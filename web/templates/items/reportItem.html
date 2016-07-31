@@ -1,0 +1,142 @@
+{% load i18n %}
+{% load web_tags %}
+{% load wchoices %}
+{% with report=item %}
+<br>
+<div class="well report report-{{ report.status|reportStatusToString }}" data-report-id="{{ report.id }}">
+  <div class="row">
+    <div class="col-md-8">
+      <h4>{% trans 'Report' %}: {% trans report.reported_thing_title %}</h4>
+    </div>
+    <div class="col-md-4">
+      <h1 class="text-right report_status">{{ report.status|reportStatusToString }}</h1>
+    </div>
+  </div>
+  <div>
+  </div>
+  <ul class="list-group">
+    <li class="list-group-item">
+      <strong>{% trans 'Reported by:' %}</strong>
+      {% if report.owner %}
+      <a href="{{ 'user'|itemURL:report.owner }}">
+	{{ report.owner }}
+      </a>{% else %}
+      Anonymous
+      {% endif %}
+      <br>
+      <small class="text-muted">{{ report.creation }}</small>
+    </li>
+    <li class="list-group-item">
+      <strong>{% trans 'Message' %}</strong><br>
+      {{ report.message }}
+    </li>
+    {% if report.all_images %}
+    <li class="list-group-item">
+      <strong>{% trans 'Images' %}</strong><br>
+      <div class="container_form">
+	{% for image in report.all_images %}
+	<a href="{{ image.image|imageURL }}" target="_blank" class="a-nodifferences">
+	  <img src="{{ image.image|imageURL }}" class="img-responsive" alt="{{ report.reported_thing_title }}" />
+	</a>
+	{% endfor %}
+      </div>
+    </li>
+    {% endif %}
+    {% if report.staff %}
+    <li class="list-group-item">
+      <strong>{% trans 'Staff' %}</strong>
+      <a href="{{ 'user'|itemURL:report.staff }}">
+	{{ report.staff }}
+      </a>
+    </li>
+    {% endif %}
+    {% if report.staff_message %}
+    <li class="list-group-item">
+      <strong>{% trans 'Staff' %} {% trans 'Message' %}</strong><br>
+      {{ report.staff_message }}
+    </li>
+    {% endif %}
+  </ul>
+  {% if user.id == report.owner.id %}
+  <a href="/reports/edit/{{ report.id }}/" class="btn btn-main btn-xl btn-block">
+    {% trans 'Edit' %} {% trans 'Report' %}
+  </a><br>
+  {% endif %}
+  <a href="/{{ report.reported_thing }}/{{ report.reported_thing_id }}/" class="open-thing btn btn-main btn-xl btn-block" data-ajax-url="/ajax/{{ report.reported_thing }}/{{ report.reported_thing_id }}/" data-ajax-show-button="true">
+    {% trans 'Open' %} {% trans report.reported_thing_title %}
+  </a>
+  {% if user.is_staff %}
+  <br><br>
+  {% if user.id != report.owner.id %}
+  {% if report.status|reportStatusToString == 'Pending' %}
+  <div class="panel-group staff-buttons" id="staff-buttons-{{ report.id }}">
+    <div class="panel panel-info inline-block" style="width: 33%; vertical-align: top; margin-top: 0;">
+      <div class="panel-heading">
+	<h3 class="panel-title fontx1-5 text-center">
+	  <a href="#collapseIgnore{{ report.id }}" data-toggle="collapse" data-parent="#staff-buttons-{{ report.id }}" class="a-nodifference">I see nothing wrong</a>
+	</h3>
+      </div>
+      <div class="panel-collapse collapse" id="collapseIgnore{{ report.id }}">
+	<form class="panel-body" method="POST" action="/ajax/moderatereport/{{ report.id }}/Ignored/">
+	  {% csrf_token %}
+	  <input type="submit" class="btn btn-info btn-block btn-lines" value="Ignore this report">
+	  <br>
+	  <ul>
+	    <li>Will not notify anyone.</li>
+	    <li>Will mark the report as done.</li>
+	  </ul>
+	</form>
+      </div>
+    </div>
+    <div class="panel panel-warning inline-block" style="width: 33%; vertical-align: top; margin-top: 0;">
+      <div class="panel-heading">
+	<h3 class="panel-title fontx1-5 text-center">
+	  <a href="#collapseEdited{{ report.id }}" data-toggle="collapse" data-parent="#staff-buttons-{{ report.id }}" class="a-nodifference">It should be edited</a>
+	</h3>
+      </div>
+      <div class="panel-collapse collapse" id="collapseEdited{{ report.id }}">
+	<form class="panel-body" method="POST" action="/ajax/moderatereport/{{ report.id }}/Edited/">
+	  {% csrf_token %}
+	  <a href="/{{ report.reported_thing|collectionGetPlural }}/edit/{{ report.reported_thing_id }}/" target="_blank" class="btn btn-success btn-block btn-lines" data-ajax-url="/ajax/{{ report.reported_thing|collectionGetPlural }}/edit/{{ report.reported_thing_id }}/" data-ajax-show-button="true">1. Edit {{ report.reported_thing_title }}</a><br>
+	  <input type="text" name="staff_message" class="form-control" placeholder="2. Explain what has been edited and why (in English)." required><br>
+	  <input type="submit" class="btn btn-warning btn-block btn-lines" value="3. Confirm this report">
+	  <br>
+	  <ul>
+	    <li>Will notify the owner of this {{ report.reported_thing }}.</li>
+	    <li>Will notifty all the people who reported this {{ report.reported_thing }}.</li>
+	    <li>Will mark all the reports for that {{ report.reported_thing }} as done.</li>
+	  </ul>
+	</form>
+      </div>
+    </div>
+    <div class="panel panel-danger inline-block" style="width: 33%; vertical-align: top; margin-top: 0;">
+      <div class="panel-heading">
+	<h3 class="panel-title fontx1-5 text-center">
+	  <a href="#collapseDeleted{{ report.id }}" data-toggle="collapse" data-parent="#staff-buttons-{{ report.id }}" class="a-nodifference">It should be deleted</a>
+	</h3>
+      </div>
+      <div class="panel-collapse collapse" id="collapseDeleted{{ report.id }}">
+	<form class="panel-body" method="POST" action="/ajax/moderatereport/{{ report.id }}/Deleted/">
+	  {% csrf_token %}
+	  <input type="text" name="staff_message" class="form-control" placeholder="1. Explain why (in English)." required><br>
+	  <input type="submit" class="btn btn-danger btn-block btn-lines" value="2. Delete {{ report.reported_thing_title }}">
+	  <br>
+	  <ul>
+	    <li>Will delete the {{ report.reported_thing }} forever. </li>
+	    <li>Will notify the owner of this {{ report.reported_thing }}.</li>
+	    <li>Will notifty all the people who reported this {{ report.reported_thing }}.</li>
+	    <li>Will mark all the reports for that {{ report.reported_thing }} as done.</li>
+	  </ul>
+	</form>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="alert alert-warning">
+    You can't moderate your own reports. Ask another member of the staff.
+  </div>
+  {% endif %}
+  {% endif %}
+</div>
+{% endwith %}

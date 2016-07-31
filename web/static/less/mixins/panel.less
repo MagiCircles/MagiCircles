@@ -1,0 +1,63 @@
+
+.panel-variant(@border; @heading-text-color; @heading-bg-color; @heading-border) {
+    border-color: @border;
+
+    & > .panel-heading {
+	color: @heading-text-color;
+	background-color: @heading-bg-color;
+	border-color: @heading-border;
+
+	+ .panel-collapse > .panel-body {
+	    border-top-color: @border;
+	}
+	.badge {
+	    color: @heading-bg-color;
+	    background-color: @heading-text-color;
+	}
+    }
+    & > .panel-footer {
+	+ .panel-collapse > .panel-body {
+	    border-bottom-color: @border;
+	}
+    }
+}
+
+.custom-panel(@color, @background:#fff, @linkcolor:#fff) {
+    .panel-variant(lighten(@color, 20%), #fff, @color, lighten(@color, 20%));
+    >.panel-heading {
+	a {
+	    color: #fff!important;
+	    &:hover {
+		color: lighten(@color, 30%)!important;
+		text-decoration: none;
+	    }
+	}
+	.avatar_wrapper {
+	    border-color: @color!important;
+	}
+    }
+    >.panel-body {
+	background: @background;
+	overflow: hidden;
+    }
+    >.panel-footer {
+	color: darken(@color, 5%);
+	background-color: lighten(@color, 40%);
+	border-top-color: lighten(@color, 20%);
+	a {
+	    color: inherit;
+	    text-decoration: none;
+	}
+    }
+    .socialbar a.btn {
+	color: #333!important;
+    }
+
+    .table-link {
+	&:hover {
+	    color: @color;
+	    cursor: pointer;
+	}
+    }
+    .a-variant(@color);
+}

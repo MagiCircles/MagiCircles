@@ -1,0 +1,78 @@
+{% load i18n %}
+{% load wchoices %}
+{% load tools %}
+{% load web_tags %}
+
+{% with profile_user=item %}
+<div class="container">
+  <br><br>
+  <div class="jumbotron jumbotron-{{ profile_user.preferences.css_color }}" id="profile">
+    <div class="topprofile">
+      <div class="row">
+	<div class="col-sm-2">
+	  {% include 'include/avatar.html' with av_user=profile_user av_size=60 av_image_size=200 %}
+	</div>
+	<div class="col-sm-10">
+	  <div class="info">
+	    <div class="pull-right text-right">
+	      {% if user.is_authenticated and not profile_user.preferences.private and not is_me %}
+	      <form method="POST" class="noform" id="follow" action="/ajax/follow/{{ profile_user.username }}/">
+		{% csrf_token %}
+		<input type="hidden" name="{% if profile_user.followed %}unfollow{% else %}follow{% endif %}">
+		<div class="btn btn-lg btn-{{ profile_user.preferences.css_color }}" id="follow-hidden-loader" style="display: none;"><i class="flaticon-loading"></i></div>
+		<input type="submit" class="btn btn-lg btn-{{ profile_user.preferences.css_color }}" value="{% if profile_user.followed %}{% trans 'Unfollow' %}{% else %}{% trans 'Follow' %}{% endif %}" data-reverse="{% if profile_user.followed %}{% trans 'Follow' %}{% else %}{% trans 'Unfollow' %}{% endif %}">
+	      </form>
+	      {% elif not user.is_authenticated %}
+	      <a href="/signup/?next={{ current_url }}" class="btn btn-lg btn-{{ profile_user.preferences.css_color }}">{% trans 'Follow' %}</a><br>
+	      {% elif is_me %}
+	      <a href="/settings/" class="btn btn-lg btn-{{ profile_user.preferences.css_color }}"><i class="flaticon-edit"></i> {% trans 'Settings' %}</a><br>
+	      {% endif %}
+	      <br><a href="#followers"{% if not profile_user.total_followers %} style="display: none"{% endif %}><strong>{{ profile_user.total_followers }}</strong> {% trans 'Followers' %}</a>
+	      <br><a href="#following"{% if not profile_user.total_following %} style="display: none"{% endif %}><strong>{{ profile_user.total_following }}</strong> {% trans 'Following' %}</a>
+	    </div>
+	    <h1 class="glee text-secondary" id="username">{{ profile_user.username }}</h1>
+	    {% if profile_user.preferences.status and profile_user.preferences.status != 'THANKS' %}<a href="/donate/"><h2 style="color: {{ profile_user.preferences.status|statusToColor }}">{{ profile_user.preferences.status|statusToString }}</h2></a>{% endif %}
+	    <br>
+	    <div class="description">{% if profile_user.preferences.description %}{{ profile_user.preferences.description }}{% endif %}</div>
+	    <a href="/reports/add/user/?id={{ profile_user.id }}" target="_blank" class="btn btn-link btn-sm"><i class="flaticon-fingers"></i> {% trans 'Report' %}</a>
+	  </div>
+	</div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <table>
+      <tr>
+	{% for link in profile_user.all_links %}
+	{% if forloop.counter0|mod:per_line %}
+    </tr></table>
+    <table class="white-table table-responsive text-center table-buttons">
+      <tr>
+	{% endif%}
+	<td>
+	  {% include 'include/link.html' %}
+	</td>
+	{% endfor %}
+      </tr>
+    </table>
+  </div>
+  {% if profile_user.all_accounts|length == 0 %}
+  <h2>
+    {% if is_me %}
+    <div class="pull-right">
+      <a href="/accounts/add/" class="btn btn-{{ profile_user.preferences.css_color }} btn-lg">
+	{% trans 'Add' %} {% trans 'Account' %}
+      </a>
+    </div>
+    {% endif %}
+    {% trans 'No account.' %}</h2>
+  {% else %}
+  {% with length=profile_user.all_accounts|length %}
+  <h2>{% blocktrans count counter=length %}{{ length }} account:{% plural %}{{ length }} accounts:{% endblocktrans %}</h2>
+  {% endwith %}
+  {% include 'accountsForProfile.html' %}
+  {% endif %}
+  <br><br>
+  {% include 'include/disqus.html' with disqus_identifier='user-'|addint:profile_user.id %}
+</div>
+{% endwith %}

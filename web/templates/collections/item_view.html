@@ -1,0 +1,22 @@
+{# required variables: name, item, #}
+{% extends "base.html" %}
+{% load i18n %}
+{% load tools %}
+
+{% block title %}{% trans title %}: {{ item }}{% endblock %}
+
+{% block content %}
+<div class="container">
+  {% include 'items/'|add:item_template|add:'.html' %}
+  <br><br>
+  {% if comments_enabled %}{% include 'include/disqus.html' with disqus_identifier=name|add:'-'|addint:item.pk %}{% endif %}
+</div>
+{% endblock %}
+
+{% block afterjs %}
+{% if ajax_callback %}
+<script>
+  {{ ajax_callback }}();
+</script>
+{% endif %}
+{% endblock %}

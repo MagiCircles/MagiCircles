@@ -1,0 +1,12 @@
+{% load i18n %}
+{% blocktrans %}Nice to meet you, we are Deby and Engil!{% endblocktrans %}<br><br>
+{% blocktrans %}We are two developers and casual players. We live in San Francisco, California. We come from the same computer science university and both work as software engineers in the same company we founded:{% endblocktrans %}
+<a href="http://rainbowcooki.es/">Rainbow Cookies</a>.
+{% if 'donate' in all_enabled %}
+{% blocktrans %}Though we love our job, we don't pay ourselves and don't have any income, so any donation helps a lot and is greatly appreciated.{% endblocktrans %}
+<a href="/donate/" class="btn btn-main btn-sm">{% trans 'Donate' %}</a>
+{% endif %}
+<br><br>
+{% blocktrans %}The heartwarming support from the community keeps motivating us to do more! We love helping the community by providing as much information as we can about the game, while keeping the website easy to use, shiny and cute ^_^{% endblocktrans %}
+<br><br>
+{% blocktrans %}We don't know how far we will go with this, but one thing we know for sure is that we are having a lot of fun doing it and sharing this adventure with you.{% endblocktrans %}

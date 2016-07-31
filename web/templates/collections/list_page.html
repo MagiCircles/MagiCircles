@@ -1,0 +1,28 @@
+{# required variables: items, per_line, col_size, name, total_results, page_size, page #}
+{# optional variables: show_no_result #}
+
+{% load i18n %}
+{% load tools %}
+{% if items|length == 0 %}
+{% if show_no_result %}
+<div class="padding50">
+  <h4 class="padding50 alert alert-info">
+    {% trans 'No result.' %}
+  </h4>
+</div>
+{% endif %}
+{% else %}
+<div class="row items">
+  {% for item in items %}
+  {% if forloop.counter0 != 0 and forloop.counter0|mod:per_line %}
+</div><div class="row items">
+  {% endif%}
+  <div class="col-lg-{{ col_size }}">
+    {% include 'items/'|add:name|add:'Item.html' %}
+  </div>
+  {% endfor %}
+</div>
+{% if not stages %}
+{% include 'include/pagination.html' %}
+{% endif %}
+{% endif %}

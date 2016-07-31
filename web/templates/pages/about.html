@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load tools %}
+{% get_current_language as LANGUAGE_CODE %}
+
+{% block title %}{% trans 'About' %}{% endblock %}
+
+{% block content %}
+
+<div class="container">
+  <div class="padding50">
+
+    <h1 class="text-main">{% trans 'About' %}</h1>
+    <div class="row">
+      <div class="col-md-8">
+	<p class="padding50">
+	  {% include about_description_template|add:'.html' %}
+	</p>
+	<p class="text-right">
+	  <a class="btn btn-main btn-lg page-scroll" href="#contact">{% trans 'Contact us' %}</a>
+	</p>
+      </div>
+      <div class="col-md-4">
+	<img src="{{ static_url }}img/{{ about_photo }}" class="img-circle img-responsive img-thumbnail">
+      </div>
+    </div>
+
+    <hr>
+
+    <div id="contact"></div>
+    <br><br><br><br>
+    <h1 class="text-main padding50">{% trans 'Contact us' %}</h1>
+    {% if contact_template %}
+    {% include contact_template|add:'.html' %}
+    {% else %}
+    <div class="row">
+      <div class="col-md-6 text-center">
+	<p class="margin50 fontx1-2">
+	  {% trans 'We reply faster if you send us an direct message on Twitter:' %}
+	</p>
+	<a href="https://twitter.com/{{ twitter }}" class="btn btn-main btn-xl">
+	  <img src="{{ static_url }}img/links/twitter.png" alt="twitter" />
+	  Twitter
+	</a>
+      </div>
+      <div class="col-md-6 text-center">
+	<p class="margin50">
+	  {% trans 'You can also contact us by email, especially if you need help with something sensitive, such as transferring your account to another user.' %}
+	</p>
+	<a href="mailto:{{ email }}" class="btn btn-main btn-xl">
+	  <i class="flaticon-edit"></i>
+	  {% trans 'Send Email' %}
+	</a>
+      </div>
+    </div>
+    <br><br>
+    <div class="row">
+      <div class="col-md-6 text-center">
+	<p class="margin50">
+	  {% trans 'You can also contact us with a private message on:' %}
+	</p>
+	<a href="https://www.reddit.com/user/{{ reddit_user }}" class="btn btn-main btn-lg">
+	  <img src="{{ static_url }}img/links/reddit.png" alt="reddit" />
+	  Reddit
+	</a>
+	<a href="https://www.facebook.com/{{ db0company }}" class="btn btn-main btn-lg">
+	  <img src="{{ static_url }}img/links/facebook.png" alt="facebook" />
+	  Facebook
+	</a>
+      </div>
+      <div class="col-md-6">
+	<p class="margin50 fontx1-2">
+	<p>
+	  {% trans 'For suggestions or bug reports, we recommend you to:' %}
+	</p>
+	<ol>
+	  <li>{% trans 'Browse the upcoming features on' %} <a href="{{ bug_tracker_url }}">{% trans 'our Tasks manager' %}</a></li>
+	  <li><a href="https://github.com/{{ github_repository }}/issues/new">{% trans 'Create a new issue' %}</a> {% trans 'with the details about what you would like us to implement' %}</li>
+	</ol>
+      </div>
+    </div>
+    {% endif %}
+
+    <hr>
+
+    <div id="franchise"></div>
+    <br><br><br><br>
+    <h1 class="text-main padding50">{% trans 'Franchise Credits' %}</h1>
+    <div class="alert alert-warning text-center">
+      <p style="max-width: 600px; margin: auto;">
+	{{ franchise }}
+      </p>
+    </div>
+    <hr>
+
+    <div id="icons"></div>
+    <br><br><br><br>
+    <h1 class="text-main padding50">{% trans 'Icons Credits' %}</h1>
+    <div>Icons made by <a href="http://www.flaticon.com/authors/freepik" title="Freepik">Freepik</a>, <a href="http://www.flaticon.com/authors/yannick" title="Yannick">Yannick</a>, <a href="http://www.flaticon.com/authors/icomoon" title="Icomoon">Icomoon</a>, <a href="http://www.flaticon.com/authors/dave-gandy" title="Dave Gandy">Dave Gandy</a>, <a href="http://www.flaticon.com/authors/icons8" title="Icons8">Icons8</a>, <a href="http://www.flaticon.com/authors/catalin-fertu" title="Catalin Fertu">Catalin Fertu</a>, <a href="http://www.flaticon.com/authors/google" title="Google">Google</a>, <a href="http://www.flaticon.com/authors/sergiu-bagrin" title="Sergiu Bagrin">Sergiu Bagrin</a>, <a href="http://www.flaticon.com/authors/bogdan-rosu" title="Bogdan Rosu">Bogdan Rosu</a>, <a href="http://www.flaticon.com/authors/egor-rumyantsev" title="Egor Rumyantsev">Egor Rumyantsev</a> from <a href="http://www.flaticon.com" title="Flaticon">www.flaticon.com</a>             is licensed by <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0">CC BY 3.0</a></div>
+
+    <hr>
+
+    <div id="contact"></div>
+    <br><br><br><br>
+    <h1 class="text-main padding50">{% trans 'Staff members' %}</h1>
+
+    <div class="row">
+      {% for user in staff %}
+      {% if forloop.counter0|mod:3 %}
+    </div><div class="row">
+      {% endif%}
+      <div class="col-md-4">
+	<div class="panel panel-{{ user.preferences.css_color }} panel-donation">
+	  <div class="panel-heading">
+	    <strong>{{ user.username }}</strong> -
+	    {% if user.is_superuser %}
+	    {% trans 'Owner' %}
+	    {% else %}
+	    {% trans 'Staff' %}
+	    {% endif %}
+	  </div>
+	  <div class="panel-body">
+	    <div class="row">
+	      <div class="col-xs-5">
+		{% include 'include/avatar.html' with av_user=user av_image_size=150 av_size=30 av_link=True av_external=True %}
+	      </div>
+	      <div class="col-xs-7">
+		<a href="/user/{{ user.username}}/" target="_blank" class="btn btn-{{ user.preferences.css_color }} btn-lg">
+		  {% trans 'Profile' %}
+		</a>
+	      </div>
+	    </div>
+	  </div>
+	</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <hr>
+
+    <div id="othersites"></div>
+    <br><br><br><br>
+    <h1 class="text-main padding50">{% trans 'Check out our other websites' %}</h1>
+    <div class="row">
+      {% for site in other_sites %}
+      {% if site.name != site_name %}
+      <div class="col-md-{{ other_sites_colsize }}">
+	<a href="{{ site.url }}" target="_blank">
+	  <figure class="well text-center">
+	    <img src="{{ site.image }}" class="img-responsive img-rounded" alt="{{ site.name }}" />
+	    <figcaption>
+	      <h3>{{ site.name }}</h3>
+	      <p>
+		{{ site.game_name }}
+	      </p>
+	    </figcaption>
+	  </figure>
+	</a>
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+
+    <hr>
+
+    <div id="developers"></div>
+    <br><br><br><br>
+    <div class="row">
+      <div class="col-md-{% if api_enabled %}8{% else %}12{% endif %}">
+	<h1 class="text-main padding50">{% trans 'Contribute' %} <small><i class="flaticon-developer"></i> {% trans 'Dev' %}</small></h1>
+	<p class="margin50">
+	  {% blocktrans %}Our project is open-source and open for contributions. We are more than happy to accept pull-requests on GitHub!{% endblocktrans %}
+	  <br><br>
+	  {% blocktrans %}The website has been made using{% endblocktrans %} <a href="https://docs.djangoproject.com/">Django</a>, {% trans 'so in Python 2. We also use' %} <a href="http://lesscss.org/">LESS CSS</a>, <a href="http://getbootstrap.com/">Bootstrap</a>, <a href="http://jquery.com/">JQuery</a> {% t 'and' %} <a href="http://bower.io/">Bower</a> {% trans 'for the front-end of the website.' %}
+	  <br><br>
+	  {% blocktrans %}We accept all kind of contributions, from tools to help players, statistics pages, mini-games, or even little CSS changes. Don't be shy! If you need help getting started, just contact us and we will happily take the time to teach you the basics, no matter your level.{% endblocktrans %}
+	  <div class="text-right">
+	    <a href="{{ contribute_url }}" class="btn btn-main btn-lg" target="_blank">
+	      {% trans 'Get Started' %}
+	    </a>
+	  </div>
+	</p>
+      </div>
+      {% if api_enabled %}
+      <div class="col-md-4">
+	<h1 class="text-main padding50">API <small><i class="flaticon-developer"></i> {% trans 'Dev' %}</small></h1>
+	<p class="margin50">
+	  {% blocktrans %}If you're a developer and you would like to get the data of the game in a convenient format, we provide a public REST API to get the game data, our users datacards, and more!{% endblocktrans %}
+	  <div class="text-right">
+	    <a href="{{ api_url }}" class="btn btn-main btn-lg" target="_blank">
+	      {% trans 'Get Started' %}
+	    </a>
+	  </div>
+	</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  <br><br><br><br>
+  {% include 'include/disqus.html' with disqus_identifier='contact' %}
+</div>
+
+{% endblock %}

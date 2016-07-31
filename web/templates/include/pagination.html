@@ -1,0 +1,31 @@
+{# There are 2 styles of pagination: 1 infinite scroll 2 on click on load more button #}
+{# required variables: total_results, page_size, page #}
+{# optional variables: onClick (bool), id (id of activity) #}
+
+{% load pagination %}
+{% load tools %}
+{% load i18n %}
+{% load tools %}
+{% if total_results > page_size %}
+{% if ajax_modal_only %}
+<div class="text-center open_remaining">
+  <a href="/{{ plural_name }}/?{{ filters_string }}" class="text-muted" target="_blank">+ <span class="remaining">{{ remaining }}</span> {% trans plural_title %}</a>
+</div>
+{% else %}
+<div id="load_more" class="padding20 text-center" data-next-page="{{ page|add:1 }}">
+  {% if onClick %}
+  <a href="#" id="activities{% if id %}{{ id }}{% endif %}">{% trans 'Load more...' %}</a>
+  {% else %}
+  <nav>
+    <ul class="pagination pagination-sm">
+      <li class="{% if page == 1 %}disabled{% endif %}"><a href="{{ current_url|previouspage:page }}">&laquo;</a></li>
+      {% for i in total_pages|times %}
+      <li class="{% if page == i|add:1 %}active{% endif %}"><a href="{{ current_url|nextpage:i }}">{{ i|add:1 }}</a></li>
+      {% endfor %}
+      <li class="{% if page == total_pages %}disabled{% endif %}"><a href="{{ current_url|nextpage:page }}">&raquo;</a></li>
+    </ul>
+  </nav>
+  {% endif %}
+</div>
+{% endif %}
+{% endif %}

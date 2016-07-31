@@ -1,0 +1,768 @@
+msgid ""
+msgstr ""
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: POEditor.com\n"
+"Project-Id-Version: MagiCircles\n"
+"Language: fr\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#. In the top bar of the site, when you're not connected. Will open a menu with login or sign up. Can be replaced with something else, like "Anonymous", "Visitor" or "Welcome".
+#: web/default_settings.py:33
+msgid "You"
+msgstr "Toi"
+
+#: web/default_settings.py:90 web/default_settings.py:204
+#: web/templates/items/profile.html:64 web/templates/pages/settings.html:87
+msgid "Account"
+msgstr "Compte"
+
+#: web/default_settings.py:91
+msgid "Leaderboard"
+msgstr "Classement"
+
+#: web/default_settings.py:97
+msgid "Create your account to join the community and be in the leaderboard!"
+msgstr "Créer ton compte pour rejoindre la communauté et être dans le classement !"
+
+#: web/default_settings.py:113 web/default_settings.py:242
+#: web/default_settings.py:253 web/templates/pages/about.html:129
+#: web/templates/pages/donate.html:154 web/templates/pages/donate.html:196
+msgid "Profile"
+msgstr "Profil"
+
+#: web/default_settings.py:114
+msgid "Players"
+msgstr "Joueurs"
+
+#: web/default_settings.py:134 web/default_settings.py:203
+#: web/templates/items/activityItem.html:44
+msgid "Activity"
+msgstr "Activité"
+
+#: web/default_settings.py:135
+msgid "Activities"
+msgstr "Activités"
+
+#: web/default_settings.py:143
+msgid "Share your adventures!"
+msgstr "Partage tes aventures !"
+
+#: web/default_settings.py:165
+#: web/management/commands/cron_notifications.py:25
+#: web/templates/emails/notification.html:5
+#: web/templates/emails/notification.html:6
+msgid "Notification"
+msgstr "Notification"
+
+#: web/default_settings.py:166
+msgid "Notifications"
+msgstr "Notifications"
+
+#: web/default_settings.py:229 web/templates/pages/login.html:4
+#: web/templates/pages/login.html.py:6 web/templates/pages/signup.html:8
+msgid "Login"
+msgstr "Connexion"
+
+#: web/default_settings.py:235 web/templates/pages/login.html:8
+#: web/templates/pages/signup.html:4 web/templates/pages/signup.html.py:6
+msgid "Sign Up"
+msgstr "Inscription"
+
+#: web/default_settings.py:259 web/templates/items/profile.html:28
+#: web/templates/pages/settings.html:16
+msgid "Settings"
+msgstr "Paramètres"
+
+#: web/default_settings.py:267
+msgid "Logout"
+msgstr "Déconnexion"
+
+#: web/default_settings.py:273 web/templates/pages/about.html:6
+#: web/templates/pages/about.html.py:13 web/templates/pages/donate.html:24
+msgid "About"
+msgstr "À propos"
+
+#: web/default_settings.py:279 web/templates/include/about_description.html:7
+#: web/templates/pages/donate.html:7 web/templates/pages/donate.html.py:13
+#: web/templates/pages/donate.html:23
+msgid "Donate"
+msgstr "Donations"
+
+#. Link to a map of all the players (similar to Google maps).
+#: web/default_settings.py:285 web/templates/pages/map.html:1
+msgid "Map"
+msgstr "Carte des joueurs"
+
+#. Link to the help pages that look like a wiki and help people use the site.
+#: web/default_settings.py:293 web/default_settings.py:299
+msgid "Help"
+msgstr "Pages d'aide"
+
+#. The favorite color of the user. Will be used to personalize their profile.
+#: web/forms.py:103 web/models.py:70
+msgid "Color"
+msgstr "Couleur"
+
+#. This is about the favorite characters the user specified in their preferences.
+#: web/forms.py:130
+msgid "All your favorites must be unique"
+msgstr "Tu ne peux pas avoir plusieurs fois le même préféré"
+
+#: web/forms.py:175
+msgid "Old Password"
+msgstr "Ancien mot de passe"
+
+#: web/forms.py:176
+msgid "New Password"
+msgstr "Nouveau mot de passe"
+
+#: web/forms.py:177
+msgid "New Password Again"
+msgstr "Vérification du nouveau mot de passe"
+
+#: web/model_choices.py:18
+msgid "Player"
+msgstr "Joueur"
+
+#: web/model_choices.py:19
+msgid "Super Player"
+msgstr "Super Joueur"
+
+#: web/model_choices.py:20
+msgid "Extreme Player"
+msgstr "Extrême Joueur"
+
+#: web/model_choices.py:21
+msgid "Master Player"
+msgstr "Le maître des joueurs"
+
+#: web/model_choices.py:22
+msgid "Ultimate Player"
+msgstr "Joueur Ultime"
+
+#: web/model_choices.py:35
+msgid "blue"
+msgstr "bleu"
+
+#: web/model_choices.py:36
+msgid "pink"
+msgstr "rose"
+
+#: web/model_choices.py:37
+msgid "shiny Silver"
+msgstr "argenté"
+
+#: web/model_choices.py:38 web/model_choices.py:39
+msgid "shiny Gold"
+msgstr "en or"
+
+#: web/model_choices.py:79
+msgid "Never"
+msgstr "Jamais"
+
+#: web/model_choices.py:80
+msgid "Sometimes"
+msgstr "Quelques fois"
+
+#: web/model_choices.py:81
+msgid "Often"
+msgstr "Souvent"
+
+#: web/model_choices.py:82
+msgid "Every single day"
+msgstr "Tous les jours"
+
+#. Example of replacement: "db0 liked your activity: I love going to the beach!" where db0 is the user who liked your activity and "I love going to the beach!" is the content of your activity.
+#: web/model_choices.py:93
+msgid "{} liked your activity: {}."
+msgstr "{} a aimé ton activité : {}."
+
+#. Make sure there's as many {} in your translation than in the original sentence.
+#. Example of replacement: "db0 just followed you." where db0 is the user who follows you.
+#: web/model_choices.py:94
+msgid "{} just followed you."
+msgstr "{} vient de te suivre."
+
+#. For the emails settings.
+#: web/model_choices.py:100
+msgid "When someone likes your activity."
+msgstr "Quand quelqu'un aime une de tes activités."
+
+#. For the emails settings.
+#: web/model_choices.py:101
+msgid "When someone follows you."
+msgstr "Quand quelqu'un te suit."
+
+#. Personal description you can write on your profile. Similar to twitter's "bio".
+#: web/models.py:66
+msgid "Description"
+msgstr "Déscription"
+
+#: web/models.py:66
+msgid "Write whatever you want. You can add formatting and links using Markdown."
+msgstr "Écris ce que tu veux. Tu peux formatter en utilisant Markdown."
+
+#. Your translation must be gender neutral. Example 1er/ère
+#: web/models.py:67
+msgid "1st"
+msgstr "1er"
+
+#. Your translation must be gender neutral. Example 1er/ère
+#: web/models.py:68
+msgid "2nd"
+msgstr "2ème"
+
+#. Your translation must be gender neutral. Example 1er/ère
+#: web/models.py:69
+msgid "3rd"
+msgstr "3ème"
+
+#: web/models.py:71
+msgid "Birthdate"
+msgstr "Date de naissance"
+
+#. Will do a google maps search and put people on the map. Can be replaced by something like "Your city" or "Address".
+#: web/models.py:72
+msgid "Location"
+msgstr "Ville"
+
+#: web/models.py:72
+msgid "The city you live in."
+msgstr "La ville dans laquelle tu vis."
+
+#: web/models.py:72
+msgid "It might take up to 24 hours to update your location on the map."
+msgstr "La mise à jour de ta position sur la carte des joueurs peut prendre jusqu'à 24 heures."
+
+#. For links. Select your platform before adding a link. Can be Facebook/Twitter/Reddit, etc.
+#: web/models.py:167
+msgid "Platform"
+msgstr "Plateforme"
+
+#: web/models.py:168
+msgid "Username/ID"
+msgstr "Nom d'utilisateur ou identifiant numérique"
+
+#. For links.
+#: web/models.py:168
+msgid "Write your username only, no URL."
+msgstr "N'écris que ton identifiant, pas un lien complet."
+
+#. For links.
+#: web/forms.py:85 web/models.py:169
+msgid "How often do you tweet/stream/post about {}?"
+msgstr "À quelle fréquence tu tweetes, t'enregistres ou poste à propos de {} ?"
+
+#: web/templates/base.html:116
+msgid "Help us translate the site"
+msgstr "Aide-nous à traduire le site"
+
+#: web/templates/collections/list_page.html:10
+msgid "No result."
+msgstr "Pas de résultat."
+
+#: web/templates/collections/modification_view.html:23
+msgid "Back to"
+msgstr "Revenir à"
+
+#: web/templates/emails/notification.html:17
+#: web/templates/emails/notification.html:20
+#: web/templates/emails/notification.txt:5 web/templates/emails/report.html:29
+#: web/templates/emails/report.html:30 web/templates/emails/report.txt:8
+#: web/templates/items/notificationItem.html:21
+#: web/templates/items/reportItem.html:66
+msgid "Open"
+msgstr "Ouvrir"
+
+#. Make sure the world "donating" can be added at the end of this sentence.
+#: web/templates/emails/donation_footer.html:3
+#: web/templates/pages/donate.html:22
+msgid "If you like the website, please consider"
+msgstr "Si tu aimes le site, penses à"
+
+#. Make sure you can add this word at the end of the sentence "If you like the website, please consider"
+#: web/templates/emails/donation_footer.html:3
+#: web/templates/pages/donate.html:22
+msgid "donating"
+msgstr "faire une donation"
+
+#: web/templates/emails/donation_footer.html:4
+#: web/templates/pages/donate.html:22
+msgid "This will help us cover the costs of the servers and allow us to keep it running for free and without ads."
+msgstr "Celles-ci nous aident à couvrir les frais des serveurs et nous permettent de continuer de faire tourner ce service gratuitement et sans publicité."
+
+#: web/templates/emails/notification.html:30
+#: web/templates/emails/notification.txt:7
+msgid "Click here"
+msgstr "Clique ici"
+
+#: web/templates/emails/notification.html:30
+#: web/templates/emails/notification.txt:7
+msgid "to turn off email notifications."
+msgstr "pour désactiver les notifications par email."
+
+#: web/templates/form.html:46
+msgid "Apply Changes"
+msgstr "Sauvegarder"
+
+#: web/templates/include/about_description.html:2
+msgid "Nice to meet you, we are Deby and Engil!"
+msgstr "Ravie de te rencontrer, nous c'est Deby et Engil !"
+
+#: web/templates/include/about_description.html:3
+msgid "We are two developers and casual players. We live in San Francisco, California. We come from the same computer science university and both work as software engineers in the same company we founded:"
+msgstr "Nous sommes 2 developpeurs et joueurs. On habite à San Francisco, en Californie. On vient de la même école d'informatique et on travaille tous les deux dans une entreprise qu'on a fondé :"
+
+#: web/templates/include/about_description.html:6
+msgid "Though we love our job, we don't pay ourselves and don't have any income, so any donation helps a lot and is greatly appreciated."
+msgstr "Même si on adore notre boulot, l'entreprise n'a pas encore les moyens de nous donner un salaire, donc on n'a aucun revenu. Du coup, chaque donation, même les plus petites, nous aide énormément."
+
+#: web/templates/include/about_description.html:10
+msgid "The heartwarming support from the community keeps motivating us to do more! We love helping the community by providing as much information as we can about the game, while keeping the website easy to use, shiny and cute ^_^"
+msgstr "Le support chaleureux de la communauté nous motive à faire toujours plus ! On adore aider les membres de la communauté en proposant toujours plus d'infos à propos du jeu, tout en gardant le site facile à utiliser et joli ^_^"
+
+#: web/templates/include/about_description.html:12
+msgid "We don't know how far we will go with this, but one thing we know for sure is that we are having a lot of fun doing it and sharing this adventure with you."
+msgstr "On sait pas trop où on va aller avec ce project, mais une chose est sûre, on adore travailler dessus et partager cette aventure avec vous."
+
+#: web/templates/include/pagination.html:17
+msgid "Load more..."
+msgstr "Charger la suite..."
+
+#: web/templates/items/activityItem.html:38
+msgid "Write Comment"
+msgstr "Commenter"
+
+#: web/templates/items/activityItem.html:39
+msgid "Comments"
+msgstr "Commentaires"
+
+#. Will be showed before another word. For example: "Edit account" or "Edit card". Can be changed to something else so the order works, such as "Modify" or "Modification of". A gender-neutral article may be added, such as "Edit the".
+#: web/templates/items/activityItem.html:44
+#: web/templates/items/reportItem.html:62
+msgid "Edit"
+msgstr "Modifier le/la"
+
+#. Feel free to use Twitter's word in your language.
+#: web/templates/items/profile.html:23
+msgid "Unfollow"
+msgstr "Se désabonner"
+
+#. Feel free to use Twitter's word in your language.
+#: web/templates/items/profile.html:23 web/templates/items/profile.html:26
+msgid "Follow"
+msgstr "Suivre"
+
+#. Feel free to use Twitter's word in your language.
+#: web/templates/items/profile.html:30
+msgid "Followers"
+msgstr "Abbonnés"
+
+#. Feel free to use Twitter's word in your language.
+#: web/templates/items/profile.html:31
+msgid "Following"
+msgstr "Abbonnements"
+
+#: web/templates/items/profile.html:68
+msgid "No account."
+msgstr "Pas de compte"
+
+#. The exact phrase "%(length)s" must appear somewhere in your translation. It will be replaced with a number. If you don't write it or write it incorrectly, the whole page will not work in your language.
+#: web/templates/items/profile.html:71
+msgid "%(length)s account:"
+msgid_plural "%(length)s accounts:"
+msgstr[0] "%(length)s compte :"
+msgstr[1] "%(length)s comptes : "
+
+#: web/templates/pages/about.html:20 web/templates/pages/about.html.py:32
+msgid "Contact us"
+msgstr "Contact"
+
+#: web/templates/pages/about.html:39
+msgid "We reply faster if you send us an direct message on Twitter:"
+msgstr "On répond plus vite si tu nous envoie un message privé sur Twitter :"
+
+#: web/templates/pages/about.html:48
+msgid "You can also contact us by email, especially if you need help with something sensitive, such as transferring your account to another user."
+msgstr "Tu peux aussi nous contacter par email, surtout si tu as besoin d'aide avec quelque chose de personnel, comme transférer ton compte à quelqu'un d'autre."
+
+#. On a button
+#: web/templates/pages/about.html:52
+msgid "Send Email"
+msgstr "Envoyer un email"
+
+#: web/templates/pages/about.html:60
+msgid "You can also contact us with a private message on:"
+msgstr "Tu peux aussi nous envoyer des messages privés sur :"
+
+#: web/templates/pages/about.html:74
+msgid "For suggestions or bug reports, we recommend you to:"
+msgstr "Pour les suggestions et les rapports de bugs, il vaut mieux :"
+
+#: web/templates/pages/about.html:77
+msgid "Browse the upcoming features on"
+msgstr "Parcourir les fonctionnalités en cours sur"
+
+#: web/templates/pages/about.html:77
+msgid "our Tasks manager"
+msgstr "notre gestionnaire de tâches"
+
+#: web/templates/pages/about.html:78
+msgid "Create a new issue"
+msgstr "Créer un nouveau ticket"
+
+#: web/templates/pages/about.html:78
+msgid "with the details about what you would like us to implement"
+msgstr "avec les détails de ce que tu voudrais"
+
+#: web/templates/pages/about.html:88
+msgid "Franchise Credits"
+msgstr "Crédits de la franchise"
+
+#: web/templates/pages/about.html:98
+msgid "Icons Credits"
+msgstr "Crédits des icônes"
+
+#: web/templates/pages/about.html:105
+msgid "Staff members"
+msgstr "Membres de l'équipe"
+
+#: web/templates/pages/about.html:117
+msgid "Owner"
+msgstr "Administrateur"
+
+#: web/templates/items/reportItem.html:47
+#: web/templates/items/reportItem.html:55 web/templates/pages/about.html:119
+msgid "Staff"
+msgstr "Équipe"
+
+#: web/templates/pages/about.html:143
+msgid "Check out our other websites"
+msgstr "Découvre nos autres sites"
+
+#: web/templates/pages/about.html:170
+msgid "Contribute"
+msgstr "Contribue"
+
+#: web/templates/pages/about.html:170 web/templates/pages/about.html.py:186
+msgid "Dev"
+msgstr "Développeurs"
+
+#: web/templates/pages/about.html:172
+msgid "Our project is open-source and open for contributions. We are more than happy to accept pull-requests on GitHub!"
+msgstr "Les sources de notre projet sont ouvertes et nous acceptons les contributions externes. On adore les pull-requests sur GitHub !"
+
+#: web/templates/pages/about.html:174
+msgid "The website has been made using"
+msgstr "Le site a été fait avec"
+
+#: web/templates/pages/about.html:174
+msgid "so in Python 2. We also use"
+msgstr "en Python 2. On utilise aussi"
+
+#: web/templates/pages/about.html:174
+msgid "for the front-end of the website."
+msgstr "pour le visuel du site."
+
+#: web/templates/pages/about.html:176
+msgid "We accept all kind of contributions, from tools to help players, statistics pages, mini-games, or even little CSS changes. Don't be shy! If you need help getting started, just contact us and we will happily take the time to teach you the basics, no matter your level."
+msgstr "On accepte n'importe quel genre de contributions, comme par exemple des outils pour les joueurs, des pages de statistiques, des mini-jeux, ou même des petits détails sur le CSS. Donc ne sois pas timide ! Si tu as besoin d'aide pour commencer, contacte-nous et on sera ravis de prendre le temps de t'apprendre les bases, peu importe ton niveau."
+
+#: web/templates/pages/about.html:179 web/templates/pages/about.html.py:191
+msgid "Get Started"
+msgstr "Guide de démarrage"
+
+#: web/templates/pages/about.html:188
+msgid "If you're a developer and you would like to get the data of the game in a convenient format, we provide a public REST API to get the game data, our users datacards, and more!"
+msgstr "Si tu es un développeur et que tu voudrais utiliser les infos du jeux dans un format pratique pour tes programmes, on propose une API REST ouverte !"
+
+#: web/templates/pages/donate.html:24 web/templates/pages/donate.html:131
+msgid "Donators"
+msgstr "Donateurs"
+
+#: web/templates/pages/donate.html:46
+msgid "Donation"
+msgstr "Don"
+
+#: web/templates/pages/donate.html:67
+msgid "Your name, your profile picture, a link to your profile, and a link to whatever you would like to advertise (your Twitter, Tumblr, Twitch or any other website!) will be added to this page."
+msgstr "Ton nom, ta photo de profil, un lien vers ton profil et un lien vers ce que tu veux (ton Twitter, Tumblr, Twitch ou n'importe quel autre site !) sera ajouté à cette page."
+
+#: web/templates/pages/donate.html:70
+msgid "Your name and a link to your profile will be added to this page."
+msgstr "Ton nom et un lien vers ton profil sera ajouté à cette page."
+
+#: web/templates/pages/donate.html:77
+msgid "We will send you a cool postcard signed by the 2 developers :)"
+msgstr "Tu recevras une carte postale signée par les deux développeurs :)"
+
+#. The exact phrase "%(status)s" must appear somewhere in your translation. It will be replaced with the status name of the user, such as "Extreme Player". If you don't write it or write it incorrectly, the whole page will not work in your language.
+#: web/templates/pages/donate.html:84
+msgid "You're the %(status)s."
+msgstr "Tu es le/la %(status)s."
+
+#: web/templates/pages/donate.html:86
+msgid "You decide who will be the character shown by default on top of the homepage."
+msgstr "Tu décides qui sera le personnage affiché par défaut sur la page d'accueil."
+
+#. The exact phrase "%(status)s" must appear somewhere in your translation. It will be replaced with the status name of the user, such as "Extreme Player". If you don't write it or write it incorrectly, the whole page will not work in your language.
+#: web/templates/pages/donate.html:94
+msgid "You're a %(status)s."
+msgstr "Tu es un/une %(status)s."
+
+#: web/templates/pages/donate.html:98
+msgid "With this special status, a lovely %(color)s heart will be displayed next to your profile picture on your profile and everywhere it appears on the website."
+msgstr "Avec ce statut spécial, un cœur %(color)s s'affichera à côté de ta photo de profil partout où elle apparait sur le site."
+
+#: web/templates/pages/donate.html:120
+msgid "We will discuss then implement a feature you would like to see on the website. You decide what you want, and we will make it come true!"
+msgstr "On discutera avec toi pour ajouter sur le site une fonctionnalité de ton choix. Tu as une idée ? On en fera une réalité !"
+
+#: web/templates/pages/donate.html:121
+msgid "Note that it has to be in the range of our abilities and in accordance with the spirit of the website ^_^"
+msgstr "Note que ça doit rester dans le cadre de nos capacités et dans l'esprit du site ^_^"
+
+#: web/templates/pages/wiki.html:5 web/templates/pages/wiki.html.py:19
+msgid "Wiki"
+msgstr "Wiki"
+
+#: web/templates/pages/login.html:9
+msgid "Forgot password?"
+msgstr "Mot de passe oublié ?"
+
+#. Customize profile, colors, location, description, etc.
+#: web/templates/pages/settings.html:8
+msgid "Customize"
+msgstr "Personnalisation"
+
+#: web/templates/pages/settings.html:12
+msgid "Change your password"
+msgstr "Modifier ton mot de passe"
+
+#: web/templates/pages/settings.html:14
+msgid "Emails"
+msgstr "Emails"
+
+#: web/templates/pages/settings.html:42
+msgid "Links"
+msgstr "Liens"
+
+#: web/templates/pages/settings.html:64
+msgid "Avatar"
+msgstr "Photo de profil"
+
+#: web/templates/pages/settings.html:67
+msgid "To change your avatar, use Gravatar with the same email address."
+msgstr "Pour modifier ta photo de profil, inscrits-toi sur Gravatar et ajoute une image associé à l'adresse email que tu utilises ici."
+
+#: web/templates/pages/settings.html:69
+msgid "F.A.Q."
+msgstr "F.A.Q."
+
+#: web/templates/pages/settings.html:70
+msgid "Change Avatar"
+msgstr "Modifier ta photo de profil"
+
+#: web/templates/pages/settings.html:74
+msgid "Accounts"
+msgstr "Comptes"
+
+#: web/templates/pages/settings.html:81
+msgid "Edit Account"
+msgstr "Modifier ce compte"
+
+#: web/templates/pages/settings.html:86 web/templates/pages/settings.html:95
+msgid "Back to my profile"
+msgstr "Retour à mon profil"
+
+#: web/templates/pages/wiki.html:23
+msgid "Back to Wiki Home"
+msgstr "Retour à l'accueil du wiki"
+
+#: web/templates/pages/wiki.html:30
+msgid "Create a new wiki page"
+msgstr "Ajouter une page de wiki"
+
+#: web/templates/pages/wiki.html:31
+msgid "Edit the sidebar"
+msgstr "Modifier la barre de menu"
+
+#: web/templates/pages/wiki.html:32 web/templates/pages/wiki.html.py:39
+msgid "Note: You need an account on GitHub to add/edit wiki pages"
+msgstr "Note : Tu as besoin d'un compte sur GitHub pour pouvoir ajouter et modifier les pages de wiki."
+
+#: web/templates/pages/wiki.html:38
+msgid "Edit this wiki page"
+msgstr "Modifier cette page de wiki"
+
+#. Make sure {object} also appears in your sentence. Will be replaced with the corresponding values.
+#: web/views_collections.py:91
+msgid "1 {object} matches your search:"
+msgstr "1 {object} correspond à ta recherche :"
+
+#. Make sure {total} and {object} also appear in your sentence. Will be replaced with the corresponding values.
+#: web/views_collections.py:91
+msgid "{total} {objects} match your search:"
+msgstr "{total} {objects} correspondent à ta recherche :"
+
+#: web/views_collections.py:122
+msgid "Become a contributor to help us fill the database"
+msgstr "Deviens un contributeur et aide-nous à remplir la base de données d'infos"
+
+#: web/views_collections.py:272
+msgid "You can't cancel this action afterwards."
+msgstr "Tu ne peux pas annuler cette action."
+
+#: web/templates/pages/donate.html:64
+msgid "Your name, your profile picture, a link to your profile, and a link to whatever you would like to advertise (your Twitter, Tumblr, Twitch or any other website!) will be added to the HOMEPAGE!"
+msgstr "Ton nom, ta photo de profil, un lien vers ton profil et un lien vers ce que tu veux (ton Twitter, Tumblr, Twitch ou n'importe quel autre site !) sera ajouté à LA PAGE D'ACCUEIL DU SITE !"
+
+#: web/templates/pages/donate.html:105
+msgid "We will send you a T-shirt!"
+msgstr "Tu recevras un T-shirt !"
+
+#: web/templates/pages/donate.html:114
+msgid "We will send you a personalized keyring!"
+msgid_plural "We will send you %(counter)s personalized keyrings!"
+msgstr[0] "Tu recevras un porte-clé personnalisé !"
+msgstr[1] "Tu recevras %(counter)s porte-clés personnalisés !"
+
+#. Will be showed before another word. For example: "Add account" or "Add card". Can be changed to something else so the order works, such as "Creation of" or "Addition of". A gender-neutral article may be added, such as "Add a".
+#: web/templates/collections/list_view.html:72
+#: web/templates/collections/list_view.html:84
+#: web/templates/items/profile.html:64 web/templates/pages/settings.html:10
+#: web/templates/pages/settings.html:87
+msgid "Add"
+msgstr "Créer un/une"
+
+#: web/templates/pages/settings.html:10 web/templates/pages/settings.html:51
+msgid "Link"
+msgstr "Lien"
+
+#: 
+msgid "Test"
+msgstr "Tester la traduction des tags"
+
+#: 
+msgid "Hello"
+msgstr "Bonjour"
+
+#: web/forms.py:204
+msgid "Confirm"
+msgstr "Confirmation"
+
+#: web/forms.py:212
+msgid "Tags"
+msgstr "Hashtags"
+
+#: web/models.py:65 web/models.py:183
+msgid "Language"
+msgstr "Langue"
+
+#: web/models.py:181 web/models.py:290 web/templates/items/reportItem.html:30
+#: web/templates/items/reportItem.html:55
+msgid "Message"
+msgstr "Message"
+
+#: web/models.py:185
+msgid "Image"
+msgstr "Illustration"
+
+#: web/templates/items/activityItem.html:26
+#: web/templates/items/activityItem.html:28
+msgid "Liked"
+msgstr "Tu aimes ça"
+
+#: web/templates/items/activityItem.html:28
+#: web/templates/items/activityItem.html:31
+msgid "Like"
+msgstr "J'aime"
+
+#. Will be shown before another word. For example: "Delete account" or "Delete card". Can be changed to something else so the order works, such as "Remove" or "Removal of". A gender-neutral article may be added, such as "Delete the".
+#: web/templates/pages/settings.html:51 web/views_collections.py:273
+msgid "Delete"
+msgstr "Supprimer le/la"
+
+#: web/forms.py:262 web/models.py:291 web/templates/items/reportItem.html:35
+msgid "Images"
+msgstr "Images"
+
+#: web/templates/emails/report.html:17 web/templates/emails/report.txt:5
+msgid "Staff Message:"
+msgstr "Message du modérateur :"
+
+#: web/templates/emails/report.html:37 web/templates/emails/report.txt:10
+msgid "Moderated by:"
+msgstr "Modéré par :"
+
+#: web/templates/items/activityItem.html:46
+#: web/templates/items/profile.html:37 web/templates/items/reportItem.html:9
+#: web/templates/items/reportItem.html:62
+msgid "Report"
+msgstr "Rapport"
+
+#: web/templates/items/reportItem.html:19
+msgid "Reported by:"
+msgstr "Signalé par :"
+
+#: web/views.py:296 web/views.py:324
+msgid "This {thing} you reported has been reviewed by a moderator and {verb}. Thank you so much for your help!"
+msgstr "Un modérateur a pris le temps de lire ton rapport et le {thing} a été {verb}. Merci beaucoup pour ton aide !"
+
+#: web/views.py:296 web/views.py:304 web/views.py:307 web/views.py:332
+msgid "edited"
+msgstr "modifié"
+
+#: web/views.py:299 web/views.py:327
+msgid "Thank you for reporting this {thing}"
+msgstr "Merci beaucoup d'avoir signalé ce {thing} !"
+
+#: web/views.py:304 web/views.py:332
+msgid "Your {thing} has been reported, and a moderator confirmed it should be {verb}."
+msgstr "Ton {thing} a été signalé par un utilisateur et un modérateur, après l'avoir lu, l'a {verb}."
+
+#: web/views.py:307 web/views.py:335
+msgid "Your {thing} has been {verb}"
+msgstr "Ton {thing} a été {verb}"
+
+#: web/views.py:324 web/views.py:335
+msgid "deleted"
+msgstr "supprimé"
+
+#: web/templates/emails/report.html:22
+msgid "Translate from English to %(language)s"
+msgstr "Traduire en %(language)s à partir de l'anglais"
+
+#: web/templates/emails/notification.html:8
+#: web/templates/emails/notification.txt:1 web/templates/emails/report.html:10
+#: web/templates/emails/report.txt:1
+msgid "Hi"
+msgstr "Salut"
+
+#: web/forms.py:116 web/models.py:67 web/models.py:68 web/models.py:69
+#: web/views.py:71
+msgid "{nth} Favorite Character"
+msgstr "{nth} personnage préféré"
+
+#: web/settings.py:90
+msgid "The {game} Database & Community"
+msgstr "Infos et Communauté sur {game}"
+
+#: web/views.py:118
+msgid "{site} is not a representative and is not associated with {game}. Its logos and images are Trademarks of {company}."
+msgstr "{site} n'est pas représentatif et n'est pas associé à {game}. Les logos et images sont des marques déposées par {company}."
+
+#: web/views.py:118
+msgid "the company that owns {game}"
+msgstr "l'entreprise qui possède {game}"
+
+#: web/views_collections.py:202
+msgid "Make sure the {thing} you're about to add doesn't already exist."
+msgstr "Assure-toi que le/la {thing} que tu es sur le point d'ajouter n'existe pas déjà."
+
+#: 
+msgid "{nth} Favorite Performer"
+msgstr "{nth} Chanteur préféré"
+

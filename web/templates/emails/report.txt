@@ -1,0 +1,10 @@
+{% load i18n %}{% trans 'Hi' %} {{ user.username }},
+
+{{ sentence }}
+
+{% trans 'Staff Message:' %}
+{{ report.staff_message }}
+
+{% if item_url %}{% trans 'Open' %}{% else %}{{ site_name }}{% endif %}: {{ site_url }}{% if item_url %}{{ item_url }}{% endif %}
+
+{% trans 'Moderated by:' %} {{ report.staff }} ({{ site_name }}user/{{ report.staff.id }}/{{ report.staff }}/)

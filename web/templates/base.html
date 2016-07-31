@@ -1,0 +1,219 @@
+{% load i18n %}
+{% load web_tags %}
+{% load tools %}
+{% if not static_url %}{% forceLoadRawContext %}{% endif %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE }}" class="html-current-{{ current }}">
+  <head>
+    <meta charset="UTF-8">
+    <title>{{ site_name }} - {% block title %}{% trans site_description %}{% endblock %}</title>
+
+    <link rel="stylesheet" href="{{ static_url }}bower/bootstrap/dist/css/bootstrap.min.css">
+    {% if debug %}
+    <link rel="stylesheet/less" type="text/css" href="{{ static_url }}less/style.less" />
+    <script src="{{ static_url }}bower/less/dist/less.min.js"></script>
+    {% else %}
+    <link rel="stylesheet" href="{{ static_url }}css/style.css?6">
+    {% endif %}
+
+    <meta property="og:image" content="{% block shareimage %}{{ site_image }}{% endblock %}"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <meta name="description" content="{% trans site_description %}">
+    <meta name="keywords" content="{{ game_name }}, {{ site_name }}, Android game, iPhone game, rhythm game, cards, card, tracker, share collection">
+    <meta name="twitter:card" content="{{ site_name }} - {% trans site_description %}">
+    <meta name="twitter:image" content="{% block shareimagetwitter %}{{ site_image }}{% endblock %}">
+    <meta name="twitter:creator" content="@db0company">
+    <!--[if lt IE 9]>
+    <script src="http://html5shim.googlecode.com/svn/trunk/html5.js">
+    </script>
+    <![endif]-->
+  </head>
+  <body class="current-{{ current }}">
+    {% if not hidenavbar %}
+    <nav class="navbar navbar-main navbar-fixed-top">
+      <div class="container">
+	<div class="navbar-header">
+	  <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target=".navbar-collapse">
+	    <span class="sr-only">Toggle navigation</span>
+	    <span class="icon-bar"></span>
+	    <span class="icon-bar"></span>
+	    <span class="icon-bar"></span>
+	  </button>
+	  <a class="navbar-brand" href="/">
+	    {% if site_logo %}<img src="{{ static_url }}img/{{ site_logo }}" class="logo">{% else %}{{ site_name }}{% endif %}
+	  </a>
+	</div>
+	<div class="collapse navbar-collapse collapse">
+	  <ul class="nav navbar-nav navbar-right">
+	    {% for link in navbar_links %}
+	    {% if link|linkShowAuth:user %}
+	    <li class="{% if current == link.url_name %}active{% endif %}">
+	      <a href="{{ link.url }}">
+		{% if link.icon %}
+		<i class="flaticon-{{ link.icon }}"></i>
+		{% elif link.image %}
+		<img src="{{ static_url }}img/{{ link.image }}.png" height="16" />
+		{% endif %}
+		{% if link.image or link.icon %}<span class="hidden-sm"> &nbsp; {% else %}<span>{% endif %}
+		    {% navbarTitle link=link %}
+	          </span>
+	      </a>
+	    </li>
+	    {% endif %}
+	    {% endfor %}
+	    {% for name, link_list in navbar_links_lists.items %}
+	    {% if name == 'more' and user.is_authenticated and 'notification' in all_enabled %}
+	    <li>
+	      <a href="/notifications/">
+		<i class="flaticon-world"></i>
+		<i class="flaticon-loading" style="display: none;"></i>
+		{% if user.preferences.unread_notifications %}
+		<span class="badge progress-bar-info">{{ user.preferences.unread_notifications }}</span>
+		{% endif %}
+	      </a>
+	    </li>
+	    {% endif %}
+	    {% if link_list.links %}
+	    <li class="dropdown">
+	      <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false" id="{{ name }}">
+		{% if link_list.icon %}
+		<i class="flaticon-{{ link_list.icon }}"></i>
+		{% elif link_list.image %}
+		<img src="{{ static_url }}img/{{ link_list.image }}.png" height="16" />
+		{% endif %}
+		{% if link_list.image or link_list.icon %}<span class="hidden-sm"> &nbsp; {% else %}<span>{% endif %}
+		  {% navbarTitle link=link_list %}
+	        </span>
+	      </a>
+	      <ul class="dropdown-menu" role="menu">
+		{% for link in link_list.links %}
+		{% if link|linkShowAuth:user %}
+		<li class="{% if current == link.url_name %}active{% endif %}">
+		  <a href="{% navbarGetURL link=link %}">
+		    {% if link.icon %}
+		    <i class="flaticon-{{ link.icon }}"></i>
+		    {% elif link.image %}
+		    <img src="{{ static_url }}img/{{ link.image }}.png" height="16" />
+		    {% endif %}
+		    {% if link.image or link.icon %}<span class="hidden-sm"> &nbsp; {% else %}<span>{% endif %}
+			{% navbarTitle link=link %}
+	              </span>
+		  </a>
+		</li>
+		{% endif %}
+		{% endfor %}
+		{% if name == 'more' %}
+		<li>
+		  <form action="{% if user.is_authenticated %}/ajax/changelanguage/{% else %}/i18n/setlang/{% endif %}" method="post" style="padding: 3px 20px;">
+		    {% csrf_token %}
+		    <input name="next" type="hidden" value="{{ current_url }}" />
+		    <select name="language" id="switchLanguage">
+		      {% for lang in LANGUAGES %}
+		      <option value="{{ lang.0 }}"{% if lang.0 == LANGUAGE_CODE %} selected{% endif %}>{{ lang.1 }}</option>
+		      {% endfor %}
+		    </select>
+		  </form>
+		  <a href="{{ translation_help_url }}" class="fontx0-8 text-muted" target="_blank">{% trans 'Help us translate the site' %}</a>
+		</li>
+		{% endif %}
+	      </ul>
+	    </li>
+	    {% endif %}
+	    {% endfor %}
+	  </ul>
+	</div>
+      </div>
+    </nav>
+    {% endif %}
+
+    <main>
+      {% block content %}{% endblock %}
+    </main>
+
+    <!-- Modal -->
+    <div class="modal fade" id="modal">
+      <div class="modal-dialog">
+	<div class="modal-content">
+	</div>
+      </div>
+    </div>
+
+    <!-- CuteForm Modal -->
+    <div class="modal fade" id="cuteform-modal">
+      <div class="modal-dialog modal-lg text-center">
+	<div class="modal-content">
+	  <div class="modal-body"></div>
+	</div>
+      </div>
+    </div>
+
+    <!-- Free Modal -->
+    <div class="modal fade" id="freeModal">
+      <div class="modal-dialog modal-lg">
+	<div class="modal-content">
+	  <div class="modal-header">
+	    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+	    <h4 class="modal-title"></h4>
+	  </div>
+	  <div class="modal-body"></div>
+	  <div class="modal-footer">
+	    <button type="button" class="btn" data-dismiss="modal">{% t 'Go' %}</button>
+	  </div>
+	</div>
+      </div>
+    </div>
+
+    <script>
+    var disqus_config = function () {
+      this.language = "{{ LANGUAGE_CODE }}";
+    };
+    var static_url = '{{ static_url }}';
+    var translated_terms = {
+      {% for term in javascript_translated_terms %}'{{ term }}': '{% trans term %}',
+      {% endfor %}};
+    </script>
+
+    <script src="{{ static_url }}bower/jquery/jquery.min.js"></script>
+    <script src="{{ static_url }}js/jquery.form.min.js"></script>
+    <script src="{{ static_url }}bower/bootstrap/dist/js/bootstrap.min.js"></script>
+    <script src="{{ static_url }}bower/jquery-easing/jquery.easing.min.js"></script>
+    <script src="{{ static_url }}bower/Autolinker.js/dist/Autolinker.min.js"></script>
+    <script src="{{ static_url }}bower/CuteForm/cuteform.js"></script>
+    <script>
+      cuteform($('#switchLanguage'), {
+        'images': {
+          {% for lang in LANGUAGES %}
+          '{{ lang.0 }}': '{{ static_url }}img/language/{{ lang.0 }}.png',
+	  {% endfor %}
+        },
+      });
+    </script>
+    {% block js %}{% endblock %}
+    {% block js2 %}{% endblock %}
+    <script src="{{ static_url }}js/web_main.js"></script>
+    <script src="{{ static_url }}js/main.js"></script>
+    {% for js_file in js_files %}
+    <script src="{% if js_file|startswith:'http' %}{{ js_file }}{% else %}{{ static_url }}{% if not js_file|startswith:'bower' %}js/{% endif %}{{ js_file }}.js{% endif %}"></script>
+    {% endfor %}
+    {% block afterjs %}{% endblock %}
+
+    <script>
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+	ga('create', 'UA-67529921-1', 'auto');
+	ga('send', 'pageview');
+    </script>
+    <script type="text/javascript">
+      var disqus_shortname = 'frgl';
+      (function () {
+      var s = document.createElement('script'); s.async = true;
+      s.type = 'text/javascript';
+      s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+      (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+      }());
+      </script>
+  </body>
+</html>

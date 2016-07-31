@@ -1,0 +1,25 @@
+{% extends "form.html" %}
+{% load i18n %}
+
+{% block title %}{% trans form.verb %} {% trans title %}{% if after_title %}: {{ after_title }}{% endif %}{% endblock %}
+
+{% block imagetitle %}
+{% if imagetitle %}
+<img src="{{ static_url }}img/{{ imagetitle }}.png" height="39" />
+{% endif %}
+{% endblock %}
+
+{% block submit %}{% trans form.verb %} {% trans title %}{% endblock %}
+
+{% block beforefields %}
+{% if form_name == 'delete' %}
+{% include 'include/alert.html' with alert_type='danger' alert_message=form.alert_message %}
+{% elif alert_message %}
+{% include 'include/alert.html' %}
+{% endif %}
+{% endblock %}
+
+{% block otherbuttons %}
+{% if back_to_list_button %}<a href="/{{ plural_name }}/" class="btn btn-link">{% trans 'Back to' %} {% trans plural_title %}</a>{% endif %}
+{% if form_name != 'delete' and otherbuttons_template %}{% include otherbuttons_template|add:'.html' %}{% endif %}
+{% endblock %}

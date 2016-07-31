@@ -1,0 +1,5 @@
+{% load tools %}
+{% include 'items/'|add:item_template|add:'.html' %}
+{% for js_file in js_files %}
+<script src="{% if js_file|startswith:'http' %}{{ js_file }}{% else %}{{ static_url }}{% if not js_file|startswith:'bower' %}js/{% endif %}{{ js_file }}.js{% endif %}"></script>
+{% endfor %}

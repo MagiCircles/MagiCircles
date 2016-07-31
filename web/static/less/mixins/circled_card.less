@@ -1,0 +1,78 @@
+
+// + set background-image
+.head_card(@width: 200px) {
+    width: @width;
+    height: @width;
+    background-size: @width * 2;
+    background-repeat: no-repeat;
+    background-position: (0.55 * @width * -1) (0.25 * @width * -1);
+}
+
+// + set Smile/Pure/Cool/All class
+.circled_card(@width) {
+    .head_card(@width);
+    border-radius: 50%;
+    border: (0.04 * @width) solid;
+
+    &.N {
+	border-style: double;
+	&:before { content: 'N'; }
+    }
+    &.R {
+	&:before { content: 'R'; }
+    }
+    &.SR {
+	border-style: outset;
+	&:before { content: 'SR'; }
+    }
+    &.UR {
+	border-style: dotted;
+	&:before { content: 'UR'; }
+    }
+    &:before {
+	color: #fff;
+	text-align: left;
+	display: block;
+	font-size: @width / 5;
+
+    }
+    -webkit-transition: border-color ease-in-out .15s, border-radius ease-in-out .15s;
+    -o-transition: border-color ease-in-out .15s, border-radius ease-in-out .15s;
+    transition: border-color ease-in-out .15s, border-radius ease-in-out .15s;
+    &.hover:hover {
+	border-radius: 10%;
+    }
+    &.Smile {
+	border-color: @SmileColor;
+	&:before {
+	    text-shadow: -0.1em -0.1em 0em @SmileColor, -0.01em 0.1em 0em @SmileColor, 0.1em -0.1em 0em @SmileColor, 0.1em 0.1em 0em @SmileColor;
+	}
+    }
+    &.Pure {
+	border-color: lighten(@PureColor, 15%);
+	&:before {
+	    text-shadow: -0.1em -0.1em 0em @PureColor, -0.01em 0.1em 0em @PureColor, 0.1em -0.1em 0em @PureColor, 0.1em 0.1em 0em @PureColor;
+	}
+    }
+    &.Cool {
+	border-color: @CoolColor;
+	&:before {
+	    text-shadow: -0.1em -0.1em 0em @CoolColor, -0.01em 0.1em 0em @CoolColor, 0.1em -0.1em 0em @CoolColor, 0.1em 0.1em 0em @CoolColor;
+	}
+    }
+    &.All {
+	border-color: @AllColor;
+	&:before {
+	    text-shadow: -0.1em -0.1em 0em @AllColor, -0.01em 0.1em 0em @AllColor, 0.1em -0.1em 0em @AllColor, 0.1em 0.1em 0em @AllColor;
+	}
+    }
+
+}
+
+.circled_card_20 { .circled_card(20px); }
+.circled_card_30 { .circled_card(30px); }
+.circled_card_50 { .circled_card(50px); }
+.circled_card_70 { .circled_card(70px); }
+.circled_card_100 { .circled_card(100px); }
+.circled_card_150 { .circled_card(150px); }
+.circled_card_200 { .circled_card(200px); }

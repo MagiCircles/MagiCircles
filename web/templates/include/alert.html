@@ -1,0 +1,21 @@
+{# Required: alert_message #}
+{# Optional: alert_type, alert_flaticon, alert_button_link, alert_button_string #}
+{% load i18n %}
+<div class="alert alert-{% if alert_type %}{{ alert_type }}{% else %}warning{% endif %}">
+  <div class="row">
+    <div class="col-sm-2 text-center hidden-xs">
+      <i class="flaticon-{% if alert_flaticon %}{{ alert_flaticon }}{% else %}about{% endif %} fontx2"></i>
+    </div>
+    <div class="col-sm-{% if alert_button_link %}7{% else %}10{% endif %}">
+      {{ alert_message }}
+    </div>
+    {% if alert_button_link %}
+    <div class="col-sm-3 hidden-xs">
+      <a href="{{ alert_button_link }}" class="btn btn-main btn-lg btn-block" target="_blank">
+	{{ alert_button_string }}
+	<i class="flaticon-link"></i>
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div><br>
