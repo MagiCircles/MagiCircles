@@ -1,0 +1,5 @@
+include LICENSE
+include README.md
+recursive-include web/static *
+recursive-include web/templates *.html
+recursive-include web/locale *.po
