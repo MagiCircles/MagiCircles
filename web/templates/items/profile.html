@@ -92,6 +92,14 @@
       </div>
 
       <div role="tabpanel" class="tab-pane" id="profileactivities">
+	{% if is_me %}
+	<br>
+	<a class="btn btn-main btn-xl btn-lines btn-block btn-add-activity" href="/activities/add/">
+	  <h3>{% trans 'Add' %} {% trans 'Activity' %}</h3>
+	  <small>{% trans add_activity_sentence %}</small>
+	</a>
+	{% endif %}
+	<br>
 
 	<div id="activities"></div>
 

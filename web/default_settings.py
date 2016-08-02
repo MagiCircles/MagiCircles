@@ -22,7 +22,7 @@ DEFAULT_JAVASCRIPT_TRANSLATED_TERMS = [
     'All', 'Only', 'None',
     'Unknown', 'Yes', 'No',
     'Liked this activity',
-    'Loading',
+    'Loading', 'No result.',
 ]
 
 ############################################################

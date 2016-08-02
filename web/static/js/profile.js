@@ -58,8 +58,12 @@ function profileTabs() {
 	    var user_id = $('#username').data('user-id');
 	    $.get('/ajax/activities/?owner_id=' + user_id, function(html) {
 		$('#activities').html(html);
-		updateActivities();
-		pagination('/ajax/activities/', '&owner_id=' + user_id, updateActivities);
+		if ($.trim($('#activities').text()) == '') {
+		    $('#activities').html('<div class="alert alert-warning">' + gettext('No result.') + '</div>');
+		} else {
+		    updateActivities();
+		    pagination('/ajax/activities/', '&owner_id=' + user_id, updateActivities);
+		}
 	    })
 	}
     });

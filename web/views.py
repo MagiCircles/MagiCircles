@@ -93,6 +93,9 @@ def profileExtraContext(context):
         if links_on_last_line > best_links_on_last_line:
             best_links_on_last_line = links_on_last_line
             context['per_line'] = i
+    context['add_activity_sentence'] = _('Share your adventures!')
+    if 'activity' in ENABLED_COLLECTIONS and 'list' in ENABLED_COLLECTIONS['activity'] and 'add_button_subtitle' in ENABLED_COLLECTIONS['activity']['list']:
+        context['add_activity_sentence'] = ENABLED_COLLECTIONS['activity']['list']['add_button_subtitle']
 
 def user(request, pk=None, username=None):
     collection = ENABLED_COLLECTIONS['user']
