@@ -22,7 +22,8 @@
   </div>
   {% endfor %}
 </div>
-{% if not stages %}
 {% include 'include/pagination.html' %}
 {% endif %}
+{% if is_last_page and after_template %}
+{% include after_template|add:'.html' %}
 {% endif %}

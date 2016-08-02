@@ -60,6 +60,9 @@
     {% endif %}{# filter_form #}
     <div class="collection-page-wrapper{% if not full_width %} as-container{% endif %}">
       <h1 class="padding50 text-center{% if not show_title %} hidden{% endif %}">{% trans plural_title %}</h1>
+      {% if before_template %}
+      {% include before_template|add:'.html' %}
+      {% endif %}
       <div class="add_buttons">
 	{% if add_buttons %}
 	<div class="row hidden-lg">

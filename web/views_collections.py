@@ -131,11 +131,14 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, **kwargs)
     context['total_pages'] = int(math.ceil(context['total_results'] / page_size))
     context['items'] = queryset
     context['page'] = page + 1
+    context['is_last_page'] = context['page'] == context['total_pages']
     context['page_size'] = page_size
     context['show_no_result'] = not ajax
     context['show_search_results'] = bool(request.GET)
     context['name'] = name
     context['title'] = collection['title']
+    context['before_template'] = collection['list'].get('before_template', None)
+    context['after_template'] = collection['list'].get('after_template', None)
     context['show_title'] = collection['list'].get('show_title', False)
     context['plural_title'] = collection['plural_title']
     context['ajax_pagination'] = collection['list'].get('ajax', True)
