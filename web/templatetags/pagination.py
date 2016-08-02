@@ -4,6 +4,7 @@ import re
 register = template.Library()
 
 def cleanpage(current_url):
+    current_url = current_url.replace('/ajax', '')
     current_url = re.sub(r'(\?page=\d+)', r'?', current_url)
     current_url = re.sub(r'(\?\&)', r'?', current_url)
     current_url = re.sub(r'(\&page=\d+)', r'', current_url)

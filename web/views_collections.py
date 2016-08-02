@@ -4,7 +4,7 @@ import string
 from collections import OrderedDict
 from django.utils.translation import ugettext_lazy as _, string_concat
 from django.shortcuts import render
-from base.middleware.httpredirect import HttpRedirectException
+from web.middleware.httpredirect import HttpRedirectException
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.exceptions import PermissionDenied
 from web.utils import itemURL, getGlobalContext, redirectWhenNotAuthenticated
@@ -72,7 +72,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, **kwargs)
     name: The string that corresponds to the view (for instance 'cards' for the '/cards/' view)
     """
     context = collection['list'].get('get_global_context', getGlobalContext)(request)
-    _authstaff_requirements('list', collection, request, context)
+    _authstaff_requirements('list', collection, request, context, default_for_auth=False)
     context['plural_name'] = collection['plural_name']
     page = 0
     page_size = collection['list'].get('page_size', 12)
@@ -100,9 +100,9 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, **kwargs)
 
     if 'filter_form' in collection['list']:
         if len(request.GET) > 1 or (len(request.GET) == 1 and 'page' not in request.GET):
-            context['filter_form'] = collection['list']['filter_form'](request.GET)
+            context['filter_form'] = collection['list']['filter_form'](filters, request=request)
         else:
-            context['filter_form'] = collection['list']['filter_form']()
+            context['filter_form'] = collection['list']['filter_form'](request=request)
 
     if 'add' in collection:
         if 'types' in collection['add']:
@@ -181,7 +181,6 @@ def add_view(request, name, collection, type=None, ajax=False, **kwargs):
         form = formClass(request=request) if not with_types else formClass(request=request, type=type)
     elif request.method == 'POST':
         form = formClass(request.POST, request.FILES, request=request) if not with_types else formClass(request.POST, request.FILES, request=request, type=type)
-        if with_types: form.type = type
         if form.is_valid():
             instance = form.save(commit=False)
             beforeSave = collection['add'].get('before_save', None)

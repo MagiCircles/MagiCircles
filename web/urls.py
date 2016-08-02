@@ -6,7 +6,7 @@ from django.db.models import Count, Q, Prefetch
 from django.db import connection
 from web import views as web_views
 from web import views_collections, models, forms
-from web.settings import ENABLED_PAGES, ENABLED_COLLECTIONS, ENABLED_NAVBAR_LISTS, SITE_NAME, GAME_NAME, SITE_DESCRIPTION, SITE_STATIC_URL, SITE_URL, GITHUB_REPOSITORY, SITE_LOGO, JAVASCRIPT_TRANSLATED_TERMS, ACCOUNT_MODEL, STATIC_UPLOADED_FILES_PREFIX, COLOR, SITE_IMAGE, TRANSLATION_HELP_URL
+from web.settings import ENABLED_PAGES, ENABLED_COLLECTIONS, ENABLED_NAVBAR_LISTS, SITE_NAME, GAME_NAME, SITE_DESCRIPTION, SITE_STATIC_URL, SITE_URL, GITHUB_REPOSITORY, SITE_LOGO, JAVASCRIPT_TRANSLATED_TERMS, ACCOUNT_MODEL, STATIC_UPLOADED_FILES_PREFIX, COLOR, SITE_IMAGE, TRANSLATION_HELP_URL, DISQUS_SHORTNAME
 from web.default_settings import RAW_CONTEXT
 
 views_module = __import__(settings.SITE + '.views', fromlist=[''])
@@ -225,6 +225,7 @@ RAW_CONTEXT['site_description'] = SITE_DESCRIPTION
 RAW_CONTEXT['game_name'] = GAME_NAME
 RAW_CONTEXT['static_url'] = SITE_STATIC_URL + 'static/'
 RAW_CONTEXT['site_logo'] = SITE_LOGO
+RAW_CONTEXT['disqus_shortname'] = DISQUS_SHORTNAME
 RAW_CONTEXT['javascript_translated_terms'] = JAVASCRIPT_TRANSLATED_TERMS
 RAW_CONTEXT['site_color'] = COLOR
 RAW_CONTEXT['site_image'] = RAW_CONTEXT['static_url'] + 'img/' + SITE_IMAGE if '//' not in SITE_IMAGE else SITE_IMAGE

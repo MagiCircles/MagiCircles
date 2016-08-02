@@ -11,77 +11,53 @@ SITE_NAME = getattr(settings_module, 'SITE_NAME')
 SITE_URL = getattr(settings_module, 'SITE_URL')
 SITE_IMAGE = getattr(settings_module, 'SITE_IMAGE')
 SITE_STATIC_URL = getattr(settings_module, 'SITE_STATIC_URL')
+DISQUS_SHORTNAME = getattr(settings_module, 'DISQUS_SHORTNAME')
 GAME_NAME = getattr(settings_module, 'GAME_NAME')
 ACCOUNT_MODEL = getattr(settings_module, 'ACCOUNT_MODEL')
 COLOR = getattr(settings_module, 'COLOR')
 
 ############################################################
-# Optional settings
-
-if hasattr(settings_module, 'WIKI'):
-    WIKI = getattr(settings_module, 'WIKI')
-else:
-    WIKI = None
-
-if hasattr(settings_module, 'BUG_TRACKER_URL'):
-    BUG_TRACKER_URL = getattr(settings_module, 'BUG_TRACKER_URL')
-else:
-    BUG_TRACKER_URL = None
-
-if hasattr(settings_module, 'SITE_LOGO'):
-    SITE_LOGO = getattr(settings_module, 'SITE_LOGO')
-else:
-    SITE_LOGO = None
+# Optional settings with default values
 
 if hasattr(settings_module, 'GITHUB_REPOSITORY'):
     GITHUB_REPOSITORY = getattr(settings_module, 'GITHUB_REPOSITORY')
 else:
-    GITHUB_REPOSITORY = None
+    GITHUB_REPOSITORY = ('SchoolIdolTomodachi', 'MagiCircles')
+
+if hasattr(settings_module, 'WIKI'):
+    WIKI = getattr(settings_module, 'WIKI')
+else:
+    WIKI = GITHUB_REPOSITORY
+
+if hasattr(settings_module, 'BUG_TRACKER_URL'):
+    BUG_TRACKER_URL = getattr(settings_module, 'BUG_TRACKER_URL')
+else:
+    BUG_TRACKER_URL = 'https://github.com/{}/{}/issues'.format(GITHUB_REPOSITORY[0], GITHUB_REPOSITORY[1])
 
 if hasattr(settings_module, 'CONTRIBUTE_URL'):
     CONTRIBUTE_URL = getattr(settings_module, 'CONTRIBUTE_URL')
 else:
-    CONTRIBUTE_URL = None
+    CONTRIBUTE_URL = 'https://github.com/SchoolIdolTomodachi/SchoolIdolAPI/wiki/Contribute'
 
 if hasattr(settings_module, 'CONTACT_EMAIL'):
     CONTACT_EMAIL = getattr(settings_module, 'CONTACT_EMAIL')
 else:
-    CONTACT_EMAIL = None
+    CONTACT_EMAIL = django_settings.AWS_SES_RETURN_PATH
 
 if hasattr(settings_module, 'CONTACT_REDDIT'):
     CONTACT_REDDIT = getattr(settings_module, 'CONTACT_REDDIT')
 else:
-    CONTACT_REDDIT = None
+    CONTACT_REDDIT = 'db0company'
 
 if hasattr(settings_module, 'CONTACT_FACEBOOK'):
     CONTACT_FACEBOOK = getattr(settings_module, 'CONTACT_FACEBOOK')
 else:
-    CONTACT_FACEBOOK = None
+    CONTACT_FACEBOOK = 'db0company'
 
 if hasattr(settings_module, 'ABOUT_PHOTO'):
     ABOUT_PHOTO = getattr(settings_module, 'ABOUT_PHOTO')
 else:
-    ABOUT_PHOTO = None
-
-if hasattr(settings_module, 'FAVORITE_CHARACTERS'):
-    FAVORITE_CHARACTERS = getattr(settings_module, 'FAVORITE_CHARACTERS')
-    if hasattr(settings_module, 'FAVORITE_CHARACTER_TO_URL'):
-        FAVORITE_CHARACTER_TO_URL = getattr(settings_module, 'FAVORITE_CHARACTER_TO_URL')
-    else:
-        FAVORITE_CHARACTER_TO_URL = lambda _: '#'
-    if hasattr(settings_module, 'FAVORITE_CHARACTER_NAME'):
-        FAVORITE_CHARACTER_NAME = getattr(settings_module, 'FAVORITE_CHARACTER_NAME')
-    else:
-        FAVORITE_CHARACTER_NAME = None
-else:
-    FAVORITE_CHARACTERS = None
-    FAVORITE_CHARACTER_TO_URL = lambda _: '#'
-    FAVORITE_CHARACTER_NAME = None
-
-if hasattr(settings_module, 'DONATE_IMAGE'):
-    DONATE_IMAGE = getattr(settings_module, 'DONATE_IMAGE')
-else:
-    DONATE_IMAGE = None
+    ABOUT_PHOTO = 'engildeby.gif'
 
 if hasattr(settings_module, 'DONATE_IMAGES_FOLDER'):
     DONATE_IMAGES_FOLDER = getattr(settings_module, 'DONATE_IMAGES_FOLDER')
@@ -108,15 +84,47 @@ if hasattr(settings_module, 'ENABLED_COLLECTIONS'):
 else:
     ENABLED_COLLECTIONS = DEFAULT_ENABLED_COLLECTIONS
 
+if hasattr(settings_module, 'TWITTER_HANDLE'):
+    TWITTER_HANDLE = getattr(settings_module, 'TWITTER_HANDLE')
+else:
+    TWITTER_HANDLE = 'schoolidolu'
+
+if hasattr(settings_module, 'TRANSLATION_HELP_URL'):
+    TRANSLATION_HELP_URL = getattr(settings_module, 'TRANSLATION_HELP_URL')
+else:
+    TRANSLATION_HELP_URL = 'https://poeditor.com/join/project/h6kGEpdnmM'
+
+############################################################
+# Optional settings without default values (= None)
+
+if hasattr(settings_module, 'SITE_LOGO'):
+    SITE_LOGO = getattr(settings_module, 'SITE_LOGO')
+else:
+    SITE_LOGO = None
+
+if hasattr(settings_module, 'FAVORITE_CHARACTERS'):
+    FAVORITE_CHARACTERS = getattr(settings_module, 'FAVORITE_CHARACTERS')
+    if hasattr(settings_module, 'FAVORITE_CHARACTER_TO_URL'):
+        FAVORITE_CHARACTER_TO_URL = getattr(settings_module, 'FAVORITE_CHARACTER_TO_URL')
+    else:
+        FAVORITE_CHARACTER_TO_URL = lambda _: '#'
+    if hasattr(settings_module, 'FAVORITE_CHARACTER_NAME'):
+        FAVORITE_CHARACTER_NAME = getattr(settings_module, 'FAVORITE_CHARACTER_NAME')
+    else:
+        FAVORITE_CHARACTER_NAME = None
+else:
+    FAVORITE_CHARACTERS = None
+    FAVORITE_CHARACTER_TO_URL = lambda _: '#'
+    FAVORITE_CHARACTER_NAME = None
+
+if hasattr(settings_module, 'DONATE_IMAGE'):
+    DONATE_IMAGE = getattr(settings_module, 'DONATE_IMAGE')
+else:
+    DONATE_IMAGE = None
 if hasattr(settings_module, 'GET_GLOBAL_CONTEXT'):
     GET_GLOBAL_CONTEXT = getattr(settings_module, 'GET_GLOBAL_CONTEXT')
 else:
     GET_GLOBAL_CONTEXT = None
-
-if hasattr(settings_module, 'TWITTER_HANDLE'):
-    TWITTER_HANDLE = getattr(settings_module, 'TWITTER_HANDLE')
-else:
-    TWITTER_HANDLE = None
 
 if hasattr(settings_module, 'JAVASCRIPT_TRANSLATED_TERMS'):
     JAVASCRIPT_TRANSLATED_TERMS = getattr(settings_module, 'JAVASCRIPT_TRANSLATED_TERMS')
@@ -138,9 +146,7 @@ if hasattr(settings_module, 'USER_COLORS'):
 else:
     USER_COLORS = None
 
-if hasattr(settings_module, 'TRANSLATION_HELP_URL'):
-    TRANSLATION_HELP_URL = getattr(settings_module, 'TRANSLATION_HELP_URL')
-else:
-    TRANSLATION_HELP_URL = 'https://poeditor.com/join/project/h6kGEpdnmM'
+############################################################
+# Specified in django settings
 
 STATIC_UPLOADED_FILES_PREFIX = django_settings.STATIC_UPLOADED_FILES_PREFIX

@@ -63,7 +63,7 @@
 	  <img src="{{ static_url }}img/links/reddit.png" alt="reddit" />
 	  Reddit
 	</a>
-	<a href="https://www.facebook.com/{{ db0company }}" class="btn btn-main btn-lg">
+	<a href="https://www.facebook.com/{{ facebook }}" class="btn btn-main btn-lg">
 	  <img src="{{ static_url }}img/links/facebook.png" alt="facebook" />
 	  Facebook
 	</a>
@@ -75,7 +75,7 @@
 	</p>
 	<ol>
 	  <li>{% trans 'Browse the upcoming features on' %} <a href="{{ bug_tracker_url }}">{% trans 'our Tasks manager' %}</a></li>
-	  <li><a href="https://github.com/{{ github_repository }}/issues/new">{% trans 'Create a new issue' %}</a> {% trans 'with the details about what you would like us to implement' %}</li>
+	  <li><a href="https://github.com/{{ github_repository.0 }}/{{ github_repository.1 }}/issues/new">{% trans 'Create a new issue' %}</a> {% trans 'with the details about what you would like us to implement' %}</li>
 	</ol>
       </div>
     </div>
@@ -187,7 +187,7 @@
 	<p class="margin50">
 	  {% blocktrans %}If you're a developer and you would like to get the data of the game in a convenient format, we provide a public REST API to get the game data, our users datacards, and more!{% endblocktrans %}
 	  <div class="text-right">
-	    <a href="{{ api_url }}" class="btn btn-main btn-lg" target="_blank">
+	    <a href="/api/" class="btn btn-main btn-lg" target="_blank">
 	      {% trans 'Get Started' %}
 	    </a>
 	  </div>

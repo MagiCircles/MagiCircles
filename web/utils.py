@@ -7,7 +7,7 @@ from django.template.loader import get_template
 from django.db import models
 from django.forms.models import model_to_dict
 from django.core.mail import EmailMultiAlternatives
-from base.middleware.httpredirect import HttpRedirectException
+from web.middleware.httpredirect import HttpRedirectException
 from default_settings import RAW_CONTEXT
 
 ############################################################

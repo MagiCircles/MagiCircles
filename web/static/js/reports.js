@@ -10,10 +10,7 @@ function updateReport() {
 	$(this).ajaxSubmit({
 	    context: this,
 	    success: function(data) {
-		console.log(data);
 		data['moderated_reports'].forEach(function(id) {
-		    console.log(id);
-		    console.log($('.report[data-report-id="' + id + '"]'));
 		    $('.report[data-report-id="' + id + '"]').removeClass('report-Pending');
 		    $('.report[data-report-id="' + id + '"]').addClass('report-' + data['action']);
 		    $('.report[data-report-id="' + id + '"] .report_status').text(data['action']);

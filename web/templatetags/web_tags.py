@@ -1,6 +1,7 @@
 import time
 from django.utils.translation import ugettext_lazy as _, string_concat
 from django import template
+from django.conf import settings
 from web import models
 from web.settings import SITE_STATIC_URL, FAVORITE_CHARACTER_TO_URL, RAW_CONTEXT, ENABLED_COLLECTIONS
 from web.utils import itemURL, AttrDict
@@ -80,9 +81,8 @@ def translated(value):
 @register.filter
 def imageURL(imageURL):
     imageURL = unicode(imageURL)
-    print imageURL
-    if 'web' in imageURL:
-        imageURL = imageURL.replace('web/', '')
+    if imageURL.startswith(settings.SITE + '/'):
+        imageURL = imageURL.replace(settings.SITE + '/', '')
     return '{}{}'.format(SITE_STATIC_URL, imageURL)
 
 @register.filter

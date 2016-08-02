@@ -52,7 +52,21 @@ function handlefollow() {
     });
 }
 
+function profileTabs() {
+    $('#profiletabs li a').on('show.bs.tab', function (e) {
+	if ($(e.target).attr('href') == '#profileactivities' && $('#activities').text() == "") {
+	    var user_id = $('#username').data('user-id');
+	    $.get('/ajax/activities/?owner_id=' + user_id, function(html) {
+		$('#activities').html(html);
+		updateActivities();
+		pagination('/ajax/activities/', '&owner_id=' + user_id, updateActivities);
+	    })
+	}
+    });
+}
+
 $(document).ready(function() {
     handlefollow();
     applyMarkdown($('.topprofile .description'));
+    profileTabs();
 });

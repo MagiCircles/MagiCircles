@@ -18,8 +18,8 @@
 {% endblock %}
 
 {% block js2 %}
+  {% if 'favorite_character1' in forms.preferences.fields and favorite_characters %}
 <script>
-{% if 'favorite_character1' in forms.preferences.fields and favorite_characters %}
 var cuteformfavoptions = {
   'images': {
     '': '{{ static_url }}img/empty.png',

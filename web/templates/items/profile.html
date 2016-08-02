@@ -30,11 +30,11 @@
 	      <br><a href="#followers"{% if not profile_user.total_followers %} style="display: none"{% endif %}><strong>{{ profile_user.total_followers }}</strong> {% trans 'Followers' %}</a>
 	      <br><a href="#following"{% if not profile_user.total_following %} style="display: none"{% endif %}><strong>{{ profile_user.total_following }}</strong> {% trans 'Following' %}</a>
 	    </div>
-	    <h1 class="glee text-secondary" id="username">{{ profile_user.username }}</h1>
+	    <h1 class="text-secondary" id="username" data-user-id="{{ profile_user.id }}">{{ profile_user.username }}</h1>
 	    {% if profile_user.preferences.status and profile_user.preferences.status != 'THANKS' %}<a href="/donate/"><h2 style="color: {{ profile_user.preferences.status|statusToColor }}">{{ profile_user.preferences.status|statusToString }}</h2></a>{% endif %}
 	    <br>
 	    <div class="description">{% if profile_user.preferences.description %}{{ profile_user.preferences.description }}{% endif %}</div>
-	    <a href="/reports/add/user/?id={{ profile_user.id }}" target="_blank" class="btn btn-link btn-sm"><i class="flaticon-fingers"></i> {% trans 'Report' %}</a>
+	    {% if not is_me %}<a href="/reports/add/user/?id={{ profile_user.id }}" target="_blank" class="btn btn-link btn-sm"><i class="flaticon-fingers"></i> {% trans 'Report' %}</a>{% endif %}
 	  </div>
 	</div>
       </div>
@@ -56,23 +56,49 @@
       </tr>
     </table>
   </div>
-  {% if profile_user.all_accounts|length == 0 %}
-  <h2>
-    {% if is_me %}
-    <div class="pull-right">
-      <a href="/accounts/add/" class="btn btn-{{ profile_user.preferences.css_color }} btn-lg">
-	{% trans 'Add' %} {% trans 'Account' %}
-      </a>
-    </div>
+  <div>
+
+    <!-- Nav tabs -->
+    {% if 'activity' in all_enabled %}
+    <ul class="nav nav-tabs" id="profiletabs" role="tablist">
+      <li role="presentation" class="active"><a href="#profileaccounts" data-toggle="tab">{% trans 'Accounts' %}</a></li>
+      <li role="presentation"><a href="#profileactivities" data-toggle="tab">{% trans 'Activities' %}</a></li>
+    </ul>
     {% endif %}
-    {% trans 'No account.' %}</h2>
-  {% else %}
-  {% with length=profile_user.all_accounts|length %}
-  <h2>{% blocktrans count counter=length %}{{ length }} account:{% plural %}{{ length }} accounts:{% endblocktrans %}</h2>
-  {% endwith %}
-  {% include 'accountsForProfile.html' %}
-  {% endif %}
-  <br><br>
-  {% include 'include/disqus.html' with disqus_identifier='user-'|addint:profile_user.id %}
+
+    <!-- Tab panes -->
+    <div class="tab-content">
+      <div role="tabpanel" class="tab-pane active" id="profileaccounts">
+
+	{% if profile_user.all_accounts|length == 0 %}
+	<h2>
+	  {% if is_me %}
+	  <div class="pull-right">
+	    <a href="/accounts/add/" class="btn btn-{{ profile_user.preferences.css_color }} btn-lg">
+	      {% trans 'Add' %} {% trans 'Account' %}
+	    </a>
+	  </div>
+	  {% endif %}
+	  {% trans 'No account.' %}</h2>
+	{% else %}
+	{% with length=profile_user.all_accounts|length %}
+	<h2>{% blocktrans count counter=length %}{{ length }} account:{% plural %}{{ length }} accounts:{% endblocktrans %}</h2>
+	{% endwith %}
+	{% include 'accountsForProfile.html' %}
+	{% endif %}
+	<br><br>
+	{% include 'include/disqus.html' with disqus_identifier='user-'|addint:profile_user.id %}
+
+      </div>
+
+      <div role="tabpanel" class="tab-pane" id="profileactivities">
+
+	<div id="activities"></div>
+
+      </div>
+
+    </div>
+
+    </div>
 </div>
 {% endwith %}

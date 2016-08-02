@@ -55,10 +55,10 @@ def _join_data(*args):
     return u'\"' + u'","'.join([unicode(value).replace('"','\"') for value in args]) + u'\"'
 
 class UserImage(models.Model):
-     image = models.ImageField(upload_to=STATIC_UPLOADED_FILES_PREFIX + 'useri_mages/')
+     image = models.ImageField(upload_to=STATIC_UPLOADED_FILES_PREFIX + 'user_images/')
 
-    def __unicode__(self):
-        return unicode(self.image)
+     def __unicode__(self):
+         return unicode(self.image)
 
 ############################################################
 # User preferences

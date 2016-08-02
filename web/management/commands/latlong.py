@@ -1,6 +1,7 @@
 import time, sys
 from django.core.management.base import BaseCommand, CommandError
 from django.utils.html import escape
+from django.conf import settings as django_settings
 from web import models
 from web.settings import SITE_STATIC_URL
 from web.templatetags.web_tags import imageURL
@@ -54,7 +55,7 @@ def latlong(opt):
 
     mapcache += '];</script><script src="' + SITE_STATIC_URL + 'static/js/map.js"></script>{% endlocalize %}{% endblock %}'
 
-    with open('web/templates/pages/map.html', 'w') as f:
+    with open(django_settings.BASE_DIR + '/' + django_settings.SITE + '/templates/pages/map.html', 'w') as f:
         f.write(mapcache.encode('UTF-8'))
     f.close()
 

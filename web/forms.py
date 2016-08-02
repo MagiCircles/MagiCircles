@@ -315,7 +315,7 @@ class ReportForm(FormSaveOwner):
         model = models.Report
         fields = ('message', 'images')
 
-class FilterReports(forms.ModelForm):
+class FilterReports(FormWithRequest):
     reported_thing = forms.ChoiceField(
         required=False,
         choices=[],

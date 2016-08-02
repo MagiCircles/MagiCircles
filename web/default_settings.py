@@ -5,7 +5,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.db.models import Prefetch, Count
 from django.conf.urls import url
-from base.middleware.httpredirect import HttpRedirectException
+from web.middleware.httpredirect import HttpRedirectException
 
 RAW_CONTEXT = {
     'debug': settings.DEBUG,
@@ -73,6 +73,10 @@ def _activitiesQuerysetWithLikesAndLiked(queryset, parameters, request):
     if 'tags' in parameters:
         for tag in parameters['tags'].split(','):
             queryset = queryset.filter(tags_string__contains='"{}"'.format(tag))
+    if 'owner_id' in parameters:
+        queryset = queryset.filter(owner_id=parameters['owner_id'])
+    if 'feed' in parameters and request.user.is_authenticated():
+        queryset = queryset.filter(Q(owner__in=request.user.preferences.following.all()) | Q(owner_id=request.user.id))
     queryset = queryset.annotate(total_likes=Count('likes'))
     return queryset
 
@@ -117,6 +121,7 @@ DEFAULT_ENABLED_COLLECTIONS = OrderedDict([
         'item': {
             'js_files': ['bower/marked/lib/marked', 'profile'],
             'template': 'profile',
+            'comments_enabled': False,
             'filter_queryset': _userItemFilterQuerySet,
             # extra_context added in urls.py (web.views.profileExtraContext), can be specified in your settings as well
         },

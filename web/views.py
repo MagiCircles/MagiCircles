@@ -116,7 +116,7 @@ def aboutDefaultContext(request, context):
     context['github_repository'] = GITHUB_REPOSITORY
     context['franchise'] = _('{site} is not a representative and is not associated with {game}. Its logos and images are Trademarks of {company}.').format(site=_(SITE_NAME), game=_(GAME_NAME), company=_('the company that owns {game}').format(game=GAME_NAME))
     context['staff'] = models.User.objects.filter(is_staff=True).select_related('preferences')
-    context['api_enabled'] = True
+    context['api_enabled'] = False
     context['contribute_url'] = CONTRIBUTE_URL
     context['other_sites'] = other_sites
     context['other_sites_colsize'] = int(math.ceil(12 / (len(context['other_sites']) - 1)))
@@ -182,6 +182,7 @@ def help(request, wiki_url='Home'):
     context = getGlobalContext(request)
     context['wiki_url'] = wiki_url
     context['wiki'] = WIKI
+    context['full_wiki_url'] = 'https://github.com/{}/{}/wiki/'.format(WIKI[0], WIKI[1])
     context['js_files'] = ['bower/marked/lib/marked', 'bower/github-wiki/js/githubwiki', 'wiki']
     return render(request, 'pages/wiki.html', context)
 
