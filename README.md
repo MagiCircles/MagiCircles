@@ -200,6 +200,14 @@ Start a new site
    ```
    Note: This model *must* contain an owner and its `related_name` *must* be `accounts`.
 
+   Make this model available in your administration, edit `sample/admin.py`:
+   ```python
+   from django.contrib import admin
+   from sample import models
+
+   admin.site.register(models.Account)
+   ```
+
 14. Create the form to add and edit the accounts in `sample/forms.py`:
    ```python
    from django import forms
@@ -343,23 +351,29 @@ Start a new site
    bower install
    ```
 
-21. Initialize the models:
+21. Initialize the translation of the site:
+   ```shell
+   mkdir sample/locale/
+   python manage.py makemessages -l ru --ignore=sample/settings.py
+   ```
+
+22. Initialize the models:
    ```shell
    python manage.py makemigrations sample
    python manage.py migrate
    ```
 
-22. Test that the homepage works so far (open [http://localhost:8000/](http://localhost:8000/) in your browser):
+23. Test that the homepage works so far (open [http://localhost:8000/](http://localhost:8000/) in your browser):
    ```shell
    python manage.py runserver
    ```
 
-23. Start setting up your settings, custom pages and collections:
+24. Start setting up your settings, custom pages and collections:
     - See [Site Settings](#site-settings) documentation
     - See [Enabled pages](#enabled-pages) documentation
     - See [Enabled collections](#enabled-collections) documentation
 
-24. Before pushing your files to a repository, make sure you don't commit local and generated files with a `.gitignore`:
+25. Before pushing your files to a repository, make sure you don't commit local and generated files with a `.gitignore`:
    ```
    env/
    sample_project/local_settings.py
@@ -367,6 +381,9 @@ Start a new site
    sample/static/bower
    sample/static/css/style.css
    sample/templates/pages/map.html
+   sample/static/uploaded/
+   collected/
+   db.sqlite3
    ```
    Those are in addition to usual python ignored files. You can get a basic `.gitignore` when you create a GitHub repository).
 
@@ -839,6 +856,7 @@ Production Environment
 
 1. Create your production settings file in `sample_project/local_settings.py`:
    ```python
+   SECRET_KEY = '#yt2*mvya*ulaxd+6jtr#%ouyco*2%3ngb=u-_$44j^86g0$$3'
    DEBUG = False
 
    AWS_ACCESS_KEY_ID = 'uTFJXQn9zZc9C93qy7rL'
