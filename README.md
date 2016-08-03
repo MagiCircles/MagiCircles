@@ -10,24 +10,24 @@ Quick start
 
 1. Pick a shortname for your site.
  - Example: `frgl` for [fr.gl](http://fr.gl/).
- - Everytime you see "name" in the following instructions, replace it with this name.
+ ```shell
+ PROJECTNAME='frgl'
+ ```
 
 2. Copy the content of the folder called `sample_project` to your project:
    ```shell
    git clone your_project_repository
-   git clone git+https://github.com/SchoolIdolTomodachi/MagiCircles.git
-   cp -r MagiCircles/sample_project your_project_repository/
+   git clone https://github.com/SchoolIdolTomodachi/MagiCircles.git
+   cp -r MagiCircles/sample_project/* your_project_repository/
+   cd your_project_repository/
    ```
 
 3. Rename the files and recursively replace the string `sample` with your shortname:
    ```shell
-   cd your_project_repository/
-   mv sample_project name_project
-   cd name_project/
-   mv sample name
-   mv sample_project name_project
-   mv name/static/img/sample.png name/static/img/name.png
-   find . -type f -print0 | xargs -0 sed -i 's/sample/name/g'
+   mv sample ${PROJECTNAME}
+   mv sample_project ${PROJECTNAME}_project
+   mv ${PROJECTNAME}/static/img/sample.png ${PROJECTNAME}/static/img/${PROJECTNAME}.png
+   for f in `grep -l sample . | \grep -v .git | \grep -E '.py$|.json$'`; do echo $f; sed -i '' -e "s/sample/${PROJECTNAME}/g" $f; done
    ```
 
 4. Setup your local python working environment, install the dependencies and run your first site:
@@ -35,7 +35,7 @@ Quick start
    virtualenv env
    source env/bin/activate
    pip install -r requirements.txt
-   python manage.py makemigrations name
+   python manage.py makemigrations ${PROJECTNAME}
    python manage.py migrate
    bower install
    python manage.py runserver
