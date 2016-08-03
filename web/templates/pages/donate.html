@@ -19,7 +19,7 @@
 	</div>
 	{% endif %}
 	<div class="col-md-{% if donate_image %}4{% else %}12{% endif %}">
-	  <p style="font-size: 30px;" class="text-main"><br>{% trans 'If you like the website, please consider' %} {% trans 'donating' %}. {% trans 'This will help us cover the costs of the servers and allow us to keep it running for free and without ads.' %}</p>
+	  <p class="text-main big-text"><br>{% trans 'If you like the website, please consider' %} {% trans 'donating' %}. {% trans 'This will help us cover the costs of the servers and allow us to keep it running for free and without ads.' %}</p>
 	  <br><br><a href="#donate" class="btn btn-main btn-xl page-scroll">{% trans 'Donate' %}</a><br>
 	  {% if total_donators %}<a href="#donators" class="btn btn-link btn-lg page-scroll">{% trans 'Donators' %}</a> - {% endif %}<a href="/about/" class="btn btn-link btn-lg">{% trans 'About' %}</a>
 	</div>
@@ -43,7 +43,7 @@
       <br><br>
   <div class="row">
     <div class="col-sm-8 text-left">
-      <h3 style="font-size: 2em;" class="text-{% if interfaceColor and interfaceColor != 'default' %}{{ interfaceColor }}{% else %}Smile{% endif %}" id="donation{{ donation.price }}"><strong>${{ donation.price }}</strong> {% trans 'Donation' %}</h3>
+      <h3 class="text-{% if interfaceColor and interfaceColor != 'default' %}{{ interfaceColor }}{% else %}Smile{% endif %} fontx2" id="donation{{ donation.price }}"><strong>${{ donation.price }}</strong> {% trans 'Donation' %}</h3>
     </div>
     <div class="col-sm-4 text-right">
       <br>

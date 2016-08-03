@@ -138,6 +138,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, **kwargs)
     context['name'] = name
     context['title'] = collection['title']
     context['before_template'] = collection['list'].get('before_template', None)
+    context['no_result_template'] = collection['list'].get('no_result_template', None)
     context['after_template'] = collection['list'].get('after_template', None)
     context['show_title'] = collection['list'].get('show_title', False)
     context['plural_title'] = collection['plural_title']

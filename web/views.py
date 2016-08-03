@@ -15,16 +15,27 @@ from web import models
 from web.donations import donations
 from web.utils import getGlobalContext, ajaxContext, redirectToProfile, AttrDict, ordinalNumber, tourldash, redirectWhenNotAuthenticated, dumpModel, send_email, emailContext, itemURL
 from web.notifications import pushNotification
-from web.settings import SITE_NAME, GAME_NAME, ENABLED_COLLECTIONS, ENABLED_PAGES, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_NAME, DONATE_IMAGE, DONATE_IMAGES_FOLDER, TWITTER_HANDLE, BUG_TRACKER_URL, GITHUB_REPOSITORY, CONTRIBUTE_URL, CONTACT_EMAIL, CONTACT_REDDIT, CONTACT_FACEBOOK, ABOUT_PHOTO, WIKI
+from web.settings import SITE_NAME, GAME_NAME, ENABLED_COLLECTIONS, ENABLED_PAGES, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_NAME, DONATE_IMAGE, DONATE_IMAGES_FOLDER, TWITTER_HANDLE, BUG_TRACKER_URL, GITHUB_REPOSITORY, CONTRIBUTE_URL, CONTACT_EMAIL, CONTACT_REDDIT, CONTACT_FACEBOOK, ABOUT_PHOTO, WIKI, LATEST_NEWS, SITE_LONG_DESCRIPTION, CALL_TO_ACTION, TOTAL_DONATORS, GAME_DESCRIPTION
 from web.views_collections import item_view, list_view
 from raw import other_sites
 
 ############################################################
 # Index
 
+def _index_extraContext(context):
+    context['latest_news'] = LATEST_NEWS
+    context['call_to_action'] = CALL_TO_ACTION
+    context['total_donators'] = TOTAL_DONATORS
+
 def index(request):
-    context = getGlobalContext(request)
-    return render(request, 'pages/index.html', context)
+    collection = ENABLED_COLLECTIONS['activity'].copy()
+    collection['list'] = collection['list'].copy()
+    collection['list']['before_template'] = 'include/homePage'
+    collection['list']['extra_context'] = _index_extraContext
+    filters = {}
+    if request.user.is_authenticated() and 'all' not in request.GET:
+        filters['feed'] = True
+    return list_view(request, 'activity', collection, extra_filters=filters)
 
 ############################################################
 # Login / Logout / Sign up
@@ -111,6 +122,7 @@ def user(request, pk=None, username=None):
 def aboutDefaultContext(request, context):
     context['about_description_template'] = 'include/about_description'
     context['about_photo'] = ABOUT_PHOTO
+    context['site_long_description'] = SITE_LONG_DESCRIPTION
     context['twitter'] = TWITTER_HANDLE
     context['email'] = CONTACT_EMAIL
     context['reddit_user'] = CONTACT_REDDIT
@@ -128,7 +140,14 @@ def aboutDefaultContext(request, context):
 def about(request):
     context = getGlobalContext(request)
     context = aboutDefaultContext(request, context)
+    context['ajax'] = context['current_url'].startswith('/ajax/')
+    context['extends'] = 'base.html' if not context['ajax'] else 'ajax.html'
     return render(request, 'pages/about.html', context)
+
+def about_game(request):
+    context = getGlobalContext(request)
+    context['game_description'] = GAME_DESCRIPTION
+    return render(request, 'pages/about_game.html', context)
 
 ############################################################
 # Settings

@@ -101,12 +101,15 @@ img.cuteform-elt {
     display: inline-block;
 }
 
+.img-responsive {
+    margin: auto;
+}
+
 .btn-xl {
     padding: 20px 32px;
     font-size: 30px;
     line-height: 1.5;
     border-radius: 20px;
-    margin: 0 10px;
 }
 
 .btn-lines {
@@ -131,6 +134,64 @@ img.cuteform-elt {
     margin-bottom: 0;
     border-bottom-right-radius: 0;
     border-bottom-left-radius: 0;
+}
+
+.default-index {
+    text-align: center;
+    header {
+	padding: 200px 0;
+	a[href="/donate/"] {
+	    margin-left: 20px;
+	}
+    }
+    #carousel-latest-news .item, #carousel-latest-news .item > img, .carousel-control {
+	border-radius: 20px;
+    }
+    #carousel-latest-news .carousel-caption {
+	position: absolute;
+        top: 0;
+        display: -webkit-box;
+        display: -moz-box;
+        display: -ms-flexbox;
+        display: -webkit-flex;
+        display: flex;
+        -webkit-box-align: center;
+        -moz-box-align: center;
+        -ms-flex-align: center;
+        -webkit-align-items: center;
+        align-items: center;
+        height: 100%;
+	h2 {
+	    width: 100%;
+	}
+    }
+    #carousel-latest-news {
+	margin-bottom: 50px;
+    }
+}
+
+.current-index {
+    .btn-add-activity {
+	opacity: 0.6;
+	padding: 5px;
+	padding: 0 20px;
+	margin-bottom: 20px;
+	h3 {
+	    display: inline-block;
+	    margin: 0;
+	    padding-right: 30px;
+	}
+	small {
+	    font-style: italic;
+	    font-size: 0.7em;
+	}
+    }
+}
+
+.big-text {
+    font-size: 30px;
+    line-height: 2em;
+    letter-spacing: 0.05em;
 }
 
 body.current-map, html.html-current-map {

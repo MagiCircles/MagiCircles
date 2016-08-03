@@ -3,7 +3,7 @@ from django.utils.translation import ugettext_lazy as _, string_concat
 from web.django_translated import t
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.db.models import Prefetch, Count
+from django.db.models import Prefetch, Count, Q
 from django.conf.urls import url
 from web.middleware.httpredirect import HttpRedirectException
 
@@ -148,6 +148,7 @@ DEFAULT_ENABLED_COLLECTIONS = OrderedDict([
             'add_button_subtitle': _('Share your adventures!'),
             'ajax_pagination_callback': 'updateActivities',
             'filter_queryset': _activitiesQuerysetWithLikesAndLiked,
+            'no_result_template': 'include/activityFollowMessage',
         },
         'item': {
             'js_files': ['bower/marked/lib/marked'],
@@ -274,11 +275,26 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'navbar_link_list': 'you',
         'navbar_link_auth': (True, False),
     }),
-    ('about', {
-        'title': _('About'),
+    ('about', [
+        {
+            'title': _('About'),
+            'custom': False,
+            'icon': 'about',
+            'navbar_link_list': 'more',
+        },
+        {
+            'ajax': True,
+            'title': _('About'),
+            'custom': False,
+            'icon': 'about',
+            'navbar_link_list': 'more',
+        },
+    ]),
+    ('about_game', {
+        'ajax': True,
+        'title': _('About the game'),
         'custom': False,
         'icon': 'about',
-        'navbar_link_list': 'more',
     }),
     ('donate', {
         'title': _('Donate'),

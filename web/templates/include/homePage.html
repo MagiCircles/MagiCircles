@@ -1,0 +1,50 @@
+{% load i18n %}
+<div class="default-index">
+  <header>
+    <h1><img src="{{ site_image }}" class="img-responsive" alt="{{ site_name }}"></h1>
+    <h2>{% trans site_description %}</h2>
+    {% if user.is_authenticated and 'donate' in all_enabled %}
+    <p class="fontx1-5">
+      {% blocktrans %}is crowdfunded by {{ total_donators }} {{ adjective }} donators{% endblocktrans %}
+      <a href="/donate/" class="btn btn-secondary">{% trans 'Donate' %}</a>
+    </p>
+    {% endif %}
+    {% if not user.is_authenticated %}
+    <a href="/about_game/" data-ajax-url="/ajax/about_game/" class="btn btn-link btn-lg">
+      {% with site_name=game_name %}{% blocktrans %}About {{ site_name }}{% endblocktrans %}{% endwith %}
+    </a>
+    <a href="/about/" data-ajax-url="/ajax/about/" class="btn btn-link btn-lg">
+      {% blocktrans %}About {{ site_name }}{% endblocktrans %}
+    </a>
+    <br><br><br>
+    <a href="/signup/" class="btn btn-xl btn-secondary">
+      {% trans call_to_action %}
+    </a>
+  {% endif %}
+  </header>
+  {% if latest_news %}
+  <div id="carousel-latest-news" class="carousel slide" data-ride="carousel">
+    <ol class="carousel-indicators">
+      {% for news in latest_news %}
+      <li data-target="#carousel-latest-news" data-slide-to="{{ forloop.counter0 }}"{% if forloop.counter0 == 0 %} class="active"{% endif %}></li>
+      {% endfor %}
+    </ol>
+    <div class="carousel-inner" role="listbox">
+      {% for news in latest_news %}
+      <a href="{{ news.url }}" class="item{% if forloop.counter0 == 0 %} active{% endif %}">
+	<img src="{{ static_url }}img/{{ news.image }}" alt="{{ news.title }}">
+	<div class="carousel-caption">
+	  {% if not news.hide_title %}<h2>{{ news.title }}</h2>{% endif %}
+	</div>
+      </a>
+      {% endfor %}
+    </div>
+    <a class="left carousel-control" data-target="#carousel-latest-news" data-slide="prev">
+      <span class="glyphicon glyphicon-chevron-left"></span>
+    </a>
+    <a class="right carousel-control" data-target="#carousel-latest-news" data-slide="next">
+      <span class="glyphicon glyphicon-chevron-right"></span>
+    </a>
+  </div>
+  {% endif %}
+</div>

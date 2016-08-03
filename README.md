@@ -153,7 +153,7 @@ Start a new site
 
 10. Include the URLs in `sample_project/urls.py`:
    ```python
-     urlpatterns = patterns('',
+   urlpatterns = patterns('',
      url(r'^', include('web.urls')),
      ...
    )
@@ -182,7 +182,7 @@ Start a new site
    ENABLED_PAGES = DEFAULT_ENABLED_PAGES
    ```
 
-12. Save your logo in `sample/static/img/sample.png` and the default avatar for your users in `sample/static/img/avatar.png`
+12. Save your logo in `sample/static/img/sample.png`, the default avatar for your users in `sample/static/img/avatar.png` and an illustration of the game in `sample/static/img/game.png`
 
 13. Create a django model in `sample/models.py` that will contain the info about the users game accounts:
    ```python
@@ -241,17 +241,7 @@ Start a new site
    ```
    In a real website, you would probably want to display the account differently in the context of the profile.
 
-17. Create your index page in `sample/templates/pages/index.html`:
-   ```html
-   {% extends "base.html" %}
-   {% block content %}
-   <div class="container">
-     <h1>Hello world!</h1>
-   </div >
-   {% endblock %}
-   ```
-
-18. Create your LESS main file in `sample/static/less/style.less`:
+17. Create your LESS main file in `sample/static/less/style.less`:
    ```css
    @import "main.less";
    @import "mixins/buttons.less";
@@ -312,12 +302,12 @@ Start a new site
    ```
    You may customize the content depending on the page you're on using `body.current-page` where page corresponds to the page name (example: `current-index`, `current-card_list`, ...).
 
-19. Create your Javascript main file in `sample/static/js/main.js`:
+18. Create your Javascript main file in `sample/static/js/main.js`:
    ```javascript
    // Your functions or code that should load on all pages goes here.
    ```
 
-20. Create your front-end dependencies file in `bower.json`:
+19. Create your front-end dependencies file in `bower.json`:
    ```json
    {
      "name": "samplewebsite",
@@ -410,7 +400,7 @@ Your settings file is located in `sample/settings.py`.
 | DONATE_IMAGES_FOLDER | Path for `donations` folder in `sample/static/img/` for images to illustrate donations perks | "" |
 | TRANSLATION_HELP_URL | URL with guide or tools to allow people to contribute to the site's translation | [link](https://poeditor.com/join/project/h6kGEpdnmM) |
 | SITE_LOGO | Path of the image displayed instead of the site name in the nav bar | None |
-| FAVORITE_CHARACTERS | List of tuples (id, full name, image path - must be squared image) for each character that can be set as a favorite on users' profiles, if it's in a database it's recommended to use generated_settings to save them once in a while | None |
+| FAVORITE_CHARACTERS | List of tuples (id, full name, image path - must be squared image) for each character that can be set as a favorite on users' profiles, if it's in a database it's recommended to use [Generated Settings](#generated-settings) to save them once in a while | None |
 | FAVORITE_CHARACTER_TO_URL | A function that will return the URL to get more info about that character. This function takes a link object with value (full name), raw_value (id), image | lambda _: '#' |
 | FAVORITE_CHARACTER_NAME | String that will be localized to specify what's a "character". Must contain `{nth}` (example: "{nth} Favorite Idol") | "{nth} Favorite Character" |
 | DONATE_IMAGE | Path of the image in DONATE_IMAGES_FOLDER | None |
@@ -419,6 +409,10 @@ Your settings file is located in `sample/settings.py`.
 | DONATORS_STATUS_CHOICES | List of tuples (status, full string) for the statuses of donators, statuses must be THANKS, SUPPORTER, LOVER, AMBASSADOR, PRODUCER and DEVOTEE | "Thanks", "Player", "Super Player", "Extreme Player", "Master Player", "Ultimate Player" |
 | ACTIVITY_TAGS | List of tuples (raw value, full localizable tag name) for the tags that can be added ao an activity | None |
 | USER_COLORS | List of tuples (raw value, full localizable color name, CSS elements name (`btn-xx`, `panel-xx`, ...), hex code of the color) | None |
+| LATEST NEWS | A list of dictionaries that should contain image, title, url and may contain hide_title, used if you keep the default index page to show a carousel. Recommended to get this from [Generated Settings](#generated-settings) | None |
+| CALL_TO_ACTION | A sentence shown on the default index page to encourage visitors to sign up | _('Join the community!') |
+| SITE_LONG_DESCRIPTION | A long description of what the website does. Used on the about page. | A long text |
+| TOTAL_DONATORS | Total number of donators (you may use web.tools.totalDonators to save this value in the [generated settings](#generated-settings)) | 2 |
 
 Enable/Disable default pages and collections
 ===
@@ -596,6 +590,7 @@ Collections list view settings dictionaries may contain the following:
 | foreach_item | Function called for all the elements about to be displayed, that takes the item position, the item and the context | None | [Example](https://gist.github.com/db0company/819ec1900fb207f865be69b92ce62c8e#file-magicirclesexamples-py-L23) |
 | before_template | Name of a template to include between the title (if shown) and the add buttons (if any) and results (without `.html`) | None | "include/beforeCards" |
 | after_template | Name of a template to include at the end of the list, when the last page loads (without `.html`), if you provide something in `extra_context` for this template, first check `if context['is_last_page']: ...` | None | "include/afterCards" |
+| no_result_template | Name of a template to show if there's no results to show, otherwise it will just show "No result" in a bootstrap `alert-info` | None | "include/cardsNoResult" |
 
 ### Item view
 
@@ -689,8 +684,8 @@ For each type, you may specify the following settings in its dictionary:
 
 | Key | Value | Default | Example |
 |-----|-------|---------|---------|
-| form_class | FormClass to add/edit the item, must take request (make it inherit from FormWithRequest) | *required* | title | Localized title of the type | type (key) | _('Rare') |
-| [Example](https://gist.github.com/db0company/819ec1900fb207f865be69b92ce62c8e#file-magicirclesexamples-py-L44) |
+| form_class | FormClass to add/edit the item, must take request (make it inherit from FormWithRequest) | *required* | [Example](https://gist.github.com/db0company/819ec1900fb207f865be69b92ce62c8e#file-magicirclesexamples-py-L44) |
+| title | Localized title of the type | type (key) | _('Rare') |
 | image | Path of an image displayed near the title of the form that illustrates the type | None | "" |
 
 The type will be passed to the formClass when it's initialized, which allows you to reuse the same form class for all your types if you'd like.
@@ -707,6 +702,7 @@ To add a new page:
 ```python
 ENABLED_PAGES['statistics'] = {
   'title': _('Statistics'),
+  ...
 }
 ```
 
@@ -725,7 +721,7 @@ def globalContext(request):
     return context
 
 def statistics(request):
-   ...
+    ...
     context = globalContext(request)
     context['statistics_data'] = ...
     return render(request, 'pages/statistics.html', context)
@@ -769,6 +765,74 @@ The settings of a navbar list may contain:
 | title | Localized name of the list or function that takes the context and return a string | *required* |
 | icon | String name of a [flaticon](#flaticon) that illustrates the nav bar list | None | 'fingers' |
 | image | Path to image that illustrates the nav bar list | None | 'stuff.png' |
+
+Generated Settings
+===
+
+Some values shouldn't be calculated from the database everytime, so it's recommended to write a script in `sample/management/commands/generate_settings.py` that will update the settings and call that script in a cron or a scheduler.
+
+```python
+import time
+from django.core.management.base import BaseCommand, CommandError
+from django.utils import timezone
+from django.conf import settings as django_settings
+from web.tools import totalDonators
+from web.utils import itemURL
+from web.templatetags.web_tags import imageURL
+from sample import models
+
+def generate_settings():
+
+        print 'Get total donators'
+        total_donators = totalDonators()
+
+        print 'Get the latest news'
+        current_events = models.Event.objects.get(end__lte=timezone.now())
+        latest_news = [{
+            'title': event.name,
+            'image': imageURL(event.image),
+            'url': itemURL('event', event),
+        } for event in current_events]
+
+        print 'Get the characters'
+        all_idols = model.Idol.objects.all().order_by('name')
+        favorite_characters = [(
+            idol.pk,
+            idol.name,
+            imageURL(idol.image),
+        ) for idol in all_idols]
+
+        print 'Save generated settings'
+        s = u'\
+import datetime\n\
+TOTAL_DONATORS = ' + unicode(total_donators) + u'\n\
+LATEST_NEWS = ' + unicode(latest_news) + '\n\
+FAVORITE_CHARACTERS = ' + unicode(favorite_characters) + '\n\
+GENERATED_DATE = datetime.datetime.fromtimestamp(' + unicode(time.time()) + u')\n\
+'
+        print s
+        with open(django_settings.BASE_DIR + '/' + django_settings.SITE + '_project/generated_settings.py', 'w') as f:
+            print >> f, s
+        f.close()
+
+class Command(BaseCommand):
+    can_import_settings = True
+
+    def handle(self, *args, **options):
+        generate_settings()
+```
+
+And in your `sample/settings.py`, use the generated values:
+
+```python
+from django.conf import settings as django_settings
+
+...
+
+TOTAL_DONATORS = django_settings.TOTAL_DONATORS
+LATEST_NEWS = django_settings.LATEST_NEWS
+FAVORITE_CHARACTERS = django_settings.FAVORITE_CHARACTERS
+```
 
 Production Environment
 ===

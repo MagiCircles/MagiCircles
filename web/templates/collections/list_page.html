@@ -6,9 +6,13 @@
 {% if items|length == 0 %}
 {% if show_no_result %}
 <div class="padding50">
+  {% if no_result_template %}
+  {% include no_result_template|add:'.html' %}
+  {% else %}
   <h4 class="padding50 alert alert-info">
     {% trans 'No result.' %}
   </h4>
+  {% endif %}
 </div>
 {% endif %}
 {% else %}

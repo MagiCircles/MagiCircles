@@ -39,6 +39,11 @@ if hasattr(settings_module, 'CONTRIBUTE_URL'):
 else:
     CONTRIBUTE_URL = 'https://github.com/SchoolIdolTomodachi/SchoolIdolAPI/wiki/Contribute'
 
+if hasattr(settings_module, 'CALL_TO_ACTION'):
+    CALL_TO_ACTION = getattr(settings_module, 'CALL_TO_ACTION')
+else:
+    CALL_TO_ACTION = _('Join the community!')
+
 if hasattr(settings_module, 'CONTACT_EMAIL'):
     CONTACT_EMAIL = getattr(settings_module, 'CONTACT_EMAIL')
 else:
@@ -69,6 +74,11 @@ if hasattr(settings_module, 'SITE_DESCRIPTION'):
 else:
     SITE_DESCRIPTION = _(u'The {game} Database & Community').format(game=GAME_NAME)
 
+if hasattr(settings_module, 'SITE_LONG_DESCRIPTION'):
+    SITE_LONG_DESCRIPTION = getattr(settings_module, 'SITE_LONG_DESCRIPTION')
+else:
+    SITE_LONG_DESCRIPTION = _(u'{site} provides an extended database of information about the game {game} and allows you to keep track of your progress in the game. You can create and customize your very own profile to share your progress and your collection to all your friends. You can also meet other players like you with the social network: read what the others are doing and share your adventures with the community. Comment, like and follow the other players to grow your network. Find players near you with the global map of all the players. And much more!').format(site=SITE_NAME, game=GAME_NAME)
+
 if hasattr(settings_module, 'ENABLED_NAVBAR_LISTS'):
     ENABLED_NAVBAR_LISTS = getattr(settings_module, 'ENABLED_NAVBAR_LISTS')
 else:
@@ -93,6 +103,11 @@ if hasattr(settings_module, 'TRANSLATION_HELP_URL'):
     TRANSLATION_HELP_URL = getattr(settings_module, 'TRANSLATION_HELP_URL')
 else:
     TRANSLATION_HELP_URL = 'https://poeditor.com/join/project/h6kGEpdnmM'
+
+if hasattr(settings_module, 'TOTAL_DONATORS'):
+    TOTAL_DONATORS = getattr(settings_module, 'TOTAL_DONATORS')
+else:
+    TOTAL_DONATORS = 2
 
 ############################################################
 # Optional settings without default values (= None)
@@ -145,6 +160,16 @@ if hasattr(settings_module, 'USER_COLORS'):
     USER_COLORS = getattr(settings_module, 'USER_COLORS')
 else:
     USER_COLORS = None
+
+if hasattr(settings_module, 'LATEST_NEWS'):
+    LATEST_NEWS = getattr(settings_module, 'LATEST_NEWS')
+else:
+    LATEST_NEWS = None
+
+if hasattr(settings_module, 'GAME_DESCRIPTION'):
+    GAME_DESCRIPTION = getattr(settings_module, 'GAME_DESCRIPTION')
+else:
+    GAME_DESCRIPTION = None
 
 ############################################################
 # Specified in django settings
