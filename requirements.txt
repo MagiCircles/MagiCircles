@@ -14,6 +14,7 @@ django-bootstrap-form-horizontal==0.0.4
 django-common-helpers==0.7.0
 django-cors-headers==1.1.0
 django-filter==0.9.1
+django-multiupload==0.5.1
 django-ses==0.7.0
 django-storages==1.1.8
 djangorestframework==3.0.3
