@@ -19,6 +19,8 @@ Quick start
    git clone your_project_repository
    git clone https://github.com/SchoolIdolTomodachi/MagiCircles.git
    cp -r MagiCircles/sample_project/* your_project_repository/
+   cp -r MagiCircles/sample_project/.bowerrc your_project_repository/
+   cp -r MagiCircles/sample_project/.gitignore your_project_repository/
    cd your_project_repository/
    ```
 
@@ -27,7 +29,7 @@ Quick start
    mv sample ${PROJECTNAME}
    mv sample_project ${PROJECTNAME}_project
    mv ${PROJECTNAME}/static/img/sample.png ${PROJECTNAME}/static/img/${PROJECTNAME}.png
-   for f in `grep -l sample . | \grep -v .git | \grep -E '.py$|.json$'`; do echo $f; sed -i '' -e "s/sample/${PROJECTNAME}/g" $f; done
+   for f in `grep -l sample . | \grep -v '.git/' | \grep -E '.py$|.json$|.bowerrc$|.gitignore$'`; do echo $f; sed -i '' -e "s/sample/${PROJECTNAME}/g" $f; done
    ```
 
 4. Setup your local python working environment, install the dependencies and run your first site:
