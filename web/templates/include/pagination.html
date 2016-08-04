@@ -12,7 +12,7 @@
   <a href="/{{ plural_name }}/?{{ filters_string }}" class="text-muted" target="_blank">+ <span class="remaining">{{ remaining }}</span> {% trans plural_title %}</a>
 </div>
 {% else %}
-<div id="load_more" class="padding20 text-center" data-next-page="{{ page|add:1 }}">
+<div id="load_more" class="padding20 text-center pagination-pages" data-next-page="{{ page|add:1 }}">
   {% if onClick %}
   <a href="#" id="activities{% if id %}{{ id }}{% endif %}">{% trans 'Load more...' %}</a>
   {% else %}

@@ -5,11 +5,11 @@
 {% load tools %}
 {% if items|length == 0 %}
 {% if show_no_result %}
-<div class="padding50">
+<div class="padding50 no-result-wrapper">
   {% if no_result_template %}
   {% include no_result_template|add:'.html' %}
   {% else %}
-  <h4 class="padding50 alert alert-info">
+  <h4 class="padding50 alert alert-info no-result-alert">
     {% trans 'No result.' %}
   </h4>
   {% endif %}

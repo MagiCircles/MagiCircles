@@ -40,7 +40,7 @@
 	    <span class="icon-bar"></span>
 	  </button>
 	  <a class="navbar-brand" href="/">
-	    {% if site_logo %}<img src="{{ static_url }}img/{{ site_logo }}" class="logo">{% else %}{{ site_name }}{% endif %}
+	    {% if site_logo %}<img src="{{ static_url }}img/{{ site_logo }}" class="logo hidden-xs hidden-sm"><span class="visible-xs visible-sm site-name">{{ site_name }}</span>{% else %}{{ site_name }}{% endif %}
 	  </a>
 	</div>
 	<div class="collapse navbar-collapse collapse">

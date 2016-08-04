@@ -29,11 +29,11 @@
 {% block content %}
 {% with form=form|default_if_none:0 %}
 {% with forms=forms|getFormAsList:form %}
-<div class="{% if not ajax %}container{% endif %}">
+<div class="{% if not ajax %}container{% endif %} container-for-generic-form">
   {% for form_name, form in forms.items %}
   {% block beforeform %}{% endblock %}
-  <h1 id="{{ form_name }}" class="text-center padding50">{% block imagetitle %}{% endblock %} {% block title %}{% endblock %}</h1>
-  <form method="POST" class="{% if not ajax %}container_form{% endif %}"{% if multipart %} enctype="multipart/form-data"{% endif %} action="{% if ajax %}{{ current_url }}{% else %}#{{ form_name }}{% endif %}">
+  <h1 id="{{ form_name }}" class="text-center padding50 form-title">{% block imagetitle %}{% endblock %} {% block title %}{% endblock %}</h1>
+  <form method="POST" class="{% if not ajax %}container_form{% endif %} generic-form"{% if multipart %} enctype="multipart/form-data"{% endif %} action="{% if ajax %}{{ current_url }}{% else %}#{{ form_name }}{% endif %}">
     {% block beforefields %}{% endblock %}
     {% block form %}
     {% csrf_token %}
@@ -43,7 +43,7 @@
     <div class="pull-right">
       {% block otherbuttons %}
       {% endblock %}
-      <button type="submit" name="{{ form_name }}" class="btn btn-main btn-lg" data-form-loader="true">{% block submit %}{% trans 'Apply Changes' %}{% endblock %}</button>
+      <button type="submit" name="{{ form_name }}" class="btn btn-main btn-lg generic-form-submit-button" data-form-loader="true">{% block submit %}{% trans 'Apply Changes' %}{% endblock %}</button>
     </div>
   </form>
 <br><br>

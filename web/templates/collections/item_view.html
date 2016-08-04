@@ -6,7 +6,7 @@
 {% block title %}{% trans title %}: {{ item }}{% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="container item-container">
   {% include 'items/'|add:item_template|add:'.html' %}
   <br><br>
   {% if comments_enabled %}{% include 'include/disqus.html' with disqus_identifier=name|add:'-'|addint:item.pk %}{% endif %}
