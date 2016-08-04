@@ -79,7 +79,7 @@ class CreateUserForm(_UserCheckEmailUsernameForm):
 
     class Meta:
         model = models.User
-        fields = ('email', 'username', 'password')
+        fields = ('username', 'email', 'password')
 
 class UserForm(_UserCheckEmailUsernameForm):
     class Meta:
