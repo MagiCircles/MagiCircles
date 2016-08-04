@@ -106,22 +106,23 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, **kwargs)
             context['filter_form'] = collection['list']['filter_form'](request=request)
 
     if 'add' in collection:
-        if 'types' in collection['add']:
-            context['add_buttons'] = []
-            for (type, button) in collection['add']['types'].items():
-                context['add_buttons'].append({
-                    'link': '/{}/add/{}/'.format(collection['plural_name'], type),
-                    'image': button.get('image', None),
-                    'title': button.get('title', type),
-                })
-        else:
-            context['add_buttons'] = [{
-                'link': '/{}/add/'.format(collection['plural_name']),
-                'image': collection.get('image', None),
-                'title': collection['title'],
-            }]
-        context['add_button_subtitle'] = collection['list'].get('add_button_subtitle', _('Become a contributor to help us fill the database'))
-        context['add_buttons_col_size'] = int(math.ceil(12 / len(context['add_buttons'])))
+        if not collection['add'].get('staff_required', False) or request.user.is_staff:
+            if 'types' in collection['add']:
+                context['add_buttons'] = []
+                for (type, button) in collection['add']['types'].items():
+                    context['add_buttons'].append({
+                        'link': '/{}/add/{}/'.format(collection['plural_name'], type),
+                        'image': button.get('image', None),
+                        'title': button.get('title', type),
+                    })
+            else:
+                context['add_buttons'] = [{
+                    'link': '/{}/add/'.format(collection['plural_name']),
+                    'image': collection.get('image', None),
+                    'title': collection['title'],
+                }]
+            context['add_button_subtitle'] = collection['list'].get('add_button_subtitle', _('Become a contributor to help us fill the database'))
+            context['add_buttons_col_size'] = int(math.ceil(12 / len(context['add_buttons'])))
 
     if 'ajax_modal_only' in request.GET:
         # Will display a link to see the other results instead of the pagination button
