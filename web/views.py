@@ -27,16 +27,14 @@ def _index_extraContext(context):
     context['latest_news'] = LATEST_NEWS
     context['call_to_action'] = CALL_TO_ACTION
     context['total_donators'] = TOTAL_DONATORS
+    context['is_feed'] = 'feed' in context['request'].GET
 
 def index(request):
     collection = ENABLED_COLLECTIONS['activity'].copy()
     collection['list'] = collection['list'].copy()
     collection['list']['before_template'] = 'include/homePage'
     collection['list']['extra_context'] = _index_extraContext
-    filters = {}
-    if request.user.is_authenticated() and 'all' not in request.GET:
-        filters['feed'] = True
-    return list_view(request, 'activity', collection, extra_filters=filters)
+    return list_view(request, 'activity', collection)
 
 ############################################################
 # Login / Logout / Sign up

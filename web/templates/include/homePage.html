@@ -48,3 +48,9 @@
   </div>
   {% endif %}
 </div>
+{% if user.is_authenticated and 'activity' in all_enabled %}
+<ul class="nav nav-tabs" id="hometabs">
+  <li{% if not is_feed %} class="active"{% endif %}><a href="/" >{% trans 'All' %}</a></li>
+  <li{% if is_feed %} class="active"{% endif %}><a href="/?feed" >{% trans 'Following' %}</a></li>
+</ul>
+{% endif %}
