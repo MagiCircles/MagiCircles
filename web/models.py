@@ -1,11 +1,11 @@
-import hashlib, urllib, datetime, csv
+import hashlib, urllib, datetime
 from django.db import models
 from django.contrib.auth.models import User
 from django.core import validators
 from django.utils.translation import ugettext_lazy as _, string_concat
 from django.conf import settings as django_settings
 from django.utils import timezone
-from web.utils import AttrDict
+from web.utils import AttrDict, join_data, split_data
 from web.settings import ACCOUNT_MODEL, GAME_NAME, COLOR, SITE_STATIC_URL, DONATORS_STATUS_CHOICES, STATIC_UPLOADED_FILES_PREFIX, USER_COLORS, FAVORITE_CHARACTERS, SITE_URL, SITE_NAME
 from web.model_choices import *
 
@@ -24,35 +24,6 @@ def avatar(user, size=200):
     return ("http://www.gravatar.com/avatar/"
             + hashlib.md5(user.email.lower()).hexdigest()
             + "?" + urllib.urlencode({'d': default, 's': str(size)}))
-
-############################################################
-# Internal Utils
-
-def _split_data(data):
-    """
-    Takes a unicode CSV string and return a list of strings.
-    """
-    def utf_8_encoder(unicode_csv_data):
-        for line in unicode_csv_data:
-            yield line.encode('utf-8')
-
-    def unicode_csv_reader(unicode_csv_data, **kwargs):
-        csv_reader = csv.reader(utf_8_encoder(unicode_csv_data), **kwargs)
-        for row in csv_reader:
-            yield [unicode(cell, 'utf-8') for cell in row]
-
-    if not data:
-        return []
-    reader = unicode_csv_reader([data])
-    for reader in reader:
-        return [r for r in reader]
-    return []
-
-def _join_data(*args):
-    """
-    Takes a list of unicode strings and return a CSV string.
-    """
-    return u'\"' + u'","'.join([unicode(value).replace('"','\"') for value in args]) + u'\"'
 
 class UserImage(models.Model):
      image = models.ImageField(upload_to=STATIC_UPLOADED_FILES_PREFIX + 'user_images/')
@@ -189,19 +160,19 @@ class Activity(models.Model):
 
     @property
     def tags(self):
-        return _split_data(self.tags_string)
+        return split_data(self.tags_string)
 
     def add_tags(self, new_tags):
-        self.tags_string = _join_data(*(self.tags + [tag for tag in new_tags if tag not in tags]))
+        self.tags_string = join_data(*(self.tags + [tag for tag in new_tags if tag not in tags]))
 
     def remove_tags(self, tags_to_remove):
-        self.tags_string = _join_data(*[tag for tag in self.tags if tag not in tags_to_remove])
+        self.tags_string = join_data(*[tag for tag in self.tags if tag not in tags_to_remove])
 
     def save_tags(self, tags):
         """
         Will completely replace any existing list of tags.
         """
-        self.tags_string = _join_data(*tags)
+        self.tags_string = join_data(*tags)
 
     # Cache
     _cache_days = 20
@@ -275,12 +246,12 @@ class Notification(models.Model):
 
     @property
     def localized_message(self):
-        data = _split_data(self.message_data)
+        data = split_data(self.message_data)
         return _(NOTIFICATION_DICT[self.message]).format(*data)
 
     @property
     def website_url(self):
-        data = _split_data(self.url_data if self.url_data else self.message_data)
+        data = split_data(self.url_data if self.url_data else self.message_data)
         return NOTIFICATION_URLS[self.message].format(*data)
 
     @property

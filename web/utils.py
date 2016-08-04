@@ -1,4 +1,4 @@
-import string, random
+import string, random, csv
 from django.conf import settings
 from django.core.urlresolvers import resolve
 from django.utils import translation
@@ -101,3 +101,33 @@ def dumpModel(instance):
         else:
             dump[key] = unicode(dump[key])
     return dump
+
+############################################################
+# Join / Split data stored as string in database
+
+def split_data(data):
+    """
+    Takes a unicode CSV string and return a list of strings.
+    """
+    def utf_8_encoder(unicode_csv_data):
+        for line in unicode_csv_data:
+            yield line.encode('utf-8')
+
+    def unicode_csv_reader(unicode_csv_data, **kwargs):
+        csv_reader = csv.reader(utf_8_encoder(unicode_csv_data), **kwargs)
+        for row in csv_reader:
+            yield [unicode(cell, 'utf-8') for cell in row]
+
+    if not data:
+        return []
+    reader = unicode_csv_reader([data])
+    for reader in reader:
+        return [r for r in reader]
+    return []
+
+def join_data(*args):
+    """
+    Takes a list of unicode strings and return a CSV string.
+    """
+    data = u'\"' + u'","'.join([unicode(value).replace('"','\"') for value in args]) + u'\"'
+    return data if data != '""' else None
