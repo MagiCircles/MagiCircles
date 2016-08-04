@@ -92,7 +92,24 @@ if 'notification' in ENABLED_COLLECTIONS:
 
 RAW_CONTEXT['navbar_links'] = []
 RAW_CONTEXT['navbar_links_lists'] = ENABLED_NAVBAR_LISTS.copy()
-urls = []
+urls = [
+    url(r'^i18n/', include('django.conf.urls.i18n')),
+    url(r'^password_reset[/]+$', 'django.contrib.auth.views.password_reset', {
+        'template_name': 'password/password_reset_form.html',
+        'html_email_template_name': 'password/password_reset_email_html.html',
+        'from_email': settings.PASSWORD_EMAIL,
+
+    }, name='password_reset'),
+    url(r'^password_reset/done[/]+$', 'django.contrib.auth.views.password_reset_done', {
+        'template_name': 'password/password_reset_done.html'
+    }, name='password_reset_done'),
+    url(r'^reset/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$', 'django.contrib.auth.views.password_reset_confirm', {
+        'template_name': 'password/password_reset_confirm.html'
+    }, name='password_reset_confirm'),
+    url(r'^reset/done[/]+$', 'django.contrib.auth.views.password_reset_complete', {
+        'template_name': 'password/password_reset_complete.html'
+    }, name='password_reset_complete'),
+]
 
 def navbarAddLink(link, list_name):
     if list_name:
