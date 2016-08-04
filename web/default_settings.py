@@ -186,7 +186,6 @@ DEFAULT_ENABLED_COLLECTIONS = OrderedDict([
         'icon': 'fingers',
         # queryset is added in urls.py, can be specified in your settings as well
         'list': {
-            'page_size': 1,
             'show_title': True,
             'staff_required': True,
             'per_line': 1,
