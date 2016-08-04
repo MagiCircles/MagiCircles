@@ -76,11 +76,6 @@ def tourldash(string):
     s =  u''.join(e if e.isalnum() else u'-' for e in string)
     return u'-'.join([s for s in s.split(u'-') if s])
 
-def itemURL(name, item, ajax=False):
-    if ajax:
-        return u'/ajax/{}/{}/'.format(name, item.pk)
-    return u'/{}/{}/{}/'.format(name, item.pk, tourldash(unicode(item)))
-
 ############################################################
 # Redirections
 

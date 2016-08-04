@@ -795,8 +795,7 @@ import time
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 from django.conf import settings as django_settings
-from web.tools import totalDonators
-from web.utils import itemURL
+from web.tools import totalDonators, itemURL
 from web.templatetags.web_tags import imageURL
 from sample import models
 

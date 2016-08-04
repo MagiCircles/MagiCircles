@@ -4,11 +4,13 @@ from django import template
 from django.conf import settings
 from web import models
 from web.settings import SITE_STATIC_URL, FAVORITE_CHARACTER_TO_URL, RAW_CONTEXT, ENABLED_COLLECTIONS
-from web.utils import itemURL, AttrDict
+from web.utils import AttrDict
+from web.tools import itemURL, fullItemURL
 
 register = template.Library()
 
 register.filter('itemURL', itemURL)
+register.filter('fullItemURL', fullItemURL)
 
 @register.filter
 def avatar(user, size=200):

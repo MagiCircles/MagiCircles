@@ -13,7 +13,8 @@ from django.views.decorators.csrf import csrf_exempt
 from web.forms import CreateUserForm, UserForm, UserPreferencesForm, AddLinkForm, ChangePasswordForm, EmailsPreferencesForm, LanguagePreferencesForm
 from web import models
 from web.donations import donations
-from web.utils import getGlobalContext, ajaxContext, redirectToProfile, AttrDict, ordinalNumber, tourldash, redirectWhenNotAuthenticated, dumpModel, send_email, emailContext, itemURL
+from web.utils import getGlobalContext, ajaxContext, redirectToProfile, AttrDict, ordinalNumber, tourldash, redirectWhenNotAuthenticated, dumpModel, send_email, emailContext
+from web.tools import itemURL, fullItemURL
 from web.notifications import pushNotification
 from web.settings import SITE_NAME, GAME_NAME, ENABLED_COLLECTIONS, ENABLED_PAGES, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_NAME, DONATE_IMAGE, DONATE_IMAGES_FOLDER, TWITTER_HANDLE, BUG_TRACKER_URL, GITHUB_REPOSITORY, CONTRIBUTE_URL, CONTACT_EMAIL, CONTACT_REDDIT, CONTACT_FACEBOOK, ABOUT_PHOTO, WIKI, LATEST_NEWS, SITE_LONG_DESCRIPTION, CALL_TO_ACTION, TOTAL_DONATORS, GAME_DESCRIPTION
 from web.views_collections import item_view, list_view
@@ -310,7 +311,7 @@ def moderatereport(request, report, action):
 
     # Action: Edit
     elif action == 'Edited':
-        context['item_url'] = (itemURL(report.reported_thing, thing))[1:] if 'item' in ENABLED_COLLECTIONS[report.reported_thing] else None
+        context['item_url'] = fullItemURL(report.reported_thing, thing) if 'item' in ENABLED_COLLECTIONS[report.reported_thing] else None
         report.status = models.REPORT_STATUS_EDITED
         # Notify reporter
         if report.owner:

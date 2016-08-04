@@ -29,7 +29,7 @@
 {% block actionbuttontitle %}{% if item_url %}{% trans 'Open' %}{% else %}{{ site_name }}{% endif %}{% endblock %}
   {% block actionbuttonalt %}{% if item_url %}{% trans 'Open' %}{% else %}{{ site_name }}{% endif %}{% endblock %}
 
-{% block actionlink %}{{ site_url }}{% if item_url %}{{ item_url }}{% endif %}{% endblock %}
+{% block actionlink %}{% if item_url %}{{ item_url }}{% endif %}{% endblock %}
 
 {% block footersentence %}
 <div style="text-align: right">

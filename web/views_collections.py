@@ -7,7 +7,8 @@ from django.shortcuts import render
 from web.middleware.httpredirect import HttpRedirectException
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.exceptions import PermissionDenied
-from web.utils import itemURL, getGlobalContext, redirectWhenNotAuthenticated
+from web.utils import getGlobalContext, redirectWhenNotAuthenticated
+from web.tools import itemURL
 from web.forms import ConfirmDelete
 
 ############################################################
