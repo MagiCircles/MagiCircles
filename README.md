@@ -260,60 +260,9 @@ Start a new site
    @mainColor: #4a86e8;
    @secondaryColor: #f5f07b;
 
-   body {
+   html {
        .setup-sidebar(@mainColor);
-   }
-
-   .table-color(@color, @inverse) {
-       td {
-   	background-color: @color;
-   	color: @inverse;
-   	.a-variant(@inverse);
-       }
-   }
-   .table-main { .table-color(@mainColor, #fff); }
-   .table-dark { .table-color(darken(@mainColor, 15%), #fff); }
-
-   a {
-       color: @mainColor;
-       &:hover, &:focus {
-   	color: darken(@mainColor, 15%);
-       }
-   }
-
-   .panel-main { .custom-panel(darken(@mainColor, 25%)); }
-
-   .text-main { color: @mainColor; }
-   .text-secondary { color: @secondaryColor; }
-
-   .btn-main { .button-variant(white, @mainColor, darken(@mainColor, 5%)); }
-   .btn-secondary { .button-variant(@mainColor, darken(@secondaryColor, 20%), darken(@secondaryColor, 5%)); }
-   .btn-link {
-       color: @mainColor;
-       &:hover, &:focus {
-           color: darken(@mainColor, 15%);
-       }
-   }
-
-   .table-buttons td {
-       .button-variant(white, @mainColor, darken(@mainColor, 5%));
-   }
-
-   .navbar-main {
-       .navbar-variant(@mainColor, white);
-   }
-
-   .cuteform-elt.cuteform-selected {
-       border-color: @secondaryColor;
-   }
-
-   .pagination>li>a, .pagination>li>span {
-       color: @mainColor;
-   }
-
-   .pagination>.active>a, .pagination>.active>a:focus, .pagination>.active>a:hover, .pagination>.active>span, .pagination>.active>span:focus, .pagination>.active>span:hover {
-       background-color: @mainColor;
-       border-color: @mainColor;
+       .magicircles(@mainColor, @secondaryColor);
    }
    ```
    You may customize the content depending on the page you're on using `body.current-page` where page corresponds to the page name (example: `current-index`, `current-card_list`, ...).

@@ -1,4 +1,3 @@
-
 @import "../bower/navbar-variant/navbar-variant.less";
 @import "../bower/CuteForm/cuteform.css";
 @import "../css/flaticon.css";
@@ -6,6 +5,8 @@
 @import "mixins/panel.less";
 @import "mixins/buttons.less";
 @import url(https://fonts.googleapis.com/css?family=Roboto);
+
+@transparent: rgba(0, 0, 0, 0);
 
 [class^="flaticon-"]:before,
 [class*=" flaticon-"]:before,
@@ -149,18 +150,18 @@ img.cuteform-elt {
     }
     #carousel-latest-news .carousel-caption {
 	position: absolute;
-        top: 0;
-        display: -webkit-box;
-        display: -moz-box;
-        display: -ms-flexbox;
-        display: -webkit-flex;
-        display: flex;
-        -webkit-box-align: center;
-        -moz-box-align: center;
-        -ms-flex-align: center;
-        -webkit-align-items: center;
-        align-items: center;
-        height: 100%;
+	top: 0;
+	display: -webkit-box;
+	display: -moz-box;
+	display: -ms-flexbox;
+	display: -webkit-flex;
+	display: flex;
+	-webkit-box-align: center;
+	-moz-box-align: center;
+	-ms-flex-align: center;
+	-webkit-align-items: center;
+	align-items: center;
+	height: 100%;
 	h2 {
 	    width: 100%;
 	}
@@ -171,10 +172,10 @@ img.cuteform-elt {
 }
 
 .current-index {
+    .add_buttons {
+	background: white;
+    }
     .btn-add-activity {
-	opacity: 0.6;
-	padding: 5px;
-	padding: 0 20px;
 	margin-bottom: 20px;
 	h3 {
 	    display: inline-block;
@@ -185,6 +186,9 @@ img.cuteform-elt {
 	    font-style: italic;
 	    font-size: 0.7em;
 	}
+    }
+    .index-not-authenticated + .add_buttons {
+	display: none;
     }
 }
 
@@ -283,6 +287,7 @@ body.current-map, html.html-current-map {
 }
 
 .activity {
+    background: white;
     .owner {
 	font-size: 1.2em;
     }
@@ -475,6 +480,67 @@ nav a[href="/notifications/"] .badge {
     50% { opacity: 0.7; }
 }
 
+.table-color(@color, @inverse) {
+    td {
+	background-color: @color;
+	color: @inverse;
+	.a-variant(@inverse);
+    }
+}
+
+.magicircles(@mainColor, @secondaryColor) {
+   .table-main { .table-color(@mainColor, #fff); }
+   .table-dark { .table-color(darken(@mainColor, 15%), #fff); }
+
+   a {
+       color: @mainColor;
+       &:hover, &:focus {
+	color: darken(@mainColor, 15%);
+       }
+   }
+
+   .panel-main { .custom-panel(darken(@mainColor, 25%)); }
+
+   .text-main { color: @mainColor; }
+   .text-secondary { color: @secondaryColor; }
+
+   .btn-main { .button-variant(white, @mainColor, darken(@mainColor, 5%)); }
+   .btn-white { .button-variant(@mainColor, white, lighten(@mainColor, 50%)) }
+   .btn-secondary { .button-variant(white, @secondaryColor, darken(@secondaryColor, 5%)); }
+   .btn-link {
+       color: @mainColor;
+       &:hover, &:focus {
+	   color: darken(@mainColor, 15%);
+       }
+   }
+
+   .table-buttons td {
+       .button-variant(white, @mainColor, darken(@mainColor, 5%));
+   }
+
+   .navbar-main {
+       .navbar-variant(@mainColor, white);
+   }
+
+   .cuteform-elt.cuteform-selected {
+       border-color: @secondaryColor;
+   }
+
+   .pagination>li>a, .pagination>li>span {
+       color: @mainColor;
+   }
+
+   .pagination>.active>a, .pagination>.active>a:focus, .pagination>.active>a:hover, .pagination>.active>span, .pagination>.active>span:focus, .pagination>.active>span:hover {
+       background-color: @mainColor;
+       border-color: @mainColor;
+   }
+   .current-index {
+       .btn-add-activity {
+	   .button-variant(@mainColor, @transparent, @transparent);
+       }
+   }
+}
+
 @media(min-width:768px) {
     .container_form {
 	width: 50%;
@@ -495,22 +561,22 @@ nav a[href="/notifications/"] .badge {
 @-webkit-keyframes animate-pulse {
     0% {
 	-webkit-transform: rotate(0deg);
-        transform: rotate(0deg);
+	transform: rotate(0deg);
     }
     100% {
 	-webkit-transform: rotate(359deg);
-        transform: rotate(359deg);
+	transform: rotate(359deg);
     }
 }
 
 @keyframes animate-pulse {
     0% {
 	-webkit-transform: rotate(0deg);
-        transform: rotate(0deg);
+	transform: rotate(0deg);
     }
     100% {
 	-webkit-transform: rotate(359deg);
-        transform: rotate(359deg);
+	transform: rotate(359deg);
     }
 }
 

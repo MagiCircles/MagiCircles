@@ -1,5 +1,5 @@
 {% load i18n %}
-<div class="default-index{% if user.is_authenticated %} index-authenticated{% endif %}">
+<div class="default-index {% if user.is_authenticated %}index-authenticated{% else %}index-not-authenticated{% endif %}">
   <header>
     <h1><img src="{{ site_image }}" class="img-responsive" alt="{{ site_name }}"></h1>
     <h2>{% trans site_description %}</h2>
