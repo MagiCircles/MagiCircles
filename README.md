@@ -288,6 +288,12 @@ Start a new site
 
    .btn-main { .button-variant(white, @mainColor, darken(@mainColor, 5%)); }
    .btn-secondary { .button-variant(@mainColor, darken(@secondaryColor, 20%), darken(@secondaryColor, 5%)); }
+   .btn-link {
+       color: @mainColor;
+       &:hover, &:focus {
+           color: darken(@mainColor, 15%);
+       }
+   }
 
    .table-buttons td {
        .button-variant(white, @mainColor, darken(@mainColor, 5%));

@@ -139,7 +139,7 @@ img.cuteform-elt {
 .default-index {
     text-align: center;
     header {
-	padding: 200px 0;
+	padding: 30px 0;
 	a[href="/donate/"] {
 	    margin-left: 20px;
 	}
@@ -200,7 +200,7 @@ body.current-map, html.html-current-map {
     padding: 0;
     main {
 	height: 100%;
-	padding-bottom: 53px;
+	padding-bottom: 51px;
     }
 }
 
@@ -356,7 +356,7 @@ body.current-map, html.html-current-map {
 }
 
 .navbar + main {
-    margin-top: 53px;
+    margin-top: 51px;
     margin-bottom: 50px;
 }
 
@@ -465,6 +465,16 @@ nav a[href="/notifications/"] .badge {
     .container_form {
 	width: 50%;
 	margin: auto;
+    }
+    .default-index {
+	header {
+	    padding: 200px 0;
+	}
+	&.index-authenticated {
+	    header {
+		padding: 20px 0 50px 0;
+	    }
+	}
     }
 }
 

@@ -1,5 +1,5 @@
 {% load i18n %}
-<div class="default-index">
+<div class="default-index{% if user.is_authenticated %} index-authenticated{% endif %}">
   <header>
     <h1><img src="{{ site_image }}" class="img-responsive" alt="{{ site_name }}"></h1>
     <h2>{% trans site_description %}</h2>
@@ -20,7 +20,7 @@
     <a href="/signup/" class="btn btn-xl btn-secondary">
       {% trans call_to_action %}
     </a>
-  {% endif %}
+    {% endif %}
   </header>
   {% if latest_news %}
   <div id="carousel-latest-news" class="carousel slide" data-ride="carousel">
