@@ -17,3 +17,5 @@ ENABLED_COLLECTIONS['account']['add']['form_class'] = forms.AccountForm
 ENABLED_COLLECTIONS['account']['edit']['form_class'] = forms.AccountForm
 
 ENABLED_PAGES = DEFAULT_ENABLED_PAGES
+
+HASHTAGS = ['LLSIF', 'LoveLive']

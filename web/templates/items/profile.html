@@ -35,6 +35,11 @@
 	    <br>
 	    <div class="description">{% if profile_user.preferences.description %}{{ profile_user.preferences.description }}{% endif %}</div>
 	    {% if not is_me %}<a href="/reports/add/user/?id={{ profile_user.id }}" target="_blank" class="btn btn-link btn-sm"><i class="flaticon-fingers"></i> {% trans 'Report' %}</a>{% endif %}
+	    <div class="text-right">
+	      <div class="btn-group">
+		{% include 'include/share.html' with share_btn_class=profile_user.preferences.css_color %}
+	      </div>
+	    </div>
 	  </div>
 	</div>
       </div>

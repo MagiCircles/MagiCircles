@@ -6,7 +6,7 @@ from django.utils.translation import ugettext_lazy as _, string_concat
 from django.conf import settings as django_settings
 from django.utils import timezone
 from web.utils import AttrDict
-from web.settings import ACCOUNT_MODEL, GAME_NAME, COLOR, SITE_STATIC_URL, DONATORS_STATUS_CHOICES, STATIC_UPLOADED_FILES_PREFIX, USER_COLORS, FAVORITE_CHARACTERS, SITE_URL
+from web.settings import ACCOUNT_MODEL, GAME_NAME, COLOR, SITE_STATIC_URL, DONATORS_STATUS_CHOICES, STATIC_UPLOADED_FILES_PREFIX, USER_COLORS, FAVORITE_CHARACTERS, SITE_URL, SITE_NAME
 from web.model_choices import *
 
 Account = ACCOUNT_MODEL
@@ -239,14 +239,24 @@ class Activity(models.Model):
         })
         return cached_owner
 
-    def __unicode__(self):
+    @property
+    def shareSentence(self):
+        return _('Check out {username}\'s activity on {site}: {activity}').format(
+            username=self.cached_owner.username,
+            site=SITE_NAME,
+            activity=self.summarize(40),
+        )
+
+    def summarize(self, length=100):
         """
-        Return the first 100 characters without cutting words
+        Return the first {length} characters without cutting words
         """
-        length = 100
         if len(self.message) <= length:
             return self.message
         return ' '.join(self.message[:length+1].split(' ')[0:-1]) + '...'
+
+    def __unicode__(self):
+        return self.summarize()
 
     class Meta:
         verbose_name_plural = "activities"

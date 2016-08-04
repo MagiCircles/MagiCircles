@@ -108,6 +108,8 @@ def profileExtraContext(context):
     context['add_activity_sentence'] = _('Share your adventures!')
     if 'activity' in ENABLED_COLLECTIONS and 'list' in ENABLED_COLLECTIONS['activity'] and 'add_button_subtitle' in ENABLED_COLLECTIONS['activity']['list']:
         context['add_activity_sentence'] = ENABLED_COLLECTIONS['activity']['list']['add_button_subtitle']
+    context['share_sentence'] = _('Check out {username}\'s awesome collection!').format(username=context['item'].username)
+    context['share_url'] = fullItemURL('user', context['item'])
 
 def user(request, pk=None, username=None):
     collection = ENABLED_COLLECTIONS['user']

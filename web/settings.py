@@ -171,6 +171,11 @@ if hasattr(settings_module, 'GAME_DESCRIPTION'):
 else:
     GAME_DESCRIPTION = None
 
+if hasattr(settings_module, 'HASHTAGS'):
+    HASHTAGS = getattr(settings_module, 'HASHTAGS')
+else:
+    HASHTAGS = []
+
 ############################################################
 # Specified in django settings
 
