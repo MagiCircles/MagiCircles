@@ -387,6 +387,7 @@ Your settings file is located in `sample/settings.py`.
 | LATEST NEWS | A list of dictionaries that should contain image, title, url and may contain hide_title, used if you keep the default index page to show a carousel. Recommended to get this from [Generated Settings](#generated-settings) | None |
 | CALL_TO_ACTION | A sentence shown on the default index page to encourage visitors to sign up | _('Join the community!') |
 | SITE_LONG_DESCRIPTION | A long description of what the website does. Used on the about page. | A long text |
+| GAME_DESCRIPTION | A long description of the game. Used on the about game page. | None (just shows game image) |
 | TOTAL_DONATORS | Total number of donators (you may use web.tools.totalDonators to save this value in the [generated settings](#generated-settings)) | 2 |
 
 Enable/Disable default pages and collections
