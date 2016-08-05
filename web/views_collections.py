@@ -36,6 +36,7 @@ def _modification_view(context, name, collection, mod_collection):
     context['js_files'] = mod_collection.get('js_files', None)
     context['otherbuttons_template'] = mod_collection.get('otherbuttons_template', None)
     context['back_to_list_button'] = mod_collection.get('back_to_list_button', True)
+    context['after_template'] = mod_collection.get('after_template', None)
     return context
 
 def _type(a): return type(a)

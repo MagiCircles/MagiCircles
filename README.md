@@ -608,10 +608,11 @@ Collections add view settings dictionaries may contain the following:
 | multipart | Should the HTML form allow multipart (uploaded files)? | False | |
 | otherbuttons_template | Template path (without `.html`) for extra buttons at the end of the form | None | "include/cardsExtraButtons" |
 | back_to_list_button | Should we display a button to go back to the list view at the end of the form? | True | |
+| after_template | Name of a template to include after the form | None | "include/afterAddCard" |
 
 ### Edit view
 
-Collections add view settings dictionaries may contain the following:
+Collections edit view settings dictionaries may contain the following:
 
 | Key | Value | Default | Example |
 |-----|-------|---------|---------|
@@ -633,6 +634,7 @@ Collections add view settings dictionaries may contain the following:
 | multipart | Should the HTML form allow multipart (uploaded files)? | False | |
 | otherbuttons_template | Template path (without `.html`) for extra buttons at the end of the form | None | "include/cardsExtraButtons" |
 | back_to_list_button | Should we display a button to go back to the list view at the end of the form? | True | |
+| after_template | Name of a template to include after the form | None | "include/afterAddCard" |
 
 ##### Item types
 
@@ -707,7 +709,7 @@ For each page, you may specify the following settings:
 
 | Key | Value | Default | Example |
 |-----|-------|---------|---------|
-| title | Localized title of the page (used in navbar and HTML page title) | *required* | _('Statistics') |
+| title | Localized title of the page (used in navbar and HTML page title) | *required* (except when ajax=True, then None) | _('Statistics') |
 | ajax | Is this page only available in AJAX? (URL starts with `ajax/`) | False | |
 | icon | String name of a [flaticon](#flaticon) that illustrates the page (used in navbar) | None | 'about' |
 | image | Path to image that illustrates the page (used in navbar) | None | 'statistics.png' |

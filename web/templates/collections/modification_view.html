@@ -23,3 +23,9 @@
 {% if back_to_list_button %}<a href="/{{ plural_name }}/" class="btn btn-link">{% trans 'Back to' %} {% trans plural_title %}</a>{% endif %}
 {% if form_name != 'delete' and otherbuttons_template %}{% include otherbuttons_template|add:'.html' %}{% endif %}
 {% endblock %}
+
+{% block belowform %}
+{% if after_template %}
+{% include after_template|add:'.html' %}
+{% endif %}
+{% endblock %}
