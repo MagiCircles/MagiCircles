@@ -129,7 +129,8 @@ function ajaxModals() {
 	    button.html('<i class="flaticon-loading"></i>');
 	    $.get(button.data('ajax-url'), function(data) {
 		button.html(button_content);
-		freeModal(button_content, data, modalButtons);
+		var title = button.data('ajax-title');
+		freeModal(typeof title == 'undefined' ? button_content : title, data, modalButtons);
 		$('#freeModal form').submit(function(e) {
 		    e.preventDefault();
 		    $(this).ajaxSubmit({
