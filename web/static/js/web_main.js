@@ -295,7 +295,7 @@ function multiCuteForms(cuteformsToDo, withImages) {
 			if (cb === true) {
 			    images[value] = static_url + 'img/' + field_name + '/' + value + '.png';
 			} else {
-			    images[value] = static_url + 'img/' + cb(value, form_choices[form][field_name][value]);
+			    images[value] = cb(value, form_choices[form][field_name][value]);
 			}
 		    }
 		}
