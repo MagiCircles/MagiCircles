@@ -14,7 +14,7 @@ register.filter('fullItemURL', fullItemURL)
 
 @register.filter
 def ajaxItemURL(name, item):
-    itemURL(name, item, ajax=True)
+    return itemURL(name, item, ajax=True)
 
 @register.filter
 def avatar(user, size=200):
