@@ -13,6 +13,10 @@ register.filter('itemURL', itemURL)
 register.filter('fullItemURL', fullItemURL)
 
 @register.filter
+def ajaxItemURL(name, item):
+    itemURL(name, item, ajax=True)
+
+@register.filter
 def avatar(user, size=200):
     return models.avatar(user, size)
 

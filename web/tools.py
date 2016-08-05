@@ -9,7 +9,7 @@ def totalDonators():
     return models.UserPreferences.objects.filter(status__isnull=False).exclude(status__exact='').count()
 
 ############################################################
-# Full Item URL
+# Item URL
 
 def itemURL(name, item, ajax=False):
     if ajax:
