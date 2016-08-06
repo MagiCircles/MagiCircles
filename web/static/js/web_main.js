@@ -131,17 +131,19 @@ function ajaxModals() {
 		button.html(button_content);
 		var title = button.data('ajax-title');
 		freeModal(typeof title == 'undefined' ? button_content : title, data, modalButtons);
-		$('#freeModal form').submit(function(e) {
-		    e.preventDefault();
-		    $(this).ajaxSubmit({
-			context: this,
-			success: function(data) {
-			    freeModal(button_content, data, modalButtons);
-			},
-			error: genericAjaxError,
+		if (typeof button.data('ajax-handle-form') != 'undefined') {
+		    $('#freeModal form').submit(function(e) {
+			e.preventDefault();
+			$(this).ajaxSubmit({
+			    context: this,
+			    success: function(data) {
+				freeModal(button_content, data, modalButtons);
+			    },
+			    error: genericAjaxError,
+			});
+			return false;
 		    });
-		    return false;
-		});
+		}
 	    });
 	    return false;
 	});
