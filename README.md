@@ -592,7 +592,7 @@ Collections add view settings dictionaries may contain the following:
 
 | Key | Value | Default | Example |
 |-----|-------|---------|---------|
-| form_class | FormClass to add the item, must take request (make it inherit from FormWithRequest) | *required* | [Example](https://gist.github.com/db0company/819ec1900fb207f865be69b92ce62c8e#file-magicirclesexamples-py-L31) |
+| form_class | FormClass to add the item, must take request (make it inherit from FormWithRequest), can be a function that takes request, context and collection | *required* | [Example](https://gist.github.com/db0company/819ec1900fb207f865be69b92ce62c8e#file-magicirclesexamples-py-L31) |
 | get_global_context | Function to get the global context | GET_GLOBAL_CONTEXT in your settings | |
 | authentication_required | Should the page be available only for authenticated users? | True | |
 | staff_required | Should the page be available only for staff users? | False | |
@@ -616,7 +616,7 @@ Collections edit view settings dictionaries may contain the following:
 
 | Key | Value | Default | Example |
 |-----|-------|---------|---------|
-| form_class | FormClass to add the item, must take request (make it inherit from FormWithRequest) | *required* | [Example](https://gist.github.com/db0company/819ec1900fb207f865be69b92ce62c8e#file-magicirclesexamples-py-L31) |
+| form_class | FormClass to add the item, must take request (make it inherit from FormWithRequest), can be a function that takes request, context and collection | *required* | [Example](https://gist.github.com/db0company/819ec1900fb207f865be69b92ce62c8e#file-magicirclesexamples-py-L31) |
 | allow_delete | Should we show a button to delete the item as well? | False | |
 | redirect_after_delete | String URL or callback (that takes request, ajax) to redirect to after the item has been deleted | List view | "/" |
 | get_global_context | Function to get the global context | GET_GLOBAL_CONTEXT in your settings | |
@@ -662,7 +662,7 @@ For each type, you may specify the following settings in its dictionary:
 
 | Key | Value | Default | Example |
 |-----|-------|---------|---------|
-| form_class | FormClass to add/edit the item, must take request (make it inherit from FormWithRequest) | *required* | [Example](https://gist.github.com/db0company/819ec1900fb207f865be69b92ce62c8e#file-magicirclesexamples-py-L44) |
+| form_class | FormClass to add/edit the item, must take request (make it inherit from FormWithRequest), can be a function that takes request, context and collection | *required* | [Example](https://gist.github.com/db0company/819ec1900fb207f865be69b92ce62c8e#file-magicirclesexamples-py-L44) |
 | title | Localized title of the type | type (key) | _('Rare') |
 | image | Path of an image displayed near the title of the form that illustrates the type | None | "" |
 
