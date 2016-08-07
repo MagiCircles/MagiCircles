@@ -38,6 +38,7 @@
     {% block form %}
     {% csrf_token %}
     {% include "bootstrap_form_horizontal.html" with form=form wrap=0 %}
+    <input type="hidden" name="{{ form_name }}" value="true">
     {% endblock %}
     {% block afterfields %}{% endblock %}
     <div class="pull-right">
