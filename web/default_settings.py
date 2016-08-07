@@ -49,7 +49,7 @@ def _accountBeforeSave(request, instance, type=None):
 def _accountRedirectAfter(request, instance, ajax=False):
     return '/user/{}/#{}'.format(request.user.username, instance.pk)
 
-def _accountRedirectAfterDelete(request, ajax=False):
+def _accountRedirectAfterDelete(request, instance, ajax=False):
     return '/user/{}/'.format(request.user.username)
 
 def _userItemFilterQuerySet(queryset, parameters, request):

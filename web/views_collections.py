@@ -248,13 +248,14 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, **kwa
     if allowDelete and request.method == 'POST' and 'delete' in request.POST:
         formDelete = ConfirmDelete(request.POST)
         if formDelete.is_valid():
-            instance.delete()
             redirectAfterDelete = collection['edit'].get('redirect_after_delete', None)
             if redirectAfterDelete:
                 if callable(redirectAfterDelete):
-                    raise HttpRedirectException(redirectAfterDelete(request, ajax))
-                raise HttpRedirectException(redirectAfterDelete if not ajax else '/ajax' + redirectAfterDelete)
-            raise HttpRedirectException('{}/{}/'.format('' if not ajax else '/ajax', collection['plural_name']))
+                    redirectAfterDelete = redirectAfterDelete(request, instance, ajax)
+                redirectAfterDelete = redirectAfterDelete if not ajax else '/ajax' + redirectAfterDelete
+            redirectAfterDelete = '{}/{}/'.format('' if not ajax else '/ajax', collection['plural_name'])
+            instance.delete()
+            raise HttpRedirectException(redirectAfterDelete)
     elif request.method == 'POST':
         form = formClass(request.POST, request.FILES, instance=instance, request=request)
         if form.is_valid():

@@ -618,7 +618,7 @@ Collections edit view settings dictionaries may contain the following:
 |-----|-------|---------|---------|
 | form_class | FormClass to add the item, must take request (make it inherit from FormWithRequest), can be a function that takes request, context and collection | *required* | [Example](https://gist.github.com/db0company/819ec1900fb207f865be69b92ce62c8e#file-magicirclesexamples-py-L31) |
 | allow_delete | Should we show a button to delete the item as well? | False | |
-| redirect_after_delete | String URL or callback (that takes request, ajax) to redirect to after the item has been deleted | List view | "/" |
+| redirect_after_delete | String URL or callback (that takes request, item, ajax) to redirect to after the item has been deleted | List view | "/" |
 | get_global_context | Function to get the global context | GET_GLOBAL_CONTEXT in your settings | |
 | authentication_required | Should the page be available only for authenticated users? | True | |
 | staff_required | Should the page be available only for staff users? | False | |
