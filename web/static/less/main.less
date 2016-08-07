@@ -119,13 +119,19 @@ img.cuteform-elt {
     word-break: normal;
 }
 
-.padding20 { padding: 20px; }
-.padding30 { padding: 30px; }
-.padding50 { padding: 50px; }
+.padding20 { padding: 5px; }
+.padding30 { padding: 10px; }
+.padding50 { padding: 20px; }
 .padding-novertical { padding-top: 0; padding-bottom: 0; }
 .margin-novertical { margin-top: 0; margin-bottom: 0; }
 .padding-nohorizontal { padding-left: 0; padding-right: 0; }
 .margin-nohorizontal { margin-left: 0; margin-right: 0; }
+
+@media (min-width: 768px) {
+    .padding20 { padding: 20px; }
+    .padding30 { padding: 30px; }
+    .padding50 { padding: 50px; }
+}
 
 .jumbotron p {
     font-size: inherit;
