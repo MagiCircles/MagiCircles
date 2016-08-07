@@ -130,14 +130,15 @@ function ajaxModals() {
 	    $.get(button.data('ajax-url'), function(data) {
 		button.html(button_content);
 		var title = button.data('ajax-title');
-		freeModal(typeof title == 'undefined' ? button_content : title, data, modalButtons);
+		title = typeof title == 'undefined' ? button_content : title;
+		freeModal(title, data, modalButtons);
 		if (typeof button.data('ajax-handle-form') != 'undefined') {
 		    $('#freeModal form').submit(function(e) {
 			e.preventDefault();
 			$(this).ajaxSubmit({
 			    context: this,
 			    success: function(data) {
-				freeModal(button_content, data, modalButtons);
+				freeModal(title, data, modalButtons);
 			    },
 			    error: genericAjaxError,
 			});
