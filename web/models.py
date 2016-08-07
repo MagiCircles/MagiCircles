@@ -267,7 +267,7 @@ class Notification(models.Model):
 class Report(models.Model):
     creation = models.DateTimeField(auto_now_add=True)
     modification = models.DateTimeField(auto_now=True)
-    owner = models.ForeignKey(User, related_name='reports')
+    owner = models.ForeignKey(User, related_name='reports', null=True)
     reported_thing = models.CharField(max_length=300)
     reported_thing_title = models.CharField(max_length=300)
     reported_thing_id = models.PositiveIntegerField()
