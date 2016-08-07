@@ -1,4 +1,4 @@
-{# required variables: items, per_line, col_size, name, total_results, page_size, page #}
+{# required variables: items, per_line, col_size, col_break, name, total_results, page_size, page #}
 {# optional variables: show_no_result #}
 
 {% load i18n %}
@@ -21,7 +21,7 @@
   {% if forloop.counter0 != 0 and forloop.counter0|mod:per_line %}
 </div><div class="row items">
   {% endif%}
-  <div class="col-lg-{{ col_size }}">
+  <div class="col-{{ col_break }}-{{ col_size }}">
     {% include 'items/'|add:name|add:'Item.html' %}
   </div>
   {% endfor %}

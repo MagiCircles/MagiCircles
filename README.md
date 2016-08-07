@@ -549,6 +549,7 @@ Collections list view settings dictionaries may contain the following:
 |-----|-------|---------|---------|
 | js_files | List of javascript files to include, all files are in `static/js` except if it starts with `bower/` | [] | ['cards.js, 'bower/marked/lib/marked'] |
 | per_line | Number of elements displayed per line (1, 2, 3, 4, 6, 12), make sure it's aligned with the page_size or it'll look weird :s | 3 | |
+| col_break | Minimum size of the column so when the screen is too small it only shows one per line, options are 'xs' (never breaks), 'sm' (= 768px), 'md' (= 992px), 'lg' (= 1200px)  | 'md' | 'lg' |
 | page_size | Number of items per page | 12 | |
 | get_global_context | Function to get the global context | GET_GLOBAL_CONTEXT in your settings | |
 | authentication_required | Should the page be available only for authenticated users? | False | |

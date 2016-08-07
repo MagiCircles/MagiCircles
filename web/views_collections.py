@@ -150,6 +150,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, **kwargs)
 
     context['js_files'] = collection['list'].get('js_files', None)
     context['full_width'] = collection['list'].get('full_width', False)
+    context['col_break'] = collection['list'].get('col_break', 'md')
     context['per_line'] = collection['list'].get('per_line', 3)
     context['col_size'] = int(math.ceil(12 / context['per_line']))
 
