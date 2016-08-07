@@ -252,8 +252,10 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, **kwa
             if redirectAfterDelete:
                 if callable(redirectAfterDelete):
                     redirectAfterDelete = redirectAfterDelete(request, instance, ajax)
-                redirectAfterDelete = redirectAfterDelete if not ajax else '/ajax' + redirectAfterDelete
-            redirectAfterDelete = '{}/{}/'.format('' if not ajax else '/ajax', collection['plural_name'])
+                else:
+                    redirectAfterDelete = redirectAfterDelete if not ajax else '/ajax' + redirectAfterDelete
+            else:
+                redirectAfterDelete = '{}/{}/'.format('' if not ajax else '/ajax', collection['plural_name'])
             instance.delete()
             raise HttpRedirectException(redirectAfterDelete)
     elif request.method == 'POST':
