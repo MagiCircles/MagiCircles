@@ -97,7 +97,7 @@
       <div class="panel-collapse collapse" id="collapseEdited{{ report.id }}">
 	<form class="panel-body" method="POST" action="/ajax/moderatereport/{{ report.id }}/Edited/">
 	  {% csrf_token %}
-	  <a href="/{{ report.reported_thing|collectionGetPlural }}/edit/{{ report.reported_thing_id }}/" target="_blank" class="btn btn-success btn-block btn-lines" data-ajax-url="/ajax/{{ report.reported_thing|collectionGetPlural }}/edit/{{ report.reported_thing_id }}/" data-ajax-show-button="true" data-ajax-handle-form="true">1. Edit {{ report.reported_thing_title }}</a><br>
+	  <a href="/{{ report.reported_thing|collectionGetPlural }}/edit/{{ report.reported_thing_id }}/" target="_blank" class="btn btn-success btn-block btn-lines" data-ajax-url="/ajax/{{ report.reported_thing|collectionGetPlural }}/edit/{{ report.reported_thing_id }}/?disable_delete" data-ajax-show-button="true" data-ajax-handle-form="true">1. Edit {{ report.reported_thing_title }}</a><br>
 	  <input type="text" name="staff_message" class="form-control" placeholder="2. Explain what has been edited and why (in English)." required><br>
 	  <input type="submit" class="btn btn-warning btn-block btn-lines" value="3. Confirm this report">
 	  <br>

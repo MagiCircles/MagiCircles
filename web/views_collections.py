@@ -238,7 +238,7 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, **kwa
         context['imagetitle'] = collection.get('image', None)
     if _type(formClass) == 'function':
         formClass = formClass(request, context, collection)
-    allowDelete = collection['edit'].get('allow_delete', False) and not ajax
+    allowDelete = collection['edit'].get('allow_delete', False) and 'disable_delete' not in request.GET
     form = formClass(instance=instance, request=request)
     if allowDelete:
         formDelete = ConfirmDelete(initial={
