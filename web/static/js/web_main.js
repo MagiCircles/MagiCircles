@@ -133,6 +133,7 @@ function ajaxModals() {
 		title = typeof title == 'undefined' ? button_content : title;
 		freeModal(title, data, modalButtons);
 		if (typeof button.data('ajax-handle-form') != 'undefined') {
+		    formloaders();
 		    $('#freeModal form').submit(function(e) {
 			e.preventDefault();
 			$(this).ajaxSubmit({
