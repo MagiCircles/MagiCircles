@@ -153,7 +153,7 @@ class UserPreferencesForm(FormWithRequest):
 
     class Meta:
         model = models.UserPreferences
-        fields = ('description', 'location', 'favorite_character1', 'favorite_character2', 'favorite_character3', 'color', 'birthdate','language')
+        fields = ('description', 'location', 'favorite_character1', 'favorite_character2', 'favorite_character3', 'color', 'birthdate','language', 'view_activities_language_only')
 
 
 class StaffEditUser(FormWithRequest):
