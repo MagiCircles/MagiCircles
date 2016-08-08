@@ -22,7 +22,7 @@
 <script>
 var cuteformfavoptions = {
   'images': {
-    '': '{{ static_url }}img/empty.png',
+    '': '{{ static_url }}img/{{ empty_image }}',
     {% for character in favorite_characters %}
     '{{ character.0 }}': '{{ character.2|imageURL }}',
     {% endfor %}

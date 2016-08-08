@@ -293,7 +293,7 @@ function multiCuteForms(cuteformsToDo, withImages) {
 		var images = {};
 		for (var value in form_choices[form][field_name]) {
 		    if (value == '') {
-			images[value] = static_url + 'img/empty.png';
+			images[value] = empty_image;
 		    } else {
 			var cb = cuteformsToDo[field_name];
 			if (cb === true) {

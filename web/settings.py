@@ -109,6 +109,11 @@ if hasattr(settings_module, 'TOTAL_DONATORS'):
 else:
     TOTAL_DONATORS = 2
 
+if hasattr(settings_module, 'EMPTY_IMAGE'):
+    EMPTY_IMAGE = getattr(settings_module, 'EMPTY_IMAGE')
+else:
+    EMPTY_IMAGE = 'empty.png'
+
 ############################################################
 # Optional settings without default values (= None)
 

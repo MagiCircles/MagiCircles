@@ -168,6 +168,7 @@
       this.language = "{{ LANGUAGE_CODE }}";
     };
     var static_url = '{{ static_url }}';
+    var empty_image = '{{ static_url }}img/{{ empty_image }}';
     var translated_terms = {
       {% for term in javascript_translated_terms %}'{{ term }}': '{% trans term %}',
       {% endfor %}};
