@@ -125,6 +125,7 @@ function ajaxModals() {
 	    modalButtons = undefined;
 	}
 	var button_content = button.html();
+	button.unbind('click');
 	button.click(function(e) {
 	    button.html('<i class="flaticon-loading"></i>');
 	    $.get(button.data('ajax-url'), function(data) {
