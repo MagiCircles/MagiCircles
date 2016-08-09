@@ -66,7 +66,7 @@
     <!-- Nav tabs -->
     {% if 'activity' in all_enabled %}
     <ul class="nav nav-tabs" id="profiletabs">
-      <li class="active"><a href="#profileaccounts" data-toggle="tab">{% trans 'Accounts' %}</a></li>
+      <li class="active"><a href="#profileaccounts" data-toggle="tab">{% if profile_user.all_accounts|length > 1 %}{% trans 'Accounts' %}{% else %}{% trans 'Account' %}{% endif %}</a></li>
       <li><a href="#profileactivities" data-toggle="tab">{% trans 'Activities' %}</a></li>
     </ul>
     {% endif %}
@@ -86,9 +86,11 @@
 	  {% endif %}
 	  {% trans 'No account.' %}</h2>
 	{% else %}
+	{% if show_total_accounts %}
 	{% with length=profile_user.all_accounts|length %}
 	<h2>{% blocktrans count counter=length %}{{ length }} account:{% plural %}{{ length }} accounts:{% endblocktrans %}</h2>
 	{% endwith %}
+	{% endif %}
 	{% include 'accountsForProfile.html' %}
 	{% endif %}
 	<br><br>

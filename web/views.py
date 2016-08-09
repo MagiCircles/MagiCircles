@@ -16,7 +16,7 @@ from web.donations import donations
 from web.utils import getGlobalContext, ajaxContext, redirectToProfile, AttrDict, ordinalNumber, tourldash, redirectWhenNotAuthenticated, dumpModel, send_email, emailContext
 from web.tools import itemURL, fullItemURL
 from web.notifications import pushNotification
-from web.settings import SITE_NAME, GAME_NAME, ENABLED_COLLECTIONS, ENABLED_PAGES, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_NAME, DONATE_IMAGE, DONATE_IMAGES_FOLDER, TWITTER_HANDLE, BUG_TRACKER_URL, GITHUB_REPOSITORY, CONTRIBUTE_URL, CONTACT_EMAIL, CONTACT_REDDIT, CONTACT_FACEBOOK, ABOUT_PHOTO, WIKI, LATEST_NEWS, SITE_LONG_DESCRIPTION, CALL_TO_ACTION, TOTAL_DONATORS, GAME_DESCRIPTION
+from web.settings import SITE_NAME, GAME_NAME, ENABLED_COLLECTIONS, ENABLED_PAGES, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_NAME, DONATE_IMAGE, DONATE_IMAGES_FOLDER, TWITTER_HANDLE, BUG_TRACKER_URL, GITHUB_REPOSITORY, CONTRIBUTE_URL, CONTACT_EMAIL, CONTACT_REDDIT, CONTACT_FACEBOOK, ABOUT_PHOTO, WIKI, LATEST_NEWS, SITE_LONG_DESCRIPTION, CALL_TO_ACTION, TOTAL_DONATORS, GAME_DESCRIPTION, SHOW_TOTAL_ACCOUNTS
 from web.views_collections import item_view, list_view
 from raw import other_sites
 
@@ -73,6 +73,7 @@ def profileExtraContext(context):
     request = context['request']
     context['is_me'] = user.id == request.user.id
     context['item'].all_links = list(context['item'].all_links)
+    context['show_total_accounts'] = SHOW_TOTAL_ACCOUNTS
     meta_links = []
     if FAVORITE_CHARACTERS:
         for i in range(1, 4):

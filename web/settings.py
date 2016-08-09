@@ -114,6 +114,11 @@ if hasattr(settings_module, 'EMPTY_IMAGE'):
 else:
     EMPTY_IMAGE = 'empty.png'
 
+if hasattr(settings_module, 'SHOW_TOTAL_ACCOUNTS'):
+    SHOW_TOTAL_ACCOUNTS = getattr(settings_module, 'SHOW_TOTAL_ACCOUNTS')
+else:
+    SHOW_TOTAL_ACCOUNTS = True
+
 ############################################################
 # Optional settings without default values (= None)
 

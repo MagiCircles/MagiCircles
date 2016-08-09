@@ -362,6 +362,7 @@ Your settings file is located in `sample/settings.py`.
 | ENABLED_NAVBAR_LISTS | See [Navbar Links](#navbar-links) documentation | |
 | ENABLED_PAGES | See [Enabled pages](#enabled-pages) documentation | |
 | ENABLED_COLLECTIONS | See [Enabled collections](#enabled-collections) documentation | |
+| SHOW_TOTAL_ACCOUNTS | On profiles, show or hide the total number of accounts before showing the accounts | True |
 | GITHUB_REPOSITORY | Tuple (Username, repository) for the sources of this site, used in about page | ('SchoolIdolTomodachi', 'MagiCircles') |
 | WIKI | Tuple (Username, repository) for the GitHub wiki pages to display the help pages | Value of GITHUB_REPOSITORY |
 | BUG_TRACKER_URL | Full URL where people can see issues (doesn't have to be github) | Full URL created from the GITHUB_REPOSITORY value |
