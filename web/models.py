@@ -1,11 +1,12 @@
-import hashlib, urllib, datetime
+import hashlib, urllib, datetime, os
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils.deconstruct import deconstructible
 from django.core import validators
 from django.utils.translation import ugettext_lazy as _, string_concat
 from django.conf import settings as django_settings
 from django.utils import timezone
-from web.utils import AttrDict, join_data, split_data
+from web.utils import AttrDict, join_data, split_data, randomString
 from web.settings import ACCOUNT_MODEL, GAME_NAME, COLOR, SITE_STATIC_URL, DONATORS_STATUS_CHOICES, STATIC_UPLOADED_FILES_PREFIX, USER_COLORS, FAVORITE_CHARACTERS, SITE_URL, SITE_NAME
 from web.model_choices import *
 
@@ -25,8 +26,17 @@ def avatar(user, size=200):
             + hashlib.md5(user.email.lower()).hexdigest()
             + "?" + urllib.urlencode({'d': default, 's': str(size)}))
 
+@deconstructible
+class uploadToRandom(object):
+    def __init__(self, prefix, length=30):
+        self.prefix = prefix
+        self.length = length
+    def __call__(self, instance, filename):
+        name, extension = os.path.splitext(filename)
+        return STATIC_UPLOADED_FILES_PREFIX + self.prefix + randomString(self.length) + extension
+
 class UserImage(models.Model):
-     image = models.ImageField(upload_to=STATIC_UPLOADED_FILES_PREFIX + 'user_images/')
+     image = models.ImageField(upload_to=uploadToRandom('user_images/'))
 
      def __unicode__(self):
          return unicode(self.image)
@@ -157,7 +167,7 @@ class Activity(models.Model):
     likes = models.ManyToManyField(User, related_name="liked_activities")
     language = models.CharField(_('Language'), max_length=4, choices=django_settings.LANGUAGES)
     tags_string = models.TextField(blank=True, null=True)
-    image = models.ImageField(_('Image'), upload_to=STATIC_UPLOADED_FILES_PREFIX + 'activities/', null=True, blank=True)
+    image = models.ImageField(_('Image'), upload_to=uploadToRandom('activities/'), null=True, blank=True)
 
     @property
     def tags(self):
@@ -243,7 +253,7 @@ class Notification(models.Model):
     url_data = models.TextField(blank=True, null=True)
     email_sent = models.BooleanField(default=False)
     seen = models.BooleanField(default=False)
-    image = models.ImageField(upload_to=STATIC_UPLOADED_FILES_PREFIX + 'notifications/', null=True, blank=True)
+    image = models.ImageField(upload_to=uploadToRandom('notifications/'), null=True, blank=True)
 
     @property
     def localized_message(self):
