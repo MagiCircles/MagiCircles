@@ -38,7 +38,7 @@ def startswith(value, arg):
     return value.startswith(arg)
 
 @register.filter
-def range(value):
+def get_range(value):
     return range(value)
 
 from django.utils.translation import ugettext_lazy as _
