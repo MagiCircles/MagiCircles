@@ -37,6 +37,10 @@ def torfc2822(date):
 def startswith(value, arg):
     return value.startswith(arg)
 
+@register.filter
+def range(value):
+    return range(value)
+
 from django.utils.translation import ugettext_lazy as _
 from web.django_translated import t
 
