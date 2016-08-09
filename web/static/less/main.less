@@ -16,6 +16,10 @@
     font-size: inherit;
 }
 
+.simple-shadow(@color) {
+    text-shadow: 0 0 0.2em @color, 0 0 0.2em @color, 0 0 0.2em @color, 0 0 0.2em @color, 0 0 0.2em @color, 0 0 0.2em @color, 0 0 0.2em @color;
+}
+
 .navbar-main img.logo {
     max-height: 40px;
     margin: -10px 0;
@@ -303,11 +307,28 @@ body.current-map, html.html-current-map {
 	    max-width: 100%;
 	}
     }
-    img {
-	max-width: 100%;
-	&.main-image {
-	    display: block;
-	    margin: auto;
+    .activity-image {
+	display: block;
+	width: 100%;
+	height: 200px;
+	background-position: center center;
+	background-size: 100%;
+	background-repeat: no-repeat;
+	border-radius: 10px;
+	color: white;
+	position: relative;
+	.simple-shadow(#888);
+	.flaticon-link {
+	    display: none;
+	    font-size: 2em;
+	    position: absolute;
+	    right: 20px;
+	    bottom: 10px;
+	}
+	&:hover {
+	    .flaticon-link {
+		display: block;
+	    }
 	}
     }
     .btn-group.share {
@@ -317,6 +338,14 @@ body.current-map, html.html-current-map {
 	    img {
 		height: 14px;
 	    }
+	}
+    }
+}
+
+@media(min-width:768px) {
+    .activity {
+	.activity-image {
+	    height: 500px;
 	}
     }
 }

@@ -12,7 +12,7 @@
 	<small class="date">{{ activity.creation }}</small><br>
 	<strong class="owner">{{ activity.cached_owner.username }}</strong><br>
 	{% if activity.image %}
-	<img src="{{ activity.image|imageURL }}" class="main-image">
+	<a href="{{ activity.image|imageURL }}" target="_blank" class="a-nodifference activity-image" style="background-image: url('{{ activity.image|imageURL }}');"><i class="flaticon-link"></i></a>
 	{% endif %}
 	<p class="message">{{ activity.message }}</p>
 	<div class="tags text-muted fontx0-8">{% for tag in activity.tags %}<a href="/activities/?tags={{ tag }}" target="_blank" class="text-muted">#{{ tag|tagToString }}</a> {% endfor %}</div>
