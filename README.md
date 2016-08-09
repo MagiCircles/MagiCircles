@@ -875,3 +875,12 @@ Flaticon
 ===
 
 The icons come from [flaticon.com](http://www.flaticon.com/) and are credited in the about page. To get the list of available icons, open your website on `/static/css/flaticon.html`.
+
+Editing this repo
+===
+
+When you add new messages:
+
+```shell
+pm makemessages -l fr --ignore=env/* --ignore=web/templates/password/* --ignore=base/settings.py --ignore=web/django_translated.py
+```
