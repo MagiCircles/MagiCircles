@@ -78,6 +78,10 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, **kwargs)
     context['plural_name'] = collection['plural_name']
     page = 0
     page_size = collection['list'].get('page_size', 12)
+    if 'page_size' in request.GET:
+        try: page_size = int(request.GET['page_size'])
+        except ValueError: pass
+        if page_size > 500: page_size = 500
     filters = _get_filters(request.GET, extra_filters)
     queryset = collection['list']['filter_queryset'](collection['queryset'], filters, request) if 'filter_queryset' in collection['list'] else collection['queryset']
 
