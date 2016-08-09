@@ -213,7 +213,7 @@ for (name, pages) in ENABLED_PAGES.items():
         else:
             url_variables = '/'.join(['(?P<{}>{})'.format(v[0], v[1]) for v in page.get('url_variables', [])])
             urls.append(url(r'^{}{}{}[/]+$'.format('ajax/' if ajax else '', name, '/' + url_variables if url_variables else ''),
-                            function, name=name))
+                            function, name=name if not ajax else '{}_ajax'.format(name)))
         if not ajax:
             navbar_link = page.get('navbar_link', True)
             if navbar_link:
