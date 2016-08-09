@@ -151,6 +151,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, **kwargs)
     context['plural_title'] = collection['plural_title']
     context['ajax_pagination'] = collection['list'].get('ajax', True)
     context['ajax_pagination_callback'] = collection['list'].get('ajax_pagination_callback', None)
+    context['ajax'] = ajax
 
     context['js_files'] = collection['list'].get('js_files', None)
     context['full_width'] = collection['list'].get('full_width', False)
