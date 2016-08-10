@@ -250,7 +250,7 @@ function pagination(nextPageUrl, newPageParameters, newPageCallback) {
 	    if (button.length > 0
 		&& button.find('.loader').length == 0
 		&& ($(window).scrollTop() + $(window).height())
-		>= ($(document).height() - button.height())) {
+		>= ($(document).height() - button.height() - 600)) {
 		load_more_function(nextPageUrl, newPageParameters, newPageCallback, false);
 	    }
 	});
