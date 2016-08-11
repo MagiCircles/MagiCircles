@@ -173,6 +173,10 @@ def settings(request):
                     form = UserForm(request.POST, instance=request.user, request=request)
                     if form.is_valid():
                         form.save()
+                        # Update cached objects with this user
+                        activities = models.Activity.objects.filter(owner_id=request.user.id).select_related('owner', 'owner__preferences')
+                        for activity in activities:
+                            activity.force_cache_owner()
                         if ON_USER_EDITED:
                             ON_USER_EDITED(request)
                         redirectToProfile(request)
