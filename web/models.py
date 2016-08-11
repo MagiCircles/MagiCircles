@@ -243,6 +243,11 @@ class Activity(models.Model):
     class Meta:
         verbose_name_plural = "activities"
 
+def updateCachedActivities(user_id):
+    activities = Activity.objects.filter(owner_id=user_id).select_related('owner', 'owner__preferences')
+    for activity in activities:
+        activity.force_cache_owner()
+
 ############################################################
 # Notification
 

@@ -10,7 +10,7 @@ from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
 from web.django_translated import t
 from web import models
-from web.settings import FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTERS, ACTIVITY_TAGS, USER_COLORS, GAME_NAME, ENABLED_COLLECTIONS
+from web.settings import FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTERS, ACTIVITY_TAGS, USER_COLORS, GAME_NAME, ENABLED_COLLECTIONS, ON_PREFERENCES_EDITED
 from web.utils import ordinalNumber, randomString
 
 ############################################################
@@ -225,6 +225,9 @@ class AddLinkForm(FormSaveOwner):
         if instance.type == 'twitter':
             self.request.user.preferences._cache_twitter = instance.value
             self.request.user.preferences.save()
+            models.updateCachedActivities(self.request.user.id)
+            if ON_PREFERENCES_EDITED:
+                ON_PREFERENCES_EDITED(self.request)
         return instance
 
     class Meta:
