@@ -14,21 +14,9 @@ other_sites = [
         'url': 'http://fr.gl/',
     },
     {
-        'name': 'Cinderella Producers',
-        'game_name': 'IDOLM@STER Cinderella Girls Starlight Stage',
-        'image': 'http://fr.gl/static/img/avatar.png',
-        'url': 'http://cinderella.pro/',
-    },
-    {
         'name': 'Stardust Run',
         'game_name': 'Pokémon Go',
-        'image': 'http://fr.gl/static/img/avatar.png',
+        'image': 'http://i.stardust.run/static/img/avatar.png',
         'url': 'http://stardust.run/',
-    },
-    {
-        'name': 'Ensemble Festival',
-        'game_name': 'Ensemble Stars',
-        'image': 'http://fr.gl/static/img/avatar.png',
-        'url': 'http://ensta.rs/',
     },
 ]

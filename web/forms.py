@@ -218,6 +218,8 @@ class AddLinkForm(FormSaveOwner):
     def __init__(self, *args, **kwargs):
         super(AddLinkForm, self).__init__(*args, **kwargs)
         self.fields['relevance'].label = _('How often do you tweet/stream/post about {}?').format(GAME_NAME)
+        self.fields['type'].choices = [(name, localized) for (name, localized) in self.fields['type'].choices if name != django_settings.SITE]
+
     def save(self, commit=True):
         instance = super(AddLinkForm, self).save(commit)
         if instance.type == 'twitter':
