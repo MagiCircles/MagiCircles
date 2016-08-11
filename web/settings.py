@@ -186,6 +186,16 @@ if hasattr(settings_module, 'HASHTAGS'):
 else:
     HASHTAGS = []
 
+if hasattr(settings_module, 'ON_USER_EDITED'):
+    ON_USER_EDITED = getattr(settings_module, 'ON_USER_EDITED')
+else:
+    ON_USER_EDITED = None
+
+if hasattr(settings_module, 'ON_PREFERENCES_EDITED'):
+    ON_PREFERENCES_EDITED = getattr(settings_module, 'ON_PREFERENCES_EDITED')
+else:
+    ON_PREFERENCES_EDITED = None
+
 ############################################################
 # Specified in django settings
 
