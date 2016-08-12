@@ -119,6 +119,11 @@ if hasattr(settings_module, 'SHOW_TOTAL_ACCOUNTS'):
 else:
     SHOW_TOTAL_ACCOUNTS = True
 
+if hasattr(settings_module, 'GOOGLE_ANALYTICS'):
+    GOOGLE_ANALYTICS = getattr(settings_module, 'GOOGLE_ANALYTICS')
+else:
+    GOOGLE_ANALYTICS = 'UA-67529921-1'
+
 ############################################################
 # Optional settings without default values (= None)
 
