@@ -4,18 +4,9 @@ from django import template
 from django.conf import settings
 from web import models
 from web.settings import SITE_STATIC_URL, FAVORITE_CHARACTER_TO_URL, RAW_CONTEXT, ENABLED_COLLECTIONS
-from web.utils import AttrDict, tourldash
-from web.tools import itemURL, fullItemURL
+from web.utils import AttrDict
 
 register = template.Library()
-
-register.filter('itemURL', itemURL)
-register.filter('tourldash', tourldash)
-register.filter('fullItemURL', fullItemURL)
-
-@register.filter
-def ajaxItemURL(name, item):
-    return itemURL(name, item, ajax=True)
 
 @register.filter
 def avatar(user, size=200):
@@ -48,7 +39,7 @@ def linkUrl(link):
 def linkImageURL(context, link):
     if link.type in models.LINK_URLS:
         return '{}img/links/{}.png'.format(context['static_url'], link.type)
-    return imageURL(link.image)
+    return link.image
 
 @register.filter
 def linkShowAuth(link, user):
@@ -84,13 +75,6 @@ def navbarTitle(context, link):
 @register.filter
 def translated(value):
     return _(value)
-
-@register.filter
-def imageURL(imageURL):
-    imageURL = unicode(imageURL)
-    if imageURL.startswith(settings.SITE + '/'):
-        imageURL = imageURL.replace(settings.SITE + '/', '')
-    return '{}{}'.format(SITE_STATIC_URL, imageURL)
 
 @register.filter
 def collectionGetPlural(name):

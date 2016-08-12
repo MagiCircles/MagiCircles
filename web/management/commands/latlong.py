@@ -4,7 +4,6 @@ from django.utils.html import escape
 from django.conf import settings as django_settings
 from web import models
 from web.settings import SITE_STATIC_URL
-from web.templatetags.web_tags import imageURL
 from geopy.geocoders import Nominatim
 
 def getLatLong(geolocator, user, retry):
@@ -47,7 +46,7 @@ def latlong(opt):
             username=escape(u.user.username),
             avatar=escape(models.avatar(u.user)),
             location=escape(u.location),
-            icon=escape(imageURL(u.favorite_character1_image if u.favorite_character1_image else 'static/img/default_map_icon.png')),
+            icon=escape(u.favorite_character1_image if u.favorite_character1_image else 'static/img/default_map_icon.png'),
             latitude=u.latitude,
             longitude=u.longitude,
             close='}',

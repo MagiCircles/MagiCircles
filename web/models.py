@@ -8,6 +8,7 @@ from django.conf import settings as django_settings
 from django.utils import timezone
 from web.utils import AttrDict, join_data, split_data, randomString
 from web.settings import ACCOUNT_MODEL, GAME_NAME, COLOR, SITE_STATIC_URL, DONATORS_STATUS_CHOICES, STATIC_UPLOADED_FILES_PREFIX, USER_COLORS, FAVORITE_CHARACTERS, SITE_URL, SITE_NAME
+from web.item_model import *
 from web.model_choices import *
 
 Account = ACCOUNT_MODEL
@@ -26,12 +27,6 @@ def avatar(user, size=200):
             + hashlib.md5(user.email.lower()).hexdigest()
             + "?" + urllib.urlencode({'d': default, 's': str(size)}))
 
-def imageURL(imageURL):
-    imageURL = unicode(imageURL)
-    if imageURL.startswith(django_settings.SITE + '/'):
-        imageURL = imageURL.replace(django_settings.SITE + '/', '')
-    return u'{}{}'.format(SITE_STATIC_URL, imageURL)
-
 @deconstructible
 class uploadToRandom(object):
     def __init__(self, prefix, length=30):
@@ -41,11 +36,19 @@ class uploadToRandom(object):
         name, extension = os.path.splitext(filename)
         return STATIC_UPLOADED_FILES_PREFIX + self.prefix + randomString(self.length) + extension
 
-class UserImage(models.Model):
-     image = models.ImageField(upload_to=uploadToRandom('user_images/'))
+class UserImage(ItemModel):
+    collection_name = 'userimages' # Doesn't exist in default_settings.py
+    image = models.ImageField(upload_to=uploadToRandom('user_images/'))
 
-     def __unicode__(self):
-         return unicode(self.image)
+    def __unicode__(self):
+        return unicode(self.image)
+
+User.item_url = lambda user: get_item_url('user', user)
+User.ajax_item_url = lambda user: get_ajax_item_url('user', user)
+User.full_item_url = lambda user: get_full_item_url('user', user)
+User.http_item_url = lambda user: get_http_item_url('user', user)
+User.image_url = lambda user: avatar(user)
+User.http_image_ur = lambda user: avatar(user)
 
 ############################################################
 # User preferences
@@ -87,9 +90,12 @@ class UserPreferences(models.Model):
     def favorite_character_image(self, number):
         if getattr(self, 'favorite_character{}'.format(number)) and FAVORITE_CHARACTERS:
             try:
-                return (image for (name, __, image) in FAVORITE_CHARACTERS if unicode(name) == getattr(self, 'favorite_character{}'.format(number))).next()
-            except: pass
-        return ''
+                imagePath = (image for (name, __, image) in FAVORITE_CHARACTERS if unicode(name) == getattr(self, 'favorite_character{}'.format(number))).next()
+            except StopIteration:
+                return None
+            return get_image_url(imagePath)
+        return None
+
     @property
     def favorite_character1_image(self): return self.favorite_character_image(1)
     @property
@@ -165,7 +171,9 @@ class UserLink(models.Model):
 ############################################################
 # Activity
 
-class Activity(models.Model):
+class Activity(ItemModel):
+    collection_name = 'activity'
+
     creation = models.DateTimeField(auto_now_add=True)
     modification = models.DateTimeField(auto_now=True)
     owner = models.ForeignKey(User, related_name='activities')
@@ -174,22 +182,6 @@ class Activity(models.Model):
     language = models.CharField(_('Language'), max_length=4, choices=django_settings.LANGUAGES)
     tags_string = models.TextField(blank=True, null=True)
     image = models.ImageField(_('Image'), upload_to=uploadToRandom('activities/'), null=True, blank=True)
-
-    @property
-    def tags(self):
-        return split_data(self.tags_string)
-
-    def add_tags(self, new_tags):
-        self.tags_string = join_data(*(self.tags + [tag for tag in new_tags if tag not in tags]))
-
-    def remove_tags(self, tags_to_remove):
-        self.tags_string = join_data(*[tag for tag in self.tags if tag not in tags_to_remove])
-
-    def save_tags(self, tags):
-        """
-        Will completely replace any existing list of tags.
-        """
-        self.tags_string = join_data(*tags)
 
     # Cache
     _cache_days = 20
@@ -228,6 +220,22 @@ class Activity(models.Model):
         return cached_owner
 
     @property
+    def tags(self):
+        return split_data(self.tags_string)
+
+    def add_tags(self, new_tags):
+        self.tags_string = join_data(*(self.tags + [tag for tag in new_tags if tag not in tags]))
+
+    def remove_tags(self, tags_to_remove):
+        self.tags_string = join_data(*[tag for tag in self.tags if tag not in tags_to_remove])
+
+    def save_tags(self, tags):
+        """
+        Will completely replace any existing list of tags.
+        """
+        self.tags_string = join_data(*tags)
+
+    @property
     def shareSentence(self):
         return _(u'Check out {username}\'s activity on {site}: {activity}').format(
             username=self.cached_owner.username,
@@ -243,12 +251,6 @@ class Activity(models.Model):
             return self.message
         return ' '.join(self.message[:length+1].split(' ')[0:-1]) + '...'
 
-    @property
-    def image_url(self):
-        if '//' in unicode(self.image):
-            return unicode(self.image)
-        return imageURL(self.image)
-
     def __unicode__(self):
         return self.summarize()
 
@@ -263,7 +265,9 @@ def updateCachedActivities(user_id):
 ############################################################
 # Notification
 
-class Notification(models.Model):
+class Notification(ItemModel):
+    collection_name = 'notification'
+
     owner = models.ForeignKey(User, related_name='notifications', db_index=True)
     message = models.PositiveIntegerField(choices=NOTIFICATION_CHOICES)
     message_data = models.TextField(blank=True, null=True)
@@ -291,19 +295,15 @@ class Notification(models.Model):
     def icon(self):
         return NOTIFICATION_ICONS[self.message]
 
-    @property
-    def image_url(self):
-        if '//' in unicode(self.image):
-            return unicode(self.image)
-        return imageURL(self.image)
-
     def __unicode__(self):
         return self.localized_message
 
 ############################################################
 # Report
 
-class Report(models.Model):
+class Report(ItemModel):
+    collection_name = 'report'
+
     creation = models.DateTimeField(auto_now_add=True)
     modification = models.DateTimeField(auto_now=True)
     owner = models.ForeignKey(User, related_name='reports', null=True)

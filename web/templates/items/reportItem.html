@@ -18,7 +18,7 @@
     <li class="list-group-item">
       <strong>{% trans 'Reported by:' %}</strong>
       {% if report.owner %}
-      <a href="{{ 'user'|itemURL:report.owner }}">
+      <a href="{{ report.owner.item_url }}">
 	{{ report.owner }}
       </a>{% else %}
       Anonymous
@@ -35,8 +35,8 @@
       <strong>{% trans 'Images' %}</strong><br>
       <div class="container_form">
 	{% for image in report.all_images %}
-	<a href="{{ image.image|imageURL }}" target="_blank" class="a-nodifferences">
-	  <img src="{{ image.image|imageURL }}" class="img-responsive" alt="{{ report.reported_thing_title }}" />
+	<a href="{{ image.image_url }}" target="_blank" class="a-nodifferences">
+	  <img src="{{ image.image_url }}" class="img-responsive" alt="{{ report.reported_thing_title }}" />
 	</a>
 	{% endfor %}
       </div>
@@ -45,7 +45,7 @@
     {% if report.staff %}
     <li class="list-group-item">
       <strong>{% trans 'Staff' %}</strong>
-      <a href="{{ 'user'|itemURL:report.staff }}">
+      <a href="{{ report.staff.item_url }}">
 	{{ report.staff }}
       </a>
     </li>

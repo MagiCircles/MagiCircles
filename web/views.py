@@ -14,7 +14,6 @@ from web.forms import CreateUserForm, UserForm, UserPreferencesForm, AddLinkForm
 from web import models
 from web.donations import donations
 from web.utils import getGlobalContext, ajaxContext, redirectToProfile, AttrDict, ordinalNumber, tourldash, redirectWhenNotAuthenticated, dumpModel, send_email, emailContext
-from web.tools import itemURL, fullItemURL
 from web.notifications import pushNotification
 from web.settings import SITE_NAME, GAME_NAME, ENABLED_COLLECTIONS, ENABLED_PAGES, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_NAME, DONATE_IMAGE, DONATE_IMAGES_FOLDER, TWITTER_HANDLE, BUG_TRACKER_URL, GITHUB_REPOSITORY, CONTRIBUTE_URL, CONTACT_EMAIL, CONTACT_REDDIT, CONTACT_FACEBOOK, ABOUT_PHOTO, WIKI, LATEST_NEWS, SITE_LONG_DESCRIPTION, CALL_TO_ACTION, TOTAL_DONATORS, GAME_DESCRIPTION, GAME_URL, SHOW_TOTAL_ACCOUNTS, ON_USER_EDITED, ON_PREFERENCES_EDITED
 from web.views_collections import item_view, list_view
@@ -108,7 +107,7 @@ def profileExtraContext(context):
     if 'activity' in ENABLED_COLLECTIONS and 'list' in ENABLED_COLLECTIONS['activity'] and 'add_button_subtitle' in ENABLED_COLLECTIONS['activity']['list']:
         context['add_activity_sentence'] = ENABLED_COLLECTIONS['activity']['list']['add_button_subtitle']
     context['share_sentence'] = _('Check out {username}\'s awesome collection!').format(username=context['item'].username)
-    context['share_url'] = fullItemURL('user', context['item'])
+    context['share_url'] = context['item'].http_item_url
 
 def user(request, pk=None, username=None):
     collection = ENABLED_COLLECTIONS['user']
@@ -320,7 +319,7 @@ def moderatereport(request, report, action):
 
     # Action: Edit
     elif action == 'Edited':
-        context['item_url'] = fullItemURL(report.reported_thing, thing) if 'item' in ENABLED_COLLECTIONS[report.reported_thing] else None
+        context['item_url'] = thing.http_item_url if 'item' in ENABLED_COLLECTIONS[report.reported_thing] else None
         report.status = models.REPORT_STATUS_EDITED
         # Notify reporter
         if report.owner:

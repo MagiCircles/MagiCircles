@@ -210,3 +210,10 @@ else:
 # Specified in django settings
 
 STATIC_UPLOADED_FILES_PREFIX = django_settings.STATIC_UPLOADED_FILES_PREFIX
+
+############################################################
+# Needed in django_settings
+
+django_settings.SITE_URL = SITE_URL
+django_settings.SITE_STATIC_URL = SITE_STATIC_URL
+django_settings.GET_GLOBAL_CONTEXT = GET_GLOBAL_CONTEXT

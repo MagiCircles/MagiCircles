@@ -191,8 +191,9 @@ Start a new site
    from django.contrib.auth.models import User
    from django.utils.translation import ugettext_lazy as _
    from django.db import models
+   from web.item_model import ItemModel
 
-   class Account(models.Model):
+   class Account(ItemModel):
        owner = models.ForeignKey(User, related_name='accounts')
        creation = models.DateTimeField(auto_now_add=True)
        level = models.PositiveIntegerField(_("Level"), null=True)
@@ -232,7 +233,7 @@ Start a new site
    {% with account=item %}
    <br>
    <div class="well">
-     <a href="{{ 'user'|itemURL:account.owner }}">
+     <a href="{{ account.owner.item_url }}">
        <div class="row">
          <div class="col-md-2">{% include 'include/avatar.html' with av_user=account.owner av_size=30 av_image_size=100 %}</div>
          <div class="col-md-8"><h3>{{ account.owner.username }}</h3></div>
@@ -377,7 +378,7 @@ Your settings file is located in `sample/settings.py`.
 | DONATE_IMAGES_FOLDER | Path for `donations` folder in `sample/static/img/` for images to illustrate donations perks | "" |
 | TRANSLATION_HELP_URL | URL with guide or tools to allow people to contribute to the site's translation | [link](https://poeditor.com/join/project/h6kGEpdnmM) |
 | SITE_LOGO | Path of the image displayed instead of the site name in the nav bar | None |
-| FAVORITE_CHARACTERS | List of tuples (id, full name, image path - must be squared image) for each character that can be set as a favorite on users' profiles, if it's in a database it's recommended to use [Generated Settings](#generated-settings) to save them once in a while | None |
+| FAVORITE_CHARACTERS | List of tuples (id, full name, image path - must be squared image and full url) for each character that can be set as a favorite on users' profiles, if it's in a database it's recommended to use [Generated Settings](#generated-settings) to save them once in a while | None |
 | FAVORITE_CHARACTER_TO_URL | A function that will return the URL to get more info about that character. This function takes a link object with value (full name), raw_value (id), image | lambda _: '#' |
 | FAVORITE_CHARACTER_NAME | String that will be localized to specify what's a "character". Must contain `{nth}` (example: "{nth} Favorite Idol") | "{nth} Favorite Character" |
 | DONATE_IMAGE | Path of the image in DONATE_IMAGES_FOLDER | None |
@@ -420,18 +421,49 @@ A collection always refers to a django model, but all your models aren't necessa
 
 All the django models used in collections must:
 
+- **Inherit from ItemModel**
+  ```python
+  from web.item_model import ItemModel
+
+  class Idol(ItemModel):
+    ...
+  ```
+  Thanks to this, you'll have access to some properties on all your objects which are required but might also be useful for you:
+  - `item_url`, for example `/idol/1/Nozomi/`
+  - `ajax_item_url`, for example `/ajax/idol/1/`
+  - `full_item_url`, for example `//sample.com/idol/1/Nozomi/`
+  - `http_item_url`, for example `http://sample.com/idol/1/Nozomi/`
+  - `image_url`, will return the full url of the `image` field (if any), for example `//i.sample.com/static/uploaded/idols/Nozomi.png`
+  - `http_image_url`, will return the full http url of the `image` field (if any), for example `http://i.sample.com/static/uploaded/idols/Nozomi.png`
+
+  If you have other images in your model, you might want to add `fieldname_url` and `http_fieldname_url`, for example:
+  ```python
+  from web.item_model import ItemModel, get_image_url, get_http_image_url
+
+  class Idol(ItemModel):
+    background = models.ImageField(upload_to=idolUploadTo, null=True, blank=True)
+
+    @property
+    def background_url(self):
+      return get_image_url(self.background)
+
+    @property
+    def http_background_url(self):
+      return get_http_image_url(self.background)
+  ```
+
 - **Have an owner**
   Which means we should be able to do `instance.owner` and `instance.owner_id`.
   It can be an actual model field or returned with `@property` (for both `owner` and `owner_id`), with the exception of the `Account` model that must contain an actual model field `owner`.
 
    ```python
-   class Idol(models.Model):
+   class Idol(ItemModel):
      """
      This model has an actual owner field
      """
        owner = models.ForeignKey(User, related_name='idols')
 
-   class Score(models.Model):
+   class Score(ItemModel):
      """
      This model doesn't have an actual owner field but uses @property to return the owner info.
      Note: In that case it's recommended to cache the account in the model.
@@ -450,7 +482,7 @@ All the django models used in collections must:
 - **Overload __unicode__**
   Preferably avoid special characters. If you have an English and Japanese sentence, go for the English one.
   ```python
-  class Card(models.Model):
+  class Card(ItemModel):
       name = models.CharField(max_length=100)
 
       def __unicode__(self):
@@ -464,7 +496,7 @@ All the django models used in collections must:
    ```python
    from web.utils import AttrDict
 
-   class Card(models.Model):
+   class Card(ItemModel):
        ...
        idol = models.ForeignKey(Idol, related_name='cards')
        ...
@@ -766,8 +798,7 @@ import time
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 from django.conf import settings as django_settings
-from web.tools import totalDonators, itemURL
-from web.templatetags.web_tags import imageURL
+from web.tools import totalDonators
 from sample import models
 
 def generate_settings():
@@ -779,8 +810,8 @@ def generate_settings():
         current_events = models.Event.objects.get(end__lte=timezone.now())
         latest_news = [{
             'title': event.name,
-            'image': imageURL(event.image),
-            'url': itemURL('event', event),
+            'image': event.image_url,
+            'url': event.item_url,
         } for event in current_events]
 
         print 'Get the characters'
@@ -788,7 +819,7 @@ def generate_settings():
         favorite_characters = [(
             idol.pk,
             idol.name,
-            imageURL(idol.image),
+	    idol.image_url,
         ) for idol in all_idols]
 
         print 'Save generated settings'

@@ -1,5 +1,5 @@
 import string, random, csv
-from django.conf import settings
+from django.conf import settings as django_settings
 from django.core.urlresolvers import resolve
 from django.utils import translation
 from django.template import Context
@@ -33,9 +33,8 @@ def globalContext(request):
     return context
 
 def getGlobalContext(request):
-    from web.settings import GET_GLOBAL_CONTEXT
-    if GET_GLOBAL_CONTEXT:
-        return GET_GLOBAL_CONTEXT(request)
+    if django_settings.GET_GLOBAL_CONTEXT:
+        return django_settings.GET_GLOBAL_CONTEXT(request)
     return globalContext(request)
 
 def ajaxContext(request):
@@ -51,9 +50,9 @@ def emailContext():
 ############################################################
 # Send email
 
-def send_email(subject, template_name, to=[], context={}, from_email=settings.AWS_SES_RETURN_PATH):
+def send_email(subject, template_name, to=[], context={}, from_email=django_settings.AWS_SES_RETURN_PATH):
     if 'template_name' != 'notification':
-        to.append(settings.LOG_EMAIL)
+        to.append(django_settings.LOG_EMAIL)
     context = Context(context)
     plaintext = get_template('emails/' + template_name + '.txt').render(context)
     htmly = get_template('emails/' + template_name + '.html').render(context)

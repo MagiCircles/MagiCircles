@@ -8,18 +8,10 @@
     <div class="col-xs-4 text-right">
       {% if link.flaticon %}
       <i class="flaticon-{{ link.flaticon }}"></i>
-      {% elif link.type == 'Favorite Performer' %}
-      <img src="{{ images_hosting_path }}{{ link.value.image }}" class="performer">
       {% else %}
       <img src="{% linkImageURL link=link %}" alt="{{ link.type }}" width="24" height="24">
       {% endif %}
     </div>
   </div>
-  {% if link.type == 'Twitter' %}
-  {% include 'include/twitter.html' with nolink=True twitter=link.value %}
-  {% elif link.type == 'Tumblr' %}
-  <iframe class="btn" frameborder="0" border="0" scrolling="no" allowtransparency="true" style="padding: 0; margin: 0; border: 0;" height="25" width="160" src="http://platform.tumblr.com/v1/follow_button.html?button_type=1&tumblelog={{ link.value }}&color_scheme=light"></iframe>
-  {% else %}
   {{ link.value }}
-  {% endif %}
 </a>

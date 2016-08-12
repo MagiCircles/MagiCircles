@@ -8,7 +8,6 @@ from web.middleware.httpredirect import HttpRedirectException
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.exceptions import PermissionDenied
 from web.utils import getGlobalContext, redirectWhenNotAuthenticated
-from web.tools import itemURL
 from web.forms import ConfirmDelete
 from web.settings import SITE_IMAGE
 
@@ -224,7 +223,7 @@ def add_view(request, name, collection, type=None, ajax=False, **kwargs):
                 if callable(redirectAfterAdd):
                     raise HttpRedirectException(redirectAfterAdd(request, instance, ajax))
                 raise HttpRedirectException(redirectAfterAdd if not ajax else '/ajax' + redirectAfterAdd)
-            raise HttpRedirectException(itemURL(name, instance, ajax))
+            raise HttpRedirectException(instance.item_url if not ajax else instance.ajax_item_url)
     form.verb = 'Add'
     context['share_image'] = _get_share_image(context, collection, 'add')
     context['forms'] = { 'add': form }
@@ -297,7 +296,7 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, **kwa
                 if callable(redirectAfterEdit):
                     raise HttpRedirectException(redirectAfterEdit(request, instance, ajax))
                 raise HttpRedirectException(redirectAfterEdit if not ajax else '/ajax' + redirectAfterEdit)
-            raise HttpRedirectException(itemURL(name, instance, ajax))
+            raise HttpRedirectException(instance.item_url if not ajax else instance.ajax_item_url)
     context['forms'] = OrderedDict()
     form.verb = 'Edit'
     context['item'] = instance
