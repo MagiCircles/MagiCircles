@@ -426,7 +426,7 @@ def follow(request, username):
     if 'follow' in request.POST and not user.followed:
         request.user.preferences.following.add(user)
         request.user.preferences.save()
-        pushNotification(user, models.NOTIFICATION_FOLLOW, [unicode(request.user)], url_values=[str(user.id), unicode(user)], image=models.avatar(request.user, size=100))
+        pushNotification(user, models.NOTIFICATION_FOLLOW, [unicode(request.user)], url_values=[str(request.user.id), unicode(request.user)], image=models.avatar(request.user, size=100))
         return JsonResponse({
             'total_followers': user.total_followers + 1,
             'result': 'followed',

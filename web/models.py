@@ -278,7 +278,7 @@ class Notification(models.Model):
 
     @property
     def full_website_url(self):
-        return u''.format(SITE_URL if SITE_URL.startswith('http') else 'http:' + SITE_URL,
+        return u'{}{}'.format(SITE_URL if SITE_URL.startswith('http') else 'http:' + SITE_URL,
                           self.website_url[1:])
 
     @property
