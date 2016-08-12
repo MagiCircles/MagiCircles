@@ -23,10 +23,10 @@ def getLatLong(geolocator, user, retry):
             print user.user, user.location, 'Invalid location'
     except:
         if retry:
-            print user.user, user.location, 'Error, ', sys.exc_info()[0], 'retry...'
+            print u'{} {} Error, {} retry...'.format(user.user, user.location, sys.exc_info()[0])
             getLatLong(geolocator, user)
         else:
-            print user.user, user.location, 'Error, ', sys.exc_info()[0]
+            print u'{} {} Error, {}'.format(user.user, user.location, sys.exc_info()[0])
 
 def latlong(opt):
     reload, retry = opt['reload'], opt['retry']
