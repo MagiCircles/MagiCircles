@@ -1,4 +1,4 @@
-{# variables: site_name, site_url, site_color, site_image #}
+{# variables: site_name, site_url, site_color, full_site_image #}
 {% load i18n %}{% load tools %}{% load web_tags %}{% forceLoadRawContext %}{% autoescape off %}
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
@@ -452,7 +452,7 @@
 				      <td class="mcnImageContent" valign="top" style="padding-right: 0px;padding-left: 0px;padding-top: 0;padding-bottom: 0;text-align: center;mso-table-lspace: 0pt;mso-table-rspace: 0pt;-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%;">
 
 
-					<img align="center" alt="" src="{{ site_image }}" width="600" style="max-width: 2456px;padding-bottom: 0;display: inline !important;vertical-align: bottom;border: 0;outline: none;text-decoration: none;-ms-interpolation-mode: bicubic;" class="mcnImage">
+					<img align="center" alt="" src="{{ full_site_image }}" width="600" style="max-width: 2456px;padding-bottom: 0;display: inline !important;vertical-align: bottom;border: 0;outline: none;text-decoration: none;-ms-interpolation-mode: bicubic;" class="mcnImage">
 
 
 				      </td>

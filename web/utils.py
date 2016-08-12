@@ -46,8 +46,6 @@ def emailContext():
     context = RAW_CONTEXT.copy()
     if context['site_url'].startswith('//'):
         context['site_url'] = 'http:' + context['site_url']
-    if context['site_image'].startswith('//'):
-        context['site_image'] = 'http:' + context['site_image']
     return context
 
 ############################################################

@@ -10,6 +10,7 @@ from django.core.exceptions import PermissionDenied
 from web.utils import getGlobalContext, redirectWhenNotAuthenticated
 from web.tools import itemURL
 from web.forms import ConfirmDelete
+from web.settings import SITE_IMAGE
 
 ############################################################
 # Internal utils
@@ -25,7 +26,21 @@ def _authstaff_requirements(page, collection, request, context, default_for_auth
     if collection[page].get('staff_required', False) and not request.user.is_staff:
         raise PermissionDenied()
 
-def _modification_view(context, name, collection, mod_collection):
+def _get_share_image(context, collection, view, item=None):
+    share_image = collection[view].get('share_image', None)
+    if callable(share_image):
+        share_image = share_image(context, collection, view, item)
+    if not share_image:
+        share_image = collection.get('share_image', collection.get('image', None))
+    if share_image is not None:
+        if '//' not in share_image:
+            share_image = u'{}img/{}'.format(context['full_static_url'], share_image)
+        if 'http' not in share_image:
+            share_image = u'http:{}'.format(share_image)
+    return share_image
+
+def _modification_view(context, name, collection, view):
+    mod_collection = collection[view]
     context['list_url'] = '/{}/'.format(collection['plural_name'])
     context['title'] = collection['title']
     context['name'] = name
@@ -55,6 +70,7 @@ def item_view(request, name, collection, pk, ajax=False, item=None, extra_filter
     context['name'] = name
     context['title'] = collection['title']
     context['js_files'] = collection['item'].get('js_files', None)
+    context['share_image'] = _get_share_image(context, collection, 'item', item=context['item'])
     context['comments_enabled'] = collection['item'].get('comments_enabled', True)
     context['item_template'] = collection['item']['template'] if 'template' in collection['item'] else '{}Item'.format(name)
     context['ajax_callback'] = collection['item'].get('ajax_callback', None)
@@ -154,6 +170,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, **kwargs)
     context['ajax'] = ajax
 
     context['js_files'] = collection['list'].get('js_files', None)
+    context['share_image'] = _get_share_image(context, collection, 'list')
     context['full_width'] = collection['list'].get('full_width', False)
     context['col_break'] = collection['list'].get('col_break', 'md')
     context['per_line'] = collection['list'].get('per_line', 3)
@@ -176,7 +193,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, **kwargs)
 def add_view(request, name, collection, type=None, ajax=False, **kwargs):
     context = collection['add'].get('get_global_context', getGlobalContext)(request)
     _authstaff_requirements('add', collection, request, context)
-    context = _modification_view(context, name, collection, collection['add'])
+    context = _modification_view(context, name, collection, 'add')
     with_types = False
     if type is not None and 'types' in collection['add']:
         if type not in collection['add']['types']:
@@ -209,6 +226,7 @@ def add_view(request, name, collection, type=None, ajax=False, **kwargs):
                 raise HttpRedirectException(redirectAfterAdd if not ajax else '/ajax' + redirectAfterAdd)
             raise HttpRedirectException(itemURL(name, instance, ajax))
     form.verb = 'Add'
+    context['share_image'] = _get_share_image(context, collection, 'add')
     context['forms'] = { 'add': form }
     if collection['add'].get('alert_duplicate', True):
         context['alert_message'] = _('Make sure the {thing} you\'re about to add doesn\'t already exist.').format(thing=_(collection['title']))
@@ -229,7 +247,7 @@ def add_view(request, name, collection, type=None, ajax=False, **kwargs):
 def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, **kwargs):
     context = collection['edit'].get('get_global_context', getGlobalContext)(request)
     _authstaff_requirements('edit', collection, request, context)
-    context = _modification_view(context, name, collection, collection['edit'])
+    context = _modification_view(context, name, collection, 'edit')
     queryset = collection['edit']['filter_queryset'](collection['queryset'], _get_filters(request.GET, extra_filters), request) if 'filter_queryset' in collection['edit'] else collection['queryset']
     instance = get_object_or_404(queryset, pk=pk)
     if collection['edit'].get('owner_only', True) and not request.user.is_staff and instance.owner_id != request.user.id:
@@ -282,6 +300,8 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, **kwa
             raise HttpRedirectException(itemURL(name, instance, ajax))
     context['forms'] = OrderedDict()
     form.verb = 'Edit'
+    context['item'] = instance
+    context['share_image'] = _get_share_image(context, collection, 'edit', item=context['item'])
     context['forms']['edit'] = form
     if allowDelete:
         formDelete.alert_message = _('You can\'t cancel this action afterwards.')

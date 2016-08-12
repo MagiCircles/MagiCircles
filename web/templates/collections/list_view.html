@@ -9,7 +9,7 @@
 {% load bootstrap %}
 {% get_current_language as LANGUAGE_CODE %}
 
-{% block title %}{% trans plural_title %}{% endblock %}
+{% block title %}{% if current == 'index' %}{% trans site_description %}{% else %}{% trans plural_title %}{% endif %}{% endblock %}
 {% block js %}
 {% if filter_form %}
 <script>

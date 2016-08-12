@@ -28,8 +28,8 @@ def avatar(user, size=200):
 
 def imageURL(imageURL):
     imageURL = unicode(imageURL)
-    if imageURL.startswith(settings.SITE + '/'):
-        imageURL = imageURL.replace(settings.SITE + '/', '')
+    if imageURL.startswith(django_settings.SITE + '/'):
+        imageURL = imageURL.replace(django_settings.SITE + '/', '')
     return u'{}{}'.format(SITE_STATIC_URL, imageURL)
 
 @deconstructible
@@ -242,6 +242,12 @@ class Activity(models.Model):
         if len(self.message) <= length:
             return self.message
         return ' '.join(self.message[:length+1].split(' ')[0:-1]) + '...'
+
+    @property
+    def image_url(self):
+        if '//' in unicode(self.image):
+            return unicode(self.image)
+        return imageURL(self.image)
 
     def __unicode__(self):
         return self.summarize()

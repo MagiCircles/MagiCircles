@@ -523,7 +523,8 @@ Collection settings dictionaries may contain the following settings:
 | title | Localized title for one item, visible for site's users  | Capitalized key | _('Card') |
 | plural_title | Localized title for multiple items, visible for site's users | Capitalized key + 's' | _('Cards') |
 | icon | String name of a [flaticon](#flaticon) that illustrates the collection (used in navbar) | None | 'album' |
-| image | Path to image that illustrates the collection (used in navbar + when adding/editing items) | None | 'card.png' |
+| image | Path to image that illustrates the collection (used in navbar + when adding/editing items + when share_image not available) | None | 'card.png' |
+| share_image | Path to image people can see when they share the pages of this collection on social media, can be a callable that takes (collection, view, item=None), can be overriden in each collection view settings | Value of image | 'sample_screenshot.png' |
 | navbar_link | Should a link to the list view of this collection appear in the nav bar? | True | True |
 | navbar_link_list | Name of the [nav bar list](#nav-bar-lists) in which the link is going to appear | None | 'more' |
 
@@ -573,6 +574,7 @@ Collections list view settings dictionaries may contain the following:
 | before_template | Name of a template to include between the title (if shown) and the add buttons (if any) and results (without `.html`) | None | "include/beforeCards" |
 | after_template | Name of a template to include at the end of the list, when the last page loads (without `.html`), if you provide something in `extra_context` for this template, first check `if context['is_last_page']: ...` | None | "include/afterCards" |
 | no_result_template | Name of a template to show if there's no results to show, otherwise it will just show "No result" in a bootstrap `alert-info` | None | "include/cardsNoResult" |
+| share_image | Path to image people can see when they share this page, can be a callable that takes (collection, view, item=None) | Value of share_image in collection settings | 'sample_screenshot.png' |
 
 ### Item view
 
@@ -591,6 +593,7 @@ Collections item view settings dictionaries may contain the following:
 | ajax_callback | The name of a javascript function to call when the page loads | None | "updateCards" (See [Example](https://gist.github.com/db0company/b9fde532eafb333beb57ab7903e69749#file-magicirclesexamples-js-L1)) |
 | ajax | Enable getting this page in ajax, the ajax auto scroll pagination will not work if this is disabled, not recommended | True | |
 | extra_context | Function that takes the context (with request inside) which allows you to add extra context, typically for your templates | None | [Example](https://gist.github.com/db0company/819ec1900fb207f865be69b92ce62c8e#file-magicirclesexamples-py-L20) |
+| share_image | Path to image people can see when they share this page, can be a callable that takes (collection, view, item=None) | Value of share_image in collection settings | 'sample_screenshot.png' |
 
 ### Add view
 
@@ -615,6 +618,7 @@ Collections add view settings dictionaries may contain the following:
 | otherbuttons_template | Template path (without `.html`) for extra buttons at the end of the form | None | "include/cardsExtraButtons" |
 | back_to_list_button | Should we display a button to go back to the list view at the end of the form? | True | |
 | after_template | Name of a template to include after the form | None | "include/afterAddCard" |
+| share_image | Path to image people can see when they share this page, can be a callable that takes (collection, view, item=None) | Value of share_image in collection settings | 'sample_screenshot.png' |
 
 ### Edit view
 
@@ -641,6 +645,7 @@ Collections edit view settings dictionaries may contain the following:
 | otherbuttons_template | Template path (without `.html`) for extra buttons at the end of the form | None | "include/cardsExtraButtons" |
 | back_to_list_button | Should we display a button to go back to the list view at the end of the form? | True | |
 | after_template | Name of a template to include after the form | None | "include/afterAddCard" |
+| share_image | Path to image people can see when they share this page, can be a callable that takes (collection, view, item=None) | Value of share_image in collection settings | 'sample_screenshot.png' |
 
 ##### Item types
 
