@@ -121,7 +121,8 @@ def user(request, pk=None, username=None):
 ############################################################
 # About
 
-def aboutDefaultContext(request, context):
+def aboutDefaultContext(request):
+    context = getGlobalContext(request)
     context['about_description_template'] = 'include/about_description'
     context['about_photo'] = ABOUT_PHOTO
     context['site_long_description'] = SITE_LONG_DESCRIPTION
@@ -137,14 +138,12 @@ def aboutDefaultContext(request, context):
     context['contribute_url'] = CONTRIBUTE_URL
     context['other_sites'] = other_sites
     context['other_sites_colsize'] = int(math.ceil(12 / (len(context['other_sites']) - 1)))
+    context['ajax'] = context['current_url'].startswith('/ajax/')
+    context['extends'] = 'base.html' if not context['ajax'] else 'ajax.html'
     return context
 
 def about(request):
-    context = getGlobalContext(request)
-    context = aboutDefaultContext(request, context)
-    context['ajax'] = context['current_url'].startswith('/ajax/')
-    context['extends'] = 'base.html' if not context['ajax'] else 'ajax.html'
-    return render(request, 'pages/about.html', context)
+    return render(request, 'pages/about.html', aboutDefaultContext(request))
 
 def about_game(request):
     context = getGlobalContext(request)
@@ -220,7 +219,8 @@ wiki = help
 ############################################################
 # Donate
 
-def donateDefaultContext(request, context):
+def donateDefaultContext(request):
+    context = getGlobalContext(request)
     donators = models.User.objects.filter(preferences__status__isnull=False).exclude(preferences__status='').order_by('preferences__status', '-preferences__donation_link', '-preferences__donation_link_title').select_related('preferences')
     context['donators_low'] = []
     context['donators_high'] = []
@@ -233,16 +233,15 @@ def donateDefaultContext(request, context):
     context['donations'] = donations
     context['donate_image'] = DONATE_IMAGE
     context['donate_images_folder'] = DONATE_IMAGES_FOLDER
+    return context
 
 def donate(request):
-    context = getGlobalContext(request)
-    donateDefaultContext(request, context)
-    return render(request, 'pages/donate.html', context)
+    return render(request, 'pages/donate.html', donateDefaultContext(request))
 
 ############################################################
 # Map
 
-def map(request):
+def mapDefaultContext(request):
     context = getGlobalContext(request)
     context['js_files'] = [
         'https://maps.googleapis.com/maps/api/js?key=AIzaSyDHtAPFTmOCQZrKSjZlIeoZrZYLJjKLupE',
@@ -264,7 +263,10 @@ def map(request):
         except IndexError: pass
     if 'zoom' in request.GET:
         context['zoom'] = request.GET['zoom']
-    return render(request, 'pages/map.html', context)
+    return context
+
+def map(request):
+    return render(request, 'pages/map.html', mapDefaultContext(request))
 
 ############################################################
 # Avatar redirection for gravatar + twitter
