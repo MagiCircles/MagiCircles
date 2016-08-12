@@ -2,6 +2,6 @@
 
 {{ notification.localized_message }}
 
-{% trans 'Open' %}: {{ site_url }}{{ notification.website_url }}
+{% trans 'Open' %}: {{ notification.full_website_url }}
 
 {% trans 'Click here' %} {% trans 'to turn off email notifications.' %}: {{ site_url }}settings/#emails
