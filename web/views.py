@@ -16,7 +16,7 @@ from web.donations import donations
 from web.utils import getGlobalContext, ajaxContext, redirectToProfile, AttrDict, ordinalNumber, tourldash, redirectWhenNotAuthenticated, dumpModel, send_email, emailContext
 from web.tools import itemURL, fullItemURL
 from web.notifications import pushNotification
-from web.settings import SITE_NAME, GAME_NAME, ENABLED_COLLECTIONS, ENABLED_PAGES, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_NAME, DONATE_IMAGE, DONATE_IMAGES_FOLDER, TWITTER_HANDLE, BUG_TRACKER_URL, GITHUB_REPOSITORY, CONTRIBUTE_URL, CONTACT_EMAIL, CONTACT_REDDIT, CONTACT_FACEBOOK, ABOUT_PHOTO, WIKI, LATEST_NEWS, SITE_LONG_DESCRIPTION, CALL_TO_ACTION, TOTAL_DONATORS, GAME_DESCRIPTION, SHOW_TOTAL_ACCOUNTS, ON_USER_EDITED, ON_PREFERENCES_EDITED
+from web.settings import SITE_NAME, GAME_NAME, ENABLED_COLLECTIONS, ENABLED_PAGES, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_NAME, DONATE_IMAGE, DONATE_IMAGES_FOLDER, TWITTER_HANDLE, BUG_TRACKER_URL, GITHUB_REPOSITORY, CONTRIBUTE_URL, CONTACT_EMAIL, CONTACT_REDDIT, CONTACT_FACEBOOK, ABOUT_PHOTO, WIKI, LATEST_NEWS, SITE_LONG_DESCRIPTION, CALL_TO_ACTION, TOTAL_DONATORS, GAME_DESCRIPTION, GAME_URL, SHOW_TOTAL_ACCOUNTS, ON_USER_EDITED, ON_PREFERENCES_EDITED
 from web.views_collections import item_view, list_view
 from raw import other_sites
 
@@ -148,6 +148,7 @@ def about(request):
 def about_game(request):
     context = getGlobalContext(request)
     context['game_description'] = GAME_DESCRIPTION
+    context['game_url'] = GAME_URL
     return render(request, 'pages/about_game.html', context)
 
 ############################################################

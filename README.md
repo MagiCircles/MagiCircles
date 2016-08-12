@@ -390,6 +390,7 @@ Your settings file is located in `sample/settings.py`.
 | CALL_TO_ACTION | A sentence shown on the default index page to encourage visitors to sign up | _('Join the community!') |
 | SITE_LONG_DESCRIPTION | A long description of what the website does. Used on the about page. | A long text |
 | GAME_DESCRIPTION | A long description of the game. Used on the about game page. | None (just shows game image) |
+| GAME_URL | A link to the official homepage of the game. Used on the about game page. | None (just shows game image) |
 | TOTAL_DONATORS | Total number of donators (you may use web.tools.totalDonators to save this value in the [generated settings](#generated-settings)) | 2 |
 | ON_USER_EDITED | Callback after a user's username or email has been changed, takes request (contains updated request.user) | None |
 | ON_PREFERENCES_EDITED | Callback after a user's preferences have been changed, takes request (contains updated request.user.preferences) | None |

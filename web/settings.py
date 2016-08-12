@@ -186,6 +186,11 @@ if hasattr(settings_module, 'GAME_DESCRIPTION'):
 else:
     GAME_DESCRIPTION = None
 
+if hasattr(settings_module, 'GAME_URL'):
+    GAME_URL = getattr(settings_module, 'GAME_URL')
+else:
+    GAME_URL = None
+
 if hasattr(settings_module, 'HASHTAGS'):
     HASHTAGS = getattr(settings_module, 'HASHTAGS')
 else:
