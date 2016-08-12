@@ -19,7 +19,7 @@ class Command(BaseCommand):
                 translation_activate(preferences.language if preferences.language else 'en')
                 context = emailContext()
                 context['notification'] = notification
-                context['user'] = notification.owner,
+                context['user'] = notification.owner
                 try:
                     send_email(
                         subject=u'{} {}: {}'.format(SITE_NAME, unicode(_('Notification')), notification.localized_message),

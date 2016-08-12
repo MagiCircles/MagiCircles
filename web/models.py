@@ -26,6 +26,12 @@ def avatar(user, size=200):
             + hashlib.md5(user.email.lower()).hexdigest()
             + "?" + urllib.urlencode({'d': default, 's': str(size)}))
 
+def imageURL(imageURL):
+    imageURL = unicode(imageURL)
+    if imageURL.startswith(settings.SITE + '/'):
+        imageURL = imageURL.replace(settings.SITE + '/', '')
+    return '{}{}'.format(SITE_STATIC_URL, imageURL)
+
 @deconstructible
 class uploadToRandom(object):
     def __init__(self, prefix, length=30):
@@ -271,8 +277,19 @@ class Notification(models.Model):
         return NOTIFICATION_URLS[self.message].format(*data)
 
     @property
+    def full_website_url(self):
+        return u''.format(SITE_URL if SITE_URL.startswith('http') else 'http:' + SITE_URL,
+                          self.website_url[1:])
+
+    @property
     def icon(self):
         return NOTIFICATION_ICONS[self.message]
+
+    @property
+    def image_url(self):
+        if '//' in unicode(self.image):
+            return unicode(self.image)
+        return imageURL(self.image)
 
     def __unicode__(self):
         return self.localized_message
