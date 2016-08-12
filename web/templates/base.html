@@ -8,6 +8,7 @@
     <meta charset="UTF-8">
     <title>{{ site_name }} - {% block title %}{% trans site_description %}{% endblock %}</title>
 
+    <link rel="shortcut icon" type="image/x-icon" href="{{ static_url }}favicon.ico" />
     <link rel="stylesheet" href="{{ static_url }}bower/bootstrap/dist/css/bootstrap.min.css">
     {% if debug %}
     <link rel="stylesheet/less" type="text/css" href="{{ static_url }}less/style.less" />
