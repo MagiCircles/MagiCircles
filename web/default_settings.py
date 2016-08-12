@@ -151,6 +151,7 @@ DEFAULT_ENABLED_COLLECTIONS = OrderedDict([
             'ajax_pagination_callback': 'updateActivities',
             'filter_queryset': _activitiesQuerysetWithLikesAndLiked,
             'no_result_template': 'include/activityFollowMessage',
+            'default_ordering': '-modification',
         },
         'item': {
             'js_files': ['bower/marked/lib/marked'],
