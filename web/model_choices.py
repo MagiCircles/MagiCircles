@@ -63,20 +63,20 @@ def linkToString(link):
     return link
 
 LINK_URLS = {
-    'Location': 'http://maps.google.com/?q={}',
-    'twitter': 'http://twitter.com/{}',
-    'facebook': 'https://www.facebook.com/{}',
-    'reddit': 'http://www.reddit.com/user/{}',
-    'schoolidolu': 'http://schoolido.lu/user/{}/',
-    'frgl': 'http://fr.gl/user/{}/',
-    'stardustrun': 'http://stardust.run/user/{}/',
-    'line': 'http://line.me/#{}',
-    'tumblr': 'http://{}.tumblr.com/',
-    'twitch': 'http://twitch.tv/{}',
-    'steam': 'http://steamcommunity.com/id/{}',
-    'instagram': 'https://instagram.com/{}/',
-    'youtube': 'https://www.youtube.com/user/{}',
-    'github': 'https://github.com/{}',
+    'Location': u'http://maps.google.com/?q={}',
+    'twitter': u'http://twitter.com/{}',
+    'facebook': u'https://www.facebook.com/{}',
+    'reddit': u'http://www.reddit.com/user/{}',
+    'schoolidolu': u'http://schoolido.lu/user/{}/',
+    'frgl': u'http://fr.gl/user/{}/',
+    'stardustrun': u'http://stardust.run/user/{}/',
+    'line': u'http://line.me/#{}',
+    'tumblr': u'http://{}.tumblr.com/',
+    'twitch': u'http://twitch.tv/{}',
+    'steam': u'http://steamcommunity.com/id/{}',
+    'instagram': u'https://instagram.com/{}/',
+    'youtube': u'https://www.youtube.com/user/{}',
+    'github': u'https://github.com/{}',
 }
 
 LINK_RELEVANCE_CHOICES = (
@@ -94,20 +94,20 @@ NOTIFICATION_LIKE = 0
 NOTIFICATION_FOLLOW = 1
 
 NOTIFICATION_CHOICES = (
-    (NOTIFICATION_LIKE, _('{} liked your activity: {}.')),
-    (NOTIFICATION_FOLLOW, _('{} just followed you.')),
+    (NOTIFICATION_LIKE, _(u'{} liked your activity: {}.')),
+    (NOTIFICATION_FOLLOW, _(u'{} just followed you.')),
 )
 
 NOTIFICATION_DICT = dict(NOTIFICATION_CHOICES)
 
 NOTIFICATION_TITLES = {
-    NOTIFICATION_LIKE: _('When someone likes your activity.'),
-    NOTIFICATION_FOLLOW: _('When someone follows you.'),
+    NOTIFICATION_LIKE: _(u'When someone likes your activity.'),
+    NOTIFICATION_FOLLOW: _(u'When someone follows you.'),
 }
 
 NOTIFICATION_URLS = {
-    NOTIFICATION_LIKE: '/activity/{}/{}/',
-    NOTIFICATION_FOLLOW: '/user/{}/{}/',
+    NOTIFICATION_LIKE: u'/activity/{}/{}/',
+    NOTIFICATION_FOLLOW: u'/user/{}/{}/',
 }
 
 NOTIFICATION_ICONS = {

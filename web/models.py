@@ -19,9 +19,9 @@ def avatar(user, size=200):
     """
     Preferences in user objects must always be prefetched
     """
-    default = '{}static/img/avatar.png'.format(SITE_STATIC_URL if SITE_STATIC_URL.startswith('http') else ('http:' + SITE_STATIC_URL if SITE_STATIC_URL.startswith('//') else 'http://' + SITE_STATIC_URL))
+    default = u'{}static/img/avatar.png'.format(SITE_STATIC_URL if SITE_STATIC_URL.startswith('http') else ('http:' + SITE_STATIC_URL if SITE_STATIC_URL.startswith('//') else 'http://' + SITE_STATIC_URL))
     if user.preferences.twitter:
-        default = '{}twitter_avatar/{}/'.format(SITE_URL if SITE_URL.startswith('http') else 'http:' + SITE_URL, user.preferences.twitter)
+        default = u'{}twitter_avatar/{}/'.format(SITE_URL if SITE_URL.startswith('http') else 'http:' + SITE_URL, user.preferences.twitter)
     return ("http://www.gravatar.com/avatar/"
             + hashlib.md5(user.email.lower()).hexdigest()
             + "?" + urllib.urlencode({'d': default, 's': str(size)}))
@@ -30,7 +30,7 @@ def imageURL(imageURL):
     imageURL = unicode(imageURL)
     if imageURL.startswith(settings.SITE + '/'):
         imageURL = imageURL.replace(settings.SITE + '/', '')
-    return '{}{}'.format(SITE_STATIC_URL, imageURL)
+    return u'{}{}'.format(SITE_STATIC_URL, imageURL)
 
 @deconstructible
 class uploadToRandom(object):
@@ -157,7 +157,7 @@ class UserLink(models.Model):
     owner = models.ForeignKey(User, related_name='links')
     type = models.CharField(_('Platform'), max_length=20, choices=LINK_CHOICES)
     value = models.CharField(_('Username/ID'), max_length=64, help_text=_('Write your username only, no URL.'), validators=[alphanumeric])
-    relevance = models.PositiveIntegerField(_('How often do you tweet/stream/post about {}?').format(GAME_NAME), choices=LINK_RELEVANCE_CHOICES, null=True, blank=True)
+    relevance = models.PositiveIntegerField(_(u'How often do you tweet/stream/post about {}?').format(GAME_NAME), choices=LINK_RELEVANCE_CHOICES, null=True, blank=True)
 
     def url(self):
         return LINK_URLS[self.type].format(self.value)
@@ -229,7 +229,7 @@ class Activity(models.Model):
 
     @property
     def shareSentence(self):
-        return _('Check out {username}\'s activity on {site}: {activity}').format(
+        return _(u'Check out {username}\'s activity on {site}: {activity}').format(
             username=self.cached_owner.username,
             site=SITE_NAME,
             activity=self.summarize(40),
