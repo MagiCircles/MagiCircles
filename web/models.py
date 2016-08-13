@@ -43,12 +43,12 @@ class UserImage(ItemModel):
     def __unicode__(self):
         return unicode(self.image)
 
-User.item_url = lambda user: get_item_url('user', user)
-User.ajax_item_url = lambda user: get_ajax_item_url('user', user)
-User.full_item_url = lambda user: get_full_item_url('user', user)
-User.http_item_url = lambda user: get_http_item_url('user', user)
-User.image_url = lambda user: avatar(user)
-User.http_image_ur = lambda user: avatar(user)
+User.item_url = property(lambda user: get_item_url('user', user))
+User.ajax_item_url = property(lambda user: get_ajax_item_url('user', user))
+User.full_item_url = property(lambda user: get_full_item_url('user', user))
+User.http_item_url = property(lambda user: get_http_item_url('user', user))
+User.image_url = property(lambda user: avatar(user))
+User.http_image_ur = property(lambda user: avatar(user))
 
 ############################################################
 # User preferences

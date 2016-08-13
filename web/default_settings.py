@@ -47,10 +47,10 @@ def _accountBeforeSave(request, instance, type=None):
     return instance
 
 def _accountRedirectAfter(request, instance, ajax=False):
-    return '/user/{}/#{}'.format(request.user.username, instance.pk)
+    return '{}#{}'.format(request.user.item_url, instance.id)
 
 def _accountRedirectAfterDelete(request, instance, ajax=False):
-    return '/user/{}/'.format(request.user.username)
+    return request.user.item_url
 
 def _userItemFilterQuerySet(queryset, parameters, request):
     if request.user.is_authenticated():
