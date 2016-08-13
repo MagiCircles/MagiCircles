@@ -53,6 +53,7 @@ def emailContext():
 def send_email(subject, template_name, to=[], context={}, from_email=django_settings.AWS_SES_RETURN_PATH):
     if 'template_name' != 'notification':
         to.append(django_settings.LOG_EMAIL)
+    subject = subject.replace('\n', '')
     context = Context(context)
     plaintext = get_template('emails/' + template_name + '.txt').render(context)
     htmly = get_template('emails/' + template_name + '.html').render(context)
