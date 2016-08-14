@@ -109,7 +109,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, **kwargs)
     queryset = queryset.order_by(*ordering)
 
     context['total_results'] = queryset.count()
-    context['total_results_sentence'] = _('1 {object} matches your search:').format(object=name) if context['total_results'] == 1 else _('{total} {objects} match your search:').format(total=context['total_results'], objects=context['plural_name'])
+    context['total_results_sentence'] = _('1 {object} matches your search:').format(object=collection['title']) if context['total_results'] == 1 else _('{total} {objects} match your search:').format(total=context['total_results'], objects=collection['plural_title'])
 
     if 'page' in request.GET and request.GET['page']:
         page = int(request.GET['page']) - 1
