@@ -103,10 +103,10 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, **kwargs)
     if 'ordering' in request.GET and request.GET['ordering']:
         reverse = ('reverse_order' in request.GET and request.GET['reverse_order']) or not request.GET or len(request.GET) == 1
         prefix = '-' if reverse else ''
-        ordering = prefix + request.GET['ordering']
+        ordering = [prefix + ordering for ordering in request.GET['ordering'].split(',')]
     else:
-        ordering = collection['list'].get('default_ordering', '-creation')
-    queryset = queryset.order_by(ordering)
+        ordering = collection['list'].get('default_ordering', '-creation').split(',')
+    queryset = queryset.order_by(*ordering)
 
     context['total_results'] = queryset.count()
     context['total_results_sentence'] = _('1 {object} matches your search:').format(object=name) if context['total_results'] == 1 else _('{total} {objects} match your search:').format(total=context['total_results'], objects=context['plural_name'])
