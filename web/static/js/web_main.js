@@ -21,6 +21,17 @@ function formloaders() {
     });
 }
 
+function loadPageScroll() {
+    $('a.page-scroll').unbind('click');
+    $('a.page-scroll').bind('click', function(event) {
+	var $anchor = $(this);
+	$('html, body').stop().animate({
+	    scrollTop: $($anchor.attr('href')).offset().top
+	}, 1500, 'easeInOutExpo');
+	event.preventDefault();
+    });
+}
+
 // *****************************************
 // Change Unknown / Yes / No to cute form All / Only / None
 
@@ -164,14 +175,7 @@ $(document).ready(function() {
 	$("#wrapper").toggleClass("toggled");
     });
 
-    $('a.page-scroll').bind('click', function(event) {
-	var $anchor = $(this);
-	$('html, body').stop().animate({
-	    scrollTop: $($anchor.attr('href')).offset().top
-	}, 1500, 'easeInOutExpo');
-	event.preventDefault();
-    });
-
+    loadPageScroll();
     formloaders();
     dateInputSupport();
     cuteFormNullBool();
