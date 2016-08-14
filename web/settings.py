@@ -124,6 +124,11 @@ if hasattr(settings_module, 'GOOGLE_ANALYTICS'):
 else:
     GOOGLE_ANALYTICS = 'UA-67529921-1'
 
+if hasattr(settings_module, 'STATIC_FILES_VERSION'):
+    STATIC_FILES_VERSION = getattr(settings_module, 'STATIC_FILES_VERSION')
+else:
+    STATIC_FILES_VERSION = '1'
+
 ############################################################
 # Optional settings without default values (= None)
 

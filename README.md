@@ -396,6 +396,7 @@ Your settings file is located in `sample/settings.py`.
 | ON_USER_EDITED | Callback after a user's username or email has been changed, takes request (contains updated request.user) | None |
 | ON_PREFERENCES_EDITED | Callback after a user's preferences have been changed, takes request (contains updated request.user.preferences) | None |
 | GOOGLE_ANALYTICS | Tracking number for Google Analytics | 'UA-67529921-1' |
+| STATIC_FILES_VERSION | A number or string that you can change when you update the css or js file of your project to force update the cache of your users in production | '1' |
 
 Enable/Disable default pages and collections
 ===
