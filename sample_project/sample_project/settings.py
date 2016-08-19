@@ -101,10 +101,12 @@ DEBUG_PORT = 8000
 from django.utils.translation import ugettext_lazy as _
 
 LANGUAGES = (
-  ('en', _('English')),
-  ('es', _('Spanish')),
-  ('ru', _('Russian')),
-  ('fr', _('French')),
+    ('en', _('English')),
+    ('es', _('Spanish')),
+    ('fr', _('French')),
+    ('de', _('German')),
+    ('it', _('Italian')),
+    ('ru', _('Russian')),
 )
 
 LANGUAGE_CODE = 'en'

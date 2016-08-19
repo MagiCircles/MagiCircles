@@ -114,8 +114,10 @@ Start a new site
    LANGUAGES = (
      ('en', _('English')),
      ('es', _('Spanish')),
-     ('ru', _('Russian')),
      ('fr', _('French')),
+     ('de', _('German')),
+     ('it', _('Italian')),
+     ('ru', _('Russian')),
    )
 
    LANGUAGE_CODE = 'en'
