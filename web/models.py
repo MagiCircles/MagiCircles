@@ -115,7 +115,7 @@ class UserPreferences(models.Model):
     def hex_color(self):
         if self.color and USER_COLORS:
             try:
-                return (hex for (name, _, _, hex) in USER_COLORS if name == self.color).next()
+                return (hex for (name, _, _, hex) in USER_COLORS if unicode(name) == self.color).next()
             except: pass
         return COLOR
 
@@ -123,7 +123,7 @@ class UserPreferences(models.Model):
     def css_color(self):
         if self.color and USER_COLORS:
             try:
-                return (css_color for (name, _, css_color, _) in USER_COLORS if name == self.color).next()
+                return (css_color for (name, _, css_color, _) in USER_COLORS if unicode(name) == self.color).next()
             except: pass
         return 'main'
 
