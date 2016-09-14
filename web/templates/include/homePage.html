@@ -32,7 +32,7 @@
     <div class="carousel-inner" role="listbox">
       {% for news in latest_news %}
       <a href="{{ news.url }}" class="item{% if forloop.counter0 == 0 %} active{% endif %}">
-	<img src="{{ static_url }}img/{{ news.image }}" alt="{{ news.title }}">
+	<img src="{% if '//' in news.image %}{{ news.image }}{% else %}{{ static_url }}img/{{ news.image }}{% endif %}" alt="{{ news.title }}">
 	<div class="carousel-caption">
 	  {% if not news.hide_title %}<h2>{{ news.title }}</h2>{% endif %}
 	</div>
@@ -47,6 +47,7 @@
     </a>
   </div>
   {% endif %}
+  <div class="after-news"></div>
 </div>
 {% if user.is_authenticated and 'activity' in all_enabled %}
 <ul class="nav nav-tabs" id="hometabs">
