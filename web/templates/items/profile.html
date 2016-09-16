@@ -45,7 +45,7 @@
       </div>
     </div>
   </div>
-  <div>
+  <div class="profile-tabs{% if not profile_user.all_links %} empty{% endif %}">
     <table>
       <tr>
 	{% for link in profile_user.all_links %}
