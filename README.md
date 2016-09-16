@@ -1,3 +1,5 @@
+![MagiCircles](http://i.imgur.com/aRdFuUE.png)
+
 MagiCircles
 =====
 
