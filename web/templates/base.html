@@ -170,6 +170,7 @@
     };
     var static_url = '{{ static_url }}';
     var empty_image = '{{ static_url }}img/{{ empty_image }}';
+    var disqus_shortname = '{{ disqus_shortname }}';
     var is_authenticated = {% if user.is_authenticated %}'{{ user.username }}'{% else %}false{% endif %};
     var translated_terms = {
       {% for term in javascript_translated_terms %}'{{ term }}': '{% trans term %}',
@@ -210,7 +211,6 @@
 	ga('send', 'pageview');
     </script>
     <script type="text/javascript">
-      var disqus_shortname = '{{ disqus_shortname }}';
       (function () {
       var s = document.createElement('script'); s.async = true;
       s.type = 'text/javascript';

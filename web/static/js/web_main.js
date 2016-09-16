@@ -281,7 +281,7 @@ function paginationOnClick(buttonId, nextPageUrl, newPageParameters, newPageCall
 
 function reloadDisqus() {
     window.DISQUSWIDGETS = undefined;
-    $.getScript("http://schoolidol.disqus.com/count.js");
+    $.getScript('http://' + disqus_shortname + '.disqus.com/count.js');
 }
 
 // *****************************************
