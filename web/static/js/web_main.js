@@ -143,7 +143,8 @@ function ajaxModals() {
 		button.html(button_content);
 		var title = button.data('ajax-title');
 		title = typeof title == 'undefined' ? button_content : title;
-		freeModal(title, data, modalButtons);
+		modal_size = button.data('ajax-modal-size');
+		freeModal(title, data, modalButtons, modal_size);
 		if (typeof button.data('ajax-handle-form') != 'undefined') {
 		    formloaders();
 		    $('#freeModal form').submit(function(e) {
@@ -214,7 +215,12 @@ function gettext(term) {
 // *****************************************
 // Modal
 
-function freeModal(title, body, buttons) {
+function freeModal(title, body, buttons, modal_size) {
+    $('#freeModal .modal-dialog').removeClass('modal-lg');
+    $('#freeModal .modal-dialog').removeClass('modal-sm');
+    if (typeof modal_size != 'undefined') {
+	$('#freeModal .modal-dialog').addClass('modal-' + modal_size);
+    }
     $('#freeModal .modal-header h4').html(title);
     $('#freeModal .modal-body').html(body);
     $('#freeModal .modal-footer').html('<button type="button" class="btn btn-main" data-dismiss="modal">OK</button>');
