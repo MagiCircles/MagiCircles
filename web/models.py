@@ -107,7 +107,7 @@ class UserPreferences(models.Model):
     def localized_color(self):
         if self.color and USER_COLORS:
             try:
-                return (_(localized) for (name, localized, __, __) in USER_COLORS if name == self.color).next()
+                return (_(localized) for (name, localized, __, __) in USER_COLORS if unicode(name) == self.color).next()
             except: pass
         return ''
 
