@@ -339,6 +339,7 @@ function hidePopovers() {
 
 // Takes an object of key = form name and value = true if just value.png, callback otherwise (value, string)
 function multiCuteForms(cuteformsToDo, withImages) {
+    withImages = typeof withImages != 'undefined' ? withImages : true;
     for (var form in form_choices) {
 	for (var field_name in form_choices[form]) {
 	    if (field_name in cuteformsToDo) {
@@ -350,14 +351,27 @@ function multiCuteForms(cuteformsToDo, withImages) {
 			var cb = cuteformsToDo[field_name];
 			if (cb === true) {
 			    images[value] = static_url + 'img/' + field_name + '/' + value + '.png';
+			    withImages = true;
+			} else if (cb === 'name') {
+			    images[value] = form_choices[form][field_name][value];
+			    withImages = false;
 			} else {
 			    images[value] = cb(value, form_choices[form][field_name][value]);
 			}
 		    }
 		}
-		cuteform($('#id_' + field_name), {
-		    'images': images,
-		});
+		if (withImages) {
+		    cuteform($('#id_' + field_name), {
+			'images': images,
+		    });
+		} else {
+		    if ('' in images) {
+			images[''] = '<img src="' + images[''] + '">'
+		    }
+		    cuteform($('#id_' + field_name), {
+			'html': images,
+		    });
+		}
 	    }
 	}
     }
