@@ -103,6 +103,9 @@ DEFAULT_ENABLED_COLLECTIONS = OrderedDict([
             'add_button_subtitle': _('Create your account to join the community and be in the leaderboard!'),
             # default_ordering added in urls.py (level), can be specified in your settings as well
         },
+        'item': {
+            'comments_enabled': False,
+        },
         'add': {
             'alert_duplicate': False,
             'before_save': _accountBeforeSave,
