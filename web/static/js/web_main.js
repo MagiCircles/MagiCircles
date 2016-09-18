@@ -224,6 +224,17 @@ $(document).ready(function() {
 // Tools to call
 
 // *****************************************
+// Load bootstrap
+
+function loadToolTips() {
+    $('[data-toggle="tooltip"]').tooltip();
+}
+
+function loadPopovers() {
+    $('[data-toggle="popover"]').popover();
+}
+
+// *****************************************
 // Get text
 
 function gettext(term) {
