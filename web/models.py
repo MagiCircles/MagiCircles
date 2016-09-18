@@ -70,7 +70,7 @@ class UserPreferences(models.Model):
     status = models.CharField(choices=STATUS_CHOICES, max_length=12, null=True)
     donation_link = models.CharField(max_length=200, null=True, blank=True)
     donation_link_title = models.CharField(max_length=100, null=True, blank=True)
-    view_activities_language_only = models.BooleanField(_('View activities in your language only?'), default=True)
+    view_activities_language_only = models.BooleanField(_('View activities in your language only?'), default=False)
     email_notifications_turned_off_string = models.CharField(max_length=15, null=True)
     unread_notifications = models.PositiveIntegerField(default=0)
 

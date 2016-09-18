@@ -77,7 +77,7 @@ def _activitiesQuerysetWithLikesAndLiked(queryset, parameters, request):
         queryset = queryset.filter(owner_id=parameters['owner_id'])
     if 'feed' in parameters and request.user.is_authenticated():
         queryset = queryset.filter(Q(owner__in=request.user.preferences.following.all()) | Q(owner_id=request.user.id))
-    elif not request.user.is_authenticated() or request.user.preferences.view_activities_language_only:
+    elif request.user.is_authenticated() and request.user.preferences.view_activities_language_only:
         queryset = queryset.filter(language=request.LANGUAGE_CODE)
     queryset = queryset.annotate(total_likes=Count('likes'))
     return queryset
