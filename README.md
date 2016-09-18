@@ -646,6 +646,7 @@ Collections add view settings dictionaries may contain the following:
 | types | See [Item Types](#item-types) | | |
 | js_files | List of javascript files to include, all files are in `static/js` except if it starts with `bower/` | [] | ['cards.js, 'bower/marked/lib/marked'] |
 | before_save | Function called before the form is saved, takes request, instance and type. Not recommended, overload `save`in your form instead | None | |
+| after_save | Function called after the form is saved, takes request, instance and type. | None | |
 | savem2m | Should we call save_m2m to save the manytomany items after saving this model? | False | |
 | redirect_after_add | String URL or callback (that takes request, item, ajax) to redirect to after the item has been added | item URL | "/" |
 | alert_duplicate | Should we display a warning that asks users to check if it doesn't already exist before adding it? | True | |
@@ -675,6 +676,7 @@ Collections edit view settings dictionaries may contain the following:
 | js_files | List of javascript files to include, all files are in `static/js` except if it starts with `bower/` | [] | ['cards.js, 'bower/marked/lib/marked'] |
 | filter_queryset | A function that takes a queryset, parameters and the request and return a modified queryset | None | [Example](https://gist.github.com/db0company/819ec1900fb207f865be69b92ce62c8e#file-magicirclesexamples-py-L1) |
 | before_save | Function called before the form is saved, takes request, instance and type. Not recommended, overload `save`in your form instead | None | |
+| after_save | Function called after the form is saved, takes request, instance and type. | None | |
 | savem2m | Should we call save_m2m to save the manytomany items after saving this model? | False | |
 | redirect_after_edit | String URL or callback (that takes request, item, ajax) to redirect to after the item has been added | item URL | "/" |
 | extra_context | Function that takes the context (with request inside) which allows you to add extra context, typically for your templates | None | [Example](https://gist.github.com/db0company/819ec1900fb207f865be69b92ce62c8e#file-magicirclesexamples-py-L20) |

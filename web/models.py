@@ -93,6 +93,8 @@ class UserPreferences(models.Model):
                 imagePath = (image for (name, __, image) in FAVORITE_CHARACTERS if unicode(name) == getattr(self, 'favorite_character{}'.format(number))).next()
             except StopIteration:
                 return None
+            if '//' in imagePath:
+                return imagePath
             return get_image_url(imagePath)
         return None
 

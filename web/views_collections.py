@@ -218,6 +218,9 @@ def add_view(request, name, collection, type=None, ajax=False, **kwargs):
             instance.save()
             if collection['add'].get('savem2m', False):
                 form.save_m2m()
+            afterSave = collection['add'].get('after_save', None)
+            if afterSave:
+                instance = afterSave(request, instance)
             redirectAfterAdd = collection['add'].get('redirect_after_add', None)
             if redirectAfterAdd:
                 if callable(redirectAfterAdd):
@@ -291,6 +294,9 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, **kwa
             instance.save()
             if collection['edit'].get('savem2m', False):
                 form.save_m2m()
+            afterSave = collection['edit'].get('after_save', None)
+            if afterSave:
+                instance = afterSave(request, instance)
             redirectAfterEdit = collection['edit'].get('redirect_after_edit', None)
             if redirectAfterEdit:
                 if callable(redirectAfterEdit):

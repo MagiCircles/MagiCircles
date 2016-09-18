@@ -50,7 +50,7 @@ def latlong(opt):
                 username=escape(u.user.username),
                 avatar=escape(models.avatar(u.user)),
                 location=escape(u.location),
-                icon=escape(u.favorite_character1_image if u.favorite_character1_image else 'static/img/default_map_icon.png'),
+                icon=escape(u.favorite_character1_image if u.favorite_character1_image else SITE_STATIC_URL + 'static/img/default_map_icon.png'),
                 latitude=u.latitude,
                 longitude=u.longitude,
                 close='}',
