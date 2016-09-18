@@ -248,11 +248,19 @@ function gettext(term) {
 // *****************************************
 // Modal
 
+// Use true for modal_size to not change the size
+// Use 0 for buttons to remove all buttons
 function freeModal(title, body, buttons, modal_size) {
-    $('#freeModal .modal-dialog').removeClass('modal-lg');
-    $('#freeModal .modal-dialog').removeClass('modal-sm');
-    if (typeof modal_size != 'undefined') {
-	$('#freeModal .modal-dialog').addClass('modal-' + modal_size);
+    keep_size = typeof keep_size == 'undefined' ? false : keep_size;
+    if (!keep_size) {
+	$('#freeModal .modal-dialog').removeClass('modal-lg');
+	$('#freeModal .modal-dialog').removeClass('modal-md');
+	$('#freeModal .modal-dialog').removeClass('modal-sm');
+	if (typeof modal_size != 'undefined') {
+	    $('#freeModal .modal-dialog').addClass('modal-' + modal_size);
+	} else {
+	    $('#freeModal .modal-dialog').addClass('modal-lg');
+	}
     }
     $('#freeModal .modal-header h4').html(title);
     $('#freeModal .modal-body').html(body);
