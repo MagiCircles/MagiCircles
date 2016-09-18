@@ -138,26 +138,48 @@ function ajaxModals() {
 	var button_content = button.html();
 	button.unbind('click');
 	button.click(function(e) {
+	    var button_display = button.css('display');
+	    if (button_display == 'inline') {
+		button.css('display', 'inline-block');
+	    }
+	    var button_height = button.height();
+	    var button_width = button.width();
 	    button.html('<i class="flaticon-loading"></i>');
+	    var loader = button.find('.flaticon-loading');
+	    loader.height(button_height);
+	    loader.width(button_width);
+	    loader.css('line-height', button_height + 'px');
+	    loader.css('font-size', button_height + 'px');
 	    $.get(button.data('ajax-url'), function(data) {
+		button.css('display', button_display);
 		button.html(button_content);
 		var title = button.data('ajax-title');
 		title = typeof title == 'undefined' ? button_content : title;
 		modal_size = button.data('ajax-modal-size');
 		freeModal(title, data, modalButtons, modal_size);
 		if (typeof button.data('ajax-handle-form') != 'undefined') {
-		    formloaders();
-		    $('#freeModal form').submit(function(e) {
-			e.preventDefault();
-			$(this).ajaxSubmit({
-			    context: this,
-			    success: function(data) {
-				freeModal(title, data, modalButtons);
-			    },
-			    error: genericAjaxError,
+		    var ajaxModals_handleForms;
+		    ajaxModals_handleForms = function() {
+			formloaders();
+			$('#freeModal form').submit(function(e) {
+			    e.preventDefault();
+			    var form_name = $(this).find('.generic-form-submit-button').attr('name');
+			    $(this).ajaxSubmit({
+				context: this,
+				success: function(data) {
+				    freeModal(title, data, modalButtons, true);
+				    if (form_name != 'undefinfed'
+					&& $('#freeModal form .generic-form-submit-button[name="' + form_name + '"]').length > 0
+					&& $('#freeModal form .errorlist').length > 0) {
+					ajaxModals_handleForms();
+				    }
+				},
+				error: genericAjaxError,
+			    });
+			    return false;
 			});
-			return false;
-		    });
+		    };
+		    ajaxModals_handleForms();
 		}
 	    });
 	    return false;
