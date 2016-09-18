@@ -7,4 +7,9 @@
 {% for js_file in js_files %}
 <script src="{% if js_file|startswith:'http' %}{{ js_file }}{% else %}{{ static_url }}{% if not js_file|startswith:'bower' %}js/{% endif %}{{ js_file }}.js?{{ static_files_version }}{% endif %}"></script>
 {% endfor %}
-{% block afterjs %}{% endblock %}
+{% block afterjs %}{% if ajax_callback %}
+<script>
+  {{ ajax_callback }}();
+</script>
+{% endif %}
+{% endblock %}
