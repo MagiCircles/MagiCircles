@@ -1,4 +1,4 @@
-import re
+import re, datetime
 from multiupload.fields import MultiFileField
 from django import forms
 from django.db.models.fields import BLANK_CHOICE_DASH
@@ -134,6 +134,12 @@ class UserPreferencesForm(FormWithRequest):
             self.fields.pop('color')
         self.fields['language'].choices = [l for l in self.fields['language'].choices if l[0]]
         self.old_location = self.instance.location if self.instance else None
+
+    def clean_birthdate(self):
+        if 'birthdate' in self.cleaned_data:
+            if self.cleaned_data['birthdate'] and self.cleaned_data['birthdate'] > datetime.date.today():
+                raise forms.ValidationError(_('This date cannot be in the future.'))
+        return self.cleaned_data['birthdate']
 
     def clean(self):
         favs = [v for (k, v) in self.cleaned_data.items() if k.startswith('favorite_character') and v]

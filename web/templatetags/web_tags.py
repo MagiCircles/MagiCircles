@@ -33,7 +33,9 @@ def linkUrl(link):
         if link.type == 'Location' and 'map' in RAW_CONTEXT['all_enabled'] and link.latlong:
             return '/map/?center={}&zoom=10'.format(link.latlong)
         return models.LINK_URLS[link.type].format(link.value)
-    return FAVORITE_CHARACTER_TO_URL(link)
+    if link.raw_value:
+        return FAVORITE_CHARACTER_TO_URL(link)
+    return '#'
 
 @register.simple_tag(takes_context=True)
 def linkImageURL(context, link):

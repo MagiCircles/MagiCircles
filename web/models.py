@@ -128,6 +128,13 @@ class UserPreferences(models.Model):
         return 'main'
 
     @property
+    def age(self):
+        if not self.birthdate:
+            return None
+        today = datetime.date.today()
+        return today.year - self.birthdate.year - ((today.month, today.day) < (self.birthdate.month, self.birthdate.day))
+
+    @property
     def email_notifications_turned_off(self):
         if not self.email_notifications_turned_off_string:
             return []

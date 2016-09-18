@@ -92,6 +92,14 @@ def profileExtraContext(context):
             'translate_type': True,
             'flaticon': 'world',
         }))
+    if user.preferences.birthdate:
+        meta_links.append(AttrDict({
+            'type': 'Birthdate',
+            'value': _('{} ({})').format(user.preferences.birthdate, _('{age} years old').format(age=user.preferences.age)),
+            'translate_type': True,
+            'flaticon': 'event',
+            'raw_value': None,
+        }))
     context['item'].all_links = meta_links + context['item'].all_links
     num_links = len(context['item'].all_links)
     best_links_on_last_line = 0
