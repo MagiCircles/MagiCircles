@@ -42,6 +42,7 @@ def index(request):
 def login(request):
     context = getGlobalContext(request)
     context['next'] = request.GET['next'] if 'next' in request.GET else None
+    context['next_title'] = request.GET['next_title'] if 'next_title' in request.GET else None
     return login_view(request, template_name='pages/login.html', extra_context=context)
 
 def logout(request):
@@ -57,12 +58,19 @@ def signup(request):
             user = authenticate(username=form.cleaned_data['username'], password=form.cleaned_data['password'])
             preferences = models.UserPreferences.objects.create(user=user, language=request.LANGUAGE_CODE)
             login_action(request, user)
-            return redirect('/accounts/add/{}'.format('?next=' + urlquote(request.GET['next']) if 'next' in request.GET else ''))
+            print request.GET
+            print 'next' in request.GET and 'next_title' in request.GET
+            url = '/accounts/add/{}{}'.format(
+                ('?next={}'.format(urlquote(request.GET['next'])) if 'next' in request.GET else ''),
+                ('&next_title={}'.format(request.GET['next_title']) if 'next' in request.GET and 'next_title' in request.GET else ''))
+            print url
+            return redirect(url)
     else:
         form = CreateUserForm(request=request)
     context = getGlobalContext(request)
     context['form'] = form
     context['next'] = request.GET.get('next', None)
+    context['next_title'] = request.GET.get('next_title', None)
     return render(request, 'pages/signup.html', context)
 
 ############################################################
@@ -164,7 +172,7 @@ def about_game(request):
 
 def settings(request):
     context = getGlobalContext(request)
-    redirectWhenNotAuthenticated(request, context)
+    redirectWhenNotAuthenticated(request, context, next_title=_('Settings'))
     context['preferences'] = request.user.preferences
     context['accounts'] = request.user.accounts.all()
     context['forms'] = OrderedDict([

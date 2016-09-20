@@ -194,6 +194,8 @@ def add_view(request, name, collection, type=None, ajax=False, **kwargs):
     _authstaff_requirements('add', collection, request, context)
     context = _modification_view(context, name, collection, 'add')
     with_types = False
+    context['next'] = request.GET.get('next', None)
+    context['next_title'] = request.GET.get('next_title', None)
     if type is not None and 'types' in collection['add']:
         if type not in collection['add']['types']:
             raise Http404
@@ -221,12 +223,17 @@ def add_view(request, name, collection, type=None, ajax=False, **kwargs):
             afterSave = collection['add'].get('after_save', None)
             if afterSave:
                 instance = afterSave(request, instance)
+            if collection['add'].get('allow_next', True) and context['next']:
+                raise HttpRedirectException(context['next'])
+            nextParameters = '?next={}&next_title={}'.format(context['next'], context['next_title'] if context['next_title'] else '') if context['next'] else ''
             redirectAfterAdd = collection['add'].get('redirect_after_add', None)
             if redirectAfterAdd:
                 if callable(redirectAfterAdd):
-                    raise HttpRedirectException(redirectAfterAdd(request, instance, ajax))
-                raise HttpRedirectException(redirectAfterAdd if not ajax else '/ajax' + redirectAfterAdd)
-            raise HttpRedirectException(instance.item_url if not ajax else instance.ajax_item_url)
+                    redirectAfterAdd = redirectAfterAdd(request, instance, ajax)
+                    redirectAfterAdd += nextParameters.replace('?', '&' if '?' in redirectAfterAdd else nextParameters)
+                    raise HttpRedirectException(redirectAfterAdd)
+                raise HttpRedirectException((redirectAfterAdd if not ajax else '/ajax' + redirectAfterAdd) + (nextParameters.replace('?', '&' if '?' in redirectAfterAdd else nextParameters)))
+            raise HttpRedirectException((instance.item_url if not ajax else instance.ajax_item_url) + nextParameters)
     form.verb = 'Add'
     context['share_image'] = _get_share_image(context, collection, 'add')
     context['forms'] = { 'add': form }

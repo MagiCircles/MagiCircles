@@ -649,6 +649,7 @@ Collections add view settings dictionaries may contain the following:
 | after_save | Function called after the form is saved, takes request, instance and type. | None | |
 | savem2m | Should we call save_m2m to save the manytomany items after saving this model? | False | |
 | redirect_after_add | String URL or callback (that takes request, item, ajax) to redirect to after the item has been added | item URL | "/" |
+| allow_next | Will ignore redirect_after_add and will redirect to what's specified in 'next' if speficied | True | |
 | alert_duplicate | Should we display a warning that asks users to check if it doesn't already exist before adding it? | True | |
 | extra_context | Function that takes the context (with request inside) which allows you to add extra context, typically for your templates | None | [Example](https://gist.github.com/db0company/819ec1900fb207f865be69b92ce62c8e#file-magicirclesexamples-py-L20) |
 | filter_queryset | A function that takes a queryset, parameters and the request and return a modified queryset | None | [Example](https://gist.github.com/db0company/819ec1900fb207f865be69b92ce62c8e#file-magicirclesexamples-py-L1) |

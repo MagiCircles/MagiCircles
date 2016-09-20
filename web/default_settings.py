@@ -84,7 +84,7 @@ def _activitiesQuerysetWithLikesAndLiked(queryset, parameters, request):
 
 def _notificationsFilter(queryset, parameters, request):
     if not request.user.is_authenticated():
-        raise HttpRedirectException('/signup/?next=/notifications/')
+        raise HttpRedirectException(u'/signup/?next=/notifications/&next_title={}'.format(unicode(_('Notifications'))))
     if 'ajax_modal_only' in parameters:
         queryset = queryset.filter(seen=False)
     else:
@@ -110,6 +110,7 @@ DEFAULT_ENABLED_COLLECTIONS = OrderedDict([
             'alert_duplicate': False,
             'before_save': _accountBeforeSave,
             'redirect_after_add': _accountRedirectAfter,
+            'allow_next': False,
         },
         'edit': {
             'redirect_after_edit': _accountRedirectAfter,

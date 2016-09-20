@@ -17,6 +17,12 @@
 {% elif alert_message %}
 {% include 'include/alert.html' %}
 {% endif %}
+{% if next %}
+<input class="hidden" name="next" value="{{ next }}">
+{% if next_title %}
+<input class="hidden" name="next_title" value="{{ next_title }}">
+{% endif %}
+{% endif %}
 {% endblock %}
 
 {% block otherbuttons %}

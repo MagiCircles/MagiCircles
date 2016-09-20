@@ -5,6 +5,6 @@
 
 {% block submit %}{% trans 'Login' %}{% endblock %}
 {% block otherbuttons %}
-<a href="/signup/{% if next %}?next={{ next|urlencode }}{% endif %}" class="btn btn-lg btn-link">{% trans 'Sign Up' %}</a>
+<a href="/signup/{% if next %}?next={{ next|urlencode }}{% if next_title %}&next_title={{ next_title }}{% endif %}{% endif %}" class="btn btn-lg btn-link">{% trans 'Sign Up' %}</a>
 <a href="/password_reset/" class="btn btn-lg btn-link">{% trans 'Forgot password?' %}</a>
 {% endblock %}

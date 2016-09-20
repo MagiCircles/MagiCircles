@@ -80,9 +80,9 @@ def tourldash(string):
 def redirectToProfile(request, account=None):
     raise HttpRedirectException(u'/user/{}/{}/'.format(request.user.id, request.user.username, '#{}'.format(account.id) if account else ''))
 
-def redirectWhenNotAuthenticated(request, context):
+def redirectWhenNotAuthenticated(request, context, next_title=None):
     if not request.user.is_authenticated():
-        raise HttpRedirectException(u'/signup/?next={}'.format(context['current_url']))
+        raise HttpRedirectException(u'/signup/?next={}{}'.format(context['current_url'], u'&next_title={}'.format(unicode(next_title)) if next_title else u''))
 
 ############################################################
 # Dump model

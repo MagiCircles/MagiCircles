@@ -23,7 +23,7 @@
 		<input type="submit" class="btn btn-lg btn-{{ profile_user.preferences.css_color }}" value="{% if profile_user.followed %}{% trans 'Unfollow' %}{% else %}{% trans 'Follow' %}{% endif %}" data-reverse="{% if profile_user.followed %}{% trans 'Follow' %}{% else %}{% trans 'Unfollow' %}{% endif %}">
 	      </form>
 	      {% elif not user.is_authenticated %}
-	      <a href="/signup/?next={{ current_url }}" class="btn btn-lg btn-{{ profile_user.preferences.css_color }}">{% trans 'Follow' %}</a><br>
+	      <a href="/signup/?next={{ current_url }}&next_title={% trans 'Profile' %}: {{ profile_user }}" class="btn btn-lg btn-{{ profile_user.preferences.css_color }}">{% trans 'Follow' %}</a><br>
 	      {% elif is_me %}
 	      <a href="/settings/" class="btn btn-lg btn-{{ profile_user.preferences.css_color }}"><i class="flaticon-edit"></i> {% trans 'Settings' %}</a><br>
 	      {% endif %}
