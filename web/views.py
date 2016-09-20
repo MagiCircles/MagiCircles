@@ -8,6 +8,7 @@ from django.contrib.auth.views import logout as logout_view
 from django.contrib.auth import authenticate, login as login_action
 from django.utils.translation import ugettext_lazy as _, string_concat, get_language, activate as translation_activate
 from django.core.exceptions import PermissionDenied
+from django.utils.http import urlquote
 from django.db.models import Count
 from django.views.decorators.csrf import csrf_exempt
 from web.forms import CreateUserForm, UserForm, UserPreferencesForm, AddLinkForm, ChangePasswordForm, EmailsPreferencesForm, LanguagePreferencesForm
