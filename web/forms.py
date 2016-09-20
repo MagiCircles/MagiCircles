@@ -52,7 +52,7 @@ class FormSaveOwner(FormWithRequest):
 class _UserCheckEmailUsernameForm(FormWithRequest):
     def clean_email(self):
         email = self.cleaned_data.get('email')
-        if email and models.User.objects.filter(email=email).exclude(username=self.request.user.username).count():
+        if email and models.User.objects.filter(email__iexact=email).exclude(username=self.request.user.username).count():
             raise forms.ValidationError(
                 message=t["%(model_name)s with this %(field_labels)s already exists."],
                 code='unique_together',
@@ -67,6 +67,12 @@ class _UserCheckEmailUsernameForm(FormWithRequest):
                 message=t["%(field_labels)s can\'t contain only digits."],
                 code='unique_together',
                 params={'field_labels': t['Username']},
+            )
+        if models.User.objects.filter(username__iexact=username).exclude(username__exact=username).count():
+            raise forms.ValidationError(
+                message=t["%(model_name)s with this %(field_labels)s already exists."],
+                code='unique_together',
+                params={'model_name': t['User'], 'field_labels': t['Username']},
             )
         return username
 

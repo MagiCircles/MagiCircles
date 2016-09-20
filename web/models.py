@@ -221,6 +221,8 @@ class Activity(ItemModel):
             'id': self.owner_id,
             'username': self._cache_owner_username,
             'email': self._cache_owner_email,
+            'item_url': '/user/{}/{}/'.format(self.owner_id, self._cache_owner_username),
+            'ajax_item_url': '/ajax/user/{}/'.format(self.owner_id),
             'preferences': AttrDict({
                 'status': self._cache_owner_preferences_status,
                 'twitter': self._cache_owner_preferences_twitter,

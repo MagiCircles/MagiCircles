@@ -122,7 +122,7 @@ def user(request, pk=None, username=None):
     user = None
     if pk is None:
         queryset = collection['item']['filter_queryset'](collection['queryset'], {}, request) if 'filter_queryset' in collection['item'] else collection['queryset']
-        user = get_object_or_404(queryset, username=username)
+        user = get_object_or_404(queryset, username__iexact=username)
     return item_view(request, 'user', collection, pk=pk, ajax=False, item=user)
 
 ############################################################
