@@ -34,6 +34,8 @@ def index(request):
     collection['list'] = collection['list'].copy()
     collection['list']['before_template'] = 'include/homePage'
     collection['list']['extra_context'] = _index_extraContext
+    if 'filter_form' in collection['list']:
+        del(collection['list']['filter_form'])
     return list_view(request, 'activity', collection)
 
 ############################################################
