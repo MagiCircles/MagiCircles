@@ -3,6 +3,8 @@ from django.utils.translation import ugettext_lazy as _, string_concat
 from web.django_translated import t
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.utils import timezone
+from dateutil.relativedelta import relativedelta
 from django.db.models import Prefetch, Count, Q
 from django.conf.urls import url
 from web.middleware.httpredirect import HttpRedirectException
@@ -71,7 +73,10 @@ def _activitiesQuerysetWithLikesAndLiked(queryset, parameters, request):
             'liked': 'SELECT COUNT(*) FROM web_activity_likes WHERE activity_id = web_activity.id AND user_id = {}'.format(request.user.id),
         })
     if 'tags' in parameters:
-        for tag in parameters['tags'].split(','):
+        tags = parameters['tags']
+        if not isinstance(tags, list):
+            tags = tags.split(',')
+        for tag in tags:
             queryset = queryset.filter(tags_string__contains='"{}"'.format(tag))
     if 'owner_id' in parameters:
         queryset = queryset.filter(owner_id=parameters['owner_id'])
@@ -79,6 +84,21 @@ def _activitiesQuerysetWithLikesAndLiked(queryset, parameters, request):
         queryset = queryset.filter(Q(owner__in=request.user.preferences.following.all()) | Q(owner_id=request.user.id))
     elif request.user.is_authenticated() and request.user.preferences.view_activities_language_only:
         queryset = queryset.filter(language=request.LANGUAGE_CODE)
+    if 'search' in parameters and parameters['search']:
+        terms = parameters['search'].split(' ')
+        for term in terms:
+            queryset = queryset.filter(Q(message__icontains=term)
+                                       | Q(tags_string__icontains=term)
+                                   )
+    if 'ordering' in parameters and parameters['ordering'] == 'total_likes,id':
+        queryset = queryset.filter(modification__gte=timezone.now() - relativedelta(weeks=1))
+    if 'language' in parameters:
+        queryset = queryset.filter(language=parameters['language'])
+    if 'with_image' in parameters:
+        if parameters['with_image'] == '2':
+            queryset = queryset.filter(image__isnull=False).exclude(image='')
+        elif parameters['with_image'] == '3':
+            queryset = queryset.filter(Q(image__isnull=True) | Q(image=''))
     queryset = queryset.annotate(total_likes=Count('likes'))
     return queryset
 
@@ -156,6 +176,7 @@ DEFAULT_ENABLED_COLLECTIONS = OrderedDict([
             'filter_queryset': _activitiesQuerysetWithLikesAndLiked,
             'no_result_template': 'include/activityFollowMessage',
             'default_ordering': '-modification',
+            # filter_form is added in urls.py (forms.FilterActivities), can be specified in your settings as well
         },
         'item': {
             'js_files': ['bower/marked/lib/marked'],

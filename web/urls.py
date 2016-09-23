@@ -45,6 +45,8 @@ if 'user' in ENABLED_COLLECTIONS:
 if 'activity' in ENABLED_COLLECTIONS:
     if 'queryset' not in ENABLED_COLLECTIONS['activity']:
         ENABLED_COLLECTIONS['activity']['queryset'] = models.Activity.objects.all().annotate(total_likes=Count('likes'))
+    if 'list' in ENABLED_COLLECTIONS['activity'] and 'filter_form' not in ENABLED_COLLECTIONS['activity']['list']:
+        ENABLED_COLLECTIONS['activity']['list']['filter_form'] = forms.FilterActivities
     if 'add' in ENABLED_COLLECTIONS['activity'] and 'form_class' not in ENABLED_COLLECTIONS['activity']['add']:
         ENABLED_COLLECTIONS['activity']['add']['form_class'] = forms.Activity
     if 'edit' in ENABLED_COLLECTIONS['activity'] and 'form_class' not in ENABLED_COLLECTIONS['activity']['edit']:

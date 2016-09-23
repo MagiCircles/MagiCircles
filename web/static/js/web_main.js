@@ -449,7 +449,11 @@ function updateActivities() {
 	});
 	return false;
     });
-
+    if ($('#sidebar-wrapper #id_language').length > 0 && $('#sidebar-wrapper #id_language + .cuteform').length < 1) {
+	multiCuteForms({
+	    'language': true,
+	});
+    }
 }
 
 // *****************************************

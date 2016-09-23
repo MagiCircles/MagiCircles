@@ -294,6 +294,37 @@ class Activity(FormSaveOwner):
         model = models.Activity
         fields = ('message', 'tags', 'language', 'image')
 
+class FilterActivities(FormWithRequest):
+    tags = forms.MultipleChoiceField(
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        choices=[],
+        label=_('Tags'),
+    )
+    search = forms.CharField(required=False)
+    with_image = forms.NullBooleanField(required=False, initial=None, label=_('Image'))
+    ordering = forms.ChoiceField(choices=[
+        ('modification', _('Last Update')),
+        ('creation', _('Creation')),
+        ('total_likes,creation', string_concat(_('Most Popular'), ' (', _('All time'), ')')),
+        ('total_likes,id', string_concat(_('Most Popular'), ' (', _('This week'), ')')),
+    ], initial='modification', required=False, label=_('Ordering'))
+    reverse_order = forms.BooleanField(initial=True, required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(FilterActivities, self).__init__(*args, **kwargs)
+        self.fields['language'].required = False
+        if ACTIVITY_TAGS:
+            self.fields['tags'].choices = ACTIVITY_TAGS
+            if self.instance:
+                self.fields['tags'].initial = self.instance.tags
+        else:
+            self.fields.pop('tags')
+
+    class Meta:
+        model = models.Activity
+        fields = ('search', 'ordering', 'reverse_order', 'tags', 'with_image', 'language')
+
 ############################################################
 # Add/Edit reports
 

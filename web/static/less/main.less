@@ -501,10 +501,20 @@ nav a[href="/notifications/"] .badge {
     animation: blinker 2s linear infinite;
 }
 
-#profiletabs, #hometabs {
+#profiletabs {
     li {
 	width: 50%;
 	text-align: center;
+    }
+}
+
+#hometabs {
+    li {
+	width: 45%;
+	text-align: center;
+	&:last-child {
+	    width: 10%;
+	}
     }
 }
 
