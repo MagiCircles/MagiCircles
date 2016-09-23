@@ -92,7 +92,7 @@ def _activitiesQuerysetWithLikesAndLiked(queryset, parameters, request):
                                    )
     if 'ordering' in parameters and parameters['ordering'] == 'total_likes,id':
         queryset = queryset.filter(modification__gte=timezone.now() - relativedelta(weeks=1))
-    if 'language' in parameters:
+    if 'language' in parameters and parameters['language']:
         queryset = queryset.filter(language=parameters['language'])
     if 'with_image' in parameters:
         if parameters['with_image'] == '2':
