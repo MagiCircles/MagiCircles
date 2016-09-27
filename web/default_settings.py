@@ -62,7 +62,10 @@ def _userItemFilterQuerySet(queryset, parameters, request):
         queryset = queryset.extra(select={
             'is_followed_by': 'SELECT COUNT(*) FROM web_userpreferences_following WHERE userpreferences_id = (SELECT id FROM web_userpreferences WHERE user_id = auth_user.id) AND user_id = {}'.format(request.user.id),
         })
-    queryset = queryset.annotate(total_following=Count('preferences__following'), total_followers=Count('followers'))
+    queryset = queryset.extra(select={
+        'total_followers': 'SELECT COUNT(*) FROM web_userpreferences_following WHERE userpreferences_id = (SELECT id FROM web_userpreferences WHERE user_id = auth_user.id)'.format(request.user.id),
+        'total_following': 'SELECT COUNT(*) FROM web_userpreferences_following WHERE user_id = auth_user.id'.format(request.user.preferences.id),
+    })
     queryset = queryset.select_related('preferences', 'favorite_character1', 'favorite_character2', 'favorite_character3')
     queryset = queryset.prefetch_related(Prefetch('accounts', to_attr='all_accounts'), Prefetch('links', to_attr='all_links'))
     return queryset
