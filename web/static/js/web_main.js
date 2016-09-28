@@ -461,6 +461,7 @@ function updateActivities() {
 	    'language': true,
 	});
     }
+    reloadDisqus();
 }
 
 // *****************************************
