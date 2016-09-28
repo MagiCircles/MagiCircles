@@ -37,17 +37,17 @@ function handlefollow() {
     $('a[href="#followers"]').click(function(e) {
 	e.preventDefault();
 	var username = $('#username').text();
-	var text = $(this).closest('tr').find('th').text();
-	$.get('/ajax/users/?followers_of=' + username, function(data) {
-	    freeModal(username + ': ' + text, data);
+	var text = $(this).text();
+	$.get('/ajax/users/?ajax_modal_only&followers_of=' + username, function(data) {
+	    freeModal(username + ': ' + text, data, 0);
 	});
     });
     $('a[href="#following"]').click(function(e) {
 	e.preventDefault();
 	var username = $('#username').text();
-	var text = $(this).closest('tr').find('th').text();
-	$.get('/ajax/users/?followed_by=' +  username, function(data) {
-	    freeModal(username + ': ' + text, data);
+	var text = $(this).text();
+	$.get('/ajax/users/?ajax_modal_only&followed_by=' +  username, function(data) {
+	    freeModal(username + ': ' + text, data, 0);
 	});
     });
 }

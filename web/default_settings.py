@@ -157,6 +157,7 @@ DEFAULT_ENABLED_COLLECTIONS = OrderedDict([
         'list': {
             'default_ordering': 'username',
             'per_line': 6,
+            'page_size': 30,
             # filter_queryset added in urls.py (_userListFilterQuerySet), can be specified in your settings as well
         },
         'edit': {
