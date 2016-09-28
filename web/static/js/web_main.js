@@ -167,8 +167,15 @@ function ajaxModals() {
 			    $(this).ajaxSubmit({
 				context: this,
 				success: function(data) {
-				    freeModal(title, data, modalButtons, true);
-				    if (form_name != 'undefinfed'
+				    var form_modal_size = modal_size;
+				    if (typeof form_name != 'undefined'
+					&& $(data).find('form .generic-form-submit-button[name="' + form_name + '"]').length == 0
+					&& $(data).find('form .errorlist').length == 0
+					&& typeof button.data('ajax-modal-after-form-size') != 'undefined') {
+					form_modal_size = button.data('ajax-modal-after-form-size');
+				    }
+				    freeModal(title, data, modalButtons, form_modal_size);
+				    if (typeof form_name != 'undefined'
 					&& $('#freeModal form .generic-form-submit-button[name="' + form_name + '"]').length > 0
 					&& $('#freeModal form .errorlist').length > 0) {
 					ajaxModals_handleForms();
@@ -251,7 +258,7 @@ function gettext(term) {
 // Use true for modal_size to not change the size
 // Use 0 for buttons to remove all buttons
 function freeModal(title, body, buttons, modal_size) {
-    keep_size = typeof keep_size == 'undefined' ? false : keep_size;
+    keep_size = modal_size === true;
     if (!keep_size) {
 	$('#freeModal .modal-dialog').removeClass('modal-lg');
 	$('#freeModal .modal-dialog').removeClass('modal-md');
