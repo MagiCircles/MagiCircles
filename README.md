@@ -316,7 +316,7 @@ Start a new site
 21. Initialize the translation of the site:
    ```shell
    mkdir sample/locale/
-   python manage.py makemessages -l ru --ignore=sample/settings.py
+   python manage.py makemessages -l ja --ignore=env/* --ignore=settings.py --ignore=sample_project/sample/settings.py --ignore=web/templates/password/* --ignore=web/django_translated.py
    ```
 
 22. Initialize the models:
@@ -924,12 +924,3 @@ Flaticon
 ===
 
 The icons come from [flaticon.com](http://www.flaticon.com/) and are credited in the about page. To get the list of available icons, open your website on `/static/css/flaticon.html`.
-
-Editing this repo
-===
-
-When you add new messages:
-
-```shell
-pm makemessages -l fr --ignore=env/* --ignore=web/templates/password/* --ignore=base/settings.py --ignore=web/django_translated.py
-```

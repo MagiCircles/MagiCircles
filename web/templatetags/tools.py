@@ -47,3 +47,19 @@ from web.django_translated import t
 @register.simple_tag
 def t(string):
     return _(string)
+
+@register.simple_tag
+def format(string, **kwargs):
+    return string.format(**kwargs)
+
+@register.simple_tag
+def trans_format(string, **kwargs):
+    return _(string).format(**kwargs)
+
+@register.simple_tag
+def anon_format(string, **kwargs):
+    return string.format(*kwargs.values())
+
+@register.simple_tag
+def trans_anon_format(string, **kwargs):
+    return _(string).format(*kwargs.values())
