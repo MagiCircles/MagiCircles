@@ -37,11 +37,13 @@ class FormWithRequest(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.request = kwargs.pop('request', None)
         super(FormWithRequest, self).__init__(*args, **kwargs)
+        self.is_creating = not hasattr(self, 'instance') or not self.instance.pk
 
 class FormSaveOwner(FormWithRequest):
     def save(self, commit=True):
         instance = super(FormSaveOwner, self).save(commit=False)
-        instance.owner = self.request.user if self.request.user.is_authenticated() else None
+        if self.is_creating:
+            instance.owner = self.request.user if self.request.user.is_authenticated() else None
         if commit:
             instance.save()
         return instance
