@@ -58,7 +58,7 @@ class _UserCheckEmailUsernameForm(FormWithRequest):
                 code='unique_together',
                 params={'model_name': t['User'], 'field_labels': t['Email']},
             )
-        return email
+        return email.lower()
 
     def clean_username(self):
         username = self.cleaned_data.get('username')
