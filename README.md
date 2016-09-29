@@ -363,7 +363,7 @@ Your settings file is located in `sample/settings.py`.
 | GAME_NAME | Full name of the game that the site is about ("Sample Game") | *required* |
 | ACCOUNT_MODEL | Your custom model to handle game accounts (`models.Account`) | *required* |
 | COLOR | The dominant hex color of the site, must be the same than @mainColor in LESS ("#4a86e8") | *required* |
-| SITE_DESCRIPTION | Slogan, catch phrase of the site | "The {game name} Database & Community" |
+| SITE_DESCRIPTION | Slogan, catch phrase of the site. May be a callable that doesn't take any argument | "The {game name} Database & Community" |
 | ENABLED_NAVBAR_LISTS | See [Navbar Links](#navbar-links) documentation | |
 | ENABLED_PAGES | See [Enabled pages](#enabled-pages) documentation | |
 | ENABLED_COLLECTIONS | See [Enabled collections](#enabled-collections) documentation | |
@@ -393,7 +393,7 @@ Your settings file is located in `sample/settings.py`.
 | USER_COLORS | List of tuples (raw value, full localizable color name, CSS elements name (`btn-xx`, `panel-xx`, ...), hex code of the color) | None |
 | LATEST NEWS | A list of dictionaries that should contain image, title, url and may contain hide_title, used if you keep the default index page to show a carousel. Recommended to get this from [Generated Settings](#generated-settings) | None |
 | CALL_TO_ACTION | A sentence shown on the default index page to encourage visitors to sign up | _('Join the community!') |
-| SITE_LONG_DESCRIPTION | A long description of what the website does. Used on the about page. | A long text |
+| SITE_LONG_DESCRIPTION | A long description of what the website does. Used on the about page. May be a callable that doesn't take any argument | A long text |
 | GAME_DESCRIPTION | A long description of the game. Used on the about game page. | None (just shows game image) |
 | GAME_URL | A link to the official homepage of the game. Used on the about game page. | None (just shows game image) |
 | TOTAL_DONATORS | Total number of donators (you may use web.tools.totalDonators to save this value in the [generated settings](#generated-settings)) | 2 |

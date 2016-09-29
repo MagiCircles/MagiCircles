@@ -63,3 +63,9 @@ def anon_format(string, **kwargs):
 @register.simple_tag
 def trans_anon_format(string, **kwargs):
     return _(string).format(*kwargs.values())
+
+@register.filter
+def orcallable(var_or_callable):
+    if callable(var_or_callable):
+        return _(var_or_callable())
+    return _(var_or_callable)

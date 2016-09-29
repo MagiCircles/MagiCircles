@@ -72,12 +72,12 @@ else:
 if hasattr(settings_module, 'SITE_DESCRIPTION'):
     SITE_DESCRIPTION = getattr(settings_module, 'SITE_DESCRIPTION')
 else:
-    SITE_DESCRIPTION = _(u'The {game} Database & Community').format(game=GAME_NAME)
+    SITE_DESCRIPTION = lambda: _(u'The {game} Database & Community').format(game=GAME_NAME)
 
 if hasattr(settings_module, 'SITE_LONG_DESCRIPTION'):
     SITE_LONG_DESCRIPTION = getattr(settings_module, 'SITE_LONG_DESCRIPTION')
 else:
-    SITE_LONG_DESCRIPTION = _(u'{site} provides an extended database of information about the game {game} and allows you to keep track of your progress in the game. You can create and customize your very own profile to share your progress and your collection to all your friends. You can also meet other players like you with the social network: read what the others are doing and share your adventures with the community. Comment, like and follow the other players to grow your network. Find players near you with the global map of all the players. And much more!').format(site=SITE_NAME, game=GAME_NAME)
+    SITE_LONG_DESCRIPTION = lambda: _(u'{site} provides an extended database of information about the game {game} and allows you to keep track of your progress in the game. You can create and customize your very own profile to share your progress and your collection to all your friends. You can also meet other players like you with the social network: read what the others are doing and share your adventures with the community. Comment, like and follow the other players to grow your network. Find players near you with the global map of all the players. And much more!').format(site=SITE_NAME, game=GAME_NAME)
 
 if hasattr(settings_module, 'ENABLED_NAVBAR_LISTS'):
     ENABLED_NAVBAR_LISTS = getattr(settings_module, 'ENABLED_NAVBAR_LISTS')

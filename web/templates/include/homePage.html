@@ -1,8 +1,9 @@
 {% load i18n %}
+{% load tools %}
 <div class="default-index {% if user.is_authenticated %}index-authenticated{% else %}index-not-authenticated{% endif %}">
   <header>
     <h1 class="home-site-logo"><img src="{{ site_image }}" class="img-responsive" alt="{{ site_name }}"></h1>
-    <h2 class="home-site-description">{% trans site_description %}</h2>
+    <h2 class="home-site-description">{{ site_description|orcallable }}</h2>
     {% if user.is_authenticated and 'donate' in all_enabled %}
     <p class="fontx1-5 home-site-donate-message">
       {% blocktrans %}is crowdfunded by {{ total_donators }} {{ adjective }} donators{% endblocktrans %}
