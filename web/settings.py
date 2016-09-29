@@ -211,6 +211,11 @@ if hasattr(settings_module, 'ON_PREFERENCES_EDITED'):
 else:
     ON_PREFERENCES_EDITED = None
 
+if hasattr(settings_module, 'PROFILE_EXTRA_TABS'):
+    PROFILE_EXTRA_TABS = getattr(settings_module, 'PROFILE_EXTRA_TABS')
+else:
+    PROFILE_EXTRA_TABS = None
+
 ############################################################
 # Specified in django settings
 

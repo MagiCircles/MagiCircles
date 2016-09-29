@@ -401,6 +401,7 @@ Your settings file is located in `sample/settings.py`.
 | ON_PREFERENCES_EDITED | Callback after a user's preferences have been changed, takes request (contains updated request.user.preferences) | None |
 | GOOGLE_ANALYTICS | Tracking number for Google Analytics | 'UA-67529921-1' |
 | STATIC_FILES_VERSION | A number or string that you can change when you update the css or js file of your project to force update the cache of your users in production | '1' |
+| PROFILE_EXTRA_TABS | A dictionary of tab name -> dictionary (name, icon, callback (= js)) to show more tabs on profile (in addition to activities and accounts) | None |
 
 Enable/Disable default pages and collections
 ===

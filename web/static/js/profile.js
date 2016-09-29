@@ -54,8 +54,8 @@ function handlefollow() {
 
 function profileTabs() {
     $('#profiletabs li a').on('show.bs.tab', function (e) {
+	var user_id = $('#username').data('user-id');
 	if ($(e.target).attr('href') == '#profileactivities' && $('#activities').text() == "") {
-	    var user_id = $('#username').data('user-id');
 	    $.get('/ajax/activities/?owner_id=' + user_id, function(html) {
 		$('#activities').html(html);
 		if ($.trim($('#activities').text()) == '') {
@@ -64,7 +64,17 @@ function profileTabs() {
 		    updateActivities();
 		    pagination('/ajax/activities/', '&owner_id=' + user_id, updateActivities);
 		}
-	    })
+	    });
+	} else if ($(e.target).attr('href') != '#profileaccounts') {
+	    var tab_name = $(e.target).attr('href').replace('#profile', '');
+	    if ($('#profile' + tab_name).text() == "") {
+		window[tab_callbacks[tab_name]](user_id, function(data, onDone) {
+		    $('#profile' + tab_name).html(data);
+		    if (typeof onDone != 'undefined') {
+			onDone(user_id);
+		    }
+		});
+	    }
 	}
     });
 }
