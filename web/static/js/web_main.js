@@ -463,8 +463,23 @@ function updateActivities() {
 // *****************************************
 // Markdown + AutoLink
 
+var entityMap = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': '&quot;',
+    "'": '&#39;',
+    "/": '&#x2F;'
+};
+
+function escapeHtml(string) {
+    return String(string).replace(/[&<>"'\/]/g, function (s) {
+	return entityMap[s];
+    });
+}
+
 function applyMarkdown(elt) {
-    elt.html(Autolinker.link(marked(elt.text()), { newWindow: true, stripPrefix: true } ));
+    elt.html(Autolinker.link(marked(escapeHtml(elt.text())), { newWindow: true, stripPrefix: true } ));
 }
 
 // *****************************************
