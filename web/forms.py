@@ -301,7 +301,7 @@ class FilterActivities(FormWithRequest):
         choices=[],
         label=_('Tags'),
     )
-    search = forms.CharField(required=False, label=_('Search'))
+    search = forms.CharField(required=False, label=t['Search'])
     with_image = forms.NullBooleanField(required=False, initial=None, label=_('Image'))
     ordering = forms.ChoiceField(choices=[
         ('modification', _('Last Update')),
