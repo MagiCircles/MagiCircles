@@ -1,8 +1,8 @@
 {% load i18n %}
+{% load l10n %}
 {% load wchoices %}
 {% load tools %}
 {% load web_tags %}
-
 {% with profile_user=item %}
 <div>
   <br><br>
@@ -66,17 +66,17 @@
     <!-- Nav tabs -->
     {% if 'activity' in all_enabled %}
     <ul class="nav nav-tabs" id="profiletabs">
-      <li class="active" style="width: {{ profile_tabs_size }}%;"><a href="#profileaccounts" data-toggle="tab">
+      <li class="active" style="width: {% localize off %}{{ profile_tabs_size }}{% endlocalize %}%;"><a href="#profileaccounts" data-toggle="tab">
 	  <i class="flaticon-users"></i>
 	  <span class="hidden-xs hidden-sm">{% if profile_user.all_accounts|length > 1 %}{% trans 'Accounts' %}{% else %}{% trans 'Account' %}{% endif %}</span>
       </a></li>
-      <li style="width: {{ profile_tabs_size }}%;"><a href="#profileactivities" data-toggle="tab">
+      <li style="width: {% localize off %}{{ profile_tabs_size }}{% endlocalize %}%;"><a href="#profileactivities" data-toggle="tab">
 	  <i class="flaticon-comments"></i>
 	  <span class="hidden-xs hidden-sm">{% trans 'Activities' %}</span>
       </a></li>
       {% if profile_extra_tabs %}
       {% for tab_name, tab in profile_extra_tabs.items %}
-      <li style="width: {{ profile_tabs_size }}%;"><a href="#profile{{ tab_name }}" data-toggle="tab">
+      <li style="width: {% localize off %}{{ profile_tabs_size }}{% endlocalize %}%;"><a href="#profile{{ tab_name }}" data-toggle="tab">
 	  {% if tab.icon %}<i class="flaticon-{{ tab.icon }}"></i><span class="hidden-xs hidden-sm">{% endif %}
 	  {{ tab.name }}{% if tab.icon %}</span>{% endif %}
       </a></li>
