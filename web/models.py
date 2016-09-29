@@ -280,6 +280,7 @@ class Notification(ItemModel):
     collection_name = 'notification'
 
     owner = models.ForeignKey(User, related_name='notifications', db_index=True)
+    creation = models.DateTimeField(auto_now_add=True)
     message = models.PositiveIntegerField(choices=NOTIFICATION_CHOICES)
     message_data = models.TextField(blank=True, null=True)
     url_data = models.TextField(blank=True, null=True)

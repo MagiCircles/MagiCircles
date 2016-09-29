@@ -110,8 +110,6 @@ def _notificationsFilter(queryset, parameters, request):
         raise HttpRedirectException(u'/signup/?next=/notifications/&next_title={}'.format(unicode(_('Notifications'))))
     if 'ajax_modal_only' in parameters:
         queryset = queryset.filter(seen=False)
-    else:
-        queryset = queryset.filter(seen=True)
     return queryset.filter(owner=request.user)
 
 DEFAULT_ENABLED_COLLECTIONS = OrderedDict([
@@ -209,7 +207,7 @@ DEFAULT_ENABLED_COLLECTIONS = OrderedDict([
             'per_line': 1,
             'page_size': 5,
             'filter_queryset': _notificationsFilter,
-            'default_ordering': 'seen',
+            'default_ordering': 'seen,-creation,-id',
             # extra_context is added in urls.py (to mark notifications as read), can be specified in your settings as well
         },
     }),

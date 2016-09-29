@@ -76,21 +76,18 @@ function dateInputSupport() {
 // *****************************************
 // Notifications
 
-function loadNotifications(callbackOnLoaded) {
-    var usernamebutton = $('[href="#navbarusername"]');
-}
-
 function notificationsHandler() {
     var button = $('a[href="/notifications/"]');
     var world = button.find('.flaticon-world');
     var loader = button.find('.flaticon-loading');
     var badge = button.find('.badge');
-    if (badge.length > 0) {
+    if (badge.length > 0 && $(document).width() > 992) {
 	var onClick = function(e) {
 	    e.preventDefault();
+	    button.unbind('click');
 	    world.hide();
 	    loader.show();
-	    $.get('/ajax/notifications/?ajax_modal_only', function(data) {
+	    $.get('/ajax/notifications/?ajax_modal_only&page_size=2', function(data) {
 		var onShown = function() {
 		    var remaining = $('nav.navbar ul.navbar-right .popover span.remaining').text();
 		    if (remaining != '') {
@@ -99,7 +96,6 @@ function notificationsHandler() {
 		    } else {
 			button.unbind('click');
 		    }
-		    $('nav.navbar ul.navbar-right .popover .open_remaining a').click(onClick);
 		};
 		loader.hide();
 		badge.hide();
