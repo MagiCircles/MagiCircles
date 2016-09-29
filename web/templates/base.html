@@ -96,7 +96,7 @@
 		    {% elif link.image %}
 		    <img src="{{ static_url }}img/{{ link.image }}.png" height="16" />
 		    {% endif %}
-		    {% if link.image or link.icon %}<span class="hidden-sm"> &nbsp; {% else %}<span>{% endif %}
+		    {% if link.image or link.icon %}<span class="hidden-xs"> &nbsp; {% else %}<span>{% endif %}
 			{% navbarTitle link=link %}
 	              </span>
 		  </a>
