@@ -399,6 +399,7 @@ function genericAjaxError(xhr, ajaxOptions, thrownError) {
 // Handle actions on activities view
 
 function updateActivities() {
+    loadPopovers();
     $('.activity .message').each(function() {
 	if (!$(this).hasClass('.markdowned')) {
 	    applyMarkdown($(this));

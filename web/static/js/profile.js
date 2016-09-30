@@ -81,6 +81,7 @@ function profileTabs() {
 
 $(document).ready(function() {
     handlefollow();
+    loadPopovers();
     applyMarkdown($('.topprofile .description'));
     profileTabs();
 });

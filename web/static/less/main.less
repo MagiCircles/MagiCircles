@@ -325,7 +325,7 @@ body.current-map, html.html-current-map {
 	    right: 20px;
 	    bottom: 10px;
 	}
-	&:hover {
+	&:hover, &:focus {
 	    .flaticon-link {
 		display: block;
 	    }
@@ -482,6 +482,17 @@ nav {
 
 .avatar {
     border-radius: 10%;
+}
+.avatar_wrapper {
+    .flaticon-heart {
+	display: block;
+	.simple-shadow(white);
+    }
+}
+a.avatar_wrapper {
+    &:hover, &:focus {
+	text-decoration: none;
+    }
 }
 
 .notification {
