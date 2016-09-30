@@ -4,6 +4,7 @@ from django.conf import settings
 from django.utils.translation import ugettext_lazy as _, string_concat
 from django.db.models import Count, Q, Prefetch
 from django.db import connection
+from web import bouncy # unused, only to force load the feedback process
 from web import views as web_views
 from web import views_collections, models, forms
 from web.settings import ENABLED_PAGES, ENABLED_COLLECTIONS, ENABLED_NAVBAR_LISTS, SITE_NAME, GAME_NAME, SITE_DESCRIPTION, SITE_STATIC_URL, SITE_URL, GITHUB_REPOSITORY, SITE_LOGO, JAVASCRIPT_TRANSLATED_TERMS, ACCOUNT_MODEL, STATIC_UPLOADED_FILES_PREFIX, COLOR, SITE_IMAGE, TRANSLATION_HELP_URL, DISQUS_SHORTNAME, HASHTAGS, TWITTER_HANDLE, EMPTY_IMAGE, GOOGLE_ANALYTICS, STATIC_FILES_VERSION
@@ -95,6 +96,7 @@ if 'notification' in ENABLED_COLLECTIONS:
 RAW_CONTEXT['navbar_links'] = []
 RAW_CONTEXT['navbar_links_lists'] = ENABLED_NAVBAR_LISTS.copy()
 urls = [
+    url(r'^bouncy/', include('django_bouncy.urls', app_name='django_bouncy')),
     url(r'^i18n/', include('django.conf.urls.i18n')),
     url(r'^password_reset[/]+$', 'django.contrib.auth.views.password_reset', {
         'template_name': 'password/password_reset_form.html',

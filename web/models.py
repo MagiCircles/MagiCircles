@@ -73,6 +73,7 @@ class UserPreferences(models.Model):
     view_activities_language_only = models.BooleanField(_('View activities in your language only?'), default=False)
     email_notifications_turned_off_string = models.CharField(max_length=15, null=True)
     unread_notifications = models.PositiveIntegerField(default=0)
+    invalid_email = models.BooleanField(default=False)
 
     def localized_favorite_character(self, number):
         if getattr(self, 'favorite_character{}'.format(number)) and FAVORITE_CHARACTERS:
@@ -143,6 +144,8 @@ class UserPreferences(models.Model):
         return [int(t) for t in self.email_notifications_turned_off_string.split(',')]
 
     def is_notification_email_allowed(self, notification_type):
+        if self.invalid_email:
+            return False
         for type in self.email_notifications_turned_off:
             if type == notification_type:
                 return False
@@ -287,6 +290,11 @@ class Notification(ItemModel):
     email_sent = models.BooleanField(default=False)
     seen = models.BooleanField(default=False)
     image = models.ImageField(upload_to=uploadToRandom('notifications/'), null=True, blank=True)
+
+    @property
+    def english_message(self):
+        data = split_data(self.message_data)
+        return NOTIFICATION_DICT[self.message].format(*data)
 
     @property
     def localized_message(self):

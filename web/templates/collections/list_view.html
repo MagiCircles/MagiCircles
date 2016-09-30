@@ -72,7 +72,7 @@
 	      {% if button.image %}
 	      <img src="{{ static_url }}img/{{ button.image }}.png" alt="{{ button.title }}" height="20" width="20">
 	      {% endif %}
-	      {% trans 'Add' %} {% trans title %}:<br>{% trans title %}
+	      {% trans 'Add' %} {% trans title %}:<br>{{ button.subtitle }}
 	    </a>
 	  </div>
 	  {% endfor %}
@@ -85,7 +85,7 @@
 	      <img src="{{ static_url }}img/{{ button.image }}.png" alt="{{ button.title }}">
 	      {% endif %}
 	      <h3>{% trans 'Add' %} {% trans title %}</h3>
-	      <small>{{ add_button_subtitle }}</small>
+	      <small>{{ button.subtitle }}</small>
 	    </a>
 	  </div>
 	  {% endfor %}

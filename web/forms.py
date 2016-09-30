@@ -81,6 +81,19 @@ class _UserCheckEmailUsernameForm(FormWithRequest):
     def __init__(self, *args, **kwargs):
         super(_UserCheckEmailUsernameForm, self).__init__(*args, **kwargs)
         self.fields['email'].required = True
+        if not self.is_creating:
+            self.previous_email = self.instance.email
+        else:
+            self.previous_email = None
+
+    def save(self, commit=True):
+        instance = super(_UserCheckEmailUsernameForm, self).save(commit=False)
+        if self.previous_email and self.previous_email != instance.email and instance.preferences.invalid_email:
+            instance.preferences.invalid_email = False
+            instance.preferences.save()
+        if commit:
+            instance.save()
+        return instance
 
 class CreateUserForm(_UserCheckEmailUsernameForm):
     password = forms.CharField(widget=forms.PasswordInput(), min_length=6, label=t['Password'])

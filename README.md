@@ -604,6 +604,7 @@ Collections list view settings dictionaries may contain the following:
 | distinct | The database query makes sure the results only appear once (significantly slower) | True | |
 | filter_form | Django form that will appear on the right side panel and allow people to search / filter, must take request (make it inherit from FormWithRequest) | None (no side bar) | [Example](https://gist.github.com/db0company/819ec1900fb207f865be69b92ce62c8e#file-magicirclesexamples-py-L8) |
 | add_button_subtitle | Sentence to write below the add buttons | _('Become a contributor to help us fill the database') | _('Create an account to join the community!') |
+| show_add_button | Should the add button be visible on the list page(if the user can add)? Can be a callable that takes request | True | |
 | show_title | Should the plural_title of the collection be displayed on top of the list? | False | |
 | ajax | Enable getting this page in ajax, the ajax auto scroll pagination will not work if this is disabled, not recommended | True | |
 | ajax_pagination_callback | The name of a javascript function to call everytime a new page loads (including the first time) | None | "updateCards" (See [Example](https://gist.github.com/db0company/b9fde532eafb333beb57ab7903e69749#file-magicirclesexamples-js-L1)) |
