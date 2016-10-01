@@ -401,7 +401,7 @@ function genericAjaxError(xhr, ajaxOptions, thrownError) {
 function updateActivities() {
     loadPopovers();
     $('.activity .message').each(function() {
-	if (!$(this).hasClass('.markdowned')) {
+	if (!$(this).hasClass('markdowned')) {
 	    applyMarkdown($(this));
 	    $(this).addClass('markdowned');
 	}
