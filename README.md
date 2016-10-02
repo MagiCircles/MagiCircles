@@ -365,6 +365,7 @@ Your settings file is located in `sample/settings.py`.
 | ACCOUNT_MODEL | Your custom model to handle game accounts (`models.Account`) | *required* |
 | COLOR | The dominant hex color of the site, must be the same than @mainColor in LESS ("#4a86e8") | *required* |
 | SITE_DESCRIPTION | Slogan, catch phrase of the site. May be a callable that doesn't take any argument | "The {game name} Database & Community" |
+| EMAIL_IMAGE | Path of the image in `sample/static/img` folder ("sample.png") that will appear at the beginning of all the emails. | value of SITE_IMAGE |
 | ENABLED_NAVBAR_LISTS | See [Navbar Links](#navbar-links) documentation | |
 | ENABLED_PAGES | See [Enabled pages](#enabled-pages) documentation | |
 | ENABLED_COLLECTIONS | See [Enabled collections](#enabled-collections) documentation | |

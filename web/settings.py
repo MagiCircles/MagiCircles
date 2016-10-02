@@ -29,6 +29,11 @@ if hasattr(settings_module, 'WIKI'):
 else:
     WIKI = GITHUB_REPOSITORY
 
+if hasattr(settings_module, 'EMAIL_IMAGE'):
+    EMAIL_IMAGE = getattr(settings_module, 'EMAIL_IMAGE')
+else:
+    EMAIL_IMAGE = SITE_IMAGE
+
 if hasattr(settings_module, 'BUG_TRACKER_URL'):
     BUG_TRACKER_URL = getattr(settings_module, 'BUG_TRACKER_URL')
 else:
