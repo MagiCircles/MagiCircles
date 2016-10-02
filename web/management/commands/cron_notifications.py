@@ -32,7 +32,10 @@ class Command(BaseCommand):
                             to=[notification.owner.email],
                             context=context,
                         )
-                        print u'Email sent to {}: {}'.format(notification.owner.username, notification.localized_message.replace('\n', ''))
+                        try:
+                            print u'Email sent to {}: {}'.format(notification.owner.username, notification.localized_message.replace('\n', ''))
+                        except:
+                            print 'Email sent'
                         sent.append(notification_sent)
                     except Exception, e:
                         print u'!! Error when sending email to {} !!'.format(notification.owner.email)
@@ -40,6 +43,9 @@ class Command(BaseCommand):
                         notification.owner.preferences.invalid_email = True
                         notification.owner.preferences.save()
             else:
-                print '  No email for {}: {}'.format(notification.owner.username, notification.localized_message.replace('\n', ''))
+                try:
+                    print '  No email for {}: {}'.format(notification.owner.username, notification.localized_message.replace('\n', ''))
+                except:
+                    print 'No email'
             notification.email_sent = True
             notification.save()
