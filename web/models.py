@@ -294,12 +294,12 @@ class Notification(ItemModel):
     @property
     def english_message(self):
         data = split_data(self.message_data)
-        return NOTIFICATION_DICT[self.message].format(*data)
+        return NOTIFICATION_DICT[self.message].format(*data).replace('\n', '')
 
     @property
     def localized_message(self):
         data = split_data(self.message_data)
-        return _(NOTIFICATION_DICT[self.message]).format(*data)
+        return _(NOTIFICATION_DICT[self.message]).format(*data).replace('\n', '')
 
     @property
     def website_url(self):
