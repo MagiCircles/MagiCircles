@@ -20,6 +20,13 @@ _usernameRegexp = '[\w.@+-]+'
 ############################################################
 # Javascript translated terms
 
+FORCE_ADD_TO_TRANSLATION = [
+    _('All'), _('Only'), _('None'),
+    _('Unknown'), _('Yes'), _('No'),
+    _('Liked this activity'),
+    _('Loading'), _('No result.'),
+]
+
 DEFAULT_JAVASCRIPT_TRANSLATED_TERMS = [
     'All', 'Only', 'None',
     'Unknown', 'Yes', 'No',
