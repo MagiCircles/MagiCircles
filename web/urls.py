@@ -7,7 +7,7 @@ from django.db import connection
 #from web import bouncy # unused, only to force load the feedback process
 from web import views as web_views
 from web import views_collections, models, forms
-from web.settings import ENABLED_PAGES, ENABLED_COLLECTIONS, ENABLED_NAVBAR_LISTS, SITE_NAME, EMAIL_IMAGE, GAME_NAME, SITE_DESCRIPTION, SITE_STATIC_URL, SITE_URL, GITHUB_REPOSITORY, SITE_LOGO, JAVASCRIPT_TRANSLATED_TERMS, ACCOUNT_MODEL, STATIC_UPLOADED_FILES_PREFIX, COLOR, SITE_IMAGE, TRANSLATION_HELP_URL, DISQUS_SHORTNAME, HASHTAGS, TWITTER_HANDLE, EMPTY_IMAGE, GOOGLE_ANALYTICS, STATIC_FILES_VERSION
+from web.settings import ENABLED_PAGES, ENABLED_COLLECTIONS, ENABLED_NAVBAR_LISTS, SITE_NAME, EMAIL_IMAGE, GAME_NAME, SITE_DESCRIPTION, SITE_STATIC_URL, SITE_URL, GITHUB_REPOSITORY, SITE_LOGO, JAVASCRIPT_TRANSLATED_TERMS, ACCOUNT_MODEL, STATIC_UPLOADED_FILES_PREFIX, COLOR, SITE_IMAGE, TRANSLATION_HELP_URL, DISQUS_SHORTNAME, HASHTAGS, TWITTER_HANDLE, EMPTY_IMAGE, GOOGLE_ANALYTICS, STATIC_FILES_VERSION, DONATE_IMAGE
 from web.default_settings import RAW_CONTEXT
 
 views_module = __import__(settings.SITE + '.views', fromlist=[''])
@@ -35,9 +35,27 @@ def _reportFilter(queryset, parameters, request):
         queryset = queryset.filter(reported_thing=parameters['reported_thing'])
     return queryset
 
+def _userItemFilterQuerySet(queryset, parameters, request):
+    if request.user.is_authenticated():
+        queryset = queryset.extra(select={
+            'followed': 'SELECT COUNT(*) FROM web_userpreferences_following WHERE userpreferences_id = {} AND user_id = auth_user.id'.format(request.user.preferences.id),
+        })
+        queryset = queryset.extra(select={
+            'is_followed_by': 'SELECT COUNT(*) FROM web_userpreferences_following WHERE userpreferences_id = (SELECT id FROM web_userpreferences WHERE user_id = auth_user.id) AND user_id = {}'.format(request.user.id),
+        })
+    queryset = queryset.extra(select={
+        'total_following': 'SELECT COUNT(*) FROM web_userpreferences_following WHERE userpreferences_id = (SELECT id FROM web_userpreferences WHERE user_id = auth_user.id)',
+        'total_followers': 'SELECT COUNT(*) FROM web_userpreferences_following WHERE user_id = auth_user.id',
+    })
+    queryset = queryset.select_related('preferences', 'favorite_character1', 'favorite_character2', 'favorite_character3')
+    queryset = queryset.prefetch_related(Prefetch('accounts', to_attr='all_accounts'), Prefetch('links', to_attr='all_links'))
+    return queryset
+
 if 'user' in ENABLED_COLLECTIONS:
     if 'item' in ENABLED_COLLECTIONS['user'] and 'extra_context' not in ENABLED_COLLECTIONS['user']['item']:
         ENABLED_COLLECTIONS['user']['item']['extra_context'] = web_views.profileExtraContext
+    if 'item' in ENABLED_COLLECTIONS['user'] and 'filter_queryset' not in ENABLED_COLLECTIONS['user']['item']:
+        ENABLED_COLLECTIONS['user']['item']['filter_queryset'] = _userItemFilterQuerySet
     if 'list' in ENABLED_COLLECTIONS['user'] and 'filter_queryset' not in ENABLED_COLLECTIONS['user']['list']:
         ENABLED_COLLECTIONS['user']['list']['filter_queryset'] = _userListFilterQuerySet
     if 'edit' in ENABLED_COLLECTIONS['user'] and 'form_class' not in ENABLED_COLLECTIONS['user']['edit']:
@@ -73,6 +91,14 @@ if 'report' in ENABLED_COLLECTIONS:
         if 'edit' in ENABLED_COLLECTIONS['report']:
             ENABLED_COLLECTIONS['report']['edit']['form_class'] = forms.ReportForm
 
+if 'badge' in ENABLED_COLLECTIONS:
+    if 'queryset' not in ENABLED_COLLECTIONS['badge']:
+        ENABLED_COLLECTIONS['badge']['queryset'] = models.Badge.objects.all()
+    if 'add' in ENABLED_COLLECTIONS['badge'] and 'form_class' not in ENABLED_COLLECTIONS['badge']['add']:
+        ENABLED_COLLECTIONS['badge']['add']['form_class'] = forms.BadgeForm
+    if 'edit' in ENABLED_COLLECTIONS['badge'] and 'form_class' not in ENABLED_COLLECTIONS['badge']['edit']:
+        ENABLED_COLLECTIONS['badge']['edit']['form_class'] = forms.BadgeForm
+
 def _notificationMarkAsRead(context):
     to_update = [item.pk for item in context['items'] if not item.seen]
     if to_update:
@@ -89,6 +115,17 @@ if 'notification' in ENABLED_COLLECTIONS:
         ENABLED_COLLECTIONS['notification']['queryset'] = models.Notification.objects.all()
     if 'list' in ENABLED_COLLECTIONS['notification'] and 'extra_context' not in ENABLED_COLLECTIONS['notification']['list']:
         ENABLED_COLLECTIONS['notification']['list']['extra_context'] = _notificationMarkAsRead
+
+def _donateExtraContext(context):
+    request = context['request']
+    context['show_paypal'] = 'show_paypal' in request.GET
+    context['donate_image'] = DONATE_IMAGE
+
+if 'donate' in ENABLED_COLLECTIONS:
+    if 'queryset' not in ENABLED_COLLECTIONS['donate']:
+        ENABLED_COLLECTIONS['donate']['queryset'] = models.DonationMonth.objects.all().prefetch_related(Prefetch('badges', queryset=models.Badge.objects.select_related('user', 'user__preferences').order_by('-show_on_profile'), to_attr='all_badges'))
+    if 'list' in ENABLED_COLLECTIONS['donate'] and 'extra_context' not in ENABLED_COLLECTIONS['donate']['list']:
+        ENABLED_COLLECTIONS['donate']['list']['extra_context'] = _donateExtraContext
 
 ############################################################
 # Navbar lists with dropdowns

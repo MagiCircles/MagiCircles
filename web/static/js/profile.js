@@ -84,4 +84,13 @@ $(document).ready(function() {
     loadPopovers();
     applyMarkdown($('.topprofile .description'));
     profileTabs();
+
+    $('[href="#openBadges"]').click(function(e) {
+	e.preventDefault();
+	$('.nav-tabs [href="#profilebadges"]').tab('show');
+	$('html, body').stop().animate({
+	    scrollTop: $('#profilebadges').offset().top
+	}, 1500, 'easeInOutExpo');
+	return false;
+    });
 });

@@ -484,6 +484,28 @@ function applyMarkdown(elt) {
 }
 
 // *****************************************
+// Load Badges
+
+function updateBadges() {
+    ajaxModals();
+}
+
+function afterLoadBadges(user_id) {
+    updateBadges();
+    pagination('/ajax/badges/', '&of_user=' + user_id, updateCards);
+}
+
+function loadBadges(user_id, onDone) {
+    $.get('/ajax/badges/?of_user=' + user_id, function(data) {
+        if (data.trim() == "") {
+	    onDone('<div class="padding20"><div class="alert alert-warning">' + gettext('No result.') + '</div></div>', loadBadges);
+	} else {
+	    onDone(data, afterLoadBadges);
+	}
+    });
+}
+
+// *****************************************
 // iTunes
 
 function pauseAllSongs() {

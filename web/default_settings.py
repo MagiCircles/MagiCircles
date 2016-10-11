@@ -5,7 +5,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.utils import timezone
 from dateutil.relativedelta import relativedelta
-from django.db.models import Prefetch, Count, Q
+from django.db.models import Count, Q
 from django.conf.urls import url
 from web.middleware.httpredirect import HttpRedirectException
 
@@ -61,22 +61,6 @@ def _accountRedirectAfter(request, instance, ajax=False):
 def _accountRedirectAfterDelete(request, instance, ajax=False):
     return request.user.item_url
 
-def _userItemFilterQuerySet(queryset, parameters, request):
-    if request.user.is_authenticated():
-        queryset = queryset.extra(select={
-            'followed': 'SELECT COUNT(*) FROM web_userpreferences_following WHERE userpreferences_id = {} AND user_id = auth_user.id'.format(request.user.preferences.id),
-        })
-        queryset = queryset.extra(select={
-            'is_followed_by': 'SELECT COUNT(*) FROM web_userpreferences_following WHERE userpreferences_id = (SELECT id FROM web_userpreferences WHERE user_id = auth_user.id) AND user_id = {}'.format(request.user.id),
-        })
-    queryset = queryset.extra(select={
-        'total_following': 'SELECT COUNT(*) FROM web_userpreferences_following WHERE userpreferences_id = (SELECT id FROM web_userpreferences WHERE user_id = auth_user.id)',
-        'total_followers': 'SELECT COUNT(*) FROM web_userpreferences_following WHERE user_id = auth_user.id',
-    })
-    queryset = queryset.select_related('preferences', 'favorite_character1', 'favorite_character2', 'favorite_character3')
-    queryset = queryset.prefetch_related(Prefetch('accounts', to_attr='all_accounts'), Prefetch('links', to_attr='all_links'))
-    return queryset
-
 def _activitiesQuerysetWithLikesAndLiked(queryset, parameters, request):
     if request.user.is_authenticated():
         queryset = queryset.extra(select={
@@ -111,6 +95,22 @@ def _activitiesQuerysetWithLikesAndLiked(queryset, parameters, request):
             queryset = queryset.filter(Q(image__isnull=True) | Q(image=''))
     queryset = queryset.annotate(total_likes=Count('likes'))
     return queryset
+
+def _badgesFilter(queryset, parameters, request):
+    if 'of_user' in parameters and parameters['of_user']:
+        queryset = queryset.filter(user_id=parameters['of_user'])
+        request.context_show_user = False
+    else:
+        queryset = queryset.select_related('user')
+        request.context_show_user = True
+    return queryset
+
+def _badgesExtraContext(context):
+    request = context['request']
+    context['show_user'] = request.context_show_user
+
+def _badgesFilterItem(queryset, parameters, request):
+    return queryset.select_related('owner')
 
 def _notificationsFilter(queryset, parameters, request):
     if not request.user.is_authenticated():
@@ -156,7 +156,7 @@ DEFAULT_ENABLED_COLLECTIONS = OrderedDict([
             'js_files': ['bower/marked/lib/marked', 'profile'],
             'template': 'profile',
             'comments_enabled': False,
-            'filter_queryset': _userItemFilterQuerySet,
+            # filter_queryset added in urls.py (__userItemFilterQuerySet), can be specified in your settings as well
             # extra_context added in urls.py (web.views.profileExtraContext), can be specified in your settings as well
         },
         'list': {
@@ -218,6 +218,34 @@ DEFAULT_ENABLED_COLLECTIONS = OrderedDict([
             # extra_context is added in urls.py (to mark notifications as read), can be specified in your settings as well
         },
     }),
+    ('badge', {
+        'title': _('Badge'),
+        'plural_title': _('Badges'),
+        'navbar_link': False,
+        # queryset is added in urls.py, can be specified in your settings as well
+        'list': {
+            'filter_queryset': _badgesFilter,
+            'extra_context': _badgesExtraContext,
+            'default_ordering': '-date',
+            'add_button_subtitle': 'Give a special badge to a special user'
+        },
+        'item': {
+            'template': 'badgeInfo',
+            'comments_enabled': False,
+            'filter_queryset': _badgesFilterItem,
+        },
+        'add': {
+            'staff_required': True,
+            'multipart': True,
+            'alert_duplicate': False,
+            # form_class is added in urls.py (forms.BadgeForm), can be specified in your settings as well
+        },
+        'edit': {
+            'staff_required': True,
+            'multipart': True,
+            # form_class is added in urls.py (forms.BadgeForm), can be specified in your settings as well
+        },
+    }),
     ('report', {
         'navbar_link_list': 'more',
         'icon': 'fingers',
@@ -254,7 +282,24 @@ DEFAULT_ENABLED_COLLECTIONS = OrderedDict([
             'redirect_after_delete': '/',
             'back_to_list_button': False,
         },
-    })
+    }),
+    ('donate', {
+        'title': _('Donate'),
+        'plural_title': _('Donate'),
+        'plural_name': 'donate',
+        'icon': 'heart',
+        'navbar_link_list': 'more',
+        # queryset is added in urls.py, can be specified in your settings as well
+        'list': {
+            'page_size': 1,
+            'per_line': 1,
+            'default_ordering': '-date',
+            'show_title': True,
+            'before_template': 'include/donate',
+            'filter_queryset': lambda q, p, r: q.filter(date__lte=timezone.now()),
+            # extra_context is added in urls.py, can be specified in your settings as well
+        },
+    }),
 ])
 
 ############################################################
@@ -332,12 +377,6 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'custom': False,
         'icon': 'about',
     }),
-    ('donate', {
-        'title': _('Donate'),
-        'custom': False,
-        'icon': 'heart',
-        'navbar_link_list': 'more',
-    }),
     ('map', {
         'title': _('Map'),
         'custom': False,
@@ -403,3 +442,14 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         ],
     }),
 ])
+
+############################################################
+# Default profile extra tabs
+
+DEFAULT_PROFILE_EXTRA_TABS = {
+    'badges': {
+        'name': _('Badges'),
+        'icon': 'achievement',
+        'callback': 'loadBadges',
+    },
+}

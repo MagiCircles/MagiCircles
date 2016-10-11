@@ -1,0 +1,16 @@
+{% load i18n %}
+{% with badge=item %}
+<div class="row badge-info">
+  <div class="col-md-5">
+    {% include 'items/badgeItem.html' with item=badge %}
+  </div>
+  <div class="col-md-7">
+    <p>{{ badge.description }}</p>
+    <div class="subtitle">
+      {% if badge.url %}<a href="{{ badge.url }}" target="_blank" class="pull-right btn btn-main btn-lg">{% trans 'More info' %}</a>{% endif %}
+      <span class="text-muted">{{ badge.date }}</span><br>
+      {% trans 'Granted by' %} <a href="{{ badge.owner.item_url }}" target="_blank">{{ badge.owner }}</a>
+    </div>
+  </div>
+</div>
+{% endwith %}

@@ -1,5 +1,6 @@
 {% load i18n %}
 {% load tools %}
+{% load l10n %}
 <div class="default-index {% if user.is_authenticated %}index-authenticated{% else %}index-not-authenticated{% endif %}">
   <header>
     <h1 class="home-site-logo"><img src="{{ site_image }}" class="img-responsive" alt="{{ site_name }}"></h1>
@@ -9,6 +10,14 @@
       {% blocktrans %}is crowdfunded by {{ total_donators }} {{ adjective }} donators{% endblocktrans %}
       <a href="/donate/" class="btn btn-secondary">{% trans 'Donate' %}</a>
     </p>
+    {% if donation_month %}
+    <div class="progress">
+      <div class="progress-bar progress-bar-{% if donation_month.percent == 100 %}success{% else %}main{% endif %} progress-bar-striped active" style="width: {% localize off %}{{ donation_month.percent }}{% endlocalize %}%;">
+	{% if donation_month.percent > 40 %}{{ donation_month.date|date:"F" }}: {% with percent=donation_month.percent_int %}{% blocktrans %}{{ percent }}% funded{% endblocktrans %}{% endwith %}{% endif %}
+      </div>
+      {% if donation_month.percent <= 40 %}<span class="text-muted no-donation">{{ donation_month.date|date:"F" }}: {% if donation_month.donations %}{% with percent=donation_month.percent_int %}{% blocktrans %}{{ percent }}% funded{% endblocktrans %}{% endwith %}{% else %}{% with percent=0 %}{% blocktrans %}{{ percent }}% funded{% endblocktrans %}{% endwith %}{% endif %}</span>{% endif %}
+    </div>
+    {% endif %}
     {% endif %}
     {% if not user.is_authenticated %}
     <a href="/about_game/" data-ajax-url="/ajax/about_game/" class="btn btn-link btn-lg home-about-game-button">

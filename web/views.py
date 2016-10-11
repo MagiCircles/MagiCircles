@@ -1,5 +1,6 @@
 from __future__ import division
-import math
+import math, datetime
+from django.utils import timezone
 from collections import OrderedDict
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, Http404, JsonResponse
@@ -7,7 +8,7 @@ from django.contrib.auth.views import login as login_view
 from django.contrib.auth.views import logout as logout_view
 from django.contrib.auth import authenticate, login as login_action
 from django.utils.translation import ugettext_lazy as _, string_concat, get_language, activate as translation_activate
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.utils.http import urlquote
 from django.db.models import Count
 from django.views.decorators.csrf import csrf_exempt
@@ -16,7 +17,7 @@ from web import models
 from web.donations import donations
 from web.utils import getGlobalContext, ajaxContext, redirectToProfile, AttrDict, ordinalNumber, tourldash, redirectWhenNotAuthenticated, dumpModel, send_email, emailContext
 from web.notifications import pushNotification
-from web.settings import SITE_NAME, GAME_NAME, ENABLED_COLLECTIONS, ENABLED_PAGES, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_NAME, DONATE_IMAGE, DONATE_IMAGES_FOLDER, TWITTER_HANDLE, BUG_TRACKER_URL, GITHUB_REPOSITORY, CONTRIBUTE_URL, CONTACT_EMAIL, CONTACT_REDDIT, CONTACT_FACEBOOK, ABOUT_PHOTO, WIKI, LATEST_NEWS, SITE_LONG_DESCRIPTION, CALL_TO_ACTION, TOTAL_DONATORS, GAME_DESCRIPTION, GAME_URL, SHOW_TOTAL_ACCOUNTS, ON_USER_EDITED, ON_PREFERENCES_EDITED, PROFILE_EXTRA_TABS
+from web.settings import SITE_NAME, GAME_NAME, ENABLED_COLLECTIONS, ENABLED_PAGES, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_NAME, TWITTER_HANDLE, BUG_TRACKER_URL, GITHUB_REPOSITORY, CONTRIBUTE_URL, CONTACT_EMAIL, CONTACT_REDDIT, CONTACT_FACEBOOK, ABOUT_PHOTO, WIKI, LATEST_NEWS, SITE_LONG_DESCRIPTION, CALL_TO_ACTION, TOTAL_DONATORS, GAME_DESCRIPTION, GAME_URL, SHOW_TOTAL_ACCOUNTS, ON_USER_EDITED, ON_PREFERENCES_EDITED, PROFILE_EXTRA_TABS
 from web.views_collections import item_view, list_view
 from raw import other_sites
 
@@ -28,6 +29,10 @@ def _index_extraContext(context):
     context['call_to_action'] = CALL_TO_ACTION
     context['total_donators'] = TOTAL_DONATORS
     context['is_feed'] = 'feed' in context['request'].GET
+    now = timezone.now()
+    context['this_month'] = datetime.datetime(year=now.year, month=now.month, day=1)
+    try: context['donation_month'] = models.DonationMonth.objects.get(date=context['this_month'])
+    except ObjectDoesNotExist: pass
 
 def index(request):
     collection = ENABLED_COLLECTIONS['activity'].copy()
@@ -80,6 +85,10 @@ def profileExtraContext(context):
     request = context['request']
     context['is_me'] = user.id == request.user.id
     context['item'].all_links = list(context['item'].all_links)
+    context['item'].latest_badges = list(context['item'].badges.filter(show_on_top_profile=True).order_by('id')[:6])
+    if len(context['item'].latest_badges) == 6:
+        context['more_badges'] = True
+    context['item'].latest_badges = context['item'].latest_badges[:5]
     context['show_total_accounts'] = SHOW_TOTAL_ACCOUNTS
     context['profile_extra_tabs'] = PROFILE_EXTRA_TABS
     context['profile_tabs_size'] = 100 / (2 + (len(PROFILE_EXTRA_TABS) if PROFILE_EXTRA_TABS else 0))
@@ -233,28 +242,6 @@ def help(request, wiki_url='Home'):
     return render(request, 'pages/wiki.html', context)
 
 wiki = help
-
-############################################################
-# Donate
-
-def donateDefaultContext(request):
-    context = getGlobalContext(request)
-    donators = models.User.objects.filter(preferences__status__isnull=False).exclude(preferences__status='').order_by('preferences__status', '-preferences__donation_link', '-preferences__donation_link_title').select_related('preferences')
-    context['donators_low'] = []
-    context['donators_high'] = []
-    for user in donators:
-        if user.preferences.status == 'THANKS' or user.preferences.status == 'SUPPORTER' or user.preferences.status == 'LOVER' or user.preferences.status == 'AMBASSADOR':
-            context['donators_low'].append(user)
-        elif user.preferences.status == 'PRODUCER' or user.preferences.status == 'DEVOTEE':
-            context['donators_high'].append(user)
-        context['total_donators'] = len(donators)
-    context['donations'] = donations
-    context['donate_image'] = DONATE_IMAGE
-    context['donate_images_folder'] = DONATE_IMAGES_FOLDER
-    return context
-
-def donate(request):
-    return render(request, 'pages/donate.html', donateDefaultContext(request))
 
 ############################################################
 # Map

@@ -35,7 +35,12 @@
 	    <br>
 	    <div class="description">{% if profile_user.preferences.description %}{{ profile_user.preferences.description }}{% endif %}</div>
 	    {% if not is_me %}<a href="/reports/add/user/?id={{ profile_user.id }}" target="_blank" class="btn btn-link btn-sm"><i class="flaticon-fingers"></i> {% trans 'Report' %}</a>{% endif %}
-	    <div class="text-right">
+	    <div class="text-right badges">
+	      {% for badge in profile_user.latest_badges %}<a href="{{ badge.item_url }}" data-ajax-url="{{ badge.ajax_item_url }}" data-ajax-title="{{ badge }}" class="mini-badge badge-color{{ badge.rank|default_if_none:"" }}" data-toggle="popover" data-trigger="hover" data-placement="top" data-content="<span class='text-badge-color{{ badge.rank|default_if_none:"" }}'>{% if badge.rank %}<img src='{{ static_url }}img/badges/medal{{ badge.rank }}.png'> {% endif %}{{ badge }}</span>" data-html="true" style="background-image: url('{{ badge.image_url }}');">
+	      <i class="flaticon-more placeholder"></i></a>{% endfor %}{% if more_badges %}<a href="#openBadges" class="mini-badge badge-color" data-toggle="popover" data-trigger="hover" data-placement="top" data-content="{% trans 'Load more...' %}">
+		<i class="flaticon-more"></i>
+	      </a>
+	      {% endif %}
 	      <div class="btn-group">
 		{% include 'include/share.html' with share_btn_class=profile_user.preferences.css_color %}
 	      </div>

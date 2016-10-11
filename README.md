@@ -381,7 +381,6 @@ Your settings file is located in `sample/settings.py`.
 | HASHTAGS | List of hashtags when sharing on Twitter + used as keywords for the page (without `#`) | [] |
 | ABOUT_PHOTO | Path of the image in `sample/static/img` folder | "engildeby.gif" |
 | EMPTY_IMAGE | Path of the image for empty values in cute form in `sample/static/img` folder | "empty.png" |
-| DONATE_IMAGES_FOLDER | Path for `donations` folder in `sample/static/img/` for images to illustrate donations perks | "" |
 | TRANSLATION_HELP_URL | URL with guide or tools to allow people to contribute to the site's translation | [link](https://poeditor.com/join/project/h6kGEpdnmM) |
 | SITE_LOGO | Path of the image displayed instead of the site name in the nav bar | None |
 | FAVORITE_CHARACTERS | List of tuples (id, full name, image path - must be squared image and full url) for each character that can be set as a favorite on users' profiles, if it's in a database it's recommended to use [Generated Settings](#generated-settings) to save them once in a while | None |

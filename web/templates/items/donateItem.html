@@ -1,0 +1,79 @@
+{% load i18n %}
+{% load l10n %}
+{% load tools %}
+{% with month=item %}
+<h1 class="padding50 donate-month">
+  <div class="row">
+    <div class="col-md-5 fontx1-5">
+      {{ month.date|date:"F Y" }}
+    </div>
+    <div class="col-md-7">
+      <div class="progress">
+	<div class="progress-bar progress-bar-{% if month.percent == 100 %}success{% else %}main{% endif %} progress-bar-striped active" style="width: {% localize off %}{{ month.percent }}{% endlocalize %}%;">
+	  {% if month.donations %}${{ month.donations }}{% endif %}
+	</div>
+	{% if not month.donations %}<span class="text-muted no-donation">{% trans 'No donation yet' %} :(</span>{% endif %}
+      </div>
+      <small class="text-muted">{% trans 'Server cost' %}: ${{ month.cost }}<br>
+	<span class="fontx0-8"><a href="#">{% trans 'Learn more' %}</a></span></small>
+    </div>
+  </div>
+</h1>
+<div class="row">
+  {% for badge in month.all_badges %}
+  {% with donator=badge.user %}
+  {% if badge.show_on_profile %}
+  {% if forloop.counter0 != 0 and forloop.counter0|mod:3 %}
+</div><div class="row items">
+  {% endif %}
+  <div class="col-sm-4">
+    <div class="panel panel-{{ donator.preferences.css_color }} panel-donation">
+      <div class="panel-heading">
+	<strong>{{ donator.username }}</strong> -
+	{{ donator.preferences.localized_status }}
+      </div>
+      <div class="panel-body">
+	<div class="row">
+	  <div class="col-xs-7">
+	    {% include 'include/avatar.html' with av_user=donator av_image_size=150 av_size=50 av_link=True av_external=True %}
+	  </div>
+	  <div class="col-xs-5">
+	    <a href="{{ donator.item_url }}" target="_blank" class="btn btn-{{ donator.preferences.css_color }} btn-lg">
+	      {% trans 'Profile' %}
+	    </a>
+	    {% if donator.preferences.donation_link %}
+	    <br><br>
+	    <a href="{{ donator.preferences.donation_link }}" target="_blank" class="btn btn-{{ donator.preferences.css_color }} btn-lg">
+	      {{ donator.preferences.donation_link_title }}
+	    </a>
+	    {% endif %}
+	  </div>
+	</div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  {% ifchanged donator.show_on_profile %}
+</div>
+{% endifchanged %}
+{% if donator.preferences.donation_link_title %}
+<div class="btn-group">
+  <a href="{{ donator.item_url }}" target="_blank" class="btn btn-{{ donator.preferences.css_color }}">
+    {% include 'include/avatar.html' with av_user=donator av_image_size=30 av_size=10 av_fixed=True av_inline=True %}
+    {{ donator.username }}
+  </a>
+  {% if donator.preferences.donation_link %}
+  <a href="{{ donator.preferences.donation_link }}" target="_blank" class="btn btn-{{ donator.preferences.css_color }} btn-extradonation">
+    {{ donator.preferences.donation_link_title }}
+  </a>
+  {% endif %}
+</div>
+{% else %}
+<a href="{{ donator.item_url }}" target="_blank" class="btn btn-{{ donator.preferences.css_color }} btn-extradonation">
+  {{ donator.username }}
+</a>
+{% endif %}
+{% endif %}
+{% endwith %}
+{% endfor %}
+{% endwith %}

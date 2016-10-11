@@ -136,3 +136,16 @@ REPORT_STATUSES = (
 )
 
 def reportStatusToString(status): return dict(REPORT_STATUSES)[status]
+
+############################################################
+# Badges
+
+BADGE_RANK_BRONZE = 1
+BADGE_RANK_SILVER = 2
+BADGE_RANK_GOLD = 3
+
+BADGE_RANK_CHOICES = (
+    (BADGE_RANK_BRONZE, _('Bronze')),
+    (BADGE_RANK_SILVER, _('Silver')),
+    (BADGE_RANK_GOLD, _('Gold')),
+)

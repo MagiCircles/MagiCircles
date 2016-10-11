@@ -6,7 +6,7 @@ from django.forms.models import model_to_dict, fields_for_model
 from django.conf import settings as django_settings
 from django.contrib.auth import authenticate, login as login_action
 from django.utils.translation import ugettext_lazy as _, string_concat, get_language, activate as translation_activate
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.shortcuts import get_object_or_404
 from web.django_translated import t
 from web import models
@@ -186,10 +186,12 @@ class UserPreferencesForm(FormWithRequest):
 class StaffEditUser(FormWithRequest):
     def __init__(self, *args, **kwargs):
         instance = kwargs.pop('instance', None)
-        preferences_fields = ('description', 'location')
+        preferences_fields = ('description', 'location', 'status', 'donation_link', 'donation_link_title')
         preferences_initial = model_to_dict(instance.preferences, preferences_fields) if instance is not None else {}
         super(StaffEditUser, self).__init__(initial=preferences_initial, instance=instance, *args, **kwargs)
         self.fields.update(fields_for_model(models.UserPreferences, preferences_fields))
+        self.fields['status'].required = False
+        self.fields['donation_link_title'].help_text = 'If the donator is not interested in adding a link but are eligible for it, write "Not interested" and leave ""Donation link" empty'
         self.old_location = instance.preferences.location if instance else None
 
     def save(self, commit=True):
@@ -200,6 +202,9 @@ class StaffEditUser(FormWithRequest):
             instance.preferences.latitude = None
             instance.preferences.longitude = None
         instance.preferences.description = self.cleaned_data['description']
+        instance.preferences.status = self.cleaned_data['status']
+        instance.preferences.donation_link = self.cleaned_data['donation_link']
+        instance.preferences.donation_link_title = self.cleaned_data['donation_link_title']
         instance.preferences.save()
         if commit:
             instance.save()
@@ -383,6 +388,7 @@ class FilterReports(FormWithRequest):
         required=False,
         choices=[],
     )
+
     def __init__(self, *args, **kwargs):
         super(FilterReports, self).__init__(*args, **kwargs)
         self.fields['status'].required = False
@@ -394,3 +400,34 @@ class FilterReports(FormWithRequest):
     class Meta:
         model = models.Report
         fields = ('status', 'reported_thing', 'staff')
+
+############################################################
+# Add/Edit Badges
+
+class BadgeForm(FormSaveOwner):
+    username = forms.CharField(max_length=32, label=_('Username'))
+
+    def __init__(self, *args, **kwargs):
+        super(BadgeForm, self).__init__(*args, **kwargs)
+        if not self.is_creating:
+            self.fields['username'].initial = self.instance.user.username
+        self.fields['url'].required = False
+
+    def clean_username(self):
+        username = self.cleaned_data['username']
+        try:
+            self.user = models.User.objects.get(username=username)
+        except ObjectDoesNotExist:
+            raise forms.ValidationError('Invalid username')
+        return username
+
+    def save(self, commit=True):
+        instance = super(BadgeForm, self).save(commit=False)
+        instance.user = self.user
+        if commit:
+            instance.save()
+        return instance
+
+    class Meta:
+        model = models.Badge
+        fields = ('date', 'username', 'name', 'description', 'image', 'url', 'show_on_top_profile', 'show_on_profile', 'rank', 'donation_month')

@@ -68,6 +68,11 @@ class UserPreferences(models.Model):
     longitude = models.FloatField(null=True, blank=True)
     following = models.ManyToManyField(User, related_name='followers')
     status = models.CharField(choices=STATUS_CHOICES, max_length=12, null=True)
+    @property
+    def localized_status(self):
+        if not self.status:
+            return None
+        return statusToString(self.status)
     donation_link = models.CharField(max_length=200, null=True, blank=True)
     donation_link_title = models.CharField(max_length=100, null=True, blank=True)
     view_activities_language_only = models.BooleanField(_('View activities in your language only?'), default=False)
@@ -339,3 +344,45 @@ class Report(ItemModel):
 
     def __unicode__(self):
         return unicode(_(self.reported_thing_title))
+
+############################################################
+# Badge
+
+class DonationMonth(ItemModel):
+    collection_name = 'donate'
+
+    date = models.DateField(default=datetime.datetime.now)
+    cost = models.FloatField(default=250)
+    donations = models.FloatField(default=0)
+
+    @property
+    def percent(self):
+        percent = (self.donations / self.cost) * 100
+        if percent > 100:
+            return 100
+        return percent
+
+    @property
+    def percent_int(self):
+        return int(self.percent)
+
+    def __unicode__(self):
+        return unicode(self.date)
+
+class Badge(ItemModel):
+    collection_name = 'badge'
+
+    date = models.DateField(default=datetime.datetime.now)
+    owner = models.ForeignKey(User, related_name='badges_created')
+    user = models.ForeignKey(User, related_name='badges')
+    donation_month = models.ForeignKey(DonationMonth, related_name='badges', null=True)
+    name = models.CharField(max_length=50)
+    description = models.CharField(max_length=300)
+    image = models.ImageField(_('Image'), upload_to=uploadToRandom('badges/'))
+    url = models.CharField(max_length=200, null=True)
+    show_on_top_profile = models.BooleanField(default=False, help_text='Will be displayed near the share buttons on top of the profile. Generally reserved for donation badges.')
+    show_on_profile = models.BooleanField(default=False, help_text='Will be displayed in the "Badges" tab of the profile. Generally only unchecked for donations under $10.')
+    rank = models.PositiveIntegerField(null=True, blank=True, choices=BADGE_RANK_CHOICES, help_text='Top 3 of this specific badge. Generally used for donators badges')
+
+    def __unicode__(self):
+        return self.name

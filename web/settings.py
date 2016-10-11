@@ -1,5 +1,5 @@
 from django.conf import settings as django_settings
-from web.default_settings import DEFAULT_ENABLED_NAVBAR_LISTS, DEFAULT_ENABLED_COLLECTIONS, DEFAULT_ENABLED_PAGES, RAW_CONTEXT, DEFAULT_JAVASCRIPT_TRANSLATED_TERMS
+from web.default_settings import DEFAULT_ENABLED_NAVBAR_LISTS, DEFAULT_ENABLED_COLLECTIONS, DEFAULT_ENABLED_PAGES, RAW_CONTEXT, DEFAULT_JAVASCRIPT_TRANSLATED_TERMS, DEFAULT_PROFILE_EXTRA_TABS
 from django.utils.translation import ugettext_lazy as _, string_concat
 
 settings_module = __import__(django_settings.SITE + '.settings', globals(), locals(), ['*'])
@@ -68,11 +68,6 @@ if hasattr(settings_module, 'ABOUT_PHOTO'):
     ABOUT_PHOTO = getattr(settings_module, 'ABOUT_PHOTO')
 else:
     ABOUT_PHOTO = 'engildeby.gif'
-
-if hasattr(settings_module, 'DONATE_IMAGES_FOLDER'):
-    DONATE_IMAGES_FOLDER = getattr(settings_module, 'DONATE_IMAGES_FOLDER')
-else:
-    DONATE_IMAGES_FOLDER = ''
 
 if hasattr(settings_module, 'SITE_DESCRIPTION'):
     SITE_DESCRIPTION = getattr(settings_module, 'SITE_DESCRIPTION')
@@ -219,7 +214,7 @@ else:
 if hasattr(settings_module, 'PROFILE_EXTRA_TABS'):
     PROFILE_EXTRA_TABS = getattr(settings_module, 'PROFILE_EXTRA_TABS')
 else:
-    PROFILE_EXTRA_TABS = None
+    PROFILE_EXTRA_TABS = DEFAULT_PROFILE_EXTRA_TABS
 
 ############################################################
 # Specified in django settings

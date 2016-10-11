@@ -1,0 +1,15 @@
+{% with badge=item %}
+<a href="{{ badge.item_url }}" data-ajax-url="{{ badge.ajax_item_url }}" data-ajax-title="{{ badge }}">
+  <div class="user-badge badge-color{{ badge.rank|default_if_none:"" }}"
+       style="background-image: url('{{ badge.image_url }}');">
+    <img src="{{ static_url }}img/badges/badge{{ badge.rank|default_if_none:"" }}.png">
+  </div>
+  <div class="caption-wrapper">
+    <div class="caption">
+      <h1 class="ribbon">
+	<strong class="ribbon-content">{{ badge }}</strong>
+      </h1>
+    </div>
+  </div>
+</a>
+{% endwith %}
