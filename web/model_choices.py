@@ -75,7 +75,7 @@ LINK_URLS = {
     'twitch': u'http://twitch.tv/{}',
     'steam': u'http://steamcommunity.com/id/{}',
     'instagram': u'https://instagram.com/{}/',
-    'youtube': u'https://www.youtube.com/user/{}',
+    'youtube': u'https://www.youtube.com/{}',
     'github': u'https://github.com/{}',
 }
 
