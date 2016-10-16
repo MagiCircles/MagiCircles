@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.utils.deconstruct import deconstructible
 from django.core import validators
 from django.utils.translation import ugettext_lazy as _, string_concat
+from django.forms.models import model_to_dict
 from django.conf import settings as django_settings
 from django.utils import timezone
 from web.utils import AttrDict, join_data, split_data, randomString
@@ -217,7 +218,7 @@ class Activity(ItemModel):
         self._cache_owner_email = self.owner.email
         self._cache_owner_preferences_status = self.owner.preferences.status
         self._cache_owner_preferences_twitter = self.owner.preferences.twitter
-        self.save()
+        saveActivityCacheOwnerWithoutChangingModification(self)
 
     @property
     def cached_owner(self):
@@ -275,6 +276,13 @@ class Activity(ItemModel):
 
     class Meta:
         verbose_name_plural = "activities"
+
+def saveActivityCacheOwnerWithoutChangingModification(activity):
+    Activity.objects.filter(id=activity.id).update(**{
+        k:v for k, v in
+        model_to_dict(activity).items()
+        if k.startswith('_cache')
+    })
 
 def updateCachedActivities(user_id):
     activities = Activity.objects.filter(owner_id=user_id).select_related('owner', 'owner__preferences')
