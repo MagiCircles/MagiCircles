@@ -114,7 +114,7 @@ def profileExtraContext(context):
     if user.preferences.birthdate:
         meta_links.append(AttrDict({
             'type': 'Birthdate',
-            'value': '{} ({})'.format(user.preferences.birthdate, _('{age} years old').format(age=user.preferences.age)),
+            'value': u'{} ({})'.format(user.preferences.birthdate, _(u'{age} years old').format(age=user.preferences.age)),
             'translate_type': True,
             'flaticon': 'event',
             'raw_value': None,
