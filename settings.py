@@ -22,6 +22,8 @@ LANGUAGES = (
     ('de', _('German')),
     ('pl', _('Polish')),
     ('ja', _('Japanese')),
+    ('zh-hans', _('Simplified Chinese')),
+    ('pt-br', _('Brazilian Portuguese')),
 )
 
 INSTALLED_APPS = (
