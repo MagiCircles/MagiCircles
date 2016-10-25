@@ -145,7 +145,7 @@ function ajaxModals() {
 	    loader.height(button_height);
 	    loader.width(button_width);
 	    loader.css('line-height', button_height + 'px');
-	    loader.css('font-size', button_height + 'px');
+	    loader.css('font-size', (button_height - (button_height * 0.4)) + 'px');
 	    $.get(button.data('ajax-url'), function(data) {
 		button.css('display', button_display);
 		button.html(button_content);
