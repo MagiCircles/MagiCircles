@@ -91,7 +91,7 @@ def profileExtraContext(context):
     context['item'].latest_badges = context['item'].latest_badges[:5]
     context['show_total_accounts'] = SHOW_TOTAL_ACCOUNTS
     context['profile_extra_tabs'] = PROFILE_EXTRA_TABS
-    context['profile_tabs_size'] = 100 / (2 + (len(PROFILE_EXTRA_TABS) if PROFILE_EXTRA_TABS else 0))
+    context['profile_tabs_size'] = 100 / ((2 if 'activity' in context['all_enabled'] else 1) + (len(PROFILE_EXTRA_TABS) if PROFILE_EXTRA_TABS else 0))
     meta_links = []
     if FAVORITE_CHARACTERS:
         for i in range(1, 4):

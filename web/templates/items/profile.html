@@ -69,16 +69,18 @@
   <div>
 
     <!-- Nav tabs -->
-    {% if 'activity' in all_enabled %}
+    {% if 'activity' in all_enabled or profile_extra_tabs %}
     <ul class="nav nav-tabs" id="profiletabs">
       <li class="active" style="width: {% localize off %}{{ profile_tabs_size }}{% endlocalize %}%;"><a href="#profileaccounts" data-toggle="tab">
 	  <i class="flaticon-users"></i>
 	  <span class="hidden-xs hidden-sm">{% if profile_user.all_accounts|length > 1 %}{% trans 'Accounts' %}{% else %}{% trans 'Account' %}{% endif %}</span>
       </a></li>
+      {% if 'activity' in all_enabled %}
       <li style="width: {% localize off %}{{ profile_tabs_size }}{% endlocalize %}%;"><a href="#profileactivities" data-toggle="tab">
 	  <i class="flaticon-comments"></i>
 	  <span class="hidden-xs hidden-sm">{% trans 'Activities' %}</span>
       </a></li>
+      {% endif %}
       {% if profile_extra_tabs %}
       {% for tab_name, tab in profile_extra_tabs.items %}
       <li style="width: {% localize off %}{{ profile_tabs_size }}{% endlocalize %}%;"><a href="#profile{{ tab_name }}" data-toggle="tab">

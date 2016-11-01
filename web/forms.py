@@ -11,7 +11,7 @@ from django.shortcuts import get_object_or_404
 from web.django_translated import t
 from web import models
 from web.settings import FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTERS, ACTIVITY_TAGS, USER_COLORS, GAME_NAME, ENABLED_COLLECTIONS, ON_PREFERENCES_EDITED
-from web.utils import ordinalNumber, randomString
+from web.utils import ordinalNumber, randomString, RAW_CONTEXT
 
 ############################################################
 # Internal utils
@@ -155,6 +155,8 @@ class UserPreferencesForm(FormWithRequest):
             self.fields.pop('color')
         self.fields['language'].choices = [l for l in self.fields['language'].choices if l[0]]
         self.old_location = self.instance.location if self.instance else None
+        if 'activity' not in RAW_CONTEXT['all_enabled']:
+            del(self.fields['view_activities_language_only'])
 
     def clean_birthdate(self):
         if 'birthdate' in self.cleaned_data:
@@ -405,7 +407,7 @@ class FilterReports(FormWithRequest):
 # Add/Edit Badges
 
 class BadgeForm(FormSaveOwner):
-    username = forms.CharField(max_length=32, label=_('Username'))
+    username = forms.CharField(max_length=32, label=t['Username'])
 
     def __init__(self, *args, **kwargs):
         super(BadgeForm, self).__init__(*args, **kwargs)
