@@ -56,7 +56,7 @@ User.http_image_ur = property(lambda user: avatar(user))
 
 class UserPreferences(models.Model):
     user = models.OneToOneField(User, related_name='preferences', on_delete=models.CASCADE)
-    language = models.CharField(_('Language'), max_length=4, choices=django_settings.LANGUAGES)
+    language = models.CharField(_('Language'), max_length=10, choices=django_settings.LANGUAGES)
     description = models.TextField(_('Description'), null=True, help_text=_('Write whatever you want. You can add formatting and links using Markdown.'), blank=True)
     favorite_character1 = models.CharField(verbose_name=_('{nth} Favorite Character').format(nth=_('1st')), null=True, max_length=200)
     favorite_character2 = models.CharField(verbose_name=_('{nth} Favorite Character').format(nth=_('2nd')), null=True, max_length=200)
