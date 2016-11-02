@@ -22,6 +22,7 @@ LANGUAGES = (
     ('de', _('German')),
     ('pl', _('Polish')),
     ('ja', _('Japanese')),
+    ('kr', _('Korean')),
     ('zh-hans', _('Simplified Chinese')),
     ('pt-br', _('Brazilian Portuguese')),
 )
