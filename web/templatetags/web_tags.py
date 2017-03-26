@@ -3,10 +3,12 @@ from django.utils.translation import ugettext_lazy as _, string_concat
 from django import template
 from django.conf import settings
 from web import models
-from web.settings import SITE_STATIC_URL, FAVORITE_CHARACTER_TO_URL, RAW_CONTEXT, ENABLED_COLLECTIONS
-from web.utils import AttrDict
+from web.settings import SITE_STATIC_URL, FAVORITE_CHARACTER_TO_URL, RAW_CONTEXT
+from web.utils import AttrDict, getMagiCollection, torfc2822
 
 register = template.Library()
+
+register.filter('torfc2822', torfc2822)
 
 @register.filter
 def avatar(user, size=200):
@@ -19,29 +21,13 @@ def forceLoadRawContext(parser, token):
 class EventNode(template.Node):
     def render(self, context):
         if 'site_url' not in context:
-            context.update(RAW_CONTEXT)
+            for key, value in RAW_CONTEXT.items():
+                if key not in context:
+                    context[key] = value
             context['request'] = AttrDict({
                 'user': context['user'],
             })
         return ''
-
-@register.filter
-def linkUrl(link):
-    if link.type in models.LINK_URLS:
-        if hasattr(link.value, 'id'):
-            return models.LINK_URLS[link.type].format(link.value.id)
-        if link.type == 'Location' and 'map' in RAW_CONTEXT['all_enabled'] and link.latlong:
-            return '/map/?center={}&zoom=10'.format(link.latlong)
-        return models.LINK_URLS[link.type].format(link.value)
-    if link.raw_value:
-        return FAVORITE_CHARACTER_TO_URL(link)
-    return '#'
-
-@register.simple_tag(takes_context=True)
-def linkImageURL(context, link):
-    if link.type in models.LINK_URLS:
-        return '{}img/links/{}.png'.format(context['static_url'], link.type)
-    return link.image
 
 @register.filter
 def linkShowAuth(link, user):
@@ -80,4 +66,4 @@ def translated(value):
 
 @register.filter
 def collectionGetPlural(name):
-    return ENABLED_COLLECTIONS[name]['plural_name']
+    return getMagiCollection(name).plural_name

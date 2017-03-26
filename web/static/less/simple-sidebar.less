@@ -23,7 +23,7 @@
 	background: @mainColor;
 	h4 { background: darken(@mainColor, 5%); }
 	.btn-default { .button-variant(#fff, darken(@mainColor, 5%), darken(darken(@mainColor, 5%), 5%)); }
-	input[type="text"],input[type="email"],input[type="number"],input[type="password"],select {
+	input[type="text"],input[type="email"],input[type="number"],input[type="password"],select,.cuteform-modal-button {
 	    border-color: darken(@mainColor, 10%);
 	    color: darken(@mainColor, 10%);
 	}
@@ -45,11 +45,13 @@
 	-moz-transition: all 0.5s ease;
 	-o-transition: all 0.5s ease;
 	transition: all 0.5s ease;
+	padding-bottom: 80px;
     }
 
     #wrapper.toggled #sidebar-wrapper {
 	width: 250px;
     }
+
 
     #page-content-wrapper {
 	width: 100%;
@@ -88,6 +90,8 @@
 	display: block;
 	color: white;
 	font-weight: 700;
+    }
+    #togglebutton, .togglebutton {
 	i {
 	    display: block;
 	}
@@ -100,13 +104,17 @@
 	}
     }
 
-    #wrapper.toggled #togglebutton {
-	right: 250px;
-	.flaticon-search {
-	    display: none;
+    #wrapper.toggled {
+	#togglebutton {
+	    right: 250px;
 	}
-	.flaticon-toggler {
-	    display: block;
+	#togglebutton, .togglebutton {
+	    .flaticon-search {
+		display: none;
+	    }
+	    .flaticon-toggler {
+		display: block;
+	    }
 	}
     }
 
@@ -164,6 +172,8 @@
 	}
 	#togglebutton {
 	    right: 250px;
+	}
+	#togglebutton, .togglebutton {
 	    .flaticon-search {
 		display: none;
 	    }
@@ -176,6 +186,8 @@
             padding-right: 0;
 	    #togglebutton {
 		right: 0;
+	    }
+	    #togglebutton, .togglebutton {
 		.flaticon-search {
 		    display: block;
 		}

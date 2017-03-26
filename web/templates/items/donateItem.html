@@ -15,7 +15,9 @@
 	{% if not month.donations %}<span class="text-muted no-donation">{% trans 'No donation yet' %} :(</span>{% endif %}
       </div>
       <small class="text-muted">{% trans 'Server cost' %}: ${{ month.cost }}<br>
-	<span class="fontx0-8"><a href="#">{% trans 'Learn more' %}</a></span></small>
+	<span class="fontx0-8">
+	  <a href="https://www.patreon.com/db0company">{% trans 'Learn more' %}</a>
+      </span></small>
     </div>
   </div>
 </h1>
@@ -30,7 +32,7 @@
     <div class="panel panel-{{ donator.preferences.css_color }} panel-donation">
       <div class="panel-heading">
 	<strong>{{ donator.username }}</strong> -
-	{{ donator.preferences.localized_status }}
+	{{ donator.preferences.status }}
       </div>
       <div class="panel-body">
 	<div class="row">

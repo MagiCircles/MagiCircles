@@ -52,44 +52,50 @@ function handlefollow() {
     });
 }
 
-function profileTabs() {
-    $('#profiletabs li a').on('show.bs.tab', function (e) {
-	var user_id = $('#username').data('user-id');
-	if ($(e.target).attr('href') == '#profileactivities' && $('#activities').text() == "") {
-	    $.get('/ajax/activities/?owner_id=' + user_id, function(html) {
-		$('#activities').html(html);
-		if ($.trim($('#activities').text()) == '') {
-		    $('#activities').html('<div class="alert alert-warning">' + gettext('No result.') + '</div>');
-		} else {
-		    updateActivities();
-		    pagination('/ajax/activities/', '&owner_id=' + user_id, updateActivities);
-		}
-	    });
-	} else if ($(e.target).attr('href') != '#profileaccounts') {
-	    var tab_name = $(e.target).attr('href').replace('#profile', '');
-	    if ($('#profile' + tab_name).text() == "") {
-		window[tab_callbacks[tab_name]](user_id, function(data, onDone) {
-		    $('#profile' + tab_name).html(data);
-		    if (typeof onDone != 'undefined') {
-			onDone(user_id);
-		    }
-		});
-	    }
+function profileLoadActivities(user_id, onDone) {
+    $.get('/ajax/activities/?owner_id=' + user_id, function(html) {
+	$('#activities').html(html);
+	if ($.trim($('#activities').text()) == '') {
+	    $('#activities').html('<div class="alert alert-warning">' + gettext('No result.') + '</div>');
+	} else {
+	    updateActivities();
+	    pagination('/ajax/activities/', '&owner_id=' + user_id, updateActivities);
 	}
+	onDone(undefined, undefined);
     });
+}
+
+function onProfileTabOpened() {
+    var tab_name = $('#profiletabs+.tab-content>.tab-pane.active').data('tab-name');
+    if (typeof tab_callbacks[tab_name] != 'undefined') {
+	if (!tab_callbacks[tab_name]['called']) {
+	    var user_id = $('#username').data('user-id');
+	    window[tab_callbacks[tab_name]['callback']](user_id, function(data, onDone) {
+		if (typeof data != 'undefined') {
+		    $('#profile' + tab_name).html(data);
+		}
+		if (typeof onDone != 'undefined') {
+		    onDone(user_id);
+		}
+		loadCommons();
+	    });
+	    tab_callbacks[tab_name]['called'] = true;
+	}
+    }
 }
 
 $(document).ready(function() {
     handlefollow();
-    loadPopovers();
-    applyMarkdown($('.topprofile .description'));
-    profileTabs();
+    onProfileTabOpened();
+    $('#profiletabs li a').on('shown.bs.tab', function (e) {
+	onProfileTabOpened();
+    });
 
     $('[href="#openBadges"]').click(function(e) {
 	e.preventDefault();
-	$('.nav-tabs [href="#profilebadges"]').tab('show');
+	$('.nav-tabs [href="#profilebadge"]').tab('show');
 	$('html, body').stop().animate({
-	    scrollTop: $('#profilebadges').offset().top
+	    scrollTop: $('#profilebadge').offset().top
 	}, 1500, 'easeInOutExpo');
 	return false;
     });

@@ -1,5 +1,6 @@
 from django.conf import settings as django_settings
-from web.default_settings import DEFAULT_ENABLED_NAVBAR_LISTS, DEFAULT_ENABLED_COLLECTIONS, DEFAULT_ENABLED_PAGES, RAW_CONTEXT, DEFAULT_JAVASCRIPT_TRANSLATED_TERMS, DEFAULT_PROFILE_EXTRA_TABS
+from web.default_settings import DEFAULT_ENABLED_NAVBAR_LISTS, DEFAULT_ENABLED_PAGES, RAW_CONTEXT, DEFAULT_JAVASCRIPT_TRANSLATED_TERMS, DEFAULT_PROFILE_TABS
+from web.utils import globalContext
 from django.utils.translation import ugettext_lazy as _, string_concat
 
 settings_module = __import__(django_settings.SITE + '.settings', globals(), locals(), ['*'])
@@ -18,6 +19,11 @@ COLOR = getattr(settings_module, 'COLOR')
 
 ############################################################
 # Optional settings with default values
+
+if hasattr(settings_module, 'SITE_LOGO'):
+    SITE_LOGO = getattr(settings_module, 'SITE_LOGO')
+else:
+    SITE_LOGO = SITE_IMAGE
 
 if hasattr(settings_module, 'GITHUB_REPOSITORY'):
     GITHUB_REPOSITORY = getattr(settings_module, 'GITHUB_REPOSITORY')
@@ -89,11 +95,6 @@ if hasattr(settings_module, 'ENABLED_PAGES'):
 else:
     ENABLED_PAGES = DEFAULT_ENABLED_PAGES
 
-if hasattr(settings_module, 'ENABLED_COLLECTIONS'):
-    ENABLED_COLLECTIONS = getattr(settings_module, 'ENABLED_COLLECTIONS')
-else:
-    ENABLED_COLLECTIONS = DEFAULT_ENABLED_COLLECTIONS
-
 if hasattr(settings_module, 'TWITTER_HANDLE'):
     TWITTER_HANDLE = getattr(settings_module, 'TWITTER_HANDLE')
 else:
@@ -119,6 +120,16 @@ if hasattr(settings_module, 'SHOW_TOTAL_ACCOUNTS'):
 else:
     SHOW_TOTAL_ACCOUNTS = True
 
+if hasattr(settings_module, 'ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT'):
+    ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT = getattr(settings_module, 'ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT')
+else:
+    ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT = False
+
+if hasattr(settings_module, 'ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES'):
+    ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES = getattr(settings_module, 'ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES')
+else:
+    ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES = ['ja', 'zh-hans', 'kr']
+
 if hasattr(settings_module, 'GOOGLE_ANALYTICS'):
     GOOGLE_ANALYTICS = getattr(settings_module, 'GOOGLE_ANALYTICS')
 else:
@@ -129,13 +140,18 @@ if hasattr(settings_module, 'STATIC_FILES_VERSION'):
 else:
     STATIC_FILES_VERSION = '1'
 
+if hasattr(settings_module, 'PROFILE_TABS'):
+    PROFILE_TABS = getattr(settings_module, 'PROFILE_TABS')
+else:
+    PROFILE_TABS = DEFAULT_PROFILE_TABS
+
 ############################################################
 # Optional settings without default values (= None)
 
-if hasattr(settings_module, 'SITE_LOGO'):
-    SITE_LOGO = getattr(settings_module, 'SITE_LOGO')
+if hasattr(settings_module, 'SITE_NAV_LOGO'):
+    SITE_NAV_LOGO = getattr(settings_module, 'SITE_NAV_LOGO')
 else:
-    SITE_LOGO = None
+    SITE_NAV_LOGO = None
 
 if hasattr(settings_module, 'FAVORITE_CHARACTERS'):
     FAVORITE_CHARACTERS = getattr(settings_module, 'FAVORITE_CHARACTERS')
@@ -159,7 +175,7 @@ else:
 if hasattr(settings_module, 'GET_GLOBAL_CONTEXT'):
     GET_GLOBAL_CONTEXT = getattr(settings_module, 'GET_GLOBAL_CONTEXT')
 else:
-    GET_GLOBAL_CONTEXT = None
+    GET_GLOBAL_CONTEXT = globalContext
 
 if hasattr(settings_module, 'JAVASCRIPT_TRANSLATED_TERMS'):
     JAVASCRIPT_TRANSLATED_TERMS = getattr(settings_module, 'JAVASCRIPT_TRANSLATED_TERMS')
@@ -210,11 +226,6 @@ if hasattr(settings_module, 'ON_PREFERENCES_EDITED'):
     ON_PREFERENCES_EDITED = getattr(settings_module, 'ON_PREFERENCES_EDITED')
 else:
     ON_PREFERENCES_EDITED = None
-
-if hasattr(settings_module, 'PROFILE_EXTRA_TABS'):
-    PROFILE_EXTRA_TABS = getattr(settings_module, 'PROFILE_EXTRA_TABS')
-else:
-    PROFILE_EXTRA_TABS = DEFAULT_PROFILE_EXTRA_TABS
 
 ############################################################
 # Specified in django settings

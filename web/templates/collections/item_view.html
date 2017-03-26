@@ -1,22 +1,12 @@
 {# required variables: name, item, #}
 {% extends "base.html" %}
-{% load i18n %}
 {% load tools %}
-
-{% block title %}{% trans title %}: {{ item }}{% endblock %}
 
 {% block content %}
 <div class="container item-container">
   {% include 'items/'|add:item_template|add:'.html' %}
+  {% if include_below_item %}{% include 'include/below_item.html' %}{% endif %}
   <br><br>
   {% if comments_enabled %}{% include 'include/disqus.html' with disqus_identifier=name|add:'-'|addint:item.pk %}{% endif %}
 </div>
-{% endblock %}
-
-{% block afterjs %}
-{% if ajax_callback %}
-<script>
-  {{ ajax_callback }}();
-</script>
-{% endif %}
 {% endblock %}

@@ -9,23 +9,19 @@
 {% load bootstrap %}
 {% get_current_language as LANGUAGE_CODE %}
 
-{% block title %}{% if current == 'index' %}{% trans site_description %}{% else %}{% trans plural_title %}{% endif %}{% endblock %}
 {% block js %}
-{% if filter_form %}
+{% if hide_sidebar %}
 <script>
-  var form_choices = {
-    'filter_form': {
-    {% for name, field in filter_form.fields.items %}
-    {% if field.choices %}
-      '{{ name }}': {
-        {% for key, value in field.choices %}
-        '{{ key }}': '{{ value }}',
-        {% endfor %}
-      },
-    {% endif %}
-    {% endfor %}
-    },
-  };
+  if ($(window).width() < 768) {
+    $('#wrapper').removeClass('toggled');
+  }
+  $('#sidebar-wrapper').show();
+  $('#togglebutton').show();
+</script>
+{% endif %}
+{% if filter_form and filter_cuteform %}
+<script>
+  var cuteform_fields = {{ filter_cuteform_json|safe }};
 </script>
 {% endif %}
 {% endblock %}
@@ -42,8 +38,8 @@
 
 {% block content %}
 {% if filter_form %}
-<div id="wrapper" class="active">
-  <nav id="sidebar-wrapper">
+<div id="wrapper" class="active{% if hide_sidebar %} toggled{% endif %}">
+  <nav id="sidebar-wrapper"{% if hide_sidebar %} style="display: none;"{% endif %}>
     <form class="form-horizontal" method="get" action="" role="form">
       {{ filter_form|bootstrap }}
       <br>
@@ -51,7 +47,7 @@
     </form>
   </nav>
   <div id="page-content-wrapper">
-    <a href="#" id="togglebutton">
+    <a href="#" id="togglebutton"{% if hide_sidebar %} style="display: none;"{% endif %}>
       <i class="flaticon-search"></i>
       <i class="flaticon-toggler hidder"></i>
     </a>
@@ -68,7 +64,7 @@
 	<div class="row hidden-lg">
 	  {% for button in add_buttons %}
 	  <div class="col-xs-{{ add_buttons_col_size }}">
-	    <a href="{{ button.link }}" class="btn btn-main btn-sm btn-block">
+	    <a href="{{ button.link }}" class="btn btn-main btn-sm btn-block{% if add_buttons_staff_only %} staff-only{% endif %}">
 	      {% if button.image %}
 	      <img src="{{ static_url }}img/{{ button.image }}.png" alt="{{ button.title }}" height="20" width="20">
 	      {% endif %}
@@ -80,7 +76,7 @@
 	<div class="row visible-lg">
 	  {% for button in add_buttons %}
 	  <div class="col-lg-{{ add_buttons_col_size }}">
-	    <a class="btn btn-main btn-xl btn-lines btn-block btn-add-{{ name }}" href="{{ button.link }}">
+	    <a class="btn btn-main btn-xl btn-lines btn-block btn-add-{{ name }}{% if add_buttons_staff_only %} staff-only{% endif %}" href="{{ button.link }}">
 	      {% if button.image %}
 	      <img src="{{ static_url }}img/{{ button.image }}.png" alt="{{ button.title }}">
 	      {% endif %}

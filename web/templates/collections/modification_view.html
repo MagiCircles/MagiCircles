@@ -1,15 +1,15 @@
 {% extends "form.html" %}
 {% load i18n %}
 
-{% block title %}{% trans form.verb %} {% trans title %}{% if after_title %}: {{ after_title }}{% endif %}{% endblock %}
-
 {% block imagetitle %}
-{% if imagetitle %}
+{% if icontitle %}
+<i class="flaticon-{{ icontitle }}"></i>
+{% elif imagetitle %}
 <img src="{{ static_url }}img/{{ imagetitle }}.png" height="39" class="modification-view-image-title" />
 {% endif %}
 {% endblock %}
 
-{% block submit %}{% trans form.verb %} {% trans title %}{% endblock %}
+{% block submit %}{{ form.action_sentence }}{% endblock %}
 
 {% block beforefields %}
 {% if form_name == 'delete' %}

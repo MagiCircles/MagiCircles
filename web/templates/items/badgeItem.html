@@ -1,4 +1,15 @@
 {% with badge=item %}
+{% if show_user %}
+<br>
+<div class="row">
+  <div class="col-xs-3">
+    {% include 'include/avatar.html' with av_user=badge.user av_size=22 av_image_size=60 av_link=True av_external=True %}
+  </div>
+  <div class="col-xs-9">
+    <h3>{{ badge.user.username }}</h3>
+  </div>
+</div>
+{% endif %}
 <a href="{{ badge.item_url }}" data-ajax-url="{{ badge.ajax_item_url }}" data-ajax-title="{{ badge }}">
   <div class="user-badge badge-color{{ badge.rank|default_if_none:"" }}"
        style="background-image: url('{{ badge.image_url }}');">
@@ -12,4 +23,7 @@
     </div>
   </div>
 </a>
+{% if badge.type == 'exclusive' and user.is_staff %}
+<div class="text-right"><a href="/badges/add/copy/?id={{ badge.id }}" class="btn btn-sm btn-secondary staff-only"><i class="flaticon-deck"></i> Make a copy</a></div><br>
+{% endif %}
 {% endwith %}

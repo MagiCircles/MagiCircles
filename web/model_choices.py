@@ -5,7 +5,7 @@ from django.conf import settings as django_settings
 ############################################################
 # Languages
 
-def languageToString(language): return dict(django_settings.LANGUAGES)[language]
+LANGUAGES_DICT = dict(django_settings.LANGUAGES)
 
 ############################################################
 # Donator statuses choices
@@ -21,23 +21,23 @@ else:
         ('PRODUCER', _('Master Player')),
         ('DEVOTEE', _('Ultimate Player')),
     )
-def statusToString(status): return dict(STATUS_CHOICES)[status]
+STATUS_CHOICES_DICT = dict(STATUS_CHOICES)
 
-def statusToColor(status):
-    if status == 'SUPPORTER': return '#4a86e8'
-    elif status == 'LOVER': return '#ff53a6'
-    elif status == 'AMBASSADOR': return '#a8a8a8'
-    elif status == 'PRODUCER': return '#c98910'
-    elif status == 'DEVOTEE': return '#c98910'
-    return ''
+STATUS_COLORS = {
+    'SUPPORTER': '#4a86e8',
+    'LOVER': '#ff53a6',
+    'AMBASSADOR': '#a8a8a8',
+    'PRODUCER': '#c98910',
+    'DEVOTEE': '#c98910',
+}
 
-def statusToColorString(status):
-    if status == 'SUPPORTER': return _('blue')
-    elif status == 'LOVER': return _('pink')
-    elif status == 'AMBASSADOR': return _('shiny Silver')
-    elif status == 'PRODUCER': return _('shiny Gold')
-    elif status == 'DEVOTEE': return _('shiny Gold')
-    return ''
+STATUS_COLOR_STRINGS = {
+    'SUPPORTER': _('blue'),
+    'LOVER':  _('pink'),
+    'AMBASSADOR':  _('shiny Silver'),
+    'PRODUCER':  _('shiny Gold'),
+    'DEVOTEE':  _('shiny Gold'),
+}
 
 ############################################################
 # Links
@@ -57,10 +57,7 @@ LINK_CHOICES = (
     ('youtube', 'YouTube'),
     ('github', 'GitHub'),
 )
-def linkToString(link):
-    if link in dict(LINK_CHOICES):
-        return dict(LINK_CHOICES)[link]
-    return link
+LINK_CHOICES_DICT = dict(LINK_CHOICES)
 
 LINK_URLS = {
     'Location': u'http://maps.google.com/?q={}',
@@ -85,7 +82,7 @@ LINK_RELEVANCE_CHOICES = (
     (2, _('Often')),
     (3, _('Every single day')),
 )
-def linkRelevanceToString(rel): return dict(LINK_RELEVANCE_CHOICES)[rel]
+LINK_RELEVANCE_CHOICES_DICT = dict(LINK_RELEVANCE_CHOICES)
 
 ############################################################
 # Notifications
@@ -105,6 +102,11 @@ NOTIFICATION_TITLES = {
     NOTIFICATION_FOLLOW: _(u'When someone follows you.'),
 }
 
+NOTIFICATION_OPEN_SENTENCES = {
+    NOTIFICATION_LIKE : lambda n: _('Open {thing}').format(thing=_('Activity')),
+    NOTIFICATION_FOLLOW: lambda n: _('Open {thing}').format(thing=_('Profile')),
+}
+
 NOTIFICATION_URLS = {
     NOTIFICATION_LIKE: u'/activity/{}/{}/',
     NOTIFICATION_FOLLOW: u'/user/{}/{}/',
@@ -118,7 +120,7 @@ NOTIFICATION_ICONS = {
 ############################################################
 # Tags
 
-def tagToString(tag): return dict(ACTIVITY_TAGS)[tag]
+ACTIVITY_TAGS_DICT =  dict(ACTIVITY_TAGS)
 
 ############################################################
 # Reports
@@ -134,8 +136,7 @@ REPORT_STATUSES = (
     (REPORT_STATUS_EDITED, 'Edited'), # Staff decided to edit the thing and notify the owner
     (REPORT_STATUS_IGNORED, 'Ignored'), # Staff decided to ignore the report
 )
-
-def reportStatusToString(status): return dict(REPORT_STATUSES)[status]
+REPORT_STATUSES_DICT = dict(REPORT_STATUSES)
 
 ############################################################
 # Badges

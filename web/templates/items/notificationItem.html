@@ -1,28 +1,22 @@
 {% load web_tags %}
 {% load i18n %}
 {% with notification=item %}
-<div class="notification{% if notification.seen %} notification-seen{% endif %}">
+<a href="{{ notification.website_url }}" target="_blank" class="notification{% if notification.seen %} notification-seen{% endif %}">
   <div class="row">
     <div class="col-xs-4 text-center">
-      <a href="{{ notification.website_url }}" target="_blank" class="a-nodifference">
-	{% if notification.image %}
-	<img src="{{ notification.image_url }}" alt="{{ notification.localized_message }}" class="img-responsive img-rounded">
-	{% else %}
-	<i class="flaticon-{{ notification.icon }} text-main fontx4"></i>
-	{% endif %}
-      </a>
+      {% if notification.image %}
+      <img src="{{ notification.image_url }}" alt="{{ notification.localized_message }}" class="img-responsive img-rounded">
+      {% else %}
+      <i class="flaticon-{{ notification.icon }} text-main fontx4"></i>
+      {% endif %}
     </div>
     <div class="col-xs-8">
       {% if not ajax_modal_only %}<small class="text-main">{{ notification.creation }}</small>{% endif %}
       <p class="padding5">
 	{{ notification.localized_message }}
       </p>
-      <div class="text-right">
-	<a href="{{ notification.website_url }}" target="_blank" class="btn btn-main">
-	  {% trans 'Open' %}
-	</a>
-      </div>
     </div>
   </div>
-</div>
+  <div class="link-wrapper"><i class="flaticon-link"></i></div>
+</a>
 {% endwith %}

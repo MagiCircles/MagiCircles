@@ -1,38 +1,17 @@
 {# blocks: beforeform, imagetitle, title, beforefields, form, afterfields, belowform #}
-{# variables: forms (dict name: form) #}
+{# variables: forms (dict name: form) or form (single) #}
 {% extends extends %}
 {% load bootstrap %}
 {% load i18n %}
 {% load tools %}
 {% load web_tags %}
 
-{% block js %}
-<script>
-  var form_choices = {
-  {% for form_name, form in forms.items %}
-  '{{ form_name }}': {
-     {% for name, field in form.fields.items %}
-     {% if field.choices %}
-     '{{ name }}': {
-       {% for key, value in field.choices %}
-       '{{ key }}': '{{ value }}',
-       {% endfor %}
-     },
-     {% endif %}
-     {% endfor %}
-  },
-  {% endfor %}
-  };
-</script>
-{% endblock %}
-
 {% block content %}
-{% with form=form|default_if_none:0 %}
 {% with forms=forms|getFormAsList:form %}
 <div class="{% if not ajax %}container{% endif %} container-for-generic-form">
   {% for form_name, form in forms.items %}
   {% block beforeform %}{% endblock %}
-  <h1 id="{{ form_name }}" class="text-center padding50 form-title">{% block imagetitle %}{% endblock %} {% block title %}{% endblock %}</h1>
+  <h1 id="{{ form_name }}" class="text-center padding50 form-title">{% block imagetitle %}{% endblock %} {% block title %}{{ page_title }}{% endblock %}</h1>
   <form method="POST" class="{% if not ajax %}container_form{% endif %} generic-form"{% if multipart %} enctype="multipart/form-data"{% endif %} action="{% if ajax %}{{ current_url }}{% else %}#{{ form_name }}{% endif %}">
     {% block beforefields %}{% endblock %}
     {% block form %}
@@ -51,6 +30,5 @@
   {% block belowform %}{% endblock %}
 {% endfor %}
 </div>
-{% endwith %}
 {% endwith %}
 {% endblock %}

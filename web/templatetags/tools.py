@@ -1,4 +1,8 @@
+import re
 from django import template
+from django.utils.translation import ugettext_lazy as _
+from web.django_translated import t
+
 register = template.Library()
 
 @register.filter
@@ -30,19 +34,12 @@ def isnone(value):
     return value is None
 
 @register.filter
-def torfc2822(date):
-    return date.strftime("%B %d, %Y %H:%M:%S %z")
-
-@register.filter
 def startswith(value, arg):
     return value.startswith(arg)
 
 @register.filter
 def get_range(value):
     return range(value)
-
-from django.utils.translation import ugettext_lazy as _
-from web.django_translated import t
 
 @register.simple_tag
 def t(string):
@@ -69,3 +66,37 @@ def orcallable(var_or_callable):
     if callable(var_or_callable):
         return _(var_or_callable())
     return _(var_or_callable)
+
+@register.filter
+def isList(thing):
+    return isinstance(thing, list)
+
+@register.filter
+def modelName(thing):
+    return thing.__class__.__name__
+
+@register.filter
+def call(function, parameter):
+    return function(parameter)
+
+@register.simple_tag(takes_context=True)
+def callWithContext(context, dict, function, p1=None, p2=None, p3=None):
+    if function in dict:
+        context['result_of_callwithcontext'] = dict[function](context, *[p for p in [p1, p2, p3] if p is not None])
+    return ''
+
+@register.filter
+def getattribute(value, arg):
+    """Gets an attribute of an object dynamically from a string name"""
+    if hasattr(value, str(arg)):
+        if callable(getattr(value, arg)):
+            return getattr(value, arg)()
+        return getattr(value, arg)
+    elif hasattr(value, 'has_key') and value.has_key(arg):
+        return value[arg]
+    elif re.compile("^\d+$").match(str(arg)) and len(value) > int(arg):
+        return value[int(arg)]
+    elif str(arg) in value:
+        return value.get(arg)
+    try: return value[arg]
+    except: return settings.TEMPLATE_STRING_IF_INVALID

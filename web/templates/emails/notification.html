@@ -14,10 +14,10 @@
 {% endblock %}
 
 {% block actionbuttontitle %}
-{% trans 'Open' %}
+{{ notification.url_open_sentence }}
 {% endblock %}
 {% block actionbuttonalt %}
-{% trans 'Open' %}
+{{ notification.url_open_sentence }}
 {% endblock %}
 
 {% block actionlink %}
@@ -27,6 +27,6 @@
 {% block footersentence %}
 <div style="text-align: right">
   {% include 'emails/donation_footer.html' %}
-  <small style="color: #cccccc;"><a href="{{ site_url }}settings/#emails">{% trans 'Click here' %}</a> {% trans 'to turn off email notifications.' %}</small>
+  <small style="color: #cccccc;"><a href="{{ site_url }}settings/#emails">{% trans 'Click here to turn off email notifications.' %}</small>
 </div>
 {% endblock %}

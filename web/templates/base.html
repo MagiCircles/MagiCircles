@@ -3,10 +3,10 @@
 {% load tools %}
 {% if not static_url %}{% forceLoadRawContext %}{% endif %}
 <!DOCTYPE html>
-<html lang="{{ LANGUAGE_CODE }}" class="html-current-{{ current }}">
+<html lang="{{ LANGUAGE_CODE }}" class="html-current-{{ current }}{% if shortcut_url != None %} html-shortcut-{{ shortcut_url }}{% endif %}">
   <head>
     <meta charset="UTF-8">
-    <title>{{ site_name }} - {% block title %}{% trans site_description %}{% endblock %}</title>
+    <title>{{ site_name }} - {% block title %}{% if page_title %}{{ page_title }}{% else %}{% trans site_description %}{% endif %}{% endblock %}</title>
 
     <link rel="shortcut icon" type="image/x-icon" href="{{ static_url }}favicon.ico" />
     <link rel="stylesheet" href="{{ static_url }}bower/bootstrap/dist/css/bootstrap.min.css">
@@ -29,7 +29,7 @@
     </script>
     <![endif]-->
   </head>
-  <body class="current-{{ current }}">
+  <body class="current-{{ current }}{% if shortcut_url != None %} shortcut-{{ shortcut_url }}{% endif %}">
     {% if not hidenavbar %}
     <nav class="navbar navbar-main navbar-fixed-top">
       <div class="container">
@@ -41,13 +41,14 @@
 	    <span class="icon-bar"></span>
 	  </button>
 	  <a class="navbar-brand" href="/">
-	    {% if site_logo %}<img src="{{ static_url }}img/{{ site_logo }}" class="logo hidden-xs hidden-sm"><span class="visible-xs visible-sm site-name">{{ site_name }}</span>{% else %}{{ site_name }}{% endif %}
+	    {% if site_nav_logo %}<img src="{{ static_url }}img/{{ site_nav_logo }}" class="logo hidden-xs hidden-sm"><span class="visible-xs visible-sm site-name">{{ site_name }}</span>{% else %}{{ site_name }}{% endif %}
 	  </a>
 	</div>
 	<div class="collapse navbar-collapse collapse">
 	  <ul class="nav navbar-nav navbar-right">
 	    {% for link in navbar_links %}
-	    {% if link|linkShowAuth:user %}
+	    {% callWithContext dict=link function='show_link_callback' %}
+	    {% if result_of_callwithcontext %}
 	    <li class="{% if current == link.url_name %}active{% endif %}">
 	      <a href="{{ link.url }}">
 		{% if link.icon %}
@@ -88,7 +89,8 @@
 	      </a>
 	      <ul class="dropdown-menu" role="menu">
 		{% for link in link_list.links %}
-		{% if link|linkShowAuth:user %}
+		{% callWithContext dict=link function='show_link_callback' %}
+		{% if result_of_callwithcontext %}
 		<li class="{% if current == link.url_name %}active{% endif %}">
 		  <a href="{% navbarGetURL link=link %}">
 		    {% if link.icon %}
@@ -164,6 +166,10 @@
       </div>
     </div>
 
+    {% if user.is_staff %}
+    <a href="#hideStaffButtons" style="display: none;" data-toggle="tooltip" data-placement="top" data-trigger="hover" data-html="true"  title="Hide/Show<br>Staff Only Buttons"><i class="flaticon-promo"></i></a>
+    {% endif %}
+
     <script>
     var disqus_config = function () {
       this.language = "{{ LANGUAGE_CODE }}";
@@ -172,9 +178,8 @@
     var empty_image = '{{ static_url }}img/{{ empty_image }}';
     var disqus_shortname = '{{ disqus_shortname }}';
     var is_authenticated = {% if user.is_authenticated %}'{{ user.username }}'{% else %}false{% endif %};
-    var translated_terms = {
-      {% for term in javascript_translated_terms %}'{{ term }}': '{% trans term %}',
-      {% endfor %}};
+    var translated_terms = {{ javascript_translated_terms_json|safe }};
+    var staff_buttons_hidden = true;
     </script>
 
     <script src="{{ static_url }}bower/jquery/jquery.min.js"></script>
@@ -184,13 +189,9 @@
     <script src="{{ static_url }}bower/Autolinker.js/dist/Autolinker.min.js"></script>
     <script src="{{ static_url }}bower/CuteForm/cuteform.js"></script>
     <script>
-      cuteform($('#switchLanguage'), {
-        'images': {
-          {% for lang in LANGUAGES %}
-          '{{ lang.0 }}': '{{ static_url }}img/language/{{ lang.0 }}.png',
-	  {% endfor %}
-        },
-      });
+      {% if cuteform_fields %}{% for selector, json in cuteform_fields_json.items %}
+      cuteform($('{{ selector }}'), {{ json|safe }});
+      {% endfor %}{% endif %}
     </script>
     {% block js %}{% endblock %}
     {% block js2 %}{% endblock %}
@@ -199,6 +200,13 @@
     {% for js_file in js_files %}
     <script src="{% if js_file|startswith:'http' %}{{ js_file }}{% else %}{{ static_url }}{% if not js_file|startswith:'bower' %}js/{% endif %}{{ js_file }}.js?{{ static_files_version }}{% endif %}"></script>
     {% endfor %}
+    {% if ajax_callback %}
+    <script>
+    $(document).ready(function() {
+    {{ ajax_callback }}();
+    });
+    </script>
+    {% endif %}
     {% block afterjs %}{% endblock %}
 
     <script>

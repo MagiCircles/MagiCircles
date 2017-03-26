@@ -1,7 +1,6 @@
 {# variables: user, report, sentence, subject #}
 {% extends 'emails/base.html' %}
 {% load i18n %}
-{% load wchoices %}
 
 {% block subject %}{{ subject }}{% endblock %}
 {% block headersubject %}{{ subject }}{% endblock %}
@@ -18,16 +17,16 @@
   {{ report.staff_message }}
   {% if user.preferences.language and user.preferences.language != 'en' %}
   <br><small><a href="https://translate.google.com/#en/{{ user.preferences.language }}/{{ report.staff_message|urlencode }}">
-      {% with language=user.preferences.language|languageToString %}
-      {% blocktrans %}Translate from English to {{ language }}{% endblocktrans %}
+      {% with from_language='English' to_language=user.preferences.localized_language %}
+      {% blocktrans %}Translate from {{ from_language }} to {{ to_language }}{% endblocktrans %}
       {% endwith %}
     </a>
   {% endif %}
 </p>
 {% endblock %}
 
-{% block actionbuttontitle %}{% if item_url %}{% trans 'Open' %}{% else %}{{ site_name }}{% endif %}{% endblock %}
-  {% block actionbuttonalt %}{% if item_url %}{% trans 'Open' %}{% else %}{{ site_name }}{% endif %}{% endblock %}
+{% block actionbuttontitle %}{% if item_url %}{{ item_open_sentence }}{% else %}{{ site_name }}{% endif %}{% endblock %}
+  {% block actionbuttonalt %}{% if item_url %}{{ item_open_sentence }}{% else %}{{ site_name }}{% endif %}{% endblock %}
 
 {% block actionlink %}{% if item_url %}{{ item_url }}{% endif %}{% endblock %}
 

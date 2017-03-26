@@ -33,43 +33,50 @@ function loadPageScroll() {
 }
 
 // *****************************************
-// Change Unknown / Yes / No to cute form All / Only / None
-
-function cuteFormNullBool() {
-    $('select option[value="1"]').each(function() {
-	var select = $(this).parent();
-	var flag = true;
-	select.find('option').each(function() {
-	    if (!(($(this).attr('value') == '1' && $(this).text() == gettext('Unknown'))
-		  || ($(this).attr('value') == '2' && $(this).text() == gettext('Yes'))
-		  || ($(this).attr('value') == '3' && $(this).text() == gettext('No')))) {
-		flag = false;
-	    }
-	});
-	if (flag) {
-	    cuteform(select, {
-		'html': {
-		    '1': gettext('All'),
-		    '2': gettext('Only'),
-		    '3': gettext('None'),
-		},
-	    });
-	}
-    });
-}
-
-// *****************************************
 // Check if date input is supported and add an help text otherwise
 
 function dateInputSupport() {
-    var input = document.createElement('input');
-    input.setAttribute('type','date');
+    if ($('input[type="date"]').length > 0) {
+	var input = document.createElement('input');
+	input.setAttribute('type','date');
 
-    var notADateValue = 'not-a-date';
-    input.setAttribute('value', notADateValue);
+	var notADateValue = 'not-a-date';
+	input.setAttribute('value', notADateValue);
 
-    if (!(input.value !== notADateValue)) {
-	$('input[type="date"]').parent().find('.help-block').text('yyyy-mm-dd');
+	if (!(input.value !== notADateValue)) {
+	    $('input[type="date"]').parent().find('.help-block').text('mm-dd-yyyy');
+	}
+    }
+}
+
+// *****************************************
+// Hide Staff Buttons
+
+function hideStaffButtons(show, showTooltip /* optional, = true */) {
+    if ($('.staff-only').length > 0) {
+	show = typeof show == 'undefined' ? false : show;
+	if (show) {
+	    $('.staff-only').show('slow');
+	} else {
+	    $('.staff-only').hide('slow');
+	}
+	$('a[href="#hideStaffButtons"]').show('slow', function() {
+	    loadToolTips();
+	    if (typeof showTooltip == 'undefined' || showTooltip == true) {
+		$('a[href="#hideStaffButtons"]').tooltip('show');
+		setTimeout(function() {
+		    $('a[href="#hideStaffButtons"]').tooltip('hide');
+		}, 2000);
+	    }
+	});
+	$('a[href="#hideStaffButtons"]').unbind('click');
+	$('a[href="#hideStaffButtons"]').click(function(e) {
+	    e.preventDefault();
+	    $(this).blur();
+	    hideStaffButtons(!show);
+	    return false;
+	});
+	staff_buttons_hidden = !show;
     }
 }
 
@@ -123,6 +130,8 @@ function notificationsHandler() {
     }
 }
 
+// *****************************************
+// Ajax modals
 
 function ajaxModals() {
     $('[data-ajax-url]').each(function() {
@@ -153,6 +162,9 @@ function ajaxModals() {
 		title = typeof title == 'undefined' ? button_content : title;
 		modal_size = button.data('ajax-modal-size');
 		freeModal(title, data, modalButtons, modal_size);
+		if (typeof button.attr('href') != 'undefined') {
+		    $('#freeModal').data('original-url', button.attr('href'));
+		}
 		if (typeof button.data('ajax-handle-form') != 'undefined') {
 		    var ajaxModals_handleForms;
 		    ajaxModals_handleForms = function() {
@@ -190,25 +202,141 @@ function ajaxModals() {
     });
 }
 
+// *****************************************
+// Load countdowns
+
+function _loadCountdowns() {
+    $('.countdown').each(function() {
+	var elt = $(this);
+	var format = typeof elt.data('format') != undefined ? elt.data('format') : '{time}';
+	elt.countdown({
+	    date: elt.data('date'),
+	    render: function(data) {
+		$(this.el).text(format.replace('{time}', data.days + ' ' + gettext('days') + ' ' + data.hours + ' ' + gettext('hours') + ' ' + data.min + ' ' + gettext('minutes') + ' ' + data.sec + ' ' + gettext('seconds')));
+	    },
+	});
+    });
+}
+
+function loadCountdowns() {
+    if ($('.countdown').length > 0) {
+	if (typeof Countdown == 'undefined') {
+	    $.getScript(static_url + 'bower/countdown/dest/jquery.countdown.min.js', _loadCountdowns);
+	} else {
+	    _loadCountdowns();
+	}
+    }
+}
 
 // *****************************************
-// Loaded in all pages
+// Load timezone dates
 
-$(document).ready(function() {
+function _loadTimezones() {
+    $('.timezone').each(function() {
+	var elt = $(this);
+	if (elt.data('converted') == true) {
+	    return;
+	}
+	elt.data('converted', true);
+	var date = new Date(elt.find('.datetime').text());
+	var timezone = elt.data('to-timezone');
+	var options = {
+	    year: 'numeric',
+	    month: 'long',
+	    day: 'numeric',
+	    hour: 'numeric',
+	    minute: 'numeric',
+	};
+	if (typeof timezone != 'undefined' && timezone != '' && timezone != 'Local time') {
+	    options['timeZone'] = timezone;
+	} else {
+	    timezone = 'Local time';
+	}
+	var converted_date = date.toLocaleString($('html').attr('lang'), options);
+	elt.find('.datetime').text(converted_date);
+	elt.find('.current_timezone').text(gettext(timezone));
+	if (typeof elt.data('timeago') != 'undefined') {
+	    var html = elt.html();
+	    elt.html(jQuery.timeago(date));
+	    elt.tooltip({
+		html: true,
+		title: html,
+		trigger: 'hover',
+	    });
+	}
+	elt.show();
+    });
+}
 
-    $("#togglebutton").click(function(e) {
-	e.preventDefault();
-	$("#wrapper").toggleClass("toggled");
+function loadTimezones() {
+    if ($('[data-timeago]').length > 0 && typeof jQuery.timeago == 'undefined') {
+	$.getScript(static_url + 'bower/jquery-timeago/jquery.timeago.js', function() {
+	    $.getScript(static_url + 'bower/jquery-timeago/locales/jquery.timeago.' + $('html').attr('lang')+ '.js', _loadTimezones);
+	});
+    } else {
+	_loadTimezones();
+    }
+}
+
+// *****************************************
+// On back button close modal
+
+var realBack = false;
+var calledBack = false;
+
+function onBackButtonCloseModal() {
+    $('.modal').on('shown.bs.modal', function()  {
+	var urlReplace;
+	var original_url = $(this).data('original-url');
+	if (typeof original_url != 'undefined') {
+	    urlReplace = original_url;
+	} else {
+	    urlReplace = '#' + $(this).attr('id');
+	}
+	history.pushState(null, null, urlReplace);
     });
 
-    loadPageScroll();
-    formloaders();
-    dateInputSupport();
-    cuteFormNullBool();
-    notificationsHandler();
-    ajaxModals();
+    $('.modal').on('hidden.bs.modal', function()  {
+	if (realBack == false) {
+	    calledBack = true;
+	    history.back();
+	} else {
+	    realBack = false;
+	}
+    });
+    $(window).on('popstate', function() {
+	if (calledBack == false) {
+	    realBack = true;
+	}
+	calledBack = false;
+	$('.modal').modal('hide');
+    });
+}
 
-    // Dismiss popovers on click outside
+// *****************************************
+// Side bar toggle button
+
+function sideBarToggleButton() {
+    $('#togglebutton, .togglebutton').click(function(e) {
+	e.preventDefault();
+	$('#wrapper').toggleClass('toggled');
+	$(this).blur();
+    });
+}
+
+// *****************************************
+// Switch language
+
+function switchLanguage() {
+    $('#switchLanguage + .cuteform img').click(function() {
+	$(this).closest('form').submit();
+    });
+}
+
+// *****************************************
+// Dismiss popovers on click outside
+
+function dismissPopoversOnClickOutside() {
     $('body').on('click', function (e) {
 	if ($(e.target).data('toggle') !== 'popover'
 	    && $(e.target).parents('.popover.in').length === 0
@@ -216,15 +344,62 @@ $(document).ready(function() {
 	    hidePopovers();
 	}
     });
+}
 
-    $('#switchLanguage + .cuteform img').click(function() {
-	$(this).closest('form').submit();
+// *****************************************
+// Load commons on modal shown
+
+function loadCommonsOnModalShown() {
+    $('.modal').on('shown.bs.modal', function (e) {
+    	loadCommons();
     });
+}
+
+function hideCommonsOnModalShown() {
+    $('#freeModal').on('show.bs.modal', function() {
+	$('main [data-toggle="tooltip"]').tooltip('hide');
+	$('main [data-toggle="popover"]').popover('hide');
+    });
+}
+
+// *****************************************
+// Loaded in all pages
+
+$(document).ready(function() {
+    loadCommons(true);
+    notificationsHandler();
+    sideBarToggleButton();
+    onBackButtonCloseModal();
+    loadCommonsOnModalShown();
+    hideCommonsOnModalShown();
+    loadPageScroll();
+    dismissPopoversOnClickOutside();
+    switchLanguage();
 });
 
 // *****************************************
 // *****************************************
 // Tools to call
+
+// *****************************************
+// Reload common things, called:
+// - on load of any page
+// - when a view is loaded in a modal
+// - when a new pagination page is loaded
+
+function loadCommons(onPageLoad /* optional = false */) {
+    onPageLoad = typeof onPageLoad == 'undefined' ? false : onPageLoad;
+    loadToolTips();
+    loadPopovers();
+    formloaders();
+    dateInputSupport();
+    hideStaffButtons(false, onPageLoad);
+    ajaxModals();
+    loadCountdowns();
+    loadTimezones();
+    loadMarkdown();
+    reloadDisqus();
+}
 
 // *****************************************
 // Load bootstrap
@@ -242,7 +417,7 @@ function loadPopovers() {
 
 function gettext(term) {
     var translated_term = translated_terms[term]
-    if (typeof translated_terms != 'undefined') {
+    if (typeof translated_term != 'undefined') {
 	return translated_term;
     }
     return term;
@@ -253,7 +428,7 @@ function gettext(term) {
 
 // Use true for modal_size to not change the size
 // Use 0 for buttons to remove all buttons
-function freeModal(title, body, buttons, modal_size) {
+function freeModal(title, body, buttons /* optional */, modal_size /* optional */) {
     keep_size = modal_size === true;
     if (!keep_size) {
 	$('#freeModal .modal-dialog').removeClass('modal-lg');
@@ -277,11 +452,29 @@ function freeModal(title, body, buttons, modal_size) {
     $('#freeModal').modal('show');
 }
 
+function confirmModal(onConfirmed, onCanceled /* optional */, title /* optional */, body /* optional */) {
+    title = typeof title == 'undefined' ? gettext('Confirm') : title;
+    body = typeof body == 'undefined' ? gettext('You can\'t cancel this action afterwards.') : body;
+    freeModal(title, body, '\
+<button type="button" class="btn btn-default">' + gettext('Cancel') + '</button>\
+<button type="button" class="btn btn-danger">' + gettext('Confirm') + '</button>');
+   $('#freeModal .modal-footer .btn-danger').click(function() {
+	onConfirmed();
+	$('#freeModal').modal('hide');
+    });
+    $('#freeModal .modal-footer .btn-default').click(function() {
+	if (typeof onCanceled != 'undefined') {
+	    onCanceled();
+	}
+	$('#freeModal').modal('hide');
+    });
+}
+
 // *****************************************
 // Pagination
 
-function load_more_function(nextPageUrl, newPageParameters, newPageCallback, onClick) {
-    var button = $("#load_more");
+function load_more_function(nextPageUrl, newPageParameters, newPageCallback /* optional */, onClick) {
+    var button = $('#load_more');
     button.html('<div class="loader">Loading...</div>');
     var next_page = button.attr('data-next-page');
     $.get(nextPageUrl + location.search + (location.search == '' ? '?' : '&') + 'page=' + next_page + newPageParameters, function(data) {
@@ -294,11 +487,12 @@ function load_more_function(nextPageUrl, newPageParameters, newPageCallback, onC
 	if (typeof newPageCallback != 'undefined') {
 	    newPageCallback();
 	}
+	loadCommons();
     });
 }
 
-function pagination(nextPageUrl, newPageParameters, newPageCallback) {
-    var button = $("#load_more");
+function pagination(nextPageUrl, newPageParameters, newPageCallback /* optional */) {
+    var button = $('#load_more');
     $(window).scroll(
 	function () {
 	    if (button.length > 0
@@ -310,7 +504,7 @@ function pagination(nextPageUrl, newPageParameters, newPageCallback) {
 	});
 }
 
-function paginationOnClick(buttonId, nextPageUrl, newPageParameters, newPageCallback) {
+function paginationOnClick(buttonId, nextPageUrl, newPageParameters, newPageCallback /* optional */) {
     var button = $('#' + buttonId);
     button.unbind('click');
     button.click(function(e) {
@@ -324,8 +518,10 @@ function paginationOnClick(buttonId, nextPageUrl, newPageParameters, newPageCall
 // Reload disqus count
 
 function reloadDisqus() {
-    window.DISQUSWIDGETS = undefined;
-    $.getScript('http://' + disqus_shortname + '.disqus.com/count.js');
+    if ($('[href$="#disqus_thread"], .disqus-comment-count').length > 0) {
+	window.DISQUSWIDGETS = undefined;
+	$.getScript('http://' + disqus_shortname + '.disqus.com/count.js');
+    }
 }
 
 // *****************************************
@@ -335,57 +531,6 @@ function hidePopovers() {
     $('[data-manual-popover=true]').popover('hide');
     $('[data-toggle=popover]').popover('hide');
     $('a[href="/notifications/"]').popover('destroy');
-}
-
-// *****************************************
-// Load a bunch of cute forms
-
-// Takes an object of key = form name and value = true if just value.png, callback otherwise (value, string)
-function multiCuteForms(cuteformsToDo, withImages) {
-    withImages = typeof withImages != 'undefined' ? withImages : true;
-    for (var form in form_choices) {
-	for (var field_name in form_choices[form]) {
-	    if (field_name in cuteformsToDo) {
-		var images = {};
-		for (var value in form_choices[form][field_name]) {
-		    if (value == '') {
-			images[value] = empty_image;
-		    } else {
-			var cb = cuteformsToDo[field_name];
-			if (cb === true) {
-			    images[value] = static_url + 'img/' + field_name + '/' + value + '.png';
-			    withImages = true;
-			} else if (cb === 'name') {
-			    images[value] = form_choices[form][field_name][value];
-			    withImages = false;
-			} else {
-			    images[value] = cb(value, form_choices[form][field_name][value]);
-			}
-		    }
-		}
-		if (withImages) {
-		    cuteform($('#id_' + field_name), {
-			'images': images,
-		    });
-		} else {
-		    if ('' in images) {
-			images[''] = '<img src="' + images[''] + '">'
-		    }
-		    cuteform($('#id_' + field_name), {
-			'html': images,
-		    });
-		}
-	    }
-	}
-    }
-}
-
-function multiCuteFormsImages(cuteFormsToDo) {
-    multiCuteForms(cuteFormsToDo, true);
-}
-
-function multiCuteFormsHTML(cuteFormsToDo) {
-    multiCuteForms(cuteFormsToDo, false);
 }
 
 // *****************************************
@@ -399,13 +544,6 @@ function genericAjaxError(xhr, ajaxOptions, thrownError) {
 // Handle actions on activities view
 
 function updateActivities() {
-    loadPopovers();
-    $('.activity .message').each(function() {
-	if (!$(this).hasClass('markdowned')) {
-	    applyMarkdown($(this));
-	    $(this).addClass('markdowned');
-	}
-    });
     $('a[href=#likecount]').unbind('click');
     $('a[href=#likecount]').click(function(e) {
 	e.preventDefault();
@@ -453,12 +591,6 @@ function updateActivities() {
 	});
 	return false;
     });
-    if ($('#sidebar-wrapper #id_language').length > 0 && $('#sidebar-wrapper #id_language + .cuteform').length < 1) {
-	multiCuteForms({
-	    'language': true,
-	});
-    }
-    reloadDisqus();
 }
 
 // *****************************************
@@ -481,6 +613,23 @@ function escapeHtml(string) {
 
 function applyMarkdown(elt) {
     elt.html(Autolinker.link(marked(escapeHtml(elt.text())), { newWindow: true, stripPrefix: true } ));
+}
+
+function _loadMarkdown() {
+    $('.to-markdown:not(.markdowned)').each(function() {
+	applyMarkdown($(this));
+	$(this).addClass('markdowned');
+    });
+}
+
+function loadMarkdown() {
+    if ($('.to-markdown').length > 0) {
+	if (typeof marked == 'undefined') {
+	    $.getScript(static_url + 'bower/marked/lib/marked.js', _loadMarkdown);
+	} else {
+	    _loadMarkdown();
+	}
+    }
 }
 
 // *****************************************

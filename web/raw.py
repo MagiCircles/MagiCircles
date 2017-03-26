@@ -1,4 +1,20 @@
 # -*- coding: utf-8 -*-
+from django.utils.translation import ugettext_lazy as _
+
+please_understand_template_sentence = 'Please understand that we have a very young audience, so we have to be very careful with what appears on our website.'
+
+donators_adjectives = [
+    _('lovely'),
+    _('awesome'),
+    _('incredible'),
+    _('adorable'),
+    _('generous'),
+    _('idols-addicted'),
+    _('friendly'),
+    _('kind'),
+    _('warmhearted'),
+    _('nice'),
+]
 
 other_sites = [
     {

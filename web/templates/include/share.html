@@ -1,11 +1,11 @@
 {# variables: share_url, share_sentence, share_btn_class #}
 {% load i18n %}
-<a href="http://twitter.com/share?text={{ share_sentence }}&url={{ share_url }}&hashtags={% for hashtag in hashtags %}{{ hashtag }},{% endfor %}&via={{ twitter_handle }}" class="btn btn-{{ share_btn_class|default_if_none:"main" }}" target="_blank">
+<a href="http://twitter.com/share?text={{ share_sentence|urlencode }}&url={{ share_url }}&hashtags={% for hashtag in hashtags %}{{ hashtag }},{% endfor %}&via={{ twitter_handle }}" class="btn btn-{{ share_btn_class|default_if_none:"main" }}" target="_blank">
   <img src="{{ static_url }}img/links/twitter.png" alt="Twitter" />
 </a>
 <a href="http://www.facebook.com/sharer/sharer.php?u={{ share_url }}" class="btn btn-{{ share_btn_class|default_if_none:"main" }}" target="_blank">
   <img src="{{ static_url }}img/links/facebook.png" alt="Facebook" />
 </a>
-<a href="http://www.reddit.com/submit?url={{ share_url }}&title={{ share_sentence }}" class="btn btn-{{ share_btn_class|default_if_none:"main" }}" target="_blank">
+<a href="http://www.reddit.com/submit?url={{ share_url }}&title={{ share_sentence|urlencode }}" class="btn btn-{{ share_btn_class|default_if_none:"main" }}" target="_blank">
   <img src="{{ static_url }}img/links/reddit.png" alt="Reddit" />
 </a>

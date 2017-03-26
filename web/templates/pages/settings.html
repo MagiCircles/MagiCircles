@@ -7,33 +7,13 @@
 {% if form_name == 'preferences' %}
 {% trans 'Customize' %}
 {% elif form_name == 'addLink' %}
-{% trans 'Add' %} {% trans 'Link' %}
+{{ add_link_sentence }}
 {% elif form_name == 'changePassword' %}
 {% trans 'Change your password' %}
 {% elif form_name == 'emails' %}
 {% trans 'Emails' %}
 {% else %}
 {% trans 'Settings' %}
-{% endif %}
-{% endblock %}
-
-{% block js2 %}
-  {% if 'favorite_character1' in forms.preferences.fields and favorite_characters %}
-<script>
-var cuteformfavoptions = {
-  'images': {
-    '': '{{ static_url }}img/{{ empty_image }}',
-    {% for character in favorite_characters %}
-    '{{ character.0 }}': '{{ character.2 }}',
-    {% endfor %}
-  },
-  'modal': 'true',
-  'modal-text': 'true',
-};
-cuteform($('#id_favorite_character1'), cuteformfavoptions);
-cuteform($('#id_favorite_character2'), cuteformfavoptions);
-cuteform($('#id_favorite_character3'), cuteformfavoptions);
-</script>
 {% endif %}
 {% endblock %}
 
@@ -48,7 +28,7 @@ cuteform($('#id_favorite_character3'), cuteformfavoptions);
       <td>
 	{% include 'include/link.html' %}
       </td>
-      <td class="text-right" width="200"><a href="#deleteLink" data-link-id="{{ link.id }}" class="btn btn-lg btn-danger">{% trans 'Delete' %} {% trans 'Link' %}</a></td>
+      <td class="text-right" width="200"><a href="#deleteLink" data-link-id="{{ link.id }}" class="btn btn-lg btn-danger">{{ delete_link_sentence }}</a></td>
     </tr>
     {% endfor %}
   </table>
@@ -78,13 +58,13 @@ cuteform($('#id_favorite_character3'), cuteformfavoptions);
     {% for account in accounts %}
     <tr>
       <td><h4>{{ account }}</h4></td>
-      <td class="text-right"><a href="/accounts/edit/{{ account.id }}/" class="btn btn-lg btn-main">{% trans 'Edit Account' %}</a></td>
+      <td class="text-right"><a href="{{ account.edit_url }}" class="btn btn-lg btn-main">{{ account.edit_sentence }}</a></td>
     </tr>
     {% endfor %}
   </table>
   <div class="text-right">
     <a href="/user/{{ user.id }}/{{ user.username }}/" class="btn btn-lg btn-link">{% trans 'Back to my profile' %}</a>
-    <a href="/accounts/add/" class="btn btn-lg btn-main"><i class="flaticon-add"></i> {% trans 'Add' %} {% trans 'Account' %}</a>
+    <a href="/accounts/add/" class="btn btn-lg btn-main"><i class="flaticon-add"></i> {{ add_account_sentence }}</a>
   </div>
 </form>
 <br><br><br><br><br><br>
@@ -93,4 +73,12 @@ cuteform($('#id_favorite_character3'), cuteformfavoptions);
 
 {% block otherbuttons %}
 <a href="/user/{{ user.id }}/{{ user.username }}/" class="btn btn-lg btn-link">{% trans 'Back to my profile' %}</a>
+{% endblock %}
+
+{% block submit %}
+{% if form_name == 'addLink' %}
+{{ add_link_sentence }}
+{% else %}
+{% trans 'Apply Changes' %}
+{% endif %}
 {% endblock %}

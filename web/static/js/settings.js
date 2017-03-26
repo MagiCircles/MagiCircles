@@ -1,7 +1,5 @@
 
 $(document).ready(function() {
-    multiCuteForms({'language': true, 'color': true});
-
     $('a[href=#deleteLink]').click(function(e) {
 	e.preventDefault();
 	var link = $(this).closest('tr');

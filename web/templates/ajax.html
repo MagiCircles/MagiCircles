@@ -1,6 +1,7 @@
 {% load tools %}
 {% block content %}
 {% include include_template|add:'.html' %}
+{% if include_below_item %}{% include 'include/below_item.html' %}{% endif %}
 {% endblock %}
 {% block js %}{% endblock %}
 {% block js2 %}{% endblock %}

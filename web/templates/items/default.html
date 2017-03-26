@@ -1,0 +1,15 @@
+<div class="{{ item.collection_name }}-info">
+  <div class="padding50 text-center top-item">
+    {% if top_illustration %}
+    {% include top_illustration|add:'.html' %}
+    {% else %}
+    {% if item.image %}
+    <img src="{{ item.image_url }}" alt="{{ item }}" class="{{ item.collection_name }}-image">
+    {% else %}
+    {{ item }}
+    {% endif %}
+    {% endif %}
+  </div>
+  <br>
+  {% include 'include/fields_table.html' with fields=item_fields bottom=True %}
+</div>

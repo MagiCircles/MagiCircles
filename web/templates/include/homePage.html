@@ -1,16 +1,17 @@
 {% load i18n %}
 {% load tools %}
 {% load l10n %}
+{% if shortcut_url == '' %}
 <div class="default-index {% if user.is_authenticated %}index-authenticated{% else %}index-not-authenticated{% endif %}">
   <header>
-    <h1 class="home-site-logo"><img src="{{ site_image }}" class="img-responsive" alt="{{ site_name }}"></h1>
+    <h1 class="home-site-logo"><img src="{{ site_logo }}" class="img-responsive" alt="{{ site_name }}"></h1>
     <h2 class="home-site-description">{{ site_description|orcallable }}</h2>
     {% if user.is_authenticated and 'donate' in all_enabled %}
     <p class="fontx1-5 home-site-donate-message">
       {% blocktrans %}is crowdfunded by {{ total_donators }} {{ adjective }} donators{% endblocktrans %}
       <a href="/donate/" class="btn btn-secondary">{% trans 'Donate' %}</a>
     </p>
-    {% if donation_month %}
+    {% if donation_month and donation_month.percent < 100 %}
     <div class="progress">
       <div class="progress-bar progress-bar-{% if donation_month.percent == 100 %}success{% else %}main{% endif %} progress-bar-striped active" style="width: {% localize off %}{{ donation_month.percent }}{% endlocalize %}%;">
 	{% if donation_month.percent > 40 %}{{ donation_month.date|date:"F" }}: {% with percent=donation_month.percent_int %}{% blocktrans %}{{ percent }}% funded{% endblocktrans %}{% endwith %}{% endif %}
@@ -63,6 +64,7 @@
 <ul class="nav nav-tabs" id="hometabs">
   <li{% if not is_feed %} class="active"{% endif %}><a href="/" >{% trans 'All' %}</a></li>
   <li{% if is_feed %} class="active"{% endif %}><a href="/?feed" >{% trans 'Following' %}</a></li>
-  <li><a href="/activities/" ><i class="flaticon-search"></i></a></li>
+  <li><a class="togglebutton" href="/activities/" ><i class="flaticon-search"></i><i class="flaticon-toggler hidder"></i></a></li>
 </ul>
+{% endif %}
 {% endif %}
