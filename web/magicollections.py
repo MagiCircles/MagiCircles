@@ -474,6 +474,9 @@ class AccountCollection(MagiCollection):
         per_line = 1
         add_button_subtitle = _('Create your account to join the community and be in the leaderboard!')
 
+        def show_add_button(self, request):
+            return not request.user.is_authenticated()
+
         @property
         def default_ordering(self):
             if hasattr(self.collection.queryset.model, 'level'):
