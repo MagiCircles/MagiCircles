@@ -68,6 +68,30 @@
     }
 }
 
+.about-table {
+    td > [class^="flaticon-"] {
+	font-size: 2em;
+    }
+    img {
+	max-height: 200px;
+	max-width: 100%;
+    }
+    td:first-child {
+	width: 60px;
+	text-align: center;
+	img {
+	    max-width: 50px;
+	}
+    }
+    .text-muted {
+	color: #ccc;
+	font-size: 0.8em;
+    }
+    &>tbody>tr>td, &>tbody>tr>th, .table>tfoot>tr>td, .table>tfoot>tr>th, .table>thead>tr>td, .table>thead>tr>th {
+	vertical-align: middle;
+    }
+}
+
 table.text-center th {
     text-align: center;
 }
