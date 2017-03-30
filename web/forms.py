@@ -69,6 +69,9 @@ class MagiForm(forms.ModelForm):
 
     def save(self, commit=True):
         instance = super(MagiForm, self).save(commit=False)
+        # Save owner on creation if specified
+        if hasattr(self.Meta, 'save_owner_on_creation') and self.Meta.save_owner_on_creation and self.is_creating:
+            instance.owner = self.request.user if self.request.user.is_authenticated() else None
         for field in self.fields.keys():
             # Fix empty strings to None
             if (hasattr(instance, field)
@@ -88,9 +91,6 @@ class MagiForm(forms.ModelForm):
                     image = shrinkImageFromData(image.read(), filename, settings=getattr(instance._meta.model, 'tinypng_settings', {}).get(field, {}))
                     image.name = instance._meta.model._meta.get_field('image').upload_to(instance, filename)
                     setattr(instance, field, image)
-        # Save owner on creation if specified
-        if hasattr(self.Meta, 'save_owner_on_creation') and self.Meta.save_owner_on_creation and self.is_creating:
-            instance.owner = self.request.user if self.request.user.is_authenticated() else None
         if commit:
             instance.save()
         return instance
