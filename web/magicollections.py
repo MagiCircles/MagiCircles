@@ -134,17 +134,18 @@ class MagiCollection(object):
     def share_image(self, context, item):
         return self.image
 
-    def to_fields(self, item, to_dict=True, only_fields=None, in_list=False):
+    def to_fields(self, item, to_dict=True, only_fields=None, in_list=False, icons={}, images={}):
         """
         Used only when template = 'default' or when 'ordering' is specified in a list
         Returns a dictionary of dictinaries with:
         - verbose_name
         - value
         - type
-        - optional: icon, link, link_text
+        - optional: icon, image, link, link_text
         Takes an object that inherits from ItemModel and returns a dictionary of field name -> value
         Available types:
         - text
+        - title_text (needs 'title')
         - image
         - bool
         - link (needs 'link_text')
@@ -154,6 +155,8 @@ class MagiCollection(object):
         Optional parameters:
         - to_dict will return a dict by default, otherwise a list or pair. Useful if you plan to change the order or insert items at certain positions.
         - only_fields if specified will ignore any other field
+        - icons is a dictionary of the icons associated with the fields
+        - images is a dictionary of the images associated with the fields
         """
         name_fields = []
         many_fields = []
@@ -172,36 +175,44 @@ class MagiCollection(object):
                     'value': u'{total} {items}'.format(total=total, items=_(verbose_name).lower()),
                     'link': u'/{}/?{}={}'.format(url, item.collection_name, item.pk),
                     'link_text': _('View all'),
+                    'icon': icons.get(field_name, None),
+                    'image': images.get(field_name, None),
                 }))
         model_fields = []
         # Fields from model
         for field in item._meta.fields:
             field_name = field.name
+            if (field_name.startswith('_')
+                or field_name in ['id', 'owner', 'owner_id']
+                or field_name == 'image'):
+                continue
             if only_fields and field_name not in only_fields:
                 continue
             if field_name.startswith('i_'):
                 field_name = field_name[2:]
-            try:
-                value = getattr(item, field_name, None)
-            except AttributeError:
-                continue
-            if (value is None
-                or field_name.startswith('_')
-                or field_name in ['id', 'owner', 'owner_id']
-                or field_name == 'image'
-            ):
-                continue
+            is_foreign_key = (isinstance(field, models.models.ForeignKey)
+                              or isinstance(field, models.models.OneToOneField))
+            value = None
+            if not is_foreign_key:
+                try:
+                    value = getattr(item, field_name, None)
+                except AttributeError:
+                    continue
+                if value is None:
+                    continue
             d = {
                 'verbose_name': getattr(field, 'verbose_name', _(field_name.capitalize())),
                 'value': value,
+                'icon': icons.get(field_name, None),
+                'image': images.get(field_name, None),
             }
-            if (isinstance(field, models.models.ForeignKey)
-                or isinstance(field, models.models.OneToOneField)):
+            if is_foreign_key:
                 try:
                     d['type'] = 'text_with_link'
                     d['value'] = getattr(item, 'cached_' + field_name).unicode
                     d['link'] = getattr(item, 'cached_' + field_name).item_url
-                    d['link_text'] = unicode(_(u'Open {thing}')).format(thing=d.verbose_name)
+                    d['ajax_link'] = getattr(item, 'cached_' + field_name).ajax_item_url
+                    d['link_text'] = unicode(_(u'Open {thing}')).format(thing=d['verbose_name'])
                 except AttributeError:
                     continue
             elif isinstance(field, models.models.ManyToManyField):

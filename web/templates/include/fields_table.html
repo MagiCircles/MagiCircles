@@ -16,10 +16,13 @@
       <td>
 	{% if field.type == 'text_with_link' %}
 	{{ field.value }}<br>
-	<a href="{{ field.link }}" target="_blank">
+	<a href="{{ field.link }}" target="_blank"{% if field.ajax_link %} data-ajax-url="{{ field.ajax_link }}" data-ajax-title="{{ field.value }}"{% endif %}>
 	  {{ field.link_text }}
 	  <i class="flaticon-link fontx0-8"></i>
 	</a>
+	{% elif field.type == 'title_text' %}
+	<strong>{{ field.title }}</strong><br>
+	<p>{{ field.value }}</p>
 	{% elif field.type == 'image' %}
 	<a href="{{ field.value }}" target="_blank">
 	  <img src="{{ field.value }}" alt="{{ field.verbose_name }}">
