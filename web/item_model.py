@@ -42,7 +42,7 @@ def get_image_url_from_path(imagePath):
     if not imagePath:
         return None
     imageURL = unicode(imagePath)
-    return u'{}{}'.format('//i.cinderella.pro/', imageURL)
+    #return u'{}{}'.format('//i.cinderella.pro/', imageURL)
     if '//' in imageURL:
         return imageURL
     if imageURL.startswith(django_settings.SITE + '/'):
