@@ -132,6 +132,10 @@ class UserPreferences(models.Model):
         return COLOR
 
     @property
+    def rgb_color(self):
+        return tuple(int(self.hex_color.lstrip('#')[i:i+2], 16) for i in (0, 2 ,4))
+
+    @property
     def css_color(self):
         if self.color and USER_COLORS:
             try:
