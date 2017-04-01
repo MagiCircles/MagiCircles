@@ -513,7 +513,7 @@ class FilterActivities(MagiForm):
         ('total_likes,creation', string_concat(_('Most Popular'), ' (', _('All time'), ')')),
         ('total_likes,id', string_concat(_('Most Popular'), ' (', _('This week'), ')')),
     ], initial='modification', required=False, label=_('Ordering'))
-    reverse_order = forms.BooleanField(initial=True, required=False)
+    reverse_order = forms.BooleanField(initial=True, required=False, label=_('Reverse order'))
 
     def __init__(self, *args, **kwargs):
         super(FilterActivities, self).__init__(*args, **kwargs)
