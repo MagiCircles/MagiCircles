@@ -3,11 +3,11 @@
   <div class="row">
     {% if donate_image %}
     <div class="col-md-4">
-      <img src="{{ static_url }}img/{{ donate_images_folder }}{{ donate_image }}" class="img-responsive">
+      <img src="{{ static_url }}img/{{ donate_images_folder }}{{ donate_image }}" class="img-responsive donate-image">
     </div>
     {% endif %}
     <div class="col-md-{% if donate_image %}8{% else %}12{% endif %} text-center ">
-      <p class="big-text"><br>{% trans 'If you like the website, please consider donating' %}. {% trans 'This will help us cover the costs of the servers and allow us to keep it running for free and without ads.' %}</p>
+      <p class="big-text donate-text"><br>{% trans 'If you like the website, please consider donating' %}. {% trans 'This will help us cover the costs of the servers and allow us to keep it running for free and without ads.' %}</p>
     </div>
   </div>
   <br><br>
