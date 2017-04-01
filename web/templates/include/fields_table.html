@@ -49,6 +49,8 @@
 	  (<span class="current_timezone">UTC</span>)
 	</span><br>
 	{% endfor %}
+	{% elif field.type == 'html' %}
+	{{ field.value|safe }}
 	{% else %}
 	{{ field.value }}
 	{% endif %}
