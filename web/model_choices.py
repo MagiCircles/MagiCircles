@@ -120,7 +120,7 @@ NOTIFICATION_ICONS = {
 ############################################################
 # Tags
 
-ACTIVITY_TAGS_DICT =  dict(ACTIVITY_TAGS)
+ACTIVITY_TAGS_DICT =  dict(ACTIVITY_TAGS if ACTIVITY_TAGS else [])
 
 ############################################################
 # Reports
