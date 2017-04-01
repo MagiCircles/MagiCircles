@@ -153,6 +153,11 @@ if hasattr(settings_module, 'SITE_NAV_LOGO'):
 else:
     SITE_NAV_LOGO = None
 
+if hasattr(settings_module, 'SITE_LOGO_PER_LANGUAGE'):
+    SITE_LOGO_PER_LANGUAGE = getattr(settings_module, 'SITE_LOGO_PER_LANGUAGE')
+else:
+    SITE_LOGO_PER_LANGUAGE = None
+
 if hasattr(settings_module, 'FAVORITE_CHARACTERS'):
     FAVORITE_CHARACTERS = getattr(settings_module, 'FAVORITE_CHARACTERS')
     if hasattr(settings_module, 'FAVORITE_CHARACTER_TO_URL'):
