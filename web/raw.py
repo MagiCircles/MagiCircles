@@ -36,6 +36,12 @@ other_sites = [
         'url': 'http://cinderella.pro/',
     },
     {
+        'name': 'Bandori Party',
+        'game_name': _('BanG Dream! Girls Band Party'),
+        'image': 'http://i.bandori.party/static/img/avatar.png',
+        'url': 'http://bandori.party/',
+    },
+    {
         'name': 'fr.gl',
         'game_name': 'Glee Forever',
         'image': 'http://fr.gl/static/img/avatar.png',
