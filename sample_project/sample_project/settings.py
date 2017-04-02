@@ -126,6 +126,13 @@ LOG_EMAIL = 'emails-log@schoolido.lu'
 PASSWORD_EMAIL = 'password@schoolido.lu'
 AWS_SES_RETURN_PATH = 'contact@schoolido.lu'
 
+FAVORITE_CHARACTERS = []
+
+MAX_WIDTH = 1200
+MAX_HEIGHT = 1200
+MIN_WIDTH = 300
+MIN_HEIGHT = 300
+
 try:
     from generated_settings import *
 except ImportError, e:
