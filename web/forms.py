@@ -89,7 +89,7 @@ class MagiForm(forms.ModelForm):
                 if image and (isinstance(image, InMemoryUploadedFile) or isinstance(image, TemporaryUploadedFile)):
                     filename = image.name
                     image = shrinkImageFromData(image.read(), filename, settings=getattr(instance._meta.model, 'tinypng_settings', {}).get(field, {}))
-                    image.name = instance._meta.model._meta.get_field('image').upload_to(instance, filename)
+                    image.name = instance._meta.model._meta.get_field(field).upload_to(instance, filename)
                     setattr(instance, field, image)
         if commit:
             instance.save()
