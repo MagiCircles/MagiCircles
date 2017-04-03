@@ -12,8 +12,8 @@
 	<img src="{{ field.image }}" alt="{{ field.verbose_name }}">
 	{% endif %}
       </td>
-      <th>{{ field.verbose_name }}</th>
-      <td>
+      {% if field.type != 'long_text' %}<th>{{ field.verbose_name }}</th>{% endif %}
+      <td{% if field.type == 'long_text' %} colspan="2"{% endif %}>
 	{% if field.type == 'text_with_link' %}
 	{{ field.value }}<br>
 	<a href="{{ field.link }}" target="_blank"{% if field.ajax_link %} data-ajax-url="{{ field.ajax_link }}" data-ajax-title="{{ field.value }}"{% endif %}>
@@ -49,6 +49,9 @@
 	  (<span class="current_timezone">UTC</span>)
 	</span><br>
 	{% endfor %}
+	{% elif field.type == 'long_text' %}
+        <strong class="long-text-title">{{ field.verbose_name }}</strong>
+        {{ field.value }}
 	{% elif field.type == 'html' %}
 	{{ field.value|safe }}
 	{% else %}

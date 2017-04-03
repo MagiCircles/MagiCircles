@@ -152,6 +152,7 @@ class MagiCollection(object):
         - button (needs 'link_text')
         - text_with_link (needs 'link' and 'link_text', will show a 'View all' button)
         - timezone_datetime (useful when showing another timezone, otherwise use text. needs 'timezones' list. can be 'local')
+        - long_text
         - html
         Optional parameters:
         - to_dict will return a dict by default, otherwise a list or pair. Useful if you plan to change the order or insert items at certain positions.
