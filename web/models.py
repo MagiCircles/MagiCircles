@@ -198,8 +198,8 @@ class UserLink(models.Model):
 
     @property
     def url(self):
-        if self.type in LINK_URLS:
-            return LINK_URLS[self.type].format(self.value)
+        if self.i_type in LINK_URLS:
+            return LINK_URLS[self.i_type].format(self.value)
         return '#'
 
     @property
