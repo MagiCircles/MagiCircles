@@ -658,6 +658,31 @@ nav {
     }
 }
 
+@media(max-width:768px) {
+    .table-buttons {
+        border-bottom-right-radius: 0;
+        border-bottom-left-radius: 0;
+        margin-bottom: -0;
+        border: 0;
+        &, tr, td, tbody {
+            display: block;
+            width: 100%;
+        }
+        &:last-child {
+            margin-bottom: 15px;
+            border-bottom-right-radius: 6px;
+            border-bottom-left-radius: 6px;
+            td:first-child {
+                border-bottom-left-radius: 0;
+            }
+            td:last-child {
+                border-bottom-right-radius: 6px;
+                border-bottom-left-radius: 6px;
+            }
+        }
+    }
+}
+
 #hometabs {
     li {
 	width: 45%;
