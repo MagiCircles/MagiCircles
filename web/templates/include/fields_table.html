@@ -27,6 +27,10 @@
 	<a href="{{ field.value }}" target="_blank">
 	  <img src="{{ field.value }}" alt="{{ field.verbose_name }}">
 	</a>
+	{% elif field.type == 'image_link'  %}
+        <a href="{{ field.link }}" target="_blank"{% if field.ajax_link %} data-ajax-url="{{ field.ajax_link }}" data-ajax-title="{{ field.link_text }}"{% endif %}>
+	  <img src="{{ field.value }}" alt="{{ field.link_text }}">
+        </a>
 	{% elif field.type == 'bool' %}
 	{% if field.value %}
 	<i class="flaticon-checked"></i> {% t 'Yes' %}

@@ -149,6 +149,7 @@ class MagiCollection(object):
         - image
         - bool
         - link (needs 'link_text')
+        - image_link (needs 'link', 'link_text')
         - button (needs 'link_text')
         - text_with_link (needs 'link' and 'link_text', will show a 'View all' button)
         - timezone_datetime (useful when showing another timezone, otherwise use text. needs 'timezones' list. can be 'local')
