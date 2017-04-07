@@ -143,14 +143,7 @@ def filter_ids(queryset, request):
 
 class MagiFiltersForm(MagiForm):
 
-    def __init__(self, *args, **kwargs):
-        super(MagiFiltersForm, self).__init__(*args, **kwargs)
-        # Remove search from form if search_fields is not specified
-        if not hasattr(self, 'search_fields') and not hasattr(self, 'search_fields_exact'):
-            del(self.fields['search'])
-        # Mark all fields as not required
-        for field in self.fields.values():
-            field.required = False
+    search = forms.CharField(required=False, label=t['Search'])
 
     def _search_to_queryset(self, queryset, request, value):
         terms = value.split(' ')
@@ -163,8 +156,29 @@ class MagiFiltersForm(MagiForm):
             queryset = queryset.filter(condition)
         return queryset
 
-    search = forms.CharField(required=False, label=t['Search'])
     search_filter = MagiFilter(to_queryset=_search_to_queryset)
+
+    ordering = forms.ChoiceField(label=_('Ordering'))
+    reverse_order = forms.BooleanField(label=_('Reverse order'))
+
+    def __init__(self, *args, **kwargs):
+        super(MagiFiltersForm, self).__init__(*args, **kwargs)
+        # Remove search from field if search_fields is not specified
+        if not hasattr(self, 'search_fields') and not hasattr(self, 'search_fields_exact'):
+            del(self.fields['search'])
+        # Remove ordering form field if ordering_fields is not specified
+        if not hasattr(self, 'ordering_fields'):
+            del(self.fields['ordering'])
+            del(self.fields['reverse_order'])
+        else:
+            self.fields['ordering'].choices = self.ordering_fields
+            self.fields['reverse_order'].initial = getattr(self, 'default_ordering_reversed', True)
+        # Mark all fields as not required
+        for field in self.fields.values():
+            field.required = False
+        # Set default ordering initial value
+        if 'ordering' in self.fields:
+            self.fields['ordering'].initial = self.collection.list_view.plain_default_ordering
 
     def filter_queryset(self, queryset, parameters, request):
         # Generic filter for ids

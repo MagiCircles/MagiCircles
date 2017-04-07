@@ -318,6 +318,11 @@ class MagiCollection(object):
         def get_page_title(self):
             return self.collection.plural_title
 
+        @property
+        def plain_default_ordering(self):
+            default_ordering = self.default_ordering.split(',')[0]
+            return default_ordering[1:] if default_ordering.startswith('-') else default_ordering
+
     class ItemView(_View):
         # Optional variables without default
         top_illustration = None
@@ -456,6 +461,7 @@ class AccountCollection(MagiCollection):
     icon = 'users'
     queryset = ACCOUNT_MODEL.objects.all().select_related('owner', 'owner__preferences')
     report_allow_delete = False
+    form_class = forms.AccountForm
 
     @property
     def report_edit_templates(self):
@@ -492,7 +498,6 @@ class AccountCollection(MagiCollection):
     class AddView(MagiCollection.AddView):
         alert_duplicate = False
         allow_next = False
-        form_class = forms.AccountForm
 
         def redirect_after_edit(self, request, instance, ajax=False):
             return '{}#{}'.format(request.user.item_url, instance.id)
