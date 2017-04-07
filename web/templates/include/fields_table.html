@@ -88,7 +88,7 @@
     </tr>
     {% if show_edit_button %}
     {% if not show_edit_button_owner_only or item.owner_id == user.id or user.is_staff %}
-    <tr class="staff-only">
+    <tr{% if show_edit_button_owner_only and item.owner_id != user.id %} class="staff-only"{% endif %}>
       <td><i class="flaticon-edit"></i></td>
       <th>{{ item.edit_sentence }}</th>
       <td>
