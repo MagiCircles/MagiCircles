@@ -1,11 +1,14 @@
 import string, inspect
 from django.conf.urls import include, patterns, url
 from django.conf import settings
+from django.core.exceptions import PermissionDenied
 from django.utils.translation import ugettext_lazy as _, string_concat
+from django.utils import timezone
 #from web import bouncy # unused, only to force load the feedback process
 from web import views_collections, magicollections
 from web import views as web_views
-from web.settings import RAW_CONTEXT, ENABLED_PAGES, ENABLED_NAVBAR_LISTS, SITE_NAME, EMAIL_IMAGE, GAME_NAME, SITE_DESCRIPTION, SITE_STATIC_URL, SITE_URL, GITHUB_REPOSITORY, SITE_LOGO, SITE_NAV_LOGO, JAVASCRIPT_TRANSLATED_TERMS, ACCOUNT_MODEL, STATIC_UPLOADED_FILES_PREFIX, COLOR, SITE_IMAGE, TRANSLATION_HELP_URL, DISQUS_SHORTNAME, HASHTAGS, TWITTER_HANDLE, EMPTY_IMAGE, GOOGLE_ANALYTICS, STATIC_FILES_VERSION, PROFILE_TABS
+from web.settings import RAW_CONTEXT, ENABLED_PAGES, ENABLED_NAVBAR_LISTS, SITE_NAME, EMAIL_IMAGE, GAME_NAME, SITE_DESCRIPTION, SITE_STATIC_URL, SITE_URL, GITHUB_REPOSITORY, SITE_LOGO, SITE_NAV_LOGO, JAVASCRIPT_TRANSLATED_TERMS, ACCOUNT_MODEL, STATIC_UPLOADED_FILES_PREFIX, COLOR, SITE_IMAGE, TRANSLATION_HELP_URL, DISQUS_SHORTNAME, HASHTAGS, TWITTER_HANDLE, EMPTY_IMAGE, GOOGLE_ANALYTICS, STATIC_FILES_VERSION, PROFILE_TABS, LAUNCH_DATE
+from web.utils import redirectWhenNotAuthenticated
 
 views_module = __import__(settings.SITE + '.views', fromlist=[''])
 try:
@@ -67,6 +70,9 @@ def getCollectionShowLinkLambda(collection):
 
 collections = {}
 
+now = timezone.now()
+launched = not LAUNCH_DATE or LAUNCH_DATE < now
+
 for name, cls in custom_magicollections_module.items() + magicollections.__dict__.items():
     if name != 'MagiCollection' and inspect.isclass(cls) and issubclass(cls, magicollections.MagiCollection) and not name.startswith('_'):
         if cls.enabled:
@@ -76,6 +82,9 @@ for name, cls in custom_magicollections_module.items() + magicollections.__dict_
                 collection.item_view = collection.ItemView(collection)
                 collection.add_view = collection.AddView(collection)
                 collection.edit_view = collection.EditView(collection)
+                if not launched:
+                    for view in ['list', 'item', 'add', 'edit']:
+                        getattr(collection, view + '_view').staff_required = True
                 collections[collection.name] = collection
                 RAW_CONTEXT['all_enabled'].append(collection.name)
 
@@ -163,26 +172,44 @@ def getPageShowLinkLambda(page):
         or (page.get('staff_required', False) and not context['request'].user.is_staff))
     )
 
+def page_view(name, page):
+    function = (
+        getattr(views_module, name)
+        if page.get('custom', True)
+        else getattr(web_views, name)
+    )
+    def _f(request, *args, **kwargs):
+        if request.user.is_authenticated():
+            if (page.get('logout_required', False)
+                or (page.get('staff_required', False) and not request.user.is_staff)):
+                raise PermissionDenied()
+        elif page.get('authentication_required', False) or page.get('staff_required', False):
+            redirectWhenNotAuthenticated(request, {
+                'current_url': request.get_full_path() + ('?' if request.get_full_path()[-1] == '/' else '&'),
+            }, next_title=page.get('title', ''))
+        return function(request, *args, **kwargs)
+    return _f
+
 for (name, pages) in ENABLED_PAGES.items():
     if not isinstance(pages, list):
         pages = [pages]
     for page in pages:
+        if not launched:
+            if name not in ['login', 'signup', 'prelaunch', 'about', 'about_game', 'changelanguage']:
+                page['staff_required'] = True
         if 'title' not in page:
             page['title'] = string.capwords(name)
         if not page.get('enabled', True):
             continue
         if name not in RAW_CONTEXT['all_enabled']:
             RAW_CONTEXT['all_enabled'].append(name)
-        function = (getattr(views_module, name)
-                    if page.get('custom', True)
-                    else getattr(web_views, name))
         ajax = page.get('ajax', False)
         if name == 'index':
-            urls.append(url(r'^$', function, name=name))
+            urls.append(url(r'^$', page_view(name, page), name=name))
         else:
             url_variables = '/'.join(['(?P<{}>{})'.format(v[0], v[1]) for v in page.get('url_variables', [])])
             urls.append(url(r'^{}{}{}[/]*$'.format('ajax/' if ajax else '', name, '/' + url_variables if url_variables else ''),
-                            function, name=name if not ajax else '{}_ajax'.format(name)))
+                            page_view(name, page), name=name if not ajax else '{}_ajax'.format(name)))
         if not ajax:
             navbar_link = page.get('navbar_link', True)
             if navbar_link:
@@ -236,3 +263,6 @@ RAW_CONTEXT['empty_image'] = EMPTY_IMAGE
 RAW_CONTEXT['full_empty_image'] = RAW_CONTEXT['static_url'] + 'img/' + RAW_CONTEXT['empty_image']
 RAW_CONTEXT['google_analytics'] = GOOGLE_ANALYTICS
 RAW_CONTEXT['static_files_version'] = STATIC_FILES_VERSION
+
+if not launched:
+    RAW_CONTEXT['launch_date'] = LAUNCH_DATE

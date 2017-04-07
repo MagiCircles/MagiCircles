@@ -177,6 +177,12 @@ if hasattr(settings_module, 'DONATE_IMAGE'):
     DONATE_IMAGE = getattr(settings_module, 'DONATE_IMAGE')
 else:
     DONATE_IMAGE = None
+
+if hasattr(settings_module, 'LAUNCH_DATE'):
+    LAUNCH_DATE = getattr(settings_module, 'LAUNCH_DATE')
+else:
+    LAUNCH_DATE = None
+
 if hasattr(settings_module, 'GET_GLOBAL_CONTEXT'):
     GET_GLOBAL_CONTEXT = getattr(settings_module, 'GET_GLOBAL_CONTEXT')
 else:

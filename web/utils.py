@@ -4,10 +4,10 @@ from PIL import Image
 from django.conf import settings as django_settings
 from django.core.files.temp import NamedTemporaryFile
 from django.core.urlresolvers import resolve
-from django.utils import translation
 from django.utils.deconstruct import deconstructible
 from django.utils.translation import ugettext_lazy as _, get_language
 from django.utils.formats import dateformat
+from django.utils import timezone
 from django.template import Context
 from django.template.loader import get_template
 from django.db import models

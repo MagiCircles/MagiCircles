@@ -101,6 +101,11 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
             'navbar_link_list': 'more',
         },
     ]),
+    ('prelaunch', {
+        'title': _('Coming soon'),
+        'custom': False,
+        'navbar_link': False,
+    }),
     ('about_game', {
         'ajax': True,
         'title': _('About the game'),

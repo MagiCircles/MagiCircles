@@ -1,6 +1,5 @@
 from __future__ import division
 import math, datetime
-from django.utils import timezone
 from collections import OrderedDict
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, JsonResponse
@@ -38,6 +37,9 @@ def logout(request):
 def signup(request):
     if request.user.is_authenticated():
         redirectToProfile(request)
+    context = getGlobalContext(request)
+    if context['launch_date']:
+        return redirect('/prelaunch/')
     if request.method == "POST":
         form = CreateUserForm(request.POST, request=request)
         if form.is_valid():
@@ -55,11 +57,20 @@ def signup(request):
             return redirect(url)
     else:
         form = CreateUserForm(request=request)
-    context = getGlobalContext(request)
     context['form'] = form
     context['next'] = request.GET.get('next', None)
     context['next_title'] = request.GET.get('next_title', None)
     return render(request, 'pages/signup.html', context)
+
+############################################################
+# Prelaunch
+
+def prelaunch(request, *args, **kwargs):
+    context = getGlobalContext(request)
+    if not context['launch_date']:
+        return redirect('signup')
+    context['twitter'] = TWITTER_HANDLE
+    return render(request, 'pages/prelaunch.html', context)
 
 ############################################################
 # Profile
