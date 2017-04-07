@@ -20,6 +20,7 @@ FORCE_ADD_TO_TRANSLATION = [
     _('Liked this activity'),
     _('Loading'), _('No result.'),
     _('Local time'),
+    _('days'), _('hours'), _('minutes'), _('seconds'),
 ]
 
 DEFAULT_JAVASCRIPT_TRANSLATED_TERMS = [
