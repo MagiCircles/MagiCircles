@@ -1,5 +1,5 @@
 from django.conf import settings as django_settings
-from web.default_settings import DEFAULT_ENABLED_NAVBAR_LISTS, DEFAULT_ENABLED_PAGES, RAW_CONTEXT, DEFAULT_JAVASCRIPT_TRANSLATED_TERMS, DEFAULT_PROFILE_TABS
+from web.default_settings import DEFAULT_ENABLED_NAVBAR_LISTS, DEFAULT_ENABLED_PAGES, RAW_CONTEXT, DEFAULT_JAVASCRIPT_TRANSLATED_TERMS, DEFAULT_PROFILE_TABS, DEFAULT_PRELAUNCH_ENABLED_PAGES
 from web.utils import globalContext
 from django.utils.translation import ugettext_lazy as _, string_concat
 
@@ -144,6 +144,11 @@ if hasattr(settings_module, 'PROFILE_TABS'):
     PROFILE_TABS = getattr(settings_module, 'PROFILE_TABS')
 else:
     PROFILE_TABS = DEFAULT_PROFILE_TABS
+
+if hasattr(settings_module, 'PRELAUNCH_ENABLED_PAGES'):
+    PRELAUNCH_ENABLED_PAGES = getattr(settings_module, 'PRELAUNCH_ENABLED_PAGES')
+else:
+    PRELAUNCH_ENABLED_PAGES = DEFAULT_PRELAUNCH_ENABLED_PAGES
 
 ############################################################
 # Optional settings without default values (= None)

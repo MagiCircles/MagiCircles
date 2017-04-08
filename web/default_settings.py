@@ -210,3 +210,16 @@ DEFAULT_PROFILE_TABS = OrderedDict([
         'callback': 'loadBadges',
     }),
 ])
+
+############################################################
+# Default prelaunch enabled pages
+
+DEFAULT_PRELAUNCH_ENABLED_PAGES = [
+    'login',
+    'signup',
+    'prelaunch',
+    'about',
+    'about_game',
+    'changelanguage',
+    'help',
+]

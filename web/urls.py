@@ -7,7 +7,7 @@ from django.utils import timezone
 #from web import bouncy # unused, only to force load the feedback process
 from web import views_collections, magicollections
 from web import views as web_views
-from web.settings import RAW_CONTEXT, ENABLED_PAGES, ENABLED_NAVBAR_LISTS, SITE_NAME, EMAIL_IMAGE, GAME_NAME, SITE_DESCRIPTION, SITE_STATIC_URL, SITE_URL, GITHUB_REPOSITORY, SITE_LOGO, SITE_NAV_LOGO, JAVASCRIPT_TRANSLATED_TERMS, ACCOUNT_MODEL, STATIC_UPLOADED_FILES_PREFIX, COLOR, SITE_IMAGE, TRANSLATION_HELP_URL, DISQUS_SHORTNAME, HASHTAGS, TWITTER_HANDLE, EMPTY_IMAGE, GOOGLE_ANALYTICS, STATIC_FILES_VERSION, PROFILE_TABS, LAUNCH_DATE
+from web.settings import RAW_CONTEXT, ENABLED_PAGES, ENABLED_NAVBAR_LISTS, SITE_NAME, EMAIL_IMAGE, GAME_NAME, SITE_DESCRIPTION, SITE_STATIC_URL, SITE_URL, GITHUB_REPOSITORY, SITE_LOGO, SITE_NAV_LOGO, JAVASCRIPT_TRANSLATED_TERMS, ACCOUNT_MODEL, STATIC_UPLOADED_FILES_PREFIX, COLOR, SITE_IMAGE, TRANSLATION_HELP_URL, DISQUS_SHORTNAME, HASHTAGS, TWITTER_HANDLE, EMPTY_IMAGE, GOOGLE_ANALYTICS, STATIC_FILES_VERSION, PROFILE_TABS, LAUNCH_DATE, PRELAUNCH_ENABLED_PAGES
 from web.utils import redirectWhenNotAuthenticated
 
 views_module = __import__(settings.SITE + '.views', fromlist=[''])
@@ -195,7 +195,7 @@ for (name, pages) in ENABLED_PAGES.items():
         pages = [pages]
     for page in pages:
         if not launched:
-            if name not in ['login', 'signup', 'prelaunch', 'about', 'about_game', 'changelanguage']:
+            if name not in PRELAUNCH_ENABLED_PAGES:
                 page['staff_required'] = True
         if 'title' not in page:
             page['title'] = string.capwords(name)
