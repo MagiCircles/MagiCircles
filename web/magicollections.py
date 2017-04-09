@@ -179,7 +179,7 @@ class MagiCollection(object):
                     'verbose_name': verbose_name,
                     'type': 'text_with_link',
                     'value': u'{total} {items}'.format(total=total, items=_(verbose_name).lower()),
-                    'link': u'/{}/?{}={}'.format(url, item.collection_name, item.pk),
+                    'link': u'/{}/?{}_id={}'.format(url, item.collection_name, item.pk),
                     'link_text': _('View all'),
                     'icon': icons.get(field_name, None),
                     'image': images.get(field_name, None),
