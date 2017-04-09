@@ -680,6 +680,7 @@ class DonatorBadgeForm(_BadgeForm):
     def __init__(self, *args, **kwargs):
         super(DonatorBadgeForm, self).__init__(*args, **kwargs)
         self.fields['donation_month'].queryset = self.fields['donation_month'].queryset.order_by('-date')
+        self.fields['donation_month'].required = True
         if not self.is_creating:
             self.fields['source'].initial = self.instance.donation_source
 
