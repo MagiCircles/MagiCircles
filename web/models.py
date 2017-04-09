@@ -277,7 +277,7 @@ class Activity(ItemModel):
 
     @property
     def localized_tags(self):
-        return [(tag, ACTIVITY_TAGS_DICT[tag]) for tag in self.tags]
+        return [(tag, ACTIVITY_TAGS_DICT[tag]) for tag in self.tags if tag in ACTIVITY_TAGS_DICT]
 
     def add_tags(self, new_tags):
         self.tags_string = join_data(*(self.tags + [tag for tag in new_tags if tag not in tags]))
