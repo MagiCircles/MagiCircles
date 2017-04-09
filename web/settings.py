@@ -1,5 +1,5 @@
 from django.conf import settings as django_settings
-from web.default_settings import DEFAULT_ENABLED_NAVBAR_LISTS, DEFAULT_ENABLED_PAGES, RAW_CONTEXT, DEFAULT_JAVASCRIPT_TRANSLATED_TERMS, DEFAULT_PROFILE_TABS, DEFAULT_PRELAUNCH_ENABLED_PAGES
+from web.default_settings import DEFAULT_ENABLED_NAVBAR_LISTS, DEFAULT_ENABLED_PAGES, RAW_CONTEXT, DEFAULT_JAVASCRIPT_TRANSLATED_TERMS, DEFAULT_PROFILE_TABS, DEFAULT_PRELAUNCH_ENABLED_PAGES, DEFAULT_NAVBAR_ORDERING
 from web.utils import globalContext
 from django.utils.translation import ugettext_lazy as _, string_concat
 
@@ -89,6 +89,11 @@ if hasattr(settings_module, 'ENABLED_NAVBAR_LISTS'):
     ENABLED_NAVBAR_LISTS = getattr(settings_module, 'ENABLED_NAVBAR_LISTS')
 else:
     ENABLED_NAVBAR_LISTS = DEFAULT_ENABLED_NAVBAR_LISTS
+
+if hasattr(settings_module, 'NAVBAR_ORDERING'):
+    NAVBAR_ORDERING = getattr(settings_module, 'NAVBAR_ORDERING')
+else:
+    NAVBAR_ORDERING = DEFAULT_NAVBAR_ORDERING
 
 if hasattr(settings_module, 'ENABLED_PAGES'):
     ENABLED_PAGES = getattr(settings_module, 'ENABLED_PAGES')

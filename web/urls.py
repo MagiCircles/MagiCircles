@@ -1,4 +1,5 @@
 import string, inspect
+from collections import OrderedDict
 from django.conf.urls import include, patterns, url
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
@@ -7,7 +8,7 @@ from django.utils import timezone
 #from web import bouncy # unused, only to force load the feedback process
 from web import views_collections, magicollections
 from web import views as web_views
-from web.settings import RAW_CONTEXT, ENABLED_PAGES, ENABLED_NAVBAR_LISTS, SITE_NAME, EMAIL_IMAGE, GAME_NAME, SITE_DESCRIPTION, SITE_STATIC_URL, SITE_URL, GITHUB_REPOSITORY, SITE_LOGO, SITE_NAV_LOGO, JAVASCRIPT_TRANSLATED_TERMS, ACCOUNT_MODEL, STATIC_UPLOADED_FILES_PREFIX, COLOR, SITE_IMAGE, TRANSLATION_HELP_URL, DISQUS_SHORTNAME, HASHTAGS, TWITTER_HANDLE, EMPTY_IMAGE, GOOGLE_ANALYTICS, STATIC_FILES_VERSION, PROFILE_TABS, LAUNCH_DATE, PRELAUNCH_ENABLED_PAGES
+from web.settings import RAW_CONTEXT, ENABLED_PAGES, ENABLED_NAVBAR_LISTS, SITE_NAME, EMAIL_IMAGE, GAME_NAME, SITE_DESCRIPTION, SITE_STATIC_URL, SITE_URL, GITHUB_REPOSITORY, SITE_LOGO, SITE_NAV_LOGO, JAVASCRIPT_TRANSLATED_TERMS, ACCOUNT_MODEL, STATIC_UPLOADED_FILES_PREFIX, COLOR, SITE_IMAGE, TRANSLATION_HELP_URL, DISQUS_SHORTNAME, HASHTAGS, TWITTER_HANDLE, EMPTY_IMAGE, GOOGLE_ANALYTICS, STATIC_FILES_VERSION, PROFILE_TABS, LAUNCH_DATE, PRELAUNCH_ENABLED_PAGES, NAVBAR_ORDERING
 from web.utils import redirectWhenNotAuthenticated
 
 views_module = __import__(settings.SITE + '.views', fromlist=[''])
@@ -19,8 +20,8 @@ except ImportError:
 ############################################################
 # Default enabled URLs (outside of collections + pages)
 
-RAW_CONTEXT['navbar_links'] = []
-RAW_CONTEXT['navbar_links_lists'] = ENABLED_NAVBAR_LISTS.copy()
+navbar_links = OrderedDict()
+
 urls = [
     #url(r'^bouncy/', include('django_bouncy.urls', app_name='django_bouncy')),
     url(r'^i18n/', include('django.conf.urls.i18n')),
@@ -44,18 +45,22 @@ urls = [
 ############################################################
 # Navbar lists with dropdowns
 
-def navbarAddLink(link, list_name=None):
+def navbarAddLink(link_name, link, list_name=None):
     if list_name:
-        if list_name not in RAW_CONTEXT['navbar_links_lists']:
-            RAW_CONTEXT['navbar_links_lists'][list_name] = {
-                'title': _(string.capwords(list_name)),
-                'links': [],
+        if list_name not in navbar_links:
+            navbar_links[list_name] = {
+                'is_list': True,
+                # show_link_callback gets added when links get ordered
             }
-        if 'links' not in RAW_CONTEXT['navbar_links_lists'][list_name]:
-            RAW_CONTEXT['navbar_links_lists'][list_name]['links'] = []
-        RAW_CONTEXT['navbar_links_lists'][list_name]['links'].append(link)
+            navbar_links[list_name].update(ENABLED_NAVBAR_LISTS.get(list_name, {}))
+            if 'title' not in navbar_links[list_name]:
+                navbar_links[list_name]['title'] = _(string.capwords(list_name))
+            if 'links' not in navbar_links[list_name]:
+                navbar_links[list_name]['links'] = {}
+        navbar_links[list_name]['links'][link_name] = link
     else:
-        RAW_CONTEXT['navbar_links'].append(link)
+        link['is_list'] = False
+        navbar_links[link_name] = link
 
 RAW_CONTEXT['all_enabled'] = []
 
@@ -68,14 +73,16 @@ def getURLLambda(name, lambdas):
 def getCollectionShowLinkLambda(collection):
     return (lambda context: collection.list_view.has_permissions(context['request'], context))
 
-collections = {}
+collections = OrderedDict()
 
 now = timezone.now()
 launched = not LAUNCH_DATE or LAUNCH_DATE < now
 
+disabled = []
+
 for name, cls in custom_magicollections_module.items() + magicollections.__dict__.items():
     if name != 'MagiCollection' and inspect.isclass(cls) and issubclass(cls, magicollections.MagiCollection) and not name.startswith('_'):
-        if cls.enabled:
+        if cls.enabled and name not in disabled:
             collection = cls()
             if collection.name not in collections:
                 collection.list_view = collection.ListView(collection)
@@ -87,6 +94,8 @@ for name, cls in custom_magicollections_module.items() + magicollections.__dict_
                         getattr(collection, view + '_view').staff_required = True
                 collections[collection.name] = collection
                 RAW_CONTEXT['all_enabled'].append(collection.name)
+        else:
+            disabled.append(name)
 
 for collection in collections.values():
     parameters = {
@@ -114,8 +123,10 @@ for collection in collections.values():
                 'auth': (True, False) if collection.list_view.authentication_required else (True, True),
                 'get_url': None,
                 'show_link_callback': getCollectionShowLinkLambda(collection),
+                'divider_before': collection.navbar_link_list_divider_before,
+                'divider_after': collection.navbar_link_list_divider_after,
             }
-            navbarAddLink(link, collection.navbar_link_list)
+            navbarAddLink(url_name, link, collection.navbar_link_list)
     if collection.item_view.enabled:
         url_name = '{}_item'.format(collection.name)
         urls.append(url(r'^{}/(?P<pk>\d+)[/]*$'.format(collection.name), views_collections.item_view, parameters, name=url_name))
@@ -223,15 +234,45 @@ for (name, pages) in ENABLED_PAGES.items():
                     'auth': page.get('navbar_link_auth', (True, True)),
                     'get_url': None if not page.get('url_variables', None) else (getURLLambda(name, lambdas)),
                     'show_link_callback': getPageShowLinkLambda(page),
+                    'divider_before': page.get('divider_before', False),
+                    'divider_after': page.get('divider_after', False),
                 }
-                navbarAddLink(link, page.get('navbar_link_list', None))
+                navbarAddLink(name, link, page.get('navbar_link_list', None))
 
 urlpatterns = patterns('', *urls)
+
+############################################################
+# Re-order navbar
+
+from pprint import pprint
+
+order = [link_name for link_name in navbar_links.keys() if link_name not in NAVBAR_ORDERING] + NAVBAR_ORDERING
+
+RAW_CONTEXT['navbar_links'] = OrderedDict((key, navbar_links[key]) for key in order if key in navbar_links)
+
+for link_name, link in RAW_CONTEXT['navbar_links'].items():
+    if link['is_list']:
+        if link['links']:
+            link['show_link_callback'] = lambda c: True
+            if 'order' in link:
+                order = [link_name for link_name in link['links'].keys() if link_name not in link['order']] + link['order']
+                print order
+                link['links'] = OrderedDict((key, link['links'][key]) for key in order if key in link['links'])
+        else:
+            link['show_link_callback'] = lambda c: False
+
+#for link in navbar_links:
+#    print link['url_name']
+#print RAW_CONTEXT['navbar_links_lists']
+#order =
+
+
+############################################################
+# Remove profile tabs when some collections are disabled
 
 for collection_name in ['activity', 'badge', 'account']:
     if collection_name not in RAW_CONTEXT['all_enabled'] and collection_name in PROFILE_TABS:
         del(PROFILE_TABS[collection_name])
-
 
 ############################################################
 # Set data in RAW_CONTEXT

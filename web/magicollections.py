@@ -90,6 +90,8 @@ class MagiCollection(object):
     icon = None
     image = None
     navbar_link_list = None
+    navbar_link_list_divider_before = False
+    navbar_link_list_divider_after = False
     types = None
     filter_cuteform = None
 
@@ -568,7 +570,10 @@ class UserCollection(MagiCollection):
 
         def get_item(self, request, pk):
             if pk == 'me':
-                pk = request.user.id
+                if request.user.is_authenticated():
+                    pk = request.user.id
+                else:
+                    raise HttpRedirectException('/signup/')
             return { 'pk': pk }
 
         def reverse_url(self, text):
@@ -848,6 +853,7 @@ class BadgeCollection(MagiCollection):
     title = _('Badge')
     plural_title = _('Badges')
     navbar_link_list = 'more'
+    navbar_link_list_divider_after = True
     queryset = models.Badge.objects.all()
     reportable = False
 
@@ -925,6 +931,7 @@ class BadgeCollection(MagiCollection):
 
 class ReportCollection(MagiCollection):
     navbar_link_list = 'more'
+    navbar_link_list_divider_before = True
     icon = 'fingers'
     queryset = models.Report.objects.all().select_related('owner', 'owner__preferences', 'staff', 'staff__preferences').prefetch_related(Prefetch('images', to_attr='all_images'))
     reportable = False

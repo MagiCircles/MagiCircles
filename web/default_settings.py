@@ -38,10 +38,14 @@ DEFAULT_ENABLED_NAVBAR_LISTS = OrderedDict([
     ('you', {
         'title': lambda context: context['request'].user.username if context['request'].user.is_authenticated() else _('You'),
         'icon': 'profile',
+        'order': ['user', 'settings', 'logout', 'login', 'signup'],
+        'url': '/signup/',
     }),
     ('more', {
         'title': '',
         'icon': 'more',
+        'order': ['about', 'donate_list', 'help', 'map', 'report_list', 'badge_list'],
+        'url': '/me/',
     }),
 ])
 
@@ -215,6 +219,15 @@ DEFAULT_PROFILE_TABS = OrderedDict([
         'callback': 'loadBadges',
     }),
 ])
+
+############################################################
+# Default navbar ordering
+
+DEFAULT_NAVBAR_ORDERING = [
+    'account_list',
+    'you',
+    'more',
+]
 
 ############################################################
 # Default prelaunch enabled pages
