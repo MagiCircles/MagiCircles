@@ -91,7 +91,7 @@ def index(request):
 
 def prelaunch(request, *args, **kwargs):
     context = getGlobalContext(request)
-    if not context['launch_date']:
+    if not context.get('launch_date', None):
         return redirect('signup')
     context['twitter'] = TWITTER_HANDLE
     return render(request, 'pages/prelaunch.html', context)
