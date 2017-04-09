@@ -33,7 +33,7 @@ def avatar(user, size=200):
 
 addItemModelProperties(User, 'user')
 User.image_url = property(avatar)
-User.http_image_ur = property(avatar)
+User.http_image_url = property(avatar)
 User.owner_id = property(lambda u: u.id)
 User.owner = property(lambda u: u)
 

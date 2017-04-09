@@ -1,7 +1,6 @@
 import string, datetime, random
 from collections import OrderedDict
 from django.utils.translation import ugettext_lazy as _, string_concat
-from django.contrib.auth.models import User
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.utils.formats import dateformat
@@ -343,6 +342,11 @@ class MagiCollection(object):
         show_edit_button = True
         comments_enabled = True
 
+        def share_image(self, context, item):
+            if hasattr(item, 'http_image_url'):
+                return item.http_image_url
+            return self.collection.share_image(context, item)
+
         @property
         def template(self):
             return '{}Item'.format(self.collection.name)
@@ -527,7 +531,7 @@ class UserCollection(MagiCollection):
     title = _('Profile')
     plural_title = _('Players')
     navbar_link = False
-    queryset = User.objects.all().select_related('preferences')
+    queryset = models.User.objects.all().select_related('preferences')
     report_allow_delete = False
     report_edit_templates = OrderedDict([
         ('Inappropriate profile picture', 'Your profile picture is inappropriate. ' + please_understand_template_sentence + ' To change your avatar, go to gravatar and upload a new image, then go to your settings on our website to re-enter your email address.'),
