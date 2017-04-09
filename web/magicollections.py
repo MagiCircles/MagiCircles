@@ -644,7 +644,7 @@ class UserCollection(MagiCollection):
                     'value': user.preferences.location,
                     'translate_type': True,
                     'flaticon': 'world',
-                    'url': '/map/?center={}&zoom=10'.format(latlong) if 'map' in context['all_enabled'] and latlong else 'https://www.google.com/maps?q={}'.format(user.preferences.location),
+                    'url': u'/map/?center={}&zoom=10'.format(latlong) if 'map' in context['all_enabled'] and latlong else u'https://www.google.com/maps?q={}'.format(user.preferences.location),
                 })
                 meta_links.append(link)
             if user.preferences.birthdate:
