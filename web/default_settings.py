@@ -49,6 +49,11 @@ DEFAULT_ENABLED_NAVBAR_LISTS = OrderedDict([
 # Enabled pages
 
 DEFAULT_ENABLED_PAGES = OrderedDict([
+    ('index', {
+        'custom': False,
+        'enabled': False,
+        'navbar_link': False,
+    }),
     ('login', {
         'custom': False,
         'title': _('Login'),

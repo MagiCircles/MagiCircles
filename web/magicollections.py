@@ -1,19 +1,20 @@
 import string, datetime, random
 from collections import OrderedDict
-from django.utils.translation import ugettext_lazy as _, string_concat, get_language
+from django.utils.translation import ugettext_lazy as _, string_concat
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.utils.formats import dateformat
-from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
+from django.core.exceptions import PermissionDenied
 from django.http import Http404
 from dateutil.relativedelta import relativedelta
 from django.db.models import Count, Q, Prefetch
+from web.views import indexExtraContext
 from web.utils import AttrDict, ordinalNumber, justReturn, getMagiCollections, getMagiCollection, CuteFormType, redirectWhenNotAuthenticated
 from web.raw import please_understand_template_sentence, donators_adjectives
 from web.django_translated import t
 from web.middleware.httpredirect import HttpRedirectException
-from web.settings import ACCOUNT_MODEL, SHOW_TOTAL_ACCOUNTS, PROFILE_TABS, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTER_TO_URL, GET_GLOBAL_CONTEXT, LATEST_NEWS, CALL_TO_ACTION, TOTAL_DONATORS, DONATE_IMAGE, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, SITE_LOGO_PER_LANGUAGE
+from web.settings import ACCOUNT_MODEL, SHOW_TOTAL_ACCOUNTS, PROFILE_TABS, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTER_TO_URL, GET_GLOBAL_CONTEXT, DONATE_IMAGE, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT
 from web import models, forms
 
 ############################################################
@@ -775,19 +776,7 @@ class ActivityCollection(MagiCollection):
         def extra_context(self, context):
             super(ActivityCollection.ListView, self).extra_context(context)
             if context.get('shortcut_url', None) == '': # Homepage of the site
-                context['latest_news'] = LATEST_NEWS
-                context['call_to_action'] = CALL_TO_ACTION
-                context['total_donators'] = TOTAL_DONATORS
-                context['is_feed'] = 'feed' in context['request'].GET
-                now = timezone.now()
-                if 'donate' in context['all_enabled']:
-                    context['this_month'] = datetime.datetime(year=now.year, month=now.month, day=1)
-                    try: context['donation_month'] = models.DonationMonth.objects.get(date=context['this_month'])
-                    except ObjectDoesNotExist: pass
-                if SITE_LOGO_PER_LANGUAGE:
-                    logo_per_language = SITE_LOGO_PER_LANGUAGE.get(get_language(), None)
-                    if logo_per_language:
-                        context['site_logo'] = context['static_url'] + 'img/' + logo_per_language if '//' not in logo_per_language else logo_per_language
+                indexExtraContext(context)
 
     class ItemView(MagiCollection.ItemView):
         ajax_callback = 'updateActivities'

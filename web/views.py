@@ -10,6 +10,7 @@ from django.contrib.admin.utils import get_deleted_objects
 from django.utils.translation import ugettext_lazy as _, string_concat, get_language, activate as translation_activate
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.utils.http import urlquote
+from django.utils import timezone
 from django.db.models import Count
 from django.views.decorators.csrf import csrf_exempt
 from web.forms import CreateUserForm, UserForm, UserPreferencesForm, AddLinkForm, ChangePasswordForm, EmailsPreferencesForm, LanguagePreferencesForm
@@ -17,7 +18,7 @@ from web import models
 from web.donations import donations
 from web.utils import getGlobalContext, ajaxContext, redirectToProfile, tourldash, redirectWhenNotAuthenticated, dumpModel, send_email, emailContext, getMagiCollection, cuteFormFieldsForContext, CuteFormType, FAVORITE_CHARACTERS_IMAGES
 from web.notifications import pushNotification
-from web.settings import SITE_NAME, GAME_NAME, ENABLED_PAGES, FAVORITE_CHARACTERS, TWITTER_HANDLE, BUG_TRACKER_URL, GITHUB_REPOSITORY, CONTRIBUTE_URL, CONTACT_EMAIL, CONTACT_REDDIT, CONTACT_FACEBOOK, ABOUT_PHOTO, WIKI, LATEST_NEWS, SITE_LONG_DESCRIPTION, CALL_TO_ACTION, TOTAL_DONATORS, GAME_DESCRIPTION, GAME_URL, ON_USER_EDITED, ON_PREFERENCES_EDITED, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT
+from web.settings import SITE_NAME, GAME_NAME, ENABLED_PAGES, FAVORITE_CHARACTERS, TWITTER_HANDLE, BUG_TRACKER_URL, GITHUB_REPOSITORY, CONTRIBUTE_URL, CONTACT_EMAIL, CONTACT_REDDIT, CONTACT_FACEBOOK, ABOUT_PHOTO, WIKI, LATEST_NEWS, SITE_LONG_DESCRIPTION, CALL_TO_ACTION, TOTAL_DONATORS, GAME_DESCRIPTION, GAME_URL, ON_USER_EDITED, ON_PREFERENCES_EDITED, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, SITE_LOGO_PER_LANGUAGE
 from web.views_collections import item_view, list_view
 from raw import other_sites
 
@@ -61,6 +62,29 @@ def signup(request):
     context['next'] = request.GET.get('next', None)
     context['next_title'] = request.GET.get('next_title', None)
     return render(request, 'pages/signup.html', context)
+
+############################################################
+# Index
+
+def indexExtraContext(context):
+    context['latest_news'] = LATEST_NEWS
+    context['call_to_action'] = CALL_TO_ACTION
+    context['total_donators'] = TOTAL_DONATORS
+    context['is_feed'] = 'feed' in context['request'].GET
+    now = timezone.now()
+    if 'donate' in context['all_enabled']:
+        context['this_month'] = datetime.datetime(year=now.year, month=now.month, day=1)
+        try: context['donation_month'] = models.DonationMonth.objects.get(date=context['this_month'])
+        except ObjectDoesNotExist: pass
+    if SITE_LOGO_PER_LANGUAGE:
+        logo_per_language = SITE_LOGO_PER_LANGUAGE.get(get_language(), None)
+        if logo_per_language:
+            context['site_logo'] = context['static_url'] + 'img/' + logo_per_language if '//' not in logo_per_language else logo_per_language
+
+def index(request):
+    context = getGlobalContext(request)
+    indexExtraContext(context)
+    return render(request, 'pages/index.html', context)
 
 ############################################################
 # Prelaunch
