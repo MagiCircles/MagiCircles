@@ -59,7 +59,7 @@
 	    <div class="btn-group editbuttons">
 	      {% if activity.cached_owner.username == user.username %}
 	      <a href="{{ activity.edit_url }}" target="_blank" class="btn btn-link btn-sm"><i class="flaticon-edit"></i> {{ activity.edit_sentence }}</a>
-	      {% elif 'report' in all_enabled %}
+	      {% elif 'report' in all_enabled and reportable %}
 	      <a href="{{ activity.report_url }}" target="_blank" class="btn btn-link btn-sm"><i class="flaticon-fingers"></i> {{ activity.report_sentence }}</a>
 	      {% endif %}
 	    </div>

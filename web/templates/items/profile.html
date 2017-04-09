@@ -35,7 +35,7 @@
 	    <br>
 	    <div class="description to-markdown">{% if profile_user.preferences.description %}{{ profile_user.preferences.description }}{% endif %}</div>
 	    {% if not is_me %}
-	    {% if 'report' in all_enabled %}
+	    {% if 'report' in all_enabled and reportable %}
 	    <a href="{{ profile_user.report_url }}" target="_blank" class="btn btn-link btn-sm"><i class="flaticon-fingers"></i> {{ profile_user.report_sentence }}</a>
 	    {% endif %}
 	    {% if user.is_superuser %}

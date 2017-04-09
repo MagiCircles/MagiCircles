@@ -82,6 +82,7 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
     context['name'] = name
     context['page_title'] = u'{title}: {item}'.format(title=collection.title, item=context['item'])
     context['js_files'] = collection.item_view.js_files
+    context['reportable'] = collection.reportable
     context['share_image'] = _get_share_image(context, collection.item_view, item=context['item'])
     context['comments_enabled'] = collection.item_view.comments_enabled
     context['item_template'] = collection.item_view.template
@@ -198,6 +199,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['show_search_results'] = bool(request.GET)
     context['name'] = name
     context['title'] = collection.title
+    context['reportable'] = collection.reportable
     context['hide_sidebar'] = collection.list_view.hide_sidebar
     context['before_template'] = collection.list_view.before_template
     context['no_result_template'] = collection.list_view.no_result_template
