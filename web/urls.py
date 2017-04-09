@@ -68,7 +68,7 @@ RAW_CONTEXT['all_enabled'] = []
 # URLs for collections
 
 def getURLLambda(name, lambdas):
-    return (lambda context: '/{}/{}/'.format(name, '/'.join([f(context) for f in lambdas])))
+    return (lambda context: u'/{}/{}/'.format(name, '/'.join([f(context) for f in lambdas])))
 
 def getCollectionShowLinkLambda(collection):
     return (lambda context: collection.list_view.has_permissions(context['request'], context))
