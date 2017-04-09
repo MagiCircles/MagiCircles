@@ -521,7 +521,7 @@ class AccountCollection(MagiCollection):
                 return instance.ajax_item_url
             return '{}#{}'.format(request.user.item_url, instance.id)
 
-        def redirect_after_delete(request, instance, item, ajax=False):
+        def redirect_after_delete(self, request, item, ajax=False):
             return request.user.item_url
 
 ############################################################
