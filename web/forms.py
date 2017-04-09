@@ -633,6 +633,7 @@ class _BadgeForm(MagiForm):
 
     class Meta:
         model = models.Badge
+        fields = ()
         optional_fields = ('donation_month', 'url')
         save_owner_on_creation = True
 
