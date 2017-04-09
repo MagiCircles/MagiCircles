@@ -39,7 +39,7 @@ def signup(request):
     if request.user.is_authenticated():
         redirectToProfile(request)
     context = getGlobalContext(request)
-    if context['launch_date']:
+    if context.get('launch_date', None):
         return redirect('/prelaunch/')
     if request.method == "POST":
         form = CreateUserForm(request.POST, request=request)
