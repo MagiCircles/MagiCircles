@@ -244,8 +244,6 @@ urlpatterns = patterns('', *urls)
 ############################################################
 # Re-order navbar
 
-from pprint import pprint
-
 order = [link_name for link_name in navbar_links.keys() if link_name not in NAVBAR_ORDERING] + NAVBAR_ORDERING
 
 RAW_CONTEXT['navbar_links'] = OrderedDict((key, navbar_links[key]) for key in order if key in navbar_links)
@@ -256,16 +254,9 @@ for link_name, link in RAW_CONTEXT['navbar_links'].items():
             link['show_link_callback'] = lambda c: True
             if 'order' in link:
                 order = [link_name for link_name in link['links'].keys() if link_name not in link['order']] + link['order']
-                print order
                 link['links'] = OrderedDict((key, link['links'][key]) for key in order if key in link['links'])
         else:
             link['show_link_callback'] = lambda c: False
-
-#for link in navbar_links:
-#    print link['url_name']
-#print RAW_CONTEXT['navbar_links_lists']
-#order =
-
 
 ############################################################
 # Remove profile tabs when some collections are disabled
