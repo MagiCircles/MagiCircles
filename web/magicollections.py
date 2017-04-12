@@ -178,7 +178,7 @@ class MagiCollection(object):
                     'verbose_name': verbose_name,
                     'type': 'text_with_link',
                     'value': u'{total} {items}'.format(total=total, items=_(verbose_name).lower()),
-                    'ajax_link': u'/ajax/{}/?{}_id={}'.format(url, item.collection_name, item.pk),
+                    'ajax_link': u'/ajax/{}/?{}_id={}&ajax_modal_only'.format(url, item.collection_name, item.pk),
                     'link': u'/{}/?{}_id={}'.format(url, item.collection_name, item.pk),
                     'link_text': _('View all'),
                     'icon': icons.get(field_name, None),
