@@ -24,7 +24,7 @@
 	<strong>{{ field.title }}</strong><br>
 	<p>{{ field.value }}</p>
 	{% elif field.type == 'image' %}
-	<a href="{{ field.value }}" target="_blank">
+	<a href="{{ field.value }}" target="_blank"{% if field.ajax_link %} data-ajax-url="{{ field.ajax_link }}" data-ajax-title="{{ field.value }}"{% endif %}>
 	  <img src="{{ field.value }}" alt="{{ field.verbose_name }}">
 	</a>
 	{% elif field.type == 'image_link'  %}
@@ -38,11 +38,11 @@
 	<i class="flaticon-delete"></i> {% t 'No' %}
 	{% endif %}
 	{% elif field.type == 'link' %}
-	<a href="{{ field.value }}" target="_blank">
+	<a href="{{ field.value }}" target="_blank"{% if field.ajax_link %} data-ajax-url="{{ field.ajax_link }}" data-ajax-title="{{ field.value }}"{% endif %}>
 	  {{ field.link_text }}
 	</a>
 	{% elif field.type == 'button' %}
-	<a href="{{ field.value }}" target="_blank" class="btn btn-lg btn-secondary">
+	<a href="{{ field.value }}" target="_blank" class="btn btn-lg btn-secondary"{% if field.ajax_link %} data-ajax-url="{{ field.ajax_link }}" data-ajax-title="{{ field.value }}"{% endif %}>
 	  {{ field.link_text }}
 	</a>
 	{% elif field.type == 'timezone_datetime' %}

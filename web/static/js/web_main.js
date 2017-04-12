@@ -165,6 +165,7 @@ function ajaxModals() {
 		if (typeof button.attr('href') != 'undefined') {
 		    $('#freeModal').data('original-url', button.attr('href'));
 		}
+                loadCommons();
 		if (typeof button.data('ajax-handle-form') != 'undefined') {
 		    var ajaxModals_handleForms;
 		    ajaxModals_handleForms = function() {

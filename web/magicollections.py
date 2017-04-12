@@ -143,7 +143,7 @@ class MagiCollection(object):
         - verbose_name
         - value
         - type
-        - optional: icon, image, link, link_text
+        - optional: icon, image, link, link_text, ajax_link
         Takes an object that inherits from ItemModel and returns a dictionary of field name -> value
         Available types:
         - text
@@ -178,6 +178,7 @@ class MagiCollection(object):
                     'verbose_name': verbose_name,
                     'type': 'text_with_link',
                     'value': u'{total} {items}'.format(total=total, items=_(verbose_name).lower()),
+                    'ajax_link': u'/ajax/{}/?{}_id={}'.format(url, item.collection_name, item.pk),
                     'link': u'/{}/?{}_id={}'.format(url, item.collection_name, item.pk),
                     'link_text': _('View all'),
                     'icon': icons.get(field_name, None),
