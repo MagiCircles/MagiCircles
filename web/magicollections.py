@@ -93,6 +93,7 @@ class MagiCollection(object):
     navbar_link_list_divider_after = False
     types = None
     filter_cuteform = None
+    collectible = None
 
     # Optional variables with default values
     @property
@@ -114,6 +115,7 @@ class MagiCollection(object):
 
     enabled = True
     navbar_link = True
+    collectible_per_user = False # default = per account
 
     reportable = True
     report_edit_templates = {}
