@@ -26,14 +26,19 @@ class MultiImageField(MultiFileField, forms.ImageField):
 class DateInput(forms.DateInput):
     input_type = 'date'
 
-def date_input(field):
+def date_input(field, value=None):
     field.widget = DateInput()
     field.widget.attrs.update({
         'class': 'calendar-widget',
         'data-role': 'data',
     })
-    field.help_text = 'mm-dd-yyyy'
-    return field
+    field.help_text = 'yyyy-mm-dd'
+    field.input_formats = [
+        '%Y-%m-%d'
+    ]
+    if value and isinstance(value, datetime.date):
+        value = value.strftime(field.input_formats[0])
+    return field, value
 
 def has_field(model, field_name):
     try:
@@ -65,7 +70,9 @@ class MagiForm(forms.ModelForm):
         # Fix dates fields
         for name, field in self.fields.items():
             if isinstance(field, forms.DateField):
-                self.fields[name] = date_input(field)
+                self.fields[name], value = date_input(field, value=(getattr(self.instance, name, None) if not self.is_creating else None))
+                if value:
+                    setattr(self.instance, name, value)
 
     def save(self, commit=True):
         instance = super(MagiForm, self).save(commit=False)
