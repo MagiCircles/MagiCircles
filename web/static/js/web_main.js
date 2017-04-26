@@ -37,15 +37,11 @@ function loadPageScroll() {
 
 function dateInputSupport() {
     if ($('input[type="date"]').length > 0) {
-	var input = document.createElement('input');
-	input.setAttribute('type','date');
-
-	var notADateValue = 'not-a-date';
-	input.setAttribute('value', notADateValue);
-
-	if (!(input.value !== notADateValue)) {
-	    $('input[type="date"]').parent().find('.help-block').text('mm-dd-yyyy');
-	}
+        var input = document.createElement('input');
+        input.setAttribute('type', 'date');
+        if (input.type == 'date') {
+	    $('input[type="date"]').parent().find('.help-block').hide();
+        }
     }
 }
 
