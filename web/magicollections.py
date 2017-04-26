@@ -114,6 +114,7 @@ class MagiCollection(object):
 
     enabled = True
     navbar_link = True
+    multipart = False
 
     reportable = True
     report_edit_templates = {}
@@ -382,12 +383,15 @@ class MagiCollection(object):
         savem2m = False
         allow_next = True
         alert_duplicate = True
-        multipart = False
         back_to_list_button = True
 
         @property
         def filter_cuteform(self):
             return self.collection.filter_cuteform
+
+        @property
+        def multipart(self):
+            return self.collection.multipart
 
         def form_class(self, request, context):
             if str(type(self.collection.form_class)) == '<type \'instancemethod\'>':
@@ -424,12 +428,15 @@ class MagiCollection(object):
         allow_delete = False
         owner_only = True
         savem2m = False
-        multipart = False
         back_to_list_button = True
 
         @property
         def filter_cuteform(self):
             return self.collection.filter_cuteform
+
+        @property
+        def multipart(self):
+            return self.collection.multipart
 
         def form_class(self, request, context):
             if str(type(self.collection.form_class)) == '<type \'instancemethod\'>':
