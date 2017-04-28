@@ -14,6 +14,7 @@ from web.raw import please_understand_template_sentence, donators_adjectives
 from web.django_translated import t
 from web.middleware.httpredirect import HttpRedirectException
 from web.settings import ACCOUNT_MODEL, SHOW_TOTAL_ACCOUNTS, PROFILE_TABS, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTER_TO_URL, GET_GLOBAL_CONTEXT, DONATE_IMAGE, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT
+from web.item_model import AccountAsOwnerItemModel
 from web import models, forms
 
 ############################################################
@@ -113,9 +114,11 @@ class MagiCollection(object):
                 model = self.queryset.model
         return AutoForm
 
+    def collectible_to_class(self, cls):
+        return cls
+
     enabled = True
     navbar_link = True
-    collectible_per_user = False # default = per account
 
     reportable = True
     report_edit_templates = {}
@@ -264,6 +267,10 @@ class MagiCollection(object):
         )
 
     @property
+    def collectible_with_accounts(self):
+        return issubclass(self.collectible, AccountAsOwnerItemModel)
+
+    @property
     def add_sentence(self):
         return _(u'Add {thing}').format(thing=self.title.lower())
 
@@ -292,6 +299,7 @@ class MagiCollection(object):
         col_break = 'md'
         page_size = 12
         show_edit_button = True
+        show_collect_button = True
         authentication_required = False
         distinct = True
         add_button_subtitle = _('Become a contributor to help us fill the database')
@@ -343,6 +351,7 @@ class MagiCollection(object):
         authentication_required = False
         owner_only = False
         show_edit_button = True
+        show_collect_button = True
         comments_enabled = True
 
         def share_image(self, context, item):

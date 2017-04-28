@@ -88,48 +88,67 @@ def _createCollectibleCollection(collection):
 
         def __init__(self, *args, **kwargs):
             super(_CollectibleForm, self).__init__(*args, **kwargs)
-            print 'test'
-            print collection.name
             del(self.fields[collection.name])
             self.fields['{}_id'.format(collection.name)] = forms.forms.IntegerField()
-            if not collection.collectible_per_user:
+            if collection.collectible_with_accounts:
                 del(self.fields['account'])
-                self.fields['account_id'].choices = ACCOUNT_MODEL.objects.filter(owner=self.request.user)
+                self.fields['account_id'].choices = [(account.id, unicode(account)) for account in ACCOUNT_MODEL.objects.filter(owner=self.request.user)]
             else:
                 del(self.fields['account_id'])
 
         def save(self, commit=True):
             instance = super(_CollectibleForm, self).save(commit=False)
-            if not collection.collectible_per_user:
-                instance.account_id = self.cleaned_data('account_id')
+            setattr(instance, '{}_id'.format(collection.name), self.cleaned_data['{}_id'.format(collection.name)])
+            if collection.collectible_with_accounts:
+                instance.account_id = self.cleaned_data['account_id']
             if commit:
                 instance.save()
             return instance
 
         class Meta:
             model = collection.collectible
-            fields = ('__all__')
-            save_owner_on_creation = collection.collectible_per_user
+            fields = '__all__'
+            save_owner_on_creation = not collection.collectible_with_accounts
 
     class _CollectibleCollection(magicollections.MagiCollection):
         name = 'collectible{}'.format(collection.name)
-        queryset = collection.collectible.objects.all()
+        queryset = collection.collectible.objects.all().select_related(collection.name)
         icon = collection.icon
         image = collection.image
         navbar_link = False
 
         form_class = _CollectibleForm
 
+        @property
+        def title(self):
+            return _('Collectible {thing}').format(thing=collection.title)
+
+        @property
+        def plural_title(self):
+            return _('Collectible {things}').format(things=collection.plural_title)
+
         def get_queryset(self, queryset, parameters, request):
             return queryset.select_related(collection.name)
+
+        class ListView(magicollections.MagiCollection.ListView):
+            item_template = 'default'
+
+        class ItemView(magicollections.MagiCollection.ItemView):
+            enabled = False
 
         class AddView(magicollections.MagiCollection.AddView):
             alert_duplicate = False
 
-    return _CollectibleCollection
+        def redirect_after_add(self, request, item, ajax):
+            return self.get_list_url(ajax=ajax)
+
+        class EditView(magicollections.MagiCollection.EditView):
+            def redirect_after_edit(self, request, item, ajax):
+                return self.get_list_url(ajax=ajax)
+
+    return collection.collectible_to_class(_CollectibleCollection)
 
 def _addToCollections(name, cls): # Class of the collection
-    print name, cls
     if cls.enabled and name not in disabled:
         collection = cls()
         if collection.name not in collections:
@@ -143,7 +162,10 @@ def _addToCollections(name, cls): # Class of the collection
             collections[collection.name] = collection
             RAW_CONTEXT['all_enabled'].append(collection.name)
             if collection.collectible:
-                _addToCollections(name, _createCollectibleCollection(collection))
+                collectible_collection = _addToCollections(name, _createCollectibleCollection(collection))
+                if collectible_collection:
+                    collection.collectible = collectible_collection
+            return collection
         else:
             disabled.append(name)
 

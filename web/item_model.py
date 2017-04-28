@@ -1,18 +1,10 @@
+import datetime
 from collections import OrderedDict
 from django.db import models
 from django.conf import settings as django_settings
 from django.utils.translation import ugettext_lazy as _, get_language
-from web.utils import tourldash, getMagiCollection
-
-"""
-Will not check if the views are enabled.
-If you'd like to check, you can do:
-  ```
-  if instance.collection.item_view.enabled and instance.collection.item_view.ajax:
-    return instance.collection.item_view_url
-  ```
-Checking adds a significant cost since it accesses the collection, so only do it when necessary.
-"""
+from django.utils import timezone
+from web.utils import tourldash, getMagiCollection, AttrDict
 
 ############################################################
 # Get collection
@@ -87,6 +79,9 @@ def get_delete_sentence(instance):
 def get_report_sentence(instance):
     return _('Report {thing}').format(thing=unicode(instance.collection.title).lower())
 
+def get_collectible_sentence(instance):
+    return _('Add this {thing} to your collection').format(thing=unicode(instance.collection.title).lower())
+
 def get_collection_plural_name(instance):
     if not getattr(instance, '_collection_plural_name', None):
         instance._collection_plural_name = instance.collection.plural_name
@@ -117,6 +112,7 @@ def addItemModelProperties(modelClass, collection_name):
     modelClass.edit_sentence = property(get_edit_sentence)
     modelClass.delete_sentence = property(get_delete_sentence)
     modelClass.report_sentence = property(get_report_sentence)
+    modelClass.collectible_sentence = property(get_collectible_sentence)
     modelClass.tinypng_settings = {}
 
 ############################################################
@@ -140,7 +136,53 @@ class ItemModel(models.Model):
     edit_sentence = property(get_edit_sentence)
     delete_sentence = property(get_delete_sentence)
     report_sentence = property(get_report_sentence)
+    collectible_sentence = property(get_collectible_sentence)
     tinypng_settings = {}
+
+    class Meta:
+        abstract = True
+
+############################################################
+# AccountAsOwnerItemModel
+
+class AccountAsOwnerItemModel(ItemModel):
+    """
+    Will provide a cache when item doesn't have an owner but has an account
+    """
+    _cache_account_days = 200 # Change to a lower value if owner can change
+    _cache_account_last_update = models.DateTimeField(null=True)
+    _cache_account_owner_id = models.PositiveIntegerField(null=True)
+
+    def update_cache_account(self):
+        self._cache_account_last_update = timezone.now()
+        self._cache_account_owner_id = self.account.owner_id
+
+    def force_cache_account(self):
+        self.update_cache_account()
+        self.save()
+
+    @property
+    def cached_account(self):
+        if (not self._cache_account_last_update
+            or self._cache_account_last_update < timezone.now() - datetime.timedelta(days=self._cache_account_days)):
+            self.force_cache_account()
+        return AttrDict({
+            'pk': self.account_id,
+            'id': self.account_id,
+            'unicode': u'#{}'.format(self.account_id),
+            'owner': AttrDict({
+                'id': self._cache_account_owner_id,
+                'pk': self._cache_account_owner_id,
+            }),
+        })
+
+    @property
+    def owner(self):
+        return self.cached_account.owner
+
+    @property
+    def owner_id(self):
+        return self.cached_account.owner.id
 
     class Meta:
         abstract = True
