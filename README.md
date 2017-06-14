@@ -370,6 +370,28 @@ The Quick Start section above will do all this for you, but feel free to follow 
    ```
    Those are in addition to usual python ignored files. You can get a basic `.gitignore` when you create a GitHub repository).
 
+Create an admin or staff
+========================
+
+All users, including administrators (= superuser) or staff, need to be created using the sign up form in the website.
+
+After your user has been created, you may change it to super administrator by doing so:
+
+```shell
+python manage.py shell
+```
+
+```python
+from web import models
+username='YOURUSERNAME'
+
+# Set as super user
+models.User.objects.filter(username=username).update(is_superuser=True, is_staff=True)
+
+# Or set as staff
+models.User.objects.filter(username=username).update(is_staff=True)
+```
+
 Site Settings
 ===
 
