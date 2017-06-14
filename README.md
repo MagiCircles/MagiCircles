@@ -67,25 +67,60 @@ This section allows you to get a website up and running in a few minutes. If you
   GITHUB=git@github.com:SchoolIdolTomodachi/Hello.git
   ```
 
-3. Pick a shortname for your website.
- - Example: `hello`
- ```shell
- PROJECTNAME='hello'
- ```
+Quick start
+------
 
-4. Copy the content of the folder called `sample_project` to your project:
-   ```shell
-   git clone ${GITHUB}
-   git clone -b MagiCircles2 https://github.com/SchoolIdolTomodachi/MagiCircles.git
-   GITFOLDER=`echo ${GITHUB} | rev | cut -d/ -f1 | rev | cut -d. -f1`
-   cp -r MagiCircles/sample_project/* ${GITFOLDER}/
-   cp -r MagiCircles/sample_project/.bowerrc ${GITFOLDER}/
-   cp -r MagiCircles/sample_project/.gitignore ${GITFOLDER}/
-   cd ${GITFOLDER}/
+This section allows you to get a website up and running in a few minutes. If you'd like to get a better understanding of how to set up a new MagiCircles website, skip this section and follow the section ⎡[Start a new website](#start-a-new-website)⎦ instead.
+
+1. Install some requirements:
+
+    - Debian, Ubuntu, and variants:
+
+      ```
+      apt-get install libpython-dev libffi-dev python-virtualenv libmysqlclient-dev libssl-dev nodejs npm
+      ```
+
+    - Arch:
+
+      ```
+      pacman -S libffi python-virtualenv libmysqlclient libssl nodejs npm
+      ```
+
+    - OS X (install [brew](https://brew.sh/) if you don't have it):
+
+      ```
+      brew install python node
+      sudo pip install virtualenv
+      ```
+
+2. Create a GitHub repository and copy the URL:
+
+   ```
+   GITHUB=git@github.com:SchoolIdolTomodachi/Hello.git
    ```
 
+3. Pick a shortname for your website.
+
+   ```
+   PROJECTNAME='hello'
+   ```
+
+4. Copy the content of the folder called `sample_project` to your project:
+
+
+```
+git clone ${GITHUB}
+git clone -b MagiCircles2 https://github.com/SchoolIdolTomodachi/MagiCircles.git
+GITFOLDER=`echo ${GITHUB} | rev | cut -d/ -f1 | rev | cut -d. -f1`
+cp -r MagiCircles/sample_project/* ${GITFOLDER}/
+cp -r MagiCircles/sample_project/.bowerrc ${GITFOLDER}/
+cp -r MagiCircles/sample_project/.gitignore ${GITFOLDER}/
+cd ${GITFOLDER}/
+```
+
 5. Rename the files and recursively replace the string `sample` with your shortname:
-   ```shell
+
+   ```
    mv sample ${PROJECTNAME}
    mv sample_project ${PROJECTNAME}_project
    mv ${PROJECTNAME}/static/img/sample.png ${PROJECTNAME}/static/img/${PROJECTNAME}.png
@@ -93,7 +128,8 @@ This section allows you to get a website up and running in a few minutes. If you
    ```
 
 6. Setup your local python working environment, install the dependencies and run your first website:
-   ```shell
+
+   ```
    virtualenv env
    source env/bin/activate
    pip install -r requirements.txt
@@ -106,11 +142,12 @@ This section allows you to get a website up and running in a few minutes. If you
    ![](http://i.imgur.com/8CfckKj.png)
 
 7. Commit your changes
-   ```shell
-   git add .gitignore .bowerrc bower.json manage.py requirements.txt ${PROJECTNAME} ${PROJECTNAME}_project
-   git commit -m "Getting started with MagiCircles2"
-   git push
-   ```
+
+```
+git add .gitignore .bowerrc bower.json manage.py requirements.txt ${PROJECTNAME} ${PROJECTNAME}_project
+git commit -m "Getting started with MagiCircles2"
+git push
+```
 
 Start a new website
 -----------
