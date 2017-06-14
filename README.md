@@ -45,31 +45,54 @@ Similarly, it is not allowed to monetize a website that uses MagiCircles using a
 Quick start
 ------
 
-1. Pick a shortname for your website.
- - Example: `frgl` for [fr.gl](http://fr.gl/).
+This section allows you to get a website up and running in a few minutes. If you'd like to get a better understanding of how to set up a new MagiCircles website, skip this section and follow the section [Start a new website](#start-a-new-website) instead.
+
+1. Install some requirements:
+   - Debian, Ubuntu, and variants
+   ```shell
+   apt-get install libpython-dev libffi-dev python-virtualenv libmysqlclient-dev libssl-dev nodejs npm
+   ```
+   - Arch
+   ```shell
+   pacman -S libffi python-virtualenv libmysqlclient libssl nodejs npm
+   ```
+   - OS X (install [brew](https://brew.sh/) if you don't have it) - untested
+   ```shell
+   brew install python node
+   sudo pip install virtualenv
+   ```
+
+2. Create a GitHub repository and copy the URL:
+  ```shell
+  GITHUB=git@github.com:SchoolIdolTomodachi/Hello.git
+  ```
+
+3. Pick a shortname for your website.
+ - Example: `hello`
  ```shell
- PROJECTNAME='frgl'
+ PROJECTNAME='hello'
  ```
 
-2. Copy the content of the folder called `sample_project` to your project:
+4. Copy the content of the folder called `sample_project` to your project:
    ```shell
-   git clone your_project_repository
-   git clone https://github.com/SchoolIdolTomodachi/MagiCircles.git
-   cp -r MagiCircles/sample_project/* your_project_repository/
-   cp -r MagiCircles/sample_project/.bowerrc your_project_repository/
-   cp -r MagiCircles/sample_project/.gitignore your_project_repository/
-   cd your_project_repository/
+   git clone ${GITHUB}
+   git clone -b MagiCircles2 https://github.com/SchoolIdolTomodachi/MagiCircles.git
+   GITFOLDER=`echo ${GITHUB} | rev | cut -d/ -f1 | rev | cut -d. -f1`
+   cp -r MagiCircles/sample_project/* ${GITFOLDER}/
+   cp -r MagiCircles/sample_project/.bowerrc ${GITFOLDER}/
+   cp -r MagiCircles/sample_project/.gitignore ${GITFOLDER}/
+   cd ${GITFOLDER}/
    ```
 
-3. Rename the files and recursively replace the string `sample` with your shortname:
+5. Rename the files and recursively replace the string `sample` with your shortname:
    ```shell
    mv sample ${PROJECTNAME}
    mv sample_project ${PROJECTNAME}_project
    mv ${PROJECTNAME}/static/img/sample.png ${PROJECTNAME}/static/img/${PROJECTNAME}.png
-   for f in `grep -l sample . | \grep -v '.git/' | \grep -E '.py$|.json$|.bowerrc$|.gitignore$'`; do echo $f; sed -i '' -e "s/sample/${PROJECTNAME}/g" $f; done
+   for f in `grep -rl sample . | \grep -v '.git/' | \grep -E '.py$|.json$|.bowerrc$|.gitignore$'`; do echo $f; sed -i '' -e "s/sample/${PROJECTNAME}/g" $f; done
    ```
 
-4. Setup your local python working environment, install the dependencies and run your first website:
+6. Setup your local python working environment, install the dependencies and run your first website:
    ```shell
    virtualenv env
    source env/bin/activate
@@ -80,12 +103,19 @@ Quick start
    python manage.py runserver
    ```
    
-![](http://i.imgur.com/8CfckKj.png)
+   ![](http://i.imgur.com/8CfckKj.png)
+
+7. Commit your changes
+   ```shell
+   git add .gitignore .bowerrc bower.json manage.py requirements.txt ${PROJECTNAME} ${PROJECTNAME}_project
+   git commit -m "Getting started with MagiCircles2"
+   git push
+   ```
 
 Start a new website
 -----------
 
-The Quick Start section above will do all this for you, but feel free to follow this instead if you want to understand how MagiCircles works in more details.
+The [Quick Start](#quick-start) section above will do all this for you, but feel free to follow this instead if you want to understand how MagiCircles works in more details.
 
 1. Pick a shortname for your website.
  - Example: `frgl` for [fr.gl](http://fr.gl/).
