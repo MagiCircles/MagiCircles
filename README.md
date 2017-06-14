@@ -41,32 +41,6 @@ Similarly, it is not allowed to monetize a website that uses MagiCircles using a
 - receiving cards or special codes that can be exchanged for money as part of the website,
 - receiving money for the website.
 
-
-Quick start
-------
-
-This section allows you to get a website up and running in a few minutes. If you'd like to get a better understanding of how to set up a new MagiCircles website, skip this section and follow the section [Start a new website](#start-a-new-website) instead.
-
-1. Install some requirements:
-   - Debian, Ubuntu, and variants
-   ```shell
-   apt-get install libpython-dev libffi-dev python-virtualenv libmysqlclient-dev libssl-dev nodejs npm
-   ```
-   - Arch
-   ```shell
-   pacman -S libffi python-virtualenv libmysqlclient libssl nodejs npm
-   ```
-   - OS X (install [brew](https://brew.sh/) if you don't have it) - untested
-   ```shell
-   brew install python node
-   sudo pip install virtualenv
-   ```
-
-2. Create a GitHub repository and copy the URL:
-  ```shell
-  GITHUB=git@github.com:SchoolIdolTomodachi/Hello.git
-  ```
-
 Quick start
 ------
 
