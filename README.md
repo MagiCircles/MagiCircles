@@ -440,7 +440,10 @@ Your settings file is located in `sample/settings.py`.
 
 | Setting | About | Default value |
 |---------|-------|---------------|
-| NAVBAR_ORDERING | 
+| NAVBAR_ORDERING | List of collection or page names in the order you would like them to appear in the nav bar. Missing collection or page name in this list will just appear at the end.  | None (order not guaranteed) |
+| ONLY_SHOW_SAME_LANGUAGE _ACTIVITY_BY_DEFAULT | If set to `True`, uers will only see the activities in their language (regardless of authentication), otherwise, they'll see all activities in all languages. Note that users can override this behavior in their settings. | False |
+| ONLY_SHOW_SAME_LANGUAGE _ACTIVITY_BY_DEFAULT _FOR_LANGUAGES  | You may use this instead of `ONLY_SHOW_SAME_LANGUAGE _ACTIVITY_BY_DEFAULT` to specify per language | ['ja', 'zh-hans', 'kr'] |
+| PROFILE_TABS | Tabs visible in a user's profile page, under the box that contins the avatar, the description and the links. A dictionary with: <ul><li>`name`: localized tab name</li><li>`icon`: String name of a flaticon that illustrates the tab</li><li>`callback`: optional, name of javasript function to call to get the content of the tab - takes: <ul><li>user_id</li><li>A callback that you must call and give it the HTML tree to display for this tab and an optional other callback to call after it's been displayed</li></ul></li></ul> | accounts, activities and badges. Will be disables if you disable their respective collection. |
 | SITE_NAME | Full name of the site (can be different from `SITE` in django settings) ("Sample Website") | *required* |
 | SITE_URL | Full URL of the website, ends with a `/` ("http://sample.com/") | *required* |
 | SITE_IMAGE | Path of the image in `sample/static/img` folder ("sample.png"). This image is used as the main illustration of the website, shared on social media. It is recommended to avoid transparency in this image.  | *required* |
@@ -449,45 +452,45 @@ Your settings file is located in `sample/settings.py`.
 | DISQUS_SHORTNAME | Go to [Disqus](https://disqus.com/admin/create/) to create a new site and provide the shortname of your new site here. It will be used to display comment sections under some of your pages or collections. :warning: Make sure you disable adertisments in your disqus site settings! | *required* |
 | ACCOUNT_MODEL | Your custom model to handle game accounts (`models.Account`) | *required* |
 | COLOR | The dominant hex color of the site, must be the same than @mainColor in LESS ("#4a86e8") | *required* |
-| SITE_DESCRIPTION | Slogan, catch phrase of the site. May be a callable that doesn't take any argument (`lambda: _('Best database for best game')`) | "The {game name} Database & Community" |
-| SITE_LOGO | Path of the image displayed on the homepage. | value of SITE_IMAGE |
-| SITE_NAV_LOGO | Path of the image displayed instead of the site name in the nav bar | None |
+| ABOUT_PHOTO | Path of the image in `sample/static/img` folder | "engildeby.gif" |
+| ACTIVITY_TAGS | List of tuples (raw value, full localizable tag name) for the tags that can be added ao an activity | None |
+| BUG_TRACKER_URL | Full URL where people can see issues (doesn't have to be github) | Full URL created from the GITHUB_REPOSITORY value |
+| CALL_TO_ACTION | A sentence shown on the default index page to encourage visitors to sign up | _('Join the community!') |
+| CONTACT_EMAIL | Main contact email address | Value in django settings `AWS_SES_RETURN_PATH` |
+| CONTACT_FACEBOOK | Contact Facebook username or page | "db0company" |
+| CONTACT_REDDIT | Contact reddit username | "db0company" |
+| CONTRIBUTE_URL | Full URL of the guide (or README) for developers who would like to contribute | [link](https://github.com/SchoolIdolTomodachi/SchoolIdolAPI/wiki/Contribute) |
+| DONATE_IMAGE | Path of the image in DONATE_IMAGES_FOLDER | None |
+| DONATORS_STATUS_CHOICES | List of tuples (status, full string) for the statuses of donators, statuses must be THANKS, SUPPORTER, LOVER, AMBASSADOR, PRODUCER and DEVOTEE | "Thanks", "Player", "Super Player", "Extreme Player", "Master Player", "Ultimate Player" |
 | EMAIL_IMAGE | Path of the image in `sample/static/img` folder ("sample.png") that will appear at the beginning of all the emails. | value of SITE_IMAGE |
+| EMPTY_IMAGE | Path of the image for empty values in cute form in `sample/static/img` folder | "empty.png" |
 | ENABLED_NAVBAR_LISTS | See [Navbar Links](#navbar-links) documentation | |
 | ENABLED_PAGES | See [Enabled pages](#enabled-pages) documentation | |
-| SHOW_TOTAL_ACCOUNTS | On profiles, show or hide the total number of accounts before showing the accounts | True |
-| GITHUB_REPOSITORY | Tuple (Username, repository) for the sources of this site, used in about page | ('SchoolIdolTomodachi', 'MagiCircles') |
-| WIKI | Tuple (Username, repository) for the GitHub wiki pages to display the help pages | Value of GITHUB_REPOSITORY |
-| BUG_TRACKER_URL | Full URL where people can see issues (doesn't have to be github) | Full URL created from the GITHUB_REPOSITORY value |
-| CONTRIBUTE_URL | Full URL of the guide (or README) for developers who would like to contribute | [link](https://github.com/SchoolIdolTomodachi/SchoolIdolAPI/wiki/Contribute) |
-| CONTACT_EMAIL | Main contact email address | Value in django settings `AWS_SES_RETURN_PATH` |
-| CONTACT_REDDIT | Contact reddit username | "db0company" |
-| CONTACT_FACEBOOK | Contact Facebook username or page | "db0company" |
-| TWITTER_HANDLE | Official Twitter account of this site | "schoolidolu" |
-| HASHTAGS | List of hashtags when sharing on Twitter + used as keywords for the page (without `#`) | [] |
-| ABOUT_PHOTO | Path of the image in `sample/static/img` folder | "engildeby.gif" |
-| EMPTY_IMAGE | Path of the image for empty values in cute form in `sample/static/img` folder | "empty.png" |
-| TRANSLATION_HELP_URL | URL with guide or tools to allow people to contribute to the site's translation | [link](https://github.com/SchoolIdolTomodachi/MagiCircles/wiki/Translate-the-website) |
 | FAVORITE_CHARACTERS | List of tuples (id, full name, image path - must be squared image and full url) for each character that can be set as a favorite on users' profiles, if it's in a database it's recommended to use [Generated Settings](#generated-settings) to save them once in a while | None |
-| FAVORITE_CHARACTER_TO_URL | A function that will return the URL to get more info about that character. This function takes a link object with value (full name), raw_value (id), image | lambda _: '#' |
 | FAVORITE_CHARACTER_NAME | String that will be localized to specify what's a "character". Must contain `{nth}` (example: "{nth} Favorite Idol") | "{nth} Favorite Character" |
-| DONATE_IMAGE | Path of the image in DONATE_IMAGES_FOLDER | None |
-| GET_GLOBAL_CONTEXT | Function that takes a request and return a context, must call `globalContext` in `web.utils` | None |
-| JAVASCRIPT_TRANSLATED_TERMS | Terms used in `gettext` function in Javascript, must contain `DEFAULT_JAVASCRIPT_TRANSLATED_TERMS` in `web.default_settings` | None |
-| DONATORS_STATUS_CHOICES | List of tuples (status, full string) for the statuses of donators, statuses must be THANKS, SUPPORTER, LOVER, AMBASSADOR, PRODUCER and DEVOTEE | "Thanks", "Player", "Super Player", "Extreme Player", "Master Player", "Ultimate Player" |
-| ACTIVITY_TAGS | List of tuples (raw value, full localizable tag name) for the tags that can be added ao an activity | None |
-| USER_COLORS | List of tuples (raw value, full localizable color name, CSS elements name (`btn-xx`, `panel-xx`, ...), hex code of the color) | None |
-| LATEST NEWS | A list of dictionaries that should contain image, title, url and may contain hide_title, used if you keep the default index page to show a carousel. Recommended to get this from [Generated Settings](#generated-settings) | None |
-| CALL_TO_ACTION | A sentence shown on the default index page to encourage visitors to sign up | _('Join the community!') |
-| SITE_LONG_DESCRIPTION | A long description of what the website does. Used on the about page. May be a callable that doesn't take any argument | A long text |
+| FAVORITE_CHARACTER_TO_URL | A function that will return the URL to get more info about that character. This function takes a link object with value (full name), raw_value (id), image | lambda _: '#' |
 | GAME_DESCRIPTION | A long description of the game. Used on the about game page. | None (just shows game image) |
 | GAME_URL | A link to the official homepage of the game. Used on the about game page. | None (just shows game image) |
-| TOTAL_DONATORS | Total number of donators (you may use web.tools.totalDonators to save this value in the [generated settings](#generated-settings)) | 2 |
-| ON_USER_EDITED | Callback after a user's username or email has been changed, takes request (contains updated request.user) | None |
-| ON_PREFERENCES_EDITED | Callback after a user's preferences have been changed, takes request (contains updated request.user.preferences) | None |
+| GET_GLOBAL_CONTEXT | Function that takes a request and return a context, must call `globalContext` in `web.utils` | None |
+| GITHUB_REPOSITORY | Tuple (Username, repository) for the sources of this site, used in about page | ('SchoolIdolTomodachi', 'MagiCircles') |
 | GOOGLE_ANALYTICS | Tracking number for Google Analytics | 'UA-67529921-1' |
-| STATIC_FILES_VERSION | A number or string that you can change when you update the css or js file of your project to force update the cache of your users in production | '1' |
+| HASHTAGS | List of hashtags when sharing on Twitter + used as keywords for the page (without `#`) | [] |
+| JAVASCRIPT_TRANSLATED_TERMS | Terms used in `gettext` function in Javascript, must contain `DEFAULT_JAVASCRIPT_TRANSLATED_TERMS` in `web.default_settings` | None |
+| LATEST NEWS | A list of dictionaries that should contain image, title, url and may contain hide_title, used if you keep the default index page to show a carousel. Recommended to get this from [Generated Settings](#generated-settings) | None |
+| ON_PREFERENCES_EDITED | Callback after a user's preferences have been changed, takes request (contains updated request.user.preferences) | None |
+| ON_USER_EDITED | Callback after a user's username or email has been changed, takes request (contains updated request.user) | None |
 | PROFILE_EXTRA_TABS | A dictionary of tab name -> dictionary (name, icon, callback (= js)) to show more tabs on profile (in addition to activities and accounts) | None |
+| SHOW_TOTAL_ACCOUNTS | On profiles, show or hide the total number of accounts before showing the accounts | True |
+| SITE_DESCRIPTION | Slogan, catch phrase of the site. May be a callable that doesn't take any argument (`lambda: _('Best database for best game')`) | "The {game name} Database & Community" |
+| SITE_LOGO | Path of the image displayed on the homepage. | value of SITE_IMAGE |
+| SITE_LONG_DESCRIPTION | A long description of what the website does. Used on the about page. May be a callable that doesn't take any argument | A long text |
+| SITE_NAV_LOGO | Path of the image displayed instead of the site name in the nav bar | None |
+| STATIC_FILES_VERSION | A number or string that you can change when you update the css or js file of your project to force update the cache of your users in production | '1' |
+| TOTAL_DONATORS | Total number of donators (you may use web.tools.totalDonators to save this value in the [generated settings](#generated-settings)) | 2 |
+| TRANSLATION_HELP_URL | URL with guide or tools to allow people to contribute to the site's translation | [link](https://github.com/SchoolIdolTomodachi/MagiCircles/wiki/Translate-the-website) |
+| TWITTER_HANDLE | Official Twitter account of this site | "schoolidolu" |
+| USER_COLORS | List of tuples (raw value, full localizable color name, CSS elements name (`btn-xx`, `panel-xx`, ...), hex code of the color) | None |
+| WIKI | Tuple (Username, repository) for the GitHub wiki pages to display the help pages | Value of GITHUB_REPOSITORY |
 
 todo
 
