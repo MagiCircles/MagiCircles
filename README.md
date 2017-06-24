@@ -73,7 +73,7 @@ Similarly, it is not allowed to monetize a website that uses MagiCircles using a
 1.  [Website Settings](#website-settings)
 1. [Collections](#collections)
     1. [Models](#models)
-      	1. [Inherit from MagiModel and provide a name](#inherit-from-itemModel-and-provide-a-name)
+      	1. [Inherit from ItemModel and provide a name](#inherit-from-itemModel-and-provide-a-name)
 	    1. [Have an owner](#have-an-owner)
 	    1. [Override `__unicode__`](#override-unicode-)
     1. [MagiCollection](#magicollection)
@@ -89,6 +89,8 @@ Similarly, it is not allowed to monetize a website that uses MagiCircles using a
         1. [to_field method](#to-field-method)
     1. [MagiForm](#magiform)
     1. [MagiFilter](#magifilter)
+        1. [Search and ordering](#search-and-ordering)
+        2. [Configure fields](#configure-fields)
 1. [Enabled Pages](#enabled-pages)
 1. [Default pages and collections](#default-pages-and-collections)
     1. [Default pages](#default-pages)
@@ -104,7 +106,8 @@ Similarly, it is not allowed to monetize a website that uses MagiCircles using a
     1. [Templates](#templates)
     1. [Javascript](#javascript)
 1. [Recommendations](#recommendations)
-    1. [Internal cache for foreign keys in models](#internal-cache-for-foreign-keys-in-models)
+    1. [Save choices values as integer rather than strings](#save-choices-values-as-integer-rather-than-strings)
+    2. [Internal cache for foreign keys in models](#internal-cache-for-foreign-keys-in-models)
     1. [Calling functions in templates](#calling-functions-in-templates)
     1. [Utility functions for models](#utility-functions-for-models)
     1. [Generated Settings](#generated-settings)
@@ -243,7 +246,7 @@ The ⎡[Quick Start](#quick-start)⎦ section above will do all this for you, bu
      'bootstrap_form_horizontal',
      'rest_framework',
      'storages',
-     'magi',
+     'web',
    )
 
    MIDDLEWARE_CLASSES = (
@@ -251,8 +254,8 @@ The ⎡[Quick Start](#quick-start)⎦ section above will do all this for you, bu
        'django.middleware.locale.LocaleMiddleware',
        'corsheaders.middleware.CorsMiddleware',
        'django.middleware.common.CommonMiddleware',
-       'magi.middleware.languageFromPreferences.LanguageFromPreferenceMiddleWare',
-       'magi.middleware.httpredirect.HttpRedirectMiddleware',
+       'web.middleware.languageFromPreferences.LanguageFromPreferenceMiddleWare',
+       'web.middleware.httpredirect.HttpRedirectMiddleware',
    )
    
    FAVORITE_CHARACTERS = []
@@ -262,7 +265,7 @@ The ⎡[Quick Start](#quick-start)⎦ section above will do all this for you, bu
    MIN_WIDTH = 300
    MIN_HEIGHT = 300
 
-   AUTHENTICATION_BACKENDS = ('magi.backends.AuthenticationBackend',)
+   AUTHENTICATION_BACKENDS = ('web.backends.AuthenticationBackend',)
 
    DEBUG_PORT = 8000
 
@@ -280,7 +283,7 @@ The ⎡[Quick Start](#quick-start)⎦ section above will do all this for you, bu
    LANGUAGE_CODE = 'en'
 
    LOCALE_PATHS = [
-     os.path.join(BASE_DIR, 'magi/locale'),
+     os.path.join(BASE_DIR, 'web/locale'),
    ]
 
    STATIC_UPLOADED_FILES_PREFIX = None
@@ -309,13 +312,13 @@ The ⎡[Quick Start](#quick-start)⎦ section above will do all this for you, bu
    LOCALE_PATHS.append(os.path.join(BASE_DIR, SITE, 'locale'))
 
    if STATIC_UPLOADED_FILES_PREFIX is None:
-       STATIC_UPLOADED_FILES_PREFIX = 'magi/static/uploaded/' if DEBUG else 'u/'
+       STATIC_UPLOADED_FILES_PREFIX = 'web/static/uploaded/' if DEBUG else 'u/'
    ```
 
 8. Include the URLs in `sample_project/urls.py`:
    ```python
    urlpatterns = patterns('',
-     url(r'^', include('magi.urls')),
+     url(r'^', include('web.urls')),
      ...
    )
    ```
@@ -323,7 +326,7 @@ The ⎡[Quick Start](#quick-start)⎦ section above will do all this for you, bu
 9. Create the file `sample/settings.py` that will describe how you want your website to look like:
    ```python
    from django.conf import settings as django_settings
-   from magi.default_settings import DEFAULT_ENABLED_COLLECTIONS, DEFAULT_ENABLED_PAGES
+   from web.default_settings import DEFAULT_ENABLED_COLLECTIONS, DEFAULT_ENABLED_PAGES
    from sample import models, forms
 
    SITE_NAME = 'Sample Website'
@@ -346,9 +349,9 @@ The ⎡[Quick Start](#quick-start)⎦ section above will do all this for you, bu
    from django.contrib.auth.models import User
    from django.utils.translation import ugettext_lazy as _
    from django.db import models
-   from magi.item_model import MagiModel
+   from web.item_model import ItemModel
 
-   class Account(MagiModel):
+   class Account(ItemModel):
        collection_name = 'account'
        
        owner = models.ForeignKey(User, related_name='accounts')
@@ -500,7 +503,7 @@ git push
    ```
 
    ```python
-   from magi import models
+   from web import models
    username='YOURUSERNAME'
 
    # Set as super user
@@ -642,11 +645,11 @@ Optional settings:
 | FAVORITE_CHARACTER_TO_URL | A function that will return the URL to get more info about that character. This function takes a link object with value (full name), raw_value (id), image | lambda _: '#' |
 | GAME_DESCRIPTION | A long description of the game. Used on the about game page. | None (just shows game image) |
 | GAME_URL | A link to the official homepage of the game. Used on the about game page. | None (just shows game image) |
-| GET_GLOBAL_CONTEXT | Function that takes a request and return a context, must call `globalContext` in `magi.utils` | None |
+| GET_GLOBAL_CONTEXT | Function that takes a request and return a context, must call `globalContext` in `web.utils` | None |
 | GITHUB_REPOSITORY | Tuple (Username, repository) for the sources of this website, used in about page | ('SchoolIdolTomodachi', 'MagiCircles') |
 | GOOGLE_ANALYTICS | Tracking number for Google Analytics | 'UA-67529921-1' |
 | HASHTAGS | List of hashtags when sharing on Twitter + used as keywords for the page (without `#`) | [] |
-| JAVASCRIPT_TRANSLATED_TERMS | Terms used in `gettext` function in Javascript, must contain `DEFAULT_JAVASCRIPT_TRANSLATED_TERMS` in `magi.default_settings` | None |
+| JAVASCRIPT_TRANSLATED_TERMS | Terms used in `gettext` function in Javascript, must contain `DEFAULT_JAVASCRIPT_TRANSLATED_TERMS` in `web.default_settings` | None |
 | LATEST NEWS | A list of dictionaries that should contain image, title, url and may contain hide_title, used if you keep the default index page to show a carousel. Recommended to get this from [generated Settings](#generated-settings). | None |
 | LAUNCH_DATE | If you want to tease your community before officially opening the website, or just let your staff team test it, you can set a launch date. It will make all the pages and collections only available to staff and make the homepage a countdown before the website opens. Example: `import datetime, pytz datetime.datetime(2017, 04, 9, 12, 0, 0, tzinfo=pytz.UTC)` | None |
 | NAVBAR_ORDERING | List of collection or page names in the order you would like them to appear in the nav bar. Missing collection or page name in this list will just appear at the end.  | None (order not guaranteed) |
@@ -664,13 +667,13 @@ Optional settings:
 | SITE_LONG_DESCRIPTION | A long description of what the website does. Used on the about page. May be a callable that doesn't take any argument | A long text |
 | SITE_NAV_LOGO | Path of the image displayed instead of the website name in the nav bar | None |
 | STATIC_FILES_VERSION | A number or string that you can change when you update the css or js file of your project to force update the cache of your users in production | '1' |
-| TOTAL_DONATORS | Total number of donators (you may use magi.tools.totalDonators to save this value in the [generated settings](#generated-settings)) | 2 |
+| TOTAL_DONATORS | Total number of donators (you may use web.tools.totalDonators to save this value in the [generated settings](#generated-settings)) | 2 |
 | TRANSLATION_HELP_URL | URL with guide or tools to allow people to contribute to the website's translation | [link](https://github.com/SchoolIdolTomodachi/MagiCircles/wiki/Translate-the-website) |
 | TWITTER_HANDLE | Official Twitter account of this website | "schoolidolu" |
 | USER_COLORS | List of tuples (raw value, full localizable color name, CSS elements name (`btn-xx`, `panel-xx`, ...), hex code of the color) | None |
 | WIKI | Tuple (Username, repository) for the GitHub wiki pages to display the help pages | Value of GITHUB_REPOSITORY |
 
-- Full details of the configuration of the settings in: `magi/settings.py` and `magi/default_settings.py`
+- Full details of the configuration of the settings in: `web/settings.py` and `web/default_settings.py`
 
 Collections
 ===
@@ -691,7 +694,7 @@ It's super easy to create a collection, and they will automatically provide page
 
 Collections are generally composed of:
 
-- The database: a class that inherits from `MagiModel` that corresponds to django model, with some extra helpers.
+- The database: a class that inherits from `ItemModel` that corresponds to django model, with some extra helpers.
   - See ⎡[Models](#models)⎦
 - The MagiCollection: a class that inherits from `MagiCollection` that will contain all the configuration.
   - See ⎡[MagiCollection](#magicollection)⎦
@@ -708,25 +711,25 @@ Models that don't need to be MagiCollections include models used only in pages (
 
 All the django models used in collections MUST:
 
-- [Inherit from MagiModel and provide a name](#inherit-from-itemModel-and-provide-a-name)
+- [Inherit from ItemModel and provide a name](#inherit-from-itemModel-and-provide-a-name)
 - [Have an owner](#have-an-owner)
 - [Override `__unicode__`](#override-unicode-)
 
-#### Inherit from MagiModel and provide a name
+#### Inherit from ItemModel and provide a name
 
 ```python
-from magi.item_model import MagiModel
+from web.item_model import ItemModel
 
-class Idol(MagiModel):
+class Idol(ItemModel):
     collection_name = 'idol'
     ...
 ```
   
 `collection_name` is used to get the MagiCollection associated with this item. While multiple MagiCollections can use the same model class, the item itself will only be aware of one associated MagiCollection.
 
-Thanks to `MagiModel`, you'll have access to some properties on all your objects, which are required, but might also be useful for you:
+Thanks to `ItemModel`, you'll have access to some properties on all your objects, which are required, but might also be useful for you:
 
-- All `MagiModel` provide the following properties (not meant to be overriden):
+- All `ItemModel` provide the following properties (not meant to be overriden):
 
 | Key | Value | Example |
 |-----|-------|---------|
@@ -752,10 +755,10 @@ Thanks to `MagiModel`, you'll have access to some properties on all your objects
 If you have other images in your model, you might want to add `fieldname_url` and `http_fieldname_url` to get similar tools for all your images:
 
 ```python
-from magi.utils import uploadItem
-from magi.item_model import MagiModel, get_image_url, get_http_image_url
+from web.utils import uploadItem
+from web.item_model import ItemModel, get_image_url, get_http_image_url
 
-class Idol(MagiModel):
+class Idol(ItemModel):
     background = models.ImageField(upload_to=uploadItem('i'), null=True, blank=True)
 
     @property
@@ -770,16 +773,16 @@ class Idol(MagiModel):
 #### Have an owner
 
 ```python
-class Idol(MagiModel):
+class Idol(ItemModel):
     owner = models.ForeignKey(User, related_name='idols')
 ```
 
-Because it's very common to associate an item to an `account` and not directly to an `owner`, since `account` already has an owner, you may make your model class inherit from `AccountAsOwnerMagiModel` instead of `MagiModel`:
+Because it's very common to associate an item to an `account` and not directly to an `owner`, since `account` already has an owner, you may make your model class inherit from `AccountAsOwnerItemModel` instead of `ItemModel`:
 
 ```python
-from magi.item_model import AccountAsOwnerMagiModel
+from web.item_model import AccountAsOwnerItemModel
 
-class OwnedCard(AccountAsOwnerMagiModel):
+class OwnedCard(AccountAsOwnerItemModel):
     """
     Will automatically provide a cache for the account and provide `owner` and `owner_id` properties.
     """
@@ -789,10 +792,10 @@ class OwnedCard(AccountAsOwnerMagiModel):
 If your model doesn't have a direct owner or account, you may fake it by providing properties for `owner` and `owner_id`:
 
 ```python
-class Book(MagiModel):
+class Book(ItemModel):
     owner = models.ForeignKey(User, related_name='books')
 
-class Chapter(MagiModel):
+class Chapter(ItemModel):
     book = models.ForeignKey(Book, related_name='books')
 
     @property
@@ -820,7 +823,7 @@ In our example above, book would be retrieved when the propety `owner` is access
 Django models already have a `__unicode__` method, but since MagiCircles uses it extensively, it's highly recommended to override it and not rely on its default value.
 
 ```python
-class Card(MagiModel):
+class Card(ItemModel):
     name = models.CharField(max_length=100)
 
     def __unicode__(self):
@@ -852,7 +855,7 @@ def __unicode__(self):
 Collections available should be configured in `sample/magicollections.py`. It's a class that inherits from `MagiCollection`.
 
 ```python
-from magi.magicollections import MagiCollection
+from web.magicollections import MagiCollection
 from sample import models
 
 class IdolCollection(MagiCollection):
@@ -939,7 +942,7 @@ For each view, you may also override the fields and methods. When overriding met
 ```python
 from django.core.exceptions import PermissionDenied
 from django.utils.translation import ugettext_lazy as _
-from magi.magicollections import MagiCollection
+from web.magicollections import MagiCollection
 
 class IdolCollection(MagiCollection):
     title = _('Idol')
@@ -956,7 +959,7 @@ class IdolCollection(MagiCollection):
 If you need some logic behind settings that are not methods you can use `@property`:
 
 ```python
-from magi.magicollections import MagiCollection
+from web.magicollections import MagiCollection
 
 class IdolCollection(MagiCollection):
     class ListView(MagiCollection.ListView):
@@ -1157,9 +1160,9 @@ See also: [methods available in all views](#all-views).
 To make a collection collectible, you need to provide a [model](#model). The model should always have either an `owner` or an `account` foreign key, allowing users to collect them.
 
 ```python
-from magi import MagiModel
+from web import ItemModel
 
-class CollectibleCard(AccountAsOwnerMagiModel):
+class CollectibleCard(AccountAsOwnerItemModel):
     collection_name = 'collectiblecards'
 
     account = models.ForeignKey(Account, related_name='collectedcards')
@@ -1171,7 +1174,7 @@ class CollectibleCard(AccountAsOwnerMagiModel):
 Then specify this model in the collection you want to make collectible with that model:
 
 ```python
-from magi.magicollections import MagiCollection
+from web.magicollections import MagiCollection
 from sample import models
 
 class CardCollection(MagiCollection):
@@ -1181,7 +1184,7 @@ class CardCollection(MagiCollection):
 Customize the MagiCollection of the collectible itself:
 
 ```python
-from magi.magicollections import MagiCollection
+from web.magicollections import MagiCollection
 from sample import models
 
 class CardCollection(MagiCollection):
@@ -1198,7 +1201,23 @@ class CardCollection(MagiCollection):
 
 ![](http://i.imgur.com/nL7JVGw.png)
 
-todo
+CuteForm is a Javascript library that transforms your form `<select>` into selectable images. [Learn more](http://db0company.github.io/CuteForm/).
+
+Because it is used a lot by forms and filter forms in MagiCircles, an integration is provided directly within the collections, so you don't need to add extra Javascript dependencies.
+
+The setting `filter_cuteform` in the collection itself, or in the list view, add view and item view seperately allow you to customize your cuteform settings.
+
+You may also configure cuteform for your own form in your own standalone pages or anywhere else using the utility function `cuteFormFieldsForContext`, which takes the same dictionary expected by `filter_cuteform` in collection, as well as the context and an optional `form` object.
+
+Dictionary of:
+- Key = field name
+- Value = dictionary of:
+    - `type`: CuteFormType.Images, .HTML, .YesNo or .OnlyNone, will be images if not specified
+    - `to_cuteform`: 'key' or 'value' or lambda that takes key and value, will be 'key' if not specified
+    - `choices`: list of pair, if not specified will use form
+    - `selector`: will be #id_{field_name} if not specified
+    - `transform`: when to_cuteform is a lambda: CuteFormTransform.No, .ImagePath, .Flaticon, .FlaticonWithText
+    - `image_folder`: only when to_cuteform = 'images' or transform = .ImagePath, will specify the images path
 
 ### Item types
 
@@ -1247,7 +1266,7 @@ The type will be passed to the formClass when it's initialized, which allows you
     - You may override this function, but you should always call its `super`.
 - Parameters
     - `item, to_dict=True, only_fields=None, in_list=False, icons={}, images={}`
-    - `item` is the item object, an instance of an `MagiModel`
+    - `item` is the item object, an instance of an `ItemModel`
     - `to_dict` will return a dict by default, otherwise a list or pair. Useful if you plan to change the order or insert items at certain positions.
     - `only_fields` if specified will ignore any other field
     - `icons` is a dictionary of the icons associated with the fields
@@ -1283,16 +1302,142 @@ In ItemView, when template is `default`:
 
 ## MagiForm
 
-todo
+- Inherit from `MagiForm`
+- Used by add view and/or edit view
+- Optional, with default: `AutoForm`
 
-+ mention AutoForm
+```python
+from django import forms
+from web.forms import AutoForm
+
+class EventForm(AutoForm):
+    start_date = forms.DateField(label=_('Beginning'))
+    end_date = forms.DateField(label=_('End'))
+
+    class Meta:
+        model = models.Event
+        fields = '__all__'
+        optional_fields = ('end_date')
+        save_owner_on_creation = True
+```
+
+- Will make fields in `optional_fields` optional, regardless of db field
+- Will show the correct date picker for date fields
+- Will replace any empty string with None for better database consistency
+- Will use tinypng to optimize images and will use settings specified in models
+- When `save_owner_on_creation` is True in Meta form object, will save the field `owner` using the current user
+
+MagiForm's behavior is similar to django's form, while `AutoForm` will try to detect automatically what should be the fields in the form.
+
+![](http://i.imgur.com/CjYBkCO.png)
+
+If you want to add some extra logic at the initialization of the form, you can override `__init__`:
+
+```python
+class CardForm(AutoForm):
+    def __init__(self, *args, **kwargs):
+        super(CardForm, self).__init__(*args, **kwargs)
+        self.fields['skill_details'].label = _('Skill details')
+
+    ...
+```
+
+If you want to add some extra logic before saving the item in the dabatase, you can override `save`:
+
+```python
+class CardForm(AutoForm):
+    def save(self, commit=False):
+	instance = super(CardForm, self).save(commit=False)
+    instance.score = instance.score / 100
+    if commit:
+            instance.save()
+	return instance
+
+    ...
+```
+
+If you want to do something depending on a specific field that changed, you can save the previous value in `__init__` and add your logic in `save`. This can be useful to update cached foreign keys.
+
+```python
+class CardForm(AutoForm):
+    def __init__(self, *args, **kwargs):
+        super(CardForm, self).__init__(*args, **kwargs)
+        self.previous_member_id = None if self.is_creating else self.instance.member_id
+
+    def save(self, commit=False):
+        instance = super(CardForm, self).save(commit=False)
+        if self.previous_member_id != instance.member_id:
+            instance.update_cache_member()
+        if commit:
+            instance.save()
+        return instance
+
+    ...
+```
 
 ## MagiFilter
 
 
 ![](http://i.imgur.com/exJJP53.png)
 
-todo
+- Inherit from `MagiFiltersForm`
+- Used by list view
+- Optional, will not show a sidebar when not provided
+
+While `MagiFiltersForm` is very similar to `MagiForm`, it doesn't have any logic to "save" an item.
+
+It provides a method `filter_queryset` that takes a queryset, the parameters (as a dictionary), the current request and returns a queryset.
+
+### Search and ordering
+
+Search and ordering fields are provided by default, but you need to specify `search_fields` and `ordering_fields` to enable them.
+
+```python
+from web.forms import MagiFiltersForm
+from sample import models
+
+class CardFilterForm(MagiFiltersForm):
+    search_fields = ['name', 'skill_name']
+    ordering_fields = [
+        ('id', _('ID')),
+        ('performance_max', _('Performance')),
+    ]
+
+    class Meta:
+        model = models.Card
+```
+
+### Configure fields
+
+For most fields, the default behavior of `MagiFiltersForm` is enough. But for some fields that are not direct fields of the model or to handle special cases, you may provide some configuration for that field.
+
+To do so, just provide an attribute `name_filter` where `name` is the corresponding field name. It has to be an instance of `MagiFilter`, to which you can pass the following named parameters:
+
+| Name | Description | Example |
+|------|-------------|---------|
+| to_queryset | function that takes form, queryset, request, value and returns a queryset. Optional, will filter automatically. `selector` and `to_value` are ignored when specified. | lambda form, queryset, request, value: queryset.filter(name__in=['a', 'b'] if value == 'a_or_b' else queryset) |
+| selector | will be the name of the field by default | 'owner__username' |
+| selectors | same as selector but works with multiple values. | ['card__name', 'card__japanese_name'] |
+| to_value | function that takes the value and transforms the value if needed. | lambda value: value + 1 |
+| multiple | allow multiple values separated by commas. Set to `False` if your value may contain commas. | |
+
+Example:
+
+```python
+from django import forms
+from django.db.models.fields import BLANK_CHOICE_DASH
+from web.forms import MagiFiltersForm
+from bang import models
+
+class CardFilterForm(MagiFiltersForm):
+    member_band = forms.ChoiceField(choices=BLANK_CHOICE_DASH + models.BAND_CHOICES, initial=None, label=_('Band'))
+    member_band_filter = MagiFilter(selector='member__i_band')
+
+    class Meta:
+        model = models.Card
+        fields = ('member_id', 'member_band')
+
+```
 
 Enabled Pages
 ===
@@ -1319,10 +1464,10 @@ The function must be in `sample/views.py`. The function must take a request and 
 All your pages must contain the global context, which you can override to add your own global context settings. It's recommended to use the same globalContext function in your views than the one specified in your [website settings](#website-settings).
 
 ```python
-from magi.utils import globalContext as magi_globalContext
+from web.utils import globalContext as web_globalContext
 
 def globalContext(request):
-    context = magi_globalContext(request)
+    context = web_globalContext(request)
     context['something'] = 'something'
     return context
 
@@ -1380,8 +1525,8 @@ Ajax:
 | /ajax/reportwhatwillbedeleted/{report}/ | Yes | A popup shown when a staff member tries to delete a reported item to warn them of all the other items that will be cascadely deleted. |
 | /ajax/successedit/ | Yes | A simple page to use on successful edit when ajax is disabled for an item view. |
 
-- Full details of the configuration of each page in: `magi/default_settings.py`
-- Full details of the implementation of each page in `magi/views.py`
+- Full details of the configuration of each page in: `web/default_settings.py`
+- Full details of the implementation of each page in `web/views.py`
 
 ## Default collections
 
@@ -1393,7 +1538,7 @@ Ajax:
 | notification | NotificationCollection | Notification | <ul><li>Only ListView is enabled.</li><li>Available as a small popup from the nav bar or as a separate page.</li><li>Notifications are generated automatically when something happens that might interest the user.</li></ul> |
 | report | ReportCollection | Report | <ul><li>Uses collection types, with types corresponding to reportable collections.</li><li>People who report can see/edit their own reports, but only staff can list all the reports and take actions.</ul> |
 
-- Default collections are in `magi/magicollections.py`
+- Default collections are in `web/magicollections.py`
 
 ### Collections disabled by default
 
@@ -1418,7 +1563,7 @@ ENABLED_PAGES['help']['enabled'] = False
 
 Disable a collection in `sample/magicollections.py`:
 ```python
-from magi.magicollections import ReportCollection as _ReportCollection
+from web.magicollections import ReportCollection as _ReportCollection
 
 class ReportCollection(_ReportCollection):
     enabled = False
@@ -1426,7 +1571,7 @@ class ReportCollection(_ReportCollection):
 
 Change something in an existing collection:
 ```python
-from magi.magicollections import AccountCollection as _AccountCollection
+from web.magicollections import AccountCollection as _AccountCollection
 
 class AccountCollection(_AccountCollection):
     icon = 'heart'
@@ -1449,7 +1594,7 @@ By default, your website will already contain 2 lists: `you` and `more`.
 You may add more lists in your settings:
 
 ```python
-from magi.default_settings import DEFAULT_ENABLED_NAVBAR_LISTS
+from web.default_settings import DEFAULT_ENABLED_NAVBAR_LISTS
 
 ENABLED_NAVBAR_LISTS = DEFAULT_ENABLED_NAVBAR_LISTS
 ENABLED_NAVBAR_LISTS['stuff'] = { ... }
@@ -1468,7 +1613,84 @@ API
 
 ![](http://i.imgur.com/3ZIP11o.png)
 
-todo
+:warning: This is a work in progress. The following guide doesn't work yet. Currently, API endpoints have be done manually.
+
+API endpoints are based on Django-Rest-Framework. Refer to [the documentation](http://www.django-rest-framework.org/) to learn more.
+
+MagiCircles provides the following:
+- [MagiSerializer](#magiserializer)
+
+## MagiSerializer
+
+Make your serializers inherit from `MagiSerializer` instead of the regular `ModelSerializer`.
+
+It will:
+- Save the owner when you create the object if `save_owner_on_creation` is set to `True` in Meta
+- Compress the images with TinyPNG before saving them
+
+You may override `post_save` and `pre_save` (and call the super for each) in your serializer to add extra logic.
+
+- `pre_save` takes validated_data
+- `post_save` takes validated_data and the instance created/edited
+
+## ImageField
+
+Use `ImageField` to return the full URLs of the images in your API endpoints:
+
+```python
+from api.serializers import MagiSerializer, ImageField
+
+class CardSerializer(MagiSerializer):
+    image = ImageField(required=True)
+    
+    class Meta:
+        models = models.Card
+        fields = ('id', 'name', 'image')
+```
+
+Your endpoint will return:
+
+```json
+{
+   id: 501,
+   name: "Go Ahead!",
+   image: "http://i.bandori.party/u/c/501Kasumi-Toyama-Pure-LYS54o.png",
+}
+```
+
+## IField
+
+If you followed the recommended way to store choices using integers, you might want to return the human readable values in your endpoints. `IField` can help with that.
+
+```python
+from api.serializers import MagiSerializer, IField
+
+class CardSerializer(MagiSerializer):
+    i_attribute = IField(models.ENGLISH_ATTRIBUTE_DICT)
+    
+    ...
+```
+
+With this, for example, even though the value saved in the database is `1`, the value returned in the json object will be "Smile". Similarly, the value expected when creating/updating will be "Smile" and not `1`.
+
+## Full Example
+
+```python
+from rest_framework import viewsets
+from api import permissions
+from api.serializers import MagiSerializer
+
+class CardSerializer(MagiSerializer):
+    class Meta:
+        model = models.Card
+        save_owner_on_creation = True
+        fields = ('id', 'name', 'japanese_name')
+
+class CardViewSet(viewsets.ModelViewSet):
+    queryset = models.Card.objects.all()
+    serializer_class = CardSerializer
+    permission_classes = (api_permissions.IsStaffOrReadOnly, )
+```
 
 Utils
 ===
@@ -1478,9 +1700,9 @@ Utils
 #### Models upload
 
 ```python
-from magi.utils import uploadToRandom, uploadItem
+from web.utils import uploadToRandom, uploadItem
 
-class Idol(MagiModel):
+class Idol(ItemModel):
     image = models.ImageField(upload_to=uploadItem('i'))
     other_image = models.ImageField(upload_to=uploadToRandom('i'))    
 ```
@@ -1492,14 +1714,14 @@ class Idol(MagiModel):
 
 - From anywhere:
   ```python
-  from magi.utils import getMagiCollections, getMagiCollection
+  from web.utils import getMagiCollections, getMagiCollection
 
   print len(getMagiCollections())
   print getMagiCollection('idol').name
   ```
-- From an instance of a model (`MagiModel`):
+- From an instance of a model (`ItemModel`):
   ```python
-  from magi import models
+  from web import models
   
   user = models.User.objects.get(id=1)
   print user.collection.name
@@ -1508,9 +1730,55 @@ class Idol(MagiModel):
 
 Both are not recommended, and you'll usually find other ways to get the information you need than by accessing the collection object.
 
-## Templates
+todo
+
+#### Other tools
+
+| Name | Description | Parameters | Return value |
+|------|-------------|------------|--------------|
+| AttrDict | Make a python dictionary act like an object (ie you can do `the_dict.something` instead of `the_dict['something']`) | dict | AttrDict object |
+| justReturn | Returns a lambda that takes whatever and returns the same value | value | lambda |
+| globalContext | Default context required by MagiCircles | request | dict |
+| ajaxContext | Lighter than globalContext, with just what's needed for an ajax view | request | dict |
+| emailContext | Lighter than globalContext, with just what's needed for an ajax view | request | dict |
+| cuteFormFieldsForContext | See ⎡[CuteForm](#cuteform)⎦. | cuteform_fields, context, form=None | None |
+| torfc2822 | Date format frequently used in Javascript | date | string |
+| send_email | Send an email | subject, template_name, to=[], context={}, from_email=django_settings.AWS_SES_RETURN_PATH | None |
+| randomString | Generates a random string | length, choice=(string.ascii_letters + string.digits) | string |
 
 todo
+
+
+## Templates
+
+### Tools
+
+The missing utility functions in django templates.
+
+```html
+{% load tools %}
+```
+
+| Name | Description | Parameters | Return value |
+|------|-------------|------------|--------------|
+| addint | Concatenate an integer at the end of a string | string, int | string |
+| anon_format | Same than `format` but parameters that are not named. Equivalent of `'hello {}'.format('Deby')` | string, **kwargs | string |
+| call | Call a function | function, parameter | returns the returned value after the function has been called |
+| callWithContext | Takes a dict that contains a function, calls it with the current context, up to 3 parameters and stores the returned value in `result_of_callwithcontext` in the context | dict, function (= string name key in dict), p1=None, p2=None, p3=None | None |
+| format | Format a string with the given dictionary. Equivalent of: `'hello {name}!'.format(name='Deby')` | string, **kwargs | string |
+| getattribute | Gets an attribute of an object dynamically from a string name | value, arg | the attribute |
+| isList | Is `thing` a list? | thing | bool |
+| isnone | Return True if the value is `None` | value | bool |
+| mod | Is a divisible by b? | a, b | a % b == 0 |
+| modelName | Takes an instance of a django model and returns the string name | thing | string |
+| orcallable | Will check if a variable is callable and call it, or just return it if it's not. Will also translate it if needed. | var_or_callable | value |
+| padzeros | Pad an integer with zeros | value, length | string |
+| split | Returns a list of strings from a string | string, splitter=',') | list |
+| startswith | Check if a string starts with another string | string, string | bool |
+| t | Translated string for terms in `django_translated`, see ⎡[Avoid generating translation terms for terms already available in Django framework](#avoid-generating-translation-terms-for-terms-already-available-in-django-framework)⎦ | string | localized string |
+| times | Create a range from 0 to value | value | list of integers |
+| trans_anon_format | Same than `trans_format` but parameters that are not named. Equivalent of `_('hello {}').format('Deby')` | string, **kwargs | string |
+| trans_format | Same than `format` but with a translated string. Equivalent of `_('hello {name}!').format(name='Deby')` | string, **kwargs | string |
 
 ## Javascript
 
@@ -1519,6 +1787,10 @@ todo
 Recommendations
 ===============
 
+## Save choices values as integer rather than strings
+
+todo
+
 ## Internal cache for foreign keys in models
 
 Use an internal cache for fields in forein keys that are accessed often, to avoid extra `JOIN` in your queries (ie `select_related`) which slow down the queries.
@@ -1526,9 +1798,9 @@ Use an internal cache for fields in forein keys that are accessed often, to avoi
 Let's say every time we display a card, we also display the name and age of the idol featured in the card:
 
 ```python
-from magi.utils import AttrDict
+from web.utils import AttrDict
 
-class Card(MagiModel):
+class Card(ItemModel):
     ...
     idol = models.ForeignKey(Idol, related_name='cards')
     ...
@@ -1569,7 +1841,6 @@ In your views and templates, when you need to use the name or age of the idol in
 print card.cached_idol.name, card.cached_idol.age
 ```
 
-
 ## Calling functions in templates
 
 While Django provides `templatetags`, it is recommended to avoid having too many `load` inside your template, especially when it's likely to be included multiple times (in a forloop for example), because they slow down the generation of the HTML page.
@@ -1604,7 +1875,7 @@ Example:
   ```
 - Do:
   ```python
-  class Idol(MagiModel):
+  class Idol(ItemModel):
       ...
       birthdate = models.DateField(_('Birthdate'))
       
@@ -1627,7 +1898,7 @@ import time
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 from django.conf import settings as django_settings
-from magi.tools import totalDonators
+from web.tools import totalDonators
 from sample import models
 
 def generate_settings():
@@ -1691,7 +1962,7 @@ If it is, add it in or create a file `sample/django_translated.py` like so:
 
 ```python
 from django.utils.translation import ugettext_lazy as _
-from magi.django_translated import t
+from web.django_translated import t
 
 t.update({
     'Japanese': _('Japanese'),
@@ -1747,9 +2018,9 @@ Production Environment
 
 2. Edit your LESS file `sample/static/less/style.less` to use the full paths for dependencies:
    ```css
-   @import "../../../env/lib/python2.7/site-packages/magi/static/less/main.less";
-   @import "../../../env/lib/python2.7/site-packages/magi/static/less/mixins/buttons.less";
-   @import "../../../env/lib/python2.7/site-packages/magi/static/less/mixins/a.less";
+   @import "../../../env/lib/python2.7/site-packages/web/static/less/main.less";
+   @import "../../../env/lib/python2.7/site-packages/web/static/less/mixins/buttons.less";
+   @import "../../../env/lib/python2.7/site-packages/web/static/less/mixins/a.less";
    ```
 
 3. Compile the CSS:
@@ -1804,8 +2075,6 @@ todo
 
 Flaticon
 ===
-
-todo
 
 The icons come from [flaticon.com](http://www.flaticon.com/) and are credited in the about page.
 
