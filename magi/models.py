@@ -29,9 +29,9 @@ def avatar(user, size=200):
             + "?" + urllib.urlencode({'d': default, 's': str(size)}))
 
 ############################################################
-# Add ItemModel properties to User objects
+# Add MagiModel properties to User objects
 
-addItemModelProperties(User, 'user')
+addMagiModelProperties(User, 'user')
 User.image_url = property(avatar)
 User.http_image_url = property(avatar)
 User.owner_id = property(lambda u: u.id)
@@ -40,7 +40,7 @@ User.owner = property(lambda u: u)
 ############################################################
 # Utility Models
 
-class UserImage(ItemModel):
+class UserImage(MagiModel):
     collection_name = 'userimages' # Doesn't exist in default_settings.py
     image = models.ImageField(upload_to=uploadToRandom('user_images/'))
 
@@ -211,7 +211,7 @@ class UserLink(models.Model):
 ############################################################
 # Activity
 
-class Activity(ItemModel):
+class Activity(MagiModel):
     collection_name = 'activity'
 
     creation = models.DateTimeField(auto_now_add=True)
@@ -328,7 +328,7 @@ def updateCachedActivities(user_id):
 ############################################################
 # Notification
 
-class Notification(ItemModel):
+class Notification(MagiModel):
     collection_name = 'notification'
 
     owner = models.ForeignKey(User, related_name='notifications', db_index=True)
@@ -374,7 +374,7 @@ class Notification(ItemModel):
 ############################################################
 # Report
 
-class Report(ItemModel):
+class Report(MagiModel):
     collection_name = 'report'
 
     creation = models.DateTimeField(auto_now_add=True)
@@ -440,7 +440,7 @@ BADGE_IMAGE_TINYPNG_SETTINGS = {
     'height': 300,
 }
 
-class DonationMonth(ItemModel):
+class DonationMonth(MagiModel):
     collection_name = 'donate'
 
     date = models.DateField(default=datetime.datetime.now)
@@ -466,7 +466,7 @@ class DonationMonth(ItemModel):
     def __unicode__(self):
         return unicode(self.date)
 
-class Badge(ItemModel):
+class Badge(MagiModel):
     collection_name = 'badge'
 
     date = models.DateField(default=datetime.datetime.now)

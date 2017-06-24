@@ -93,12 +93,12 @@ def get_collection_plural_name(instance):
     return instance._collection_plural_name
 
 ############################################################
-# Transform an existing model to an ItemModel
+# Transform an existing model to an MagiModel
 # Used for the User model
 
-def addItemModelProperties(modelClass, collection_name):
+def addMagiModelProperties(modelClass, collection_name):
     """
-    Takes an existing Model class and adds the missing properties that would make it a proper ItemModel.
+    Takes an existing Model class and adds the missing properties that would make it a proper MagiModel.
     Useful if you can't write a certain model yourself but you wish to use a MagiCollection for that model.
     """
     modelClass.collection_name = collection_name
@@ -120,9 +120,9 @@ def addItemModelProperties(modelClass, collection_name):
     modelClass.tinypng_settings = {}
 
 ############################################################
-# ItemModel
+# MagiModel
 
-class ItemModel(models.Model):
+class MagiModel(models.Model):
     collection_name = ''
 
     collection = property(get_collection)

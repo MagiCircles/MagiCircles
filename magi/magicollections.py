@@ -145,7 +145,7 @@ class MagiCollection(object):
         - value
         - type
         - optional: icon, image, link, link_text, ajax_link
-        Takes an object that inherits from ItemModel and returns a dictionary of field name -> value
+        Takes an object that inherits from MagiModel and returns a dictionary of field name -> value
         Available types:
         - text
         - title_text (needs 'title')

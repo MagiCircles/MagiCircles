@@ -73,7 +73,7 @@ Similarly, it is not allowed to monetize a website that uses MagiCircles using a
 1.  [Website Settings](#website-settings)
 1. [Collections](#collections)
     1. [Models](#models)
-      	1. [Inherit from ItemModel and provide a name](#inherit-from-itemModel-and-provide-a-name)
+      	1. [Inherit from MagiModel and provide a name](#inherit-from-itemModel-and-provide-a-name)
 	    1. [Have an owner](#have-an-owner)
 	    1. [Override `__unicode__`](#override-unicode-)
     1. [MagiCollection](#magicollection)
@@ -346,9 +346,9 @@ The ⎡[Quick Start](#quick-start)⎦ section above will do all this for you, bu
    from django.contrib.auth.models import User
    from django.utils.translation import ugettext_lazy as _
    from django.db import models
-   from magi.item_model import ItemModel
+   from magi.item_model import MagiModel
 
-   class Account(ItemModel):
+   class Account(MagiModel):
        collection_name = 'account'
        
        owner = models.ForeignKey(User, related_name='accounts')
@@ -691,7 +691,7 @@ It's super easy to create a collection, and they will automatically provide page
 
 Collections are generally composed of:
 
-- The database: a class that inherits from `ItemModel` that corresponds to django model, with some extra helpers.
+- The database: a class that inherits from `MagiModel` that corresponds to django model, with some extra helpers.
   - See ⎡[Models](#models)⎦
 - The MagiCollection: a class that inherits from `MagiCollection` that will contain all the configuration.
   - See ⎡[MagiCollection](#magicollection)⎦
@@ -708,25 +708,25 @@ Models that don't need to be MagiCollections include models used only in pages (
 
 All the django models used in collections MUST:
 
-- [Inherit from ItemModel and provide a name](#inherit-from-itemModel-and-provide-a-name)
+- [Inherit from MagiModel and provide a name](#inherit-from-itemModel-and-provide-a-name)
 - [Have an owner](#have-an-owner)
 - [Override `__unicode__`](#override-unicode-)
 
-#### Inherit from ItemModel and provide a name
+#### Inherit from MagiModel and provide a name
 
 ```python
-from magi.item_model import ItemModel
+from magi.item_model import MagiModel
 
-class Idol(ItemModel):
+class Idol(MagiModel):
     collection_name = 'idol'
     ...
 ```
   
 `collection_name` is used to get the MagiCollection associated with this item. While multiple MagiCollections can use the same model class, the item itself will only be aware of one associated MagiCollection.
 
-Thanks to `ItemModel`, you'll have access to some properties on all your objects, which are required, but might also be useful for you:
+Thanks to `MagiModel`, you'll have access to some properties on all your objects, which are required, but might also be useful for you:
 
-- All `ItemModel` provide the following properties (not meant to be overriden):
+- All `MagiModel` provide the following properties (not meant to be overriden):
 
 | Key | Value | Example |
 |-----|-------|---------|
@@ -753,9 +753,9 @@ If you have other images in your model, you might want to add `fieldname_url` an
 
 ```python
 from magi.utils import uploadItem
-from magi.item_model import ItemModel, get_image_url, get_http_image_url
+from magi.item_model import MagiModel, get_image_url, get_http_image_url
 
-class Idol(ItemModel):
+class Idol(MagiModel):
     background = models.ImageField(upload_to=uploadItem('i'), null=True, blank=True)
 
     @property
@@ -770,16 +770,16 @@ class Idol(ItemModel):
 #### Have an owner
 
 ```python
-class Idol(ItemModel):
+class Idol(MagiModel):
     owner = models.ForeignKey(User, related_name='idols')
 ```
 
-Because it's very common to associate an item to an `account` and not directly to an `owner`, since `account` already has an owner, you may make your model class inherit from `AccountAsOwnerItemModel` instead of `ItemModel`:
+Because it's very common to associate an item to an `account` and not directly to an `owner`, since `account` already has an owner, you may make your model class inherit from `AccountAsOwnerMagiModel` instead of `MagiModel`:
 
 ```python
-from magi.item_model import AccountAsOwnerItemModel
+from magi.item_model import AccountAsOwnerMagiModel
 
-class OwnedCard(AccountAsOwnerItemModel):
+class OwnedCard(AccountAsOwnerMagiModel):
     """
     Will automatically provide a cache for the account and provide `owner` and `owner_id` properties.
     """
@@ -789,10 +789,10 @@ class OwnedCard(AccountAsOwnerItemModel):
 If your model doesn't have a direct owner or account, you may fake it by providing properties for `owner` and `owner_id`:
 
 ```python
-class Book(ItemModel):
+class Book(MagiModel):
     owner = models.ForeignKey(User, related_name='books')
 
-class Chapter(ItemModel):
+class Chapter(MagiModel):
     book = models.ForeignKey(Book, related_name='books')
 
     @property
@@ -820,7 +820,7 @@ In our example above, book would be retrieved when the propety `owner` is access
 Django models already have a `__unicode__` method, but since MagiCircles uses it extensively, it's highly recommended to override it and not rely on its default value.
 
 ```python
-class Card(ItemModel):
+class Card(MagiModel):
     name = models.CharField(max_length=100)
 
     def __unicode__(self):
@@ -1157,9 +1157,9 @@ See also: [methods available in all views](#all-views).
 To make a collection collectible, you need to provide a [model](#model). The model should always have either an `owner` or an `account` foreign key, allowing users to collect them.
 
 ```python
-from magi import ItemModel
+from magi import MagiModel
 
-class CollectibleCard(AccountAsOwnerItemModel):
+class CollectibleCard(AccountAsOwnerMagiModel):
     collection_name = 'collectiblecards'
 
     account = models.ForeignKey(Account, related_name='collectedcards')
@@ -1247,7 +1247,7 @@ The type will be passed to the formClass when it's initialized, which allows you
     - You may override this function, but you should always call its `super`.
 - Parameters
     - `item, to_dict=True, only_fields=None, in_list=False, icons={}, images={}`
-    - `item` is the item object, an instance of an `ItemModel`
+    - `item` is the item object, an instance of an `MagiModel`
     - `to_dict` will return a dict by default, otherwise a list or pair. Useful if you plan to change the order or insert items at certain positions.
     - `only_fields` if specified will ignore any other field
     - `icons` is a dictionary of the icons associated with the fields
@@ -1480,7 +1480,7 @@ Utils
 ```python
 from magi.utils import uploadToRandom, uploadItem
 
-class Idol(ItemModel):
+class Idol(MagiModel):
     image = models.ImageField(upload_to=uploadItem('i'))
     other_image = models.ImageField(upload_to=uploadToRandom('i'))    
 ```
@@ -1497,7 +1497,7 @@ class Idol(ItemModel):
   print len(getMagiCollections())
   print getMagiCollection('idol').name
   ```
-- From an instance of a model (`ItemModel`):
+- From an instance of a model (`MagiModel`):
   ```python
   from magi import models
   
@@ -1528,7 +1528,7 @@ Let's say every time we display a card, we also display the name and age of the 
 ```python
 from magi.utils import AttrDict
 
-class Card(ItemModel):
+class Card(MagiModel):
     ...
     idol = models.ForeignKey(Idol, related_name='cards')
     ...
@@ -1604,7 +1604,7 @@ Example:
   ```
 - Do:
   ```python
-  class Idol(ItemModel):
+  class Idol(MagiModel):
       ...
       birthdate = models.DateField(_('Birthdate'))
       
