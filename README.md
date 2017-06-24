@@ -243,7 +243,7 @@ The ⎡[Quick Start](#quick-start)⎦ section above will do all this for you, bu
      'bootstrap_form_horizontal',
      'rest_framework',
      'storages',
-     'web',
+     'magi',
    )
 
    MIDDLEWARE_CLASSES = (
@@ -251,8 +251,8 @@ The ⎡[Quick Start](#quick-start)⎦ section above will do all this for you, bu
        'django.middleware.locale.LocaleMiddleware',
        'corsheaders.middleware.CorsMiddleware',
        'django.middleware.common.CommonMiddleware',
-       'web.middleware.languageFromPreferences.LanguageFromPreferenceMiddleWare',
-       'web.middleware.httpredirect.HttpRedirectMiddleware',
+       'magi.middleware.languageFromPreferences.LanguageFromPreferenceMiddleWare',
+       'magi.middleware.httpredirect.HttpRedirectMiddleware',
    )
    
    FAVORITE_CHARACTERS = []
@@ -262,7 +262,7 @@ The ⎡[Quick Start](#quick-start)⎦ section above will do all this for you, bu
    MIN_WIDTH = 300
    MIN_HEIGHT = 300
 
-   AUTHENTICATION_BACKENDS = ('web.backends.AuthenticationBackend',)
+   AUTHENTICATION_BACKENDS = ('magi.backends.AuthenticationBackend',)
 
    DEBUG_PORT = 8000
 
@@ -280,7 +280,7 @@ The ⎡[Quick Start](#quick-start)⎦ section above will do all this for you, bu
    LANGUAGE_CODE = 'en'
 
    LOCALE_PATHS = [
-     os.path.join(BASE_DIR, 'web/locale'),
+     os.path.join(BASE_DIR, 'magi/locale'),
    ]
 
    STATIC_UPLOADED_FILES_PREFIX = None
@@ -309,13 +309,13 @@ The ⎡[Quick Start](#quick-start)⎦ section above will do all this for you, bu
    LOCALE_PATHS.append(os.path.join(BASE_DIR, SITE, 'locale'))
 
    if STATIC_UPLOADED_FILES_PREFIX is None:
-       STATIC_UPLOADED_FILES_PREFIX = 'web/static/uploaded/' if DEBUG else 'u/'
+       STATIC_UPLOADED_FILES_PREFIX = 'magi/static/uploaded/' if DEBUG else 'u/'
    ```
 
 8. Include the URLs in `sample_project/urls.py`:
    ```python
    urlpatterns = patterns('',
-     url(r'^', include('web.urls')),
+     url(r'^', include('magi.urls')),
      ...
    )
    ```
@@ -323,7 +323,7 @@ The ⎡[Quick Start](#quick-start)⎦ section above will do all this for you, bu
 9. Create the file `sample/settings.py` that will describe how you want your website to look like:
    ```python
    from django.conf import settings as django_settings
-   from web.default_settings import DEFAULT_ENABLED_COLLECTIONS, DEFAULT_ENABLED_PAGES
+   from magi.default_settings import DEFAULT_ENABLED_COLLECTIONS, DEFAULT_ENABLED_PAGES
    from sample import models, forms
 
    SITE_NAME = 'Sample Website'
@@ -346,7 +346,7 @@ The ⎡[Quick Start](#quick-start)⎦ section above will do all this for you, bu
    from django.contrib.auth.models import User
    from django.utils.translation import ugettext_lazy as _
    from django.db import models
-   from web.item_model import ItemModel
+   from magi.item_model import ItemModel
 
    class Account(ItemModel):
        collection_name = 'account'
@@ -500,7 +500,7 @@ git push
    ```
 
    ```python
-   from web import models
+   from magi import models
    username='YOURUSERNAME'
 
    # Set as super user
@@ -642,11 +642,11 @@ Optional settings:
 | FAVORITE_CHARACTER_TO_URL | A function that will return the URL to get more info about that character. This function takes a link object with value (full name), raw_value (id), image | lambda _: '#' |
 | GAME_DESCRIPTION | A long description of the game. Used on the about game page. | None (just shows game image) |
 | GAME_URL | A link to the official homepage of the game. Used on the about game page. | None (just shows game image) |
-| GET_GLOBAL_CONTEXT | Function that takes a request and return a context, must call `globalContext` in `web.utils` | None |
+| GET_GLOBAL_CONTEXT | Function that takes a request and return a context, must call `globalContext` in `magi.utils` | None |
 | GITHUB_REPOSITORY | Tuple (Username, repository) for the sources of this website, used in about page | ('SchoolIdolTomodachi', 'MagiCircles') |
 | GOOGLE_ANALYTICS | Tracking number for Google Analytics | 'UA-67529921-1' |
 | HASHTAGS | List of hashtags when sharing on Twitter + used as keywords for the page (without `#`) | [] |
-| JAVASCRIPT_TRANSLATED_TERMS | Terms used in `gettext` function in Javascript, must contain `DEFAULT_JAVASCRIPT_TRANSLATED_TERMS` in `web.default_settings` | None |
+| JAVASCRIPT_TRANSLATED_TERMS | Terms used in `gettext` function in Javascript, must contain `DEFAULT_JAVASCRIPT_TRANSLATED_TERMS` in `magi.default_settings` | None |
 | LATEST NEWS | A list of dictionaries that should contain image, title, url and may contain hide_title, used if you keep the default index page to show a carousel. Recommended to get this from [generated Settings](#generated-settings). | None |
 | LAUNCH_DATE | If you want to tease your community before officially opening the website, or just let your staff team test it, you can set a launch date. It will make all the pages and collections only available to staff and make the homepage a countdown before the website opens. Example: `import datetime, pytz datetime.datetime(2017, 04, 9, 12, 0, 0, tzinfo=pytz.UTC)` | None |
 | NAVBAR_ORDERING | List of collection or page names in the order you would like them to appear in the nav bar. Missing collection or page name in this list will just appear at the end.  | None (order not guaranteed) |
@@ -664,13 +664,13 @@ Optional settings:
 | SITE_LONG_DESCRIPTION | A long description of what the website does. Used on the about page. May be a callable that doesn't take any argument | A long text |
 | SITE_NAV_LOGO | Path of the image displayed instead of the website name in the nav bar | None |
 | STATIC_FILES_VERSION | A number or string that you can change when you update the css or js file of your project to force update the cache of your users in production | '1' |
-| TOTAL_DONATORS | Total number of donators (you may use web.tools.totalDonators to save this value in the [generated settings](#generated-settings)) | 2 |
+| TOTAL_DONATORS | Total number of donators (you may use magi.tools.totalDonators to save this value in the [generated settings](#generated-settings)) | 2 |
 | TRANSLATION_HELP_URL | URL with guide or tools to allow people to contribute to the website's translation | [link](https://github.com/SchoolIdolTomodachi/MagiCircles/wiki/Translate-the-website) |
 | TWITTER_HANDLE | Official Twitter account of this website | "schoolidolu" |
 | USER_COLORS | List of tuples (raw value, full localizable color name, CSS elements name (`btn-xx`, `panel-xx`, ...), hex code of the color) | None |
 | WIKI | Tuple (Username, repository) for the GitHub wiki pages to display the help pages | Value of GITHUB_REPOSITORY |
 
-- Full details of the configuration of the settings in: `web/settings.py` and `web/default_settings.py`
+- Full details of the configuration of the settings in: `magi/settings.py` and `magi/default_settings.py`
 
 Collections
 ===
@@ -715,7 +715,7 @@ All the django models used in collections MUST:
 #### Inherit from ItemModel and provide a name
 
 ```python
-from web.item_model import ItemModel
+from magi.item_model import ItemModel
 
 class Idol(ItemModel):
     collection_name = 'idol'
@@ -752,8 +752,8 @@ Thanks to `ItemModel`, you'll have access to some properties on all your objects
 If you have other images in your model, you might want to add `fieldname_url` and `http_fieldname_url` to get similar tools for all your images:
 
 ```python
-from web.utils import uploadItem
-from web.item_model import ItemModel, get_image_url, get_http_image_url
+from magi.utils import uploadItem
+from magi.item_model import ItemModel, get_image_url, get_http_image_url
 
 class Idol(ItemModel):
     background = models.ImageField(upload_to=uploadItem('i'), null=True, blank=True)
@@ -777,7 +777,7 @@ class Idol(ItemModel):
 Because it's very common to associate an item to an `account` and not directly to an `owner`, since `account` already has an owner, you may make your model class inherit from `AccountAsOwnerItemModel` instead of `ItemModel`:
 
 ```python
-from web.item_model import AccountAsOwnerItemModel
+from magi.item_model import AccountAsOwnerItemModel
 
 class OwnedCard(AccountAsOwnerItemModel):
     """
@@ -852,7 +852,7 @@ def __unicode__(self):
 Collections available should be configured in `sample/magicollections.py`. It's a class that inherits from `MagiCollection`.
 
 ```python
-from web.magicollections import MagiCollection
+from magi.magicollections import MagiCollection
 from sample import models
 
 class IdolCollection(MagiCollection):
@@ -939,7 +939,7 @@ For each view, you may also override the fields and methods. When overriding met
 ```python
 from django.core.exceptions import PermissionDenied
 from django.utils.translation import ugettext_lazy as _
-from web.magicollections import MagiCollection
+from magi.magicollections import MagiCollection
 
 class IdolCollection(MagiCollection):
     title = _('Idol')
@@ -956,7 +956,7 @@ class IdolCollection(MagiCollection):
 If you need some logic behind settings that are not methods you can use `@property`:
 
 ```python
-from web.magicollections import MagiCollection
+from magi.magicollections import MagiCollection
 
 class IdolCollection(MagiCollection):
     class ListView(MagiCollection.ListView):
@@ -1157,7 +1157,7 @@ See also: [methods available in all views](#all-views).
 To make a collection collectible, you need to provide a [model](#model). The model should always have either an `owner` or an `account` foreign key, allowing users to collect them.
 
 ```python
-from web import ItemModel
+from magi import ItemModel
 
 class CollectibleCard(AccountAsOwnerItemModel):
     collection_name = 'collectiblecards'
@@ -1171,7 +1171,7 @@ class CollectibleCard(AccountAsOwnerItemModel):
 Then specify this model in the collection you want to make collectible with that model:
 
 ```python
-from web.magicollections import MagiCollection
+from magi.magicollections import MagiCollection
 from sample import models
 
 class CardCollection(MagiCollection):
@@ -1181,7 +1181,7 @@ class CardCollection(MagiCollection):
 Customize the MagiCollection of the collectible itself:
 
 ```python
-from web.magicollections import MagiCollection
+from magi.magicollections import MagiCollection
 from sample import models
 
 class CardCollection(MagiCollection):
@@ -1319,10 +1319,10 @@ The function must be in `sample/views.py`. The function must take a request and 
 All your pages must contain the global context, which you can override to add your own global context settings. It's recommended to use the same globalContext function in your views than the one specified in your [website settings](#website-settings).
 
 ```python
-from web.utils import globalContext as web_globalContext
+from magi.utils import globalContext as magi_globalContext
 
 def globalContext(request):
-    context = web_globalContext(request)
+    context = magi_globalContext(request)
     context['something'] = 'something'
     return context
 
@@ -1380,8 +1380,8 @@ Ajax:
 | /ajax/reportwhatwillbedeleted/{report}/ | Yes | A popup shown when a staff member tries to delete a reported item to warn them of all the other items that will be cascadely deleted. |
 | /ajax/successedit/ | Yes | A simple page to use on successful edit when ajax is disabled for an item view. |
 
-- Full details of the configuration of each page in: `web/default_settings.py`
-- Full details of the implementation of each page in `web/views.py`
+- Full details of the configuration of each page in: `magi/default_settings.py`
+- Full details of the implementation of each page in `magi/views.py`
 
 ## Default collections
 
@@ -1393,7 +1393,7 @@ Ajax:
 | notification | NotificationCollection | Notification | <ul><li>Only ListView is enabled.</li><li>Available as a small popup from the nav bar or as a separate page.</li><li>Notifications are generated automatically when something happens that might interest the user.</li></ul> |
 | report | ReportCollection | Report | <ul><li>Uses collection types, with types corresponding to reportable collections.</li><li>People who report can see/edit their own reports, but only staff can list all the reports and take actions.</ul> |
 
-- Default collections are in `web/magicollections.py`
+- Default collections are in `magi/magicollections.py`
 
 ### Collections disabled by default
 
@@ -1418,7 +1418,7 @@ ENABLED_PAGES['help']['enabled'] = False
 
 Disable a collection in `sample/magicollections.py`:
 ```python
-from web.magicollections import ReportCollection as _ReportCollection
+from magi.magicollections import ReportCollection as _ReportCollection
 
 class ReportCollection(_ReportCollection):
     enabled = False
@@ -1426,7 +1426,7 @@ class ReportCollection(_ReportCollection):
 
 Change something in an existing collection:
 ```python
-from web.magicollections import AccountCollection as _AccountCollection
+from magi.magicollections import AccountCollection as _AccountCollection
 
 class AccountCollection(_AccountCollection):
     icon = 'heart'
@@ -1449,7 +1449,7 @@ By default, your website will already contain 2 lists: `you` and `more`.
 You may add more lists in your settings:
 
 ```python
-from web.default_settings import DEFAULT_ENABLED_NAVBAR_LISTS
+from magi.default_settings import DEFAULT_ENABLED_NAVBAR_LISTS
 
 ENABLED_NAVBAR_LISTS = DEFAULT_ENABLED_NAVBAR_LISTS
 ENABLED_NAVBAR_LISTS['stuff'] = { ... }
@@ -1478,7 +1478,7 @@ Utils
 #### Models upload
 
 ```python
-from web.utils import uploadToRandom, uploadItem
+from magi.utils import uploadToRandom, uploadItem
 
 class Idol(ItemModel):
     image = models.ImageField(upload_to=uploadItem('i'))
@@ -1492,14 +1492,14 @@ class Idol(ItemModel):
 
 - From anywhere:
   ```python
-  from web.utils import getMagiCollections, getMagiCollection
+  from magi.utils import getMagiCollections, getMagiCollection
 
   print len(getMagiCollections())
   print getMagiCollection('idol').name
   ```
 - From an instance of a model (`ItemModel`):
   ```python
-  from web import models
+  from magi import models
   
   user = models.User.objects.get(id=1)
   print user.collection.name
@@ -1526,7 +1526,7 @@ Use an internal cache for fields in forein keys that are accessed often, to avoi
 Let's say every time we display a card, we also display the name and age of the idol featured in the card:
 
 ```python
-from web.utils import AttrDict
+from magi.utils import AttrDict
 
 class Card(ItemModel):
     ...
@@ -1627,7 +1627,7 @@ import time
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 from django.conf import settings as django_settings
-from web.tools import totalDonators
+from magi.tools import totalDonators
 from sample import models
 
 def generate_settings():
@@ -1691,7 +1691,7 @@ If it is, add it in or create a file `sample/django_translated.py` like so:
 
 ```python
 from django.utils.translation import ugettext_lazy as _
-from web.django_translated import t
+from magi.django_translated import t
 
 t.update({
     'Japanese': _('Japanese'),
@@ -1747,9 +1747,9 @@ Production Environment
 
 2. Edit your LESS file `sample/static/less/style.less` to use the full paths for dependencies:
    ```css
-   @import "../../../env/lib/python2.7/site-packages/web/static/less/main.less";
-   @import "../../../env/lib/python2.7/site-packages/web/static/less/mixins/buttons.less";
-   @import "../../../env/lib/python2.7/site-packages/web/static/less/mixins/a.less";
+   @import "../../../env/lib/python2.7/site-packages/magi/static/less/main.less";
+   @import "../../../env/lib/python2.7/site-packages/magi/static/less/mixins/buttons.less";
+   @import "../../../env/lib/python2.7/site-packages/magi/static/less/mixins/a.less";
    ```
 
 3. Compile the CSS:

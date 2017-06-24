@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from django.utils.translation import ugettext_lazy as _
 from django.db import models
-from web.item_model import ItemModel
+from magi.item_model import ItemModel
 
 class Account(ItemModel):
     collection_name = 'account'
