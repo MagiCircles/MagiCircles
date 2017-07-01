@@ -1745,6 +1745,10 @@ todo
 | torfc2822 | Date format frequently used in Javascript | date | string |
 | send_email | Send an email | subject, template_name, to=[], context={}, from_email=django_settings.AWS_SES_RETURN_PATH | None |
 | randomString | Generates a random string | length, choice=(string.ascii_letters + string.digits) | string |
+| ordinalNumber | Returns 1st, 2nd, 3rd, 4th, etc. Not localized. | n | string |
+| tourldash | Takes any string and returns a URL-friendly string. Example: "Hi! You're awesome." becomes "Hi-You-re-awesome" | string | string
+| redirectToProfile | Raises an exception that will make the current request redirect to the profile of the authenticated user. If specified, will redirect to a specific account anchor within the profile. | request, account=None | None (raises an exception) |
+| redirectWhenNotAuthenticated | Will check if the current user is authenticated, and if not, will re
 
 todo
 
