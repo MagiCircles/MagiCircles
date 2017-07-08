@@ -1730,28 +1730,90 @@ class Idol(ItemModel):
 
 Both are not recommended, and you'll usually find other ways to get the information you need than by accessing the collection object.
 
-todo
+#### Optimize images with TinyPNG
+
+If you use the recommended MagiForm classes, you don't need to worry about optimizing images yourself. Outside of this context, you may use `shrinkImageFromData`:
+
+```python
+from web.utils import shrinkImageFromData
+
+f = open('/tmp/image.png', 'r+')
+image = shrinkImageFromData(f.read(), 'image.png')
+```
+
+You may also provide some settings:
+
+```python
+image = shrinkImageFromData(f.read(), 'image.png', settings={
+    'resize': 'cover',
+    'width': 200,
+    'height': 200,
+})
+```
+
+Settings can be either:
+- `{ 'resize': 'cover' }`, with default values `{ 'width': 300, 'height': 300 }`
+- `{ 'resize': 'fit' }`, with default values `{ 'max_width': MAX_WIDTH, 'max_height': MAX_HEIGHT, 'min_width': MIN_WIDTH, 'min_height': MIN_HEIGHT }` (default values in your django settings)
+
+See [TinyPNG's documentation](https://tinypng.com/developers/reference) for more details about how images get resized.
+
+#### Store CSV values in models fields
+
+Activities need to store a list of tags associated with each. While a semantically correct database-oriented approach would be to have a tags table that associate an activity with a tag, it is unfortunately a very slow method. For this reason, activities simply contain a textfield, and provide methods to save new tags and retrieve a tag as a list.
+
+```python
+from web.utils import join_data, split_data
+
+class Activity(ItemModel):
+    collection_name = 'activity'
+    ...
+
+    tags_string = models.TextField(blank=True, null=True)
+
+    @property
+    def tags(self):
+        return split_data(self.tags_string)
+
+    def add_tags(self, new_tags):
+        self.tags_string = join_data(*(self.tags + [tag for tag in new_tags if tag not in tags]))
+
+    def remove_tags(self, tags_to_remove):
+        self.tags_string = join_data(*[tag for tag in self.tags if tag not in tags_to_remove])
+
+    def save_tags(self, tags):
+        """
+        Will completely replace any existing list of tags.
+        """
+        self.tags_string = join_data(*tags)
+```
+
+You may use the following methods to get something similar for your own fields:
+
+| Name | Description | Parameters | Return value |
+|------|-------------|------------|--------------|
+| split_data | Takes a unicode CSV string and return a list of strings. | data | list |
+| join_data | Takes a list of unicode strings and return a CSV string. | *args | string |
+
 
 #### Other tools
 
 | Name | Description | Parameters | Return value |
 |------|-------------|------------|--------------|
 | AttrDict | Make a python dictionary act like an object (ie you can do `the_dict.something` instead of `the_dict['something']`) | dict | AttrDict object |
-| justReturn | Returns a lambda that takes whatever and returns the same value | value | lambda |
-| globalContext | Default context required by MagiCircles | request | dict |
 | ajaxContext | Lighter than globalContext, with just what's needed for an ajax view | request | dict |
-| emailContext | Lighter than globalContext, with just what's needed for an ajax view | request | dict |
 | cuteFormFieldsForContext | See ⎡[CuteForm](#cuteform)⎦. | cuteform_fields, context, form=None | None |
-| torfc2822 | Date format frequently used in Javascript | date | string |
-| send_email | Send an email | subject, template_name, to=[], context={}, from_email=django_settings.AWS_SES_RETURN_PATH | None |
-| randomString | Generates a random string | length, choice=(string.ascii_letters + string.digits) | string |
+| dumpModel | Take an instance of a model and transform it into a dictonary with all its info (easily flattenable). Allows to delete an instance without losing data (used by Report collection) | instance | dictionary |
+| emailContext | Lighter than globalContext, with just what's needed for an ajax view | request | dict |
+| globalContext | Default context required by MagiCircles | request | dict |
+| justReturn | Returns a lambda that takes whatever and returns the same value | value | lambda |
 | ordinalNumber | Returns 1st, 2nd, 3rd, 4th, etc. Not localized. | n | string |
-| tourldash | Takes any string and returns a URL-friendly string. Example: "Hi! You're awesome." becomes "Hi-You-re-awesome" | string | string
+| randomString | Generates a random string | length, choice=(string.ascii_letters + string.digits) | string |
 | redirectToProfile | Raises an exception that will make the current request redirect to the profile of the authenticated user. If specified, will redirect to a specific account anchor within the profile. | request, account=None | None (raises an exception) |
-| redirectWhenNotAuthenticated | Will check if the current user is authenticated, and if not, will re
-
-todo
-
+| redirectWhenNotAuthenticated | Will check if the current user is authenticated, and if not, will redirect to the signup page with `next` set as the `current_url` | request, context, next_title=None | None (raises an exception) |
+| send_email | Send an email | subject, template_name, to=[], context={}, from_email=django_settings.AWS_SES_RETURN_PATH | None |
+| setSubField | Mostly used when overriding `to_fields`. See ⎡[to_fields method](#to-field-method)⎦. | fields, field_name, value, key='icon' | None (updates fields in place) |
+| torfc2822 | Date format frequently used in Javascript | date | string |
+| tourldash | Takes any string and returns a URL-friendly string. Example: "Hi! You're awesome." becomes "Hi-You-re-awesome" | string | string
 
 ## Templates
 
@@ -1786,7 +1848,124 @@ The missing utility functions in django templates.
 
 ## Javascript
 
-todo
+All the following functions are available in all pages. You can call them from any javascript file, as long as it's included after the inclusion of all the main Javascript files.
+
+| Name | Description | Parameters | Return value |
+|------|-------------|------------|--------------|
+| disableButton | Make any button not clickable. Can be useful to avoid allowing someone to click a button again after it's been clicked. See also ⎡[Make a form only submittable once](#make-a-form-only-submittable-once)⎦. | button | None |
+| gettext | Get the translation of a term. In python, you need to provide this translation in `JAVASCRIPT_TRANSLATED_TERMS` MagiCircles settings. | term | translated string |
+| freeModal | Show a bootstrap modal. <ul><li>Use true for modal_size to not change the size</li><li>Use 0 for buttons to remove all buttons</li><li>modal_size can be `md`, `lg` or `sm`</li></ul> | title, body, buttons=(Go button that closes the modal), modal_size='lg' | None |
+| confirmModal | Show a modal to confirm a critical action. It takes a callback that you can use to perform the action. | onConfirmed, onCanceled=undefined, title=gettext('Confirm'), body=gettext('You can\'t cancel this action afterwards.') | None |
+| genericAjaxError | You may use this function to handle errors in your ajax calls. It will simply display the error in an alert | xhr, ajaxOptions, thrownError | None |
+
+#### HTML elements with automatic Javascript behavior
+
+There are some classes you can add to your HTML elements that will automatically make them do something for you. It allows you to avoid loading a Javascript file just to run something simple and common.
+
+###### Load an Ajax page in a modal
+
+- Add an attribute `data-ajax-url` to any button or link.
+
+```html
+<a href="/something/" data-ajax-url="/ajax/something/"></a>
+```
+
+It will open the ajax version of the page in a bootstrap modal instead of opening a new page. Users may right click on the link to open the original link in a new tab if they want. It will also open the page if they disable Javascript.
+
+While the ajax page is loading, the button or link clicked transforms into a loader.
+
+In case of an error, the default function `genericAjaxError` will be called.
+
+When the page is loaded within the modal, the browser URL changes without reloading the page. This allows users to easily bookmark or share a specific page.
+
+If the user uses the back button of their browser, the modal will be closed, behaving like it was loaded as a new page, which is the behavior users expect.
+
+You may configure this further using the following attributes:
+- `data-ajax-show-button`: If set to `true`, will show the default ajax button "Go" which simply closes the modal on click. Otherwise, no button will be visible and the user may close the modal using the top right cross, by clicking outside of the modal or by using the back button in browser
+- `data-ajax-title`: By default, the title of the modal will be the inner HTML of the clicked button or link. You may specify a different title here.
+- `data-modal-size`: Specify the size of the modal. Choices are `md`, `lg` and `sm`. Default size is `lg`.
+- `data-ajax-handle-form`: If your loaded ajax page contains forms, you may set this to `true` to make the form response appear in this modal as well. Make sure the page loaded in response to this form is also in ajax (doesn't contain the page's boilerplate).
+    -  If you need the form response to be displayed in a modal of a different size, you may provide `data-ajax-modal-after-form-size`
+    -  It will understand that you got an error if your return form response contains a `form` with `.error-list`, and handle the form within the modal again (without changing the size)
+
+###### Smooth scroll to an anchor
+
+- Add a class `.page-scroll` to any link to an anchor within the same page
+
+![](http://i.imgur.com/jKxMLrX.gif)
+
+###### Make a form only submittable once
+
+- Add a class `.form-loader` to any button
+
+It will show a loader inside the button when you click it, and make it invalid.
+It should only be used for forms handled server side that expect a page reload (ie will not work if you use Ajax to submit the form)
+
+###### Hide staff-only buttons
+
+- Add a class `.staff-only` to any HTML element
+
+It's important to hide staff only buttons by default, allowing staff members to easily take screenshots of our website similar to what everybody else can see, and share them.
+
+A button in the bottom left corner of the website allows staff members to show all the staff only buttons.
+
+###### Countdowns
+
+- Add a class `.countdown` and an attribute `data-date` to any HTML element
+
+The inner HTML will transform into a countdown before the date specified in `data-date`. The date must be specified in RFC2822 format. You may use the utility function `torfc2822` in python. See ⎡[Utils - Python - Other tools](#other-tools)⎦.
+
+It requires the [countdown javascript library](http://rendro.github.io/countdown/), which will be loaded asynchronosly only if at least one `.countdown` element is present in the page.
+
+You may provide `data-format` to specify a sentence. For example: `data="Only {time} left! Play now!"` will display `Only 1 day 2 hours 5 minutes 36 seconds left! Play now!`. The `{time}` sentence will be translated, so it's recommended to make sure the sentence you provide is also translated.
+
+###### Timezones
+
+- Add a class `.timezone` to an HTMl element, with an inner element with a class `.datetime` should 
+
+The date in the `.datetime` element must be specified in RFC2822 format. You may use the utility function `torfc2822` in python. See ⎡[Utils - Python - Other tools](#other-tools)⎦.
+
+It will display the date in a human readable, translated format in the timezone of the current user.
+
+You may specify a different timezone using `data-to-timezone`. Example: `Asia/Tokyo`
+
+You may also display how long ago that date was or is going to be in a human readable format by setting `data-timeago` to `true`. Example: `less than a minute ago`, `9 months ago`, ...
+
+In that case, the user may put their mouse over this element to see the date in their local timezone in a booltstrap tooltip.
+
+It requires the [timeago javascript library](http://timeago.yarp.com/), which will be loaded asynchronosly only if at least one `.timezone` element with `data-timeago` set to `true` is present in the page.
+
+###### Markdown
+
+- Add a class `.to-markdown` to any HTML element
+
+The content will be converted in HTML using the markdown format. It will also automatically transform links to become clickable. HTML is not considered part of the markdown format and will be escaped.
+
+It requires the [marked javascript library](https://github.com/chjj/marked), which will be loaded asynchronosly only if at least one `.to-markdown` element is present in the page.
+
+#### Commons
+
+A bunch of "common" functions are called together when:
+- on load of any page
+- when a view is loaded in a modal
+- when a new pagination page is loaded
+
+You may call `loadCommons` again if needed, for example if you load new HTMl within the page. You may also call these functions individually.
+
+Functions called (in this order):
+
+| Name | Description |
+|------|-------------|
+| loadToolTips | Load Bootstrap tooltips. [Learn more](http://getbootstrap.com/javascript/#tooltips). |
+| loadPopovers | Load Bootstrap popovers. [Learn more](http://getbootstrap.com/javascript/#popovers) |
+| formloaders | See ⎡[Make a form only submittable once](#make-a-form-only-submittable-once)⎦. |
+| dateInputSupport | Check if the current browser has support for HTML5 date input and if not (= just a text input), will show a help text with the date format. |
+| hideStaffButtons | See ⎡[Hide staff-only buttons](#hide-staff-only-buttons)⎦. |
+| ajaxModals | See ⎡[Load an Ajax page in a modal](#load-an-ajax-page-in-a-modal)⎦.
+| loadCountdowns | See ⎡[Countdowns](#countdowns)⎦ |
+| loadTimezones | See ⎡[Timezones](#timezones)⎦ |
+| loadMarkdown | See ⎡[Markdown](#markdown)⎦ |
+| reloadDisqus | Will force reload Disqus script that displays the total number of comments in the link to the comment section of a page. |
 
 Recommendations
 ===============
