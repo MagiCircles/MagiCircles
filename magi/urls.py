@@ -8,7 +8,7 @@ from django.utils import timezone
 #from magi import bouncy # unused, only to force load the feedback process
 from magi import views_collections, magicollections
 from magi import views as magi_views
-from magi.settings import RAW_CONTEXT, ENABLED_PAGES, ENABLED_NAVBAR_LISTS, SITE_NAME, EMAIL_IMAGE, GAME_NAME, SITE_DESCRIPTION, SITE_STATIC_URL, SITE_URL, GITHUB_REPOSITORY, SITE_LOGO, SITE_NAV_LOGO, JAVASCRIPT_TRANSLATED_TERMS, ACCOUNT_MODEL, STATIC_UPLOADED_FILES_PREFIX, COLOR, SITE_IMAGE, TRANSLATION_HELP_URL, DISQUS_SHORTNAME, HASHTAGS, TWITTER_HANDLE, EMPTY_IMAGE, GOOGLE_ANALYTICS, STATIC_FILES_VERSION, PROFILE_TABS, LAUNCH_DATE, PRELAUNCH_ENABLED_PAGES, NAVBAR_ORDERING
+from magi.settings import RAW_CONTEXT, ENABLED_PAGES, ENABLED_NAVBAR_LISTS, SITE_NAME, EMAIL_IMAGE, GAME_NAME, SITE_DESCRIPTION, SITE_STATIC_URL, SITE_URL, GITHUB_REPOSITORY, SITE_LOGO, SITE_NAV_LOGO, JAVASCRIPT_TRANSLATED_TERMS, ACCOUNT_MODEL, STATIC_UPLOADED_FILES_PREFIX, COLOR, SITE_IMAGE, TRANSLATION_HELP_URL, DISQUS_SHORTNAME, HASHTAGS, TWITTER_HANDLE, EMPTY_IMAGE, GOOGLE_ANALYTICS, STATIC_FILES_VERSION, PROFILE_TABS, LAUNCH_DATE, PRELAUNCH_ENABLED_PAGES, NAVBAR_ORDERING, ACCOUNT_MODEL
 from magi.utils import redirectWhenNotAuthenticated
 
 views_module = __import__(settings.SITE + '.views', fromlist=[''])
@@ -80,22 +80,97 @@ launched = not LAUNCH_DATE or LAUNCH_DATE < now
 
 disabled = []
 
-for name, cls in custom_magicollections_module.items() + magicollections.__dict__.items():
-    if name != 'MagiCollection' and inspect.isclass(cls) and issubclass(cls, magicollections.MagiCollection) and not name.startswith('_'):
-        if cls.enabled and name not in disabled:
-            collection = cls()
-            if collection.name not in collections:
-                collection.list_view = collection.ListView(collection)
-                collection.item_view = collection.ItemView(collection)
-                collection.add_view = collection.AddView(collection)
-                collection.edit_view = collection.EditView(collection)
-                if not launched:
-                    for view in ['list', 'item', 'add', 'edit']:
-                        getattr(collection, view + '_view').staff_required = True
-                collections[collection.name] = collection
-                RAW_CONTEXT['all_enabled'].append(collection.name)
+def _createCollectibleCollection(collection):
+    class _CollectibleForm(forms.AutoForm):
+        account_id = forms.forms.ChoiceField(label=_('Account'))
+        # todo: make widgets hidden
+
+        def __init__(self, *args, **kwargs):
+            super(_CollectibleForm, self).__init__(*args, **kwargs)
+            del(self.fields[collection.name])
+            self.fields['{}_id'.format(collection.name)] = forms.forms.IntegerField()
+            if collection.collectible_with_accounts:
+                del(self.fields['account'])
+                self.fields['account_id'].choices = [(account.id, unicode(account)) for account in ACCOUNT_MODEL.objects.filter(owner=self.request.user)]
+            else:
+                del(self.fields['account_id'])
+
+        def save(self, commit=True):
+            instance = super(_CollectibleForm, self).save(commit=False)
+            setattr(instance, '{}_id'.format(collection.name), self.cleaned_data['{}_id'.format(collection.name)])
+            if collection.collectible_with_accounts:
+                instance.account_id = self.cleaned_data['account_id']
+            if commit:
+                instance.save()
+            return instance
+
+        class Meta:
+            model = collection.collectible
+            fields = '__all__'
+            save_owner_on_creation = not collection.collectible_with_accounts
+
+    class _CollectibleCollection(magicollections.MagiCollection):
+        name = 'collectible{}'.format(collection.name)
+        queryset = collection.collectible.objects.all().select_related(collection.name)
+        icon = collection.icon
+        image = collection.image
+        navbar_link = False
+
+        form_class = _CollectibleForm
+
+        @property
+        def title(self):
+            return _('Collectible {thing}').format(thing=collection.title)
+
+        @property
+        def plural_title(self):
+            return _('Collectible {things}').format(things=collection.plural_title)
+
+        def get_queryset(self, queryset, parameters, request):
+            return queryset.select_related(collection.name)
+
+        class ListView(magicollections.MagiCollection.ListView):
+            item_template = 'default'
+
+        class ItemView(magicollections.MagiCollection.ItemView):
+            enabled = False
+
+        class AddView(magicollections.MagiCollection.AddView):
+            alert_duplicate = False
+
+        def redirect_after_add(self, request, item, ajax):
+            return self.get_list_url(ajax=ajax)
+
+        class EditView(magicollections.MagiCollection.EditView):
+            def redirect_after_edit(self, request, item, ajax):
+                return self.get_list_url(ajax=ajax)
+
+    return collection.collectible_to_class(_CollectibleCollection)
+
+def _addToCollections(name, cls): # Class of the collection
+    if cls.enabled and name not in disabled:
+        collection = cls()
+        if collection.name not in collections:
+            collection.list_view = collection.ListView(collection)
+            collection.item_view = collection.ItemView(collection)
+            collection.add_view = collection.AddView(collection)
+            collection.edit_view = collection.EditView(collection)
+            if not launched:
+                for view in ['list', 'item', 'add', 'edit']:
+                    getattr(collection, view + '_view').staff_required = True
+            collections[collection.name] = collection
+            RAW_CONTEXT['all_enabled'].append(collection.name)
+            if collection.collectible:
+                collectible_collection = _addToCollections(name, _createCollectibleCollection(collection))
+                if collectible_collection:
+                    collection.collectible = collectible_collection
+            return collection
         else:
             disabled.append(name)
+
+for name, cls in custom_magicollections_module.items() + magicollections.__dict__.items():
+    if name != 'MagiCollection' and inspect.isclass(cls) and issubclass(cls, magicollections.MagiCollection) and not name.startswith('_'):
+        _addToCollections(name, cls)
 
 for collection in collections.values():
     parameters = {

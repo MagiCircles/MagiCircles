@@ -8,12 +8,14 @@ from django.core.exceptions import PermissionDenied
 from django.http import Http404
 from dateutil.relativedelta import relativedelta
 from django.db.models import Count, Q, Prefetch
+
 from magi.views import indexExtraContext
 from magi.utils import AttrDict, ordinalNumber, justReturn, getMagiCollections, getMagiCollection, CuteFormType, redirectWhenNotAuthenticated
 from magi.raw import please_understand_template_sentence, donators_adjectives
 from magi.django_translated import t
 from magi.middleware.httpredirect import HttpRedirectException
 from magi.settings import ACCOUNT_MODEL, SHOW_TOTAL_ACCOUNTS, PROFILE_TABS, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTER_TO_URL, GET_GLOBAL_CONTEXT, DONATE_IMAGE, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT
+from magi.item_model import AccountAsOwnerItemModel
 from magi import models, forms
 
 ############################################################
@@ -93,6 +95,7 @@ class MagiCollection(object):
     navbar_link_list_divider_after = False
     types = None
     filter_cuteform = None
+    collectible = None
 
     # Optional variables with default values
     @property
@@ -111,6 +114,9 @@ class MagiCollection(object):
             class Meta:
                 model = self.queryset.model
         return AutoForm
+
+    def collectible_to_class(self, cls):
+        return cls
 
     enabled = True
     navbar_link = True
@@ -264,7 +270,8 @@ class MagiCollection(object):
 
     @property
     def collectible_with_accounts(self):
-        return issubclass(self.collectible.__class__, AccountAsOwnerItemModel)
+        return issubclass(self.collectible.__class__, AccountAsOwnerItemModel) # todo: test, not sure which one works
+        return issubclass(self.collectible, AccountAsOwnerItemModel)
 
     @property
     def add_sentence(self):
@@ -295,6 +302,7 @@ class MagiCollection(object):
         col_break = 'md'
         page_size = 12
         show_edit_button = True
+        show_collect_button = True
         authentication_required = False
         distinct = True
         add_button_subtitle = _('Become a contributor to help us fill the database')
@@ -346,6 +354,7 @@ class MagiCollection(object):
         authentication_required = False
         owner_only = False
         show_edit_button = True
+        show_collect_button = True
         comments_enabled = True
 
         def share_image(self, context, item):

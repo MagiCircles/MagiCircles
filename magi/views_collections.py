@@ -8,9 +8,10 @@ from magi.middleware.httpredirect import HttpRedirectException
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import Http404
 from django.core.exceptions import PermissionDenied
+
 from magi.utils import getGlobalContext, cuteFormFieldsForContext
 from magi.forms import ConfirmDelete, filter_ids
-from magi.settings import SITE_IMAGE
+from magi.settings import SITE_IMAGE, ACCOUNT_MODEL
 
 ############################################################
 # Internal utils
@@ -46,10 +47,23 @@ def _modification_view(context, name, view):
 def _show_edit_button(collection, collection_view, request, context):
     if collection_view.show_edit_button and collection.edit_view.has_permissions(request, context):
         context['show_edit_button'] = True
+        context['show_edit_ajax_enabled'] = collection.edit_view.ajax
         if collection.edit_view.owner_only:
             context['show_edit_button_owner_only'] = True
         if collection.edit_view.staff_required:
             context['edit_button_staff_only'] = True
+
+def _show_collect_button(collection, collection_view, request, context):
+    if collection.collectible and collection.collectible.add_view.enabled:
+        context['collectible'] = True
+        if collection.collectible.add_view.has_permissions(request, context):
+            context['collectible_has_permissions'] = True
+        if collection.collectible.add_view.ajax:
+            context['collectible_ajax'] = True
+        if collection_view.show_collect_button:
+            context['show_collect_button'] = True
+        if collection.collectible.add_view.staff_required:
+            context['collectible_staff_only'] = True
 
 def _modification_views_page_titles(action_sentence, context, after_title):
     context['page_title'] = u'{action_sentence}{after_title}'.format(
@@ -75,7 +89,10 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
         options = collection.item_view.get_item(request, pk)
     context['item'] = get_object_or_404(queryset, **options) if not item else item
     collection.item_view.check_owner_permissions(request, context, context['item'])
+
     _show_edit_button(collection, collection.item_view, request, context)
+    _show_collect_button(collection, collection.item_view, request, context)
+
     if shortcut_url is not None:
         context['shortcut_url'] = shortcut_url
     context['ajax'] = ajax
@@ -184,6 +201,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
                 context['add_buttons_col_size'] = int(math.ceil(12 / len(context['add_buttons'])))
 
     _show_edit_button(collection, collection.list_view, request, context)
+    _show_collect_button(collection, collection.list_view, request, context)
 
     if 'ajax_modal_only' in request.GET:
         # Will display a link to see the other results instead of the pagination button
@@ -194,7 +212,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     if shortcut_url is not None:
         context['shortcut_url'] = shortcut_url
     context['ordering'] = ordering
-    context['include_below_item'] = context.get('show_edit_button', False) or context.get('show_relevant_fields_on_ordering', False)
+    context['include_below_item'] = context.get('show_edit_button', False) or context.get('show_relevant_fields_on_ordering', False) or context.get('show_collect_button', False)
     context['page_title'] = collection.plural_title
     context['total_pages'] = int(math.ceil(context['total_results'] / page_size))
     context['items'] = queryset
