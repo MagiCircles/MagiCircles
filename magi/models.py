@@ -406,6 +406,12 @@ class Report(MagiModel):
         return _('Open {thing}').format(thing=_(self.reported_thing_title))
 
     @property
+    def reported_thing_plural_name(self):
+        if not self._reported_thing_plural_name:
+            self._reported_thing_plural_name = getMagiCollection(name).plural_name
+        return self._reported_thing_plural_name
+
+    @property
     def item_view_enabled(self):
         return self.reported_thing_collection.item_view.enabled
 

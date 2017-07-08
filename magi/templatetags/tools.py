@@ -37,10 +37,6 @@ def isnone(value):
 def startswith(value, arg):
     return value.startswith(arg)
 
-@register.filter
-def get_range(value):
-    return range(value)
-
 @register.simple_tag
 def t(string):
     return _(string)

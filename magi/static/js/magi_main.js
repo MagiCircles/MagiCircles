@@ -21,6 +21,9 @@ function formloaders() {
     });
 }
 
+// *****************************************
+// Smooth page scroll
+
 function loadPageScroll() {
     $('a.page-scroll').unbind('click');
     $('a.page-scroll').bind('click', function(event) {

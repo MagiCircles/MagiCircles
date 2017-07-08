@@ -90,7 +90,13 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
         context['show_edit_button'] = False
         context['item_fields'] = collection.to_fields(context['item'])
         context['top_illustration'] = collection.item_view.top_illustration
-    context['include_below_item'] = context.get('show_edit_button', False)
+        if context['show_collect_button']:
+            context['show_collect_button'] = False
+            if request.user.is_authenticated() and collection.collectible:
+                if collection.collectible_with_accounts:
+                    context['accounts'] = ACCOUNT_MODEL.filter(owner=request.user)
+
+    context['include_below_item'] = context.get('show_edit_button', False) or context.get('show_collect_button', False)
     context['ajax_callback'] = collection.item_view.ajax_callback
     collection.item_view.extra_context(context)
     if ajax:

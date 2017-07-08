@@ -115,7 +115,7 @@
 	  </select>
 	  <textarea name="staff_message" class="form-control" placeholder="Explain what has been edited and why (in English)." style="display: none;" required></textarea><br>
 	  2. Edit the {{ report.reported_thing }} accordingly:
-	  <a href="/{{ report.reported_thing|collectionGetPlural }}/edit/{{ report.reported_thing_id }}/" target="_blank" class="btn btn-success btn-block btn-lines" data-ajax-url="/ajax/{{ report.reported_thing|collectionGetPlural }}/edit/{{ report.reported_thing_id }}/?disable_delete" data-ajax-show-button="true" data-ajax-handle-form="true">Edit {{ report.reported_thing }}</a><br>
+	  <a href="/{{ report.reported_thing_plural_name }}/edit/{{ report.reported_thing_id }}/" target="_blank" class="btn btn-success btn-block btn-lines" data-ajax-url="/ajax/{{ report.reported_thing_plural_name }}/edit/{{ report.reported_thing_id }}/?disable_delete" data-ajax-show-button="true" data-ajax-handle-form="true">Edit {{ report.reported_thing }}</a><br>
 	  2. Confirm the report:
 	  <input type="submit" class="btn btn-warning btn-block btn-lines" value="Confirm">
 	  <br>

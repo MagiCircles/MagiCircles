@@ -91,11 +91,11 @@ def cuteFormFieldsForContext(cuteform_fields, context, form=None):
     Adds the necesary context to call cuteform in javascript.
     cuteform_fields: must be a dictionary of {
       field_name: {
-        type: 'images' or 'html' or 'yesno' or 'onlynone', will be images if not specified,
+        type: CuteFormType.Images, .HTML, .YesNo or .OnlyNone, will be images if not specified,
         to_cuteform: 'key' or 'value' or lambda that takes key and value, will be 'key' if not specified,
         choices: list of pair, if not specified will use form
         selector: will be #id_{field_name} if not specified,
-        transform: when to_cuteform is a lambda: 'images' to get regular images format or 'flaticon' or 'flaticon_with_text' to get flaticon
+        transform: when to_cuteform is a lambda: CuteFormTransform.No, .ImagePath, .Flaticon, .FlaticonWithText
         image_folder: only when to_cuteform = 'images' or transform = 'images', will specify the images path,
     }
     """

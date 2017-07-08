@@ -30,14 +30,6 @@ class EventNode(template.Node):
         return ''
 
 @register.filter
-def linkShowAuth(link, user):
-    if user.is_authenticated():
-        if link['auth'][0] and link['staff_required']:
-            return user.is_staff
-        return link['auth'][0]
-    return link['auth'][1] and not link['staff_required']
-
-@register.filter
 def getFormAsList(forms, form):
     if forms:
         return forms
@@ -59,11 +51,3 @@ def navbarTitle(context, link):
     if title:
         return _(title)
     return title
-
-@register.filter
-def translated(value):
-    return _(value)
-
-@register.filter
-def collectionGetPlural(name):
-    return getMagiCollection(name).plural_name

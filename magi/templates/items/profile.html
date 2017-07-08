@@ -91,10 +91,10 @@
       <div role="tabpanel" class="tab-pane{% if opened_tab == tab_name %} active{% endif %}" id="profile{{ tab_name }}" data-tab-name="{{ tab_name }}">{% if tab_name == 'account' %}
 	{% if profile_user.all_accounts|length == 0 %}
 	<h2>
-	  {% if is_me %}
+	  {% if is_me and can_add_account %}
 	  <div class="pull-right">
 	    <a href="/accounts/add/" class="btn btn-{{ profile_user.preferences.css_color }} btn-lg">
-	      {% trans 'Add' %} {% trans 'Account' %}
+              {{ add_account_sentence }}
 	    </a>
 	  </div>
 	  {% endif %}
@@ -110,11 +110,11 @@
 	<br><br>
 	{% include 'include/disqus.html' with disqus_identifier='user-'|addint:profile_user.id %}
 	{% elif tab_name == 'activity' %}
-	{% if is_me %}
+	{% if is_me and can_add_activity %}
 	<br>
 	<a class="btn btn-main btn-xl btn-lines btn-block btn-add-activity" href="/activities/add/">
-	  <h3>{% trans 'Add' %} {% trans 'Activity' %}</h3>
-	  <small>{% trans add_activity_sentence %}</small>
+	  <h3>{{ add_activity_sentence }}</h3>
+	  <small>{{ add_activity_subtitle }}</small>
 	</a>
 	{% endif %}
 	<br>

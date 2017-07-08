@@ -1,6 +1,6 @@
 import string, datetime, random
 from collections import OrderedDict
-from django.utils.translation import ugettext_lazy as _, string_concat
+from django.utils.translation import ugettext_lazy as _, string_concat, get_language # todo remove get_l
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.utils.formats import dateformat
@@ -261,6 +261,10 @@ class MagiCollection(object):
             self.plural_name,
             u'{}/'.format(type) if type else '',
         )
+
+    @property
+    def collectible_with_accounts(self):
+        return issubclass(self.collectible.__class__, AccountAsOwnerItemModel)
 
     @property
     def add_sentence(self):
@@ -679,11 +683,17 @@ class UserCollection(MagiCollection):
                     best_links_on_last_line = links_on_last_line
                     context['per_line'] = i
 
-            # Javascript sentences
-            context['add_activity_sentence'] = _('Share your adventures!')
+            # Sentences
+            print get_language()
             activity_collection = getMagiCollection('activity')
-            if 'activity' in context['all_enabled']:
-                context['add_activity_sentence'] = activity_collection.list_view.add_button_subtitle
+            if activity_collection.add_view.has_permissions(request, context):
+                context['can_add_activity'] = True
+                context['add_activity_sentence'] = activity_collection.add_sentence
+                context['add_activity_subtitle'] = activity_collection.list_view.add_button_subtitle
+            account_collection = getMagiCollection('account')
+            if account_collection.add_view.has_permissions(request, context):
+                context['can_add_account'] = True
+                context['add_account_sentence'] = account_collection.add_sentence
             context['share_sentence'] = _('Check out {username}\'s awesome collection!').format(username=context['item'].username)
             context['share_url'] = context['item'].http_item_url
 

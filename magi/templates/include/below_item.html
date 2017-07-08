@@ -1,8 +1,23 @@
-{% if show_edit_button %}
-{% if not show_edit_button_owner_only or item.owner_id == user.id or user.is_staff %}
-<div class="text-right"><a href="{{ item.edit_url }}" class="btn btn-sm btn-secondary{% if edit_button_staff_only or item.owner_id != user.id %}{% if edit_button_staff_only or show_edit_button_owner_only %} staff-only{% endif %}{% endif %}"><i class="flaticon-edit"></i> {{ item.edit_sentence }}</a></div>
-{% endif %}
-{% endif %}
+<div class="text-right below-item-buttons">
+  {% if show_collect_button %}
+  {% if collectible_has_permissions %}
+  <a href="#"
+     class="btn btn-block btn-secondary">
+    {{ item.collectible_sentence }}
+  </a>
+  {% elif not user.is_authenticated %}
+  <a href="/signup/?next={{ item.item_url }}&next_title={{ item }}"
+     class="btn btn-sm btn-secondary">
+    {{ item.collectible_sentence }}
+  </a>
+  {% endif %}
+  {% endif %}
+  {% if show_edit_button %}
+  {% if not show_edit_button_owner_only or item.owner_id == user.id or user.is_staff %}
+  <a href="{{ item.edit_url }}"{% if show_edit_ajax_enabled %} data-ajax-url="{{ item.ajax_edit_url }}" data-ajax-title="{{ item.edit_sentence }}"{% endif %} class="btn btn-sm btn-secondary{% if edit_button_staff_only or item.owner_id != user.id %}{% if edit_button_staff_only or show_edit_button_owner_only %} staff-only{% endif %}{% endif %}"><i class="flaticon-edit"></i> {{ item.edit_sentence }}</a>
+  {% endif %}
+  {% endif %}
+</div>
 {% if show_relevant_fields_on_ordering and item.relevant_fields_to_show %}
 {% include 'include/fields_table.html' with fields=item.relevant_fields_to_show bottom=False %}
 {% endif %}
