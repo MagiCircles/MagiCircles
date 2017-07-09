@@ -123,6 +123,7 @@ Similarly, it is not allowed to monetize a website that uses MagiCircles using a
 1. [Production Environment](#production-environment)
 1. [Flaticon](#flaticon)
 1. [Translations](#translations)
+1. [Migrate from MagiCircles1 to MagiCircles2](#migrate-from-magicircles1-to-magicircles2)
 
 Start a new website
 ==========
@@ -1067,6 +1068,9 @@ See also: [methods available in all views](#all-views).
 
 See also: [methods available in all views](#all-views).
 
+- If you provide your own template for `item_template`, the context will contain the following:
+todo
+
 #### Item view
 
 
@@ -1093,6 +1097,9 @@ See also: [settings available in all views](#all-views).
 | reverse_url | Allows you to have URLs with just a string and find the item with thout, instead of the id. For example, the default URL of a profile is `/user/1/db0/`, but with this, you can make `/user/db0/` and still be able to retrieve the corresponding user, without knowing its id. | string (text in URL, for example if the URL is `/user/tom/`, this will be `'tom'`) | a dictionary that will be used with the queryset to get a single item | None |
 
 See also: [methods available in all views](#all-views)⎦.
+
+- If you provide your own template for `template`, the context will contain the following:
+todo
 
 #### Add view
 
@@ -1238,17 +1245,13 @@ When you use types on a collection, its model must have a `type` (ie we should b
 For example, let's say we have 3 types of cards: Normal, Rare and Super Rare and we want to use different forms for those. Our collection will look like that:
 
 ```python
-ENABLED_COLLECTIONS['card'] = {
-  ...
-  'add': {
-     ...
-     types: {
-       'normal': { ... },
-       'rare': { ... },
-       'superrare': { ... },
-     },
-  },
-}
+class CardCollection(MagiCollection):
+    ...
+    types = {
+        'normal': { ... },
+        'rare': { ... },
+        'superrare': { ... },
+    }
 ```
 
 For each type, you may specify the following settings in its dictionary:
@@ -1496,6 +1499,15 @@ For each page, you may specify the following settings:
 | navbar_link | Should a link to the list view of this collection appear in the nav bar? | True | True |
 | navbar_link_list | Name of the [nav bar list](#nav-bar-lists) in which the link is going to appear | None | 'more' |
 | url_variables | List of tuples (name of the variable, regexp to match the variable in the URL, function that takes a context and returns the value that should be displayed in the navbar - optional when navbar_link = False) | [] | [('pk', '\d+', lambda context: context['request'].user.id)] |
+
+By default, if you use the global context, all your pages will have a context that contains the following:
+todo
+
+In your page's template, you may override the following blocks:
+todo
+
+You may add some variables in your context which will automatically be used and may have useful behaviors for you:
+todo
 
 Default pages and collections
 ===
@@ -1824,6 +1836,8 @@ You may use the following methods to get something similar for your own fields:
 
 ## Templates
 
+Note that using template tags, either provided ones below or your own, adds a significant loading cost. See ⎡[Using template tags](#using-template-tags)⎦.
+
 ### Tools
 
 The missing utility functions in django templates.
@@ -1980,6 +1994,31 @@ Recommendations
 ## Save choices values as integer rather than strings
 
 todo
+
+## Don't concatenate translated strings
+
+In some languages, the order of the words in a sentence might not be what you expect. If you force the order of words with concatenation, you make the translators' job very hard, if not impossible.
+
+Example in python:
+```python
+context['greetings'] = _('Hello') + request.user.username + '!'
+```
+should be:
+```python
+context['greetings'] = _('Hello {name}!').format(name=request.user.username)
+```
+
+Example in template:
+```html
+{% trans 'Hello' %} {{ user.username }}!
+```
+should be:
+```html
+{% load tools %}
+{% trans_format string='Hello {name}!' name=user.username %}
+```
+
+Note that in general, it is recommended to do that transformation in python and not in the template, since doing it in template requires the inclusion of the tools module, which adds a significant cost.
 
 ## Internal cache for foreign keys in models
 
@@ -2269,3 +2308,311 @@ Flaticon
 The icons come from [flaticon.com](http://www.flaticon.com/) and are credited in the about page.
 
 To get the list of available icons and their codes, open your website on `/static/css/flaticon.html`.
+
+
+Migrate from MagiCircles1 to MagiCircles2
+=========================================
+
+1. **Update MagiCircles2**
+
+    Change your `requirements.txt` to use MagiCircles2 branch:
+    ```txt
+    git+https://github.com/SchoolIdolTomodachi/MagiCircles.git@MagiCircles2
+    ```
+    Update requirements:
+    ```shell
+    pip install -r requirements.txt --upgrade
+    ```
+    
+    DO NOT PERFORM MIGRATIONS AT THIS POINT!
+
+1. **Rename your SQL tables from web to magi**
+
+    ```sql
+    UPDATE django_content_type SET app_label='magi' WHERE app_label='web';
+    UPDATE django_migrations SET app='magi' WHERE app='web';
+    ALTER TABLE web_activity RENAME TO magi_activity;
+    ALTER TABLE web_activity_likes RENAME TO magi_activity_likes;
+    ALTER TABLE web_badge RENAME TO magi_badge;
+    ALTER TABLE web_donationmonth RENAME TO magi_donationmonth;
+    ALTER TABLE web_notification RENAME TO magi_notification;
+    ALTER TABLE web_report RENAME TO magi_report;
+    ALTER TABLE web_report_images RENAME TO magi_report_images;
+    ALTER TABLE web_userimage RENAME TO magi_userimage;
+    ALTER TABLE web_userlink RENAME TO magi_userlink;
+    ALTER TABLE web_userpreferences RENAME TO magi_userpreferences;
+    ALTER TABLE web_userpreferences_following RENAME TO magi_userpreferences_following;
+    ```
+
+1. **Rename web to magi in your code**
+
+    Python imports:
+    ```python
+    from web import forms
+    from web import models as web_models
+    from web.magicollections import MagiCollection
+    ```
+    should be:
+    ```python
+    from magi import forms
+    from magi import models as magi_models
+    from magi.magicollections import MagiCollection
+    ```
+    
+    In settings.py:
+    ```
+    INSTALLED_APPS = (
+        ...
+        'web',
+    )
+    
+    AUTHENTICATION_BACKENDS = ('web.backends.AuthenticationBackend',)
+    
+    ...
+    ```
+    should be:
+    ```
+    INSTALLED_APPS = (
+        ...
+        'magi',
+    )
+    
+    AUTHENTICATION_BACKENDS = ('magi.backends.AuthenticationBackend',)
+    
+    ...
+    ```
+    
+    If you have manual SQL queries or partial queries in your code, you'll need to update the table names as well:
+    
+    ```python
+    def get_queryset(self, queryset, parameters, request):
+        if request.user.is_authenticated():
+            queryset = queryset.extra(select={
+                'followed': 'SELECT COUNT(*) FROM web_userpreferences_following WHERE userpreferences_id = {} AND user_id = auth_user.id'.format(request.user.preferences.id),
+            })
+    ```
+    should be:
+    ```python
+    def get_queryset(self, queryset, parameters, request):
+        if request.user.is_authenticated():
+            queryset = queryset.extra(select={
+                'followed': 'SELECT COUNT(*) FROM magi_userpreferences_following WHERE userpreferences_id = {} AND user_id = auth_user.id'.format(request.user.preferences.id),
+            })
+    ```
+    
+    If your code base is quite big, you may want to replace it automatically:
+    
+    ```shell
+    find sample/ -type f -name '*.py' -exec sed -i 's/web\./magi\./g;s/from web/from magi/g;s#web/#magi/#g;'"s/'web'/'magi'/g;"'s/web_tags/magi_tags/g;' \{\} \;
+    find sample/templates/ -type f -name '*.html' -exec sed -i 's/web\./magi\./g;s/from web/from magi/g;s#web/#magi/#g;'"s/'web'/'magi'/g;"'s/web_tags/magi_tags/g;' \{\} \;
+    ```
+
+1. **Add the new required settings in `sample/settings.py`**
+
+    ```python
+    MIDDLEWARE_CLASSES = (
+        ...
+        'magi.middleware.languageFromPreferences.LanguageFromPreferenceMiddleWare',
+    )
+
+    FAVORITE_CHARACTERS = []
+
+    MAX_WIDTH = 1200
+    MAX_HEIGHT = 1200
+    MIN_WIDTH = 300
+    MIN_HEIGHT = 300
+    ```
+1. **Use the new settings available to configure your website**
+
+    Many new features have been added in your website settings, so it's recommended to use them instead of whatever you manually implemented in the past to achieve the same behavior.
+    
+    - `LAUNCH_DATE`
+    - `NAVBAR_ORDERING`
+    - `ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT`
+    - `ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES`
+    - `PRELAUNCH_ENABLED_PAGES`
+    - `PROFILE_TABS`
+    - `SITE_LOGO_PER_LANGUAGE`
+    - `SITE_LOGO`
+    - Note: `SITE_LOGO` has been renamed to `SITE_NAV_LOGO` and `SITE_LOGO` now corresponds to the logo on the homepage
+
+1. **Make your models inherit from MagiModel**
+
+    See ⎡[MagiModel](#models)⎦ documentation.
+    
+    - Add `collection_name` before your model's fields
+    - If your model uses `account` to determine the owner, make it inherit from `AccountAsOwnerModel`
+
+1. **Remove ENABLED_COLLECTIONS dictionary and configure your collections with MagiCollection objects**
+
+    Previously in `sample/settings.py`:
+    ```python
+    ENABLED_COLLECTIONS['card'] = {
+        'queryset': models.Card.objects.all(),
+        'list': {
+            'default_ordering': '-release_date',
+        },
+    }
+    ```
+    should be in `sample/magicollections.py`:
+    ```python
+    class CardCollection(MagiCollection):
+        queryset = models.Card.objects.all()
+    
+        class ListView(MagiCollection.ListView):
+            default_ordering = '-release_date'
+    ```
+    
+    If your dictionary was referring to functions defined somewhere else, it's now recommended to have the full function inside the collection object.
+
+1. **Use the new settings available in MagiCollections and views**
+
+    Many new features have been added in MagiCollection objects, so it's recommended to use them instead of whatever you manually implemented in the past to achieve the same behavior.
+    
+    New settings in collection:
+    - `types`, `form_class` and `multipart` can be set for the whole collection in addition to per view
+    - `navbar_link_title`, `navbar_link_list_divider_before`, `navbar_link_list_divider_after`
+    - `reportable`, `report_edit_templates`, `report_delete_templates`, `report_allow_edit`, `report_allow_edit`
+    - `filter_cuteform`
+    - `collectible`
+    - New overridable methods: `get_queryset`, `to_fields`
+
+    New settings in views:
+    - All views: `ajax_callback`, `check_owner_permissions`, `check_permissions`, `enabled`, `get_queryset`, `logout_required`, `multipart`, `owner_only`, `shortcut_urls`
+        - Note: `filter_queryset` is now called `get_queryset` and should be used for semantically different operations. Filtering should be done using `MagiFiltersForm`.
+        - Note: `types` is not in the collection itself and not per view.
+    - List View: `filter_cuteform`, `hide_sidebar`, `item_template`, `show_edit_button`, `show_relevant_fields_on_ordering`
+    - Item View: `show_edit_button`, `top_illustration`, `get_item`, `reverse_url`
+    - Add View: `filter_cuteform`
+    - Edit View: `form_class`, `get_item`
+
+1. **Specify your templates for List views or Item views, or use the default one**
+
+    MagiCircles2 now comes with default templates for List views and Item views. If you don't specify `template` in Item view and `item_template` in List view, the default templates will be used.
+    
+    If you want to use the default templates because they suit your needs, don't provide `template` and `item_template` in your views settings.
+    
+    If you want to use your own templates:
+    
+    ```python
+    from magi.utils import custom_item_template
+    
+    class IdolCollection(MagiCollection):
+        ...
+        class ListView(MagiCollection.ListView):
+            item_template = custom_item_template
+    ```
+    
+    This will use the standard name for template, which is the collection name + "Item". For example: `idolItem`.
+    It will now load your template file in `sample/templates/items/idolItem.html`.
+    
+    Though it's recommended to use the standard name for your custom templates, you may use your own template name:
+    
+    ```python
+    class IdolCollection(MagiCollection):
+        ...
+        class ListView(MagiCollection.ListView):
+            item_template = 'idolDetails'
+    ```
+    
+    In that case, it will load the template file in `sample/templates/items/idolDetails.html`.
+    
+    If you already had a custom template called `default`, you'll need to rename it.
+
+1. **Make your forms inherit from MagiForm or MagiFiltersForm**
+
+    See ⎡[MagiForm](#magiform)⎦ and ⎡[MagiFilter](#magifilter)⎦ documentations.
+    
+    Do not use `get_queryset` (previously `filter_queryset`) to filter the result of the filters side bar. Instead, use [MagiFiltersForm](#magifilter).
+    
+    Do not use `before_save` and `after_save` if possible, and prefer customizing your [MagiForm](#magiform).
+    
+    If you used to manually call TinyPNG for your images, you may now remove this code since MagiForm will do it for you.
+
+1. **Remove any useless form**
+
+    MagiCircles2 now comes with a `form_class` provided by default. You may want to remove your own custom forms if the default one works for you.
+
+1. **Use sentences helpers in MagiModel**
+
+    Search for all the places where you created a sentence regarding an action by concatenating 2 words and replace that with the sentence helper.
+    
+    Example:
+    ```html
+    <a href="{{ card.item_url }}">{% trans 'Open' %} {% trans 'Card' %}</a>
+    ```
+    should be:
+    ```html
+    <a href="{{ card.item_url }}">{{ card.open_sentence }}}</a>
+    ```
+    
+    See all sentences helpers in ⎡[MagiModel documentation](#inherit-from-magimodel-and-provide-a-name)⎦
+    
+    ```
+    emacs `gs "'Open'" | \grep -v bower | \grep -v locale | \grep -v collected`
+    emacs `gs "'Edit'" | \grep -v bower | \grep -v locale | \grep -v collected`
+    emacs `gs "verb" | \grep -v bower | \grep -v locale | \grep -v collected`
+    emacs `gs "'Delete'" | \grep -v bower | \grep -v locale | \grep -v collected`
+    emacs `gs "'Report'" | \grep -v bower | \grep -v locale | \grep -v collected`
+    emacs `gs "'Add'" | \grep -v bower | \grep -v locale | \grep -v collected`
+    ```
+
+    Some languages don't have the same order of words for these sentences, so it is not recommended to concatenate words.
+    It also applies to any other sentences you created like that.
+    
+    See ⎡[Don't concatenate translated strings](#dont-concatenate-translated-string)⎦.
+        
+    
+1. **Use links helpers in MagiModel**
+
+    If you manually created links to an item or item pages, you may want to use the new helpers.
+    
+    Example:
+    ```html
+    <a href="/cards/{{ card.id }}">...</a>
+    ```
+    should be:
+    ```html
+    <a href="{{ card.item_url }}">...</a>
+    ```
+    
+    See all links helpers in ⎡[MagiModel documentation](#inherit-from-magimodel-and-provide-a-name)⎦
+    
+    ```
+    emacs `gs "/card" | \grep -v bower | \grep -v locale | \grep -v collected`
+    emacs `gs "/edit" | \grep -v bower | \grep -v locale | \grep -v collected`
+    emacs `gs "/add/" | \grep -v bower | \grep -v locale | \grep -v collected`
+    emacs `gs "RAW_CONTEXT\[\'magi" | \grep -v bower | \grep -v locale | \grep -v collected`
+    ```
+1. **Localize text representations of MagiModel instances**
+
+    MagiCircles1 recommended to keep only one way to represent an item, but MagiCircles2 encourages localization for SEO purposes.
+
+    Example:
+    ```python
+    class Idol(MagiModel):
+        ...
+        def __unicode__(self):
+            return self.name
+    ```
+    should be:
+    ```python
+    from django.utils.translation import get_language
+
+    class Idol(MagiModel):
+        ...
+        def __unicode__(self):
+            return self.japanese_name if get_language == 'ja' else self.name
+    ```
+
+1. **Add more supported languages**
+
+     Many new languages got added since MagiCircles1. Take a look at [our collaborative translation tool](https://poeditor.com/join/project/h6kGEpdnmM) to pick languages you might be interested in.
+
+1. **Migrate**
+
+    Once you're done updating, you will need to perform the databases migrations for the new models in MagiCircles2.
+    
+    ```shell
+    python manage.py migrate
+    ```
