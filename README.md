@@ -1030,7 +1030,7 @@ List view for a staff member will hide all the staff buttons by default and you 
 |-----|-------|---------|---------|
 | filter_form | Django form that will appear on the right side panel and allow people to search / filter. It's recommended to make it inherit from `MagiFilter`. | None (no side bar) | [Example](https://gist.github.com/db0company/819ec1900fb207f865be69b92ce62c8e#file-magicirclesexamples-py-L8) |
 | ajax_pagination_callback | The name of a javascript function to call everytime a new page loads (including the first time) | None | "updateCards" (See [Example](https://gist.github.com/db0company/b9fde532eafb333beb57ab7903e69749#file-magicirclesexamples-js-L1)) |
-| item_template | Path of the HTML template in `sample/templates/items/` to display the item (without `.html`) | Collection name + "Item" | "cardItem" |
+| item_template | Path of the HTML template in `sample/templates/items/` to display the item (without `.html`). If you don't want to use the default one, it's highly recommended to use the standard name for custom templates. To do so, use `custom_item_template` in `magi.utils`. | "default_item_in_list" | "cardDetails" |
 | before_template | Name of a template to include between the title (if shown) and the add buttons (if any) and results (without `.html`) | None | "include/beforeCards" |
 | after_template | Name of a template to include at the end of the list, when the last page loads (without `.html`), if you provide something in `extra_context` for this template, first check `if context['is_last_page']: ...` | None | "include/afterCards" |
 | no_result_template | Name of a template to show if there's no results to show, otherwise it will just show "No result" in a bootstrap `alert-info` | None | "include/cardsNoResult" |
@@ -1078,7 +1078,7 @@ See also: [methods available in all views](#all-views).
 
 | Key | Value | Default | Example |
 |-----|-------|---------|---------|
-| template | Path of the HTML template in `sample/templates/items/` to display the item (without `.html`). May be `default` to use the defaut view with the image on top and the list of fields below it. See ⎡[to_fields method](#to_field-method)⎦ for more details about the `default` template. | Collection name + "Item" | "cardItem" |
+| template | Path of the HTML template in `sample/templates/items/` to display the item (without `.html`). By default, will use the defaut view with the image on top and the list of fields below it. See ⎡[to_fields method](#to_field-method)⎦ for more details about the `default` template. If you don't want to use the default one, it's highly recommended to use the standard name for custom templates. To do so, use `custom_item_template` in `magi.utils`. | "default" | "cardItem" |
 | top_illustration | If the `default` template is used, it will show either the `image` in the object or its name. You may display something else by specifying the path of a HTML template (full path in template folder), without `.html`. | None | `include/topCard` |
 | show_edit_button | Should a button to edit the item be displayed under the item (if the user has permissions to edit)? Set this to `False` is your template already includes a button to edit the item. | True | |
 | comments_enabled | Should we display a comment section below the item? | True | |
@@ -1267,7 +1267,7 @@ The type will be passed to the formClass when it's initialized, which allows you
 
 - Where is it called?
     - **ListView:** Will be called when `ordering` is specified to show the field(s) details, with `only_fields` in parameters. For example, if you order the list by level, the level is going to be displayed under the item, because it's very likely that you'll want to compare that between the items.
-    - **ItemView:** If you use the template `default`, it will show a table with all the fields returned by this function.
+    - **ItemView:** If you use the default template, it will show a table with all the fields returned by this function.
 - Can it be overriden?
     - You may override this function, but you should always call its `super`.
 - Parameters
@@ -1302,7 +1302,7 @@ In ListView, when ordering is specified:
 
 ![](http://i.imgur.com/z1ei25k.png)
 
-In ItemView, when template is `default`:
+In ItemView, when using the default template:
 
 ![](http://i.imgur.com/ikMoXCq.png)
 
@@ -1808,10 +1808,11 @@ You may use the following methods to get something similar for your own fields:
 | AttrDict | Make a python dictionary act like an object (ie you can do `the_dict.something` instead of `the_dict['something']`) | dict | AttrDict object |
 | ajaxContext | Lighter than globalContext, with just what's needed for an ajax view | request | dict |
 | cuteFormFieldsForContext | See ⎡[CuteForm](#cuteform)⎦. | cuteform_fields, context, form=None | None |
+| custom_item_template | To be used in MagiCollections when using a custom template instead of the default one. | view | string |
 | dumpModel | Take an instance of a model and transform it into a dictonary with all its info (easily flattenable). Allows to delete an instance without losing data (used by Report collection) | instance | dictionary |
 | emailContext | Lighter than globalContext, with just what's needed for an ajax view | request | dict |
 | globalContext | Default context required by MagiCircles | request | dict |
-| justReturn | Returns a lambda that takes whatever and returns the same value | value | lambda |
+| justReturn | Returns a lambda that takes whatever and returns the same value. May be useful in MagiCollections when you want to override a method but ignore its parameters and return the same constant value. | value | lambda |
 | ordinalNumber | Returns 1st, 2nd, 3rd, 4th, etc. Not localized. | n | string |
 | randomString | Generates a random string | length, choice=(string.ascii_letters + string.digits) | string |
 | redirectToProfile | Raises an exception that will make the current request redirect to the profile of the authenticated user. If specified, will redirect to a specific account anchor within the profile. | request, account=None | None (raises an exception) |
@@ -2263,7 +2264,7 @@ Translations
 todo
 
 Flaticon
-===
+========
 
 The icons come from [flaticon.com](http://www.flaticon.com/) and are credited in the about page.
 

@@ -38,10 +38,16 @@ class AttrDict(dict):
         self.__dict__ = self
 
 ############################################################
-# Helpers
+# Helpers for MagiCollections
 
 def justReturn(string):
     return lambda *args, **kwargs: string
+
+"""
+Use this to get the standard name for custom templates:
+item_template = custom_item_template
+"""
+custom_item_template = property(lambda view: '{}Item'.format(view.collection.name))
 
 ############################################################
 # Context for django requests

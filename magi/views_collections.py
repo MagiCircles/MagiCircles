@@ -103,6 +103,7 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
     context['share_image'] = _get_share_image(context, collection.item_view, item=context['item'])
     context['comments_enabled'] = collection.item_view.comments_enabled
     context['item_template'] = collection.item_view.template
+    context['collection'] = collection
     if context['item_template'] == 'default':
         context['show_edit_button'] = False
         context['item_fields'] = collection.to_fields(context['item'])
@@ -229,8 +230,6 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['no_result_template'] = collection.list_view.no_result_template
     context['after_template'] = collection.list_view.after_template
     context['item_template'] = collection.list_view.item_template
-    if context['item_template'] == 'default':
-        context['item_template'] = 'default_item_in_list'
     context['show_title'] = collection.list_view.show_title
     context['plural_title'] = collection.plural_title
     context['ajax_pagination'] = collection.list_view.ajax
@@ -246,6 +245,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['col_size'] = int(math.ceil(12 / context['per_line']))
     context['item_view_enabled'] = collection.item_view.enabled
     context['ajax_item_view_enabled'] = context['item_view_enabled'] and collection.item_view.ajax
+    context['collection'] = collection
 
     collection.list_view.extra_context(context)
 
@@ -317,6 +317,7 @@ def add_view(request, name, collection, type=None, ajax=False, shortcut_url=None
     context['share_image'] = _get_share_image(context, collection.add_view)
     context['forms'] = { 'add': form }
     context['ajax_callback'] = collection.add_view.ajax_callback
+    context['collection'] = collection
     if collection.add_view.alert_duplicate:
         context['alert_message'] = _('Make sure the {thing} you\'re about to add doesn\'t already exist.').format(thing=_(collection.title))
         context['alert_button_link'] = context['list_url']
@@ -387,6 +388,7 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
     _modification_views_page_titles(instance.edit_sentence, context, unicode(instance))
     context['ajax_callback'] = collection.edit_view.ajax_callback
     context['forms']['edit'] = form
+    context['collection'] = collection
     if allowDelete:
         formDelete.alert_message = _('You can\'t cancel this action afterwards.')
         formDelete.action_sentence = instance.delete_sentence

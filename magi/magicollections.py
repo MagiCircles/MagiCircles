@@ -10,7 +10,7 @@ from dateutil.relativedelta import relativedelta
 from django.db.models import Count, Q, Prefetch
 
 from magi.views import indexExtraContext
-from magi.utils import AttrDict, ordinalNumber, justReturn, getMagiCollections, getMagiCollection, CuteFormType, redirectWhenNotAuthenticated
+from magi.utils import AttrDict, ordinalNumber, justReturn, getMagiCollections, getMagiCollection, CuteFormType, redirectWhenNotAuthenticated, custom_item_template
 from magi.raw import please_understand_template_sentence, donators_adjectives
 from magi.django_translated import t
 from magi.middleware.httpredirect import HttpRedirectException
@@ -310,6 +310,7 @@ class MagiCollection(object):
         full_width = False
         show_relevant_fields_on_ordering = True
         hide_sidebar = False
+        item_template = 'default_item_in_list'
 
         def show_add_button(self, request):
             return True
@@ -317,10 +318,6 @@ class MagiCollection(object):
         @property
         def filter_cuteform(self):
             return self.collection.filter_cuteform
-
-        @property
-        def item_template(self):
-            return '{}Item'.format(self.collection.name)
 
         @property
         def default_ordering(self):
@@ -356,15 +353,12 @@ class MagiCollection(object):
         show_edit_button = True
         show_collect_button = True
         comments_enabled = True
+        template = 'default'
 
         def share_image(self, context, item):
             if hasattr(item, 'http_image_url'):
                 return item.http_image_url
             return self.collection.share_image(context, item)
-
-        @property
-        def template(self):
-            return '{}Item'.format(self.collection.name)
 
         def get_item(self, request, pk):
             return { 'pk': pk }
@@ -507,6 +501,7 @@ class AccountCollection(MagiCollection):
         return templates
 
     class ListView(MagiCollection.ListView):
+        item_template = custom_item_template
         show_title = True
         per_line = 1
         add_button_subtitle = _('Create your account to join the community and be in the leaderboard!')
@@ -521,6 +516,7 @@ class AccountCollection(MagiCollection):
             return MagiCollection.ListView.default_ordering.__get__(self)
 
     class ItemView(MagiCollection.ItemView):
+        template = custom_item_template
         comments_enabled = False
 
     class AddView(MagiCollection.AddView):
@@ -567,6 +563,7 @@ class UserCollection(MagiCollection):
     }
 
     class ListView(MagiCollection.ListView):
+        item_template = custom_item_template
         default_ordering = 'username'
         per_line = 6
         page_size = 30
@@ -584,8 +581,8 @@ class UserCollection(MagiCollection):
             return context
 
     class ItemView(MagiCollection.ItemView):
-        js_files = ['profile']
         template = 'profile'
+        js_files = ['profile']
         comments_enabled = False
         show_edit_button = False
         ajax = False
@@ -764,6 +761,7 @@ class ActivityCollection(MagiCollection):
     }
 
     class ListView(MagiCollection.ListView):
+        item_template = custom_item_template
         per_line = 1
         distinct = False
         add_button_subtitle = _('Share your adventures!')
@@ -815,6 +813,7 @@ class ActivityCollection(MagiCollection):
                 indexExtraContext(context)
 
     class ItemView(MagiCollection.ItemView):
+        template = custom_item_template
         ajax_callback = 'updateActivities'
         show_edit_button = False
 
@@ -842,6 +841,7 @@ class NotificationCollection(MagiCollection):
     reportable = False
 
     class ListView(MagiCollection.ListView):
+        item_template = custom_item_template
         show_title = True
         per_line = 1
         page_size = 5
@@ -912,6 +912,7 @@ class BadgeCollection(MagiCollection):
     }
 
     class ListView(MagiCollection.ListView):
+        item_template = custom_item_template
         default_ordering = '-date,-id'
 
         def get_queryset(self, queryset, parameters, request):
@@ -986,6 +987,7 @@ class ReportCollection(MagiCollection):
     _cached_types = None
 
     class ListView(MagiCollection.ListView):
+        item_template = custom_item_template
         show_title = True
         staff_required = True
         show_edit_button = False
@@ -1007,6 +1009,7 @@ class ReportCollection(MagiCollection):
             return queryset
 
     class ItemView(MagiCollection.ItemView):
+        template = custom_item_template
         comments_enabled = False
         owner_only = True
         show_edit_button = False
@@ -1048,6 +1051,7 @@ class DonateCollection(MagiCollection):
     reportable = False
 
     class ListView(MagiCollection.ListView):
+        item_template = custom_item_template
         page_size = 1
         per_line = 1
         default_ordering = '-date'
