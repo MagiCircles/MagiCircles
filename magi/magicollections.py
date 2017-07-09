@@ -15,7 +15,7 @@ from magi.raw import please_understand_template_sentence, donators_adjectives
 from magi.django_translated import t
 from magi.middleware.httpredirect import HttpRedirectException
 from magi.settings import ACCOUNT_MODEL, SHOW_TOTAL_ACCOUNTS, PROFILE_TABS, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTER_TO_URL, GET_GLOBAL_CONTEXT, DONATE_IMAGE, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT
-from magi.item_model import AccountAsOwnerItemModel
+from magi.item_model import AccountAsOwnerModel
 from magi import models, forms
 
 ############################################################
@@ -270,8 +270,8 @@ class MagiCollection(object):
 
     @property
     def collectible_with_accounts(self):
-        return issubclass(self.collectible.__class__, AccountAsOwnerItemModel) # todo: test, not sure which one works
-        return issubclass(self.collectible, AccountAsOwnerItemModel)
+        return issubclass(self.collectible.__class__, AccountAsOwnerModel) # todo: test, not sure which one works
+        return issubclass(self.collectible, AccountAsOwnerModel)
 
     @property
     def add_sentence(self):

@@ -153,9 +153,9 @@ class MagiModel(models.Model):
         abstract = True
 
 ############################################################
-# AccountAsOwnerItemModel
+# AccountAsOwnerModel
 
-class AccountAsOwnerItemModel(ItemModel):
+class AccountAsOwnerModel(MagiModel):
     """
     Will provide a cache when item doesn't have an owner but has an account
     """
