@@ -1,6 +1,6 @@
 import string, datetime, random
 from collections import OrderedDict
-from django.utils.translation import ugettext_lazy as _, string_concat, get_language # todo remove get_l
+from django.utils.translation import ugettext_lazy as _, string_concat
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.utils.formats import dateformat
@@ -10,11 +10,11 @@ from dateutil.relativedelta import relativedelta
 from django.db.models import Count, Q, Prefetch
 
 from magi.views import indexExtraContext
-from magi.utils import AttrDict, ordinalNumber, justReturn, getMagiCollections, getMagiCollection, CuteFormType, redirectWhenNotAuthenticated, custom_item_template
+from magi.utils import AttrDict, ordinalNumber, justReturn, getMagiCollections, getMagiCollection, CuteFormType, CuteFormTransform, redirectWhenNotAuthenticated, custom_item_template
 from magi.raw import please_understand_template_sentence, donators_adjectives
 from magi.django_translated import t
 from magi.middleware.httpredirect import HttpRedirectException
-from magi.settings import ACCOUNT_MODEL, SHOW_TOTAL_ACCOUNTS, PROFILE_TABS, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTER_TO_URL, GET_GLOBAL_CONTEXT, DONATE_IMAGE, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT
+from magi.settings import ACCOUNT_MODEL, SHOW_TOTAL_ACCOUNTS, PROFILE_TABS, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTER_TO_URL, GET_GLOBAL_CONTEXT, DONATE_IMAGE, ON_USER_EDITED, ON_PREFERENCES_EDITED
 from magi.item_model import AccountAsOwnerModel
 from magi import models, forms
 
@@ -690,7 +690,6 @@ class UserCollection(MagiCollection):
                     context['per_line'] = i
 
             # Sentences
-            print get_language()
             activity_collection = getMagiCollection('activity')
             if activity_collection.add_view.has_permissions(request, context):
                 context['can_add_activity'] = True
@@ -709,6 +708,14 @@ class UserCollection(MagiCollection):
     class EditView(MagiCollection.EditView):
         staff_required = True
         form_class = forms.StaffEditUser
+
+        def after_save(self, request, instance):
+            models.updateCachedActivities(instance.id)
+            if ON_USER_EDITED:
+                ON_USER_EDITED(request)
+            if ON_PREFERENCES_EDITED:
+                ON_PREFERENCES_EDITED(request)
+            return instance
 
         def redirect_after_edit(self, request, item, ajax):
             if ajax: # Ajax is not allowed
@@ -754,7 +761,9 @@ class ActivityCollection(MagiCollection):
         return queryset
 
     filter_cuteform = {
-        'language': {},
+        'i_language': {
+            'image_folder': 'language',
+        },
         'with_image': {
             'type': CuteFormType.OnlyNone,
         },
@@ -776,35 +785,6 @@ class ActivityCollection(MagiCollection):
         shortcut_urls = ['']
 
         def get_queryset(self, queryset, parameters, request):
-            if 'tags' in parameters:
-                tags = parameters['tags']
-                if not isinstance(tags, list):
-                    tags = tags.split(',')
-                for tag in tags:
-                    queryset = queryset.filter(tags_string__contains='"{}"'.format(tag))
-            if 'owner_id' in parameters:
-                queryset = queryset.filter(owner_id=parameters['owner_id'])
-            if 'feed' in parameters and request.user.is_authenticated():
-                queryset = queryset.filter(Q(owner__in=request.user.preferences.following.all()) | Q(owner_id=request.user.id))
-            elif request.user.is_authenticated() and request.user.preferences.view_activities_language_only:
-                queryset = queryset.filter(language=request.LANGUAGE_CODE)
-            elif ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT:
-                queryset = queryset.filter(language=request.LANGUAGE_CODE)
-            if 'search' in parameters and parameters['search']:
-                terms = parameters['search'].split(' ')
-                for term in terms:
-                    queryset = queryset.filter(Q(message__icontains=term)
-                                               | Q(tags_string__icontains=term)
-                                           )
-            if 'ordering' in parameters and parameters['ordering'] == 'total_likes,id':
-                queryset = queryset.filter(modification__gte=timezone.now() - relativedelta(weeks=1))
-            if 'language' in parameters and parameters['language']:
-                queryset = queryset.filter(language=parameters['language'])
-            if 'with_image' in parameters:
-                if parameters['with_image'] == '2':
-                    queryset = queryset.filter(image__isnull=False).exclude(image='')
-                elif parameters['with_image'] == '3':
-                    queryset = queryset.filter(Q(image__isnull=True) | Q(image=''))
             return self.collection._get_queryset_for_list_and_item(queryset, parameters, request)
 
         def extra_context(self, context):
@@ -909,15 +889,20 @@ class BadgeCollection(MagiCollection):
             'type': CuteFormType.YesNo,
             'to_cuteform': lambda k, v: 'checked' if k == 'True' else 'delete',
         },
+        'rank': {
+            'image_folder': 'badges',
+            'to_cuteform': lambda k, v: u'medal{}'.format(k),
+            'transform': CuteFormTransform.ImagePath,
+        }
     }
 
     class ListView(MagiCollection.ListView):
         item_template = custom_item_template
-        default_ordering = '-date,-id'
+        default_ordering = '-date'
+        filter_form = forms.FilterBadges
 
         def get_queryset(self, queryset, parameters, request):
             if 'of_user' in parameters and parameters['of_user']:
-                queryset = queryset.filter(user_id=parameters['of_user'], show_on_profile=True)
                 request.context_show_user = False
             else:
                 queryset = queryset.select_related('user', 'user__preferences')
@@ -996,17 +981,7 @@ class ReportCollection(MagiCollection):
         ajax_pagination_callback = 'updateReport'
         filter_form = forms.FilterReports
         show_add_button = justReturn(False)
-
-        def get_queryset(self, queryset, parameters, request):
-            if 'staff' in parameters and parameters['staff']:
-                queryset = queryset.filter(staff=parameters['staff'])
-            if 'i_status' in parameters and parameters['i_status']:
-                queryset = queryset.filter(i_status=parameters['i_status'])
-            else:
-                queryset = queryset.filter(i_status=models.REPORT_STATUS_PENDING)
-            if 'reported_thing' in parameters and parameters['reported_thing']:
-                queryset = queryset.filter(reported_thing=parameters['reported_thing'])
-            return queryset
+        default_ordering = 'i_status'
 
     class ItemView(MagiCollection.ItemView):
         template = custom_item_template

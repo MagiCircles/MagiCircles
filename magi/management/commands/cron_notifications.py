@@ -21,7 +21,7 @@ class Command(BaseCommand):
                 if notification_sent in sent:
                     print u' Duplicate not sent to {}: {}'.format(notification.owner.username, notification.english_message)
                 else:
-                    translation_activate(preferences.language if preferences.language else 'en')
+                    translation_activate(preferences.language if preferences.i_language else 'en')
                     context = emailContext()
                     context['notification'] = notification
                     context['user'] = notification.owner

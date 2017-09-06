@@ -4,17 +4,157 @@ from django.db import models
 from django.conf import settings as django_settings
 from django.utils.translation import ugettext_lazy as _, get_language
 from django.utils import timezone
-from magi.utils import tourldash, getMagiCollection, AttrDict
+from magi.utils import tourldash, getMagiCollection, AttrDict, join_data, split_data
 
-"""
-Will not check if the views are enabled.
-If you'd like to check, you can do:
-  ```
-  if instance.collection.item_view.enabled and instance.collection.item_view.ajax:
-    return instance.collection.item_view_url
-  ```
-Checking adds a significant cost since it accesses the collection, so only do it when necessary.
-"""
+############################################################
+# Utils for images
+
+def get_image_url_from_path(imagePath):
+    if not imagePath:
+        return None
+    imageURL = unicode(imagePath)
+    if '//' in imageURL:
+        return imageURL
+    if imageURL.startswith(django_settings.SITE + '/'):
+        imageURL = imageURL.replace(django_settings.SITE + '/', '')
+    return u'{}{}'.format(django_settings.SITE_STATIC_URL, imageURL)
+
+def get_image_url(instance, image_name='image'):
+    return get_image_url_from_path(getattr(instance, image_name))
+
+def get_http_image_url_from_path(imagePath):
+    imageURL = get_image_url_from_path(imagePath)
+    if not imageURL:
+        return None
+    if 'http' not in imageURL:
+        imageURL = 'http:' + imageURL
+    return imageURL
+
+def get_http_image_url(instance, image_name='image'):
+    return get_http_image_url_from_path(getattr(instance, image_name))
+
+############################################################
+# Utils for choices
+
+def i_choices(choices):
+    if not choices:
+        return []
+    return [(i, choice[1] if isinstance(choice, tuple) else choice) for i, choice in enumerate(choices)]
+
+############################################################
+# BaseMagiModel
+
+class BaseMagiModel(models.Model):
+    """
+    Can be used for your models that don't have an associated MagiCollection.
+
+    It comes with:
+    - helpers for i_ fields
+      - i_something: raw integer value
+      - something: string representation
+      - t_something: i18n string representation
+    - helpers for images
+      - image_url, http_image_url where "image" is the name of the image field
+    - tinypng_settings
+    - helpers for CSV values
+      - c_something: raw string
+      - something: list of CSV values
+      - t_something: list of translated values
+      - add_c: add some new strings in the list
+      - remove_c: remove some strings from the list
+      - save_c: replace the full list of existing strings
+    """
+    tinypng_settings = {}
+
+    @classmethod
+    def get_i(self, field_name, string):
+        """
+        Takes a string value of a choice and return its internal value
+        field_name = without i_
+        """
+        try:
+            try:
+                return next(i for i, c in enumerate(getattr(self, '{name}_CHOICES'.format(name=field_name.upper())))
+                            if (c[0] if isinstance(c, tuple) else c) == string)
+            except AttributeError:
+                return next(i for i, c in enumerate(self._meta.get_field('i_{name}'.format(name=field_name)).choices)
+                            if c[1] == string)
+        except StopIteration:
+            raise KeyError(string)
+
+    def add_c(self, field_name, to_add):
+        """
+        Add strings from a CSV formatted c_something
+        """
+        current_c = getattr(self, field_name)
+        setattr(self, 'c_{name}'.format(name=field_name),
+                join_data(*(current_c + [c for c in to_add if c not in current_c])))
+
+    def remove_c(self, field_name, to_remove):
+        """
+        Remove strings to a CSV formatted c_something
+        """
+        current_c = getattr(self, field_name)
+        setattr(self, 'c_{name}'.format(name=field_name),
+                join_data(*[c for c in current_c if c not in to_remove]))
+
+    def save_c(self, field_name, c):
+        """
+        Completely replace any existing CSV formatted list into c_something
+        """
+        setattr(self, 'c_{name}'.format(name=field_name), join_data(*c))
+
+    def __getattr__(self, name):
+        # For choice fields with name "i_something", accessing "something" returns the verbose value
+        if not name.startswith('_') and not name.startswith('i_') and not name.startswith('c_'):
+            # When accessing "something" and "i_something exists, return the readable key for the choice
+            if hasattr(self, 'i_{name}'.format(name=name)):
+                return self._get_i_field_choice(name, key=True)
+            # When accessing "t_something", return the translated value
+            elif name.startswith('t_'):
+                name = name[2:]
+                # For a i_choice
+                if hasattr(self, 'i_{name}'.format(name=name)):
+                    return self._get_i_field_choice(name)
+                # For a CSV value: return dict {value: translated value}
+                elif hasattr(self, 'c_{name}'.format(name=name)):
+                    choices = dict(getattr(self, '{name}_CHOICES'.format(name=name.upper()), {}))
+                    return OrderedDict([(c, choices.get(c, _(c))) for c in getattr(self, name)])
+            # When accessing "something_url" for an image, return the url
+            elif name.endswith('_url'):
+                field_name = name.replace('http_', '')[:-4]
+                if isinstance(self._meta.get_field(field_name), models.ImageField):
+                    return (get_http_image_url(self, field_name)
+                            if name.startswith('http_')
+                            else get_image_url(self, field_name))
+            # When accessing "something" and "c_something" exists, returns the list of CSV values
+            elif hasattr(self, 'c_{name}'.format(name=name)):
+                return split_data(getattr(self, 'c_{name}'.format(name=name)))
+        raise AttributeError("%r object has no attribute %r" % (self.__class__, name))
+
+    def _get_i_field_choice(self, field_name, key=False):
+        """
+        field_name = the name of the field without "i_"
+        key = if choices are provided as a dictionary, return the key, otherwise, the value
+        """
+        try:
+            choices = getattr(self, '{name}_CHOICES'.format(name=field_name.upper()))
+            valid_dict = True
+            try:
+                choices = dict(choices)
+            except (ValueError, TypeError):
+                valid_dict = False
+            k = getattr(self, 'i_{name}'.format(name=field_name))
+            return k if key and valid_dict else choices[k]
+        except (IndexError, TypeError):
+            field = self._meta.get_field('i_{name}'.format(name=field_name))
+            return dict(field.choices).get(getattr(self, field.name, None), None)
+
+    class Meta:
+        abstract = True
+
+############################################################
+# Utils for collection (used by MagiModel and addMagiModelProperties)
 
 ############################################################
 # Get collection
@@ -24,6 +164,14 @@ def get_collection(instance):
 
 ############################################################
 # Get URLs
+
+# Will not check if the views are enabled.
+# If you'd like to check, you can do:
+#   ```
+#   if instance.collection.item_view.enabled and instance.collection.item_view.ajax:
+#     return instance.collection.item_view_url
+#   ```
+# Checking adds a significant cost since it accesses the collection, so only do it when necessary.
 
 def get_item_url(instance):
     return u'/{}/{}/{}/'.format(instance.collection_name, instance.pk, tourldash(unicode(instance)))
@@ -39,31 +187,6 @@ def get_http_item_url(instance):
     if url and 'http' not in url:
         url = 'http:' + url
     return url
-
-def get_image_url_from_path(imagePath):
-    if not imagePath:
-        return None
-    imageURL = unicode(imagePath)
-    #return u'{}{}'.format('//i.cinderella.pro/', imageURL)
-    if '//' in imageURL:
-        return imageURL
-    if imageURL.startswith(django_settings.SITE + '/'):
-        imageURL = imageURL.replace(django_settings.SITE + '/', '')
-    return u'{}{}'.format(django_settings.SITE_STATIC_URL, imageURL)
-
-def get_image_url(instance):
-    return get_image_url_from_path(getattr(instance, 'image'))
-
-def get_http_image_url_from_path(imagePath):
-    imageURL = get_image_url_from_path(imagePath)
-    if not imageURL:
-        return None
-    if 'http' not in imageURL:
-        imageURL = 'http:' + imageURL
-    return imageURL
-
-def get_http_image_url(instance):
-    return get_http_image_url_from_path(getattr(instance, 'image'))
 
 def get_edit_url(instance):
     return u'/{}/edit/{}/'.format(instance.collection_plural_name, instance.pk)
@@ -105,6 +228,7 @@ def addMagiModelProperties(modelClass, collection_name):
     """
     Takes an existing Model class and adds the missing properties that would make it a proper MagiModel.
     Useful if you can't write a certain model yourself but you wish to use a MagiCollection for that model.
+    Will not have the properties and tools provided by BaseMagiModel, except image_url and http_image_url for image field.
     """
     modelClass.collection_name = collection_name
     modelClass.collection = property(get_collection)
@@ -128,7 +252,10 @@ def addMagiModelProperties(modelClass, collection_name):
 ############################################################
 # MagiModel
 
-class MagiModel(models.Model):
+class MagiModel(BaseMagiModel):
+    """
+    The model you must inherit from
+    """
     collection_name = ''
 
     collection = property(get_collection)
@@ -140,14 +267,11 @@ class MagiModel(models.Model):
     edit_url = property(get_edit_url)
     report_url = property(get_report_url)
     ajax_edit_url = property(get_ajax_edit_url)
-    image_url = property(get_image_url)
-    http_image_url = property(get_http_image_url)
     open_sentence = property(get_open_sentence)
     edit_sentence = property(get_edit_sentence)
     delete_sentence = property(get_delete_sentence)
     report_sentence = property(get_report_sentence)
     collectible_sentence = property(get_collectible_sentence)
-    tinypng_settings = {}
 
     class Meta:
         abstract = True

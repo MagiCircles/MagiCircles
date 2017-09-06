@@ -357,7 +357,7 @@ The ⎡[Quick Start](#quick-start)⎦ section above will do all this for you, bu
    from django.contrib.auth.models import User
    from django.utils.translation import ugettext_lazy as _
    from django.db import models
-   from magi.item_model import MagiModel
+   from magi.models import MagiModel
 
    class Account(MagiModel):
        collection_name = 'account'
@@ -726,7 +726,7 @@ All the django models used in collections MUST:
 #### Inherit from MagiModel and provide a name
 
 ```python
-from magi.item_model import MagiModel
+from magi.models import MagiModel
 
 class Idol(MagiModel):
     collection_name = 'idol'
@@ -735,48 +735,11 @@ class Idol(MagiModel):
 
 `collection_name` is used to get the MagiCollection associated with this item. While multiple MagiCollections can use the same model class, the item itself will only be aware of one associated MagiCollection.
 
-Thanks to `MagiModel`, you'll have access to some properties on all your objects, which are required, but might also be useful for you:
+Thanks to `MagiModel`, you'll have access to some properties on all your objects which can be useful. You can also name some of your fields a certain way to unlock some features, like interger choices and CSV.
 
-- All `MagiModel` provide the following properties (not meant to be overriden):
+See ⎡[MagiModel Utils](#magimodel-utils)⎦.
 
-| Key | Value | Example |
-|-----|-------|---------|
-| `collection` | Associated MagiCollection object (retrieved using the `collection_name`) | Instance of IdolCollection |
-| `collection_title` | MagiCollection setting for localized title | _('Idol') |
-| `collection_plural_name` | MagiCollection setting for non-localized plural | For 'idol', it would be  `idols`, for 'activity', it would be `activities` |
-| `item_url` | The URL to the ItemView | `/idol/1/Nozomi/` |
-| `ajax_item_url` | The URL to the ajax ItemView | `/ajax/idol/1/` |
-| `full_item_url` | The URL to the ItemView with the domain | `//sample.com/idol/1/Nozomi/` |
-| `http_item_url` | The URL to the ItemView with the domain and `http` (when `//` URLs are not supported, such as in emails or when sharing) | `http://sample.com/idol/1/Nozomi/` |
-| `edit_url` | The URL of the EditView | `/idols/edit/1/` |
-| `ajax_edit_url` | The URL of the ajax EditView | `/ajax/idols/edit/1/` |
-| `report_url` | The URL to report this item | `/idols/report/1/` |
-| `image_url` | The full url of the `image` field (if any) | `//i.sample.com/static/uploaded/idols/Nozomi.png` |
-| `http_image_url` | The full url of the `image` field (if any) with `http` (when `//` URLs are not supported, such as in emails or when sharing) | `http://i.sample.com/static/uploaded/idols/Nozomi.png` |
-| `open_sentence` | Localized sentence to open this item (open the ItemView) | `Open idol` |
-| `edit_sentence` | Localized sentence to edit this item, also used to open the page to edit this item (EditView)  | `Edit idol` |
-| `delete_sentence` | Localized sentence to delete this item | `Delete idol` |
-| `report_sentence` | Localized sentence to report this item, or open the page to report this item | `Report idol` |
-
-`image_url` and `http_image_url` will use the `image` field in your model.
-
-If you have other images in your model, you might want to add `fieldname_url` and `http_fieldname_url` to get similar tools for all your images:
-
-```python
-from magi.utils import uploadItem
-from magi.item_model import MagiModel, get_image_url, get_http_image_url
-
-class Idol(MagiModel):
-    background = models.ImageField(upload_to=uploadItem('i'), null=True, blank=True)
-
-    @property
-    def background_url(self):
-      return get_image_url(self.background)
-
-    @property
-    def http_background_url(self):
-      return get_http_image_url(self.background)
-```
+You may use `BaseMagiModel` if you'd like to enjoy MagiModel's features without tying it to a collection.
 
 #### Have an owner
 
@@ -788,7 +751,7 @@ class Idol(MagiModel):
 Because it's very common to associate an item to an `account` and not directly to an `owner`, since `account` already has an owner, you may make your model class inherit from `AccountAsOwnerModel` instead of `MagiModel`:
 
 ```python
-from magi.item_model import AccountAsOwnerModel
+from magi.models import AccountAsOwnerModel
 
 class OwnedCard(AccountAsOwnerModel):
     """
@@ -1006,7 +969,7 @@ class IdolCollection(MagiCollection):
 | get_global_context | Function called to pre-fill the context before the view loads (even before checking for permissions) | request | dictionary | `GET_GLOBAL_CONTEXT` specified in settings for the website. |
 | share_image | Image displayed when sharing this view on social media (Facebook, Twitter, etc). Full URL. Can be specified in collection. | context, item=None | String URL | `share_image` in MagiCollection |
 | extra_context | Allows you to add extra context, typically for your templates. Called after most of the logic for the view has been executed already. [Example](https://gist.github.com/db0company/819ec1900fb207f865be69b92ce62c8e#file-magicirclesexamples-py-L20)  | context | dictionary | Just returns the context |
-| get_queryset | Queryset used to retrieve the item(s) | queryset, parameters, request | Django queryset | `get_queryset` in MagiCollection |
+| get_queryset | Queryset used to retrieve the item(s). Can be specified in collection. | queryset, parameters, request | Django queryset | `get_queryset` in MagiCollection |
 | check_permissions | Check if the current user has permissions to load this view | request, context | None, should raise exceptions when the user doesn't have permissions. | Will check permissions depending on the views settings (such as `staff_required`, etc.), and either raise `PermissionDenied` or `HttpRedirectException` |
 | check_owner_permissions | Only for ItemView and EditView, will be called after getting the item and check if the current user has permissions to load this view | request, context, item | None, should raise exceptions when the user doesn't have permissions | Will check permissions depending on the view settings (`owner_only`) and either raise `PermissionDenied` or `HttpRedirectException`.
 
@@ -1174,7 +1137,7 @@ See also: [methods available in all views](#all-views).
 To make a collection collectible, you need to provide a [model](#model). The model should always have either an `owner` or an `account` foreign key, allowing users to collect them.
 
 ```python
-from magi.item_model import AccountAsOwnerModel
+from magi.models import AccountAsOwnerModel
 
 class CollectibleCard(AccountAsOwnerModel):
     collection_name = 'collectiblecards'
@@ -1419,17 +1382,21 @@ class CardFilterForm(MagiFiltersForm):
 
 ### Configure fields
 
-For most fields, the default behavior of `MagiFiltersForm` is enough. But for some fields that are not direct fields of the model or to handle special cases, you may provide some configuration for that field.
+For most fields, the default behavior of `MagiFiltersForm` is enough. Fields like NullBooleanFields or MultipleChoiceFields are already handled.
+
+But for some fields that are not direct fields of the model or to handle special cases, you may provide some configuration for that field.
 
 To do so, just provide an attribute `name_filter` where `name` is the corresponding field name. It has to be an instance of `MagiFilter`, to which you can pass the following named parameters:
 
-| Name | Description | Example |
-|------|-------------|---------|
-| to_queryset | function that takes form, queryset, request, value and returns a queryset. Optional, will filter automatically. `selector` and `to_value` are ignored when specified. | lambda form, queryset, request, value: queryset.filter(name__in=['a', 'b'] if value == 'a_or_b' else queryset) |
-| selector | will be the name of the field by default | 'owner__username' |
-| selectors | same as selector but works with multiple values. | ['card__name', 'card__japanese_name'] |
-| to_value | function that takes the value and transforms the value if needed. | lambda value: value + 1 |
-| multiple | allow multiple values separated by commas. Set to `False` if your value may contain commas. | |
+| Name | Description | Default | Example |
+|------|-------------|---------|---------|
+| to_queryset | function that takes form, queryset, request, value and returns a queryset. Optional, will filter automatically. `selector`, `selectors` and `multiple` are ignored when specified. | None (default behavior) | lambda form, queryset, request, value: queryset.filter(name__in=['a', 'b'] if value == 'a_or_b' else queryset) |
+| selector | will be the name of the field by default | None (will use the name of the filter field) | 'owner__username' |
+| selectors | same as selector but works with multiple values. | None (will use selector) | ['card__name', 'card__japanese_name'] |
+| to_value | function that takes the value and transforms the value if needed. May receive a string or a list. | None (will not transform the value) | lambda value: value + 1 |
+| multiple | allow multiple values separated by commas. Set to `False` if your value may contain commas. | True | |
+| operator_for_multiple |
+| allow_csv | When `multiple` is unabled or the field is a MultipleChoiceField, is it allowed to provide values as comma separated? Example: `?rarity=SR,UR`. When csv is not allowed, values must be provided as a list like so: `?rarity=SR&rarity=UR` | True | |
 
 Example:
 
@@ -1714,6 +1681,183 @@ class CardViewSet(viewsets.ModelViewSet):
 Utils
 ===
 
+## MagiModel utils
+
+### MagiModel collection utils
+
+All `MagiModel` provide the following properties (not meant to be overriden):
+
+| Key | Value | Example |
+|-----|-------|---------|
+| `collection` | Associated MagiCollection object (retrieved using the `collection_name`) | Instance of IdolCollection |
+| `collection_title` | MagiCollection setting for localized title | _('Idol') |
+| `collection_plural_name` | MagiCollection setting for non-localized plural | For 'idol', it would be  `idols`, for 'activity', it would be `activities` |
+| `item_url` | The URL to the ItemView | `/idol/1/Nozomi/` |
+| `ajax_item_url` | The URL to the ajax ItemView | `/ajax/idol/1/` |
+| `full_item_url` | The URL to the ItemView with the domain | `//sample.com/idol/1/Nozomi/` |
+| `http_item_url` | The URL to the ItemView with the domain and `http` (when `//` URLs are not supported, such as in emails or when sharing) | `http://sample.com/idol/1/Nozomi/` |
+| `edit_url` | The URL of the EditView | `/idols/edit/1/` |
+| `ajax_edit_url` | The URL of the ajax EditView | `/ajax/idols/edit/1/` |
+| `report_url` | The URL to report this item | `/idols/report/1/` |
+| `open_sentence` | Localized sentence to open this item (open the ItemView) | `Open idol` |
+| `edit_sentence` | Localized sentence to edit this item, also used to open the page to edit this item (EditView)  | `Edit idol` |
+| `delete_sentence` | Localized sentence to delete this item | `Delete idol` |
+| `report_sentence` | Localized sentence to report this item, or open the page to report this item | `Report idol` |
+
+These properties are only available for `MagiModel` and not `BaseMagiModel`.
+
+### MagiModel Images
+
+If your model contains images, you may access the following properties for each of the images, where `image` is the name of the field:
+
+| Key | Value | Example |
+|-----|-------|---------|
+| `image_url` | The full url of the `image` field | `//i.sample.com/static/uploaded/idols/Nozomi.png` |
+| `http_image_url` | The full url of the `image` field with `http` (when `//` URLs are not supported, such as in emails or when sharing) | `http://i.sample.com/static/uploaded/idols/Nozomi.png` |
+
+### Save choices values as integer rather than strings
+
+Instead of saving your choice field as a string which values is from a list of string choices, use integers. It makes the database queries faster when filtering.
+
+To do that, start your field name with `i_` like so:
+
+```python
+from magi.models import MagiModel, i_choices
+
+class Card(MagiModel):
+
+    POWER_CHOICES = (
+        _('Happy'),
+        _('Cool'),
+        _('Rock'),
+    )
+    i_power = models.PositiveIntegerField(choices=i_choices(POWER_CHOICES), default=0)
+```
+
+It will be stored as an integer in the database, but you can easily access the human readable value with:
+
+```python
+card.power   # will return _('Cool')
+card.i_power # will return 1
+```
+
+Note: your model must contain the list of choices with the right naming: `power` -> `POWER_CHOICES`, `super_power` -> `SUPER_POWER_CHOICES`.
+
+If you need a clear way to compare the value, you may want to use untranslated values:
+
+```python
+if card.power == _('Happy'): # comparing translated strings doesn't work
+   ...
+```
+
+To do so, you can provide a string key to your choices like so:
+
+```python
+from magi.models import MagiModel, i_choices
+
+class Card(MagiModel):
+
+    POWER_CHOICES = (
+        ('happy', _('Happy')),
+        ('cool', _('Cool')),
+        ('rock', _('Rock')),
+    )
+    i_power = models.PositiveIntegerField(choices=i_choices(POWER_CHOICES), default=0)
+```
+
+You may now do:
+
+```python
+if card.power == 'happy':
+   ...
+```
+
+And you can access the translated value with:
+
+```
+card.t_power # translated "Happy"
+```
+
+If filtering by these choices is done very often, you may also set a db index:
+```
+    i_power = models.PositiveIntegerField(choices=i_choices(POWER_CHOICES), default=0, db_index=True)
+```
+
+If you need to initialize or update the value outside of the context of a form, you may want to retrieve the integer value for a given string field. You can do so using the class method `get_id`:
+
+```
+new_card = models.Card.objects.create(name='Julia', i_power=models.Card.get_i('power', 'rock'))
+# or
+new_card.i_power = models.Card.get_i('power', 'cool')
+```
+
+Note: If you want to change your choices in the future, keep in mind that you might need to update your database manually to reflect the correct integer values.
+
+### Store comma separated values
+
+While the recommended Django way of storing a list of values in a model is to use a separate model with `ManyToMany`, it can be quite costly, since you will need extra queries to retrieve the values. For simple list of values like strings, you can store them as comma separated values.
+
+To do so, start your field name with `c_`, like so:
+
+```python
+class Card(MagiModel):
+    c_abilities = models.TextField(blank=True, null=True)
+```
+
+You may now access the CSV values in a convenient array like so:
+
+```python
+print card.abilities # ["fly", "dance", "heal"] (list)
+print card.c_abilities # "fly","dance","heal" (string)
+```
+
+You may limit your CSV values to a list of choices like so:
+
+```python
+class Card(MagiModel):
+    ABILITIES_CHOICES = (
+        ('fly', _('Fly')),
+        ('dance', _('Dance')),
+        ('sing', _('Sing')),
+        ('heal', _('Heal')),
+    )
+    c_abilities = models.TextField(blank=True, null=True)
+```
+
+Choices will not be enforced at the database level, but will help MagiForms show checkboxes.
+
+You can get the list of translated CSV values using `t_`. It will return an ordered dictionary.
+
+```python
+card.t_abilities # { 'fly': _('Fly'), 'dance': _('Dance'), 'heal': _('Heal') }
+```
+
+If choices are not provided or are provided without translations, it's going to return `_(value)` where `value` is the string. In that case, it's not guaranteed that the string will be in your translation file, so you might want to force it in by declaring it somewhere else: `_('the string')`.
+
+Some methods are available directly in MagiModel to add and remove values from the CSV:
+
+| Name | Description | Parameters | Return value |
+|------|-------------|------------|--------------|
+| add_c | Add strings to a CSV formatted c_something | field_name, to_add | None |
+| remove_c | Remove strings from a CSV formatted c_something | field_name, to_remove | None |
+| save_c | Completely replace any existing CSV formatted list into c_something | field_name, c | None |
+
+You still need to call `save` on your instance to save the values in database.
+
+Example:
+
+```
+card = model.Card.objects.get(id=1)
+card.add_c('abilities', ['fly', 'dance'])
+card.save()
+```
+
+### Transform images before saving them
+
+You may provide a `tinypng_settings` dictionary in your MagiModel to let your future MagiForm know how to transform your images before saving them.
+
+For the full details of the dictionary, see ⎡[Optimize images with TinyPNG](#optimize-images-with-tinypng)⎦.
+
 ## Python
 
 #### Models upload
@@ -1991,10 +2135,6 @@ Functions called (in this order):
 
 Recommendations
 ===============
-
-## Save choices values as integer rather than strings
-
-todo
 
 ## Don't concatenate translated strings
 
@@ -2324,7 +2464,7 @@ Migrate from MagiCircles1 to MagiCircles2
     ```shell
     pip install -r requirements.txt --upgrade
     ```
-    
+
     DO NOT PERFORM MIGRATIONS AT THIS POINT!
 
 1. **Rename your SQL tables from web to magi**
@@ -2359,16 +2499,16 @@ Migrate from MagiCircles1 to MagiCircles2
     from magi import models as magi_models
     from magi.magicollections import MagiCollection
     ```
-    
+
     In settings.py:
     ```
     INSTALLED_APPS = (
         ...
         'web',
     )
-    
+
     AUTHENTICATION_BACKENDS = ('web.backends.AuthenticationBackend',)
-    
+
     ...
     ```
     should be:
@@ -2377,14 +2517,14 @@ Migrate from MagiCircles1 to MagiCircles2
         ...
         'magi',
     )
-    
+
     AUTHENTICATION_BACKENDS = ('magi.backends.AuthenticationBackend',)
-    
+
     ...
     ```
-    
+
     If you have manual SQL queries or partial queries in your code, you'll need to update the table names as well:
-    
+
     ```python
     def get_queryset(self, queryset, parameters, request):
         if request.user.is_authenticated():
@@ -2400,9 +2540,9 @@ Migrate from MagiCircles1 to MagiCircles2
                 'followed': 'SELECT COUNT(*) FROM magi_userpreferences_following WHERE userpreferences_id = {} AND user_id = auth_user.id'.format(request.user.preferences.id),
             })
     ```
-    
+
     If your code base is quite big, you may want to replace it automatically:
-    
+
     ```shell
     find sample/ -type f -name '*.py' -exec sed -i 's/web\./magi\./g;s/from web/from magi/g;s#web/#magi/#g;'"s/'web'/'magi'/g;"'s/web_tags/magi_tags/g;' \{\} \;
     find sample/templates/ -type f -name '*.html' -exec sed -i 's/web\./magi\./g;s/from web/from magi/g;s#web/#magi/#g;'"s/'web'/'magi'/g;"'s/web_tags/magi_tags/g;' \{\} \;
@@ -2426,7 +2566,7 @@ Migrate from MagiCircles1 to MagiCircles2
 1. **Use the new settings available to configure your website**
 
     Many new features have been added in your website settings, so it's recommended to use them instead of whatever you manually implemented in the past to achieve the same behavior.
-    
+
     - `LAUNCH_DATE`
     - `NAVBAR_ORDERING`
     - `ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT`
@@ -2440,7 +2580,7 @@ Migrate from MagiCircles1 to MagiCircles2
 1. **Make your models inherit from MagiModel**
 
     See ⎡[MagiModel](#models)⎦ documentation.
-    
+
     - Add `collection_name` before your model's fields
     - If your model uses `account` to determine the owner, make it inherit from `AccountAsOwnerModel`
 
@@ -2459,17 +2599,17 @@ Migrate from MagiCircles1 to MagiCircles2
     ```python
     class CardCollection(MagiCollection):
         queryset = models.Card.objects.all()
-    
+
         class ListView(MagiCollection.ListView):
             default_ordering = '-release_date'
     ```
-    
+
     If your dictionary was referring to functions defined somewhere else, it's now recommended to have the full function inside the collection object.
 
 1. **Use the new settings available in MagiCollections and views**
 
     Many new features have been added in MagiCollection objects, so it's recommended to use them instead of whatever you manually implemented in the past to achieve the same behavior.
-    
+
     New settings in collection:
     - `types`, `form_class` and `multipart` can be set for the whole collection in addition to per view
     - `navbar_link_title`, `navbar_link_list_divider_before`, `navbar_link_list_divider_after`
@@ -2490,44 +2630,44 @@ Migrate from MagiCircles1 to MagiCircles2
 1. **Specify your templates for List views or Item views, or use the default one**
 
     MagiCircles2 now comes with default templates for List views and Item views. If you don't specify `template` in Item view and `item_template` in List view, the default templates will be used.
-    
+
     If you want to use the default templates because they suit your needs, don't provide `template` and `item_template` in your views settings.
-    
+
     If you want to use your own templates:
-    
+
     ```python
     from magi.utils import custom_item_template
-    
+
     class IdolCollection(MagiCollection):
         ...
         class ListView(MagiCollection.ListView):
             item_template = custom_item_template
     ```
-    
+
     This will use the standard name for template, which is the collection name + "Item". For example: `idolItem`.
     It will now load your template file in `sample/templates/items/idolItem.html`.
-    
+
     Though it's recommended to use the standard name for your custom templates, you may use your own template name:
-    
+
     ```python
     class IdolCollection(MagiCollection):
         ...
         class ListView(MagiCollection.ListView):
             item_template = 'idolDetails'
     ```
-    
+
     In that case, it will load the template file in `sample/templates/items/idolDetails.html`.
-    
+
     If you already had a custom template called `default`, you'll need to rename it.
 
 1. **Make your forms inherit from MagiForm or MagiFiltersForm**
 
     See ⎡[MagiForm](#magiform)⎦ and ⎡[MagiFilter](#magifilter)⎦ documentations.
-    
+
     Do not use `get_queryset` (previously `filter_queryset`) to filter the result of the filters side bar. Instead, use [MagiFiltersForm](#magifilter).
-    
+
     Do not use `before_save` and `after_save` if possible, and prefer customizing your [MagiForm](#magiform).
-    
+
     If you used to manually call TinyPNG for your images, you may now remove this code since MagiForm will do it for you.
 
 1. **Remove any useless form**
@@ -2537,7 +2677,7 @@ Migrate from MagiCircles1 to MagiCircles2
 1. **Use sentences helpers in MagiModel**
 
     Search for all the places where you created a sentence regarding an action by concatenating 2 words and replace that with the sentence helper.
-    
+
     Example:
     ```html
     <a href="{{ card.item_url }}">{% trans 'Open' %} {% trans 'Card' %}</a>
@@ -2546,9 +2686,9 @@ Migrate from MagiCircles1 to MagiCircles2
     ```html
     <a href="{{ card.item_url }}">{{ card.open_sentence }}}</a>
     ```
-    
+
     See all sentences helpers in ⎡[MagiModel documentation](#inherit-from-magimodel-and-provide-a-name)⎦
-    
+
     ```
     emacs `gs "'Open'" | \grep -v bower | \grep -v locale | \grep -v collected`
     emacs `gs "'Edit'" | \grep -v bower | \grep -v locale | \grep -v collected`
@@ -2560,14 +2700,14 @@ Migrate from MagiCircles1 to MagiCircles2
 
     Some languages don't have the same order of words for these sentences, so it is not recommended to concatenate words.
     It also applies to any other sentences you created like that.
-    
+
     See ⎡[Don't concatenate translated strings](#dont-concatenate-translated-string)⎦.
-        
-    
+
+
 1. **Use links helpers in MagiModel**
 
     If you manually created links to an item or item pages, you may want to use the new helpers.
-    
+
     Example:
     ```html
     <a href="/cards/{{ card.id }}">...</a>
@@ -2576,9 +2716,9 @@ Migrate from MagiCircles1 to MagiCircles2
     ```html
     <a href="{{ card.item_url }}">...</a>
     ```
-    
+
     See all links helpers in ⎡[MagiModel documentation](#inherit-from-magimodel-and-provide-a-name)⎦
-    
+
     ```
     emacs `gs "/card" | \grep -v bower | \grep -v locale | \grep -v collected`
     emacs `gs "/edit" | \grep -v bower | \grep -v locale | \grep -v collected`
@@ -2613,7 +2753,7 @@ Migrate from MagiCircles1 to MagiCircles2
 1. **Migrate**
 
     Once you're done updating, you will need to perform the databases migrations for the new models in MagiCircles2.
-    
+
     ```shell
     python manage.py migrate
     ```

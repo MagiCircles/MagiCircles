@@ -317,6 +317,10 @@ def split_data(data):
     """
     Takes a unicode CSV string and return a list of strings.
     """
+    if not data:
+        return []
+    if isinstance(data, list):
+        return data
     def utf_8_encoder(unicode_csv_data):
         for line in unicode_csv_data:
             yield line.encode('utf-8')
@@ -326,8 +330,6 @@ def split_data(data):
         for row in csv_reader:
             yield [unicode(cell, 'utf-8') for cell in row]
 
-    if not data:
-        return []
     reader = unicode_csv_reader([data])
     for reader in reader:
         return [r for r in reader]

@@ -15,7 +15,7 @@
 <p>
   <strong>{% trans 'Staff Message:' %}</strong><br>
   {{ report.staff_message }}
-  {% if user.preferences.language and user.preferences.language != 'en' %}
+  {% if user.preferences.i_language and user.preferences.language != 'en' %}
   <br><small><a href="https://translate.google.com/#en/{{ user.preferences.language }}/{{ report.staff_message|urlencode }}">
       {% with from_language='English' to_language=user.preferences.localized_language %}
       {% blocktrans %}Translate from {{ from_language }} to {{ to_language }}{% endblocktrans %}

@@ -2,6 +2,7 @@ import re, datetime
 from collections import OrderedDict
 from multiupload.fields import MultiFileField
 from django import forms
+from django.http.request import QueryDict
 from django.db.models.fields import BLANK_CHOICE_DASH, FieldDoesNotExist
 from django.db.models import Q
 from django.forms.models import model_to_dict, fields_for_model
@@ -14,7 +15,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile, TemporaryUpload
 from django.shortcuts import get_object_or_404
 from magi.django_translated import t
 from magi import models
-from magi.settings import FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTERS, ACTIVITY_TAGS, USER_COLORS, GAME_NAME, ON_PREFERENCES_EDITED
+from magi.settings import FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTERS, USER_COLORS, GAME_NAME, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, ON_PREFERENCES_EDITED
 from magi.utils import ordinalNumber, randomString, shrinkImageFromData, getMagiCollection
 
 ############################################################
@@ -62,17 +63,37 @@ class MagiForm(forms.ModelForm):
         self.form_type = kwargs.pop('type', None)
         super(MagiForm, self).__init__(*args, **kwargs)
         self.is_creating = not hasattr(self, 'instance') or not self.instance.pk
+        self.c_choices = []
         # Fix optional fields
         if hasattr(self.Meta, 'optional_fields'):
             for field in self.Meta.optional_fields:
                 if field in self.fields:
                     self.fields[field].required = False
-        # Fix dates fields
         for name, field in self.fields.items():
+            # Fix dates fields
             if isinstance(field, forms.DateField):
                 self.fields[name], value = date_input(field, value=(getattr(self.instance, name, None) if not self.is_creating else None))
                 if value:
                     setattr(self.instance, name, value)
+            # Make CSV values with choices use a CheckboxSelectMultiple widget
+            elif name.startswith('c_'):
+                choices = getattr(self.Meta.model, '{name}_CHOICES'.format(name=name[2:].upper()), None)
+                if choices is not None:
+                    self.c_choices.append(name)
+                    if not choices:
+                        self.fields.pop(name)
+                    else:
+                        choices_field_name = '{name}_choices'.format(name=name)
+                        choices_field_name = name
+                        self.fields[choices_field_name] = forms.MultipleChoiceField(
+                            required=False,
+                            widget=forms.CheckboxSelectMultiple,
+                            choices=[(c[0], c[1]) if isinstance(c, tuple) else (c, c) for c in choices],
+                            label=field.label,
+                        )
+                        if not self.is_creating:
+                            # Set the value in the object to the list to pre-select the right options
+                            setattr(self.instance, name, getattr(self.instance, name[2:]))
 
     def save(self, commit=True):
         instance = super(MagiForm, self).save(commit=False)
@@ -87,6 +108,9 @@ class MagiForm(forms.ModelForm):
                 and (isinstance(getattr(instance, field), unicode) or isinstance(getattr(instance, field), str))
                 and getattr(instance, field) == ''):
                 setattr(instance, field, None)
+            # Save CSV values
+            if field.startswith('c_') and field in self.c_choices:
+                instance.save_c(field[2:], self.cleaned_data[field])
             # Shrink images
             if (hasattr(instance, field)
                 and isinstance(self.fields[field], forms.Field)
@@ -135,6 +159,8 @@ class MagiFilter(object):
                  selectors=None,
                  to_value=None,
                  multiple=True,
+                 operator_for_multiple=None,
+                 allow_csv=True,
     ):
         self.to_queryset = to_queryset
         self.selectors = selectors
@@ -142,6 +168,20 @@ class MagiFilter(object):
             self.selectors = [selector]
         self.to_value = to_value
         self.multiple = multiple
+        self.operator_for_multiple = operator_for_multiple
+        self.allow_csv = allow_csv
+
+class MagiFilterOperator:
+    OrContains, OrExact, And = range(3)
+
+    _default_per_field_type = {
+        forms.fields.MultipleChoiceField: OrContains,
+    }
+    _default = OrExact
+
+    @staticmethod
+    def default_for_field(field):
+        return MagiFilterOperator._default_per_field_type.get(type(field), MagiFilterOperator._default)
 
 def filter_ids(queryset, request):
     if 'ids' in request.GET and request.GET['ids'] and request.GET['ids'].replace(',', '').isdigit():
@@ -149,7 +189,6 @@ def filter_ids(queryset, request):
     return queryset
 
 class MagiFiltersForm(MagiForm):
-
     search = forms.CharField(required=False, label=t['Search'])
 
     def _search_to_queryset(self, queryset, request, value):
@@ -166,10 +205,12 @@ class MagiFiltersForm(MagiForm):
     search_filter = MagiFilter(to_queryset=_search_to_queryset)
 
     ordering = forms.ChoiceField(label=_('Ordering'))
+    ordering_filter = MagiFilter(multiple=False)
     reverse_order = forms.BooleanField(label=_('Reverse order'))
 
     def __init__(self, *args, **kwargs):
         super(MagiFiltersForm, self).__init__(*args, **kwargs)
+        self.empty_permitted = True
         # Remove search from field if search_fields is not specified
         if not hasattr(self, 'search_fields') and not hasattr(self, 'search_fields_exact'):
             del(self.fields['search'])
@@ -177,55 +218,107 @@ class MagiFiltersForm(MagiForm):
         if not hasattr(self, 'ordering_fields'):
             del(self.fields['ordering'])
             del(self.fields['reverse_order'])
-        else:
-            self.fields['ordering'].choices = self.ordering_fields
-            self.fields['reverse_order'].initial = getattr(self, 'default_ordering_reversed', True)
-        # Mark all fields as not required
-        for field in self.fields.values():
-            field.required = False
         # Set default ordering initial value
         if 'ordering' in self.fields:
+            self.fields['ordering'].choices = self.ordering_fields
             self.fields['ordering'].initial = self.collection.list_view.plain_default_ordering
+            self.fields['reverse_order'].initial = self.collection.list_view.default_ordering.startswith('-')
+        for field_name, field in self.fields.items():
+            # Add blank choice to list of choices that don't have one
+            if (field.required and isinstance(field, forms.fields.ChoiceField)
+                and field.choices and not field.initial):
+                choices = list(self.fields[field_name].choices)
+                if choices and choices[0][0] != '':
+                    self.fields[field_name].choices = BLANK_CHOICE_DASH + choices
+                    self.fields[field_name].initial = ''
+            # Marks all fields as not required
+            field.required = False
 
     def filter_queryset(self, queryset, parameters, request):
         # Generic filter for ids
         queryset = filter_ids(queryset, request)
         # Go through form fields
-        hidden_filters = getattr(self, 'hidden_filters', {})
-        for field_name in self.fields.keys() + hidden_filters.keys():
+        for field_name in self.fields.keys():
+            # ordering fields are Handled in views collection, used by pagination
             if field_name in ['ordering', 'page', 'reverse_order']:
                 continue
             if field_name in parameters and parameters[field_name] != '':
-                if field_name in hidden_filters:
-                    hidden = True
-                    filter = hidden_filters[field_name]
-                else:
-                    hidden = False
-                    filter = getattr(self, '{}_filter'.format(field_name), None)
+                filter = getattr(self, '{}_filter'.format(field_name), None)
                 if not filter:
                     filter = MagiFilter()
+                # Filtering is provided by to_queryset
                 if filter.to_queryset:
-                    queryset = filter.to_queryset(self, queryset, request, value=parameters[field_name])
-                else:
-                    value = filter.to_value(parameters[field_name]) if filter.to_value else parameters[field_name]
+                    queryset = filter.to_queryset(self, queryset, request,
+                                                  value=self._value_as_string(filter, parameters, field_name))
+                else: # Automatic filtering
+                    operator_for_multiple = filter.operator_for_multiple or MagiFilterOperator.default_for_field(self.fields[field_name])
                     selectors = filter.selectors if filter.selectors else [field_name]
                     condition = Q()
+                    filters, exclude = {}, {}
                     for selector in selectors:
-                        if not hidden and isinstance(self.fields[field_name], forms.fields.NullBooleanField):
-                            if value == '2':
-                                filters = { selector: True }
-                            elif value == '3':
-                                filters = { selector: False }
+                        # NullBooleanField
+                        if isinstance(self.fields[field_name], forms.fields.NullBooleanField):
+                            value = self._value_as_nullbool(filter, parameters, field_name)
+                            if value is not None:
+                                filters[selector] = value
+                                # Special case for __isnull selectors
+                                if selector.endswith('__isnull') and not filter.to_value:
+                                    filters[selector] = value = not value
+                                    original_selector = selector[:(-1 * len('__isnull'))]
+                                    if value:
+                                        condition = condition | Q(**{ original_selector: '' })
+                                    else:
+                                        exclude = { original_selector: '' }
+                        # MultipleChoiceField
+                        elif (isinstance(self.fields[field_name], forms.fields.MultipleChoiceField)
+                              or filter.multiple):
+                            values = self._value_as_list(filter, parameters, field_name, filter.allow_csv)
+                            if operator_for_multiple == MagiFilterOperator.OrContains:
+                                for value in values:
+                                    condition = condition | Q(**{ u'{}__icontains'.format(selector): value })
+                            elif operator_for_multiple == MagiFilterOperator.OrExact:
+                                filters = { u'{}__in'.format(selector): values }
+                            elif operator_for_multiple == MagiFilterOperator.And:
+                                for value in values:
+                                    condition = condition & Q(**{ u'{}__icontains'.format(selector): value })
                             else:
-                                filters = {}
+                                raise NotImplementedError('Unknown operator for multiple condition')
+                        # Generic
                         else:
-                            if filter.multiple:
-                                filters = { '{}__in'.format(selector): value.split(',') }
-                            else:
-                                filters = { selector: value }
+                            filters = { selector: self._value_as_string(filter, parameters, field_name) }
                         condition = condition | Q(**filters)
-                    queryset = queryset.filter(condition)
+                    queryset = queryset.filter(condition).exclude(**exclude)
         return queryset
+
+    def _value_as_string(self, filter, parameters, field_name):
+        return filter.to_value(parameters[field_name]) if filter.to_value else parameters[field_name]
+
+    def _value_as_nullbool(self, filter, parameters, field_name):
+        value = None
+        if parameters[field_name] == '2':
+            value = True
+        elif parameters[field_name] == '3':
+            value = False
+        return filter.to_value(value) if filter.to_value else value
+
+    def _value_as_list(self, filter, parameters, field_name, allow_csv=True):
+        if isinstance(parameters, QueryDict):
+            value = parameters.getlist(field_name)
+            if allow_csv and len(value) == 1:
+                value = value[0].split(',')
+        else:
+            value = parameters[field_name]
+        return filter.to_value(value) if filter.to_value else value
+
+    def _post_clean(self):
+        """
+        In django/forms/models.py, will try to construct an instance and will fail when some values are missing.
+        Overriding this method will bypass the checks and allow fitlers to work even when some values are missing.
+        """
+        pass
+
+    def save(self, commit=True):
+        raise NotImplementedError('MagiFiltersForm are not meant to be used to save models. Use a regular MagiForm instead.')
 
 ############################################################
 ############################################################
@@ -245,13 +338,21 @@ class AccountForm(AutoForm):
 class _UserCheckEmailUsernameForm(MagiForm):
     def clean_email(self):
         email = self.cleaned_data.get('email')
-        if email and models.User.objects.filter(email__iexact=email).exclude(username=self.request.user.username).count():
+        if not email:
+            return None
+        email = email.lower()
+        # If the email didn't change
+        if self.previous_email and self.previous_email == email:
+            return email
+        # If another user uses this email address
+        if (models.User.objects.filter(email__iexact=email)
+            .exclude(username=self.instance.username if not self.is_creating else None).count()):
             raise forms.ValidationError(
                 message=t["%(model_name)s with this %(field_labels)s already exists."],
                 code='unique_together',
                 params={'model_name': t['User'], 'field_labels': t['Email']},
             )
-        return email.lower()
+        return email
 
     def clean_username(self):
         username = self.cleaned_data.get('username')
@@ -302,17 +403,17 @@ class EmailsPreferencesForm(MagiForm):
     def __init__(self, *args, **kwargs):
         super(EmailsPreferencesForm, self).__init__(*args, **kwargs)
         turned_off = self.request.user.preferences.email_notifications_turned_off
-        for (type, sentence) in models.NOTIFICATION_TITLES.items():
+        for (type, message) in models.Notification.MESSAGES:
             value = True
             if type in turned_off:
                 value = False
-            self.fields['email{}'.format(type)] = forms.BooleanField(required=False, label=_(sentence), initial=value)
+            self.fields['email{}'.format(type)] = forms.BooleanField(required=False, label=_(message['title']), initial=value)
 
     def save(self, commit=True):
         new_emails_settings = []
-        for type in models.NOTIFICATION_TITLES.keys():
+        for type in models.Notification.MESSAGES_DICT.keys():
             if not self.cleaned_data.get('email{}'.format(type), False):
-                new_emails_settings.append(type)
+                new_emails_settings.append(models.Notification.get_i('message', type))
         self.request.user.preferences.save_email_notifications_turned_off(new_emails_settings)
         if commit:
             self.request.user.preferences.save()
@@ -347,7 +448,7 @@ class UserPreferencesForm(MagiForm):
                 self.fields['color'].initial = self.instance.color
         else:
             self.fields.pop('color')
-        self.fields['language'].choices = [l for l in self.fields['language'].choices if l[0]]
+        self.fields['i_language'].choices = [l for l in self.fields['i_language'].choices if l[0]]
         self.old_location = self.instance.location if self.instance else None
         if not getMagiCollection('activity'):
             del(self.fields['view_activities_language_only'])
@@ -376,9 +477,9 @@ class UserPreferencesForm(MagiForm):
 
     class Meta:
         model = models.UserPreferences
-        fields = ('description', 'location', 'favorite_character1', 'favorite_character2', 'favorite_character3', 'color', 'birthdate','language', 'view_activities_language_only')
+        fields = ('description', 'location', 'favorite_character1', 'favorite_character2', 'favorite_character3', 'color', 'birthdate','i_language', 'view_activities_language_only')
 
-class StaffEditUser(MagiForm):
+class StaffEditUser(_UserCheckEmailUsernameForm):
     force_remove_avatar = forms.BooleanField(required=False)
 
     def __init__(self, *args, **kwargs):
@@ -415,7 +516,7 @@ class StaffEditUser(MagiForm):
 
     class Meta:
         model = models.User
-        fields = ('username', )
+        fields = ('username', 'email')
 
 class ChangePasswordForm(MagiForm):
     old_password = forms.CharField(widget=forms.PasswordInput(), label=_('Old Password'))
@@ -476,7 +577,7 @@ class AddLinkForm(MagiForm):
 class LanguagePreferencesForm(MagiForm):
     class Meta:
         model = models.UserPreferences
-        fields = ('language',)
+        fields = ('i_language',)
 
 ############################################################
 # Confirm delete - works with everything
@@ -489,66 +590,44 @@ class ConfirmDelete(forms.Form):
 # Activity form
 
 class ActivityForm(MagiForm):
-    tags = forms.MultipleChoiceField(
-        required=False,
-        widget=forms.CheckboxSelectMultiple,
-        choices=[],
-        label=_('Tags'),
-    )
-
     def __init__(self, *args, **kwargs):
         super(ActivityForm, self).__init__(*args, **kwargs)
-        self.fields['language'].initial = self.request.user.preferences.language if self.request.user.is_authenticated() and self.request.user.preferences.language else django_settings.LANGUAGE_CODE
-        if ACTIVITY_TAGS:
-            self.fields['tags'].choices = ACTIVITY_TAGS
-            if self.instance:
-                self.fields['tags'].initial = self.instance.tags
-        else:
-            self.fields.pop('tags')
-
-    def save(self, commit=True):
-        instance = super(ActivityForm, self).save(commit=False)
-        if 'tags' in self.cleaned_data:
-            instance.save_tags(self.cleaned_data['tags'])
-        if commit:
-            instance.save()
-        return instance
+        self.fields['i_language'].initial = self.request.user.preferences.language if self.request.user.is_authenticated() and self.request.user.preferences.language else django_settings.LANGUAGE_CODE
 
     class Meta:
         model = models.Activity
-        fields = ('message', 'tags', 'language', 'image')
+        fields = ('message', 'c_tags', 'i_language', 'image')
         save_owner_on_creation = True
 
-class FilterActivities(MagiForm):
-    tags = forms.MultipleChoiceField(
-        required=False,
-        widget=forms.CheckboxSelectMultiple,
-        choices=[],
-        label=_('Tags'),
-    )
-    search = forms.CharField(required=False, label=t['Search'])
-    with_image = forms.NullBooleanField(required=False, initial=None, label=_('Image'))
-    ordering = forms.ChoiceField(choices=[
+class FilterActivities(MagiFiltersForm):
+    search_fields = ['message', 'c_tags']
+    ordering_fields = [
         ('modification', _('Last Update')),
         ('creation', _('Creation')),
         ('total_likes,creation', string_concat(_('Most Popular'), ' (', _('All time'), ')')),
         ('total_likes,id', string_concat(_('Most Popular'), ' (', _('This week'), ')')),
-    ], initial='modification', required=False, label=_('Ordering'))
-    reverse_order = forms.BooleanField(initial=True, required=False, label=_('Reverse order'))
+    ]
 
-    def __init__(self, *args, **kwargs):
-        super(FilterActivities, self).__init__(*args, **kwargs)
-        self.fields['language'].required = False
-        if ACTIVITY_TAGS:
-            self.fields['tags'].choices = ACTIVITY_TAGS
-            if self.instance:
-                self.fields['tags'].initial = self.instance.tags
-        else:
-            self.fields.pop('tags')
+    with_image = forms.NullBooleanField(label=_('Image'))
+    with_image_filter = MagiFilter(selector='image__isnull')
+
+    owner_id = forms.IntegerField(widget=forms.HiddenInput)
+
+    def filter_queryset(self, queryset, parameters, request):
+        queryset = super(FilterActivities, self).filter_queryset(queryset, parameters, request)
+        if 'feed' in parameters and request.user.is_authenticated():
+            queryset = queryset.filter(Q(owner__in=request.user.preferences.following.all()) | Q(owner_id=request.user.id))
+        elif request.user.is_authenticated() and request.user.preferences.view_activities_language_only:
+            queryset = queryset.filter(language=request.LANGUAGE_CODE)
+        elif ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT:
+            queryset = queryset.filter(language=request.LANGUAGE_CODE)
+        if 'ordering' in parameters and parameters['ordering'] == 'total_likes,id':
+            queryset = queryset.filter(modification__gte=timezone.now() - relativedelta(weeks=1))
+        return queryset
 
     class Meta:
         model = models.Activity
-        fields = ('search', 'tags', 'with_image', 'language', 'ordering', 'reverse_order')
+        fields = ('search', 'c_tags', 'with_image', 'i_language')
 
 ############################################################
 # Add/Edit reports
@@ -594,7 +673,13 @@ class ReportForm(MagiForm):
         fields = ('reason', 'message', 'images')
         save_owner_on_creation = True
 
-class FilterReports(MagiForm):
+class FilterReports(MagiFiltersForm):
+    search_fields = ['owner__username', 'message', 'staff_message', 'reason', 'reported_thing_title']
+    ordering_fields = [
+        ('i_status', 'Status'),
+        ('creation', 'Creation'),
+        ('modification', 'Last Update'),
+    ]
     reported_thing = forms.ChoiceField(
         required=False,
         choices=[],
@@ -602,11 +687,8 @@ class FilterReports(MagiForm):
 
     def __init__(self, *args, **kwargs):
         super(FilterReports, self).__init__(*args, **kwargs)
-        self.fields['i_status'].required = False
-        self.fields['i_status'].initial = models.REPORT_STATUS_PENDING
-        self.fields['staff'].required = False
-        self.fields['staff'].queryset = self.fields['staff'].queryset.filter(is_staff=True)
         self.fields['reported_thing'].choices = BLANK_CHOICE_DASH + [ (name, info['title']) for name, info in self.collection.types.items() ]
+        self.fields['staff'].queryset = self.fields['staff'].queryset.filter(is_staff=True)
 
     class Meta:
         model = models.Report
@@ -705,3 +787,22 @@ class DonatorBadgeForm(_BadgeForm):
 
     class Meta(_BadgeForm.Meta):
         fields = ('username', 'donation_month', 'source', 'show_on_profile', 'rank')
+
+class FilterBadges(MagiFiltersForm):
+    search_fields = ['user__username', 'name', 'description']
+    ordering_fields = [
+        ('date', 'Date'),
+        ('rank', 'Rank'),
+    ]
+
+    of_user = forms.IntegerField(widget=forms.HiddenInput)
+    of_user_filter = MagiFilter(to_queryset=lambda form, queryset, request, value: queryset.filter(user_id=value, show_on_profile=True))
+
+    def __init__(self, *args, **kwargs):
+        super(FilterBadges, self).__init__(*args, **kwargs)
+        self.fields['owner'].queryset = self.fields['owner'].queryset.filter(is_staff=True)
+        self.fields['owner'].label = 'Staff'
+
+    class Meta:
+        model = models.Badge
+        fields = ('search', 'rank', 'owner')

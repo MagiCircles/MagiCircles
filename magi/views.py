@@ -48,7 +48,7 @@ def signup(request):
             user = authenticate(username=form.cleaned_data['username'], password=form.cleaned_data['password'])
             preferences = models.UserPreferences.objects.create(
                 user=user,
-                language=request.LANGUAGE_CODE,
+                i_language=request.LANGUAGE_CODE,
                 view_activities_language_only=ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT,
             )
             login_action(request, user)
@@ -189,8 +189,9 @@ def settings(request):
     context['links'] = list(request.user.links.all())
     context['js_files'] = ['settings']
     filter_cuteform = {
-        'language': {
+        'i_language': {
             'type': CuteFormType.Images,
+            'image_folder': 'language',
         },
         'color': {
             'type': CuteFormType.Images,
@@ -276,7 +277,7 @@ def deletelink(request, pk):
 def moderatereport(request, report, action):
     if not request.user.is_authenticated() or not request.user.is_staff or request.method != 'POST':
         raise PermissionDenied()
-    report = get_object_or_404(models.Report.objects.exclude(owner=request.user).select_related('owner', 'owner__preferences'), pk=report, i_status=models.REPORT_STATUS_PENDING)
+    report = get_object_or_404(models.Report.objects.exclude(owner=request.user).select_related('owner', 'owner__preferences'), pk=report, i_status=models.Report.get_i('status', 'Pending'))
 
     if (not request.user.is_superuser
         and ((action == 'Edited' and not report.allow_edit)
@@ -311,7 +312,7 @@ def moderatereport(request, report, action):
 
     # Action: Ignore
     if action == 'Ignored':
-        report.i_status = models.REPORT_STATUS_IGNORED
+        report.i_status = models.Report.get_i('status', 'Ignored')
         report.save()
         moderated_reports = [report.pk]
 
@@ -323,7 +324,7 @@ def moderatereport(request, report, action):
         else:
             context['item_url'] = None
             context['item_open_sentence'] = None
-        report.i_status = models.REPORT_STATUS_EDITED
+        report.i_status = models.Report.get_i('status', 'Edited')
         # Notify reporter
         if report.owner:
             translation_activate(report.owner.preferences.language if report.owner.preferences.language else 'en')
@@ -344,13 +345,13 @@ def moderatereport(request, report, action):
         moderated_reports = [report.pk]
 
     elif action == 'Deleted':
-        report.i_status = models.REPORT_STATUS_DELETED
+        report.i_status = models.Report.get_i('status', 'Deleted')
         report.saved_data = dumpModel(thing)
         # Notify all reporters
         all_reports = models.Report.objects.filter(
             reported_thing=report.reported_thing,
             reported_thing_id=report.reported_thing_id,
-            i_status=models.REPORT_STATUS_PENDING,
+            i_status=models.Report.get_i('status', 'Pending'),
         ).select_related('owner', 'owner__preferences')
         for a_report in all_reports:
             if a_report.owner:
@@ -373,7 +374,7 @@ def moderatereport(request, report, action):
             staff=request.user,
             staff_message=report.staff_message,
             saved_data=report.saved_data,
-            i_status=models.REPORT_STATUS_DELETED,
+            i_status=models.Report.get_i('status', 'Deleted'),
         )
         thing.delete()
 
@@ -388,7 +389,7 @@ def reportwhatwillbedeleted(request, report):
         raise PermissionDenied()
     context = ajaxContext(request)
     # Get the report
-    report = get_object_or_404(models.Report, pk=report, i_status=models.REPORT_STATUS_PENDING)
+    report = get_object_or_404(models.Report, pk=report, i_status=models.Report.get_i('status', 'Pending'))
     # Get the reported thing
     queryset = report.reported_thing_collection.queryset
     thing = get_object_or_404(queryset, pk=report.reported_thing_id)
@@ -422,7 +423,7 @@ def likeactivity(request, pk):
     if 'like' in request.POST and not activity.liked:
         activity.likes.add(request.user)
         activity.save()
-        pushNotification(activity.owner, models.NOTIFICATION_LIKE, [unicode(request.user), unicode(activity)], url_values=[str(activity.id), tourldash(unicode(activity))], image=activity.image)
+        pushNotification(activity.owner, 'like', [unicode(request.user), unicode(activity)], url_values=[str(activity.id), tourldash(unicode(activity))], image=activity.image)
         return JsonResponse({
             'total_likes': activity.total_likes + 2,
             'result': 'liked',
@@ -449,7 +450,7 @@ def follow(request, username):
     if 'follow' in request.POST and not user.followed:
         request.user.preferences.following.add(user)
         request.user.preferences.save()
-        pushNotification(user, models.NOTIFICATION_FOLLOW, [unicode(request.user)], url_values=[str(request.user.id), unicode(request.user)], image=models.avatar(request.user, size=100))
+        pushNotification(user, 'follow', [unicode(request.user)], url_values=[str(request.user.id), unicode(request.user)], image=models.avatar(request.user, size=100))
         return JsonResponse({
             'total_followers': user.total_followers + 1,
             'result': 'followed',
@@ -467,4 +468,6 @@ def follow(request, username):
 
 def successedit(request):
     context = ajaxContext(request)
+    n = models.Notification.objects.get(id=1)
+
     return render(request, 'pages/ajax/successedit.html')

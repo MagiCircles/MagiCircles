@@ -10,12 +10,12 @@
       <div>
 	{% if activity.language != LANGUAGE_CODE %}
 	<a href="https://translate.google.com/#{{ activity.language }}/{{ LANGUAGE_CODE }}/{{ activity.message|urlencode }}" class="language" target="_blank">
-	  <small>{% with from_language=activity.localized_language to_language=localized_language %}{% blocktrans %}Translate from {{ from_language }} to {{ to_language }}{% endblocktrans %}{% endwith %}</small>
+	  <small>{% with from_language=activity.t_language to_language=localized_language %}{% blocktrans %}Translate from {{ from_language }} to {{ to_language }}{% endblocktrans %}{% endwith %}</small>
 	  <img src="{{ static_url }}img/language/{{ activity.language }}.png" alt="{{ activity.language }}">
 	</a>
 	{% elif activity.language != 'en' and user.is_authenticated and activity.cached_owner.username == user.username %}
 
-	<a href="{{ activity.edit_url }}" target="_blank" class="language" data-trigger="hover" data-toggle="tooltip" title="{% trans 'Language' %}: {{ activity.localized_language }}<br>{{ activity.edit_sentence }}" data-html="true"><img src="{{ static_url }}img/language/{{ activity.language }}.png" alt="{{ activity.language }}"></a>
+	<a href="{{ activity.edit_url }}" target="_blank" class="language" data-trigger="hover" data-toggle="tooltip" title="{% trans 'Language' %}: {{ activity.t_language }}<br>{{ activity.edit_sentence }}" data-html="true"><img src="{{ static_url }}img/language/{{ activity.language }}.png" alt="{{ activity.language }}"></a>
 	{% endif %}
 	<small class="date">
 	  <span class="timezone" data-timeago="true">
@@ -29,7 +29,7 @@
 	<a href="{{ activity.image_url }}" target="_blank" class="a-nodifference activity-image" style="background-image: url('{{ activity.image_url }}');"><i class="flaticon-link"></i></a>
 	{% endif %}
 	<p class="message to-markdown">{{ activity.message }}</p>
-	<div class="tags text-muted fontx0-8">{% for tag, localized_tag in activity.localized_tags %}<a href="/activities/?tags={{ tag }}" target="_blank" class="text-muted">#{{ localized_tag }}</a> {% endfor %}</div>
+	<div class="tags text-muted fontx0-8">{% for tag, t_tag in activity.t_tags.items %}<a href="/activities/?tags={{ tag }}" target="_blank" class="text-muted">#{{ t_tag }}</a> {% endfor %}</div>
 	<div class="socialbar">
 	  <div class="btn-group share">
 	    {% include 'include/share.html' with share_url=activity.http_item_url share_sentence=activity.shareSentence share_btn_class="main btn-sm" %}
@@ -58,7 +58,7 @@
 	    {% endif %}
 	    <div class="btn-group editbuttons">
 	      {% if activity.cached_owner.username == user.username %}
-	      <a href="{{ activity.edit_url }}" target="_blank" class="btn btn-link btn-sm"><i class="flaticon-edit"></i> {{ activity.edit_sentence }}</a>
+	      <a href="{{ activity.edit_url }}"{% if current != 'activity_item' %} target="_blank"{% endif %} class="btn btn-link btn-sm"><i class="flaticon-edit"></i> {{ activity.edit_sentence }}</a>
 	      {% elif 'report' in all_enabled and reportable %}
 	      <a href="{{ activity.report_url }}" target="_blank" class="btn btn-link btn-sm"><i class="flaticon-fingers"></i> {{ activity.report_sentence }}</a>
 	      {% endif %}

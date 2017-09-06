@@ -7,10 +7,9 @@ from django.utils import timezone
 from django.utils.formats import dateformat
 from django.forms.models import model_to_dict
 from django.conf import settings as django_settings
-from magi.utils import AttrDict, join_data, split_data, randomString, getMagiCollection, uploadToRandom, uploadItem, linkToImageURL
-from magi.settings import ACCOUNT_MODEL, GAME_NAME, COLOR, SITE_STATIC_URL, DONATORS_STATUS_CHOICES, USER_COLORS, FAVORITE_CHARACTERS, SITE_URL, SITE_NAME, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT
-from magi.item_model import *
-from magi.model_choices import *
+from magi.utils import AttrDict, randomString, getMagiCollection, uploadToRandom, uploadItem, linkToImageURL
+from magi.settings import ACCOUNT_MODEL, GAME_NAME, COLOR, SITE_STATIC_URL, DONATORS_STATUS_CHOICES, USER_COLORS, FAVORITE_CHARACTERS, SITE_URL, SITE_NAME, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, ACTIVITY_TAGS
+from magi.item_model import MagiModel, BaseMagiModel, get_image_url, i_choices, addMagiModelProperties
 
 Account = ACCOUNT_MODEL
 
@@ -40,22 +39,21 @@ User.owner = property(lambda u: u)
 ############################################################
 # Utility Models
 
-class UserImage(MagiModel):
-    collection_name = 'userimages' # Doesn't exist in default_settings.py
+class UserImage(BaseMagiModel):
     image = models.ImageField(upload_to=uploadToRandom('user_images/'))
 
     def __unicode__(self):
-        return unicode(self.image)
+        return unicode(self.image_url)
 
 ############################################################
 # User preferences
 
-class UserPreferences(models.Model):
+class UserPreferences(BaseMagiModel):
     user = models.OneToOneField(User, related_name='preferences', on_delete=models.CASCADE)
-    language = models.CharField(_('Language'), max_length=10, choices=django_settings.LANGUAGES)
-    @property
-    def localized_language(self):
-        return LANGUAGES_DICT[self.language]
+
+    LANGUAGE_CHOICES = django_settings.LANGUAGES
+    i_language = models.CharField(_('Language'), max_length=10, choices=LANGUAGE_CHOICES)
+
     description = models.TextField(_('Description'), null=True, help_text=_('Write whatever you want. You can add formatting and links using Markdown.'), blank=True)
     favorite_character1 = models.CharField(verbose_name=_('{nth} Favorite Character').format(nth=_('1st')), null=True, max_length=200)
     favorite_character2 = models.CharField(verbose_name=_('{nth} Favorite Character').format(nth=_('2nd')), null=True, max_length=200)
@@ -67,16 +65,40 @@ class UserPreferences(models.Model):
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
     following = models.ManyToManyField(User, related_name='followers')
-    i_status = models.CharField(choices=STATUS_CHOICES, max_length=12, null=True)
-    @property
-    def status(self):
-        return STATUS_CHOICES_DICT[self.i_status] if self.i_status else None
+
+    STATUS_CHOICES = DONATORS_STATUS_CHOICES if DONATORS_STATUS_CHOICES else (
+        ('THANKS', 'Thanks'),
+        ('SUPPORTER', _('Player')),
+        ('LOVER', _('Super Player')),
+        ('AMBASSADOR', _('Extreme Player')),
+        ('PRODUCER', _('Master Player')),
+        ('DEVOTEE', _('Ultimate Player')),
+    )
+
+    STATUS_COLORS = {
+        'SUPPORTER': '#4a86e8',
+        'LOVER': '#ff53a6',
+        'AMBASSADOR': '#a8a8a8',
+        'PRODUCER': '#c98910',
+        'DEVOTEE': '#c98910',
+    }
+
+    STATUS_COLOR_STRINGS = {
+        'SUPPORTER': _('blue'),
+        'LOVER':  _('pink'),
+        'AMBASSADOR':  _('shiny Silver'),
+        'PRODUCER':  _('shiny Gold'),
+        'DEVOTEE':  _('shiny Gold'),
+    }
+
+    i_status = models.CharField(_('Status'), choices=STATUS_CHOICES, max_length=12, null=True)
     @property
     def status_color(self):
-        return STATUS_COLORS[self.i_status] if self.i_status else None
+        return self.STATUS_COLORS[self.i_status] if self.i_status else None
     @property
     def status_color_string(self):
-        return STATUS_COLOR_STRINGS[self.i_status] if self.i_status else None
+        return self.STATUS_COLOR_STRINGS[self.i_status] if self.i_status else None
+
     donation_link = models.CharField(max_length=200, null=True, blank=True)
     donation_link_title = models.CharField(max_length=100, null=True, blank=True)
     view_activities_language_only = models.BooleanField(_('View activities in your language only?'), default=ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT)
@@ -154,7 +176,7 @@ class UserPreferences(models.Model):
     def email_notifications_turned_off(self):
         if not self.email_notifications_turned_off_string:
             return []
-        return [int(t) for t in self.email_notifications_turned_off_string.split(',')]
+        return [Notification.MESSAGES[int(t)][0] for t in self.email_notifications_turned_off_string.split(',')]
 
     def is_notification_email_allowed(self, notification_type):
         if self.invalid_email:
@@ -183,28 +205,64 @@ class UserPreferences(models.Model):
 ############################################################
 # User links
 
-class UserLink(models.Model):
+class UserLink(BaseMagiModel):
     alphanumeric = validators.RegexValidator(r'^[0-9a-zA-Z-_\. ]*$', 'Only alphanumeric and - _ characters are allowed.')
     owner = models.ForeignKey(User, related_name='links')
-    i_type = models.CharField(_('Platform'), max_length=20, choices=LINK_CHOICES)
-    @property
-    def type(self):
-        return LINK_CHOICES_DICT.get(self.i_type, self.i_type)
     value = models.CharField(_('Username/ID'), max_length=64, help_text=_('Write your username only, no URL.'), validators=[alphanumeric])
-    i_relevance = models.PositiveIntegerField(_(u'How often do you tweet/stream/post about {}?').format(GAME_NAME), choices=LINK_RELEVANCE_CHOICES, null=True, blank=True)
-    @property
-    def relevance(self):
-        return LINK_RELEVANCE_CHOICES_DICT.get(self.i_relevance, None) if self.i_relevance else None
+
+    TYPE_CHOICES = (
+        ('facebook', 'Facebook'),
+        ('twitter', 'Twitter'),
+        ('reddit', 'Reddit'),
+        ('schoolidolu', 'School Idol Tomodachi'),
+        ('stardustrun', 'Stardust Run'),
+        ('frgl', 'fr.gl'),
+        ('line', 'LINE Messenger'),
+        ('tumblr', 'Tumblr'),
+        ('twitch', 'Twitch'),
+        ('steam', 'Steam'),
+        ('instagram', 'Instagram'),
+        ('youtube', 'YouTube'),
+        ('github', 'GitHub'),
+    )
+
+    i_type = models.CharField(_('Platform'), max_length=20, choices=TYPE_CHOICES)
+
+    RELEVANCE_CHOICES = (
+        _('Never'),
+        _('Sometimes'),
+        _('Often'),
+        _('Every single day'),
+    )
+
+    i_relevance = models.PositiveIntegerField(_(u'How often do you tweet/stream/post about {}?').format(GAME_NAME), choices=i_choices(RELEVANCE_CHOICES), null=True, blank=True)
+
+    LINK_URLS = {
+        'Location': u'http://maps.google.com/?q={}',
+        'twitter': u'http://twitter.com/{}',
+        'facebook': u'https://www.facebook.com/{}',
+        'reddit': u'http://www.reddit.com/user/{}',
+        'schoolidolu': u'http://schoolido.lu/user/{}/',
+        'frgl': u'http://fr.gl/user/{}/',
+        'stardustrun': u'http://stardust.run/user/{}/',
+        'line': u'http://line.me/#{}',
+        'tumblr': u'http://{}.tumblr.com/',
+        'twitch': u'http://twitch.tv/{}',
+        'steam': u'http://steamcommunity.com/id/{}',
+        'instagram': u'https://instagram.com/{}/',
+        'youtube': u'https://www.youtube.com/{}',
+        'github': u'https://github.com/{}',
+    }
 
     @property
     def url(self):
-        if self.i_type in LINK_URLS:
-            return LINK_URLS[self.i_type].format(self.value)
+        if self.i_type in self.LINK_URLS:
+            return self.LINK_URLS[self.i_type].format(self.value)
         return '#'
 
     @property
     def image_url(self):
-        if self.i_type in LINK_URLS:
+        if self.i_type in self.LINK_URLS:
             return linkToImageURL(self)
         return None
 
@@ -219,11 +277,13 @@ class Activity(MagiModel):
     owner = models.ForeignKey(User, related_name='activities')
     message = models.TextField(_('Message'))
     likes = models.ManyToManyField(User, related_name="liked_activities")
-    language = models.CharField(_('Language'), max_length=4, choices=django_settings.LANGUAGES)
-    @property
-    def localized_language(self):
-        return LANGUAGES_DICT[self.language]
-    tags_string = models.TextField(blank=True, null=True)
+
+    LANGUAGE_CHOICES = django_settings.LANGUAGES
+    i_language = models.CharField(_('Language'), max_length=4, choices=LANGUAGE_CHOICES)
+
+    TAGS_CHOICES = ACTIVITY_TAGS if ACTIVITY_TAGS else []
+    c_tags = models.TextField(_('Tags'), blank=True, null=True)
+
     image = models.ImageField(_('Image'), upload_to=uploadToRandom('activities/'), null=True, blank=True, help_text=_('Only post official artworks, artworks you own, or fan artworks that are approved by the artist and credited.'))
 
     tinypng_settings = {
@@ -237,7 +297,8 @@ class Activity(MagiModel):
     _cache_last_update = models.DateTimeField(null=True)
     _cache_owner_username = models.CharField(max_length=32, null=True)
     _cache_owner_email = models.EmailField(blank=True)
-    _cache_owner_preferences_i_status = models.CharField(choices=STATUS_CHOICES, max_length=12, null=True)
+    _cache_owner_preferences_i_status = models.CharField(choices=UserPreferences.STATUS_CHOICES,
+                                                         max_length=12, null=True)
     _cache_owner_preferences_twitter = models.CharField(max_length=32, null=True, blank=True)
 
     def force_cache_owner(self):
@@ -265,31 +326,11 @@ class Activity(MagiModel):
             'ajax_item_url': '/ajax/user/{}/'.format(self.owner_id),
             'preferences': AttrDict({
                 'i_status': self._cache_owner_preferences_i_status,
-                'status': STATUS_CHOICES_DICT[self._cache_owner_preferences_i_status] if self._cache_owner_preferences_i_status else None,
+                'status': dict(UserPreferences.STATUS_CHOICES)[self._cache_owner_preferences_i_status] if self._cache_owner_preferences_i_status else None,
                 'twitter': self._cache_owner_preferences_twitter,
             }),
         })
         return cached_owner
-
-    @property
-    def tags(self):
-        return split_data(self.tags_string)
-
-    @property
-    def localized_tags(self):
-        return [(tag, ACTIVITY_TAGS_DICT[tag]) for tag in self.tags if tag in ACTIVITY_TAGS_DICT]
-
-    def add_tags(self, new_tags):
-        self.tags_string = join_data(*(self.tags + [tag for tag in new_tags if tag not in tags]))
-
-    def remove_tags(self, tags_to_remove):
-        self.tags_string = join_data(*[tag for tag in self.tags if tag not in tags_to_remove])
-
-    def save_tags(self, tags):
-        """
-        Will completely replace any existing list of tags.
-        """
-        self.tags_string = join_data(*tags)
 
     @property
     def shareSentence(self):
@@ -333,27 +374,50 @@ class Notification(MagiModel):
 
     owner = models.ForeignKey(User, related_name='notifications', db_index=True)
     creation = models.DateTimeField(auto_now_add=True)
-    message = models.PositiveIntegerField(choices=NOTIFICATION_CHOICES)
-    message_data = models.TextField(blank=True, null=True)
-    url_data = models.TextField(blank=True, null=True)
+
+    MESSAGES = [
+        ('like', {
+            'format': _(u'{} liked your activity: {}.'),
+            'title': _(u'When someone likes your activity.'),
+            'open_sentence': lambda n: _('Open {thing}').format(thing=_('Activity')),
+            'url': u'/activity/{}/{}/',
+            'icon': 'heart',
+        }),
+        ('follow', {
+            'format': _(u'{} just followed you.'),
+            'title': _(u'When someone follows you.'),
+            'open_sentence': lambda n: _('Open {thing}').format(thing=_('Profile')),
+            'url': u'/user/{}/{}/',
+            'icon': 'users',
+        }),
+    ]
+    MESSAGES_DICT = dict(MESSAGES)
+    MESSAGE_CHOICES = [(key, message['title']) for key, message in MESSAGES]
+    i_message = models.PositiveIntegerField(choices=i_choices(MESSAGE_CHOICES))
+
+    c_message_data = models.TextField(blank=True, null=True)
+    c_url_data = models.TextField(blank=True, null=True)
     email_sent = models.BooleanField(default=False)
     seen = models.BooleanField(default=False)
     image = models.ImageField(upload_to=uploadItem('notifications/'), null=True, blank=True)
 
+    def message_value(self, key):
+        """
+        Get the dictionary value for this key, for the current notification message.
+        """
+        return self.MESSAGES_DICT.get(self.message, {}).get(key, u'')
+
     @property
     def english_message(self):
-        data = split_data(self.message_data)
-        return NOTIFICATION_DICT[self.message].format(*data).replace('\n', '')
+        return self.message_value('format').format(*self.message_data).replace('\n', '')
 
     @property
     def localized_message(self):
-        data = split_data(self.message_data)
-        return _(NOTIFICATION_DICT[self.message]).format(*data).replace('\n', '')
+        return _(self.message_value('format')).format(*self.message_data).replace('\n', '')
 
     @property
     def website_url(self):
-        data = split_data(self.url_data if self.url_data else self.message_data)
-        return NOTIFICATION_URLS[self.message].format(*data)
+        return self.message_value('url').format(*(self.url_data if self.url_data else self.message_data))
 
     @property
     def full_website_url(self):
@@ -362,11 +426,11 @@ class Notification(MagiModel):
 
     @property
     def url_open_sentence(self):
-        return NOTIFICATION_OPEN_SENTENCES[self.message](self)
+        return self.message_value('open_sentence')(self)
 
     @property
     def icon(self):
-        return NOTIFICATION_ICONS[self.message]
+        return self.message_value('icon')
 
     def __unicode__(self):
         return self.localized_message
@@ -388,9 +452,15 @@ class Report(MagiModel):
     images = models.ManyToManyField(UserImage, related_name="report", verbose_name=_('Images'))
     staff = models.ForeignKey(User, related_name='staff_reports', null=True, on_delete=models.SET_NULL)
     staff_message = models.TextField(null=True)
-    i_status = models.PositiveIntegerField(choices=REPORT_STATUSES, default=0)
-    @property
-    def status(self): return REPORT_STATUSES_DICT[self.i_status]
+
+    STATUS_CHOICES = [
+        'Pending', # No staff took care of it
+        'Deleted', # Staff decided to delete the thing
+        'Edited', # Staff decided to edit the thing
+        'Ignored', # Staff decided to ignore the report
+    ]
+
+    i_status = models.PositiveIntegerField('Status', choices=i_choices(STATUS_CHOICES), default=0)
     saved_data = models.TextField(null=True)
 
     @property # Required by magicircles since the magicollection uses types
@@ -477,7 +547,7 @@ class Badge(MagiModel):
 
     date = models.DateField(default=datetime.datetime.now)
     owner = models.ForeignKey(User, related_name='badges_created')
-    user = models.ForeignKey(User, related_name='badges')
+    user = models.ForeignKey(User, related_name='badges', db_index=True)
     donation_month = models.ForeignKey(DonationMonth, related_name='badges', null=True)
     name = models.CharField(max_length=50, null=True)
     description = models.CharField(max_length=300)
@@ -485,7 +555,18 @@ class Badge(MagiModel):
     url = models.CharField(max_length=200, null=True)
     show_on_top_profile = models.BooleanField(default=False)
     show_on_profile = models.BooleanField(default=False)
-    rank = models.PositiveIntegerField(null=True, blank=True, choices=BADGE_RANK_CHOICES, help_text='Top 3 of this specific badge.')
+
+    RANK_BRONZE = 1
+    RANK_SILVER = 2
+    RANK_GOLD = 3
+
+    RANK_CHOICES = (
+        (RANK_BRONZE, _('Bronze')),
+        (RANK_SILVER, _('Silver')),
+        (RANK_GOLD, _('Gold')),
+    )
+
+    rank = models.PositiveIntegerField(null=True, blank=True, choices=RANK_CHOICES, help_text='Top 3 of this specific badge.')
 
     tinypng_settings = {
         'image': BADGE_IMAGE_TINYPNG_SETTINGS,

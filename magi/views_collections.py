@@ -52,6 +52,8 @@ def _show_edit_button(collection, collection_view, request, context):
             context['show_edit_button_owner_only'] = True
         if collection.edit_view.staff_required:
             context['edit_button_staff_only'] = True
+        if collection_view.staff_required:
+            context['staff_only_full_page'] = True
 
 def _show_collect_button(collection, collection_view, request, context):
     if collection.collectible and collection.collectible.add_view.enabled:

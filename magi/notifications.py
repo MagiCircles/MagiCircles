@@ -8,8 +8,8 @@ def pushNotification(user, notification_type, values, url_values=None, image=Non
     """
     notification = models.Notification.objects.create(
         owner=user,
-        message=notification_type,
-        message_data=join_data(*values),
+        i_message=models.Notification.get_i('message', notification_type),
+        c_message_data=join_data(*values),
         url_data=(join_data(*url_values) if url_values else None),
         image=image)
     models.UserPreferences.objects.filter(pk=user.preferences.pk).update(unread_notifications=F('unread_notifications') + 1)
