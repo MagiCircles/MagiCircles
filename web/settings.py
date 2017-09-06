@@ -108,7 +108,7 @@ else:
 if hasattr(settings_module, 'TRANSLATION_HELP_URL'):
     TRANSLATION_HELP_URL = getattr(settings_module, 'TRANSLATION_HELP_URL')
 else:
-    TRANSLATION_HELP_URL = 'https://poeditor.com/join/project/h6kGEpdnmM'
+    TRANSLATION_HELP_URL = 'https://github.com/SchoolIdolTomodachi/MagiCircles/wiki/Translate-the-website'
 
 if hasattr(settings_module, 'TOTAL_DONATORS'):
     TOTAL_DONATORS = getattr(settings_module, 'TOTAL_DONATORS')
