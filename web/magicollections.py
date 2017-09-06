@@ -23,6 +23,10 @@ class _View(object):
     """
     Class used inside MagiCollection for common variables inside views
     """
+
+    def __init__(self, collection):
+        self.collection = collection
+
     # Optional variables without default
     js_files = []
     extra_context = None
@@ -46,9 +50,6 @@ class _View(object):
 
     def get_queryset(self, queryset, parameters, request):
         return self.collection.get_queryset(queryset, parameters, request)
-
-    def __init__(self, collection):
-        self.collection = collection
 
     def check_permissions(self, request, context):
         if not self.enabled:
