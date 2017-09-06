@@ -6,7 +6,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 SECRET_KEY = '%no*6sl#g&34vg61&4zs*pjk+gb9_ma-oua!@h1o0wn3fxb!k#'
 
 LOCALE_PATHS = [
-    os.path.join(BASE_DIR, 'web/locale'),
+    os.path.join(BASE_DIR, 'magi/locale'),
 ]
 
 SITE = 'none'
@@ -32,7 +32,7 @@ INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.messages',
-    'web',
+    'magi',
 )
 
 MIDDLEWARE_CLASSES = (

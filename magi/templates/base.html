@@ -1,0 +1,220 @@
+{% load i18n %}
+{% load magi_tags %}
+{% load tools %}
+{% if not static_url %}{% forceLoadRawContext %}{% endif %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE }}" class="html-current-{{ current }}{% if shortcut_url != None %} html-shortcut-{{ shortcut_url }}{% endif %}">
+  <head>
+    <meta charset="UTF-8">
+    <title>{{ site_name }} - {% block title %}{% if page_title %}{{ page_title }}{% else %}{% trans site_description %}{% endif %}{% endblock %}</title>
+
+    <link rel="shortcut icon" type="image/x-icon" href="{{ static_url }}favicon.ico" />
+    <link rel="stylesheet" href="{{ static_url }}bower/bootstrap/dist/css/bootstrap.min.css">
+    {% if debug %}
+    <link rel="stylesheet/less" type="text/css" href="{{ static_url }}less/style.less" />
+    <script src="{{ static_url }}bower/less/dist/less.min.js"></script>
+    {% else %}
+    <link rel="stylesheet" href="{{ static_url }}css/style.css?{{ static_files_version }}">
+    {% endif %}
+
+    <meta property="og:image" content="{% block shareimage %}{% if share_image %}{{ share_image }}{% else %}{{ full_site_image }}{% endif %}{% endblock %}"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <meta name="description" content="{% trans site_description %}">
+    <meta name="keywords" content="{{ game_name }}, {{ site_name }}, Android game, iPhone game, rhythm game, cards, card, tracker, share collection{% for hashtag in hashtags %},{{ hashtag }}{% endfor %}">
+    <meta name="twitter:card" content="{{ site_name }} - {% trans site_description %}">
+    <meta name="twitter:image" content="{% block shareimagetwitter %}{% if share_image %}{{ share_image }}{% else %}{{ full_site_image }}{% endif %}{% endblock %}">
+    <meta name="twitter:creator" content="@db0company">
+    <!--[if lt IE 9]>
+    <script src="http://html5shim.googlecode.com/svn/trunk/html5.js">
+    </script>
+    <![endif]-->
+  </head>
+  <body class="current-{{ current }}{% if shortcut_url != None %} shortcut-{{ shortcut_url }}{% endif %}">
+    {% if not hidenavbar %}
+    <nav class="navbar navbar-main navbar-fixed-top">
+      <div class="container">
+	<div class="navbar-header">
+	  <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target=".navbar-collapse">
+	    <span class="sr-only">Toggle navigation</span>
+	    <span class="icon-bar"></span>
+	    <span class="icon-bar"></span>
+	    <span class="icon-bar"></span>
+	  </button>
+	  <a class="navbar-brand" href="/">
+	    {% if site_nav_logo %}<img src="{{ static_url }}img/{{ site_nav_logo }}" class="logo hidden-xs hidden-sm"><span class="visible-xs visible-sm site-name">{{ site_name }}</span>{% else %}{{ site_name }}{% endif %}
+	  </a>
+	</div>
+	<div class="collapse navbar-collapse collapse">
+	  <ul class="nav navbar-nav navbar-right">
+	    {% for link_name, link in navbar_links.items %}
+	    {% if link_name == 'more' and user.is_authenticated and 'notification' in all_enabled %}
+	    <li>
+	      <a href="/notifications/">
+		<i class="flaticon-world"></i>
+		<i class="flaticon-loading" style="display: none;"></i>
+		{% if user.preferences.unread_notifications %}
+		<span class="badge progress-bar-info">{{ user.preferences.unread_notifications }}</span>
+		{% endif %}
+	      </a>
+	    </li>
+	    {% endif %}
+	    {% callWithContext dict=link function='show_link_callback' %}
+	    {% if result_of_callwithcontext %}
+	    <li class="{% if current == link_name %}active{% endif %}{% if link.is_list %} dropdown{% endif %}">
+	      <a href="{{ link.url|default_if_none:'#' }}"{% if link.is_list %} class="dropdown-toggle" data-toggle="dropdown" id="navBarIDDropDown{{ link_name }}"{% endif %}>
+		{% if link.icon %}
+		<i class="flaticon-{{ link.icon }}"></i>
+		{% elif link.image %}
+		<img src="{{ static_url }}img/{{ link.image }}.png" height="16" />
+		{% endif %}
+		{% if link.image or link.icon %}<span class="hidden-sm"> &nbsp; {% else %}<span>{% endif %}
+		    {% navbarTitle link=link %}
+	          </span>
+	      </a>
+              {% if link.is_list %}
+	      <ul class="dropdown-menu" role="menu">
+		{% for sub_link_name, sub_link in link.links.items %}
+		{% callWithContext dict=sub_link function='show_link_callback' %}
+		{% if result_of_callwithcontext %}
+                {% if sub_link.divider_before %}
+                <li class="divider"></li>
+                {% endif %}
+		<li class="{% if current == sub_link_name %}active{% endif %}">
+		  <a href="{% navbarGetURL link=sub_link %}">
+		    {% if sub_link.icon %}
+		    <i class="flaticon-{{ sub_link.icon }}"></i>
+		    {% elif link.image %}
+		    <img src="{{ static_url }}img/{{ sub_link.image }}.png" height="16" />
+		    {% endif %}
+		    {% navbarTitle link=sub_link %}
+		  </a>
+		</li>
+                {% if sub_link.divider_after %}
+                <li class="divider"></li>
+                {% endif %}
+		{% endif %}
+		{% endfor %}
+	        {% if link.is_list and link_name == 'more' %}
+	        <li>
+	          <form action="{% if user.is_authenticated %}/ajax/changelanguage/{% else %}/i18n/setlang/{% endif %}" method="post" style="padding: 3px 20px;">
+		    {% csrf_token %}
+		    <input name="next" type="hidden" value="{{ current_url }}" />
+		    <select name="i_language" id="switchLanguage">
+		      {% for lang in LANGUAGES %}
+		      <option value="{{ lang.0 }}"{% if lang.0 == LANGUAGE_CODE %} selected{% endif %}>{{ lang.1 }}</option>
+		      {% endfor %}
+		    </select>
+	          </form>
+	          <a href="{{ translation_help_url }}" class="fontx0-8 text-muted" target="_blank">{% trans 'Help us translate the site' %}</a>
+	        </li>
+	        {% endif %}
+	      </ul>
+              {% endif %}
+	    </li>
+	    {% endif %}
+	    {% endfor %}
+	  </ul>
+	</div>
+      </div>
+    </nav>
+    {% endif %}
+
+    <main>
+      {% block content %}{% endblock %}
+    </main>
+
+    <!-- Modal -->
+    <div class="modal fade" id="modal">
+      <div class="modal-dialog">
+	<div class="modal-content">
+	</div>
+      </div>
+    </div>
+
+    <!-- CuteForm Modal -->
+    <div class="modal fade" id="cuteform-modal">
+      <div class="modal-dialog modal-lg text-center">
+	<div class="modal-content">
+	  <div class="modal-body"></div>
+	</div>
+      </div>
+    </div>
+
+    <!-- Free Modal -->
+    <div class="modal fade" id="freeModal">
+      <div class="modal-dialog modal-lg">
+	<div class="modal-content">
+	  <div class="modal-header">
+	    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+	    <h4 class="modal-title"></h4>
+	  </div>
+	  <div class="modal-body"></div>
+	  <div class="modal-footer">
+	    <button type="button" class="btn" data-dismiss="modal">{% t 'Go' %}</button>
+	  </div>
+	</div>
+      </div>
+    </div>
+
+    {% if user.is_staff %}
+    <a href="#hideStaffButtons" style="display: none;" data-toggle="tooltip" data-placement="top" data-trigger="hover" data-html="true"  title="Hide/Show<br>Staff Only Buttons"><i class="flaticon-promo"></i></a>
+    {% endif %}
+
+    <script>
+    var disqus_config = function () {
+      this.language = "{{ LANGUAGE_CODE }}";
+    };
+    var static_url = '{{ static_url }}';
+    var empty_image = '{{ static_url }}img/{{ empty_image }}';
+    var disqus_shortname = '{{ disqus_shortname }}';
+    var is_authenticated = {% if user.is_authenticated %}'{{ user.username }}'{% else %}false{% endif %};
+    var translated_terms = {{ javascript_translated_terms_json|safe }};
+    var staff_buttons_hidden = true;
+    </script>
+
+    <script src="{{ static_url }}bower/jquery/jquery.min.js"></script>
+    <script src="{{ static_url }}js/jquery.form.min.js"></script>
+    <script src="{{ static_url }}bower/bootstrap/dist/js/bootstrap.min.js"></script>
+    <script src="{{ static_url }}bower/jquery-easing/jquery.easing.min.js"></script>
+    <script src="{{ static_url }}bower/Autolinker.js/dist/Autolinker.min.js"></script>
+    <script src="{{ static_url }}bower/CuteForm/cuteform.js"></script>
+    <script>
+      {% if cuteform_fields %}{% for selector, json in cuteform_fields_json.items %}
+      cuteform($('{{ selector }}'), {{ json|safe }});
+      {% endfor %}{% endif %}
+    </script>
+    {% block js %}{% endblock %}
+    {% block js2 %}{% endblock %}
+    <script src="{{ static_url }}js/magi_main.js?{{ static_files_version }}"></script>
+    <script src="{{ static_url }}js/main.js?{{ static_files_version }}"></script>
+    {% for js_file in js_files %}
+    <script src="{% if js_file|startswith:'http' %}{{ js_file }}{% else %}{{ static_url }}{% if not js_file|startswith:'bower' %}js/{% endif %}{{ js_file }}.js?{{ static_files_version }}{% endif %}"></script>
+    {% endfor %}
+    {% if ajax_callback %}
+    <script>
+    $(document).ready(function() {
+    {{ ajax_callback }}();
+    });
+    </script>
+    {% endif %}
+    {% block afterjs %}{% endblock %}
+
+    <script>
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+	ga('create', '{{ google_analytics }}', 'auto');
+	ga('send', 'pageview');
+    </script>
+    <script type="text/javascript">
+      (function () {
+      var s = document.createElement('script'); s.async = true;
+      s.type = 'text/javascript';
+      s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+      (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+      }());
+      </script>
+  </body>
+</html>

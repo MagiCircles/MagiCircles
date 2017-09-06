@@ -41,7 +41,7 @@ INSTALLED_APPS = (
     'bootstrap_form_horizontal',
     'rest_framework',
     'storages',
-    'web',
+    'magi',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -55,8 +55,8 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.locale.LocaleMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'web.middleware.languageFromPreferences.LanguageFromPreferenceMiddleWare',
-    'web.middleware.httpredirect.HttpRedirectMiddleware',
+    'magi.middleware.languageFromPreferences.LanguageFromPreferenceMiddleWare',
+    'magi.middleware.httpredirect.HttpRedirectMiddleware',
 )
 
 ROOT_URLCONF = 'sample_project.urls'
@@ -95,7 +95,7 @@ STATIC_URL = '/static/'
 
 SITE = 'sample'
 
-AUTHENTICATION_BACKENDS = ('web.backends.AuthenticationBackend',)
+AUTHENTICATION_BACKENDS = ('magi.backends.AuthenticationBackend',)
 
 DEBUG_PORT = 8000
 
@@ -113,7 +113,7 @@ LANGUAGES = (
 LANGUAGE_CODE = 'en'
 
 LOCALE_PATHS = [
-  os.path.join(BASE_DIR, 'web/locale'),
+  os.path.join(BASE_DIR, 'magi/locale'),
 ]
 
 STATIC_UPLOADED_FILES_PREFIX = None

@@ -1,0 +1,38 @@
+{# variables: user, report, sentence, subject #}
+{% extends 'emails/base.html' %}
+{% load i18n %}
+
+{% block subject %}{{ subject }}{% endblock %}
+{% block headersubject %}{{ subject }}{% endblock %}
+
+{% block content %}
+{% trans 'Hi' %} {{ user.username }},
+<br><br>
+
+<p>
+  {{ sentence }}
+</p>
+<p>
+  <strong>{% trans 'Staff Message:' %}</strong><br>
+  {{ report.staff_message }}
+  {% if user.preferences.i_language and user.preferences.language != 'en' %}
+  <br><small><a href="https://translate.google.com/#en/{{ user.preferences.language }}/{{ report.staff_message|urlencode }}">
+      {% with from_language='English' to_language=user.preferences.localized_language %}
+      {% blocktrans %}Translate from {{ from_language }} to {{ to_language }}{% endblocktrans %}
+      {% endwith %}
+    </a>
+  {% endif %}
+</p>
+{% endblock %}
+
+{% block actionbuttontitle %}{% if item_url %}{{ item_open_sentence }}{% else %}{{ site_name }}{% endif %}{% endblock %}
+  {% block actionbuttonalt %}{% if item_url %}{{ item_open_sentence }}{% else %}{{ site_name }}{% endif %}{% endblock %}
+
+{% block actionlink %}{% if item_url %}{{ item_url }}{% endif %}{% endblock %}
+
+{% block footersentence %}
+<div style="text-align: right">
+  {% if show_donation %}{% include 'emails/donation_footer.html' %}{% endif %}
+  {% trans 'Moderated by:' %} <a href="{{ site_name }}user/{{ report.staff.id }}/{{ report.staff }}/">{{ report.staff }}</a>
+</div>
+{% endblock %}
