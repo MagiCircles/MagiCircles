@@ -76,21 +76,26 @@ def get_ajax_edit_url(instance):
 # Get sentences
 
 def get_open_sentence(instance):
-    return _('Open {thing}').format(thing=unicode(instance.collection.title).lower())
+    return _('Open {thing}').format(thing=unicode(instance.collection_title).lower())
 
 def get_edit_sentence(instance):
-    return _('Edit {thing}').format(thing=unicode(instance.collection.title).lower())
+    return _('Edit {thing}').format(thing=unicode(instance.collection_title).lower())
 
 def get_delete_sentence(instance):
-    return _('Delete {thing}').format(thing=unicode(instance.collection.title).lower())
+    return _('Delete {thing}').format(thing=unicode(instance.collection_title).lower())
 
 def get_report_sentence(instance):
-    return _('Report {thing}').format(thing=unicode(instance.collection.title).lower())
+    return _('Report {thing}').format(thing=unicode(instance.collection_title).lower())
 
 def get_collection_plural_name(instance):
     if not getattr(instance, '_collection_plural_name', None):
         instance._collection_plural_name = instance.collection.plural_name
     return instance._collection_plural_name
+
+def get_collection_title(instance):
+    if not getattr(instance, '_collection_title', None):
+        instance._collection_title = instance.collection.title
+    return instance._collection_title
 
 ############################################################
 # Transform an existing model to an ItemModel
@@ -104,6 +109,7 @@ def addItemModelProperties(modelClass, collection_name):
     modelClass.collection_name = collection_name
     modelClass.collection = property(get_collection)
     modelClass.collection_plural_name = property(get_collection_plural_name)
+    modelClass.collection_title = property(get_collection_title)
     modelClass.item_url = property(get_item_url)
     modelClass.ajax_item_url = property(get_ajax_item_url)
     modelClass.full_item_url = property(get_full_item_url)
@@ -127,6 +133,7 @@ class ItemModel(models.Model):
 
     collection = property(get_collection)
     collection_plural_name = property(get_collection_plural_name)
+    collection_title = property(get_collection_title)
     item_url = property(get_item_url)
     ajax_item_url = property(get_ajax_item_url)
     full_item_url = property(get_full_item_url)
