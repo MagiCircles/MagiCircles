@@ -550,7 +550,7 @@ class UserCollection(MagiCollection):
         ('Inappropriate location', 'Your location was inappropriate. ' + please_understand_template_sentence),
     ])
     report_delete_templates = {
-        'Inappropriate behavior towards other user(s)': 'We recently noticed that you\'ve recently been acting in an inappropriate manner towards other user(s), which doesn\'t correspond to what we expect from our community members. Your profile, accounts, activities and everything else you owned on our website has been permanently deleted, and we kindly ask you not to re-iterate your actions.',
+        'Inappropriate behavior towards other user(s)': 'We noticed that you\'ve been acting in an inappropriate manner towards other user(s), which doesn\'t correspond to what we expect from our community members. Your profile, accounts, activities and everything else you owned on our website has been permanently deleted, and we kindly ask you not to re-iterate your actions.',
         'Spam': 'We detected spam activities from your user profile. Your profile, accounts, activities and everything else you owned on our website has been permanently deleted, and we kindly ask you not to re-iterate your actions.',
     }
 
@@ -713,18 +713,18 @@ class ActivityCollection(MagiCollection):
 
     report_edit_templates = OrderedDict([
         ('Incorrect/missing tag', 'Your activity\'s tags have been changed. One or more of the activity\'s tags didn\'t reflect its content, or one or more tags were missing.'),
-        ('Incorrect language', 'The language you specified for this activity didn\'t reflect its content so it has been changed.'),
+        ('Wrong language', 'The language you specified for this activity didn\'t reflect its content so it has been changed.'),
         ('Inappropriate image', 'An image in this activity you posted was inappropriate. ' + please_understand_template_sentence),
         ('Inappropriate content', 'Something you wrote in this activity was inappropriate. ' + please_understand_template_sentence),
         ('False information', 'Something you wrote in this activity is invalid or doesn\'t have enough available proof to be considered true.'),
         ('Illegal content', 'Something you shared in this activity was illegal so it has been edited.'),
-        ('Uncredited fanart', 'You shared an image that is not official and you didn\'t make, so it has been edited. Make sure you only post official art, or ask for permission to the artist and credit them.'),
+        ('Uncredited fanart', 'You shared an image without the artist\'s permission, so it has been edited. Make sure you only post official art, or ask for permission to the artist and credit them.'),
     ])
 
     report_delete_templates = OrderedDict([
         ('Troll activity', 'This activity has been detected as being deliberately provocative with the intention of causing disruption or argument and therefore has been deleted. We kindly ask you not to re-iterate your actions and be respectful towards our community.'),
         ('Illegal content', 'Something you shared in this activity was illegal so it has been deleted.'),
-        ('Uncredited fanart', 'You shared an image that is not official and you didn\'t make, so your activity has been deleted. Make sure you only post official art, or ask for permission to the artist and credit them.'),
+        ('Uncredited fanart', 'You shared an image without the artist\'s permission, so your activity has been deleted. Make sure you only post official art, or ask for permission to the artist and credit them.'),
         ('Inappropriate activity', 'This activity was inappropriate. ' + please_understand_template_sentence),
         ('False information', 'Something you wrote in this activity is invalid or doesn\'t have enough available proof to be considered true.'),
         ('Spam activity', 'This activity has been detected as spam. We do not tolerate such behavior and kindly ask you not to re-iterate your actions or your entire profile might get deleted next time.'),
