@@ -635,8 +635,8 @@ class UserCollection(MagiCollection):
             # Profile tabs
             context['show_total_accounts'] = SHOW_TOTAL_ACCOUNTS
             context['profile_tabs'] = PROFILE_TABS
-            context['profile_tabs_size'] = 100 / len(context['profile_tabs'])
-            context['opened_tab'] = context['profile_tabs'].keys()[0]
+            context['profile_tabs_size'] = 100 / len(context['profile_tabs']) if context['profile_tabs'] else 100
+            context['opened_tab'] = context['profile_tabs'].keys()[0] if context['profile_tabs'] else None
             if 'open' in request.GET and request.GET['open'] in context['profile_tabs']:
                 context['opened_tab'] = request.GET['open']
 
@@ -692,12 +692,12 @@ class UserCollection(MagiCollection):
 
             # Sentences
             activity_collection = getMagiCollection('activity')
-            if activity_collection.add_view.has_permissions(request, context):
+            if activity_collection and activity_collection.add_view.has_permissions(request, context):
                 context['can_add_activity'] = True
                 context['add_activity_sentence'] = activity_collection.add_sentence
                 context['add_activity_subtitle'] = activity_collection.list_view.add_button_subtitle
             account_collection = getMagiCollection('account')
-            if account_collection.add_view.has_permissions(request, context):
+            if account_collection and account_collection.add_view.has_permissions(request, context):
                 context['can_add_account'] = True
                 context['add_account_sentence'] = account_collection.add_sentence
             context['share_sentence'] = _('Check out {username}\'s awesome collection!').format(username=context['item'].username)
