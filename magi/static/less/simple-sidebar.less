@@ -46,6 +46,21 @@
 	-o-transition: all 0.5s ease;
 	transition: all 0.5s ease;
 	padding-bottom: 80px;
+
+        .form-group {
+            .help-block {
+                color: rgba(255, 255, 255, 0.8);
+            }
+            &.has-error {
+                background: rgba(255, 255, 255, 0.7);
+                border-radius: 3px;
+                padding-left: 10px;
+                padding-right: 10px;
+                .control-label, .help-block {
+                    color: #d9534f;
+                }
+            }
+        }
     }
 
     #wrapper.toggled #sidebar-wrapper {
@@ -164,21 +179,6 @@
     .sidebar-nav > .sidebar-brand a:hover {
 	color: #fff;
 	background: none;
-    }
-
-    .form-group {
-        .help-block {
-            color: rgba(255, 255, 255, 0.8);
-        }
-        &.has-error {
-            background: rgba(255, 255, 255, 0.7);
-            border-radius: 3px;
-            padding-left: 10px;
-            padding-right: 10px;
-            .control-label, .help-block {
-                color: #d9534f;
-            }
-        }
     }
 
     @media(min-width:768px) {
