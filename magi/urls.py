@@ -8,8 +8,12 @@ from django.utils import timezone
 #from magi import bouncy # unused, only to force load the feedback process
 from magi import views_collections, magicollections
 from magi import views as magi_views
+from magi import forms
 from magi.settings import RAW_CONTEXT, ENABLED_PAGES, ENABLED_NAVBAR_LISTS, SITE_NAME, EMAIL_IMAGE, GAME_NAME, SITE_DESCRIPTION, SITE_STATIC_URL, SITE_URL, GITHUB_REPOSITORY, SITE_LOGO, SITE_NAV_LOGO, JAVASCRIPT_TRANSLATED_TERMS, ACCOUNT_MODEL, STATIC_UPLOADED_FILES_PREFIX, COLOR, SITE_IMAGE, TRANSLATION_HELP_URL, DISQUS_SHORTNAME, HASHTAGS, TWITTER_HANDLE, EMPTY_IMAGE, GOOGLE_ANALYTICS, STATIC_FILES_VERSION, PROFILE_TABS, LAUNCH_DATE, PRELAUNCH_ENABLED_PAGES, NAVBAR_ORDERING, ACCOUNT_MODEL
 from magi.utils import redirectWhenNotAuthenticated
+
+############################################################
+# Load dynamic module based on SITE
 
 views_module = __import__(settings.SITE + '.views', fromlist=[''])
 try:
@@ -18,9 +22,18 @@ except ImportError:
     custom_magicollections_module = {}
 
 ############################################################
-# Default enabled URLs (outside of collections + pages)
+# Vatiables
 
 navbar_links = OrderedDict()
+now = timezone.now()
+launched = not LAUNCH_DATE or LAUNCH_DATE < now
+collections = OrderedDict()
+enabled = {}
+all_enabled = []
+urls = []
+
+############################################################
+# Default enabled URLs (outside of collections + pages)
 
 urls = [
     #url(r'^bouncy/', include('django_bouncy.urls', app_name='django_bouncy')),
@@ -62,8 +75,6 @@ def navbarAddLink(link_name, link, list_name=None):
         link['is_list'] = False
         navbar_links[link_name] = link
 
-RAW_CONTEXT['all_enabled'] = []
-
 ############################################################
 # URLs for collections
 
@@ -72,13 +83,6 @@ def getURLLambda(name, lambdas):
 
 def getCollectionShowLinkLambda(collection):
     return (lambda context: collection.list_view.has_permissions(context['request'], context))
-
-collections = OrderedDict()
-
-now = timezone.now()
-launched = not LAUNCH_DATE or LAUNCH_DATE < now
-
-disabled = []
 
 def _createCollectibleCollection(collection):
     class _CollectibleForm(forms.AutoForm):
@@ -115,6 +119,7 @@ def _createCollectibleCollection(collection):
         icon = collection.icon
         image = collection.image
         navbar_link = False
+        reportable = False
 
         form_class = _CollectibleForm
 
@@ -148,30 +153,41 @@ def _createCollectibleCollection(collection):
     return collection.collectible_to_class(_CollectibleCollection)
 
 def _addToCollections(name, cls): # Class of the collection
-    if cls.enabled and name not in disabled:
-        collection = cls()
-        if collection.name not in collections:
-            collection.list_view = collection.ListView(collection)
-            collection.item_view = collection.ItemView(collection)
-            collection.add_view = collection.AddView(collection)
-            collection.edit_view = collection.EditView(collection)
-            if not launched:
-                for view in ['list', 'item', 'add', 'edit']:
-                    getattr(collection, view + '_view').staff_required = True
-            collections[collection.name] = collection
-            RAW_CONTEXT['all_enabled'].append(collection.name)
-            if collection.collectible:
-                collectible_collection = _addToCollections(name, _createCollectibleCollection(collection))
-                if collectible_collection:
-                    collection.collectible = collectible_collection
-            return collection
-        else:
-            disabled.append(name)
+    collection = cls()
+    collection.list_view = collection.ListView(collection)
+    collection.item_view = collection.ItemView(collection)
+    collection.add_view = collection.AddView(collection)
+    collection.edit_view = collection.EditView(collection)
+    if not launched:
+        for view in ['list', 'item', 'add', 'edit']:
+            getattr(collection, view + '_view').staff_required = True
+    collections[collection.name] = collection
+    if collection.collectible:
+        collectible_collection = _addToCollections(name, _createCollectibleCollection(collection))
+        if collectible_collection:
+            collection.collectible = collectible_collection
+    all_enabled.append(collection.name)
+    return collection
 
-for name, cls in custom_magicollections_module.items() + magicollections.__dict__.items():
+def _addToEnabledCollections(name, cls, is_custom):
     if name != 'MagiCollection' and inspect.isclass(cls) and issubclass(cls, magicollections.MagiCollection) and not name.startswith('_'):
-        _addToCollections(name, cls)
+        if cls.enabled:
+            cls.is_custom = is_custom
+            enabled[name] = cls
+        elif name in enabled:
+            del(enabled[name])
 
+# Determine the list of collections that should be enabled
+for name, cls in magicollections.__dict__.items():
+    _addToEnabledCollections(name, cls, False)
+for name, cls in custom_magicollections_module.items():
+    _addToEnabledCollections(name, cls, True)
+
+# Instanciate collection objects
+for name, cls in enabled.items():
+    _addToCollections(name, cls)
+
+# Add collection URLs to router
 for collection in collections.values():
     parameters = {
         'name': collection.name,
@@ -287,8 +303,8 @@ for (name, pages) in ENABLED_PAGES.items():
             page['title'] = string.capwords(name)
         if not page.get('enabled', True):
             continue
-        if name not in RAW_CONTEXT['all_enabled']:
-            RAW_CONTEXT['all_enabled'].append(name)
+        if name not in all_enabled:
+            all_enabled.append(name)
         ajax = page.get('ajax', False)
         if name == 'index':
             urls.append(url(r'^$', page_view(name, page), name=name))
@@ -337,12 +353,13 @@ for link_name, link in RAW_CONTEXT['navbar_links'].items():
 # Remove profile tabs when some collections are disabled
 
 for collection_name in ['activity', 'badge', 'account']:
-    if collection_name not in RAW_CONTEXT['all_enabled'] and collection_name in PROFILE_TABS:
+    if collection_name not in all_enabled and collection_name in PROFILE_TABS:
         del(PROFILE_TABS[collection_name])
 
 ############################################################
 # Set data in RAW_CONTEXT
 
+RAW_CONTEXT['all_enabled'] = enabled.keys()
 RAW_CONTEXT['magicollections'] = collections
 RAW_CONTEXT['account_model'] = ACCOUNT_MODEL
 RAW_CONTEXT['site_name'] = SITE_NAME
