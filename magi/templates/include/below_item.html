@@ -14,7 +14,7 @@
   {% endif %}
   {% if show_edit_button %}
   {% if not show_edit_button_owner_only or item.owner_id == user.id or user.is_staff %}
-  <a href="{{ item.edit_url }}"{% if show_edit_ajax_enabled %} data-ajax-url="{{ item.ajax_edit_url }}" data-ajax-title="{{ item.edit_sentence }}"{% endif %} class="btn btn-sm btn-secondary{% if edit_button_staff_only or item.owner_id != user.id %}{% if edit_button_staff_only or show_edit_button_owner_only %} staff-only{% if staff_only_full_page %}-full-staff-page{% endif %}{% endif %}{% endif %}"><i class="flaticon-edit"></i> {{ item.edit_sentence }}</a>
+  <a href="{{ item.edit_url }}"{% if show_edit_ajax_enabled %} data-ajax-url="{{ item.ajax_edit_url }}" data-ajax-title="{{ item.edit_sentence }}" data-ajax-handle-form="true"{% endif %} class="btn btn-sm btn-secondary{% if edit_button_staff_only or item.owner_id != user.id %}{% if edit_button_staff_only or show_edit_button_owner_only %} staff-only{% if staff_only_full_page %}-full-staff-page{% endif %}{% endif %}{% endif %}"><i class="flaticon-edit"></i> {{ item.edit_sentence }}</a>
   {% endif %}
   {% endif %}
 </div>
