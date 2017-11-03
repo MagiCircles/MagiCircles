@@ -198,6 +198,11 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'custom': False,
         'navbar_link': False,
     }),
+    ('successadd', {
+        'ajax': True,
+        'custom': False,
+        'navbar_link': False,
+    }),
 ])
 
 ############################################################

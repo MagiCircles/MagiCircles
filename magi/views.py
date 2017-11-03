@@ -468,6 +468,8 @@ def follow(request, username):
 
 def successedit(request):
     context = ajaxContext(request)
-    n = models.Notification.objects.get(id=1)
-
     return render(request, 'pages/ajax/successedit.html')
+
+def successadd(request):
+    context = ajaxContext(request)
+    return render(request, 'pages/ajax/successadd.html')
