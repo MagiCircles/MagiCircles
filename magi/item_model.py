@@ -67,6 +67,18 @@ class BaseMagiModel(models.Model):
     tinypng_settings = {}
 
     @classmethod
+    def _get_choices(self, field_name):
+        """
+        Return value is dictionary of:
+           int -> (string, translated string)
+        or int -> string
+        """
+        try:
+            return list(enumerate(getattr(self, '{name}_CHOICES'.format(name=field_name.upper()))))
+        except AttributeError:
+            return list(enumerate(self._meta.get_field('i_{name}'.format(name=field_name)).choices))
+
+    @classmethod
     def get_i(self, field_name, string):
         """
         Takes a string value of a choice and return its internal value
@@ -79,6 +91,17 @@ class BaseMagiModel(models.Model):
             except AttributeError:
                 return next(i for i, c in enumerate(self._meta.get_field('i_{name}'.format(name=field_name)).choices)
                             if c[1] == string)
+        except StopIteration:
+            raise KeyError(string)
+
+    @classmethod
+    def get_reverse_i(self, field_name, i):
+        """
+        Takes an int value of a choice and return its string value
+        field_name = without i_
+        """
+        try:
+            return next((c[0] if isinstance(c, tuple) else c) for j, c in self._get_choices(field_name) if i == j)
         except StopIteration:
             raise KeyError(string)
 
@@ -133,6 +156,7 @@ class BaseMagiModel(models.Model):
         raise AttributeError("%r object has no attribute %r" % (self.__class__, name))
 
     def _get_i_field_choice(self, field_name, key=False):
+        # todo: make this function use _get_choices
         """
         field_name = the name of the field without "i_"
         key = if choices are provided as a dictionary, return the key, otherwise, the value

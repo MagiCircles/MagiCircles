@@ -1743,6 +1743,8 @@ card.i_power # will return 1
 
 Note: your model must contain the list of choices with the right naming: `power` -> `POWER_CHOICES`, `super_power` -> `SUPER_POWER_CHOICES`.
 
+Note: Do not use dictionaries, as the order is not guaranteed. You may use an OrderedDict instead of a list of tuples if needed.
+
 If you need a clear way to compare the value, you may want to use untranslated values:
 
 ```python
@@ -1774,21 +1776,27 @@ if card.power == 'happy':
 
 And you can access the translated value with:
 
-```
+```python
 card.t_power # translated "Happy"
 ```
 
 If filtering by these choices is done very often, you may also set a db index:
-```
+```python
     i_power = models.PositiveIntegerField(choices=i_choices(POWER_CHOICES), default=0, db_index=True)
 ```
 
-If you need to initialize or update the value outside of the context of a form, you may want to retrieve the integer value for a given string field. You can do so using the class method `get_id`:
+If you need to initialize or update the value outside of the context of a form, you may want to retrieve the integer value for a given string field. You can do so using the class method `get_i`:
 
-```
+```python
 new_card = models.Card.objects.create(name='Julia', i_power=models.Card.get_i('power', 'rock'))
 # or
 new_card.i_power = models.Card.get_i('power', 'cool')
+```
+
+Similarly, you may retrieve the integer value from the string value using `get_reverse_i`:
+
+```python
+print models.Card.get_reverse_i('cool') # will print 1
 ```
 
 Note: If you want to change your choices in the future, keep in mind that you might need to update your database manually to reflect the correct integer values.
