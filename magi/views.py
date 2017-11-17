@@ -305,7 +305,7 @@ def moderatereport(request, report, action):
         report.staff_message = request.POST['staff_message']
 
         # Get reason
-        reason = report.POST.get('reason', None)
+        reason = request.POST.get('reason', None)
         if reason and reason != '_other':
             report.reason = reason
 
