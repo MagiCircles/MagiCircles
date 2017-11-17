@@ -1,9 +1,11 @@
 from __future__ import division
-import os, string, random, csv, tinify, cStringIO, pytz, simplejson
+import os, string, random, csv, tinify, cStringIO, pytz, simplejson, datetime
 from PIL import Image
 from django.conf import settings as django_settings
 from django.core.files.temp import NamedTemporaryFile
+from django.core.exceptions import ValidationError
 from django.core.urlresolvers import resolve
+from django.core.validators import BaseValidator
 from django.utils.deconstruct import deconstructible
 from django.utils.translation import ugettext_lazy as _, get_language
 from django.utils.formats import dateformat
@@ -341,6 +343,17 @@ def join_data(*args):
     """
     data = u'\"' + u'","'.join([unicode(value).replace('"','\"') for value in args]) + u'\"'
     return data if data != '""' else None
+
+############################################################
+# Validators
+
+def FutureOnlyValidator(value):
+    if value < datetime.date.today():
+        raise ValidationError(_('This date has to be in the future.'), code='future_value')
+
+def PastOnlyValidator(value):
+    if value > datetime.date.today():
+        raise ValidationError(_('This date cannot be in the future.'), code='past_value')
 
 ############################################################
 # Use TinyPNG to optimize images

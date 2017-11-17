@@ -100,19 +100,24 @@ Similarly, it is not allowed to monetize a website that uses MagiCircles using a
 1. [Nav bar lists](#nav-bar-lists)
 1. [API](#api)
 1. [Utils](#utils)
+    1. [MagiModel utils](magimodel-utils)
+        1. [MagiModel collection utils](#magimodel-collection-utils)
+        1. [MagiModel Images](#magimodel-images)
+        1. [Save choices values as integer rather than strings](#save-choices-values-as-integer-rather-than-strings)
+        1. [Store comma separated values](#store-comma-separated-values)
+        1. [Transform images before saving them](#transform-images-before-saving-them)
     1. [Python](#python)
         1. [Models upload](#models-upload)
         1. [Access MagiCollections](#access-magicollections)
-	1. [Optimize images with TinyPNG](#optimize-images-with-tinypng)
-	1. [Store CSV values in models fields](#store-csv-values-in-models-fields)
-	1. [Other tools](#other-tools)
+        1. [Optimize images with TinyPNG](#optimize-images-with-tinypng)
+        1. [Validators](#validators)
+        1. [Other tools](#other-tools)
     1. [Templates](#templates)
         1. [Tools](#tools)
     1. [Javascript](#javascript)
         1. [HTML elements with automatic Javascript behavior](#html-elements-with-automatic-javascript-behavior)
-	1. [Commons](#commons)
+	      1. [Commons](#commons)
 1. [Recommendations](#recommendations)
-    1. [Save choices values as integer rather than strings](#save-choices-values-as-integer-rather-than-strings)
     1. [Don't concatenate translated strings](#dont-concatenate-translated-strings)
     1. [Internal cache for foreign keys in models](#internal-cache-for-foreign-keys-in-models)
     1. [Calling functions in templates](#calling-functions-in-templates)
@@ -1928,43 +1933,21 @@ Settings can be either:
 
 See [TinyPNG's documentation](https://tinypng.com/developers/reference) for more details about how images get resized.
 
-#### Store CSV values in models fields
+#### Validators
 
-Activities need to store a list of tags associated with each. While a semantically correct database-oriented approach would be to have a tags table that associate an activity with a tag, it is unfortunately a very slow method. For this reason, activities simply contain a textfield, and provide methods to save new tags and retrieve a tag as a list.
+Validators may be used on forms and models.
+
+##### FutureOnlyValidator and PastOnlyValidator
 
 ```python
-from magi.utils import join_data, split_data
+from magi.utils import PastOnlyValidator
 
-class Activity(MagiModel):
-    collection_name = 'activity'
+class Account(MagiModel):
     ...
-
-    tags_string = models.TextField(blank=True, null=True)
-
-    @property
-    def tags(self):
-        return split_data(self.tags_string)
-
-    def add_tags(self, new_tags):
-        self.tags_string = join_data(*(self.tags + [tag for tag in new_tags if tag not in tags]))
-
-    def remove_tags(self, tags_to_remove):
-        self.tags_string = join_data(*[tag for tag in self.tags if tag not in tags_to_remove])
-
-    def save_tags(self, tags):
-        """
-        Will completely replace any existing list of tags.
-        """
-        self.tags_string = join_data(*tags)
+    start_date = models.DateField(validators=[PastOnlyValidator])
 ```
 
-You may use the following methods to get something similar for your own fields:
-
-| Name | Description | Parameters | Return value |
-|------|-------------|------------|--------------|
-| split_data | Takes a unicode CSV string and return a list of strings. | data | list |
-| join_data | Takes a list of unicode strings and return a CSV string. | *args | string |
-
+In this example, if you try to set the start_date to some time in the future, it will raise an error.
 
 #### Other tools
 
