@@ -666,11 +666,12 @@ function pauseAllSongs() {
 }
 
 function loadiTunesData(song, successCallback, errorCallback) {
-    var itunes_id = song.find('[href=#play]').data('itunes-id');
+    var itunes_id = song.data('itunes-id');
     $.ajax({
 	"url": 'https://itunes.apple.com/lookup',
 	"dataType": "jsonp",
 	"data": {
+            "country": "JP",
 	    "id": itunes_id,
 	},
 	"error": function (jqXHR, textStatus, message) {
@@ -681,19 +682,34 @@ function loadiTunesData(song, successCallback, errorCallback) {
 	},
 	"success": function (data, textStatus, jqXHR) {
 	    data = data['results'][0];
-	    song.find('.itunes').find('.album').prop('src', data['artworkUrl60']);
-	    song.find('.itunes').find('.itunes-link').prop('href', data['trackViewUrl'] + '&at=1001l8e6');
-	    song.find('.itunes').show('slow');
+            let details = song.find('.itunes-details');
+	    details.find('.album').prop('src', data['artworkUrl60']);
+	    details.find('.itunes-link').prop('href', data['trackViewUrl'] + '&at=1001l8e6');
+	    details.show('slow');
 	    song.find('audio source').prop('src', data['previewUrl'])
 	    song.find('audio')[0].load();
 	    playSongButtons();
-	    successCallback(song, data);
+            if (typeof successCallback != 'undefined') {
+	        successCallback(song, data);
+            }
 	}
     });
 }
 
 function loadAlliTunesData(successCallback, errorCallback) {
-    $('.song').each(function() {
+    $('.itunes').each(function() {
+        $(this).html('<audio controls="" id="player" class="hidden">\
+            <source src="" type="audio/mp4">\
+              Your browser does not support the audio element.\
+          </audio>\
+          <span style="display: none" class="itunes-details">\
+            <img src="" alt="Future style" class="album img-rounded" height="31">\
+            <a href="" target="_blank" class="itunes-link">\
+              <img src="' + static_url + 'img/get_itunes.svg" alt="Get it on iTunes" height="31">\
+            </a>\
+          </span>\
+          <a href="#play" class="fontx1-5"><i class="flaticon-play"></i></a>\
+');
 	loadiTunesData($(this), successCallback, errorCallback);
     });
 }
@@ -707,7 +723,7 @@ function playSongButtons() {
 	event.preventDefault();
 	var button = $(this);
 	var button_i = button.find('i');
-	var song = button.closest('.song');
+	var song = button.closest('.itunes');
 	// Stop all previously playing audio
 	if (button_i.prop('class') == 'flaticon-pause') {
 	    pauseAllSongs();

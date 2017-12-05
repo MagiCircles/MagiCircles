@@ -151,15 +151,17 @@ class MagiCollection(object):
         - verbose_name
         - value
         - type
-        - optional: icon, image, link, link_text, ajax_link
+        - optional: icon, image, link, link_text, ajax_link, images
         Takes an object that inherits from MagiModel and returns a dictionary of field name -> value
         Available types:
         - text
         - title_text (needs 'title')
-        - image
+        - image (needs images with 'value', 'ajax_link')
+        - images
         - bool
         - link (needs 'link_text')
         - image_link (needs 'link', 'link_text')
+        - images_links (needs images with 'value', 'ajax_link', 'link', 'link_text')
         - button (needs 'link_text')
         - text_with_link (needs 'link' and 'link_text', will show a 'View all' button)
         - timezone_datetime (useful when showing another timezone, otherwise use text. needs 'timezones' list. can be 'local')
@@ -245,6 +247,8 @@ class MagiCollection(object):
             elif isinstance(field, models.models.FileField):
                 d['type'] = 'link'
                 d['link_text'] = t['Download']
+            elif field_name == 'itunes_id':
+                d['type'] = 'itunes'
             else:
                 d['type'] = 'text'
             if d['type'] == 'text_with_link':

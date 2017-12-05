@@ -199,6 +199,23 @@ def cuteFormFieldsForContext(cuteform_fields, context, form=None):
 # Database upload to
 
 @deconstructible
+class uploadToKeepName(object):
+    def __init__(self, prefix, length=6):
+        self.prefix = prefix
+        self.length = length
+
+    def __call__(self, instance, filename):
+        name, extension = os.path.splitext(filename)
+        name = (
+            RAW_CONTEXT['static_uploaded_files_prefix']
+            + self.prefix
+            + name
+            + randomString(self.length)
+            + extension
+        )
+        return name
+
+@deconstructible
 class uploadToRandom(object):
     def __init__(self, prefix, length=30):
         self.prefix = prefix
