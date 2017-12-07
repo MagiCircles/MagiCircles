@@ -88,6 +88,19 @@ def emailContext():
         context['site_url'] = 'http:' + context['site_url']
     return context
 
+def getAccountIdsFromSession(request):
+    if not request.user.is_authenticated():
+        return []
+    if 'account_ids' not in request.session:
+        request.session['account_ids'] = [
+            account.id
+            for account in RAW_CONTEXT['account_model'].objects.filter(**{
+                    RAW_CONTEXT['account_model'].selector_to_owner():
+                    request.user
+            })
+        ]
+    return request.session['account_ids']
+
 class CuteFormType:
     Images, HTML, YesNo, OnlyNone = range(4)
     to_string = ['images', 'html', 'html', 'html']

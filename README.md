@@ -1968,6 +1968,7 @@ You may use the following methods to get something similar for your own fields:
 | custom_item_template | To be used in MagiCollections when using a custom template instead of the default one. | view | string |
 | dumpModel | Take an instance of a model and transform it into a dictonary with all its info (easily flattenable). Allows to delete an instance without losing data (used by Report collection) | instance | dictionary |
 | emailContext | Lighter than globalContext, with just what's needed for an ajax view | request | dict |
+| getAccountIdsFromSession | Get the list of account ids of the currently logged in user | request | list of ids |
 | globalContext | Default context required by MagiCircles | request | dict |
 | justReturn | Returns a lambda that takes whatever and returns the same value. May be useful in MagiCollections when you want to override a method but ignore its parameters and return the same constant value. | value | lambda |
 | ordinalNumber | Returns 1st, 2nd, 3rd, 4th, etc. Not localized. | n | string |
