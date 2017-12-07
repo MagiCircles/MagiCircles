@@ -61,6 +61,7 @@ class MagiForm(forms.ModelForm):
         self.request = kwargs.pop('request', None)
         self.collection = kwargs.pop('collection', None)
         self.form_type = kwargs.pop('type', None)
+        self.ajax = kwargs.pop('ajax', False)
         super(MagiForm, self).__init__(*args, **kwargs)
         self.is_creating = not hasattr(self, 'instance') or not self.instance.pk
         self.c_choices = []

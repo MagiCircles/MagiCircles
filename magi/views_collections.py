@@ -157,13 +157,13 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
 
     if collection.list_view.filter_form:
         if len(request.GET) > 1 or (len(request.GET) == 1 and 'page' not in request.GET):
-            context['filter_form'] = collection.list_view.filter_form(filters, request=request, collection=collection)
+            context['filter_form'] = collection.list_view.filter_form(filters, request=request, ajax=ajax, collection=collection)
             if hasattr(context['filter_form'], 'filter_queryset'):
                 queryset = context['filter_form'].filter_queryset(queryset, filters, request)
             else:
                 queryset = filter_ids(queryset, request)
         else:
-            context['filter_form'] = collection.list_view.filter_form(request=request, collection=collection)
+            context['filter_form'] = collection.list_view.filter_form(request=request, ajax=ajax, collection=collection)
 
     context['total_results'] = queryset.count()
     context['total_results_sentence'] = _('1 {object} matches your search:').format(object=collection.title) if context['total_results'] == 1 else _('{total} {objects} match your search:').format(total=context['total_results'], objects=collection.plural_title)
@@ -292,9 +292,9 @@ def add_view(request, name, collection, type=None, ajax=False, shortcut_url=None
     if str(_type(formClass)) == '<type \'instancemethod\'>':
         formClass = formClass(request, context)
     if request.method == 'GET':
-        form = formClass(request=request, collection=collection) if not with_types else formClass(request=request, collection=collection, type=type)
+        form = formClass(request=request, ajax=ajax, collection=collection) if not with_types else formClass(request=request, ajax=ajax, collection=collection, type=type)
     elif request.method == 'POST':
-        form = formClass(request.POST, request.FILES, request=request, collection=collection) if not with_types else formClass(request.POST, request.FILES, request=request, collection=collection, type=type)
+        form = formClass(request.POST, request.FILES, request=request, ajax=ajax, collection=collection) if not with_types else formClass(request.POST, request.FILES, request=request, ajax=ajax, collection=collection, type=type)
         if form.is_valid():
             instance = form.save(commit=False)
             instance = collection.add_view.before_save(request, instance, type=type)
@@ -356,12 +356,12 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
     if str(_type(formClass)) == '<type \'instancemethod\'>':
         formClass = formClass(request, context)
     allowDelete = collection.edit_view.allow_delete and 'disable_delete' not in request.GET
-    form = formClass(instance=instance, request=request, collection=collection)
+    form = formClass(instance=instance, request=request, ajax=ajax, collection=collection)
     if allowDelete:
         formDelete = ConfirmDelete(initial={
             'thing_to_delete': instance.pk,
         })
-    form = formClass(instance=instance, request=request, collection=collection)
+    form = formClass(instance=instance, request=request, ajax=ajax, collection=collection)
     if allowDelete and request.method == 'POST' and 'delete' in request.POST:
         formDelete = ConfirmDelete(request.POST)
         if formDelete.is_valid():
@@ -369,7 +369,7 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
             instance.delete()
             raise HttpRedirectException(redirectURL)
     elif request.method == 'POST':
-        form = formClass(request.POST, request.FILES, instance=instance, request=request, collection=collection)
+        form = formClass(request.POST, request.FILES, instance=instance, request=request, ajax=ajax, collection=collection)
         if form.is_valid():
             instance = form.save(commit=False)
             instance = collection.edit_view.before_save(request, instance)
