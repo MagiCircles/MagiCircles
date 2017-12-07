@@ -1119,6 +1119,7 @@ See also: [settings available in all views](#all-views).
 
 | Name | Description | Parameters | Return value | Default |
 |------|-------------|------------|--------------|---------|
+| before_delete | Function called before the item gets deleted. | request, instance, ajax | None | Nothing |
 | before_save | Function called before the form is saved. Not recommended, overload `save`in your form instead | request, instance, type=None | instance | Just returns the instance |
 | after_save | Function called after the form is saved. Not recommended, overload `save`in your form instead | request, instance, type=None | instance | Just returns the instance |
 | form_class | Form class to edit an item. Doesn't have to be a method (see above). Can be specified in collection. | request, context | A form class | AutoForm |

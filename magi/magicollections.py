@@ -456,6 +456,9 @@ class MagiCollection(object):
                 return item.item_url if not ajax else item.ajax_item_url
             return self.collection.get_list_url(ajax)
 
+        def before_delete(self, request, item, ajax):
+            pass
+
         def redirect_after_delete(self, request, item, ajax):
             return self.collection.get_list_url(ajax)
 

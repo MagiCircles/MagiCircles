@@ -365,6 +365,7 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
     if allowDelete and request.method == 'POST' and 'delete' in request.POST:
         formDelete = ConfirmDelete(request.POST)
         if formDelete.is_valid():
+            collection.edit_view.before_delete(request, instance, ajax)
             redirectURL = collection.edit_view.redirect_after_delete(request, instance, ajax)
             instance.delete()
             raise HttpRedirectException(redirectURL)
