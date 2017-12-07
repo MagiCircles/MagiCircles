@@ -1971,6 +1971,7 @@ You may use the following methods to get something similar for your own fields:
 | globalContext | Default context required by MagiCircles | request | dict |
 | justReturn | Returns a lambda that takes whatever and returns the same value. May be useful in MagiCollections when you want to override a method but ignore its parameters and return the same constant value. | value | lambda |
 | ordinalNumber | Returns 1st, 2nd, 3rd, 4th, etc. Not localized. | n | string |
+| propertyFromCollection | To be used in a view, will set the value to the value in the parent collection | property_name | any |
 | randomString | Generates a random string | length, choice=(string.ascii_letters + string.digits) | string |
 | redirectToProfile | Raises an exception that will make the current request redirect to the profile of the authenticated user. If specified, will redirect to a specific account anchor within the profile. | request, account=None | None (raises an exception) |
 | redirectWhenNotAuthenticated | Will check if the current user is authenticated, and if not, will redirect to the signup page with `next` set as the `current_url` | request, context, next_title=None | None (raises an exception) |

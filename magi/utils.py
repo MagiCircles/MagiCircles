@@ -43,6 +43,11 @@ class AttrDict(dict):
 def justReturn(string):
     return lambda *args, **kwargs: string
 
+def propertyFromCollection(property_name):
+    def _propertyFromCollection(view):
+        return getattr(view.collection, property_name)
+    return _propertyFromCollection
+
 """
 Use this to get the standard name for custom templates:
 item_template = custom_item_template
