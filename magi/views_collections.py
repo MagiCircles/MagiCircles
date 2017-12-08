@@ -105,6 +105,7 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
     context['share_image'] = _get_share_image(context, collection.item_view, item=context['item'])
     context['comments_enabled'] = collection.item_view.comments_enabled
     context['item_template'] = collection.item_view.template
+    context['full_width'] = collection.item_view.full_width
     context['collection'] = collection
     if context['item_template'] == 'default':
         context['show_edit_button'] = False

@@ -11,7 +11,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container item-container">
+<div class="{% if not full_width %}container {% endif %}item-container">
   {% include 'items/'|add:item_template|add:'.html' %}
   {% if include_below_item %}{% include 'include/below_item.html' %}{% endif %}
   <br><br>
