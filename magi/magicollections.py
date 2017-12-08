@@ -385,6 +385,9 @@ class MagiCollection(object):
     def edit_sentence(self):
         return _(u'Edit {thing}').format(thing=self.title.lower())
 
+    def __unicode__(self):
+        return u'MagiCollection {}'.format(self.name)
+
     #######################
     # Collection Views
 
