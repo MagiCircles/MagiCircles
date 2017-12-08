@@ -1145,7 +1145,7 @@ See also: [methods available in all views](#all-views).
 
 ![](http://i.imgur.com/r3FrVK5.png)
 
-:warning: This is a work in progress. The following guide doesn't work yet. Currently, collections have be made collecible manually.
+:warning: This is a work in progress. The following guide doesn't work yet. Currently, collections have to be made collecible manually.
 
 To make a collection collectible, you need to provide a [model](#model). The model should always have either an `owner` or an `account` foreign key, allowing users to collect them.
 
@@ -1171,7 +1171,7 @@ class CardCollection(MagiCollection):
     collectible = models.CollectibleCard
 ```
 
-Customize the MagiCollection of the collectible itself:
+You can customize the MagiCollection of the collectible itself:
 
 ```python
 from magi.magicollections import MagiCollection
@@ -1408,7 +1408,7 @@ To do so, just provide an attribute `name_filter` where `name` is the correspond
 | selectors | same as selector but works with multiple values. | None (will use selector) | ['card__name', 'card__japanese_name'] |
 | to_value | function that takes the value and transforms the value if needed. May receive a string or a list. | None (will not transform the value) | lambda value: value + 1 |
 | multiple | allow multiple values separated by commas. Set to `False` if your value may contain commas. | True | |
-| operator_for_multiple |
+| operator_for_multiple | When multiple is enabled, what should be the operation? Choices are: `OrContains`, `OrExact` or `And`. | Depends on field type. | MagiFilterOperator.OrExact |
 | allow_csv | When `multiple` is unabled or the field is a MultipleChoiceField, is it allowed to provide values as comma separated? Example: `?rarity=SR,UR`. When csv is not allowed, values must be provided as a list like so: `?rarity=SR&rarity=UR` | True | |
 
 Example:
