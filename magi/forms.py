@@ -845,14 +845,11 @@ class FilterBadges(MagiFiltersForm):
         ('rank', 'Rank'),
     ]
 
+    added_by = forms.ModelChoiceField(label=_('Staff'), queryset=models.User.objects.filter(is_staff=True), )
+
     of_user = forms.IntegerField(widget=forms.HiddenInput)
     of_user_filter = MagiFilter(to_queryset=lambda form, queryset, request, value: queryset.filter(user_id=value, show_on_profile=True))
 
-    def __init__(self, *args, **kwargs):
-        super(FilterBadges, self).__init__(*args, **kwargs)
-        self.fields['owner'].queryset = self.fields['owner'].queryset.filter(is_staff=True)
-        self.fields['owner'].label = 'Staff'
-
     class Meta:
         model = models.Badge
-        fields = ('search', 'rank', 'owner')
+        fields = ('search', 'rank', 'added_by', 'of_user')
