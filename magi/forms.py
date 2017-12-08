@@ -229,7 +229,7 @@ def filter_ids(queryset, request):
         queryset = queryset.filter(pk__in=request.GET['ids'].split(','))
     return queryset
 
-class MagiFiltersForm(MagiForm):
+class MagiFiltersForm(AutoForm):
     search = forms.CharField(required=False, label=t['Search'])
 
     def _search_to_queryset(self, queryset, request, value):
