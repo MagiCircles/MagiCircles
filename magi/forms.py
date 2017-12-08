@@ -49,8 +49,34 @@ def has_field(model, field_name):
         return False
 
 ############################################################
+# HiddenModelChoiceField is a form field type that will not retrieve
+# the list of choices but will validate if the foreign key
+# is valid when saved.
+
+class HiddenModelChoiceField(forms.IntegerField):
+    def __init__(self, queryset=None, to_field_name='pk',
+                 *args, **kwargs):
+        self.queryset = queryset
+        self.to_field_name = to_field_name
+        super(HiddenModelChoiceField, self).__init__(*args, **kwargs)
+
+    def to_python(self, value):
+        if value in self.empty_values:
+            return None
+        try:
+            key = self.to_field_name
+            value = self.queryset.get(**{key: value})
+        except (ValueError, self.queryset.model.DoesNotExist):
+            raise forms.ValidationError(
+                _('Select a valid choice. %(value)s is not one of the available choices.'),
+                params={ 'value': value }, code='invalid_choice',
+            )
+        return value
+
+############################################################
 # Recommended form for any MagiCollection item
 # - Will make fields in `optional_fields` optional, regardless of db field
+# - Will make fields in `hidden_foreign_keys` hidden and not do an extra query to get choices
 # - Will show the correct date picker for date fields
 # - Will replace any empty string with None for better database consistency
 # - Will use tinypng to optimize images and will use settings specified in models
@@ -65,7 +91,21 @@ class MagiForm(forms.ModelForm):
         super(MagiForm, self).__init__(*args, **kwargs)
         self.is_creating = not hasattr(self, 'instance') or not self.instance.pk
         self.c_choices = []
+        self.hidden_foreign_keys_querysets = {}
         # Fix optional fields
+        if hasattr(self.Meta, 'optional_fields'):
+            for field in self.Meta.optional_fields:
+                if field in self.fields:
+                    self.fields[field].required = False
+        # Hidden foreign keys fields
+        if hasattr(self.Meta, 'hidden_foreign_keys'):
+            for field in self.Meta.hidden_foreign_keys:
+                if field in self.fields:
+                    self.fields[field] = HiddenModelChoiceField(
+                        queryset=self.fields[field].queryset,
+                        widget=forms.HiddenInput,
+                        initial=(None if self.is_creating else getattr(self.instance, u'{}_id'.format(field))),
+                    )
         if hasattr(self.Meta, 'optional_fields'):
             for field in self.Meta.optional_fields:
                 if field in self.fields:
