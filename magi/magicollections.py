@@ -10,7 +10,7 @@ from dateutil.relativedelta import relativedelta
 from django.db.models import Count, Q, Prefetch
 
 from magi.views import indexExtraContext
-from magi.utils import AttrDict, ordinalNumber, justReturn, getMagiCollections, getMagiCollection, CuteFormType, CuteFormTransform, redirectWhenNotAuthenticated, custom_item_template
+from magi.utils import AttrDict, ordinalNumber, justReturn, propertyFromCollection, getMagiCollections, getMagiCollection, CuteFormType, CuteFormTransform, redirectWhenNotAuthenticated, custom_item_template, getAccountIdsFromSession
 from magi.raw import please_understand_template_sentence, donators_adjectives
 from magi.django_translated import t
 from magi.middleware.httpredirect import HttpRedirectException
@@ -511,7 +511,7 @@ class AccountCollection(MagiCollection):
         add_button_subtitle = _('Create your account to join the community and be in the leaderboard!')
 
         def show_add_button(self, request):
-            return not request.user.is_authenticated()
+            return not getAccountIdsFromSession(request)
 
         @property
         def default_ordering(self):
@@ -531,7 +531,8 @@ class AccountCollection(MagiCollection):
             return '{}#{}'.format(request.user.item_url, instance.id)
 
         def before_save(self, request, instance, type=None):
-            instance.owner = request.user
+            if 'account_ids' in request.session:
+                del request.session['account_ids']
             return instance
 
     class EditView(MagiCollection.EditView):
@@ -541,6 +542,10 @@ class AccountCollection(MagiCollection):
             if ajax:
                 return instance.ajax_item_url
             return '{}#{}'.format(request.user.item_url, instance.id)
+
+        def before_delete(self, request, item, ajax):
+            if 'account_ids' in request.session:
+                del request.session['account_ids']
 
         def redirect_after_delete(self, request, item, ajax=False):
             return request.user.item_url
