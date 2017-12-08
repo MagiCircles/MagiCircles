@@ -736,6 +736,15 @@ class FilterReports(MagiFiltersForm):
         fields = ('i_status', 'reported_thing', 'staff')
 
 ############################################################
+# Donation Months forms
+
+class DonateForm(AutoForm):
+    class Meta:
+        model = models.DonationMonth
+        fields = '__all__'
+        save_owner_on_creation = True
+
+############################################################
 # Add/Edit Badges
 
 class _BadgeForm(MagiForm):

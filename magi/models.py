@@ -519,6 +519,7 @@ BADGE_IMAGE_TINYPNG_SETTINGS = {
 class DonationMonth(MagiModel):
     collection_name = 'donate'
 
+    owner = models.ForeignKey(User, related_name='donation_month_created')
     date = models.DateField(default=datetime.datetime.now)
     cost = models.FloatField(default=250)
     donations = models.FloatField(default=0)
