@@ -188,6 +188,7 @@ function ajaxModals() {
 					&& $('#freeModal form .errorlist').length > 0) {
 					ajaxModals_handleForms();
 				    }
+                                    loadCommons();
 				},
 				error: genericAjaxError,
 			    });
