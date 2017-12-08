@@ -249,9 +249,6 @@ def get_delete_sentence(instance):
 def get_report_sentence(instance):
     return _('Report {thing}').format(thing=unicode(instance.collection_title).lower())
 
-def get_collectible_sentence(instance):
-    return _('Add this {thing} to your collection').format(thing=unicode(instance.collection_title).lower())
-
 def get_collection_plural_name(instance):
     if not getattr(instance, '_collection_plural_name', None):
         instance._collection_plural_name = instance.collection.plural_name
@@ -289,7 +286,6 @@ def addMagiModelProperties(modelClass, collection_name):
     modelClass.edit_sentence = property(get_edit_sentence)
     modelClass.delete_sentence = property(get_delete_sentence)
     modelClass.report_sentence = property(get_report_sentence)
-    modelClass.collectible_sentence = property(get_collectible_sentence)
     modelClass.tinypng_settings = {}
 
     modelClass.fk_as_owner = None
