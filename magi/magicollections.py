@@ -392,6 +392,7 @@ class MagiCollection(object):
     # Collection Views
 
     class ListView(_View):
+        view = 'list_view'
         # Optional variables without default
         filter_form = None
         ajax_pagination_callback = None
@@ -444,6 +445,8 @@ class MagiCollection(object):
             return default_ordering[1:] if default_ordering.startswith('-') else default_ordering
 
     class ItemView(_View):
+        view = 'item_view'
+
         # Optional variables without default
         top_illustration = None
 
@@ -479,6 +482,8 @@ class MagiCollection(object):
             return self.collection.title
 
     class AddView(_View):
+        view = 'add_view'
+
         # Optional variables without default
         otherbuttons_template = None
         after_template = None
@@ -524,6 +529,8 @@ class MagiCollection(object):
             return self.collection.add_sentence
 
     class EditView(_View):
+        view = 'edit_view'
+
         # Optional variables without default
         otherbuttons_template = None
         after_template = None
