@@ -640,9 +640,11 @@ class AccountCollection(MagiCollection):
 
     class AddView(MagiCollection.AddView):
         alert_duplicate = False
-        allow_next = False
+        allow_next = True
 
-        def redirect_after_edit(self, request, instance, ajax=False):
+        def redirect_after_add(self, request, instance, ajax=False):
+            if ajax: # Ajax is not allowed for profile url
+                return '/ajax/successadd/'
             return '{}#{}'.format(request.user.item_url, instance.id)
 
         def before_save(self, request, instance, type=None):
@@ -832,6 +834,12 @@ class UserCollection(MagiCollection):
     class EditView(MagiCollection.EditView):
         staff_required = True
         form_class = forms.StaffEditUser
+
+        def check_owner_permissions(self, request, context, item):
+            super(UserCollection.EditView, self).check_permissions(request, context)
+            # Edit view is for staff only, but staff can't edit their own
+            if item.is_owner(request.user):
+                raise PermissionDenied()
 
         def after_save(self, request, instance):
             models.updateCachedActivities(instance.id)
