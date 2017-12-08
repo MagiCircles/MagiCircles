@@ -161,6 +161,7 @@ def _addToCollections(name, cls): # Class of the collection
     if not launched:
         for view in ['list', 'item', 'add', 'edit']:
             getattr(collection, view + '_view').staff_required = True
+    all_enabled.append(collection.name)
     collections[collection.name] = collection
     if collection.collectible:
         collectible_collection = _addToCollections(name, _createCollectibleCollection(collection))
@@ -357,9 +358,16 @@ for collection_name in ['activity', 'badge', 'account']:
         del(PROFILE_TABS[collection_name])
 
 ############################################################
+# Mark as non-reportable if the report collection is disabled
+
+if 'report' not in all_enabled:
+    for collection in collections.values():
+        collection.reportable = False
+
+############################################################
 # Set data in RAW_CONTEXT
 
-RAW_CONTEXT['all_enabled'] = enabled.keys()
+RAW_CONTEXT['all_enabled'] = all_enabled
 RAW_CONTEXT['magicollections'] = collections
 RAW_CONTEXT['account_model'] = ACCOUNT_MODEL
 RAW_CONTEXT['site_name'] = SITE_NAME
