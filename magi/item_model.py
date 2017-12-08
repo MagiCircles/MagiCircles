@@ -42,6 +42,35 @@ def i_choices(choices):
     return [(i, choice[1] if isinstance(choice, tuple) else choice) for i, choice in enumerate(choices)]
 
 ############################################################
+# Utils for owner
+
+def get_selector_to_owner(cls):
+    if cls.fk_as_owner:
+        return u'{}__owner'.format(cls.fk_as_owner)
+    return 'owner'
+
+def get_owner_ids(cls, user):
+    if not user.is_authenticated():
+        return []
+    if cls.fk_as_owner:
+        return cls.objects.filter(**{ cls.selector_to_owner(): user }).distinct().values_list(
+            u'{}_id'.format(cls.fk_as_owner), flat=True)
+    return [user.id]
+
+def get_owner_collection(cls):
+    if cls.fk_as_owner:
+        return getMagiCollection(cls.fk_as_owner)
+    return getMagiCollection('user')
+
+def get_allow_multiple_per_owner(cls):
+    # todo
+    print cls.owner
+    return cls.owner
+
+def get_is_owner(instance, user):
+    return instance.owner_id == user.id
+
+############################################################
 # BaseMagiModel
 
 class BaseMagiModel(models.Model):
@@ -49,6 +78,7 @@ class BaseMagiModel(models.Model):
     Can be used for your models that don't have an associated MagiCollection.
 
     It comes with:
+    - helpers for owner
     - helpers for i_ fields
       - i_something: raw integer value
       - something: string representation
@@ -65,6 +95,13 @@ class BaseMagiModel(models.Model):
       - save_c: replace the full list of existing strings
     """
     tinypng_settings = {}
+
+    fk_as_owner = None
+    selector_to_owner = classmethod(get_selector_to_owner)
+    owner_ids = classmethod(get_owner_ids)
+    allow_multiple_per_owner = classmethod(get_allow_multiple_per_owner)
+    owner_collection = classmethod(get_owner_collection)
+    is_owner = get_is_owner
 
     @classmethod
     def get_i(self, field_name, string):
@@ -233,7 +270,7 @@ def addMagiModelProperties(modelClass, collection_name):
     """
     Takes an existing Model class and adds the missing properties that would make it a proper MagiModel.
     Useful if you can't write a certain model yourself but you wish to use a MagiCollection for that model.
-    Will not have the properties and tools provided by BaseMagiModel, except image_url and http_image_url for image field.
+    Will not have the properties and tools provided by BaseMagiModel, except helpers for images, c_ and i_fields.
     """
     modelClass.collection_name = collection_name
     modelClass.collection = property(get_collection)
@@ -254,6 +291,13 @@ def addMagiModelProperties(modelClass, collection_name):
     modelClass.report_sentence = property(get_report_sentence)
     modelClass.collectible_sentence = property(get_collectible_sentence)
     modelClass.tinypng_settings = {}
+
+    modelClass.fk_as_owner = None
+    modelClass.selector_to_owner = classmethod(get_selector_to_owner)
+    modelClass.owner_ids = classmethod(get_owner_ids)
+    modelClass.allow_multiple_per_owner = classmethod(get_allow_multiple_per_owner)
+    modelClass.owner_collection = classmethod(get_owner_collection)
+    modelClass.is_owner = get_is_owner
 
 ############################################################
 # MagiModel
@@ -280,6 +324,9 @@ class MagiModel(BaseMagiModel):
     report_sentence = property(get_report_sentence)
     collectible_sentence = property(get_collectible_sentence)
 
+    allow_multiple_per_owner = classmethod(get_allow_multiple_per_owner)
+
+
     class Meta:
         abstract = True
 
@@ -288,8 +335,12 @@ class MagiModel(BaseMagiModel):
 
 class AccountAsOwnerModel(MagiModel):
     """
-    Will provide a cache when item doesn't have an owner but has an account
+    Will provide a cache when item doesn't have an owner but has an account.
+    You need to provide the account field in your model:
+    account = models.ForeignKey(Account, verbose_name=_('Account'))
     """
+    fk_as_owner = 'account'
+
     _cache_account_days = 200 # Change to a lower value if owner can change
     _cache_account_last_update = models.DateTimeField(null=True)
     _cache_account_owner_id = models.PositiveIntegerField(null=True)

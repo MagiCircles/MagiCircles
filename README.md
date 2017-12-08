@@ -760,14 +760,15 @@ class OwnedCard(AccountAsOwnerModel):
     account = models.ForeignKey(Account, related_name='ownedcards')
 ```
 
-If your model doesn't have a direct owner or account, you may fake it by providing properties for `owner` and `owner_id`:
+If your model doesn't have a direct owner or account, you may fake it by providing properties for `owner` and `owner_id`, and specify `fk_as_owner` in your model:
 
 ```python
 class Book(MagiModel):
     owner = models.ForeignKey(User, related_name='books')
 
 class Chapter(MagiModel):
-    book = models.ForeignKey(Book, related_name='books')
+    book = models.ForeignKey(Book, related_name='chapters')
+    fk_as_owner = 'book'
 
     @property
     def owner(self):
@@ -776,6 +777,16 @@ class Chapter(MagiModel):
     @property
     def owner_id(self):
         return self.book.owner_id
+```
+
+If you have multiple layers of foreign keys before finding the owner, you may specify `selector_to_owner`:
+
+```python
+class Paragraph(MagiModel):
+    chapter = model.ForeignKey(Chapter, related_name='paragraphs')
+    fk_as_owner = 'chapter'
+    selector_to_owner = 'chapter__book__owner'
+    ...
 ```
 
 Note: `Account` model MUST contain an actual model field `owner`.
@@ -1687,7 +1698,21 @@ Utils
 
 ### MagiModel collection utils
 
-All `MagiModel` provide the following properties (not meant to be overriden):
+All your models that inherit from `MagiModel` or `BaseMagiModel` provide the following class methods:
+
+| Name | Description | Parameters | Return value |
+|------|-------------|------------|--------------|
+| selector_to_owner | Django model query selector you can use to retrieve the User object that correspond to the owner of this instance. | None | String query selector (example: 'owner', 'account__owner', 'chapter__book__owner') |
+| owner_ids | Get the list of ids of the fk_as_owner. For example, for a card that uses accounts as owner, it would return the list of account ids owned by the user. For the 'chapter__book__owner' case, it would return the list of chapters owned by the user. | user | List of ids |
+| owner_collection | For example for account would return AccountCollection. | None | An instance of a MagiCollection or None |
+
+All your models that inherit from `MagiModel` or `BaseMagiModel` provide the following methods:
+
+| Name | Description | Parameters | Return value |
+|------|-------------|------------|--------------|
+| is_owner | Is the user in parameters the owner of this instance? | user | True or False |
+
+All your models that inherit from `MagiModel` (not `BaseMagiModel`) provide the following properties (not meant to be overriden):
 
 | Key | Value | Example |
 |-----|-------|---------|
