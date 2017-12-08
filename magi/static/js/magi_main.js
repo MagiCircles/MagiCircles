@@ -334,6 +334,70 @@ function switchLanguage() {
 }
 
 // *****************************************
+// Items reloaders
+
+function itemsReloaders() {
+    if (typeof ids_to_reload != 'undefined') {
+        $.each(reload_urls_start_with, function(index, url_start_with) {
+            $('[href^="' + url_start_with + '"]:not(.reload-handler)').click(function(e) {
+                var item_id = $(this).closest('[data-item-id]').data('item-id');
+                ids_to_reload.push(item_id);
+                $(this).addClass('reload-handler');
+            });
+        });
+    }
+    if (typeof reload_item != 'undefined') {
+        $.each(reload_urls_start_with, function(index, url_start_with) {
+            $('[href^="' + url_start_with + '"]:not(.reload-item-handler)').click(function(e) {
+                reload_item = true;
+                $(this).addClass('reload-item-handler');
+            });
+        });
+    }
+}
+
+function modalItemsReloaders() {
+    if (typeof ids_to_reload != 'undefined') {
+        $('.modal').on('hidden.bs.modal', function(e) {
+            ids_to_reload = $.unique(ids_to_reload);
+            if (ids_to_reload.length > 0) {
+                $.get(ajax_reload_url + '?ids=' + ids_to_reload.join(',')
+                      + '&page_size=' + ids_to_reload.length, function(data) {
+                          var html = $(data);
+                          $.each(ids_to_reload, function(index, id) {
+                              var previous_item = $('[data-item="' + reload_data_item + '"][data-item-id="' + id + '"]');
+                              var new_item = html.find('[data-item="' + reload_data_item + '"][data-item-id="' + id + '"]');
+                              if (new_item.length == 0) {
+                                  // If not returned, remove it
+                                  previous_item.remove();
+                              } else {
+                                  // Replace element
+                                  previous_item.replaceWith(new_item);
+                              }
+                          });
+                          ids_to_reload = [];
+                          if (ajax_pagination_callback) {
+                              ajax_pagination_callback();
+                          }
+                          loadCommons();
+                      });
+            }
+        });
+    }
+    if (typeof reload_item != 'undefined') {
+        $('.modal').on('hidden.bs.modal', function(e) {
+            if (reload_item === true) {
+                $.get(ajax_reload_url, function(data) {
+                    $('.item-container').html(data);
+                    reload_item = false;
+                    loadCommons();
+                });
+            }
+        });
+    }
+}
+
+// *****************************************
 // Dismiss popovers on click outside
 
 function dismissPopoversOnClickOutside() {
@@ -367,6 +431,7 @@ function hideCommonsOnModalShown() {
 
 $(document).ready(function() {
     loadCommons(true);
+    modalItemsReloaders();
     notificationsHandler();
     sideBarToggleButton();
     onBackButtonCloseModal();
@@ -399,6 +464,7 @@ function loadCommons(onPageLoad /* optional = false */) {
     loadTimezones();
     loadMarkdown();
     reloadDisqus();
+    itemsReloaders();
 }
 
 // *****************************************

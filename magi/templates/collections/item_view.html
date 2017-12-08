@@ -2,6 +2,14 @@
 {% extends "base.html" %}
 {% load tools %}
 
+{% block afterjs %}
+<script>
+  var ajax_reload_url = '{{ ajax_reload_url }}';
+  var reload_urls_start_with = [{% for url in reload_urls_start_with %}'{{ url }}', {% endfor %}];
+  var reload_item = false;
+</script>
+{% endblock %}
+
 {% block content %}
 <div class="container item-container">
   {% include 'items/'|add:item_template|add:'.html' %}

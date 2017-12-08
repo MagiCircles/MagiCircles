@@ -21,7 +21,7 @@
   {% if forloop.counter0 != 0 and forloop.counter0|mod:per_line %}
 </div><div class="row items">
   {% endif%}
-  <div class="col-{{ col_break }}-{{ col_size }}">
+  <div class="col-{{ col_break }}-{{ col_size }}" data-item="{{ collection.name }}" data-item-id="{{ item.id }}">
     {% include 'items/'|add:item_template|add:'.html' %}
     {% if include_below_item %}{% include 'include/below_item.html' %}{% endif %}
   </div>

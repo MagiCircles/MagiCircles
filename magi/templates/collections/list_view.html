@@ -34,6 +34,13 @@
   pagination('/ajax/{{ plural_name }}/', ''{% if ajax_pagination_callback %}, {{ ajax_pagination_callback }}{% endif %});
 </script>
 {% endif %}
+<script>
+  var ajax_reload_url = '{{ ajax_reload_url }}';
+  var ajax_pagination_callback = {{ ajax_pagination_callback|default_if_none:'null' }};
+  var reload_data_item = '{{ collection.name }}';
+  var reload_urls_start_with = [{% for url in reload_urls_start_with %}'{{ url }}', {% endfor %}];
+  var ids_to_reload = [];
+</script>
 {% endblock %}
 
 {% block content %}

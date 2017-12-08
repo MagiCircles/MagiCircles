@@ -115,6 +115,12 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
             if request.user.is_authenticated() and collection.collectible:
                 if collection.collectible_with_accounts:
                     context['accounts'] = ACCOUNT_MODEL.filter(owner=request.user)
+    # Ajax items reloader
+    if not ajax and collection.item_view.auto_reloader and collection.item_view.ajax:
+        context['ajax_reload_url'] = context['item'].ajax_item_url
+        context['reload_urls_start_with'] = [u'/{}/edit/'.format(collection.name)];
+        if collection.collectible_collections:
+            context['reload_urls_start_with'] += [cc.get_add_url() for cc in collection.collectible_collections.values()]
 
     context['include_below_item'] = context.get('show_edit_button', False) or context.get('show_collect_button', False)
     context['ajax_callback'] = collection.item_view.ajax_callback
@@ -214,6 +220,14 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
 
     if shortcut_url is not None:
         context['shortcut_url'] = shortcut_url
+
+    # Ajax items reloader
+    if not ajax and collection.list_view.auto_reloader and collection.list_view.ajax:
+        context['ajax_reload_url'] = collection.get_list_url(ajax=True)
+        context['reload_urls_start_with'] = [u'/{}/edit/'.format(collection.name)];
+        if collection.collectible_collections:
+            context['reload_urls_start_with'] += [cc.get_add_url() for cc in collection.collectible_collections.values()]
+
     context['ordering'] = ordering
     context['include_below_item'] = context.get('show_edit_button', False) or context.get('show_relevant_fields_on_ordering', False) or context.get('show_collect_button', False)
     context['page_title'] = collection.plural_title

@@ -419,6 +419,7 @@ class MagiCollection(object):
         show_relevant_fields_on_ordering = True
         hide_sidebar = False
         item_template = 'default_item_in_list'
+        auto_reloader = True
 
         def show_add_button(self, request):
             return True
@@ -463,6 +464,7 @@ class MagiCollection(object):
         show_edit_button = True
         show_collect_button = True
         comments_enabled = True
+        auto_reloader = True
         template = 'default'
 
         def share_image(self, context, item):
