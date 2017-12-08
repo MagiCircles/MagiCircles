@@ -253,8 +253,109 @@ class MagiCollection(object):
                 name_fields.append((field_name, d))
             else:
                 model_fields.append((field_name, d))
+        # Collectible fields
+        for collection in self.collectible_collections.values():
+            pass#todo
         fields = name_fields + many_fields + model_fields
         return OrderedDict(fields) if to_dict else fields
+
+    #######################
+    # Buttons
+    # Only for item_view and list_view
+
+    item_buttons_classes = ['btn', 'btn-secondary', 'btn-lines']
+    show_item_buttons = True
+    show_item_buttons_justified = True
+    show_item_buttons_as_icons = False
+    show_item_buttons_in_one_line = True
+    show_edit_button = True
+    show_edit_button_superuser_only = False
+    show_report_button = True
+    show_collect_button = True # Can also be a dictionary when multiple collectibles
+
+    def buttons_per_item(self, view, request, context, item):
+        """
+        Used to display buttons below item, only for ItemView and ListView.
+        You may override this function, but you're not really supposed to call it yourself.
+        Can be overriden per view.
+        """
+        buttons = OrderedDict([
+            (button_name, {
+                'show': False,
+                'has_permissions': False,
+                'title': button_name,
+                'icon': False,
+                'image': False,
+                'url': False,
+                'open_in_new_window': False,
+                'ajax_url': False,
+                'ajax_title': False, # By default will use title
+                'classes': (view.item_buttons_classes
+                            + (['btn-block'] if not view.show_item_buttons_in_one_line else [])),
+            }) for button_name in self.collectible_collections.keys() + ['edit', 'report']
+        ])
+        # Collectible buttons
+        for name, collectible_collection in self.collectible_collections.items():
+            if collectible_collection.add_view.enabled:
+                url_to_collectible_add_with_item = lambda url: u'{url}?{item_name}_id={item_id}'.format(
+                    url=url, item_name=self.name, item_id=item.id)
+                buttons[name]['show'] = view.show_collect_button[name] if isinstance(view.show_collect_button, dict) else view.show_collect_button
+                buttons[name]['title'] = collectible_collection.add_sentence
+                buttons[name]['badge'] = getattr(item, u'total_{}'.format(name), 0)
+                buttons[name]['icon'] = 'add'
+                buttons[name]['image'] = collectible_collection.image
+                if (collectible_collection.add_view.authentication_required
+                    and not collectible_collection.add_view.staff_required
+                    and not request.user.is_authenticated()):
+                    buttons[name]['has_permissions'] = True
+                    buttons[name]['url'] = u'/signup/?next={url}&next_title={title}'.format(
+                        url=url_to_collectible_add_with_item(collectible_collection.get_add_url()),
+                        title=item.edit_sentence,
+                    )
+                else:
+                    buttons[name]['has_permissions'] = collectible_collection.add_view.has_permissions(request, context)
+                    buttons[name]['url'] = url_to_collectible_add_with_item(collectible_collection.get_add_url())
+                    buttons[name]['ajax_url'] = url_to_collectible_add_with_item(collectible_collection.get_add_url(ajax=True))
+                    if collectible_collection.add_view.staff_required and not view.staff_required:
+                        buttons[name]['classes'].append('staff-only')
+        # Edit button
+        if self.edit_view.enabled:
+            buttons['edit']['show'] = view.show_edit_button
+            buttons['edit']['title'] = item.edit_sentence
+            buttons['edit']['icon'] = 'edit'
+            if (self.edit_view.authentication_required
+                and not self.edit_view.staff_required
+                and not request.user.is_authenticated()):
+                buttons['edit']['has_permissions'] = True
+                buttons['edit']['url'] = u'/signup/?next={url}&next_title={title}'.format(
+                    url=item.edit_url,
+                    title=item.edit_sentence,
+                )
+            else:
+                buttons['edit']['has_permissions'] = self.edit_view.has_permissions(request, context, item=item)
+                if (view.show_edit_button_superuser_only
+                    and buttons['edit']['has_permissions']
+                    and not item.is_owner(request.user)
+                    and request.user.is_staff
+                    and not request.user.is_superuser):
+                    buttons['edit']['show'] = False
+                buttons['edit']['url'] = item.edit_url
+                if self.edit_view.ajax:
+                    buttons['edit']['ajax_url'] = item.ajax_edit_url
+                if ((self.edit_view.staff_required
+                     or not item.is_owner(request.user))
+                    and not view.staff_required):
+                    buttons['edit']['classes'].append('staff-only')
+        # Report buttons
+        if self.reportable:
+            buttons['report']['show'] = view.show_report_button
+            buttons['report']['title'] = item.report_sentence
+            buttons['report']['icon'] = 'fingers'
+            buttons['report']['has_permissions'] = (not request.user.is_authenticated()
+                                                    or item.owner_id != request.user.id)
+            buttons['report']['url'] = item.report_url
+            buttons['report']['open_in_new_window'] = True
+        return buttons
 
     #######################
     # Tools - not meant to be overriden
@@ -263,6 +364,8 @@ class MagiCollection(object):
         return u'{}/{}/'.format('' if not ajax else '/ajax', self.plural_name)
 
     def get_add_url(self, ajax=False, type=None):
+        if self.types and not type:
+            type = self.types.keys[0]
         return u'{}/{}/add/{}'.format(
             '' if not ajax else '/ajax',
             self.plural_name,
