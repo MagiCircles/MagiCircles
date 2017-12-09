@@ -1,5 +1,6 @@
 import string, datetime, random
 from collections import OrderedDict
+from stringcase import snakecase
 from django.utils.translation import ugettext_lazy as _, string_concat
 from django.utils import timezone
 from django.utils.safestring import mark_safe
@@ -97,6 +98,7 @@ class MagiCollection(object):
     types = None
     filter_cuteform = None
     collectible = None
+    collectible_collections = {}
 
     # Optional variables with default values
     @property
@@ -108,6 +110,26 @@ class MagiCollection(object):
         return self.plural_title
 
     def get_queryset(self, queryset, parameters, request):
+        # Select related total collectible for authenticated user
+        if request.user.is_authenticated() and self.collectible_collections:
+            account_ids = getAccountIdsFromSession(request)
+            for collection in self.collectible_collections.values():
+                item_field_name = snakecase(self.queryset.model.__name__)
+                fk_owner = collection.queryset.model.fk_as_owner if collection.queryset.model.fk_as_owner else 'owner'
+                fk_owner_ids = ','.join(unicode(i) for i in (
+                    getAccountIdsFromSession(request)
+                    if fk_owner == 'account'
+                    else collection.queryset.model.owner_ids(request.user)))
+                a = {
+                    u'total_{}'.format(collection.name):
+                    'SELECT COUNT(*) FROM {db_table} WHERE {item_field_name}_id = {item_db_table}.id AND {fk_owner}_id IN ({fk_owner_ids})'.format(
+                        db_table=collection.queryset.model._meta.db_table,
+                        item_field_name=item_field_name,
+                        item_db_table=self.queryset.model._meta.db_table,
+                        fk_owner=fk_owner, fk_owner_ids=fk_owner_ids,
+                    )
+                }
+                queryset = queryset.extra(select=a)
         return queryset
 
     def form_class(self, request, context):
@@ -116,8 +138,125 @@ class MagiCollection(object):
                 model = self.queryset.model
         return AutoForm
 
-    def collectible_to_class(self, cls):
-        return cls
+    def collectible_to_class(self, model_class):
+        """
+        Return a collectible class based on this model.
+        You may override this function, but you're not really supposed to call it yourself.
+        """
+        parent_collection = self
+        item_field_name = snakecase(parent_collection.queryset.model.__name__)
+        item_field_name_id = u'{}_id'.format(item_field_name)
+
+        class _CollectibleForm(forms.AutoForm):
+            def __init__(self, *args, **kwargs):
+                super(_CollectibleForm, self).__init__(*args, **kwargs)
+                redirectWhenNotAuthenticated(self.request, {})
+                # Editing
+                if not self.is_creating:
+                    del(self.fields[item_field_name])
+                    if model_class.fk_as_owner:
+                        del(self.fields[model_class.fk_as_owner])
+                # Creating
+                else:
+                    # Collected item field
+                    self.item_id = self.request.GET.get(item_field_name_id, None)
+                    if not self.item_id:
+                        raise HttpRedirectException(parent_collection.get_list_url())
+                    self.fields[item_field_name].initial = self.item_id
+                    # Owner field
+                    if model_class.fk_as_owner:
+                        self.fields[model_class.fk_as_owner].empty_label = None
+                        filtered_queryset = self.fields[model_class.fk_as_owner].queryset.filter(**{
+                            model_class.selector_to_owner()[len(model_class.fk_as_owner) + 2:]:
+                            self.request.user
+                        })
+                        self.fields[model_class.fk_as_owner].choices = [
+                            (c.id, unicode(c)) for c in filtered_queryset
+                        ]
+                        total_choices = len(self.fields[model_class.fk_as_owner].choices)
+                        if total_choices == 0:
+                            collection = model_class.owner_collection()
+                            if collection:
+                                raise HttpRedirectException(u'{}?next={}'.format(
+                                    collection.get_add_url(ajax=self.ajax),
+                                    self.request.get_full_path(),
+                                ))
+                        if total_choices > 0:
+                            self.fields[model_class.fk_as_owner].initial = self.fields[model_class.fk_as_owner].choices[0][0]
+                        if total_choices == 1:
+                            self.fields[model_class.fk_as_owner] = forms.HiddenModelChoiceField(
+                                queryset=filtered_queryset,
+                                initial=self.fields[model_class.fk_as_owner].initial,
+                                widget=forms.forms.HiddenInput,
+                            )
+
+            class Meta:
+                model = model_class
+                fields = '__all__'
+                save_owner_on_creation = not model_class.fk_as_owner
+                hidden_foreign_keys = [item_field_name]
+
+        class _CollectibleFilterForm(forms.MagiFiltersForm):
+            class Meta:
+                model = model_class
+                fields = '__all__'
+
+        class _CollectibleCollection(MagiCollection):
+            name = model_class.collection_name
+            queryset = model_class.objects.all().select_related(self.name)
+            icon = self.icon
+            image = self.image
+            navbar_link = False
+            reportable = False
+            form_class = _CollectibleForm
+
+            def get_list_url_for_authenticated_owner(self, request, ajax, item=None):
+                url = u'{url}?owner_id={owner_id}{item}'.format(
+                    url=self.get_list_url(ajax=ajax),
+                    owner_id=request.user.id,
+                    item=u'&{}={}'.format(
+                        item_field_name,
+                        getattr(item, item_field_name_id),
+                    ) if item else '',
+                )
+                return url
+
+            @property
+            def title(self):
+                return _('Collected {thing}').format(thing=parent_collection.title)
+
+            @property
+            def plural_title(self):
+                return _('Collected {things}').format(things=parent_collection.plural_title)
+
+            @property
+            def add_sentence(self):
+                return _(u'Add to your {thing}').format(thing=self.plural_title.lower())
+
+            class ListView(MagiCollection.ListView):
+                filter_form = _CollectibleFilterForm
+
+            class ItemView(MagiCollection.ItemView):
+                enabled = False
+
+            class AddView(MagiCollection.AddView):
+                alert_duplicate = False
+                back_to_list_button = False
+
+                def redirect_after_add(self, request, item, ajax):
+                    return self.collection.get_list_url_for_authenticated_owner(request, ajax, item)
+
+            class EditView(MagiCollection.EditView):
+                back_to_list_button = False
+                allow_delete = True
+
+                def redirect_after_edit(self, request, item, ajax):
+                    return self.collection.get_list_url_for_authenticated_owner(request, ajax, item)
+
+                def redirect_after_delete(self, request, item, ajax):
+                    return self.collection.get_list_url_for_authenticated_owner(request, ajax, item)
+
+        return _CollectibleCollection
 
     enabled = True
     navbar_link = True
@@ -173,6 +312,7 @@ class MagiCollection(object):
         """
         name_fields = []
         many_fields = []
+        collectible_fields = []
         # Fields from reverse
         for (field_name, url, verbose_name) in getattr(item, 'reverse_related', []):
             if only_fields and field_name not in only_fields:
@@ -371,11 +511,6 @@ class MagiCollection(object):
             self.plural_name,
             u'{}/'.format(type) if type else '',
         )
-
-    @property
-    def collectible_with_accounts(self):
-        return issubclass(self.collectible.__class__, AccountAsOwnerModel) # todo: test, not sure which one works
-        return issubclass(self.collectible, AccountAsOwnerModel)
 
     @property
     def add_sentence(self):

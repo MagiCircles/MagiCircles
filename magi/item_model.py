@@ -318,10 +318,11 @@ class MagiModel(BaseMagiModel):
     edit_sentence = property(get_edit_sentence)
     delete_sentence = property(get_delete_sentence)
     report_sentence = property(get_report_sentence)
-    collectible_sentence = property(get_collectible_sentence)
 
     allow_multiple_per_owner = classmethod(get_allow_multiple_per_owner)
 
+    def __unicode__(self):
+        return self.collection_title
 
     class Meta:
         abstract = True

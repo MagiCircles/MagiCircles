@@ -84,74 +84,6 @@ def getURLLambda(name, lambdas):
 def getCollectionShowLinkLambda(collection):
     return (lambda context: collection.list_view.has_permissions(context['request'], context))
 
-def _createCollectibleCollection(collection):
-    class _CollectibleForm(forms.AutoForm):
-        account_id = forms.forms.ChoiceField(label=_('Account'))
-        # todo: make widgets hidden
-
-        def __init__(self, *args, **kwargs):
-            super(_CollectibleForm, self).__init__(*args, **kwargs)
-            del(self.fields[collection.name])
-            self.fields['{}_id'.format(collection.name)] = forms.forms.IntegerField()
-            if collection.collectible_with_accounts:
-                del(self.fields['account'])
-                self.fields['account_id'].choices = [(account.id, unicode(account)) for account in ACCOUNT_MODEL.objects.filter(owner=self.request.user)]
-            else:
-                del(self.fields['account_id'])
-
-        def save(self, commit=True):
-            instance = super(_CollectibleForm, self).save(commit=False)
-            setattr(instance, '{}_id'.format(collection.name), self.cleaned_data['{}_id'.format(collection.name)])
-            if collection.collectible_with_accounts:
-                instance.account_id = self.cleaned_data['account_id']
-            if commit:
-                instance.save()
-            return instance
-
-        class Meta:
-            model = collection.collectible
-            fields = '__all__'
-            save_owner_on_creation = not collection.collectible_with_accounts
-
-    class _CollectibleCollection(magicollections.MagiCollection):
-        name = 'collectible{}'.format(collection.name)
-        queryset = collection.collectible.objects.all().select_related(collection.name)
-        icon = collection.icon
-        image = collection.image
-        navbar_link = False
-        reportable = False
-
-        form_class = _CollectibleForm
-
-        @property
-        def title(self):
-            return _('Collectible {thing}').format(thing=collection.title)
-
-        @property
-        def plural_title(self):
-            return _('Collectible {things}').format(things=collection.plural_title)
-
-        def get_queryset(self, queryset, parameters, request):
-            return queryset.select_related(collection.name)
-
-        class ListView(magicollections.MagiCollection.ListView):
-            item_template = 'default'
-
-        class ItemView(magicollections.MagiCollection.ItemView):
-            enabled = False
-
-        class AddView(magicollections.MagiCollection.AddView):
-            alert_duplicate = False
-
-        def redirect_after_add(self, request, item, ajax):
-            return self.get_list_url(ajax=ajax)
-
-        class EditView(magicollections.MagiCollection.EditView):
-            def redirect_after_edit(self, request, item, ajax):
-                return self.get_list_url(ajax=ajax)
-
-    return collection.collectible_to_class(_CollectibleCollection)
-
 def _addToCollections(name, cls): # Class of the collection
     collection = cls()
     collection.list_view = collection.ListView(collection)
@@ -164,10 +96,14 @@ def _addToCollections(name, cls): # Class of the collection
     all_enabled.append(collection.name)
     collections[collection.name] = collection
     if collection.collectible:
-        collectible_collection = _addToCollections(name, _createCollectibleCollection(collection))
-        if collectible_collection:
-            collection.collectible = collectible_collection
-    all_enabled.append(collection.name)
+        collectible_model_classes = collection.collectible if isinstance(collection.collectible, list) else [collection.collectible]
+        collection.collectible_collections = OrderedDict()
+        for model_class in collectible_model_classes:
+            collectible_collection_class = collection.collectible_to_class(model_class)
+            if collectible_collection_class:
+                collectible_collection = _addToCollections(model_class.collection_name, collectible_collection_class)
+                if collectible_collection:
+                    collection.collectible_collections[collectible_collection.name] = collectible_collection
     return collection
 
 def _addToEnabledCollections(name, cls, is_custom):

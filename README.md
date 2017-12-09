@@ -1201,12 +1201,27 @@ from sample import models
 class CardCollection(MagiCollection):
     collectible = models.CollectibleCard
 
-    def to_collectible_class(self, CollectibleClass):
-        class NewCollectibleClass(CollectibleClass):
-            title = _('Owned Cards')
-        return NewCollectibleClass
+    def collectible_to_class(self, model_class):
+	cls = super(CardCollection, self).collectible_to_class(model_class)
+        class _CollectibleCard(cls):
+            icon = 'world'
+        return _CollectibleCard
 ```
 
+When customizing your collectible's MagiCollection, keep in mind that types are not compatible and shouldn't be used in a collectible's MagiCollection.
+
+You may provide multiple collectibles for one collection. For example, you may want to allow users to save the cards they own and their favorite cards. To do so, you can provide a dictionary as a collectible. The keys must correspond to `collection_name` provided in the models.
+
+```python
+from magi.magicollections import MagiCollection
+from sample import models
+
+class CardCollection(MagiCollection):
+    collectible = {
+        'collectiblecard': models.CollectibleCard,
+        'wishedcard': models.WishedCard,
+    }
+```
 
 ### CuteForm
 
