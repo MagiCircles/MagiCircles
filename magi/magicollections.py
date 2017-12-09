@@ -1388,6 +1388,7 @@ class DonateCollection(MagiCollection):
     navbar_link_list = 'more'
     queryset =  models.DonationMonth.objects.all().prefetch_related(Prefetch('badges', queryset=models.Badge.objects.select_related('user', 'user__preferences').order_by('-show_on_profile'), to_attr='all_badges'))
     reportable = False
+    form_class = forms.DonateForm
 
     def buttons_per_item(self, request, context, item):
         buttons = super(DonateCollection, self).buttons_per_item(request, context, item)
