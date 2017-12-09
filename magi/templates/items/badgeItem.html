@@ -23,7 +23,4 @@
     </div>
   </div>
 </a>
-{% if badge.type == 'exclusive' and user.is_staff %}
-<div class="text-right"><a href="/badges/add/copy/?id={{ badge.id }}" class="btn btn-sm btn-secondary staff-only"><i class="flaticon-deck"></i> Make a copy</a></div><br>
-{% endif %}
 {% endwith %}

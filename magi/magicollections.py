@@ -409,8 +409,19 @@ class MagiCollection(object):
         per_line = 3
         col_break = 'md'
         page_size = 12
-        show_edit_button = True
-        show_collect_button = True
+
+        item_buttons_classes = property(propertyFromCollection('item_buttons_classes'))
+        show_item_buttons = property(propertyFromCollection('show_item_buttons'))
+        show_item_buttons_justified = property(propertyFromCollection('show_item_buttons_justified'))
+        show_item_buttons_as_icons = property(propertyFromCollection('show_item_buttons_as_icons'))
+        show_item_buttons_in_one_line = property(propertyFromCollection('show_item_buttons_in_one_line'))
+        show_edit_button = property(propertyFromCollection('show_edit_button'))
+        show_edit_button_superuser_only = property(propertyFromCollection('show_edit_button_superuser_only'))
+        show_report_button = property(propertyFromCollection('show_report_button'))
+        show_collect_button = property(propertyFromCollection('show_collect_button'))
+
+        top_buttons_classes = ['btn', 'btn-lg', 'btn-block', 'btn-main']
+        show_add_button_superuser_only = False
         authentication_required = False
         distinct = True
         add_button_subtitle = _('Become a contributor to help us fill the database')
@@ -420,6 +431,9 @@ class MagiCollection(object):
         hide_sidebar = False
         item_template = 'default_item_in_list'
         auto_reloader = True
+
+        def buttons_per_item(self, *args, **kwargs):
+            return self.collection.buttons_per_item(self, *args, **kwargs)
 
         def show_add_button(self, request):
             return True
@@ -433,6 +447,49 @@ class MagiCollection(object):
             if hasattr(self.collection.queryset.model, 'creation'):
                 return '-creation'
             return '-id'
+
+        def top_buttons(self, request, context):
+            """
+            Used to display buttons at the beginning of the list view.
+            You may override this function, but you're not really supposed to call it yourself.
+            """
+            buttons = OrderedDict()
+            # Add buttons
+            if self.collection.add_view.enabled:
+                for_all_buttons = {
+                    'show': self.show_add_button(request),
+                    'has_permissions': self.collection.add_view.has_permissions(request, context),
+                    'ajax_url': False, # Top add buttons should always open a full page
+                    'open_in_new_window': False,
+                    'classes': (
+                        self.collection.list_view.top_buttons_classes
+                        + (['staff-only'] if self.collection.add_view.staff_required and not self.staff_required else [])
+                    ),
+                    'title': self.collection.add_sentence,
+                }
+                if (self.show_add_button_superuser_only
+                    and for_all_buttons['has_permissions']
+                    and request.user.is_staff
+                    and not request.user.is_superuser):
+                    for_all_buttons['show'] = False
+                if self.collection.types:
+                    for (type, button) in self.collection.types.items():
+                        if not button.get('show_button', True):
+                            continue
+                        buttons[u'add_{}'.format(type)] = dict({
+                            'url': self.collection.get_add_url(type=type),
+                            'icon': button.get('icon', None),
+                            'image': button.get('image', None),
+                            'subtitle': button.get('title', type),
+                        }, **for_all_buttons)
+                else:
+                    buttons['add'] = dict({
+                        'url': self.collection.get_add_url(),
+                        'icon': self.collection.icon,
+                        'image': self.collection.image,
+                        'subtitle': self.collection.list_view.add_button_subtitle,
+                    }, **for_all_buttons)
+            return buttons
 
         #######################
         # Tools - not meant to be overriden
@@ -461,11 +518,30 @@ class MagiCollection(object):
         # Optional variables with default values
         authentication_required = False
         owner_only = False
-        show_edit_button = True
-        show_collect_button = True
         comments_enabled = True
+        full_width = False
         auto_reloader = True
         template = 'default'
+
+        @property
+        def show_item_buttons(self):
+            return False if self.template == 'default' else self.collection.show_item_buttons
+        @property
+        def item_buttons_classes(self):
+            return self.collection.item_buttons_classes + (['btn-lg'] if self.template == 'default' else [])
+        @property
+        def show_item_buttons_as_icons(self):
+            return True if self.template == 'default' else self.collection.show_item_buttons_as_icons
+        show_edit_button = property(propertyFromCollection('show_edit_button'))
+        show_edit_button_superuser_only = property(propertyFromCollection('show_edit_button_superuser_only'))
+        show_report_button = property(propertyFromCollection('show_report_button'))
+        show_collect_button = property(propertyFromCollection('show_collect_button'))
+        # Note: if you use the 'default' template, the following 2 will be ignored:
+        show_item_buttons_justified = property(propertyFromCollection('show_item_buttons_justified'))
+        show_item_buttons_in_one_line = property(propertyFromCollection('show_item_buttons_in_one_line'))
+
+        def buttons_per_item(self, *args, **kwargs):
+            return self.collection.buttons_per_item(self, *args, **kwargs)
 
         def share_image(self, context, item):
             if hasattr(item, 'http_image_url'):
@@ -621,9 +697,11 @@ class AccountCollection(MagiCollection):
 
     class ListView(MagiCollection.ListView):
         item_template = custom_item_template
+        show_edit_button_superuser_only = True
         show_title = True
         per_line = 1
         add_button_subtitle = _('Create your account to join the community and be in the leaderboard!')
+        show_item_buttons = False
 
         def show_add_button(self, request):
             return not getAccountIdsFromSession(request)
@@ -637,6 +715,7 @@ class AccountCollection(MagiCollection):
     class ItemView(MagiCollection.ItemView):
         template = custom_item_template
         comments_enabled = False
+        show_edit_button_superuser_only = True
 
     class AddView(MagiCollection.AddView):
         alert_duplicate = False
@@ -691,6 +770,8 @@ class UserCollection(MagiCollection):
     class ListView(MagiCollection.ListView):
         item_template = custom_item_template
         default_ordering = 'username'
+        show_item_buttons = False
+        show_edit_button_superuser_only = True
         per_line = 6
         page_size = 30
 
@@ -710,7 +791,10 @@ class UserCollection(MagiCollection):
         template = 'profile'
         js_files = ['profile']
         comments_enabled = False
-        show_edit_button = False
+        show_item_buttons = False
+        show_item_buttons_justified = False
+        item_buttons_classes = ['btn', 'btn-link']
+        show_edit_button_superuser_only = True
         ajax = False
         shortcut_urls = [
             ('me', 'me'),
@@ -913,7 +997,14 @@ class ActivityCollection(MagiCollection):
         filter_form = forms.FilterActivities
         hide_sidebar = True
         show_relevant_fields_on_ordering = False
-        show_edit_button = False
+        show_item_buttons = False
+        show_item_buttons_justified = False
+
+        @property
+        def item_buttons_classes(self):
+            return [cls for cls in super(ActivityCollection.ListView, self).item_buttons_classes if cls != 'btn-secondary'] + ['btn-link']
+
+        show_edit_button_superuser_only = True
         shortcut_urls = ['']
 
         def get_queryset(self, queryset, parameters, request):
@@ -927,7 +1018,13 @@ class ActivityCollection(MagiCollection):
     class ItemView(MagiCollection.ItemView):
         template = custom_item_template
         ajax_callback = 'updateActivities'
-        show_edit_button = False
+        show_item_buttons = False
+        show_item_buttons_justified = False
+        show_edit_button_superuser_only = True
+
+        @property
+        def item_buttons_classes(self):
+            return [cls for cls in super(ActivityCollection.ItemView, self).item_buttons_classes if cls != 'btn-secondary'] + ['btn-link']
 
         def get_queryset(self, queryset, parameters, request):
             return self.collection._get_queryset_for_list_and_item(queryset, parameters, request)
@@ -1157,12 +1254,34 @@ class DonateCollection(MagiCollection):
     queryset =  models.DonationMonth.objects.all().prefetch_related(Prefetch('badges', queryset=models.Badge.objects.select_related('user', 'user__preferences').order_by('-show_on_profile'), to_attr='all_badges'))
     reportable = False
 
+    def buttons_per_item(self, request, context, item):
+        buttons = super(DonateCollection, self).buttons_per_item(request, context, item)
+        if item.type == 'exclusive':
+            buttons['copy'] = {
+                'show': True,
+                'has_permissions': self.add_view.has_permissions(request, context, item=item),
+                'title': u'Make a copy',
+                'icon': 'deck',
+                'url': u'{url}?id={badge_id}'.format(
+                    url=self.get_add_url(type='copy'),
+                    badge_id=item.id,
+                ),
+                'classes': (
+                    self.item_buttons_classes
+                    + (['btn-block'] if not self.show_item_buttons_in_one_line else []),
+                    + (['staff-only'] if self.add_view.staff_required else [])
+                ),
+            }
+        return buttons
+
     class ListView(MagiCollection.ListView):
         item_template = custom_item_template
         page_size = 1
         per_line = 1
         default_ordering = '-date'
         show_title = True
+        show_edit_button_superuser_only = True
+        show_add_button_superuser_only = True
         before_template = 'include/donate'
         add_button_subtitle = ''
 

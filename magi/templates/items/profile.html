@@ -34,14 +34,7 @@
 	    {% if profile_user.preferences.i_status and profile_user.preferences.i_status != 'THANKS' %}<a href="/donate/"><h2 style="color: {{ profile_user.preferences.status_color }}">{{ profile_user.preferences.status }}</h2></a>{% endif %}
 	    <br>
 	    <div class="description to-markdown">{% if profile_user.preferences.description %}{{ profile_user.preferences.description }}{% endif %}</div>
-	    {% if not is_me %}
-	    {% if 'report' in all_enabled and reportable %}
-	    <a href="{{ profile_user.report_url }}" target="_blank" class="btn btn-link btn-sm"><i class="flaticon-fingers"></i> {{ profile_user.report_sentence }}</a>
-	    {% endif %}
-	    {% if user.is_superuser %}
-	    <a href="{{ profile_user.edit_url }}" class="btn btn-link btn-sm staff-only"><i class="flaticon-edit"></i> {{ profile_user.edit_sentence }}</a><br>
-	    {% endif %}
-	    {% endif %}
+            {% include 'include/below_item.html' with show_item_buttons=True %}
 	    <div class="text-right badges">
 	      {% for badge in profile_user.latest_badges %}<a href="{{ badge.item_url }}" data-ajax-url="{{ badge.ajax_item_url }}" data-ajax-title="{{ badge }}" class="mini-badge badge-color{{ badge.rank|default_if_none:"" }}" data-toggle="popover" data-trigger="hover" data-placement="top" data-content="<span class='text-badge-color{{ badge.rank|default_if_none:"" }}'>{% if badge.rank %}<img src='{{ static_url }}img/badges/medal{{ badge.rank }}.png'> {% endif %}{{ badge }}</span>" data-html="true" style="background-image: url('{{ badge.image_url }}');">
 		<i class="flaticon-more placeholder"></i></a>{% endfor %}{% if more_badges %}<a href="#openBadges" class="mini-badge badge-color" data-toggle="popover" data-trigger="hover" data-placement="top" data-content="{% trans 'Load more...' %}">

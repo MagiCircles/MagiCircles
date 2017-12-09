@@ -1,5 +1,4 @@
-{# variables: fields, bottom #}
-{# when bottom=True, needs user and item #}
+{# variables: fields, bottom, item (item.buttons_to_show), user #}
 {% load tools %}
 {% load magi_tags %}
   <table class="table about-table">
@@ -64,6 +63,35 @@
       </td>
     </tr>
     {% endfor %}
+    {% if item.buttons_to_show %}
+    {% for name, button in item.buttons_to_show.items %}
+    {% if button.show and button.has_permissions %}
+    <tr{% if 'staff-only' in button.classes %} class="staff-only"{% endif %}>
+      <td>
+        {% if button.icon %}<i class="flaticon-{{ button.icon }}"></i>
+        {% elif button.image %}<img src="{{ static_url }}img/{{ button.image }}.png" height="39" />{% endif %}
+      </td>
+      <th>{{ button.title }}</th>
+      <td>
+        <a href="{{ button.url }}" data-btn-name="{{ name }}"
+           class="{% for class in button.classes %}{% if class != 'staff-only' %}{{ class }} {% endif %}{% endfor %}"
+           title="{{ button.title }}"
+           {% if button.open_in_new_window %} target="_blank"{% endif %}
+           {% if button.ajax_url %}
+           data-ajax-url="{{ button.ajax_url }}"
+           data-ajax-title="{% if button.ajax_title %}{{ button.ajax_title }}{% else %}{{ button.title }}{% endif %}"
+           data-ajax-handle-form="true"
+           {% endif %}>
+          {% if button.icon %}<i class="flaticon-{{ button.icon }}"></i>
+          {% elif button.image %}<img src="{{ static_url }}img/{{ button.image }}.png" height="39" />{% endif %}
+          {% if not item.show_item_buttons_as_icons %}{{ button.title }}{% endif %}
+          {% if button.badge != None %}<span class="badge progress-bar-main"{% if not button.badge %} style="display: none;"{% endif %}>{{ button.badge }}</span>{% endif %}
+        </a>
+      </td>
+    </tr>
+    {% endif %}
+    {% endfor %}
+    {% endif %}
     {% if bottom %}
     {% load i18n %}
     {% if comments_enabled %}
@@ -86,16 +114,5 @@
 	</span>
       </td>
     </tr>
-    {% if show_edit_button %}
-    {% if not show_edit_button_owner_only or item.owner_id == user.id or user.is_staff %}
-    <tr{% if show_edit_button_owner_only and item.owner_id != user.id %} class="staff-only"{% endif %}>
-      <td><i class="flaticon-edit"></i></td>
-      <th>{{ item.edit_sentence }}</th>
-      <td>
-	<a href="{{ item.edit_url }}" class="btn btn-lg btn-secondary"><i class="flaticon-edit"></i></a>
-      </td>
-    </tr>
-    {% endif %}
-    {% endif %}
     {% endif %}
   </table>

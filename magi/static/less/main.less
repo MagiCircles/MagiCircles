@@ -286,7 +286,7 @@ table.text-center th {
     #togglebutton {
 	display: none;
     }
-    .add_buttons, .total-search-results {
+    .top_buttons, .total-search-results {
 	background: white;
     }
     .btn-add-activity {
@@ -301,7 +301,7 @@ table.text-center th {
 	    font-size: 0.7em;
 	}
     }
-    .index-not-authenticated + .add_buttons {
+    .index-not-authenticated + .top_buttons {
 	display: none;
     }
 }
@@ -326,8 +326,11 @@ body.current-map, html.html-current-map {
     height: 100%;
 }
 
-.add_buttons {
-    padding-top: 10px;
+.top_buttons {
+    padding: 20px 0;
+    .btn {
+        white-space: normal;
+    }
 }
 
 .a-nodifference {

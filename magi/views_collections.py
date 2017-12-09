@@ -44,29 +44,6 @@ def _modification_view(context, name, view):
     context['after_template'] = view.after_template
     return context
 
-def _show_edit_button(collection, collection_view, request, context):
-    if collection_view.show_edit_button and collection.edit_view.has_permissions(request, context):
-        context['show_edit_button'] = True
-        context['show_edit_ajax_enabled'] = collection.edit_view.ajax
-        if collection.edit_view.owner_only:
-            context['show_edit_button_owner_only'] = True
-        if collection.edit_view.staff_required:
-            context['edit_button_staff_only'] = True
-        if collection_view.staff_required:
-            context['staff_only_full_page'] = True
-
-def _show_collect_button(collection, collection_view, request, context):
-    if collection.collectible and collection.collectible.add_view.enabled:
-        context['collectible'] = True
-        if collection.collectible.add_view.has_permissions(request, context):
-            context['collectible_has_permissions'] = True
-        if collection.collectible.add_view.ajax:
-            context['collectible_ajax'] = True
-        if collection_view.show_collect_button:
-            context['show_collect_button'] = True
-        if collection.collectible.add_view.staff_required:
-            context['collectible_staff_only'] = True
-
 def _modification_views_page_titles(action_sentence, context, after_title):
     context['page_title'] = u'{action_sentence}{after_title}'.format(
         action_sentence=action_sentence,
@@ -92,9 +69,6 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
     context['item'] = get_object_or_404(queryset, **options) if not item else item
     collection.item_view.check_owner_permissions(request, context, context['item'])
 
-    _show_edit_button(collection, collection.item_view, request, context)
-    _show_collect_button(collection, collection.item_view, request, context)
-
     if shortcut_url is not None:
         context['shortcut_url'] = shortcut_url
     context['ajax'] = ajax
@@ -106,16 +80,12 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
     context['comments_enabled'] = collection.item_view.comments_enabled
     context['item_template'] = collection.item_view.template
     context['full_width'] = collection.item_view.full_width
+    context['ajax_callback'] = collection.item_view.ajax_callback
     context['collection'] = collection
     if context['item_template'] == 'default':
-        context['show_edit_button'] = False
-        context['item_fields'] = collection.to_fields(context['item'])
         context['top_illustration'] = collection.item_view.top_illustration
-        if context.get('show_collect_button'):
-            context['show_collect_button'] = False
-            if request.user.is_authenticated() and collection.collectible:
-                if collection.collectible_with_accounts:
-                    context['accounts'] = ACCOUNT_MODEL.filter(owner=request.user)
+        context['item_fields'] = collection.to_fields(context['item'])
+
     # Ajax items reloader
     if not ajax and collection.item_view.auto_reloader and collection.item_view.ajax:
         context['ajax_reload_url'] = context['item'].ajax_item_url
@@ -123,8 +93,15 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
         if collection.collectible_collections:
             context['reload_urls_start_with'] += [cc.get_add_url() for cc in collection.collectible_collections.values()]
 
-    context['include_below_item'] = context.get('show_edit_button', False) or context.get('show_collect_button', False)
-    context['ajax_callback'] = collection.item_view.ajax_callback
+    context['include_below_item'] = False
+    context['show_item_buttons'] = collection.item_view.show_item_buttons
+    context['item'].show_item_buttons_justified = collection.item_view.show_item_buttons_justified
+    context['item'].show_item_buttons_as_icons = collection.item_view.show_item_buttons_as_icons
+    context['item'].show_item_buttons_in_one_line = collection.item_view.show_item_buttons_in_one_line
+    context['item'].buttons_to_show = collection.item_view.buttons_per_item(request, context, context['item'])
+    if collection.item_view.show_item_buttons and [True for b in context['item'].buttons_to_show.values() if b['show'] and b['has_permissions']]:
+        context['include_below_item'] = True
+
     collection.item_view.extra_context(context)
     if ajax:
         context['include_template'] = 'items/{}'.format(context['item_template'])
@@ -186,33 +163,6 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     if 'filter_form' in context:
         cuteFormFieldsForContext(collection.list_view.filter_cuteform, context, form=context['filter_form'])
 
-    if collection.add_view.enabled:
-        if collection.list_view.show_add_button(request):
-            if collection.add_view.has_permissions(request, context):
-                if collection.types:
-                    context['add_buttons'] = []
-                    for (type, button) in collection.types.items():
-                        if not button.get('show_button', True):
-                            continue
-                        context['add_buttons'].append({
-                            'link': collection.get_add_url(type=type),
-                            'image': button.get('image', None),
-                            'title': button.get('title', type),
-                            'subtitle': collection.types[type].get('title', button.get('title', type)),
-                        })
-                else:
-                    context['add_buttons'] = [{
-                        'link': collection.get_add_url(),
-                        'image': collection.image,
-                        'title': collection.title,
-                        'subtitle': collection.list_view.add_button_subtitle,
-                    }]
-                context['add_buttons_staff_only'] = collection.add_view.staff_required
-                context['add_buttons_col_size'] = int(math.ceil(12 / len(context['add_buttons'])))
-
-    _show_edit_button(collection, collection.list_view, request, context)
-    _show_collect_button(collection, collection.list_view, request, context)
-
     if 'ajax_modal_only' in request.GET:
         # Will display a link to see the other results instead of the pagination button
         context['ajax_modal_only'] = True
@@ -230,7 +180,6 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
             context['reload_urls_start_with'] += [cc.get_add_url() for cc in collection.collectible_collections.values()]
 
     context['ordering'] = ordering
-    context['include_below_item'] = context.get('show_edit_button', False) or context.get('show_relevant_fields_on_ordering', False) or context.get('show_collect_button', False)
     context['page_title'] = collection.plural_title
     context['total_pages'] = int(math.ceil(context['total_results'] / page_size))
     context['items'] = queryset
@@ -251,9 +200,8 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['plural_title'] = collection.plural_title
     context['ajax_pagination'] = collection.list_view.ajax
     context['ajax_pagination_callback'] = collection.list_view.ajax_pagination_callback
-    context['ajax'] = ajax
     context['ajax_callback'] = collection.list_view.ajax_callback
-
+    context['ajax'] = ajax
     context['js_files'] = collection.list_view.js_files
     context['share_image'] = _get_share_image(context, collection.list_view)
     context['full_width'] = collection.list_view.full_width
@@ -262,16 +210,30 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['col_size'] = int(math.ceil(12 / context['per_line']))
     context['item_view_enabled'] = collection.item_view.enabled
     context['ajax_item_view_enabled'] = context['item_view_enabled'] and collection.item_view.ajax
+    context['include_below_item'] = False # May be set to true below
     context['collection'] = collection
 
-    collection.list_view.extra_context(context)
+    if not ajax:
+        context['top_buttons'] = collection.list_view.top_buttons(request, context)
+        context['top_buttons_total'] = len([True for b in context['top_buttons'].values() if b['show'] and b['has_permissions']])
+        if context['top_buttons_total']:
+            context['top_buttons_col_size'] = int(math.ceil(12 / context['top_buttons_total']))
 
-    if collection.list_view.foreach_items or context.get('show_relevant_fields_on_ordering', False):
-        for i, item in enumerate(queryset):
-            if collection.list_view.foreach_items:
-                collection.list_view.foreach_items(i, item, context)
-            if context.get('show_relevant_fields_on_ordering', False):
-                item.relevant_fields_to_show = collection.to_fields(item, only_fields=context['plain_ordering'], in_list=True)
+    context['show_item_buttons'] = collection.list_view.show_item_buttons
+    for i, item in enumerate(queryset):
+        if collection.list_view.foreach_items:
+            collection.list_view.foreach_items(i, item, context)
+        if context.get('show_relevant_fields_on_ordering', False):
+            context['include_below_item'] = True
+            item.relevant_fields_to_show = collection.to_fields(item, only_fields=context['plain_ordering'], in_list=True)
+        item.buttons_to_show = collection.list_view.buttons_per_item(request, context, item)
+        item.show_item_buttons_justified = collection.list_view.show_item_buttons_justified
+        item.show_item_buttons_as_icons = collection.list_view.show_item_buttons_as_icons
+        item.show_item_buttons_in_one_line = collection.list_view.show_item_buttons_in_one_line
+        if collection.list_view.show_item_buttons and [True for b in item.buttons_to_show.values() if b['show'] and b['has_permissions']]:
+            context['include_below_item'] = True
+
+    collection.list_view.extra_context(context)
 
     if ajax:
         return render(request, 'collections/list_page.html', context)

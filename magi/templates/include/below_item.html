@@ -1,23 +1,31 @@
-<div class="text-right below-item-buttons">
-  {% if show_collect_button %}
-  {% if collectible_has_permissions %}
-  <a href="#"
-     class="btn btn-block btn-secondary">
-    {{ item.collectible_sentence }}
+{# Required: show_relevant_fields_on_ordering, show_item_buttons, item (item.buttons_to_show, item.show_item_buttons_in_one_line, item.show_item_buttons_justified, item.relevant_fields_to_show) #}
+{% if show_item_buttons and item.buttons_to_show %}
+<div class="below-item-buttons{% if item.show_item_buttons_in_one_line %} btn-group {% if item.show_item_buttons_justified %}btn-group-justified{% endif %}{% endif %}">
+  {% for name, button in item.buttons_to_show.items %}
+  {% if button.show and button.has_permissions %}
+  <a href="{{ button.url }}" data-btn-name="{{ name }}"
+     class="{% for class in button.classes %}{{ class }} {% endfor %}"
+     title="{{ button.title }}"
+     {% if button.open_in_new_window %} target="_blank"{% endif %}
+     {% if item.show_item_buttons_as_icons %}
+     data-toggle="tooltip"
+     data-placement="top"
+     data-container="body"
+     {% endif %}
+     {% if button.ajax_url %}
+     data-ajax-url="{{ button.ajax_url }}"
+     data-ajax-title="{% if button.ajax_title %}{{ button.ajax_title }}{% else %}{{ button.title }}{% endif %}"
+     data-ajax-handle-form="true"
+     {% endif %}>
+    {% if button.icon %}<i class="flaticon-{{ button.icon }}"></i>
+    {% elif button.image %}<img src="{{ static_url }}img/{{ button.image }}.png" height="39" />{% endif %}
+    {% if not item.show_item_buttons_as_icons %}{{ button.title }}{% endif %}
+    {% if button.badge != None %}<span class="badge progress-bar-main"{% if not button.badge %} style="display: none;"{% endif %}>{{ button.badge }}</span>{% endif %}
   </a>
-  {% elif not user.is_authenticated %}
-  <a href="/signup/?next={{ item.item_url }}&next_title={{ item }}"
-     class="btn btn-sm btn-secondary">
-    {{ item.collectible_sentence }}
-  </a>
   {% endif %}
-  {% endif %}
-  {% if show_edit_button %}
-  {% if not show_edit_button_owner_only or item.owner_id == user.id or user.is_staff %}
-  <a href="{{ item.edit_url }}"{% if show_edit_ajax_enabled %} data-ajax-url="{{ item.ajax_edit_url }}" data-ajax-title="{{ item.edit_sentence }}" data-ajax-handle-form="true"{% endif %} class="btn btn-sm btn-secondary{% if edit_button_staff_only or item.owner_id != user.id %}{% if edit_button_staff_only or show_edit_button_owner_only %} staff-only{% if staff_only_full_page %}-full-staff-page{% endif %}{% endif %}{% endif %}"><i class="flaticon-edit"></i> {{ item.edit_sentence }}</a>
-  {% endif %}
-  {% endif %}
+  {% endfor %}
 </div>
+{% endif %}
 {% if show_relevant_fields_on_ordering and item.relevant_fields_to_show %}
 {% include 'include/fields_table.html' with fields=item.relevant_fields_to_show bottom=False %}
 {% endif %}

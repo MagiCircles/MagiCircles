@@ -864,6 +864,7 @@ For each collection, you may also override the fields and methods. When overridi
 | Key | Value | Default | Example |
 |-----|-------|---------|---------|
 | enabled | Is the collection enabled? When not, it won't be initialized at all and won't be available when getting a collection by name. | True | |
+| item_buttons_classes | Only used in ListView and ItemView. Classes used for the buttons under items. Can be overriden in ItemView and ListView. | ['btn', 'btn-secondary', 'btn-lines'] | |
 | name | Name of the collection, unique | Lowercased name of the class without `collection` | 'card' |
 | plural_name | Multiple items string, used in URLs | key + 's' | 'cards' |
 | icon | String name of a [flaticon](#flaticon) that illustrates the collection (used in navbar) | None | 'album' |
@@ -881,6 +882,13 @@ For each collection, you may also override the fields and methods. When overridi
 | report_delete_templates | A dictionary of reasons why a reported item should be deleted. The key is a short title for the reason, and the value is a fully detailed message that will be sent to the owner when the item gets deleted. Both shouldn't be localized. | {} | ```{ 'Illegal content': 'Something you shared in this activity was illegal so it has been edited.' }```|
 | report_allow_edit | Should staff members be allowed to edit a reported item? Otherwise, only administrators will be able to. | True | |
 | report_allow_edit | Should staff members be allowed to delete a reported item? Otherwise, only administrators will be able to. | True | |
+| show_collect_button | Should button(s) to add a collectible to your collection be displayed under each item? When multiple collectible exist, you may provide a dictionary of { collectibleCollectionName: boolean }. Can be overriden in ItemView and ListView. | True |
+| show_edit_button | Should the edit button under each item be displayed? (Note: will not be displayed regardless of this setting if the edit view is disabled or the current user doesn't have permissions.) Can be overriden in ItemView and ListView. | True | |
+| show_edit_button_superuser_only | If the edit button under each item is available for staff only, should it be shown for super users only? Note: it doesn't prevent staff to go to the edit page themselves if they have permission. Can be overriden in ItemView and ListView. | False | |
+| show_item_buttons | Let MagiCircles display the buttons under each items automatically? Set to False if you'd like to insert the buttons yourself. To insert the buttons anywhere in your item template, use `{% include 'include/below_item.html' with show_item_buttons=True %}`. Can be overriden in ItemView and ListView. | True | |
+| show_item_buttons_as_icons | Should only icons be displayed in buttons under each items? False = also shows text. Can be overriden in ItemView and ListView. | False | |
+| show_item_buttons_in_one_line | Show butons under each item in one line? False = displays buttons each under the other. Can be overriden in ItemView and ListView. | True | |
+| show_report_button | Should the report button be displayed under each item? Note: Will not be displayed regardless of this setting if the item is not reportable or reports are disabled globally. Can be overriden in ItemView and ListView. | True | |
 | types | See ⎡[Item Types](#item-types)⎦ | | |
 | filter_cuteform | See ⎡[CuteForm](#cuteform)⎦. Can be overriden in ListView, AddView and EditView. | | |
 
@@ -890,7 +898,6 @@ For each collection, you may also override the fields and methods. When overridi
 |-----|-------|---------|
 | add_sentence | Localized sentence you can use for a button to the AddView | 'Add card' |
 | edit_sentence | Localized sentence you can use for a button to the EditView | 'Edit card' |
-
 
 - All collections provide the following tools (not meant to be overriden):
 
@@ -903,10 +910,10 @@ For each collection, you may also override the fields and methods. When overridi
 
 | Name | Description | Parameters | Return value | Default |
 |------|-------------|------------|--------------|---------|
+| buttons_per_item | Used to display buttons below item, only for ItemView and ListView. Any new dictionary within the returned dictionary of buttons must contain the following keys: show, has_permissions, title, url, classes and may contain icon, image, url, open_in_new_window, ajax_url, ajax_title. Can be overriden in ItemView and ListView. | view, request, context, item | Dictionary of dictionary | Will automatically determine and fill up buttons for collectibles, edit, report. |
 | get_queryset | Queryset used to retrieve the item(s). Can be overriden per view. | queryset, parameters, request | Django queryset | The queryset given as parameters |
 | form_class | Form class to add / edit an item. Doesn't have to be a method (see above). Can be overriden per view. | request, context | A form class | AutoForm |
 | to_fields | See ⎡[to_fields method](#to-field-method)⎦ |
-
 
 ### Views
 
@@ -1007,6 +1014,7 @@ List view for a staff member will hide all the staff buttons by default and you 
 | filter_form | Django form that will appear on the right side panel and allow people to search / filter. It's recommended to make it inherit from `MagiFilter`. | None (no side bar) | [Example](https://gist.github.com/db0company/819ec1900fb207f865be69b92ce62c8e#file-magicirclesexamples-py-L8) |
 | ajax_pagination_callback | The name of a javascript function to call everytime a new page loads (including the first time) | None | "updateCards" (See [Example](https://gist.github.com/db0company/b9fde532eafb333beb57ab7903e69749#file-magicirclesexamples-js-L1)) |
 | auto_reloader | Should items be automatically reloaded when there is a change in ajax? (for example, when an item is edited through a modal within the same page) | True | |
+| item_buttons_classes | Classes used for the buttons under items. Can be specified in collection. | Value from collection | |
 | item_template | Path of the HTML template in `sample/templates/items/` to display the item (without `.html`). If you don't want to use the default one, it's highly recommended to use the standard name for custom templates. To do so, use `custom_item_template` in `magi.utils`. | "default_item_in_list" | "cardDetails" |
 | before_template | Name of a template to include between the title (if shown) and the add buttons (if any) and results (without `.html`) | None | "include/beforeCards" |
 | after_template | Name of a template to include at the end of the list, when the last page loads (without `.html`), if you provide something in `extra_context` for this template, first check `if context['is_last_page']: ...` | None | "include/afterCards" |
@@ -1015,6 +1023,7 @@ List view for a staff member will hide all the staff buttons by default and you 
 | col_break | Minimum size of the column so when the screen is too small it only shows one per line, options are 'xs' (never breaks), 'sm' (= 768px), 'md' (= 992px), 'lg' (= 1200px)  | 'md' | |
 | page_size | Number of items per page | 12 | |
 | show_edit_button | Should a button to edit the item be displayed under the item (if the user has permissions to edit)? Set this to `False` is your template already includes a button to edit the item. | True | |
+| show_item_buttons_as_icons | When buttons are enabled (edit, report, collectible, ...), should the buttons be displayed as icons or as full width buttons? | False | |
 | authentication_required | Should the page be available only for authenticated users? | False | |
 | distinct | When retrieving the items from the database, should the query include a `distinct`? ⚠️ Makes the page much slower, only use if you cannot guarantee that items will only appear once. | False | |
 | add_button_subtitle | A button to add an item will be displayed on top of the page, with a subtitle. | _('Become a contributor to help us fill the database') | _('Share your adventures!') |
@@ -1024,6 +1033,13 @@ List view for a staff member will hide all the staff buttons by default and you 
 | hide_sidebar | By default, the side bar will be open when you open the page. You may leave it close by default, but keep in mind that it's very unlikely that your users will find it by themselves. | False | |
 | filter_cuteform | See ⎡[CuteForm](#cuteform)⎦. Can be specified in collection. | | |
 | default_ordering | String name of a field (only one) | '-creation' | 'level' |
+| show_collect_button | Should button(s) to add a collectible to your collection be displayed under each item? When multiple collectible exist, you may provide a dictionary of { collectibleCollectionName: boolean }. Can be specified in collection. | Value from collection |
+| show_edit_button | Should the edit button under each item be displayed? (Note: will not be displayed regardless of this setting if the edit view is disabled or the current user doesn't have permissions.) Can be specified in collection. | Value from collection | |
+| show_edit_button_superuser_only | If the edit button under each item is available for staff only, should it be shown for super users only? Note: it doesn't prevent staff to go to the edit page themselves if they have permission. Can be specified in collection. | Value from collection | |
+| show_item_buttons | Let MagiCircles display the buttons under each items automatically? Set to False if you'd like to insert the buttons yourself. To insert the buttons anywhere in your item template, use `{% include 'include/below_item.html' with show_item_buttons=True %}`. Can be specified in collection. | Value from collection | |
+| show_item_buttons_as_icons | Should only icons be displayed in buttons under each items? False = also shows text. Can be specified in collection. | Value from collection | |
+| show_item_buttons_in_one_line | Show butons under each item in one line? False = displays buttons each under the other. Can be specified in collection. | Value from collection | |
+| show_report_button | Should the report button be displayed under each item? Note: Will not be displayed regardless of this setting if the item is not reportable or reports are disabled globally. Can be specified in collection. | Value from collection | |
 
 See also: [settings available in all views](#all-views).
 
@@ -1031,8 +1047,10 @@ See also: [settings available in all views](#all-views).
 
 | Name | Description | Parameters | Return value | Default |
 |------|-------------|------------|--------------|---------|
+| buttons_per_item | Used to display buttons below item. Any new dictionary within the returned dictionary of buttons must contain the following keys: show, has_permissions, title, url, classes and may contain icon, image, url, open_in_new_window, ajax_url, ajax_title. Can be specified in collection. | request, context, item | Dictionary of dictionary | Method from collection will be called |
 | foreach_item | Function called for all the elements about to be displayed, that takes the item position, the item and the context ([example](https://gist.github.com/db0company/819ec1900fb207f865be69b92ce62c8e#file-magicirclesexamples-py-L23)). If you can, provide a property inside the model's class instead, to avoid an extra loop. | index, item, context | None | None |
 | show_add_button | Should a button be displayed at the beginning to let users add new items (if they have the permission to do so)? | request | Boolean | returns `True` |
+| top_buttons | Will be called to display buttons at the beginning of the list view. Any new dictionary within the returned dictionary of buttons must contain the following keys: show, has_permissions, url, classes, title and may contain ajax_url, open_in_new_window, icon, image, subtitle | request, context | Dictionary of dictionary | Will automatically determine which add buttons should be displayed. |
 
 See also: [methods available in all views](#all-views).
 
@@ -1058,6 +1076,7 @@ todo
 
 | Key | Value | Default | Example |
 |-----|-------|---------|---------|
+| item_buttons_classes | Classes used for the buttons under items. Can be specified in collection. | Value from collection | |
 | template | Path of the HTML template in `sample/templates/items/` to display the item (without `.html`). By default, will use the defaut view with the image on top and the list of fields below it. See ⎡[to_fields method](#to_field-method)⎦ for more details about the `default` template. If you don't want to use the default one, it's highly recommended to use the standard name for custom templates. To do so, use `custom_item_template` in `magi.utils`. | "default" | "cardItem" |
 | top_illustration | If the `default` template is used, it will show either the `image` in the object or its name. You may display something else by specifying the path of a HTML template (full path in template folder), without `.html`. | None | `include/topCard` |
 | show_edit_button | Should a button to edit the item be displayed under the item (if the user has permissions to edit)? Set this to `False` is your template already includes a button to edit the item. | True | |
@@ -1070,6 +1089,7 @@ See also: [settings available in all views](#all-views).
 
 | Name | Description | Parameters | Return value | Default |
 |------|-------------|------------|--------------|---------|
+| buttons_per_item | Used to display buttons below item. Any new dictionary within the returned dictionary of buttons must contain the following keys: show, has_permissions, title, url, classes and may contain icon, image, url, open_in_new_window, ajax_url, ajax_title. Can be specified in collection. | request, context, item | Dictionary of dictionary | Method from collection will be called |
 | get_item | How is the item retrieved using the `pk` (=id) provided in the URL? For example, in the URL `/card/12/super-rare-lily/`, `pk` will be `12` | request, pk (in URL) | a dictionary that will be used with the queryset to get a single item | `{ 'pk': pk }` |
 | reverse_url | Allows you to have URLs with just a string and find the item with thout, instead of the id. For example, the default URL of a profile is `/user/1/db0/`, but with this, you can make `/user/db0/` and still be able to retrieve the corresponding user, without knowing its id. | string (text in URL, for example if the URL is `/user/tom/`, this will be `'tom'`) | a dictionary that will be used with the queryset to get a single item | None |
 

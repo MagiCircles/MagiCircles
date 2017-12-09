@@ -32,7 +32,7 @@
 	<div class="tags text-muted fontx0-8">{% for tag, t_tag in activity.t_tags.items %}<a href="/activities/?tags={{ tag }}" target="_blank" class="text-muted">#{{ t_tag }}</a> {% endfor %}</div>
 	<div class="socialbar">
 	  <div class="btn-group share">
-	    {% include 'include/share.html' with share_url=activity.http_item_url share_sentence=activity.shareSentence share_btn_class="main btn-sm" %}
+	    {% include 'include/share.html' with share_url=activity.http_item_url share_sentence=activity.shareSentence share_btn_class="main" %}
 	  </div>
 	  <form method="POST" class="form-inline likeactivity" action="/ajax/likeactivity/{{ activity.id }}/">
 	    {% csrf_token %}
@@ -40,29 +40,23 @@
 	    <div class="btn-group">
 	      {% if user.is_authenticated %}
 	      {% if activity.cached_owner.username == user.username %}
-	      <button class="btn btn-link btn-sm" disabled><i class="flaticon-heart"></i> {% trans 'Liked' %}</button>
+	      <button class="btn btn-link" disabled><i class="flaticon-heart"></i> {% trans 'Liked' %}</button>
 	      {% else %}
-	      <button type="submit" class="btn btn-link btn-sm" data-reverse="{% if activity.liked %}<i class='flaticon-heart-empty'></i> {% trans 'Like' %}{% else %}<i class='flaticon-heart'></i> {% trans 'Liked' %}{% endif %}">{% if activity.liked %}<i class='flaticon-heart'></i> {% trans 'Liked' %}{% else %}<i class='flaticon-heart-empty'></i> {% trans 'Like' %}{% endif %}</button>
+	      <button type="submit" class="btn btn-link" data-reverse="{% if activity.liked %}<i class='flaticon-heart-empty'></i> {% trans 'Like' %}{% else %}<i class='flaticon-heart'></i> {% trans 'Liked' %}{% endif %}">{% if activity.liked %}<i class='flaticon-heart'></i> {% trans 'Liked' %}{% else %}<i class='flaticon-heart-empty'></i> {% trans 'Like' %}{% endif %}</button>
 	      {% endif %}
 	      {% else %}
-	      <a href="/signup/?next={{ current_url }}" class="btn btn-link btn-sm"><i class="flaticon-heart"></i> {% trans 'Like' %}</a>
+	      <a href="/signup/?next={{ current_url }}" class="btn btn-link"><i class="flaticon-heart"></i> {% trans 'Like' %}</a>
 	      {% endif %}
-	      <div class="btn btn-link btn-sm hidden-loader" style="display: none;"><i class="flaticon-loading"></i></div>
-	      <a href="#likecount" class="btn btn-link btn-sm" data-manual-popover="true">{{ activity.total_likes|add:1 }}</a>
+	      <div class="btn btn-link hidden-loader" style="display: none;"><i class="flaticon-loading"></i></div>
+	      <a href="#likecount" class="btn btn-link" data-manual-popover="true">{{ activity.total_likes|add:1 }}</a>
 	    </div>
 	    {% if current != 'activity_item' %}
 	    <div class="btn-group writecomments">
-	      <a href="{{ activity.item_url }}" target="_blank" class="btn btn-link btn-sm"><i class="flaticon-comments"></i> {% trans 'Write Comment' %}</a>
-	      <a href="{{ activity.item_url }}/#disqus_thread" target="_blank" class="btn btn-link btn-sm disqus-comment-count" data-disqus-identifier="activity-{{ activity.id }}">{% trans 'Comments' %}</a>
+	      <a href="{{ activity.item_url }}" target="_blank" class="btn btn-link"><i class="flaticon-comments"></i> {% trans 'Write Comment' %}</a>
+	      <a href="{{ activity.item_url }}/#disqus_thread" target="_blank" class="btn btn-link disqus-comment-count" data-disqus-identifier="activity-{{ activity.id }}">{% trans 'Comments' %}</a>
 	    </div>
 	    {% endif %}
-	    <div class="btn-group editbuttons">
-	      {% if activity.cached_owner.username == user.username %}
-	      <a href="{{ activity.edit_url }}"{% if current != 'activity_item' %} target="_blank"{% endif %} class="btn btn-link btn-sm"><i class="flaticon-edit"></i> {{ activity.edit_sentence }}</a>
-	      {% elif 'report' in all_enabled and reportable %}
-	      <a href="{{ activity.report_url }}" target="_blank" class="btn btn-link btn-sm"><i class="flaticon-fingers"></i> {{ activity.report_sentence }}</a>
-	      {% endif %}
-	    </div>
+            {% include 'include/below_item.html' with show_item_buttons=True %}
 	  </form>
 	</div>
       </div>
