@@ -468,6 +468,7 @@ class MagiCollection(object):
             buttons['edit']['title'] = item.edit_sentence
             buttons['edit']['icon'] = 'edit'
             if (self.edit_view.authentication_required
+                and not self.edit_view.owner_only
                 and not self.edit_view.staff_required
                 and not request.user.is_authenticated()):
                 buttons['edit']['has_permissions'] = True
@@ -840,7 +841,6 @@ class AccountCollection(MagiCollection):
         show_title = True
         per_line = 1
         add_button_subtitle = _('Create your account to join the community and be in the leaderboard!')
-        show_item_buttons = False
 
         def show_add_button(self, request):
             return not getAccountIdsFromSession(request)
@@ -875,7 +875,7 @@ class AccountCollection(MagiCollection):
 
         def redirect_after_edit(self, request, instance, ajax=False):
             if ajax:
-                return instance.ajax_item_url
+                return '/ajax/successedit/'
             return '{}#{}'.format(request.user.item_url, instance.id)
 
         def before_delete(self, request, item, ajax):
@@ -883,6 +883,8 @@ class AccountCollection(MagiCollection):
                 del request.session['account_ids']
 
         def redirect_after_delete(self, request, item, ajax=False):
+            if ajax:
+                return '/ajax/successdelete/'
             return request.user.item_url
 
 ############################################################
