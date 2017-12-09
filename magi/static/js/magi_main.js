@@ -708,7 +708,7 @@ function updateBadges() {
 
 function afterLoadBadges(user_id) {
     updateBadges();
-    pagination('/ajax/badges/', '&of_user=' + user_id, updateCards);
+    pagination('/ajax/badges/', '&of_user=' + user_id, updateBadges);
 }
 
 function loadBadges(user_id, onDone) {
