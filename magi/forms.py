@@ -777,6 +777,14 @@ class _BadgeForm(MagiForm):
         save_owner_on_creation = True
 
 class ExclusiveBadgeForm(_BadgeForm):
+    def save(self, commit=True):
+        instance = super(ExclusiveBadgeForm, self).save(commit=False)
+        instance.show_on_profile = True
+        instance.show_on_top_profile = False
+        if commit:
+            instance.save()
+        return instance
+
     class Meta(_BadgeForm.Meta):
         fields = ('username', 'name', 'description', 'image', 'url', 'rank')
 
@@ -796,6 +804,8 @@ class CopyBadgeForm(_BadgeForm):
 
     def save(self, commit=True):
         instance = super(CopyBadgeForm, self).save(commit=False)
+        instance.show_on_profile = True
+        instance.show_on_top_profile = False
         instance.image = self.badge.image
         if commit:
             instance.save()

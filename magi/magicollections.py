@@ -290,15 +290,17 @@ class MagiCollection(object):
         - verbose_name
         - value
         - type
-        - optional: icon, image, link, link_text, ajax_link
+        - optional: icon, image, link, link_text, ajax_link, images
         Takes an object that inherits from MagiModel and returns a dictionary of field name -> value
         Available types:
         - text
         - title_text (needs 'title')
-        - image
+        - image (needs images with 'value', 'ajax_link')
+        - images
         - bool
         - link (needs 'link_text')
         - image_link (needs 'link', 'link_text')
+        - images_links (needs images with 'value', 'ajax_link', 'link', 'link_text')
         - button (needs 'link_text')
         - text_with_link (needs 'link' and 'link_text', will show a 'View all' button)
         - timezone_datetime (useful when showing another timezone, otherwise use text. needs 'timezones' list. can be 'local')
@@ -385,6 +387,8 @@ class MagiCollection(object):
             elif isinstance(field, models.models.FileField):
                 d['type'] = 'link'
                 d['link_text'] = t['Download']
+            elif field_name == 'itunes_id':
+                d['type'] = 'itunes'
             else:
                 d['type'] = 'text'
             if d['type'] == 'text_with_link':
@@ -951,14 +955,24 @@ class UserCollection(MagiCollection):
         def get_queryset(self, queryset, parameters, request):
             if request.user.is_authenticated():
                 queryset = queryset.extra(select={
-                    'followed': 'SELECT COUNT(*) FROM magi_userpreferences_following WHERE userpreferences_id = {} AND user_id = auth_user.id'.format(request.user.preferences.id),
+                    'followed': 'SELECT COUNT(*) FROM {table}_following WHERE userpreferences_id = {id} AND user_id = auth_user.id'.format(
+                        table=models.UserPreferences._meta.db_table,
+                        id=request.user.preferences.id,
+                    ),
                 })
                 queryset = queryset.extra(select={
-                    'is_followed_by': 'SELECT COUNT(*) FROM magi_userpreferences_following WHERE userpreferences_id = (SELECT id FROM magi_userpreferences WHERE user_id = auth_user.id) AND user_id = {}'.format(request.user.id),
+                    'is_followed_by': 'SELECT COUNT(*) FROM {table}_following WHERE userpreferences_id = (SELECT id FROM {table} WHERE user_id = auth_user.id) AND user_id = {id}'.format(
+                        table=models.UserPreferences._meta.db_table,
+                        id=request.user.id,
+                    ),
                 })
             queryset = queryset.extra(select={
-                'total_following': 'SELECT COUNT(*) FROM magi_userpreferences_following WHERE userpreferences_id = (SELECT id FROM magi_userpreferences WHERE user_id = auth_user.id)',
-                'total_followers': 'SELECT COUNT(*) FROM magi_userpreferences_following WHERE user_id = auth_user.id',
+                'total_following': 'SELECT COUNT(*) FROM {table}_following WHERE userpreferences_id = (SELECT id FROM {table} WHERE user_id = auth_user.id)'.format(
+                    table=models.UserPreferences._meta.db_table,
+                ),
+                'total_followers': 'SELECT COUNT(*) FROM {table}_following WHERE user_id = auth_user.id'.format(
+                    table=models.UserPreferences._meta.db_table,
+                ),
             })
             queryset = queryset.select_related('preferences', 'favorite_character1', 'favorite_character2', 'favorite_character3')
             queryset = queryset.prefetch_related(Prefetch('accounts', to_attr='all_accounts'), Prefetch('links', queryset=models.UserLink.objects.order_by('-i_relevance'), to_attr='all_links'))
@@ -1106,7 +1120,10 @@ class ActivityCollection(MagiCollection):
     def _get_queryset_for_list_and_item(self, queryset, parameters, request):
         if request.user.is_authenticated():
             queryset = queryset.extra(select={
-                'liked': 'SELECT COUNT(*) FROM magi_activity_likes WHERE activity_id = magi_activity.id AND user_id = {}'.format(request.user.id),
+                'liked': 'SELECT COUNT(*) FROM {activity_table_name}_likes WHERE activity_id = {activity_table_name}.id AND user_id = {user_id}'.format(
+                    activity_table_name=models.Activity._meta.db_table,
+                    user_id=request.user.id,
+                ),
             })
         queryset = queryset.annotate(total_likes=Count('likes'))
         return queryset

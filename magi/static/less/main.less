@@ -1,4 +1,5 @@
 @import "../bower/navbar-variant/navbar-variant.less";
+@import "../bower/bootstrap/less/variables.less";
 @import "../css/flaticon.css";
 @import "simple-sidebar.less";
 @import "mixins/panel.less";
@@ -69,7 +70,7 @@
 }
 
 .about-table {
-    td > [class^="flaticon-"] {
+    td:first-child > [class^="flaticon-"] {
 	font-size: 2em;
     }
     img {
@@ -82,6 +83,14 @@
 	img {
 	    max-width: 50px;
 	}
+    }
+    td:last-child {
+        .flaticon-delete {
+            color: @brand-danger;
+        }
+        .flaticon-checked {
+            color: @brand-success;
+        }
     }
     .long-text-title {
         display: block;
@@ -97,6 +106,19 @@
     }
     td:last-child {
         text-align: right;
+    }
+    .itunes {
+        [href="#play"], .itunes-details {
+            display: inline-block;
+            vertical-align: middle;
+        }
+        [href="#play"] {
+            font-size: 2em;
+            padding-left: 20px;
+            &:hover, &:focus {
+                text-decoration: none;
+            }
+        }
     }
 }
 
