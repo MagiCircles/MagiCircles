@@ -89,7 +89,7 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
     # Ajax items reloader
     if not ajax and collection.item_view.auto_reloader and collection.item_view.ajax:
         context['ajax_reload_url'] = context['item'].ajax_item_url
-        context['reload_urls_start_with'] = [u'/{}/edit/'.format(collection.name)];
+        context['reload_urls_start_with'] = [u'/{}/edit/'.format(collection.plural_name)];
         if collection.collectible_collections:
             context['reload_urls_start_with'] += [cc.get_add_url() for cc in collection.collectible_collections.values()]
 
@@ -175,7 +175,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     # Ajax items reloader
     if not ajax and collection.list_view.auto_reloader and collection.list_view.ajax:
         context['ajax_reload_url'] = collection.get_list_url(ajax=True)
-        context['reload_urls_start_with'] = [u'/{}/edit/'.format(collection.name)];
+        context['reload_urls_start_with'] = [u'/{}/edit/'.format(collection.plural_name)];
         if collection.collectible_collections:
             context['reload_urls_start_with'] += [cc.get_add_url() for cc in collection.collectible_collections.values()]
 

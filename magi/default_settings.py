@@ -203,6 +203,11 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'custom': False,
         'navbar_link': False,
     }),
+    ('successdelete', {
+        'ajax': True,
+        'custom': False,
+        'navbar_link': False,
+    }),
 ])
 
 ############################################################

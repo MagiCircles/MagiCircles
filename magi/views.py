@@ -467,8 +467,15 @@ def follow(request, username):
 
 def successedit(request):
     context = ajaxContext(request)
-    return render(request, 'pages/ajax/successedit.html')
+    context['success_sentence'] = _('Successfully edited!')
+    return render(request, 'pages/ajax/success.html', context)
 
 def successadd(request):
     context = ajaxContext(request)
-    return render(request, 'pages/ajax/successadd.html')
+    context['success_sentence'] = _('Successfully added!')
+    return render(request, 'pages/ajax/success.html', context)
+
+def successdelete(request):
+    context = ajaxContext(request)
+    context['success_sentence'] = _('Successfully deleted!')
+    return render(request, 'pages/ajax/success.html', context)
