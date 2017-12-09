@@ -1277,6 +1277,29 @@ class BadgeCollection(MagiCollection):
         }
     }
 
+    def buttons_per_item(self, view, request, context, item):
+        buttons = super(BadgeCollection, self).buttons_per_item(view, request, context, item)
+        if item.type == 'exclusive':
+            buttons['copy'] = {
+                'show': True,
+                'has_permissions': self.add_view.has_permissions(request, context, item=item),
+                'title': u'Make a copy',
+                'icon': 'deck',
+                'url': u'{url}?id={badge_id}'.format(
+                    url=self.get_add_url(type='copy'),
+                    badge_id=item.id,
+                ),
+                'classes': (
+                    view.item_buttons_classes
+                    + (['btn-block'] if not view.show_item_buttons_in_one_line else [])
+                    + (['staff-only'] if self.add_view.staff_required else [])
+                ),
+            }
+        if not context['ajax']:
+            for button in buttons.values():
+                button['classes'] = [cls for cls in button['classes'] if cls != 'staff-only']
+        return buttons
+
     class ListView(MagiCollection.ListView):
         item_template = custom_item_template
         default_ordering = '-date'
@@ -1293,6 +1316,12 @@ class BadgeCollection(MagiCollection):
         def extra_context(self, context):
             request = context['request']
             context['show_user'] = request.context_show_user
+
+        def top_buttons(self, request, context):
+            buttons = super(BadgeCollection.ListView, self).top_buttons(request, context)
+            for button in buttons.values():
+                button['classes'] = [cls for cls in button['classes'] if cls != 'staff-only']
+            return buttons
 
         def check_permissions(self, request, context):
             super(BadgeCollection.ListView, self).check_permissions(request, context)
@@ -1406,26 +1435,6 @@ class DonateCollection(MagiCollection):
     queryset =  models.DonationMonth.objects.all().prefetch_related(Prefetch('badges', queryset=models.Badge.objects.select_related('user', 'user__preferences').order_by('-show_on_profile'), to_attr='all_badges'))
     reportable = False
     form_class = forms.DonateForm
-
-    def buttons_per_item(self, request, context, item):
-        buttons = super(DonateCollection, self).buttons_per_item(request, context, item)
-        if item.type == 'exclusive':
-            buttons['copy'] = {
-                'show': True,
-                'has_permissions': self.add_view.has_permissions(request, context, item=item),
-                'title': u'Make a copy',
-                'icon': 'deck',
-                'url': u'{url}?id={badge_id}'.format(
-                    url=self.get_add_url(type='copy'),
-                    badge_id=item.id,
-                ),
-                'classes': (
-                    self.item_buttons_classes
-                    + (['btn-block'] if not self.show_item_buttons_in_one_line else []),
-                    + (['staff-only'] if self.add_view.staff_required else [])
-                ),
-            }
-        return buttons
 
     class ListView(MagiCollection.ListView):
         item_template = custom_item_template
