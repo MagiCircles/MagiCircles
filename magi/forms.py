@@ -671,6 +671,16 @@ class FilterActivities(MagiFiltersForm):
         fields = ('search', 'c_tags', 'with_image', 'i_language')
 
 ############################################################
+# Notifications
+
+class FilterNotification(MagiFiltersForm):
+    search_fields = ['c_message_data', 'c_url_data']
+
+    class Meta:
+        model = models.Notification
+        fields = ('search', 'i_message')
+
+############################################################
 # Add/Edit reports
 
 class ReportForm(MagiForm):

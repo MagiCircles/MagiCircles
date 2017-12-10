@@ -1205,6 +1205,8 @@ class NotificationCollection(MagiCollection):
 
     class ListView(MagiCollection.ListView):
         item_template = custom_item_template
+        filter_form = forms.FilterNotification
+        hide_sidebar = True
         show_title = True
         per_line = 1
         page_size = 5
