@@ -1869,6 +1869,24 @@ print models.Card.get_reverse_i('cool') # will print 1
 
 Note: If you want to change your choices in the future, keep in mind that you might need to update your database manually to reflect the correct integer values.
 
+You can still call your field `i_something` if you would like to enjoy the handy shortcuts provided by i_ but still want to store your value as something else than an integer. You just need to specify that your choices don't use i_choices using `SOMETHING_WITHOUT_I_CHOICES` like so:
+
+```python
+class Article(BaseMagiModel):
+    LANGUAGE_CHOICES = (
+        ('en', _('English')),
+        ('es', _('Spanish')),
+        ('ru', _('Russian')),
+        ('it', _('Italian')),
+    )
+    LANGUAGE_WITHOUT_I_CHOICES = True
+    i_language = models.CharField(_('Language'), max_length=10, choices=LANGUAGE_CHOICES, default='en')
+
+print article.language # will print en
+print article.i_language # will print en
+print article.t_language # will print English
+```
+
 ### Store comma separated values
 
 While the recommended Django way of storing a list of values in a model is to use a separate model with `ManyToMany`, it can be quite costly, since you will need extra queries to retrieve the values. For simple list of values like strings, you can store them as comma separated values.
@@ -1908,7 +1926,7 @@ You can get the list of translated CSV values using `t_`. It will return an orde
 card.t_abilities # { 'fly': _('Fly'), 'dance': _('Dance'), 'heal': _('Heal') }
 ```
 
-If choices are not provided or are provided without translations, it's going to return `_(value)` where `value` is the string. In that case, it's not guaranteed that the string will be in your translation file, so you might want to force it in by declaring it somewhere else: `_('the string')`.
+If choices are not provided or are provided without translations, it's going to return a dictionary with the same value as key and value.
 
 Some methods are available directly in MagiModel to add and remove values from the CSV:
 
