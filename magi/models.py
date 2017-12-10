@@ -52,6 +52,7 @@ class UserPreferences(BaseMagiModel):
     user = models.OneToOneField(User, related_name='preferences', on_delete=models.CASCADE)
 
     LANGUAGE_CHOICES = django_settings.LANGUAGES
+    LANGUAGE_WITHOUT_I_CHOICES = True
     i_language = models.CharField(_('Language'), max_length=10, choices=LANGUAGE_CHOICES)
 
     description = models.TextField(_('Description'), null=True, help_text=_('Write whatever you want. You can add formatting and links using Markdown.'), blank=True)
@@ -91,6 +92,7 @@ class UserPreferences(BaseMagiModel):
         'DEVOTEE':  _('shiny Gold'),
     }
 
+    STATUS_WITHOUT_I_CHOICES = True
     i_status = models.CharField(_('Status'), choices=STATUS_CHOICES, max_length=12, null=True)
     @property
     def status_color(self):
@@ -226,6 +228,7 @@ class UserLink(BaseMagiModel):
         ('github', 'GitHub'),
     )
 
+    TYPE_WITHOUT_I_CHOICES = True
     i_type = models.CharField(_('Platform'), max_length=20, choices=TYPE_CHOICES)
 
     RELEVANCE_CHOICES = (
@@ -279,6 +282,7 @@ class Activity(MagiModel):
     likes = models.ManyToManyField(User, related_name="liked_activities")
 
     LANGUAGE_CHOICES = django_settings.LANGUAGES
+    LANGUAGE_WITHOUT_I_CHOICES = True
     i_language = models.CharField(_('Language'), max_length=4, choices=LANGUAGE_CHOICES)
 
     TAGS_CHOICES = ACTIVITY_TAGS if ACTIVITY_TAGS else []
@@ -392,8 +396,8 @@ class Notification(MagiModel):
         }),
     ]
     MESSAGES_DICT = dict(MESSAGES)
-    MESSAGE_CHOICES = [(key, message['title']) for key, message in MESSAGES]
-    i_message = models.PositiveIntegerField(choices=i_choices(MESSAGE_CHOICES))
+    MESSAGE_CHOICES = [(key, _message['title']) for key, _message in MESSAGES]
+    i_message = models.PositiveIntegerField(_('Notification type'), choices=i_choices(MESSAGE_CHOICES))
 
     c_message_data = models.TextField(blank=True, null=True)
     c_url_data = models.TextField(blank=True, null=True)

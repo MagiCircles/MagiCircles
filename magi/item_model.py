@@ -1,6 +1,7 @@
 import datetime
 from collections import OrderedDict
 from django.db import models
+from django.db.models.fields import FieldDoesNotExist
 from django.conf import settings as django_settings
 from django.utils.translation import ugettext_lazy as _, get_language
 from django.utils import timezone
@@ -104,16 +105,19 @@ class BaseMagiModel(models.Model):
     is_owner = get_is_owner
 
     @classmethod
-    def _get_choices(self, field_name):
+    def get_choices(self, field_name):
         """
-        Return value is dictionary of:
-           int -> (string, translated string)
-        or int -> string
+        Return value is a list of tuples with:
+           (int, (string, translated string))
+        or (int, string)
         """
         try:
-            return list(enumerate(getattr(self, '{name}_CHOICES'.format(name=field_name.upper()))))
+            choices = getattr(self, '{name}_CHOICES'.format(name=field_name.upper()))
+            if getattr(self, u'{name}_WITHOUT_I_CHOICES'.format(name=field_name.upper()), False):
+                return [(c[0], c) for c in choices]
+            return list(enumerate(choices))
         except AttributeError:
-            return list(enumerate(self._meta.get_field('i_{name}'.format(name=field_name)).choices))
+            return list(self._meta.get_field('i_{name}'.format(name=field_name)).choices)
 
     @classmethod
     def get_i(self, field_name, string):
@@ -122,12 +126,11 @@ class BaseMagiModel(models.Model):
         field_name = without i_
         """
         try:
-            try:
-                return next(i for i, c in enumerate(getattr(self, '{name}_CHOICES'.format(name=field_name.upper())))
-                            if (c[0] if isinstance(c, tuple) else c) == string)
-            except AttributeError:
-                return next(i for i, c in enumerate(self._meta.get_field('i_{name}'.format(name=field_name)).choices)
-                            if c[1] == string)
+            return next(
+                index
+                for index, c in self.get_choices(field_name)
+                if (c[0] if isinstance(c, tuple) else c) == string
+            )
         except StopIteration:
             raise KeyError(string)
 
@@ -138,9 +141,28 @@ class BaseMagiModel(models.Model):
         field_name = without i_
         """
         try:
-            return next((c[0] if isinstance(c, tuple) else c) for j, c in self._get_choices(field_name) if i == j)
+            return next(
+                (c[0] if isinstance(c, tuple) else c)
+                for index, c in self.get_choices(field_name)
+                if index == i
+            )
         except StopIteration:
-            raise KeyError(string)
+            raise KeyError(i)
+
+    @classmethod
+    def get_verbose_i(self, field_name, i):
+        """
+        Takes an int value of a choice and return its verbose value
+        field_name = without i_
+        """
+        try:
+            return next(
+                (c[1] if isinstance(c, tuple) else c)
+                for index, c in self.get_choices(field_name)
+                if index == i
+            )
+        except StopIteration:
+            raise KeyError(i)
 
     def add_c(self, field_name, to_add):
         """
@@ -164,22 +186,24 @@ class BaseMagiModel(models.Model):
         """
         setattr(self, 'c_{name}'.format(name=field_name), join_data(*c))
 
+    def __setattr__(self, name, value):
+        super(BaseMagiModel, self).__setattr__(name, value)
+
     def __getattr__(self, name):
-        # For choice fields with name "i_something", accessing "something" returns the verbose value
+        # For choice fields with name "i_something", accessing "something" returns the string value
         if not name.startswith('_') and not name.startswith('i_') and not name.startswith('c_'):
             # When accessing "something" and "i_something exists, return the readable key for the choice
-            if hasattr(self, 'i_{name}'.format(name=name)):
-                return self._get_i_field_choice(name, key=True)
-            # When accessing "t_something", return the translated value
+            if hasattr(self, u'i_{name}'.format(name=name)):
+                return type(self).get_reverse_i(name, getattr(self, u'i_{name}'.format(name=name)))
+            # When accessing "t_something", return the verbose value
             elif name.startswith('t_'):
                 name = name[2:]
                 # For a i_choice
                 if hasattr(self, 'i_{name}'.format(name=name)):
-                    return self._get_i_field_choice(name)
+                    return type(self).get_verbose_i(name, getattr(self, 'i_{name}'.format(name=name)))
                 # For a CSV value: return dict {value: translated value}
                 elif hasattr(self, 'c_{name}'.format(name=name)):
-                    choices = dict(getattr(self, '{name}_CHOICES'.format(name=name.upper()), {}))
-                    return OrderedDict([(c, choices.get(c, _(c))) for c in getattr(self, name)])
+                    return self._c_to_t(name)
             # When accessing "something_url" for an image, return the url
             elif name.endswith('_url'):
                 field_name = name.replace('http_', '')[:-4]
@@ -192,24 +216,13 @@ class BaseMagiModel(models.Model):
                 return split_data(getattr(self, 'c_{name}'.format(name=name)))
         raise AttributeError("%r object has no attribute %r" % (self.__class__, name))
 
-    def _get_i_field_choice(self, field_name, key=False):
-        # todo: make this function use _get_choices
-        """
-        field_name = the name of the field without "i_"
-        key = if choices are provided as a dictionary, return the key, otherwise, the value
-        """
-        try:
-            choices = getattr(self, '{name}_CHOICES'.format(name=field_name.upper()))
-            valid_dict = True
-            try:
-                choices = dict(choices)
-            except (ValueError, TypeError):
-                valid_dict = False
-            k = getattr(self, 'i_{name}'.format(name=field_name))
-            return k if key and valid_dict else choices[k]
-        except (IndexError, TypeError):
-            field = self._meta.get_field('i_{name}'.format(name=field_name))
-            return dict(field.choices).get(getattr(self, field.name, None), None)
+    def _c_to_t(self, name):
+        choices = {
+            (choice[0] if isinstance(choice, tuple) else choice):
+            (choice[1] if isinstance(choice, tuple) else _(choice))
+            for choice in getattr(self, '{name}_CHOICES'.format(name=name.upper()), [])
+        }
+        return OrderedDict([(c, choices.get(c, c)) for c in getattr(self, name)])
 
     class Meta:
         abstract = True
