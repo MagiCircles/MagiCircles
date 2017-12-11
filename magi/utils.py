@@ -309,6 +309,8 @@ def ordinalNumber(n):
     return "%d%s" % (n,"tsnrhtdd"[(n/10%10!=1)*(n%10<4)*n%10::4])
 
 def tourldash(string):
+    if not string:
+        return ''
     s =  u''.join(e if e.isalnum() else u'-' for e in string)
     return u'-'.join([s for s in s.split(u'-') if s])
 
