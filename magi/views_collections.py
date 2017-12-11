@@ -73,7 +73,7 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
         context['shortcut_url'] = shortcut_url
     context['ajax'] = ajax
     context['name'] = name
-    context['page_title'] = u'{title}: {item}'.format(title=collection.title, item=context['item'])
+    context['page_title'] = u'{item} - {title}'.format(title=collection.title, item=context['item'])
     context['js_files'] = collection.item_view.js_files
     context['reportable'] = collection.reportable
     context['share_image'] = _get_share_image(context, collection.item_view, item=context['item'])
@@ -180,7 +180,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
             context['reload_urls_start_with'] += [cc.get_add_url() for cc in collection.collectible_collections.values()]
 
     context['ordering'] = ordering
-    context['page_title'] = collection.plural_title
+    context['page_title'] = _(u'List of all the {things}').format(things=collection.plural_title.lower())
     context['total_pages'] = int(math.ceil(context['total_results'] / page_size))
     context['items'] = queryset
     context['page'] = page + 1

@@ -1432,7 +1432,8 @@ class ReportCollection(MagiCollection):
 class DonateCollection(MagiCollection):
     enabled = False
     title = 'Donation Month'
-    plural_title = _('Donate')
+    plural_title = _('Donators')
+    navbar_link_title = _('Donate')
     plural_name = 'donate'
     icon = 'heart'
     navbar_link_list = 'more'
