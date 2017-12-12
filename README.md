@@ -362,19 +362,13 @@ The ⎡[Quick Start](#quick-start)⎦ section above will do all this for you, bu
    from django.contrib.auth.models import User
    from django.utils.translation import ugettext_lazy as _
    from django.db import models
-   from magi.models import MagiModel
+   from magi.item_model import MagiModel
+   from magi.abstract_models import BaseAccount
 
-   class Account(MagiModel):
-       collection_name = 'account'
-
-       owner = models.ForeignKey(User, related_name='accounts')
-       creation = models.DateTimeField(auto_now_add=True)
-       level = models.PositiveIntegerField(_("Level"), null=True)
-
-       def __unicode__(self):
-           return u'#{} Level {}'.format(self.id, self.level)
+   class Account(BaseAccount):
+       class Meta:
+           pass
    ```
-   Note: This model *must* contain an owner and its `related_name` *must* be `accounts`.
 
    Make this model available in your administration, edit `sample/admin.py`:
    ```python

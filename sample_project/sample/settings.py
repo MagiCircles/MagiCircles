@@ -1,6 +1,8 @@
 from django.conf import settings as django_settings
 from sample import models
 
+# Configure and personalize your website here.
+
 SITE_NAME = 'Sample Website'
 SITE_URL = 'http://sample.com/'
 SITE_IMAGE = 'sample.png'
