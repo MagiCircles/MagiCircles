@@ -851,9 +851,11 @@ class AccountCollection(MagiCollection):
 
         @property
         def default_ordering(self):
-            if hasattr(self.collection.queryset.model, 'level'):
+            try:
+                self.collection.queryset.model._meta.get_field('level')
                 return '-level'
-            return MagiCollection.ListView.default_ordering.__get__(self)
+            except FieldDoesNotExist:
+                return MagiCollection.ListView.default_ordering.__get__(self)
 
     class ItemView(MagiCollection.ItemView):
         template = 'defaultAccountItem'
