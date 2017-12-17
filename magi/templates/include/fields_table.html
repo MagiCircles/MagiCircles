@@ -77,7 +77,7 @@
       </td>
     </tr>
     {% endfor %}
-    {% if item.buttons_to_show %}
+    {% if item.buttons_to_show and bottom %}
     {% for name, button in item.buttons_to_show.items %}
     {% if button.show and button.has_permissions %}
     <tr{% if 'staff-only' in button.classes %} class="staff-only"{% endif %}>

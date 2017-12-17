@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.utils.translation import ugettext_lazy as _
 from django.db import models
 from django.utils import timezone
-from magi.item_model import MagiModel
+from magi.item_model import MagiModel, get_image_url_from_path
 from magi.utils import AttrDict
 
 ############################################################
@@ -89,6 +89,7 @@ class CacheOwner(MagiModel):
     def cached_owner(self):
         if not self._cache_owner_last_update or self._cache_owner_last_update < timezone.now() - datetime.timedelta(days=self._cache_owner_days):
             self.force_cache_owner()
+        from magi.models import UserPreferences
         return AttrDict({
             'pk': self.owner_id,
             'id': self.owner_id,
@@ -101,6 +102,10 @@ class CacheOwner(MagiModel):
                 'status': dict(UserPreferences.STATUS_CHOICES)[self._cache_owner_preferences_i_status] if self._cache_owner_preferences_i_status else None,
                 'twitter': self._cache_owner_preferences_twitter,
                 'color': self._cache_owner_color,
+                'localized_color': UserPreferences.get_localized_color(self._cache_owner_color),
+                'hex_color': UserPreferences.get_hex_color(self._cache_owner_color),
+                'rgb_color': UserPreferences.get_rgb_color(self._cache_owner_color),
+                'css_color': UserPreferences.get_css_color(self._cache_owner_color),
             }),
         })
 
@@ -111,12 +116,40 @@ class CacheOwner(MagiModel):
 # BaseAccount
 
 class BaseAccount(CacheOwner):
+    # If you're willing to add a unique code allowing users to find the real account in the game,
+    # use one of the following names: friend_id, friend_code, account_id, account_code
     collection_name = 'account'
 
     owner = models.ForeignKey(User, related_name='accounts')
     creation = models.DateTimeField(_('Join Date'), auto_now_add=True)
     start_date = models.DateField(_('Start Date'), null=True)
     level = models.PositiveIntegerField(_("Level"), null=True)
+
+    # Cache: leaderboard position
+
+    _cache_leaderboards_days = 1
+    _cache_leaderboards_last_update = models.DateTimeField(null=True)
+    _cache_leaderboard = models.PositiveIntegerField(null=True)
+
+    def update_cache_leaderboards(self):
+        self._cache_leaderboards_last_update = timezone.now()
+        self._cache_leaderboard = type(self).objects.filter(level__gt=self.level).values('level').distinct().count() + 1
+
+    def force_cache_leaderboards(self):
+        self.update_cache_leaderboards()
+        self.save()
+
+    @property
+    def cached_leaderboard(self):
+        if not self.level:
+            return None
+        if not self._cache_leaderboards_last_update or self._cache_leaderboards_last_update < timezone.now() - datetime.timedelta(days=self._cache_leaderboards_days):
+            self.force_cache_leaderboards()
+        return self._cache_leaderboard
+
+    @property
+    def leaderboard_image_url(self):
+        return get_image_url_from_path(u'static/img/badges/medal{}.png'.format(4 - self.cached_leaderboard))
 
     def __unicode__(self):
         return u'#{} {}'.format(self.id, u'Level {}'.format(self.level) if self.level else '')

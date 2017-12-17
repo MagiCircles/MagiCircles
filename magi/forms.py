@@ -371,6 +371,7 @@ class AccountForm(AutoForm):
     class Meta:
         model = models.Account
         fields = '__all__'
+        optional_fields = ('start_date', 'level', )
         save_owner_on_creation = True
 
 ############################################################

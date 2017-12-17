@@ -819,6 +819,11 @@ class AccountCollection(MagiCollection):
     report_allow_delete = False
     form_class = forms.AccountForm
 
+    show_item_buttons = False
+    show_item_buttons_as_icons = True
+    item_buttons_classes = ['btn', 'btn-link']
+    show_item_buttons_justified = False
+
     @property
     def report_edit_templates(self):
         templates = OrderedDict([
@@ -835,7 +840,7 @@ class AccountCollection(MagiCollection):
         return templates
 
     class ListView(MagiCollection.ListView):
-        item_template = custom_item_template
+        item_template = 'defaultAccountItem'
         show_edit_button_superuser_only = True
         show_title = True
         per_line = 1
@@ -851,7 +856,7 @@ class AccountCollection(MagiCollection):
             return MagiCollection.ListView.default_ordering.__get__(self)
 
     class ItemView(MagiCollection.ItemView):
-        template = custom_item_template
+        template = 'defaultAccountItem'
         comments_enabled = False
         show_edit_button_superuser_only = True
 
@@ -983,6 +988,15 @@ class UserCollection(MagiCollection):
             user = context['item']
             request = context['request']
             context['is_me'] = user.id == request.user.id
+            account_collection = getMagiCollection('account')
+
+            # Account buttons
+            if account_collection:
+                for account in user.all_accounts:
+                    account.buttons_to_show = account_collection.list_view.buttons_per_item(request, context, account)
+                    account.show_item_buttons_justified = account_collection.list_view.show_item_buttons_justified
+                    account.show_item_buttons_as_icons = account_collection.list_view.show_item_buttons_as_icons
+                    account.show_item_buttons_in_one_line = account_collection.list_view.show_item_buttons_in_one_line
 
             # Badges
             if 'badge' in context['all_enabled']:
@@ -1055,7 +1069,6 @@ class UserCollection(MagiCollection):
                 context['can_add_activity'] = True
                 context['add_activity_sentence'] = activity_collection.add_sentence
                 context['add_activity_subtitle'] = activity_collection.list_view.add_button_subtitle
-            account_collection = getMagiCollection('account')
             if account_collection and account_collection.add_view.has_permissions(request, context):
                 context['can_add_account'] = True
                 context['add_account_sentence'] = account_collection.add_sentence
@@ -1076,11 +1089,12 @@ class UserCollection(MagiCollection):
                 raise PermissionDenied()
 
         def after_save(self, request, instance):
-            models.updateCachedActivities(instance.id)
+            models.onUserEdited(instance)
             if ON_USER_EDITED:
-                ON_USER_EDITED(request)
+                ON_USER_EDITED(instance)
+            models.onPreferencesEdited(instance)
             if ON_PREFERENCES_EDITED:
-                ON_PREFERENCES_EDITED(request)
+                ON_PREFERENCES_EDITED(instance)
             return instance
 
         def redirect_after_edit(self, request, item, ajax):

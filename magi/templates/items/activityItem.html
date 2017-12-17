@@ -56,7 +56,7 @@
 	      <a href="{{ activity.item_url }}/#disqus_thread" target="_blank" class="btn btn-link disqus-comment-count" data-disqus-identifier="activity-{{ activity.id }}">{% trans 'Comments' %}</a>
 	    </div>
 	    {% endif %}
-            {% include 'include/below_item.html' with show_item_buttons=True %}
+            {% include 'include/below_item.html' with buttons_only=True show_item_buttons=True %}
 	  </form>
 	</div>
       </div>

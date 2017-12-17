@@ -10,6 +10,7 @@ from django.conf import settings as django_settings
 from magi.utils import AttrDict, randomString, getMagiCollection, uploadToRandom, uploadItem, linkToImageURL
 from magi.settings import ACCOUNT_MODEL, GAME_NAME, COLOR, SITE_STATIC_URL, DONATORS_STATUS_CHOICES, USER_COLORS, FAVORITE_CHARACTERS, SITE_URL, SITE_NAME, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, ACTIVITY_TAGS
 from magi.item_model import MagiModel, BaseMagiModel, get_image_url, i_choices, addMagiModelProperties
+from magi.abstract_models import CacheOwner
 
 Account = ACCOUNT_MODEL
 
@@ -139,40 +140,55 @@ class UserPreferences(BaseMagiModel):
     @property
     def favorite_character3_image(self): return self.favorite_character_image(3)
 
-    @property
-    def localized_color(self):
-        if self.color and USER_COLORS:
+    @classmethod
+    def get_localized_color(self, color):
+        if color and USER_COLORS:
             try:
-                return (_(localized) for (name, localized, __, __) in USER_COLORS if unicode(name) == self.color).next()
+                return (_(localized) for (name, localized, __, __) in USER_COLORS if unicode(name) == color).next()
             except: pass
         return ''
-
     @property
-    def hex_color(self):
-        if self.color and USER_COLORS:
+    def localized_color(self):
+        return type(self).get_localized_color(self.color)
+
+    @classmethod
+    def get_hex_color(self, color):
+        if color and USER_COLORS:
             try:
-                return (hex for (name, _, _, hex) in USER_COLORS if unicode(name) == self.color).next()
+                return (hex for (name, _, _, hex) in USER_COLORS if unicode(name) == color).next()
             except: pass
         return COLOR
+    @property
+    def hex_color(self):
+        return type(self).get_hex_color(self.color)
 
+    @classmethod
+    def get_rgb_color(self, color):
+        return tuple(int(self.get_hex_color(color).lstrip('#')[i:i+2], 16) for i in (0, 2 ,4))
     @property
     def rgb_color(self):
-        return tuple(int(self.hex_color.lstrip('#')[i:i+2], 16) for i in (0, 2 ,4))
+        return type(self).get_rbg_color(self.color)
 
-    @property
-    def css_color(self):
-        if self.color and USER_COLORS:
+    @classmethod
+    def get_css_color(self, color):
+        if color and USER_COLORS:
             try:
-                return (css_color for (name, _, css_color, _) in USER_COLORS if unicode(name) == self.color).next()
+                return (css_color for (name, _, css_color, _) in USER_COLORS if unicode(name) == color).next()
             except: pass
         return 'main'
-
     @property
-    def age(self):
-        if not self.birthdate:
+    def css_color(self):
+        return type(self).get_css_color(self.color)
+
+    @classmethod
+    def get_age(self, birthdate):
+        if not birthdate:
             return None
         today = datetime.date.today()
-        return today.year - self.birthdate.year - ((today.month, today.day) < (self.birthdate.month, self.birthdate.day))
+        return today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
+    @property
+    def age(self):
+        return type(self).get_age(self.birthdate)
 
     @property
     def email_notifications_turned_off(self):
@@ -604,3 +620,16 @@ class Badge(MagiModel):
 
     def __unicode__(self):
         return self.translated_name
+
+############################################################
+# Callbacks to call on UserPreferences or User edited
+# If you call these you should also call ON_USER_EDITED and ON_PREFERENCES_EDITED from settings.
+
+def onUserEdited(user):
+    updateCachedActivities(user.id)
+    if issubclass(ACCOUNT_MODEL, CacheOwner):
+        ACCOUNT_MODEL.objects.filter(owner=user).update(_cache_owner_last_update=None)
+
+def onPreferencesEdited(user):
+    if issubclass(ACCOUNT_MODEL, CacheOwner):
+        ACCOUNT_MODEL.objects.filter(owner=user).update(_cache_owner_last_update=None)

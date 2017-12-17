@@ -397,7 +397,9 @@ The ⎡[Quick Start](#quick-start)⎦ section above will do all this for you, bu
 16. Create the template that will display the accounts under the users info in their profiles in `sample/templates/accountsForProfile.html`:
    ```html
    {% for item in profile_user.all_accounts %}
-   {% include 'items/accountItem.html' %}
+   <div class="row"><div class="col-md-12">
+     {% include 'items/defaultAccountItem.html' with without_link=True %}
+   </div></div>
    {% endfor %}
    ```
    In a real website, you would probably want to display the account differently in the context of the profile.
@@ -662,8 +664,8 @@ Optional settings:
 | NAVBAR_ORDERING | List of collection or page names in the order you would like them to appear in the nav bar. Missing collection or page name in this list will just appear at the end.  | None (order not guaranteed) |
 | ONLY_SHOW_SAME_LANGUAGE _ACTIVITY_BY_DEFAULT _FOR_LANGUAGES  | You may use this instead of `ONLY_SHOW_SAME_LANGUAGE _ACTIVITY_BY_DEFAULT` to specify per language | ['ja', 'zh-hans', 'kr'] |
 | ONLY_SHOW_SAME_LANGUAGE _ACTIVITY_BY_DEFAULT | If set to `True`, uers will only see the activities in their language (regardless of authentication), otherwise, they'll see all activities in all languages. Note that users can override this behavior in their settings. | False |
-| ON_PREFERENCES_EDITED | Callback after a user's preferences have been changed, takes request (contains updated request.user.preferences) | None |
-| ON_USER_EDITED | Callback after a user's username or email has been changed, takes request (contains updated request.user) | None |
+| ON_PREFERENCES_EDITED | Callback after a user's preferences have been changed, takes user instance (contains updated user.preferences). If you call this yourself, make sure you also call `models.onPreferencesEdited`. | None |
+| ON_USER_EDITED | Callback after a user's username or email has been changed, takes user instance. If you call this yourself, make sure you also call `models.onUserEdited`. | None |
 | PRELAUNCH_ENABLED_PAGES  | When launch date is set, all the pages in `ENABLED_PAGES` get changed to only be available to staff members, except the pages listed here. | 'login', 'signup', 'prelaunch', 'about', 'about_game', 'changelanguage', 'help' |
 | PROFILE_EXTRA_TABS | A dictionary of tab name -> dictionary (name, icon, callback (= js)) to show more tabs on profile (in addition to activities and accounts) | None |
 | PROFILE_TABS | Tabs visible in a user's profile page, under the box that contins the avatar, the description and the links. A dictionary with: <ul><li>`name`: localized tab name</li><li>`icon`: String name of a [flaticon](#flaticon) that illustrates the tab</li><li>`callback`: optional, name of javasript function to call to get the content of the tab - takes: <ul><li>user_id</li><li>A callback that you must call and give it the HTML tree to display for this tab and an optional other callback to call after it's been displayed</li></ul></li></ul> | accounts, activities and badges. Will be disabled if you disable their respective collection. |
@@ -884,7 +886,7 @@ For each collection, you may also override the fields and methods. When overridi
 | show_collect_button | Should button(s) to add a collectible to your collection be displayed under each item? When multiple collectible exist, you may provide a dictionary of { collectibleCollectionName: boolean }. Can be overriden in ItemView and ListView. | True |
 | show_edit_button | Should the edit button under each item be displayed? (Note: will not be displayed regardless of this setting if the edit view is disabled or the current user doesn't have permissions.) Can be overriden in ItemView and ListView. | True | |
 | show_edit_button_superuser_only | If the edit button under each item is available for staff only, should it be shown for super users only? Note: it doesn't prevent staff to go to the edit page themselves if they have permission. Can be overriden in ItemView and ListView. | False | |
-| show_item_buttons | Let MagiCircles display the buttons under each items automatically? Set to False if you'd like to insert the buttons yourself. To insert the buttons anywhere in your item template, use `{% include 'include/below_item.html' with show_item_buttons=True %}`. Can be overriden in ItemView and ListView. | True | |
+| show_item_buttons | Let MagiCircles display the buttons under each items automatically? Set to False if you'd like to insert the buttons yourself. To insert the buttons anywhere in your item template, use `{% include 'include/below_item.html' with buttons_only=True show_item_buttons=True %}`. Can be overriden in ItemView and ListView. | True | |
 | show_item_buttons_as_icons | Should only icons be displayed in buttons under each items? False = also shows text. Can be overriden in ItemView and ListView. | False | |
 | show_item_buttons_in_one_line | Show butons under each item in one line? False = displays buttons each under the other. Can be overriden in ItemView and ListView. | True | |
 | show_report_button | Should the report button be displayed under each item? Note: Will not be displayed regardless of this setting if the item is not reportable or reports are disabled globally. Can be overriden in ItemView and ListView. | True | |
@@ -1035,7 +1037,7 @@ List view for a staff member will hide all the staff buttons by default and you 
 | show_collect_button | Should button(s) to add a collectible to your collection be displayed under each item? When multiple collectible exist, you may provide a dictionary of { collectibleCollectionName: boolean }. Can be specified in collection. | Value from collection |
 | show_edit_button | Should the edit button under each item be displayed? (Note: will not be displayed regardless of this setting if the edit view is disabled or the current user doesn't have permissions.) Can be specified in collection. | Value from collection | |
 | show_edit_button_superuser_only | If the edit button under each item is available for staff only, should it be shown for super users only? Note: it doesn't prevent staff to go to the edit page themselves if they have permission. Can be specified in collection. | Value from collection | |
-| show_item_buttons | Let MagiCircles display the buttons under each items automatically? Set to False if you'd like to insert the buttons yourself. To insert the buttons anywhere in your item template, use `{% include 'include/below_item.html' with show_item_buttons=True %}`. Can be specified in collection. | Value from collection | |
+| show_item_buttons | Let MagiCircles display the buttons under each items automatically? Set to False if you'd like to insert the buttons yourself. To insert the buttons anywhere in your item template, use `{% include 'include/below_item.html' with buttons_only=True show_item_buttons=True %}`. Can be specified in collection. | Value from collection | |
 | show_item_buttons_as_icons | Should only icons be displayed in buttons under each items? False = also shows text. Can be specified in collection. | Value from collection | |
 | show_item_buttons_in_one_line | Show butons under each item in one line? False = displays buttons each under the other. Can be specified in collection. | Value from collection | |
 | show_report_button | Should the report button be displayed under each item? Note: Will not be displayed regardless of this setting if the item is not reportable or reports are disabled globally. Can be specified in collection. | Value from collection | |
@@ -2694,6 +2696,12 @@ Migrate from MagiCircles1 to MagiCircles2
     - Item View: `show_edit_button`, `top_illustration`, `get_item`, `reverse_url`
     - Add View: `filter_cuteform`
     - Edit View: `form_class`, `get_item`
+
+1. **Fix ON_USER_EDITED and ON_PREFERENCES_EDITED**
+
+    Both used to take `request` as a parameter and now take the user that has been updated.
+
+    In addition, if for some reasons you were calling these 2 functions youself, you should now also call `models.onPreferencesEdited` or `models.onUserEdited` right before.
 
 1. **Specify your templates for List views or Item views, or use the default one**
 

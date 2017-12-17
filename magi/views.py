@@ -159,16 +159,17 @@ def settings(request):
                     form = UserForm(request.POST, instance=request.user, request=request)
                     if form.is_valid():
                         form.save()
-                        models.updateCachedActivities(request.user.id)
+                        models.onUserEdited(request.user)
                         if ON_USER_EDITED:
-                            ON_USER_EDITED(request)
+                            ON_USER_EDITED(request.user)
                         redirectToProfile(request)
                 elif form_name == 'preferences':
                     form = UserPreferencesForm(request.POST, instance=context['preferences'], request=request)
                     if form.is_valid():
                         form.save()
+                        models.onPreferencesEdited(request.user)
                         if ON_PREFERENCES_EDITED:
-                            ON_PREFERENCES_EDITED(request)
+                            ON_PREFERENCES_EDITED(request.user)
                         redirectToProfile(request)
                 elif form_name == 'addLink':
                     form = AddLinkForm(request.POST, request=request)

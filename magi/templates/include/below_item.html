@@ -26,6 +26,8 @@
   {% endfor %}
 </div>
 {% endif %}
+{% if not buttons_only %}
 {% if show_relevant_fields_on_ordering and item.relevant_fields_to_show %}
 {% include 'include/fields_table.html' with fields=item.relevant_fields_to_show bottom=False %}
+{% endif %}
 {% endif %}

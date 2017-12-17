@@ -4,6 +4,7 @@
 @import "simple-sidebar.less";
 @import "mixins/panel.less";
 @import "mixins/buttons.less";
+@import "mixins/well.less";
 @import url(https://fonts.googleapis.com/css?family=Roboto);
 
 @transparent: rgba(0, 0, 0, 0);
@@ -603,6 +604,7 @@ form .form-group ul[id^=id_c_] {
 
 .avatar {
     border-radius: 10%;
+    overflow: hidden;
 }
 .avatar_wrapper {
     .flaticon-heart {
@@ -779,6 +781,14 @@ nav {
        &:hover, &:focus {
 	   color: darken(@mainColor, 15%);
        }
+   }
+
+   .well-main {
+       .well-variant(@mainColor, white);
+   }
+
+   .well-secondary {
+       .well-variant(@secondaryColor, white);
    }
 
    a[href="#hideStaffButtons"] {
@@ -1093,4 +1103,53 @@ nav {
     height: 30px;
     line-height: 30px;
     box-sizing: content-box;
+}
+
+.default-account {
+    border-radius: 10px;
+    padding: 30px 60px;
+    h3 {
+	font-size: 60px;
+        line-height: 100px;
+        margin: 0;
+    }
+    h3.username {
+        overflow: hidden;
+    }
+    h3.level {
+        text-align: right;
+    }
+    .friend_id, .friend_code, .account_id, .account_code {
+        text-align: right;
+        overflow: hidden;
+        padding-top: 5px;
+        margin-top: -30px;
+    }
+    .default-account-buttons {
+        position: absolute;
+        top: 0;
+        right: 0;
+        padding: 10px 25px 0 0;
+        .btn {
+            padding: 0 3px;
+            text-decoration: none;
+            &:hover {
+                text-decoration: none;
+            }
+        }
+    }
+    .leaderboard {
+        position: absolute;
+        top: -13px;
+        left: -5px;
+        img {
+            transform: rotate(-26deg);
+        }
+        span {
+            display: block;
+            padding-top: 26px;
+            padding-left: 36px;
+            font-size: 1.2em;
+        }
+    }
 }
