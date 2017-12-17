@@ -67,7 +67,7 @@ def get_allow_multiple_per_owner(cls):
     return cls.owner
 
 def get_is_owner(instance, user):
-    return instance.owner_id == user.id
+    return user and instance.owner_id == user.id
 
 ############################################################
 # BaseMagiModel
