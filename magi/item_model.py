@@ -1,11 +1,9 @@
-import datetime
 from collections import OrderedDict
 from django.db import models
 from django.db.models.fields import FieldDoesNotExist
 from django.conf import settings as django_settings
 from django.utils.translation import ugettext_lazy as _, get_language
-from django.utils import timezone
-from magi.utils import tourldash, getMagiCollection, AttrDict, join_data, split_data
+from magi.utils import tourldash, getMagiCollection, join_data, split_data
 
 ############################################################
 # Utils for images
