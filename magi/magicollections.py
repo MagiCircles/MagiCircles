@@ -7,7 +7,6 @@ from django.utils.safestring import mark_safe
 from django.utils.formats import dateformat
 from django.core.exceptions import PermissionDenied
 from django.http import Http404
-from dateutil.relativedelta import relativedelta
 from django.db.models import Count, Q, Prefetch
 
 from magi.views import indexExtraContext
@@ -241,6 +240,7 @@ class MagiCollection(object):
             class AddView(MagiCollection.AddView):
                 alert_duplicate = False
                 back_to_list_button = False
+                max_per_user = 3000
 
                 def redirect_after_add(self, request, item, ajax):
                     return self.collection.get_list_url_for_authenticated_owner(request, ajax, item)
@@ -396,9 +396,6 @@ class MagiCollection(object):
                 name_fields.append((field_name, d))
             else:
                 model_fields.append((field_name, d))
-        # Collectible fields
-        for collection in self.collectible_collections.values():
-            pass#todo
         fields = name_fields + many_fields + model_fields
         return OrderedDict(fields) if to_dict else fields
 
@@ -704,6 +701,9 @@ class MagiCollection(object):
         # Optional variables without default
         otherbuttons_template = None
         after_template = None
+        max_per_user = None
+        max_per_user_per_day = None
+        max_per_user_per_hour = None
 
         def before_save(self, request, instance, type=None):
             return instance
@@ -865,6 +865,7 @@ class AccountCollection(MagiCollection):
     class AddView(MagiCollection.AddView):
         alert_duplicate = False
         allow_next = True
+        max_per_user = 10
 
         def redirect_after_add(self, request, instance, ajax=False):
             if ajax: # Ajax is not allowed for profile url
@@ -1202,6 +1203,7 @@ class ActivityCollection(MagiCollection):
         multipart = True
         alert_duplicate = False
         form_class = forms.ActivityForm
+        max_per_user_per_hour = 3
 
     class EditView(MagiCollection.EditView):
         multipart = True

@@ -1,5 +1,6 @@
 import re, datetime
 from collections import OrderedDict
+from dateutil.relativedelta import relativedelta
 from multiupload.fields import MultiFileField
 from django import forms
 from django.http.request import QueryDict
@@ -8,6 +9,7 @@ from django.db.models import Q
 from django.forms.models import model_to_dict, fields_for_model
 from django.conf import settings as django_settings
 from django.contrib.auth import authenticate, login as login_action
+from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _, string_concat, get_language, activate as translation_activate
 from django.utils.safestring import mark_safe
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
@@ -142,6 +144,40 @@ class MagiForm(forms.ModelForm):
                         label=field.label,
                     )
 
+    def clean(self):
+        # Check max_per_user
+        if (self.collection
+            and self.request and self.request.user.is_authenticated()):
+            if self.collection.add_view.max_per_user_per_hour:
+                already_added = self.Meta.model.objects.filter(**{
+                    self.Meta.model.selector_to_owner(): self.request.user,
+                    'creation__gte': timezone.now() - relativedelta(hours=1),
+                }).count()
+                if already_added >= self.collection.add_view.max_per_user_per_hour:
+                    raise forms.ValidationError(
+                        unicode(_('You\'ve added a lot of {things}, lately. Try to wait a little bit before adding more.'))
+                        .format(things=unicode(self.collection.plural_title).lower()))
+            if self.collection.add_view.max_per_user_per_day:
+                already_added = self.Meta.model.objects.filter(**{
+                    self.Meta.model.selector_to_owner(): self.request.user,
+                    'creation__gte': timezone.now() - relativedelta(days=1),
+                }).count()
+                if already_added >= self.collection.add_view.max_per_user_per_day:
+                    raise forms.ValidationError(
+                        unicode(_('You\'ve added a lot of {things}, lately. Try to wait a little bit before adding more.'))
+                        .format(things=unicode(self.collection.plural_title).lower()))
+            if self.collection.add_view.max_per_user:
+                already_added = self.Meta.model.objects.filter(**{
+                    self.Meta.model.selector_to_owner(): self.request.user
+                }).count()
+                if already_added >= self.collection.add_view.max_per_user:
+                    raise forms.ValidationError(unicode(_('You already have {total} {things}. You can only add up to {max} {things}.')).format(
+                        total=already_added,
+                        max=self.collection.add_view.max_per_user,
+                        things=unicode(self.collection.plural_title).lower(),
+                    ))
+        return self.cleaned_data
+
     def save(self, commit=True):
         instance = super(MagiForm, self).save(commit=False)
         # Save owner on creation if specified
@@ -268,8 +304,9 @@ class MagiFiltersForm(AutoForm):
         # Set default ordering initial value
         if 'ordering' in self.fields:
             self.fields['ordering'].choices = self.ordering_fields
-            self.fields['ordering'].initial = self.collection.list_view.plain_default_ordering
-            self.fields['reverse_order'].initial = self.collection.list_view.default_ordering.startswith('-')
+            if self.collection:
+                self.fields['ordering'].initial = self.collection.list_view.plain_default_ordering
+                self.fields['reverse_order'].initial = self.collection.list_view.default_ordering.startswith('-')
         for field_name, field in self.fields.items():
             # Add blank choice to list of choices that don't have one
             if (field.required and isinstance(field, forms.fields.ChoiceField)

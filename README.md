@@ -1117,6 +1117,9 @@ todo
 | multipart | Should the HTML form allow multipart (uploaded files)? Can be specified in collection. | False | |
 | form_class | Form class to add an item. Can be a method (see below). Can be specified in collection. | AutoForm | IdolForm |
 | filter_cuteform | See ⎡[CuteForm](#cuteform)⎦. Can be specified in collection. | | |
+| max_per_user | By default, users can add as many as they'd like. You can restrict to a max number of added per user to avoid spam. | None | 3000 |
+| max_per_user_per_day | Will limit how many a user can add within 24 hours. | None | 24 |
+| max_per_user_per_hour | Will limit how many a user can add within an hour. | None | 3 |
 
 See also: [settings available in all views](#all-views).
 
@@ -2762,7 +2765,7 @@ Migrate from MagiCircles1 to MagiCircles2
         - Note: `types` is not in the collection itself and not per view.
     - List View: `filter_cuteform`, `hide_sidebar`, `item_template`, `show_edit_button`, `show_relevant_fields_on_ordering`
     - Item View: `show_edit_button`, `top_illustration`, `get_item`, `reverse_url`
-    - Add View: `filter_cuteform`
+    - Add View: `filter_cuteform`, `max_per_user_per_hour`, `max_per_user_per_day`, `max_per_user`
     - Edit View: `form_class`, `get_item`
 
 1. **Fix ON_USER_EDITED and ON_PREFERENCES_EDITED**
