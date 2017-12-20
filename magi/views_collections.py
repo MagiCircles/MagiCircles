@@ -148,6 +148,8 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
                 queryset = filter_ids(queryset, request)
         else:
             context['filter_form'] = collection.list_view.filter_form(request=request, ajax=ajax, collection=collection)
+    else:
+        queryset = filter_ids(queryset, request)
 
     context['total_results'] = queryset.count()
     context['total_results_sentence'] = _('1 {object} matches your search:').format(object=collection.title) if context['total_results'] == 1 else _('{total} {objects} match your search:').format(total=context['total_results'], objects=collection.plural_title)
