@@ -106,6 +106,7 @@ Similarly, it is not allowed to monetize a website that uses MagiCircles using a
         1. [Save choices values as integer rather than strings](#save-choices-values-as-integer-rather-than-strings)
         1. [Store comma separated values](#store-comma-separated-values)
         1. [Transform images before saving them](#transform-images-before-saving-them)
+        1. [Check choices at form level instead of model level](#check-choices-at-form-level-instead-of-model-level)
     1. [Python](#python)
         1. [Models upload](#models-upload)
         1. [Access MagiCollections](#access-magicollections)
@@ -1947,6 +1948,21 @@ card.save()
 You may provide a `tinypng_settings` dictionary in your MagiModel to let your future MagiForm know how to transform your images before saving them.
 
 For the full details of the dictionary, see ⎡[Optimize images with TinyPNG](#optimize-images-with-tinypng)⎦.
+
+### Check choices at form level instead of model level
+
+It's recommended to add the choices in your field and let django validators and your database engine do the work for you.
+
+If for some reason you can't or don't want to enforce it at the model level, you can enforce the choices at the form level (when using MagiForm):
+
+```python
+class Idol(MagiModel):
+    LANGUAGE_SOFT_CHOICES = (
+        ('en', _('English')),
+        ('es', _('Spanish')),
+    )
+    i_language = models.CharField(max_length=10)
+```
 
 ## Python
 

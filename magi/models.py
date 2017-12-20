@@ -54,7 +54,8 @@ class UserPreferences(BaseMagiModel):
 
     LANGUAGE_CHOICES = django_settings.LANGUAGES
     LANGUAGE_WITHOUT_I_CHOICES = True
-    i_language = models.CharField(_('Language'), max_length=10, choices=LANGUAGE_CHOICES)
+    LANGUAGE_SOFT_CHOICES = django_settings.LANGUAGES
+    i_language = models.CharField(_('Language'), max_length=10)
 
     description = models.TextField(_('Description'), null=True, help_text=_('Write whatever you want. You can add formatting and links using Markdown.'), blank=True)
     favorite_character1 = models.CharField(verbose_name=_('{nth} Favorite Character').format(nth=_('1st')), null=True, max_length=200)
@@ -254,7 +255,7 @@ class UserLink(BaseMagiModel):
         _('Every single day'),
     )
 
-    i_relevance = models.PositiveIntegerField(_(u'How often do you tweet/stream/post about {}?').format(GAME_NAME), choices=i_choices(RELEVANCE_CHOICES), null=True, blank=True)
+    i_relevance = models.PositiveIntegerField(choices=i_choices(RELEVANCE_CHOICES), null=True, blank=True)
 
     LINK_URLS = {
         'Location': u'http://maps.google.com/?q={}',
@@ -299,7 +300,8 @@ class Activity(MagiModel):
 
     LANGUAGE_CHOICES = django_settings.LANGUAGES
     LANGUAGE_WITHOUT_I_CHOICES = True
-    i_language = models.CharField(_('Language'), max_length=4, choices=LANGUAGE_CHOICES)
+    LANGUAGE_SOFT_CHOICES = LANGUAGE_CHOICES
+    i_language = models.CharField(_('Language'), max_length=4)
 
     TAGS_CHOICES = ACTIVITY_TAGS if ACTIVITY_TAGS else []
     c_tags = models.TextField(_('Tags'), blank=True, null=True)

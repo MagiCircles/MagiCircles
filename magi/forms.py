@@ -124,9 +124,7 @@ class MagiForm(forms.ModelForm):
                     if not choices:
                         self.fields.pop(name)
                     else:
-                        choices_field_name = '{name}_choices'.format(name=name)
-                        choices_field_name = name
-                        self.fields[choices_field_name] = forms.MultipleChoiceField(
+                        self.fields[name] = forms.MultipleChoiceField(
                             required=False,
                             widget=forms.CheckboxSelectMultiple,
                             choices=[(c[0], c[1]) if isinstance(c, tuple) else (c, c) for c in choices],
@@ -135,6 +133,14 @@ class MagiForm(forms.ModelForm):
                         if not self.is_creating:
                             # Set the value in the object to the list to pre-select the right options
                             setattr(self.instance, name, getattr(self.instance, name[2:]))
+            elif getattr(self.Meta.model, u'{name}_SOFT_CHOICES'.format(name=name[2:].upper()), False):
+                choices = getattr(self.Meta.model, '{name}_CHOICES'.format(name=name[2:].upper()), None)
+                if choices is not None:
+                    self.fields[name] = forms.ChoiceField(
+                        required=field.required,
+                        choices=[(c[0], c[1]) if isinstance(c, tuple) else (c, c) for c in choices],
+                        label=field.label,
+                    )
 
     def save(self, commit=True):
         instance = super(MagiForm, self).save(commit=False)
@@ -490,7 +496,6 @@ class UserPreferencesForm(MagiForm):
                 self.fields['color'].initial = self.instance.color
         else:
             self.fields.pop('color')
-        self.fields['i_language'].choices = [l for l in self.fields['i_language'].choices if l[0]]
         self.old_location = self.instance.location if self.instance else None
         if not getMagiCollection('activity'):
             del(self.fields['view_activities_language_only'])
