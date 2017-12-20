@@ -5,6 +5,7 @@ from django.db import models
 from django.utils import timezone
 from magi.item_model import MagiModel, get_image_url_from_path
 from magi.utils import AttrDict
+from magi.default_settings import RAW_CONTEXT
 
 ############################################################
 # AccountAsOwnerModel
@@ -89,7 +90,6 @@ class CacheOwner(MagiModel):
     def cached_owner(self):
         if not self._cache_owner_last_update or self._cache_owner_last_update < timezone.now() - datetime.timedelta(days=self._cache_owner_days):
             self.force_cache_owner()
-        from magi.models import UserPreferences
         return AttrDict({
             'pk': self.owner_id,
             'id': self.owner_id,
@@ -99,13 +99,13 @@ class CacheOwner(MagiModel):
             'ajax_item_url': '/ajax/user/{}/'.format(self.owner_id),
             'preferences': AttrDict({
                 'i_status': self._cache_owner_preferences_i_status,
-                'status': dict(UserPreferences.STATUS_CHOICES)[self._cache_owner_preferences_i_status] if self._cache_owner_preferences_i_status else None,
+                'status': dict(RAW_CONTEXT['preferences_model'].STATUS_CHOICES)[self._cache_owner_preferences_i_status] if self._cache_owner_preferences_i_status else None,
                 'twitter': self._cache_owner_preferences_twitter,
                 'color': self._cache_owner_color,
-                'localized_color': UserPreferences.get_localized_color(self._cache_owner_color),
-                'hex_color': UserPreferences.get_hex_color(self._cache_owner_color),
-                'rgb_color': UserPreferences.get_rgb_color(self._cache_owner_color),
-                'css_color': UserPreferences.get_css_color(self._cache_owner_color),
+                'localized_color': RAW_CONTEXT['preferences_model'].get_localized_color(self._cache_owner_color),
+                'hex_color': RAW_CONTEXT['preferences_model'].get_hex_color(self._cache_owner_color),
+                'rgb_color': RAW_CONTEXT['preferences_model'].get_rgb_color(self._cache_owner_color),
+                'css_color': RAW_CONTEXT['preferences_model'].get_css_color(self._cache_owner_color),
             }),
         })
 
