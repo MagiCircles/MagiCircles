@@ -125,6 +125,8 @@ class BaseAccount(CacheOwner):
     start_date = models.DateField(_('Start Date'), null=True)
     level = models.PositiveIntegerField(_("Level"), null=True)
 
+    show_friend_id = True
+
     # Cache: leaderboard position
 
     _cache_leaderboards_days = 1
