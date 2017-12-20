@@ -572,7 +572,11 @@ class StaffEditUser(_UserCheckEmailUsernameForm):
         preferences_initial = model_to_dict(instance.preferences, preferences_fields) if instance is not None else {}
         super(StaffEditUser, self).__init__(initial=preferences_initial, instance=instance, *args, **kwargs)
         self.fields.update(fields_for_model(models.UserPreferences, preferences_fields))
-        self.fields['i_status'].required = False
+        self.fields['i_status'] = forms.ChoiceField(
+            required=False,
+            choices=(BLANK_CHOICE_DASH + [(c[0], c[1]) if isinstance(c, tuple) else (c, c) for c in instance.preferences.STATUS_SOFT_CHOICES]),
+            label=self.fields['i_status'].label,
+        )
         self.fields['donation_link_title'].help_text = 'If the donator is not interested in adding a link but are eligible for it, write "Not interested" and leave ""Donation link" empty'
         self.old_location = instance.preferences.location if instance else None
         if not self.is_creating:

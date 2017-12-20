@@ -95,7 +95,8 @@ class UserPreferences(BaseMagiModel):
     }
 
     STATUS_WITHOUT_I_CHOICES = True
-    i_status = models.CharField(_('Status'), choices=STATUS_CHOICES, max_length=12, null=True)
+    STATUS_SOFT_CHOICES = STATUS_CHOICES
+    i_status = models.CharField(_('Status'), max_length=12, null=True)
     @property
     def status_color(self):
         return self.STATUS_COLORS[self.i_status] if self.i_status else None
@@ -319,8 +320,7 @@ class Activity(MagiModel):
     _cache_last_update = models.DateTimeField(null=True)
     _cache_owner_username = models.CharField(max_length=32, null=True)
     _cache_owner_email = models.EmailField(blank=True)
-    _cache_owner_preferences_i_status = models.CharField(choices=UserPreferences.STATUS_CHOICES,
-                                                         max_length=12, null=True)
+    _cache_owner_preferences_i_status = models.CharField(max_length=12, null=True)
     _cache_owner_preferences_twitter = models.CharField(max_length=32, null=True, blank=True)
 
     def force_cache_owner(self):
