@@ -184,9 +184,6 @@ class BaseMagiModel(models.Model):
         """
         setattr(self, 'c_{name}'.format(name=field_name), join_data(*c))
 
-    def __setattr__(self, name, value):
-        super(BaseMagiModel, self).__setattr__(name, value)
-
     def __getattr__(self, name):
         # For choice fields with name "i_something", accessing "something" returns the string value
         if not name.startswith('_') and not name.startswith('i_') and not name.startswith('c_'):

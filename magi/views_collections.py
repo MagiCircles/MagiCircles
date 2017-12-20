@@ -163,7 +163,11 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     queryset = queryset[(page * page_size):((page * page_size) + page_size)]
 
     if 'filter_form' in context:
-        cuteFormFieldsForContext(collection.list_view.filter_cuteform, context, form=context['filter_form'])
+        cuteFormFieldsForContext(
+            collection.list_view.filter_cuteform,
+            context, form=context['filter_form'],
+            prefix='#sidebar-wrapper ',
+        )
 
     if 'ajax_modal_only' in request.GET:
         # Will display a link to see the other results instead of the pagination button
@@ -291,12 +295,16 @@ def add_view(request, name, collection, type=None, ajax=False, shortcut_url=None
                     context['next_title'] if context['next_title'] else '',
                 )
             raise HttpRedirectException(redirectURL)
-    cuteFormFieldsForContext(collection.add_view.filter_cuteform, context, form=form)
+    cuteFormFieldsForContext(
+        collection.add_view.filter_cuteform,
+        context, form=form,
+        prefix=u'[data-form-name="add_{}"] '.format(collection.name)
+    )
     _modification_views_page_titles(collection.add_sentence, context, after_title)
     context['action_sentence'] = collection.add_sentence # Used in page title
     form.action_sentence = collection.add_sentence # Genericity when we have multiple forms
     context['share_image'] = _get_share_image(context, collection.add_view)
-    context['forms'] = { 'add': form }
+    context['forms'] = { u'add_{}'.format(collection.name): form }
     context['ajax_callback'] = collection.add_view.ajax_callback
     context['collection'] = collection
     if collection.add_view.alert_duplicate:
@@ -359,7 +367,11 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
             instance = collection.edit_view.after_save(request, instance)
             redirectURL = collection.edit_view.redirect_after_edit(request, instance, ajax)
             raise HttpRedirectException(redirectURL)
-    cuteFormFieldsForContext(collection.edit_view.filter_cuteform, context, form=form)
+    cuteFormFieldsForContext(
+        collection.edit_view.filter_cuteform,
+        context, form=form,
+        prefix=u'[data-form-name="edit_{}"] '.format(collection.name)
+    )
     if shortcut_url is not None:
         context['shortcut_url'] = shortcut_url
     context['forms'] = OrderedDict()
@@ -369,12 +381,12 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
     context['share_image'] = _get_share_image(context, collection.edit_view, item=context['item'])
     _modification_views_page_titles(instance.edit_sentence, context, unicode(instance))
     context['ajax_callback'] = collection.edit_view.ajax_callback
-    context['forms']['edit'] = form
+    context['forms'][u'edit_{}'.format(collection.name)] = form
     context['collection'] = collection
     if allowDelete:
         formDelete.alert_message = _('You can\'t cancel this action afterwards.')
         formDelete.action_sentence = instance.delete_sentence
-        context['forms']['delete'] = formDelete
+        context['forms'][u'delete_{}'.format(collection.name)] = formDelete
 
     collection.edit_view.extra_context(context)
     if ajax:

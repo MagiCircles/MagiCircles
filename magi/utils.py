@@ -67,12 +67,13 @@ def globalContext(request):
     context['request'] = request
     context['javascript_translated_terms_json'] = simplejson.dumps({ term: unicode(_(term)) for term in context['javascript_translated_terms']})
     context['localized_language'] = LANGUAGES_DICT.get(get_language(), '')
-    cuteFormFieldsForContext({
-        'language': {
-            'selector': '#switchLanguage',
-            'choices': django_settings.LANGUAGES,
-        },
-    }, context)
+    if '/ajax/' not in context['current_url']:
+        cuteFormFieldsForContext({
+            'language': {
+                'selector': '#switchLanguage',
+                'choices': django_settings.LANGUAGES,
+            },
+        }, context)
     return context
 
 def getGlobalContext(request):
@@ -82,6 +83,7 @@ def getGlobalContext(request):
 
 def ajaxContext(request):
     context = RAW_CONTEXT.copy()
+    context['request'] = request
     return context
 
 def emailContext():
@@ -112,9 +114,10 @@ class CuteFormTransform:
     No, ImagePath, Flaticon, FlaticonWithText = range(4)
     default_field_type = [CuteFormType.Images, CuteFormType.Images, CuteFormType.HTML, CuteFormType.HTML]
 
-def cuteFormFieldsForContext(cuteform_fields, context, form=None):
+def cuteFormFieldsForContext(cuteform_fields, context, form=None, prefix=None):
     """
     Adds the necesary context to call cuteform in javascript.
+    Prefix is a prefix to add to all selectors. Can be useful to isolate your cuteform within areas of your page.
     cuteform_fields: must be a dictionary of {
       field_name: {
         type: CuteFormType.Images, .HTML, .YesNo or .OnlyNone, will be images if not specified,
@@ -171,13 +174,14 @@ def cuteFormFieldsForContext(cuteform_fields, context, form=None):
                 ]
         if not choices:
             continue
+        selector = u'{}{}'.format((prefix if prefix else ''), field['selector'])
         # Initialize cuteform dict for field
-        context['cuteform_fields'][field['selector']] = {
+        context['cuteform_fields'][selector] = {
             CuteFormType.to_string[field_type]: {},
         }
         # Add extra settings if any
         if 'extra_settings' in field:
-            context['cuteform_fields'][field['selector']].update(field['extra_settings'])
+            context['cuteform_fields'][selector].update(field['extra_settings'])
         for choice in choices:
             key, value = choice if isinstance(choice, tuple) else (choice.id, choice)
             if key == '':
@@ -208,10 +212,10 @@ def cuteFormFieldsForContext(cuteform_fields, context, form=None):
                 else:
                     cuteform = unicode(cuteform_value)
             # Add in key, value in context for field
-            context['cuteform_fields'][field['selector']][CuteFormType.to_string[field_type]][key] = cuteform
+            context['cuteform_fields'][selector][CuteFormType.to_string[field_type]][key] = cuteform
 
         # Store a JSON version to be displayed in Javascript
-        context['cuteform_fields_json'][field['selector']] = simplejson.dumps(context['cuteform_fields'][field['selector']])
+        context['cuteform_fields_json'][selector] = simplejson.dumps(context['cuteform_fields'][selector])
 
 ############################################################
 # Database upload to

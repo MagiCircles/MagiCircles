@@ -10,7 +10,7 @@
 {% endfor %}
 <script>
   {% if cuteform_fields %}{% for selector, json in cuteform_fields_json.items %}
-  cuteform($('{{ selector }}'), {{ json|safe }});
+  cuteform($('{{ selector|safe }}'), {{ json|safe }});
   {% endfor %}{% endif %}
 </script>
 {% block afterjs %}{% if ajax_callback %}

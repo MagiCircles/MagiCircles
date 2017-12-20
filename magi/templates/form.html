@@ -12,7 +12,7 @@
   {% for form_name, form in forms.items %}
   {% block beforeform %}{% endblock %}
   <h1 id="{{ form_name }}" class="text-center padding50 form-title">{% block imagetitle %}{% endblock %} {% block title %}{{ page_title }}{% endblock %}</h1>
-  <form method="POST" class="{% if not ajax %}container_form{% endif %} generic-form"{% if multipart %} enctype="multipart/form-data"{% endif %} action="{% if ajax %}{{ current_url }}{% else %}#{{ form_name }}{% endif %}">
+  <form method="POST" class="{% if not ajax %}container_form{% endif %} generic-form"{% if multipart %} enctype="multipart/form-data"{% endif %} action="{% if ajax %}{{ current_url }}{% else %}#{{ form_name }}{% endif %}" data-form-name="{{ form_name }}">
     {% block beforefields %}{% endblock %}
     {% block form %}
     {% csrf_token %}
