@@ -2442,11 +2442,63 @@ See ⎡[Translations](#translations)⎦.
 
 ## Disable activities
 
-todo
+`sample/settings.py`:
+
+```python
+from magi.default_settings import DEFAULT_ENABLED_PAGES
+
+ENABLED_PAGES = DEFAULT_ENABLED_PAGES
+ENABLED_PAGES['index']['enabled'] = True
+```
+
+`sample/magicollections.py`:
+
+```python
+from magi.magicollections import ActivityCollection as _ActivityCollection
+
+class ActivityCollection(_ActivityCollection):
+    enabled = False
+```
 
 ## Disable activities but keep news for staff members
 
-todo
+`sample/settings.py`:
+
+```python
+from magi.default_settings import DEFAULT_ENABLED_PAGES
+
+ENABLED_PAGES = DEFAULT_ENABLED_PAGES
+ENABLED_PAGES['index']['enabled'] = True
+```
+
+`sample/magicollections.py`:
+
+```python
+from magi.magicollections import ActivityCollection as _ActivityCollection
+
+class ActivityCollection(_ActivityCollection):
+    enabled = False
+
+Activity.collection_name = 'news'
+
+class NewsCollection(_ActivityCollection):
+    plural_name = 'news'
+    title = _('Staff News')
+    plural_title = _('Staff News')
+    reportable = False
+    queryset = Activity.objects.all()
+
+    class ListView(_ActivityCollection.ListView):
+        show_title = True
+        item_template = 'activityItem'
+        shortcut_urls = []
+
+    class ItemView(_ActivityCollection.ItemView):
+        template = 'activityItem'
+
+    class AddView(_ActivityCollection.AddView):
+        staff_required = True
+```
 
 Production Environment
 ===
