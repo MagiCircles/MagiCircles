@@ -608,9 +608,9 @@ class AddLinkForm(MagiForm):
         if instance.i_type == 'twitter':
             self.request.user.preferences._cache_twitter = instance.value
             self.request.user.preferences.save()
-            models.updateCachedActivities(self.request.user.id)
+            models.onPreferencesEdited(self.request.user)
             if ON_PREFERENCES_EDITED:
-                ON_PREFERENCES_EDITED(self.request)
+                ON_PREFERENCES_EDITED(self.request.user)
         return instance
 
     class Meta:
