@@ -2490,6 +2490,8 @@ class NewsCollection(_ActivityCollection):
     plural_title = _('Staff News')
     reportable = False
     queryset = Activity.objects.all()
+    navbar_link = True
+    navbar_link_list = 'more'
 
     class ListView(_ActivityCollection.ListView):
         show_title = True
