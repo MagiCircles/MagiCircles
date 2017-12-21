@@ -7,8 +7,7 @@ from django.utils.safestring import mark_safe
 from django.utils.formats import dateformat
 from django.core.exceptions import PermissionDenied
 from django.http import Http404
-from django.db.models import Count, Q, Prefetch
-
+from django.db.models import Count, Q, Prefetch, FieldDoesNotExist
 from magi.views import indexExtraContext
 from magi.utils import AttrDict, ordinalNumber, justReturn, propertyFromCollection, getMagiCollections, getMagiCollection, CuteFormType, CuteFormTransform, redirectWhenNotAuthenticated, custom_item_template, getAccountIdsFromSession
 from magi.raw import please_understand_template_sentence, donators_adjectives
@@ -947,6 +946,7 @@ class UserCollection(MagiCollection):
         shortcut_urls = [
             ('me', 'me'),
         ]
+        accounts_template = 'include/defaultAccountsForProfile'
 
         def get_item(self, request, pk):
             if pk == 'me':
@@ -984,13 +984,19 @@ class UserCollection(MagiCollection):
                 ),
             })
             queryset = queryset.select_related('preferences', 'favorite_character1', 'favorite_character2', 'favorite_character3')
-            queryset = queryset.prefetch_related(Prefetch('accounts', to_attr='all_accounts'), Prefetch('links', queryset=models.UserLink.objects.order_by('-i_relevance'), to_attr='all_links'))
+            try:
+                models.Account._meta.get_field('level')
+                has_level = True
+            except FieldDoesNotExist:
+                has_level = False
+            queryset = queryset.prefetch_related(Prefetch('accounts', queryset=models.Account.objects.order_by('-level' if has_level else '-id'), to_attr='all_accounts'), Prefetch('links', queryset=models.UserLink.objects.order_by('-i_relevance'), to_attr='all_links'))
             return queryset
 
         def extra_context(self, context):
             user = context['item']
             request = context['request']
             context['is_me'] = user.id == request.user.id
+            context['accounts_template'] = self.accounts_template
             account_collection = getMagiCollection('account')
 
             # Account buttons

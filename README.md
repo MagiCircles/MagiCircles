@@ -2770,6 +2770,19 @@ Migrate from MagiCircles1 to MagiCircles2
     - Add View: `filter_cuteform`, `max_per_user_per_hour`, `max_per_user_per_day`, `max_per_user`
     - Edit View: `form_class`, `get_item`
 
+1. **Specify your template for accounts in profile**
+
+    MagiCircles now provides a default template for accounts in profile. If you would like to keep the one you made
+    and not use the default one, specify it in your UserCollection ItemView:
+
+    ```python
+    from magi.magicollections import UserCollection as _UserCollection
+
+    class UserCollection(_UserCollection):
+        class ItemView(_UserCollection.ItemView):
+            accounts_template = 'accountsForProfile'
+    ```
+
 1. **Fix ON_USER_EDITED and ON_PREFERENCES_EDITED**
 
     Both used to take `request` as a parameter and now take the user that has been updated.

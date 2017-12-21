@@ -98,7 +98,7 @@
 	<h2>{% blocktrans count counter=length %}{{ length }} account:{% plural %}{{ length }} accounts:{% endblocktrans %}</h2>
 	{% endwith %}
 	{% endif %}
-	{% include 'accountsForProfile.html' %}
+	{% include accounts_template|add:'.html' %}
 	{% endif %}
 	<br><br>
 	{% include 'include/disqus.html' with disqus_identifier='user-'|addint:profile_user.id %}
