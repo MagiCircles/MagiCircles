@@ -1,6 +1,40 @@
-{% for item in profile_user.all_accounts %}
-<div class="row"><div class="col-md-12">
-    {% include 'items/defaultAccountItem.html' %}
-    {% include 'include/fields_table.html' with fields=item.fields bottom=True%}
-</div></div>
+{% load l10n %}
+{% for account in profile_user.all_accounts %}
+<div class="panel panel-{{ account.cached_owner.preferences.css_color }} panel-default-account"
+     data-account-id="{{ account.id }}">
+  <div class="panel-heading default-account">
+    <div class="row">
+      <div class="col-md-2">
+        {% include 'include/avatar.html' with av_user=account.owner av_size=30 av_image_size=100 av_fixed=True %}
+      </div>
+      <div class="col-md-8">
+        <h3 class="username">{{ account.cached_owner.username }}</h3>
+      </div>
+      <div class="col-md-2">
+        <h3 class="level">{{ account.level|default_if_none:"??" }}</h3>
+        {% if account.friend_id and account.show_friend_id %}<div class="friend_id"><small>{{ account.friend_id }}</small></div>{% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="panel-body">
+    <ul class="nav nav-tabs account-tabs">
+      {# account.tabs (o dict), .tabs_size, .opened_tab #}
+      {# tab.name, .icon, .image #}
+      {% for tab_name, tab in account.tabs.items %}
+      <li{% if account.opened_tab == tab_name %} class="active"{% endif %} style="width: {% localize off %}{{ account.tabs_size }}{% endlocalize %}%;"><a href="#account-{{ account.id }}-tab-{{ tab_name }}" data-toggle="tab">
+	  {% if tab.icon %}<i class="flaticon-{{ tab.icon }}"></i><span class="hidden-xs hidden-sm">{% endif %}
+	    {{ tab.name }}{% if tab.icon %}</span>{% endif %}
+      </a></li>
+      {% endfor %}
+    </ul>
+    <!-- Tab panes -->
+    <div class="tab-content">
+      {% for tab_name, tab in account.tabs.items %}
+      <div role="tabpanel" class="tab-pane{% if account.opened_tab == tab_name %} active{% endif %}" id="account-{{ account.id }}-tab-{{ tab_name }}" data-tab-name="{{ tab_name }}">{% if tab_name == 'about' %}
+        {% include 'include/fields_table.html' with item=account fields=account.fields bottom=True %}
+      {% endif %}</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
 {% endfor %}

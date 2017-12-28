@@ -245,6 +245,11 @@ class MagiCollection(object):
 
             class ListView(MagiCollection.ListView):
                 filter_form = _CollectibleFilterForm
+                item_padding = 0
+                item_buttons_classes = ['btn', 'btn-round']
+                show_item_buttons_as_icons = True
+                col_break = 'sm'
+                per_line = 6
 
             class ItemView(MagiCollection.ItemView):
                 enabled = False
@@ -834,9 +839,32 @@ class AccountCollection(MagiCollection):
     form_class = forms.AccountForm
 
     show_item_buttons = False
-    show_item_buttons_as_icons = True
-    item_buttons_classes = ['btn', 'btn-link']
     show_item_buttons_justified = False
+
+    def get_profile_account_tabs(self, request, context, account):
+        """
+        Ordered dict that:
+        - MUST contain name, callback (except for about)
+        - May contain icon, image, callback
+        """
+        tabs = OrderedDict()
+        if context['collectible_collections'] and 'account' in context['collectible_collections']:
+            for collection_name, collection in context['collectible_collections']['account'].items():
+                tabs[collection_name] = {
+                    'name': collection.plural_title,
+                    'icon': collection.icon,
+                    'image': collection.image,
+                    'callback': mark_safe(u'loadCollection(\'{load_url}\', {callback})'.format(
+                        load_url=collection.get_list_url_for_authenticated_owner(
+                            request, ajax=True, item=None, fk_as_owner=account.id),
+                        callback=collection.list_view.ajax_pagination_callback or 'undefined',
+                    )),
+                }
+        tabs['about'] = {
+            'name': _('About'),
+            'icon': 'about',
+        }
+        return tabs
 
     @property
     def report_edit_templates(self):
@@ -853,12 +881,37 @@ class AccountCollection(MagiCollection):
                     templates[u'Inappropriate {}'.format(name)] = 'Your account\'s {} was inappropriate. ' + please_understand_template_sentence.format(name)
         return templates
 
+    def to_fields(self, item, *args, **kwargs):
+        fields = super(AccountCollection, self).to_fields(item, *args, icons={
+            'creation': 'date',
+            'start_date': 'date',
+            'level': 'max-level',
+            'friend_id': 'id',
+        }, **kwargs)
+        if hasattr(item, 'cached_leaderboard') and item.cached_leaderboard:
+            fields['leaderboard'] = {
+                'verbose_name': _('Leaderboard position'),
+                'icon': 'trophy',
+            }
+            if item.cached_leaderboard > 3:
+                fields['leaderboard']['type'] = 'text'
+                fields['leaderboard']['value'] = u'#{}'.format(item.cached_leaderboard)
+            else:
+                fields['leaderboard']['type'] = 'image_link'
+                fields['leaderboard']['link'] = '/accounts/'
+                fields['leaderboard']['link_text'] = u'#{}'.format(item.cached_leaderboard)
+                fields['leaderboard']['value'] = item.leaderboard_image_url
+        return fields
+
     class ListView(MagiCollection.ListView):
         item_template = 'defaultAccountItem'
         show_edit_button_superuser_only = True
         show_title = True
         per_line = 1
         add_button_subtitle = _('Create your account to join the community and be in the leaderboard!')
+
+        show_item_buttons_as_icons = True
+        item_buttons_classes = ['btn', 'btn-link']
 
         def show_add_button(self, request):
             return not getAccountIdsFromSession(request)
@@ -1013,14 +1066,32 @@ class UserCollection(MagiCollection):
             context['is_me'] = user.id == request.user.id
             context['accounts_template'] = self.accounts_template
             account_collection = getMagiCollection('account')
+            afterjs = u'<script>'
 
-            # Account buttons
+            # Account buttons & tabs
+            afterjs += u'var account_tab_callbacks = {'
             if account_collection:
                 for account in user.all_accounts:
-                    account.buttons_to_show = account_collection.list_view.buttons_per_item(request, context, account)
-                    account.show_item_buttons_justified = account_collection.list_view.show_item_buttons_justified
-                    account.show_item_buttons_as_icons = account_collection.list_view.show_item_buttons_as_icons
-                    account.show_item_buttons_in_one_line = account_collection.list_view.show_item_buttons_in_one_line
+                    # Buttons
+                    account.buttons_to_show = account_collection.item_view.buttons_per_item(request, context, account)
+                    account.show_item_buttons_justified = account_collection.item_view.show_item_buttons_justified
+                    account.show_item_buttons_as_icons = account_collection.item_view.show_item_buttons_as_icons
+                    account.show_item_buttons_in_one_line = account_collection.item_view.show_item_buttons_in_one_line
+                    # Tabs
+                    account.tabs = account_collection.get_profile_account_tabs(request, context, account)
+                    account.tabs_size = 100 / len(account.tabs) if account.tabs else 100
+                    account.opened_tab = account.tabs.keys()[0] if account.tabs else None
+                    open_tab_key = u'account{}'.format(account.id)
+                    if open_tab_key in request.GET and request.GET[open_tab_key] in account.tabs:
+                        account.opened_tab = request.GET[open_tab_key]
+                    afterjs += u'\'{account_id}\': {{'.format(account_id=account.id)
+                    for tab_name, tab in account.tabs.items():
+                        if 'callback' in tab and tab['callback']:
+                            afterjs += u'\'{tab_name}\': {{\'callback\': {callback}, \'called\': false}},'.format(
+                                tab_name=tab_name, callback=tab['callback'],
+                            )
+                    afterjs += u'},'
+            afterjs += u'};'
 
             # Badges
             if 'badge' in context['all_enabled']:
@@ -1036,6 +1107,13 @@ class UserCollection(MagiCollection):
             context['opened_tab'] = context['profile_tabs'].keys()[0] if context['profile_tabs'] else None
             if 'open' in request.GET and request.GET['open'] in context['profile_tabs']:
                 context['opened_tab'] = request.GET['open']
+            afterjs += u'var tab_callbacks = {'
+            for tab_name, tab in context['profile_tabs'].items():
+                if 'callback' in tab and tab['callback']:
+                    afterjs += u'\'{tab_name}\': {{\'callback\': {callback}, \'called\': false}},'.format(
+                        tab_name=tab_name, callback=tab['callback'],
+                    )
+            afterjs += u'};'
 
             # Links
             context['item'].all_links = list(context['item'].all_links)
@@ -1098,6 +1176,10 @@ class UserCollection(MagiCollection):
                 context['add_account_sentence'] = account_collection.add_sentence
             context['share_sentence'] = _('Check out {username}\'s awesome collection!').format(username=context['item'].username)
             context['share_url'] = context['item'].http_item_url
+
+            # Afterjs
+            afterjs += u'</script>'
+            context['afterjs'] = afterjs
 
     class AddView(MagiCollection.AddView):
         enabled = False

@@ -120,13 +120,4 @@
 
   </div>
 </div>
-
-<script>
-  var tab_callbacks = {{% for tab_name, tab in profile_tabs.items %}{% if tab.callback %}
-    '{{ tab_name }}': {
-      'callback': '{{ tab.callback }}',
-      'called': false,
-     },{% endif %}{% endfor %}
-  };
-</script>
 {% endwith %}

@@ -32,6 +32,7 @@ collections = OrderedDict()
 enabled = {}
 all_enabled = []
 urls = []
+collectible_collections = {}
 
 ############################################################
 # Default enabled URLs (outside of collections + pages)
@@ -105,6 +106,10 @@ def _addToCollections(name, cls): # Class of the collection
                 collectible_collection = _addToCollections(model_class.collection_name, collectible_collection_class)
                 if collectible_collection:
                     collection.collectible_collections[collectible_collection.name] = collectible_collection
+                    fk_as_owner = collectible_collection.queryset.model.fk_as_owner or 'owner'
+                    if fk_as_owner not in collectible_collections:
+                        collectible_collections[fk_as_owner] = {}
+                    collectible_collections[fk_as_owner][collectible_collection.name] = collectible_collection
     return collection
 
 def _addToEnabledCollections(name, cls, is_custom):
@@ -306,6 +311,7 @@ if 'report' not in all_enabled:
 
 RAW_CONTEXT['all_enabled'] = all_enabled
 RAW_CONTEXT['magicollections'] = collections
+RAW_CONTEXT['collectible_collections'] = collectible_collections
 RAW_CONTEXT['account_model'] = ACCOUNT_MODEL
 RAW_CONTEXT['site_name'] = SITE_NAME
 RAW_CONTEXT['site_url'] = SITE_URL

@@ -1153,3 +1153,47 @@ nav {
         }
     }
 }
+
+.panel-default-account {
+    border-radius: 10px;
+    .default-account {
+        border-radius: 9px 9px 0 0;
+        padding: 40px 60px;
+        padding-bottom: 80px;
+    }
+    .panel-body {
+        padding: 30px;
+        padding-top: 0;
+        margin-top: -45px;
+    }
+    .account-tabs {
+        margin-bottom: 20px;
+        &>li>a {
+            border-radius: 10px 10px 0 0;
+            border-bottom: 0;
+            transition: color @transition, background-color @transition, border-color @transition;
+            [class^="flaticon-"], img {
+                padding: 0 8px;
+            }
+        }
+        &>li.active>a, &>li.active>a:focus, &>li.active>a:hover {
+            border-color: white;
+            border-bottom: 0;
+        }
+        &>li:not(.active)>a {
+            color: white;
+            &:hover, &:focus {
+                color: inherit;
+                border-bottom: 0;
+            }
+        }
+    }
+    .about-table {
+        margin-bottom: 0;
+        tr:first-child {
+            td, th {
+                border-top: 0;
+            }
+        }
+    }
+}
