@@ -1018,6 +1018,7 @@ List view for a staff member will hide all the staff buttons by default and you 
 | auto_reloader | Should items be automatically reloaded when there is a change in ajax? (for example, when an item is edited through a modal within the same page) | True | |
 | item_buttons_classes | Classes used for the buttons under items. Can be specified in collection. | Value from collection | |
 | item_template | Path of the HTML template in `sample/templates/items/` to display the item (without `.html`). If you don't want to use the default one, it's highly recommended to use the standard name for custom templates. To do so, use `custom_item_template` in `magi.utils`. | "default_item_in_list" | "cardDetails" |
+| item_padding | Padding (in px) around the item, only applied when using the default template. | 20 | |
 | before_template | Name of a template to include between the title (if shown) and the add buttons (if any) and results (without `.html`) | None | "include/beforeCards" |
 | after_template | Name of a template to include at the end of the list, when the last page loads (without `.html`), if you provide something in `extra_context` for this template, first check `if context['is_last_page']: ...` | None | "include/afterCards" |
 | no_result_template | Name of a template to show if there's no results to show, otherwise it will just show "No result" in a bootstrap `alert-info` | None | "include/cardsNoResult" |
@@ -1080,6 +1081,7 @@ todo
 |-----|-------|---------|---------|
 | item_buttons_classes | Classes used for the buttons under items. Can be specified in collection. | Value from collection | |
 | template | Path of the HTML template in `sample/templates/items/` to display the item (without `.html`). By default, will use the defaut view with the image on top and the list of fields below it. See ⎡[to_fields method](#to_field-method)⎦ for more details about the `default` template. If you don't want to use the default one, it's highly recommended to use the standard name for custom templates. To do so, use `custom_item_template` in `magi.utils`. | "default" | "cardItem" |
+| item_padding | Padding (in px) around the item, only applied when using the default template. | 20 | |
 | top_illustration | If the `default` template is used, it will show either the `image` in the object or its name. You may display something else by specifying the path of a HTML template (full path in template folder), without `.html`. | None | `include/topCard` |
 | show_edit_button | Should a button to edit the item be displayed under the item (if the user has permissions to edit)? Set this to `False` is your template already includes a button to edit the item. | True | |
 | comments_enabled | Should we display a comment section below the item? | True | |
@@ -2765,8 +2767,8 @@ Migrate from MagiCircles1 to MagiCircles2
     - All views: `ajax_callback`, `check_owner_permissions`, `check_permissions`, `enabled`, `get_queryset`, `logout_required`, `multipart`, `owner_only`, `shortcut_urls`
         - Note: `filter_queryset` is now called `get_queryset` and should be used for semantically different operations. Filtering should be done using `MagiFiltersForm`.
         - Note: `types` is not in the collection itself and not per view.
-    - List View: `filter_cuteform`, `hide_sidebar`, `item_template`, `show_edit_button`, `show_relevant_fields_on_ordering`
-    - Item View: `show_edit_button`, `top_illustration`, `get_item`, `reverse_url`
+    - List View: `filter_cuteform`, `hide_sidebar`, `item_template`, `show_edit_button`, `show_relevant_fields_on_ordering`, `item_padding`
+    - Item View: `show_edit_button`, `top_illustration`, `get_item`, `reverse_url`, `item_padding`
     - Add View: `filter_cuteform`, `max_per_user_per_hour`, `max_per_user_per_day`, `max_per_user`
     - Edit View: `form_class`, `get_item`
 

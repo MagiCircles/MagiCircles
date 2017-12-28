@@ -1,4 +1,4 @@
-<div class="padding20 text-center top-item">
+<div class="text-center top-item" style="padding: {{ item_padding }}px;">
   {% if item_view_enabled %}
   <a href="{{ item.item_url }}"{% if ajax_item_view_enabled %} data-ajax-url="{{ item.ajax_item_url }}" data-ajax-title="{{ item }}"{% endif %}>
     {% endif %}

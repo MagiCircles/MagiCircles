@@ -557,6 +557,7 @@ class MagiCollection(object):
         per_line = 3
         col_break = 'md'
         page_size = 12
+        item_padding = 20 # Only used with default item template
 
         item_buttons_classes = property(propertyFromCollection('item_buttons_classes'))
         show_item_buttons = property(propertyFromCollection('show_item_buttons'))
@@ -670,6 +671,7 @@ class MagiCollection(object):
         full_width = False
         auto_reloader = True
         template = 'default'
+        item_padding = 20 # Only used with default item template
 
         @property
         def show_item_buttons(self):

@@ -78,6 +78,7 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
     context['reportable'] = collection.reportable
     context['share_image'] = _get_share_image(context, collection.item_view, item=context['item'])
     context['comments_enabled'] = collection.item_view.comments_enabled
+    context['item_padding'] = collection.item_view.item_padding
     context['item_template'] = collection.item_view.template
     context['full_width'] = collection.item_view.full_width
     context['ajax_callback'] = collection.item_view.ajax_callback
@@ -202,6 +203,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['no_result_template'] = collection.list_view.no_result_template
     context['after_template'] = collection.list_view.after_template
     context['item_template'] = collection.list_view.item_template
+    context['item_padding'] = collection.list_view.item_padding
     context['show_title'] = collection.list_view.show_title
     context['plural_title'] = collection.plural_title
     context['ajax_pagination'] = collection.list_view.ajax
