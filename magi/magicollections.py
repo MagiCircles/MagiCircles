@@ -194,6 +194,16 @@ class MagiCollection(object):
                 hidden_foreign_keys = [item_field_name]
 
         class _CollectibleFilterForm(forms.MagiFiltersForm):
+            def __init__(self, *args, **kwargs):
+                super(_CollectibleFilterForm, self).__init__(*args, **kwargs)
+                self.fields['owner'] = forms.forms.IntegerField(required=False)
+                self.owner_filter = forms.MagiFilter(selector=model_class.selector_to_owner())
+                if model_class.fk_as_owner:
+                    self.fields[model_class.fk_as_owner] = forms.forms.IntegerField(required=False)
+                    setattr(self, u'{}_filter'.format(model_class.fk_as_owner), forms.MagiFilter(
+                        selector=model_class.fk_as_owner
+                    ))
+
             class Meta:
                 model = model_class
                 fields = '__all__'
@@ -207,14 +217,17 @@ class MagiCollection(object):
             reportable = False
             form_class = _CollectibleForm
 
-            def get_list_url_for_authenticated_owner(self, request, ajax, item=None):
-                url = u'{url}?owner_id={owner_id}{item}'.format(
+            def get_list_url_for_authenticated_owner(self, request, ajax, item=None, fk_as_owner=None):
+                url = u'{url}?{parameters}'.format(
                     url=self.get_list_url(ajax=ajax),
-                    owner_id=request.user.id,
-                    item=u'&{}={}'.format(
-                        item_field_name,
-                        getattr(item, item_field_name_id),
-                    ) if item else '',
+                    parameters=u'&'.join([p for p in [
+                        u'owner={}'.format(request.user.id) if not fk_as_owner else None,
+                        u'{}={}'.format(
+                            item_field_name,
+                            getattr(item, item_field_name_id),
+                        ) if item else None,
+                        u'{}={}'.format(model_class.fk_as_owner, fk_as_owner) if fk_as_owner else None,
+                    ] if p is not None]),
                 )
                 return url
 
