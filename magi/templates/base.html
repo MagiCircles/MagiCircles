@@ -183,8 +183,8 @@
       cuteform($('{{ selector|safe }}'), {{ json|safe }});
       {% endfor %}{% endif %}
     </script>
-    {% block js %}{% endblock %}
-    {% block js2 %}{% endblock %}
+    {% block js %}{% endblock %}{% if js %}{{ js }}{% endif %}
+    {% block js2 %}{% endblock %}{% if js %}{{ js2 }}{% endif %}
     <script src="{{ static_url }}js/magi_main.js?{{ static_files_version }}"></script>
     <script src="{{ static_url }}js/main.js?{{ static_files_version }}"></script>
     {% for js_file in js_files %}
@@ -197,7 +197,7 @@
     });
     </script>
     {% endif %}
-    {% block afterjs %}{% endblock %}
+    {% block afterjs %}{% endblock %}{% if afterjs %}{{ afterjs|safe }}{% endif %}
 
     <script>
 	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
