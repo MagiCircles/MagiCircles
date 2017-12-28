@@ -1,0 +1,35 @@
+@import "../../bower/bootstrap/less/mixins/alerts.less";
+@import "a.less";
+
+.alert-simple-variant(@color) {
+    .alert-variant(lighten(@color, 30%), lighten(@color, 20%), white);
+}
+
+.panel-simple-variant(@color) {
+     .panel-variant(lighten(@color, 20%), #fff, @color, lighten(@color, 20%));
+}
+
+.progress-bar-variant(@color) {
+    background-color: @color;
+}
+
+.jumbotron_per_color(@color) {
+    background-image: linear-gradient(290deg, lighten(@color, 10%), @color);
+    color: white;
+    .a-variant(lighten(@color, 30%));
+    h1, h2, h3, h4, h5, h6 {
+	color: @color;
+	color: white;
+    }
+    &+div:not(.empty) table td {
+	background-color: @color;
+	&:hover, &:focus {
+	    background-color: darken(@color, 10%);
+	}
+    }
+}
+
+.well_per_color(@color) {
+    .well-variant(@color, white);
+    background-image: linear-gradient(290deg, lighten(@color, 10%), @color);
+}

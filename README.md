@@ -207,6 +207,7 @@ cd ${GITFOLDER}/
    python manage.py makemigrations ${PROJECTNAME}
    python manage.py migrate
    bower install
+   python manage.py generate_css
    python manage.py runserver
    ```
    Open http://localhost:8000/
@@ -407,18 +408,37 @@ The ⎡[Quick Start](#quick-start)⎦ section above will do all this for you, bu
 
 17. Create your LESS main file in `sample/static/less/style.less`:
    ```css
-   @import "main.less";
-   @import "mixins/buttons.less";
-   @import "mixins/a.less";
+    /* Uncomment this line when you need to compile LESS -> CSS */
+    /* @import "../../../env/lib/python2.7/site-packages/magi/static/less/main.less"; */
 
-   @mainColor: #4a86e8;
-   @secondaryColor: #f5f07b;
+    /* Comment this line when you need to compile LESS -> CSS */
+    @import "main.less";
 
-   html {
-       .setup-sidebar(@mainColor);
-       .magicircles(@mainColor, @secondaryColor);
-   }
-   ```
+    /******************************************/
+    /* Variables */
+
+    @mainColor: #4a86e8;
+    @secondaryColor: #73c024;
+
+    /******************************************/
+    /* Tools */
+
+    /******************************************/
+    /* MagiCircles */
+
+    html {
+        .setup-sidebar(@mainColor);
+        .magicircles(@mainColor, @secondaryColor);
+    }
+
+    @import "generated_colors.less";
+
+    /******************************************/
+    /* Single pages */
+
+    /******************************************/
+    /* MagiCollections */
+    ```
    You may customize the content depending on the page you're on using `.current-page` where page corresponds to the page name (example: `current-index`, `current-card_list`, ...).
 
 18. Create your Javascript main file in `sample/static/js/main.js`:
@@ -461,6 +481,7 @@ The ⎡[Quick Start](#quick-start)⎦ section above will do all this for you, bu
    ```shell
    npm install -g less bower
    bower install
+   python manage.py generate_css
    ```
 
 21. Initialize the models:

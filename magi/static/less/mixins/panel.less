@@ -61,3 +61,7 @@
     }
     .a-variant(@color);
 }
+
+.panel-simple-variant(@color) {
+    .panel-variant(lighten(@color, 20%), #fff, @color, lighten(@color, 20%));
+}
