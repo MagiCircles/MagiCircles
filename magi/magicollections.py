@@ -1465,12 +1465,13 @@ class BadgeCollection(MagiCollection):
         alert_duplicate = False
 
         def extra_context(self, context):
-            if hasattr(context['forms']['add'], 'badge'):
-                context['alert_message'] = string_concat(_('Badge'), ': ', unicode(context['forms']['add'].badge))
+            form_name = u'add_{}'.format(self.name)
+            if hasattr(context['forms'][form_name], 'badge'):
+                context['alert_message'] = string_concat(_('Badge'), ': ', unicode(context['forms'][form_name].badge))
                 context['alert_type'] = 'info'
                 context['alert_flaticon'] = 'about'
-                context['alert_button_string'] = context['forms']['add'].badge.open_sentence
-                context['alert_button_link'] = context['forms']['add'].badge.item_url
+                context['alert_button_string'] = context['forms'][form_name].badge.open_sentence
+                context['alert_button_link'] = context['forms'][form_name].badge.item_url
 
     class EditView(MagiCollection.EditView):
         staff_required = True
