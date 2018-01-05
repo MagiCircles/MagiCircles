@@ -64,6 +64,11 @@
 	  (<span class="current_timezone">UTC</span>)
 	</span><br>
 	{% endfor %}
+        {% if field.ago %}
+        <small class="text-muted"><span class="timezone" data-timeago="true" style="display: none;">
+	    <span class="datetime">{{ field.value|torfc2822 }}</span>
+	</span></small>
+        {% endif %}
 	{% elif field.type == 'long_text' %}
         <strong class="long-text-title">{{ field.verbose_name }}</strong>
         {{ field.value }}

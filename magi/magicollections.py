@@ -363,7 +363,7 @@ class MagiCollection(object):
         - images_links (needs images with 'value', 'ajax_link', 'link', 'link_text')
         - button (needs 'link_text')
         - text_with_link (needs 'link' and 'link_text', will show a 'View all' button)
-        - timezone_datetime (useful when showing another timezone, otherwise use text. needs 'timezones' list. can be 'local')
+        - timezone_datetime (needs 'ago' and 'timezones' list. can be 'local')
         - long_text
         - html
         Optional parameters:
@@ -444,6 +444,11 @@ class MagiCollection(object):
             elif (isinstance(field, models.models.BooleanField)
                   or isinstance(field, models.models.NullBooleanField)):
                 d['type'] = 'bool'
+            elif (isinstance(field, models.models.DateField)
+                  or isinstance(field, models.models.DateTimeField)):
+                d['type'] = 'timezone_datetime'
+                d['timezones'] = ['Local time']
+                d['ago'] = True
             elif isinstance(field, models.models.FileField):
                 d['type'] = 'link'
                 d['link_text'] = t['Download']
