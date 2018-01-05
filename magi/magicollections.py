@@ -203,10 +203,10 @@ class MagiCollection(object):
         class _CollectibleFilterForm(forms.MagiFiltersForm):
             def __init__(self, *args, **kwargs):
                 super(_CollectibleFilterForm, self).__init__(*args, **kwargs)
-                self.fields['owner'] = forms.forms.IntegerField(required=False, widget=forms.HiddenInput)
+                self.fields['owner'] = forms.forms.IntegerField(required=False, widget=forms.forms.HiddenInput)
                 self.owner_filter = forms.MagiFilter(selector=model_class.selector_to_owner())
                 if model_class.fk_as_owner:
-                    self.fields[model_class.fk_as_owner] = forms.forms.IntegerField(required=False, widget=forms.HiddenInput)
+                    self.fields[model_class.fk_as_owner] = forms.forms.IntegerField(required=False, widget=forms.forms.HiddenInput)
                     setattr(self, u'{}_filter'.format(model_class.fk_as_owner), forms.MagiFilter(
                         selector=model_class.fk_as_owner
                     ))
