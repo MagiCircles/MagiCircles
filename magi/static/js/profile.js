@@ -93,6 +93,7 @@ function onProfileTabOpened() {
     if (typeof tab_callbacks[tab_name] != 'undefined') {
 	if (!tab_callbacks[tab_name]['called']) {
 	    var user_id = $('#username').data('user-id');
+	    $('#profile' + tab_name).html('<div class="loader"><i class="flaticon-loading"></i></div>');
 	    tab_callbacks[tab_name]['callback'](tab_name, user_id, function(data, onDone) {
 		if (typeof data != 'undefined') {
 		    $('#profile' + tab_name).html(data);
@@ -125,6 +126,7 @@ function onProfileAccountTabOpened(account_elt) {
     if (account_tab_callbacks
         && account_tab_callbacks[account_id]
         && typeof account_tab_callbacks[account_id][tab_name] != 'undefined') {
+        account_elt.find('#account-' + account_id + '-tab-' + tab_name).html('<div class="loader"><i class="flaticon-loading"></i></div>');
 	if (!account_tab_callbacks[account_id][tab_name]['called']) {
 	    var user_id = $('#username').data('user-id');
 	    account_tab_callbacks[account_id][tab_name]['callback'](tab_name, user_id, account_id, function(data, onDone) {

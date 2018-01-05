@@ -669,7 +669,7 @@ function confirmModal(onConfirmed, onCanceled /* optional */, title /* optional 
 
 function load_more_function(nextPageUrl, newPageParameters, newPageCallback /* optional */, onClick) {
     var button = $('#load_more');
-    button.html('<div class="loader">Loading...</div>');
+    button.html('<div class="loader"><i class="flaticon-loading"></i></div>');
     var next_page = button.attr('data-next-page');
     $.get(nextPageUrl + location.search + (location.search == '' ? '?' : '&') + 'page=' + next_page + newPageParameters, function(data) {
 	button.replaceWith(data);
