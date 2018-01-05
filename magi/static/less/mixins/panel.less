@@ -19,10 +19,24 @@
             @media(max-width:768px) {
                 background-image: linear-gradient(160deg, fade(@heading-bg-color, 95%), @transparent, @transparent, fade(@heading-bg-color, 95%));
             }
+            text-shadow:
+            1px 1px 0 @heading-bg-color,
+            -1px -1px 0 @heading-bg-color,
+            1px -1px 0 @heading-bg-color,
+            -1px 1px 0 @heading-bg-color,
+            1px 1px 0 @heading-bg-color;
         }
     }
     .nav-tabs {
         background-image: linear-gradient(0deg, fade(@heading-bg-color, 50%), @transparent);
+        &> li:not(.active) > a:not(:hover):not(:focus) {
+            text-shadow:
+            1px 1px 0 @heading-bg-color,
+            -1px -1px 0 @heading-bg-color,
+            1px -1px 0 @heading-bg-color,
+            -1px 1px 0 @heading-bg-color,
+            1px 1px 0 @heading-bg-color;
+        }
     }
     & > .panel-footer {
 	+ .panel-collapse > .panel-body {

@@ -116,7 +116,10 @@ class MagiCollection(object):
                 return queryset
             account_ids = getAccountIdsFromSession(request)
             for name, collection in self.collectible_collections.items():
-                if isinstance(view.show_collect_button, dict) and not view.show_collect_button.get(name, True):
+                if (not collection.add_view.enabled
+                    or (isinstance(view.show_collect_button, dict)
+                        and not view.show_collect_button.get(name, True))
+                    or not collection.add_view.has_permissions(request, {})):
                     continue
                 item_field_name = snakecase(self.queryset.model.__name__)
                 fk_owner = collection.queryset.model.fk_as_owner if collection.queryset.model.fk_as_owner else 'owner'
