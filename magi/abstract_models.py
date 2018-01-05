@@ -132,6 +132,8 @@ class BaseAccount(CacheOwner):
     start_date = models.DateField(_('Start Date'), null=True)
     level = models.PositiveIntegerField(_('Level'), null=True)
 
+    default_tab = models.CharField(_('Default tab'), max_length=100, null=True)
+
     show_friend_id = True
 
     # Share URL

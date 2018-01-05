@@ -63,6 +63,7 @@ class UserPreferences(BaseMagiModel):
     favorite_character3 = models.CharField(verbose_name=_('{nth} Favorite Character').format(nth=_('3rd')), null=True, max_length=200)
     color = models.CharField(_('Color'), max_length=100, null=True, blank=True)
     birthdate = models.DateField(_('Birthdate'), blank=True, null=True)
+    default_tab = models.CharField(_('Default tab'), max_length=100, null=True)
     location = models.CharField(_('Location'), max_length=200, null=True, blank=True, help_text=string_concat(_('The city you live in.'), ' ', _('It might take up to 24 hours to update your location on the map.')))
     location_changed = models.BooleanField(default=False)
     latitude = models.FloatField(null=True, blank=True)

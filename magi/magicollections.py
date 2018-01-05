@@ -990,6 +990,8 @@ class AccountCollection(MagiCollection):
                 fields['leaderboard']['value'] = item.leaderboard_image_url
         if 'nickname' in fields:
             del(fields['nickname'])
+        if 'default_tab' in fields:
+            del(fields['default_tab'])
         return fields
 
     class ListView(MagiCollection.ListView):
@@ -1176,6 +1178,8 @@ class UserCollection(MagiCollection):
                     account.tabs_size = 100 / len(account.tabs) if account.tabs else 100
                     account.opened_tab = account.tabs.keys()[0] if account.tabs else None
                     open_tab_key = u'account{}'.format(account.id)
+                    if account.default_tab and account.default_tab in account.tabs:
+                        account.opened_tab = account.default_tab
                     if open_tab_key in request.GET and request.GET[open_tab_key] in account.tabs:
                         account.opened_tab = request.GET[open_tab_key]
                     afterjs += u'\'{account_id}\': {{'.format(account_id=account.id)
@@ -1211,6 +1215,8 @@ class UserCollection(MagiCollection):
 
             context['profile_tabs_size'] = 100 / len(context['profile_tabs']) if context['profile_tabs'] else 100
             context['opened_tab'] = context['profile_tabs'].keys()[0] if context['profile_tabs'] else None
+            if user.preferences.default_tab and user.preferences.default_tab in context['profile_tabs']:
+                context['opened_tab'] = user.preferences.default_tab
             if 'open' in request.GET and request.GET['open'] in context['profile_tabs']:
                 context['opened_tab'] = request.GET['open']
             afterjs += u'var tab_callbacks = {'

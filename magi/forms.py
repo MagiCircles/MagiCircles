@@ -19,7 +19,8 @@ from django.shortcuts import get_object_or_404
 from magi.middleware.httpredirect import HttpRedirectException
 from magi.django_translated import t
 from magi import models
-from magi.settings import FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTERS, USER_COLORS, GAME_NAME, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, ON_PREFERENCES_EDITED
+from magi.default_settings import RAW_CONTEXT
+from magi.settings import FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTERS, USER_COLORS, GAME_NAME, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, ON_PREFERENCES_EDITED, PROFILE_TABS
 from magi.utils import ordinalNumber, randomString, shrinkImageFromData, getMagiCollection, getAccountIdsFromSession
 
 ############################################################
@@ -441,6 +442,18 @@ class AccountForm(AutoForm):
         if self.is_creating and 'nickname' in self.fields:
             if len(getAccountIdsFromSession(self.request)) == 0:
                 self.fields['nickname'].widget = self.fields['nickname'].hidden_widget()
+        if 'default_tab' in self.fields:
+            if self.is_creating or not self.collection or not hasattr(self.collection, 'get_profile_account_tabs'):
+                del(self.fields['default_tab'])
+            else:
+                self.fields['default_tab'] = forms.ChoiceField(
+                    required=False,
+                    choices=BLANK_CHOICE_DASH + [
+                        (tab_name, tab['name'])
+                        for tab_name, tab in
+                        self.collection.get_profile_account_tabs(self.request, RAW_CONTEXT, self.instance).items()
+                    ],
+                )
 
     class Meta:
         model = models.Account
@@ -541,6 +554,13 @@ class EmailsPreferencesForm(MagiForm):
 
 class UserPreferencesForm(MagiForm):
     color = forms.ChoiceField(required=False, choices=[], label=_('Color'))
+    default_tab = forms.ChoiceField(
+        required=False,
+        choices=BLANK_CHOICE_DASH + [
+            (tab_name, tab['name'])
+            for tab_name, tab in PROFILE_TABS.items()
+        ],
+    )
 
     def __init__(self, *args, **kwargs):
         super(UserPreferencesForm, self).__init__(*args, **kwargs)
@@ -592,7 +612,7 @@ class UserPreferencesForm(MagiForm):
 
     class Meta:
         model = models.UserPreferences
-        fields = ('description', 'location', 'favorite_character1', 'favorite_character2', 'favorite_character3', 'color', 'birthdate','i_language', 'view_activities_language_only')
+        fields = ('description', 'location', 'favorite_character1', 'favorite_character2', 'favorite_character3', 'color', 'birthdate','i_language', 'view_activities_language_only', 'default_tab')
 
 class StaffEditUser(_UserCheckEmailUsernameForm):
     force_remove_avatar = forms.BooleanField(required=False)
