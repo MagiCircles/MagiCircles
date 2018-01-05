@@ -14,6 +14,7 @@ from django.utils.translation import ugettext_lazy as _, string_concat, get_lang
 from django.utils.safestring import mark_safe
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.core.files.uploadedfile import InMemoryUploadedFile, TemporaryUploadedFile
+from django.core.validators import MinValueValidator
 from django.shortcuts import get_object_or_404
 from magi.middleware.httpredirect import HttpRedirectException
 from magi.django_translated import t
@@ -36,6 +37,9 @@ def date_input(field, value=None):
         'class': 'calendar-widget',
         'data-role': 'data',
     })
+    field.validators += [
+        MinValueValidator(datetime.date(1900, 1, 2)),
+    ]
     field.help_text = 'yyyy-mm-dd'
     field.input_formats = [
         '%Y-%m-%d'
