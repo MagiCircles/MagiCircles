@@ -988,6 +988,8 @@ class AccountCollection(MagiCollection):
                 fields['leaderboard']['link'] = '/accounts/'
                 fields['leaderboard']['link_text'] = u'#{}'.format(item.cached_leaderboard)
                 fields['leaderboard']['value'] = item.leaderboard_image_url
+        if 'nickname' in fields:
+            del(fields['nickname'])
         return fields
 
     class ListView(MagiCollection.ListView):

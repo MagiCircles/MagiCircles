@@ -19,7 +19,7 @@ from magi.middleware.httpredirect import HttpRedirectException
 from magi.django_translated import t
 from magi import models
 from magi.settings import FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTERS, USER_COLORS, GAME_NAME, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, ON_PREFERENCES_EDITED
-from magi.utils import ordinalNumber, randomString, shrinkImageFromData, getMagiCollection
+from magi.utils import ordinalNumber, randomString, shrinkImageFromData, getMagiCollection, getAccountIdsFromSession
 
 ############################################################
 # Internal utils
@@ -434,11 +434,14 @@ class AccountForm(AutoForm):
                 del(self.fields['center'])
             else:
                 self.fields['center'].queryset = self.fields['center'].queryset.filter(account=self.instance.id)
+        if self.is_creating and 'nickname' in self.fields:
+            if len(getAccountIdsFromSession(self.request)) == 0:
+                self.fields['nickname'].widget = self.fields['nickname'].hidden_widget()
 
     class Meta:
         model = models.Account
         fields = '__all__'
-        optional_fields = ('start_date', 'level', 'center', 'friend_id')
+        optional_fields = ('start_date', 'level', 'center', 'friend_id', 'nickname')
         save_owner_on_creation = True
 
 ############################################################

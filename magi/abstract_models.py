@@ -123,13 +123,14 @@ class CacheOwner(MagiModel):
 
 class BaseAccount(CacheOwner):
     # If you're willing to add a unique code allowing users to find the real account in the game,
-    # use one of the following names: friend_id, friend_code, account_id, account_code
+    # use a field name "friend_id"
     collection_name = 'account'
 
     owner = models.ForeignKey(User, related_name='accounts')
     creation = models.DateTimeField(_('Join Date'), auto_now_add=True)
+    nickname = models.CharField(_('Nickname'), max_length=200, null=True, help_text=_('Give a nickname to your new account to easily differenciate it from your other accounts when you\'re managing them.'))
     start_date = models.DateField(_('Start Date'), null=True)
-    level = models.PositiveIntegerField(_("Level"), null=True)
+    level = models.PositiveIntegerField(_('Level'), null=True)
 
     show_friend_id = True
 
@@ -165,7 +166,11 @@ class BaseAccount(CacheOwner):
         return get_image_url_from_path(u'static/img/badges/medal{}.png'.format(4 - self.cached_leaderboard))
 
     def __unicode__(self):
-        return u'#{} {}'.format(self.id, u'Level {}'.format(self.level) if self.level else '')
+        if self.id:
+            return u'{} {}'.format(
+                self.nickname if self.nickname else self.cached_owner.username,
+                _(u'Level {}').format(self.level) if self.level else '')
+        return u'Level {}'.format(self.level) if self.level else ''
 
     class Meta:
         abstract = True
