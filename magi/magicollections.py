@@ -107,10 +107,17 @@ class MagiCollection(object):
         return self.plural_title
 
     def get_queryset(self, queryset, parameters, request):
+        return queryset
+
+    def _collectibles_queryset(self, view, queryset, request):
         # Select related total collectible for authenticated user
         if request.user.is_authenticated() and self.collectible_collections:
+            if not view.show_collect_button:
+                return queryset
             account_ids = getAccountIdsFromSession(request)
-            for collection in self.collectible_collections.values():
+            for name, collection in self.collectible_collections.items():
+                if isinstance(view.show_collect_button, dict) and not view.show_collect_button.get(name, True):
+                    continue
                 item_field_name = snakecase(self.queryset.model.__name__)
                 fk_owner = collection.queryset.model.fk_as_owner if collection.queryset.model.fk_as_owner else 'owner'
                 fk_owner_ids = ','.join(unicode(i) for i in (
@@ -487,48 +494,52 @@ class MagiCollection(object):
         ])
         # Collectible buttons
         for name, collectible_collection in self.collectible_collections.items():
-            if collectible_collection.add_view.enabled:
-                extra_attributes = {}
-                url_to_collectible_add_with_item = lambda url: u'{url}?{item_name}_id={item_id}'.format(
-                    url=url, item_name=self.name, item_id=item.id)
-                buttons[name]['show'] = view.show_collect_button[name] if isinstance(view.show_collect_button, dict) else view.show_collect_button
-                buttons[name]['title'] = collectible_collection.add_sentence
-                buttons[name]['badge'] = getattr(item, u'total_{}'.format(name), 0)
-                buttons[name]['icon'] = 'add'
-                buttons[name]['image'] = collectible_collection.image
-                if collectible_collection.add_view.unique_per_owner:
-                    extra_attributes['unique-per-owner'] = 'true'
-                if collectible_collection.add_view.quick_add_to_collection:
-                    extra_attributes['quick-add-to-collection'] = 'true'
-                    extra_attributes['parent-item'] = self.name
-                    add_to_id_from_request = request.GET.get(u'add_to_{}'.format(collectible_collection.name))
-                    if add_to_id_from_request:
-                        extra_attributes['quick-add-to-id'] = add_to_id_from_request
-                        extra_attributes['quick-add-to-fk-as-owner'] = collectible_collection.queryset.model.fk_as_owner or 'owner'
+            if (not view.show_collect_button
+                or (isinstance(view.show_collect_button, dict) and not view.show_collect_button.get(name, True))
+                or not collectible_collection.add_view.enabled):
+                del(buttons[name])
+                continue
+            extra_attributes = {}
+            url_to_collectible_add_with_item = lambda url: u'{url}?{item_name}_id={item_id}'.format(
+                url=url, item_name=self.name, item_id=item.id)
+            buttons[name]['show'] = view.show_collect_button[name] if isinstance(view.show_collect_button, dict) else view.show_collect_button
+            buttons[name]['title'] = collectible_collection.add_sentence
+            buttons[name]['badge'] = getattr(item, u'total_{}'.format(name), 0)
+            buttons[name]['icon'] = 'add'
+            buttons[name]['image'] = collectible_collection.image
+            if collectible_collection.add_view.unique_per_owner:
+                extra_attributes['unique-per-owner'] = 'true'
+            if collectible_collection.add_view.quick_add_to_collection:
+                extra_attributes['quick-add-to-collection'] = 'true'
+                extra_attributes['parent-item'] = self.name
+                add_to_id_from_request = request.GET.get(u'add_to_{}'.format(collectible_collection.name))
+                if add_to_id_from_request:
+                    extra_attributes['quick-add-to-id'] = add_to_id_from_request
+                    extra_attributes['quick-add-to-fk-as-owner'] = collectible_collection.queryset.model.fk_as_owner or 'owner'
 
-                if collectible_collection.add_view.unique_per_owner and collectible_collection.add_view.quick_add_to_collection:
-                    delete_sentence = unicode(_('Delete {thing}')).format(thing=unicode(collectible_collection.title).lower())
-                    if buttons[name]['badge'] > 0:
-                        extra_attributes['alt-message'] = buttons[name]['title']
-                        buttons[name]['ajax_title'] = buttons[name]['title']
-                        buttons[name]['title'] = delete_sentence
-                    else:
-                        extra_attributes['alt-message'] = delete_sentence
-                if (collectible_collection.add_view.authentication_required
-                    and not collectible_collection.add_view.staff_required
-                    and not request.user.is_authenticated()):
-                    buttons[name]['has_permissions'] = True
-                    buttons[name]['url'] = u'/signup/?next={url}&next_title={title}'.format(
-                        url=url_to_collectible_add_with_item(collectible_collection.get_add_url()),
-                        title=item.edit_sentence,
-                    )
+            if collectible_collection.add_view.unique_per_owner and collectible_collection.add_view.quick_add_to_collection:
+                delete_sentence = unicode(_('Delete {thing}')).format(thing=unicode(collectible_collection.title).lower())
+                if buttons[name]['badge'] > 0:
+                    extra_attributes['alt-message'] = buttons[name]['title']
+                    buttons[name]['ajax_title'] = buttons[name]['title']
+                    buttons[name]['title'] = delete_sentence
                 else:
-                    buttons[name]['has_permissions'] = collectible_collection.add_view.has_permissions(request, context)
-                    buttons[name]['url'] = url_to_collectible_add_with_item(collectible_collection.get_add_url())
-                    buttons[name]['ajax_url'] = url_to_collectible_add_with_item(collectible_collection.get_add_url(ajax=True))
-                    if collectible_collection.add_view.staff_required and not view.staff_required:
-                        buttons[name]['classes'].append('staff-only')
-                buttons[name]['extra_attributes'] = extra_attributes
+                    extra_attributes['alt-message'] = delete_sentence
+            if (collectible_collection.add_view.authentication_required
+                and not collectible_collection.add_view.staff_required
+                and not request.user.is_authenticated()):
+                buttons[name]['has_permissions'] = True
+                buttons[name]['url'] = u'/signup/?next={url}&next_title={title}'.format(
+                    url=url_to_collectible_add_with_item(collectible_collection.get_add_url()),
+                    title=item.edit_sentence,
+                )
+            else:
+                buttons[name]['has_permissions'] = collectible_collection.add_view.has_permissions(request, context)
+                buttons[name]['url'] = url_to_collectible_add_with_item(collectible_collection.get_add_url())
+                buttons[name]['ajax_url'] = url_to_collectible_add_with_item(collectible_collection.get_add_url(ajax=True))
+                if collectible_collection.add_view.staff_required and not view.staff_required:
+                    buttons[name]['classes'].append('staff-only')
+            buttons[name]['extra_attributes'] = extra_attributes
         # Edit button
         if self.edit_view.enabled:
             buttons['edit']['show'] = view.show_edit_button
@@ -641,6 +652,9 @@ class MagiCollection(object):
         item_template = 'default_item_in_list'
         auto_reloader = True
 
+        def get_queryset(self, queryset, parameters, request):
+            return super(MagiCollection.ListView, self).get_queryset(self.collection._collectibles_queryset(self, queryset, request), parameters, request)
+
         def buttons_per_item(self, *args, **kwargs):
             return self.collection.buttons_per_item(self, *args, **kwargs)
 
@@ -750,6 +764,9 @@ class MagiCollection(object):
         # Note: if you use the 'default' template, the following 2 will be ignored:
         show_item_buttons_justified = property(propertyFromCollection('show_item_buttons_justified'))
         show_item_buttons_in_one_line = property(propertyFromCollection('show_item_buttons_in_one_line'))
+
+        def get_queryset(self, queryset, parameters, request):
+            return super(MagiCollection.ItemView, self).get_queryset(self.collection._collectibles_queryset(self, queryset, request), parameters, request)
 
         def buttons_per_item(self, *args, **kwargs):
             return self.collection.buttons_per_item(self, *args, **kwargs)
