@@ -78,6 +78,7 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
     context['reportable'] = collection.reportable
     context['share_image'] = _get_share_image(context, collection.item_view, item=context['item'])
     context['comments_enabled'] = collection.item_view.comments_enabled
+    context['share_enabled'] = collection.item_view.share_enabled
     context['item_padding'] = collection.item_view.item_padding
     context['item_template'] = collection.item_view.template
     context['full_width'] = collection.item_view.full_width
@@ -168,6 +169,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
             collection.list_view.filter_cuteform,
             context, form=context['filter_form'],
             prefix='#sidebar-wrapper ',
+            ajax=ajax,
         )
 
     if 'ajax_modal_only' in request.GET:
@@ -216,8 +218,9 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['col_break'] = collection.list_view.col_break
     context['per_line'] = collection.list_view.per_line
     context['col_size'] = int(math.ceil(12 / context['per_line']))
+    context['ajax_item_popover'] = collection.list_view.ajax_item_popover
     context['item_view_enabled'] = collection.item_view.enabled
-    context['ajax_item_view_enabled'] = context['item_view_enabled'] and collection.item_view.ajax
+    context['ajax_item_view_enabled'] = context['item_view_enabled'] and collection.item_view.ajax and not context['ajax_item_popover']
     context['include_below_item'] = False # May be set to true below
     context['collection'] = collection
 
@@ -300,7 +303,8 @@ def add_view(request, name, collection, type=None, ajax=False, shortcut_url=None
     cuteFormFieldsForContext(
         collection.add_view.filter_cuteform,
         context, form=form,
-        prefix=u'[data-form-name="add_{}"] '.format(collection.name)
+        prefix=u'[data-form-name="add_{}"] '.format(collection.name),
+        ajax=ajax,
     )
     _modification_views_page_titles(collection.add_sentence, context, after_title)
     context['action_sentence'] = collection.add_sentence # Used in page title
@@ -329,7 +333,7 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
     collection.edit_view.check_permissions(request, context)
     context = _modification_view(context, name, collection.edit_view)
     queryset = collection.edit_view.get_queryset(collection.queryset, _get_filters(request.GET, extra_filters), request)
-    instance = get_object_or_404(queryset, **collection.item_view.get_item(request, pk))
+    instance = get_object_or_404(queryset, **collection.edit_view.get_item(request, pk))
     context['type'] = None
     collection.edit_view.check_owner_permissions(request, context, instance)
     if collection.types:
@@ -351,7 +355,7 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
             'thing_to_delete': instance.pk,
         })
     form = formClass(instance=instance, request=request, ajax=ajax, collection=collection)
-    if allowDelete and request.method == 'POST' and 'delete' in request.POST:
+    if allowDelete and request.method == 'POST' and u'delete_{}'.format(collection.name) in request.POST:
         formDelete = ConfirmDelete(request.POST)
         if formDelete.is_valid():
             collection.edit_view.before_delete(request, instance, ajax)
@@ -372,7 +376,8 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
     cuteFormFieldsForContext(
         collection.edit_view.filter_cuteform,
         context, form=form,
-        prefix=u'[data-form-name="edit_{}"] '.format(collection.name)
+        prefix=u'[data-form-name="edit_{}"] '.format(collection.name),
+        ajax=ajax,
     )
     if shortcut_url is not None:
         context['shortcut_url'] = shortcut_url
@@ -388,6 +393,7 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
     if allowDelete:
         formDelete.alert_message = _('You can\'t cancel this action afterwards.')
         formDelete.action_sentence = instance.delete_sentence
+        formDelete.form_title = u'{}: {}'.format(instance.delete_sentence, unicode(instance))
         context['forms'][u'delete_{}'.format(collection.name)] = formDelete
 
     collection.edit_view.extra_context(context)

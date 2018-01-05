@@ -15,7 +15,7 @@
   {% if not without_link %}<a href="{{ account.cached_owner.item_url }}">{% endif %}
     <div class="row">
       <div class="col-md-2">
-        {% include 'include/avatar.html' with av_user=account.owner av_size=30 av_image_size=100 av_fixed=True %}
+        {% include 'include/avatar.html' with av_user=account.cached_owner av_size=30 av_image_size=100 av_fixed=True %}
       </div>
       <div class="col-md-8">
         <h3 class="username">{{ account.cached_owner.username }}</h3>

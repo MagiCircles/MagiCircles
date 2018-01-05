@@ -2,6 +2,7 @@ import datetime
 from django.contrib.auth.models import User
 from django.utils.translation import ugettext_lazy as _
 from django.db import models
+from django.conf import settings as django_settings
 from django.utils import timezone
 from magi.item_model import MagiModel, get_image_url_from_path
 from magi.utils import AttrDict
@@ -90,6 +91,8 @@ class CacheOwner(MagiModel):
     def cached_owner(self):
         if not self._cache_owner_last_update or self._cache_owner_last_update < timezone.now() - datetime.timedelta(days=self._cache_owner_days):
             self.force_cache_owner()
+        full_item_url = '{}user/{}/{}/'.format(django_settings.SITE_URL, self.owner_id, self._cache_owner_username)
+        http_item_url = u'http:' + full_item_url if 'http' not in full_item_url else full_item_url
         return AttrDict({
             'pk': self.owner_id,
             'id': self.owner_id,
@@ -97,6 +100,9 @@ class CacheOwner(MagiModel):
             'email': self._cache_owner_email,
             'item_url': '/user/{}/{}/'.format(self.owner_id, self._cache_owner_username),
             'ajax_item_url': '/ajax/user/{}/'.format(self.owner_id),
+            'full_item_url': full_item_url,
+            'http_item_url': http_item_url,
+            'share_url': http_item_url,
             'preferences': AttrDict({
                 'i_status': self._cache_owner_preferences_i_status,
                 'status': dict(RAW_CONTEXT['preferences_model'].STATUS_CHOICES)[self._cache_owner_preferences_i_status] if self._cache_owner_preferences_i_status else None,
@@ -126,6 +132,11 @@ class BaseAccount(CacheOwner):
     level = models.PositiveIntegerField(_("Level"), null=True)
 
     show_friend_id = True
+
+    # Share URL
+
+    def share_url(self):
+        return u'{}#{}'.format(self.cached_owner.share_url, self.id)
 
     # Cache: leaderboard position
 

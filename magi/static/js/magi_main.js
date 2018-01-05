@@ -204,6 +204,41 @@ function ajaxModals() {
 }
 
 // *****************************************
+// Ajax popovers
+
+function ajaxPopovers() {
+    $('[data-ajax-popover]').each(function() {
+	var button = $(this);
+	button.unbind('click');
+	button.click(function(e) {
+            e.preventDefault();
+            var popover = button.data('bs.popover');
+            if (!popover) {
+                if (button.popover)
+                    button.popover({
+	                content: '<i class="flaticon-loading"></i>',
+                        html: true,
+                        container: 'body',
+                        trigger: 'manual',
+                        placement: 'bottom',
+                    });
+                button.popover('show');
+                popover = button.data('bs.popover');
+                $.get(button.data('ajax-popover'), function(data) {
+                    popover.options.content = data;
+                    button.on('shown.bs.popover', function() {
+                        loadCommons();
+                    });
+                    button.popover('show');
+                })
+            } else {
+                button.popover('show');
+            }
+        });
+    });
+}
+
+// *****************************************
 // Load countdowns
 
 function _loadCountdowns() {
@@ -335,6 +370,90 @@ function switchLanguage() {
 }
 
 // *****************************************
+
+// uniquePerOwner can also be set in data-unique-per-owner
+function directAddCollectible(buttons, uniquePerOwner) {
+    buttons.unbind('click');
+    buttons.each(function() {
+        var button = $(this);
+        var form_url = button.data('ajax-url');
+        if (form_url.indexOf('/add/') < 0) {
+            return;
+        }
+        button.removeAttr('data-ajax-url');
+        button.click(function(e) {
+            e.preventDefault();
+            if (button.find('.flaticon-loading').length > 0) {
+                return;
+            }
+            var button_content = button.html();
+            if (!(typeof uniquePerOwner !== 'undefined' ? uniquePerOwner : button.data('unique-per-owner') === true) || button.find('.badge').text() === '0') {
+                // Add
+	        button.html('<i class="flaticon-loading"></i>');
+                $.get(form_url, function(data) {
+                    var form = $(data).find('form');
+                    var add_to_id = button.data('quick-add-to-id');
+                    if (typeof add_to_id !== 'undefined') {
+                        form.find('#id_' + button.data('quick-add-to-fk-as-owner')).val(add_to_id);
+                    }
+	            form.ajaxSubmit({
+                        success: function(data) {
+                            button.html(button_content);
+                            if ($(data).hasClass('success')) {
+                                button.find('.badge').text(parseInt(button.find('.badge').text()) + 1);
+                                var alt_message = button.data('alt-message');
+                                if (alt_message) {
+                                    button.data('alt-message', button.find('.message').text().trim());
+                                    button.find('.message').text(alt_message);
+                                    button.prop('title', alt_message);
+                                    button.tooltip('fixTitle');
+                                    button.data('original-title', alt_message);
+                                }
+                                button.find('.badge').show();
+	                        button.tooltip('hide');
+                            }
+                            else {
+                                genericAjaxError({ responseText: 'Error' });
+                            }
+                        },
+	                error: genericAjaxError,
+                    });
+                });
+            } else {
+                // Delete
+	        button.html('<i class="flaticon-loading"></i>');
+                $.get('/ajax/' + button.data('btn-name') + '/edit/unique/?' + button.data('parent-item') + '_id=' + button.closest('[data-item]').first().data('item-id'), function(data) {
+                    var form = $(data).find('form[data-form-name^="delete_"]');
+                    form.find('#id_confirm').prop('checked', true);
+	            form.ajaxSubmit({
+                        success: function(data) {
+                            button.html(button_content);
+                            if ($(data).hasClass('success')) {
+                                button.find('.badge').text(parseInt(button.find('.badge').text()) - 1);
+                                var alt_message = button.data('alt-message');
+                                if (alt_message) {
+                                    button.data('alt-message', button.find('.message').text());
+                                    button.find('.message').text(alt_message);
+                                    button.prop('title', alt_message);
+                                    button.tooltip('fixTitle');
+                                    button.data('original-title', alt_message);
+                                }
+                                button.find('.badge').hide();
+	                        button.tooltip('hide');
+                            }
+                            else {
+                                genericAjaxError({ responseText: 'Error' });
+                            }
+                        },
+	                error: genericAjaxError,
+                    });
+                });
+            }
+        });
+    });
+}
+
+// *****************************************
 // Items reloaders
 
 function itemsReloaders() {
@@ -357,12 +476,15 @@ function itemsReloaders() {
     }
 }
 
+var reloaderLocation;
+
 function modalItemsReloaders() {
     if (typeof ids_to_reload != 'undefined') {
+        reloaderLocation = location.search;
         $('.modal').on('hidden.bs.modal', function(e) {
             ids_to_reload = $.unique(ids_to_reload);
             if (ids_to_reload.length > 0) {
-                $.get(ajax_reload_url + '?ids=' + ids_to_reload.join(',')
+                $.get(ajax_reload_url + reloaderLocation + (reloaderLocation == '' ? '?' : '&') + 'ids=' + ids_to_reload.join(',')
                       + '&page_size=' + ids_to_reload.length, function(data) {
                           var html = $(data);
                           $.each(ids_to_reload, function(index, id) {
@@ -405,7 +527,9 @@ function dismissPopoversOnClickOutside() {
     $('body').on('click', function (e) {
 	if ($(e.target).data('toggle') !== 'popover'
 	    && $(e.target).parents('.popover.in').length === 0
-	    && $(e.target).data('manual-popover') != true) {
+	    && $(e.target).data('manual-popover') != true
+            && typeof $(e.target).data('ajax-popover') == 'undefined'
+            && $(e.target).closest('[data-ajax-popover]').length === 0) {
 	    hidePopovers();
 	}
     });
@@ -424,6 +548,7 @@ function hideCommonsOnModalShown() {
     $('#freeModal').on('show.bs.modal', function() {
 	$('main [data-toggle="tooltip"]').tooltip('hide');
 	$('main [data-toggle="popover"]').popover('hide');
+        $('main [data-ajax-popover]').popover('hide');
     });
 }
 
@@ -461,11 +586,13 @@ function loadCommons(onPageLoad /* optional = false */) {
     dateInputSupport();
     hideStaffButtons(false, onPageLoad);
     ajaxModals();
+    ajaxPopovers();
     loadCountdowns();
     loadTimezones();
     loadMarkdown();
     reloadDisqus();
     itemsReloaders();
+    directAddCollectible($('[data-quick-add-to-collection="true"]'));
 }
 
 // *****************************************
@@ -596,6 +723,7 @@ function reloadDisqus() {
 
 function hidePopovers() {
     $('[data-manual-popover=true]').popover('hide');
+    $('[data-ajax-popover]').popover('hide');
     $('[data-toggle=popover]').popover('hide');
     $('a[href="/notifications/"]').popover('destroy');
 }
@@ -711,7 +839,7 @@ function afterLoadBadges(user_id) {
     pagination('/ajax/badges/', '&of_user=' + user_id, updateBadges);
 }
 
-function loadBadges(user_id, onDone) {
+function loadBadges(tab_name, user_id, onDone) {
     $.get('/ajax/badges/?of_user=' + user_id, function(data) {
         if (data.trim() == "") {
 	    onDone('<div class="padding20"><div class="alert alert-warning">' + gettext('No result.') + '</div></div>', loadBadges);

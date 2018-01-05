@@ -95,6 +95,11 @@ if hasattr(settings_module, 'NAVBAR_ORDERING'):
 else:
     NAVBAR_ORDERING = DEFAULT_NAVBAR_ORDERING
 
+if hasattr(settings_module, 'ACCOUNT_TAB_ORDERING'):
+    ACCOUNT_TAB_ORDERING = getattr(settings_module, 'ACCOUNT_TAB_ORDERING')
+else:
+    ACCOUNT_TAB_ORDERING = []
+
 if hasattr(settings_module, 'ENABLED_PAGES'):
     ENABLED_PAGES = getattr(settings_module, 'ENABLED_PAGES')
 else:

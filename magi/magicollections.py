@@ -13,7 +13,7 @@ from magi.utils import AttrDict, ordinalNumber, justReturn, propertyFromCollecti
 from magi.raw import please_understand_template_sentence, donators_adjectives
 from magi.django_translated import t
 from magi.middleware.httpredirect import HttpRedirectException
-from magi.settings import ACCOUNT_MODEL, SHOW_TOTAL_ACCOUNTS, PROFILE_TABS, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTER_TO_URL, GET_GLOBAL_CONTEXT, DONATE_IMAGE, ON_USER_EDITED, ON_PREFERENCES_EDITED
+from magi.settings import ACCOUNT_MODEL, SHOW_TOTAL_ACCOUNTS, PROFILE_TABS, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTER_TO_URL, GET_GLOBAL_CONTEXT, DONATE_IMAGE, ON_USER_EDITED, ON_PREFERENCES_EDITED, ACCOUNT_TAB_ORDERING
 from magi import models, forms
 
 ############################################################
@@ -196,10 +196,10 @@ class MagiCollection(object):
         class _CollectibleFilterForm(forms.MagiFiltersForm):
             def __init__(self, *args, **kwargs):
                 super(_CollectibleFilterForm, self).__init__(*args, **kwargs)
-                self.fields['owner'] = forms.forms.IntegerField(required=False)
+                self.fields['owner'] = forms.forms.IntegerField(required=False, widget=forms.HiddenInput)
                 self.owner_filter = forms.MagiFilter(selector=model_class.selector_to_owner())
                 if model_class.fk_as_owner:
-                    self.fields[model_class.fk_as_owner] = forms.forms.IntegerField(required=False)
+                    self.fields[model_class.fk_as_owner] = forms.forms.IntegerField(required=False, widget=forms.HiddenInput)
                     setattr(self, u'{}_filter'.format(model_class.fk_as_owner), forms.MagiFilter(
                         selector=model_class.fk_as_owner
                     ))
@@ -243,16 +243,39 @@ class MagiCollection(object):
             def add_sentence(self):
                 return _(u'Add to your {thing}').format(thing=self.plural_title.lower())
 
+            def to_fields(self, item, *args, **kwargs):
+                fields = super(_CollectibleCollection, self).to_fields(item, *args, to_dict=False, **kwargs)
+                item_parent = getattr(item, item_field_name)
+                fields = [
+                    (item_field_name, {
+                        'type': 'text_with_link',
+                        'verbose_name': parent_collection.title,
+                        'value': unicode(item_parent),
+                        'icon': parent_collection.icon,
+                        'image': parent_collection.image,
+                        'link': item_parent.item_url,
+                        'ajax_link': item_parent.ajax_item_url,
+                        'link_text': unicode(_(u'Open {thing}')).format(thing=unicode(parent_collection.title).lower()),
+                    }),
+                ] + fields
+                return OrderedDict(fields)
+
             class ListView(MagiCollection.ListView):
                 filter_form = _CollectibleFilterForm
-                item_padding = 0
-                item_buttons_classes = ['btn', 'btn-round']
-                show_item_buttons_as_icons = True
+                item_padding = '7px 0'
                 col_break = 'sm'
                 per_line = 6
+                page_size = 30
+                show_item_buttons = False
+                show_add_button = justReturn(False)
+                ajax_item_popover = True
 
             class ItemView(MagiCollection.ItemView):
-                enabled = False
+                comments_enabled = False
+                share_enabled = False
+
+                def extra_context(self, context):
+                    context['item_parent'] = getattr(context['item'], item_field_name)
 
             class AddView(MagiCollection.AddView):
                 alert_duplicate = False
@@ -260,17 +283,28 @@ class MagiCollection(object):
                 max_per_user = 3000
 
                 def redirect_after_add(self, request, item, ajax):
-                    return self.collection.get_list_url_for_authenticated_owner(request, ajax, item)
+                    if ajax:
+                        return '/ajax/successadd/'
+                    return parent_collection.get_list_url()
 
             class EditView(MagiCollection.EditView):
                 back_to_list_button = False
                 allow_delete = True
 
+                def get_item(self, request, pk):
+                    if pk == 'unique':
+                        return { model_class.selector_to_owner(): request.user, item_field_name: request.GET.get(item_field_name_id) }
+                    return super(_CollectibleCollection.EditView, self).get_item(request, pk)
+
                 def redirect_after_edit(self, request, item, ajax):
-                    return self.collection.get_list_url_for_authenticated_owner(request, ajax, item)
+                    if ajax:
+                        return '/ajax/successedit/'
+                    return parent_collection.get_list_url()
 
                 def redirect_after_delete(self, request, item, ajax):
-                    return self.collection.get_list_url_for_authenticated_owner(request, ajax, item)
+                    if ajax:
+                        return '/ajax/successdelete/'
+                    return parent_collection.get_list_url()
 
         return _CollectibleCollection
 
@@ -454,6 +488,7 @@ class MagiCollection(object):
         # Collectible buttons
         for name, collectible_collection in self.collectible_collections.items():
             if collectible_collection.add_view.enabled:
+                extra_attributes = {}
                 url_to_collectible_add_with_item = lambda url: u'{url}?{item_name}_id={item_id}'.format(
                     url=url, item_name=self.name, item_id=item.id)
                 buttons[name]['show'] = view.show_collect_button[name] if isinstance(view.show_collect_button, dict) else view.show_collect_button
@@ -461,6 +496,24 @@ class MagiCollection(object):
                 buttons[name]['badge'] = getattr(item, u'total_{}'.format(name), 0)
                 buttons[name]['icon'] = 'add'
                 buttons[name]['image'] = collectible_collection.image
+                if collectible_collection.add_view.unique_per_owner:
+                    extra_attributes['unique-per-owner'] = 'true'
+                if collectible_collection.add_view.quick_add_to_collection:
+                    extra_attributes['quick-add-to-collection'] = 'true'
+                    extra_attributes['parent-item'] = self.name
+                    add_to_id_from_request = request.GET.get(u'add_to_{}'.format(collectible_collection.name))
+                    if add_to_id_from_request:
+                        extra_attributes['quick-add-to-id'] = add_to_id_from_request
+                        extra_attributes['quick-add-to-fk-as-owner'] = collectible_collection.queryset.model.fk_as_owner or 'owner'
+
+                if collectible_collection.add_view.unique_per_owner and collectible_collection.add_view.quick_add_to_collection:
+                    delete_sentence = unicode(_('Delete {thing}')).format(thing=unicode(collectible_collection.title).lower())
+                    if buttons[name]['badge'] > 0:
+                        extra_attributes['alt-message'] = buttons[name]['title']
+                        buttons[name]['ajax_title'] = buttons[name]['title']
+                        buttons[name]['title'] = delete_sentence
+                    else:
+                        extra_attributes['alt-message'] = delete_sentence
                 if (collectible_collection.add_view.authentication_required
                     and not collectible_collection.add_view.staff_required
                     and not request.user.is_authenticated()):
@@ -475,6 +528,7 @@ class MagiCollection(object):
                     buttons[name]['ajax_url'] = url_to_collectible_add_with_item(collectible_collection.get_add_url(ajax=True))
                     if collectible_collection.add_view.staff_required and not view.staff_required:
                         buttons[name]['classes'].append('staff-only')
+                buttons[name]['extra_attributes'] = extra_attributes
         # Edit button
         if self.edit_view.enabled:
             buttons['edit']['show'] = view.show_edit_button
@@ -563,6 +617,7 @@ class MagiCollection(object):
         col_break = 'md'
         page_size = 12
         item_padding = 20 # Only used with default item template
+        ajax_item_popover = False
 
         item_buttons_classes = property(propertyFromCollection('item_buttons_classes'))
         show_item_buttons = property(propertyFromCollection('show_item_buttons'))
@@ -673,6 +728,7 @@ class MagiCollection(object):
         authentication_required = False
         owner_only = False
         comments_enabled = True
+        share_enabled = True
         full_width = False
         auto_reloader = True
         template = 'default'
@@ -739,6 +795,8 @@ class MagiCollection(object):
         allow_next = True
         alert_duplicate = True
         back_to_list_button = True
+        unique_per_owner = False
+        quick_add_to_collection = False # for collectibles only
 
         @property
         def filter_cuteform(self):
@@ -812,6 +870,8 @@ class MagiCollection(object):
             return self.collection.get_list_url(ajax)
 
         def get_item(self, request, pk):
+            if pk == 'unique':
+                return { 'owner': request.user }
             return { 'pk': pk }
 
         #######################
@@ -834,7 +894,7 @@ class AccountCollection(MagiCollection):
     plural_title = _('Accounts')
     navbar_link_title = _('Leaderboard')
     icon = 'users'
-    queryset = ACCOUNT_MODEL.objects.all().select_related('owner', 'owner__preferences')
+    queryset = ACCOUNT_MODEL.objects.all()
     report_allow_delete = False
     form_class = forms.AccountForm
 
@@ -847,14 +907,14 @@ class AccountCollection(MagiCollection):
         - MUST contain name, callback (except for about)
         - May contain icon, image, callback
         """
-        tabs = OrderedDict()
+        tabs = {}
         if context['collectible_collections'] and 'account' in context['collectible_collections']:
             for collection_name, collection in context['collectible_collections']['account'].items():
                 tabs[collection_name] = {
                     'name': collection.plural_title,
                     'icon': collection.icon,
                     'image': collection.image,
-                    'callback': mark_safe(u'loadCollection(\'{load_url}\', {callback})'.format(
+                    'callback': mark_safe(u'loadCollectionForAccount(\'{load_url}\', {callback})'.format(
                         load_url=collection.get_list_url_for_authenticated_owner(
                             request, ajax=True, item=None, fk_as_owner=account.id),
                         callback=collection.list_view.ajax_pagination_callback or 'undefined',
@@ -864,7 +924,14 @@ class AccountCollection(MagiCollection):
             'name': _('About'),
             'icon': 'about',
         }
-        return tabs
+        ordered_tabs = OrderedDict()
+        for name in ACCOUNT_TAB_ORDERING:
+            if name in tabs:
+                ordered_tabs[name] = tabs[name]
+                del(tabs[name])
+        for name, tab in tabs.items():
+            ordered_tabs[name] = tab
+        return ordered_tabs
 
     @property
     def report_edit_templates(self):
@@ -1057,7 +1124,12 @@ class UserCollection(MagiCollection):
                 has_level = True
             except FieldDoesNotExist:
                 has_level = False
-            queryset = queryset.prefetch_related(Prefetch('accounts', queryset=models.Account.objects.order_by('-level' if has_level else '-id'), to_attr='all_accounts'), Prefetch('links', queryset=models.UserLink.objects.order_by('-i_relevance'), to_attr='all_links'))
+            account_queryset = models.Account.objects.order_by('-level' if has_level else '-id')
+            try:
+                models.Account._meta.get_field('center')
+                account_queryset = account_queryset.select_related('center')
+            except FieldDoesNotExist: pass
+            queryset = queryset.prefetch_related(Prefetch('accounts', queryset=account_queryset, to_attr='all_accounts'), Prefetch('links', queryset=models.UserLink.objects.order_by('-i_relevance'), to_attr='all_links'))
             return queryset
 
         def extra_context(self, context):
@@ -1103,6 +1175,18 @@ class UserCollection(MagiCollection):
             # Profile tabs
             context['show_total_accounts'] = SHOW_TOTAL_ACCOUNTS
             context['profile_tabs'] = PROFILE_TABS
+            if context['collectible_collections'] and 'owner' in context['collectible_collections']:
+                for collection_name, collection in context['collectible_collections']['owner'].items():
+                    context['profile_tabs'][collection_name] = {
+                        'name': collection.plural_title,
+                        'icon': collection.icon,
+                        'image': collection.image,
+                        'callback': mark_safe(u'loadCollectionForOwner(\'{load_url}\', {callback})'.format(
+                            load_url=collection.get_list_url(ajax=True),
+                            callback=collection.list_view.ajax_pagination_callback or 'undefined',
+                        )),
+                    }
+
             context['profile_tabs_size'] = 100 / len(context['profile_tabs']) if context['profile_tabs'] else 100
             context['opened_tab'] = context['profile_tabs'].keys()[0] if context['profile_tabs'] else None
             if 'open' in request.GET and request.GET['open'] in context['profile_tabs']:
@@ -1307,6 +1391,7 @@ class ActivityCollection(MagiCollection):
         alert_duplicate = False
         form_class = forms.ActivityForm
         max_per_user_per_hour = 3
+        unique_per_owner = True
 
     class EditView(MagiCollection.EditView):
         multipart = True

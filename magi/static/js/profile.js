@@ -52,11 +52,34 @@ function handlefollow() {
     });
 }
 
-function profileLoadActivities(user_id, onDone) {
+function profileLoadActivities(tab_name, user_id, onDone) {
     $.get('/ajax/activities/?owner_id=' + user_id, function(html) {
 	$('#activities').html(html);
 	if ($.trim($('#activities').text()) == '') {
 	    $('#activities').html('<div class="alert alert-warning">' + gettext('No result.') + '</div>');
+	} else {
+	    updateActivities();
+	    pagination('/ajax/activities/', '&owner_id=' + user_id, updateActivities);
+	}
+	onDone(undefined, undefined);
+    });
+}
+
+function loadCollectionForOwner(load_url, callback) {
+    return function(tab_name, user_id, onDone) {
+        $.get(load_url + '?owner=' + user_id, function(data) {
+            onDone($.trim(data) === '' ? '<div class="alert alert-warning">' + gettext('No result.') + '</div>' : data, function() {
+                if (callback) {
+                    callback();
+                }
+                pagination(load_url, '&owner=' + user_id, callback);
+            });
+        });
+    }
+    $.get('/ajax/activities/?owner_id=' + user_id, function(html) {
+	$('#activities').html(html);
+	if ($.trim($('#activities').text()) == '') {
+	    $('#activities').html();
 	} else {
 	    updateActivities();
 	    pagination('/ajax/activities/', '&owner_id=' + user_id, updateActivities);
@@ -70,7 +93,7 @@ function onProfileTabOpened() {
     if (typeof tab_callbacks[tab_name] != 'undefined') {
 	if (!tab_callbacks[tab_name]['called']) {
 	    var user_id = $('#username').data('user-id');
-	    tab_callbacks[tab_name]['callback'](user_id, function(data, onDone) {
+	    tab_callbacks[tab_name]['callback'](tab_name, user_id, function(data, onDone) {
 		if (typeof data != 'undefined') {
 		    $('#profile' + tab_name).html(data);
 		}
@@ -84,10 +107,10 @@ function onProfileTabOpened() {
     }
 }
 
-function loadCollection(load_url, callback) {
+function loadCollectionForAccount(load_url, callback) {
     return function(tab_name, user_id, account_id, onDone) {
         $.get(load_url + '&ajax_modal_only', function(data) {
-            onDone(data, function() {
+            onDone($.trim(data) === '' ? '<div class="alert alert-warning">' + gettext('No result.') + '</div>' : data, function() {
                 if (callback) {
                     callback();
                 }

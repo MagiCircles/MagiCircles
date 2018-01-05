@@ -90,6 +90,8 @@
         <a href="{{ button.url }}" data-btn-name="{{ name }}"
            class="{% for class in button.classes %}{% if class != 'staff-only' %}{{ class }} {% endif %}{% endfor %}"
            title="{{ button.title }}"
+           {% for attr, value in button.extra_attributes.items %}data-{{ attr }}="{{ value }}"
+           {% endfor %}
            {% if button.open_in_new_window %} target="_blank"{% endif %}
            {% if button.ajax_url %}
            data-ajax-url="{{ button.ajax_url }}"
@@ -98,7 +100,7 @@
            {% endif %}>
           {% if button.icon %}<i class="flaticon-{{ button.icon }}"></i>
           {% elif button.image %}<img src="{{ static_url }}img/{{ button.image }}.png" height="39" />{% endif %}
-          {% if not item.show_item_buttons_as_icons %}{{ button.title }}{% endif %}
+          {% if not item.show_item_buttons_as_icons %}<span class="message">{{ button.title }}</span>{% endif %}
           {% if button.badge != None %}<span class="badge progress-bar-main"{% if not button.badge %} style="display: none;"{% endif %}>{{ button.badge }}</span>{% endif %}
         </a>
       </td>
@@ -119,14 +121,16 @@
       </td>
     </tr>
     {% endif %}
+    {% if share_enabled %}
     <tr>
       <td><i class="flaticon-link"></i></td>
       <th>{% trans 'Share' %}</th>
       <td>
 	<span class="btn-group">
-	  {% include 'include/share.html' with share_url=item.http_item_url share_btn_class="secondary btn-lg" share_sentence=item %}
+	  {% include 'include/share.html' with share_url=item.share_url share_btn_class="secondary btn-lg" share_sentence=item %}
 	</span>
       </td>
     </tr>
+    {% endif %}
     {% endif %}
   </table>

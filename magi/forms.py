@@ -15,6 +15,7 @@ from django.utils.safestring import mark_safe
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.core.files.uploadedfile import InMemoryUploadedFile, TemporaryUploadedFile
 from django.shortcuts import get_object_or_404
+from magi.middleware.httpredirect import HttpRedirectException
 from magi.django_translated import t
 from magi import models
 from magi.settings import FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTERS, USER_COLORS, GAME_NAME, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, ON_PREFERENCES_EDITED
@@ -94,6 +95,11 @@ class MagiForm(forms.ModelForm):
         self.is_creating = not hasattr(self, 'instance') or not self.instance.pk
         self.c_choices = []
         self.hidden_foreign_keys_querysets = {}
+        # If is creating and item is unique, redirect to edit unique
+        if self.is_creating and self.collection and self.collection.add_view.unique_per_owner:
+            existing = self.collection.edit_view.get_queryset(self.collection.queryset, {}, self.request).filter(**self.collection.edit_view.get_item(self.request, 'unique'))
+            try: raise HttpRedirectException(existing[0].ajax_edit_url if self.ajax else existing[0].edit_url) # Redirect to edit
+            except IndexError: pass # Can add!
         # Fix optional fields
         if hasattr(self.Meta, 'optional_fields'):
             for field in self.Meta.optional_fields:
@@ -235,6 +241,7 @@ class MagiFilter(object):
     selectors: same as selector but works with multiple values.
     to_value: lambda that takes the value and transforms the value if needed.
     multiple: allow multiple values separated by commas. Set to False if your value may contain commas.
+    noop: when set to true, will not affect result
     """
     def __init__(self,
                  to_queryset=None,
@@ -244,6 +251,7 @@ class MagiFilter(object):
                  multiple=True,
                  operator_for_multiple=None,
                  allow_csv=True,
+                 noop=False,
     ):
         self.to_queryset = to_queryset
         self.selectors = selectors
@@ -253,6 +261,7 @@ class MagiFilter(object):
         self.multiple = multiple
         self.operator_for_multiple = operator_for_multiple
         self.allow_csv = allow_csv
+        self.noop = noop
 
 class MagiFilterOperator:
     OrContains, OrExact, And = range(3)
@@ -294,6 +303,11 @@ class MagiFiltersForm(AutoForm):
     def __init__(self, *args, **kwargs):
         super(MagiFiltersForm, self).__init__(*args, **kwargs)
         self.empty_permitted = True
+        # Add add_to_{} to fields that are collectible and have a quick add option
+        for collection_name, collection in self.collection.collectible_collections.items():
+            if collection.add_view.enabled and collection.add_view.quick_add_to_collection:
+                self.fields[u'add_to_{}'.format(collection_name)] = forms.IntegerField(required=False, widget=forms.HiddenInput)
+                setattr(self, u'add_to_{}_filter'.format(collection_name), MagiFilter(noop=True))
         # Remove search from field if search_fields is not specified
         if not hasattr(self, 'search_fields') and not hasattr(self, 'search_fields_exact'):
             del(self.fields['search'])
@@ -330,6 +344,8 @@ class MagiFiltersForm(AutoForm):
                 filter = getattr(self, '{}_filter'.format(field_name), None)
                 if not filter:
                     filter = MagiFilter()
+                if filter.noop:
+                    continue
                 # Filtering is provided by to_queryset
                 if filter.to_queryset:
                     queryset = filter.to_queryset(self, queryset, request,
@@ -411,10 +427,18 @@ class MagiFiltersForm(AutoForm):
 # Accounts forms
 
 class AccountForm(AutoForm):
+    def __init__(self, *args, **kwargs):
+        super(AccountForm, self).__init__(*args, **kwargs)
+        if 'center' in self.fields:
+            if self.is_creating:
+                del(self.fields['center'])
+            else:
+                self.fields['center'].queryset = self.fields['center'].queryset.filter(account=self.instance.id)
+
     class Meta:
         model = models.Account
         fields = '__all__'
-        optional_fields = ('start_date', 'level', )
+        optional_fields = ('start_date', 'level', 'center', 'friend_id')
         save_owner_on_creation = True
 
 ############################################################

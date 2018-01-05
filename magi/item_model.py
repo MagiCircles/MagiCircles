@@ -257,6 +257,9 @@ def get_http_item_url(instance):
         url = 'http:' + url
     return url
 
+def get_share_url(instance):
+    return instance.http_item_url
+
 def get_edit_url(instance):
     return u'/{}/edit/{}/'.format(instance.collection_plural_name, instance.pk)
 
@@ -309,6 +312,7 @@ def addMagiModelProperties(modelClass, collection_name):
     modelClass.ajax_item_url = property(get_ajax_item_url)
     modelClass.full_item_url = property(get_full_item_url)
     modelClass.http_item_url = property(get_http_item_url)
+    modelClass.share_url = property(get_share_url)
     modelClass.edit_url = property(get_edit_url)
     modelClass.report_url = property(get_report_url)
     modelClass.ajax_edit_url = property(get_ajax_edit_url)
@@ -343,6 +347,7 @@ class MagiModel(BaseMagiModel):
     ajax_item_url = property(get_ajax_item_url)
     full_item_url = property(get_full_item_url)
     http_item_url = property(get_http_item_url)
+    share_url = property(get_share_url)
     edit_url = property(get_edit_url)
     report_url = property(get_report_url)
     ajax_edit_url = property(get_ajax_edit_url)
@@ -354,7 +359,10 @@ class MagiModel(BaseMagiModel):
     allow_multiple_per_owner = classmethod(get_allow_multiple_per_owner)
 
     def __unicode__(self):
-        return self.collection_title
+        try:
+            return self.collection_title
+        except AttributeError:
+            return self.collection_name
 
     class Meta:
         abstract = True

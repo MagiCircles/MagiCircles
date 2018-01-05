@@ -933,7 +933,7 @@ For each collection, you may also override the fields and methods. When overridi
 
 | Name | Description | Parameters | Return value | Default |
 |------|-------------|------------|--------------|---------|
-| buttons_per_item | Used to display buttons below item, only for ItemView and ListView. Any new dictionary within the returned dictionary of buttons must contain the following keys: show, has_permissions, title, url, classes and may contain icon, image, url, open_in_new_window, ajax_url, ajax_title. Can be overriden in ItemView and ListView. | view, request, context, item | Dictionary of dictionary | Will automatically determine and fill up buttons for collectibles, edit, report. |
+| buttons_per_item | Used to display buttons below item, only for ItemView and ListView. Any new dictionary within the returned dictionary of buttons must contain the following keys: show, has_permissions, title, url, classes and may contain icon, image, url, open_in_new_window, ajax_url, ajax_title, extra_attributes. Can be overriden in ItemView and ListView. | view, request, context, item | Dictionary of dictionary | Will automatically determine and fill up buttons for collectibles, edit, report. |
 | get_queryset | Queryset used to retrieve the item(s). Can be overriden per view. | queryset, parameters, request | Django queryset | The queryset given as parameters |
 | form_class | Form class to add / edit an item. Doesn't have to be a method (see above). Can be overriden per view. | request, context | A form class | AutoForm |
 | to_fields | See ⎡[to_fields method](#to-field-method)⎦ |
@@ -1106,6 +1106,7 @@ todo
 | top_illustration | If the `default` template is used, it will show either the `image` in the object or its name. You may display something else by specifying the path of a HTML template (full path in template folder), without `.html`. | None | `include/topCard` |
 | show_edit_button | Should a button to edit the item be displayed under the item (if the user has permissions to edit)? Set this to `False` is your template already includes a button to edit the item. | True | |
 | comments_enabled | Should we display a comment section below the item? | True | |
+| share_enabled | Should we display share buttons below the item (only with default template)? | True | |
 | full_width | By default, the page will be in a bootstrap container, which will limit its width to a maximum, depending on the screen size. You may change this to `True` to always get the full width | False | |
 
 See also: [settings available in all views](#all-views).
@@ -1143,6 +1144,8 @@ todo
 | max_per_user | By default, users can add as many as they'd like. You can restrict to a max number of added per user to avoid spam. | None | 3000 |
 | max_per_user_per_day | Will limit how many a user can add within 24 hours. | None | 24 |
 | max_per_user_per_hour | Will limit how many a user can add within an hour. | None | 3 |
+| unique_per_owner | Will specify that only one of this item can be added. Will redirect to edit page when trying to add again. | False | |
+| quick_add_to_collection | (Collectibles only) Will automatically load javascript utility "directAddCollectible" to add to your collection in one click. Will load the form and attempt to submit it in the background, so will only work if all the fields in the form are optional or have a default selected/entered value when the form is loaded. Combined with “unique_per_owner”, will allow users to easily add or delete with one click. | False | |
 
 See also: [settings available in all views](#all-views).
 
@@ -1474,6 +1477,7 @@ To do so, just provide an attribute `name_filter` where `name` is the correspond
 | multiple | allow multiple values separated by commas. Set to `False` if your value may contain commas. | True | |
 | operator_for_multiple | When multiple is enabled, what should be the operation? Choices are: `OrContains`, `OrExact` or `And`. | Depends on field type. | MagiFilterOperator.OrExact |
 | allow_csv | When `multiple` is unabled or the field is a MultipleChoiceField, is it allowed to provide values as comma separated? Example: `?rarity=SR,UR`. When csv is not allowed, values must be provided as a list like so: `?rarity=SR&rarity=UR` | True | |
+| noop | Will not affect the queryset. Useful when you need a GET parameter that does something else than filtering, such as changing the way items are displayed. | False | |
 
 Example:
 
@@ -2135,6 +2139,7 @@ All the following functions are available in all pages. You can call them from a
 | freeModal | Show a bootstrap modal. <ul><li>Use true for modal_size to not change the size</li><li>Use 0 for buttons to remove all buttons</li><li>modal_size can be `md`, `lg` or `sm`</li></ul> | title, body, buttons=(Go button that closes the modal), modal_size='lg' | None |
 | confirmModal | Show a modal to confirm a critical action. It takes a callback that you can use to perform the action. | onConfirmed, onCanceled=undefined, title=gettext('Confirm'), body=gettext('You can\'t cancel this action afterwards.') | None |
 | genericAjaxError | You may use this function to handle errors in your ajax calls. It will simply display the error in an alert | xhr, ajaxOptions, thrownError | None |
+| directAddCollectible | To be used with buttons to add an item to your collection. Instead of loading the form to add in a modal, will attempt to load it in the background and submit it, then update the counter of total collected items. uniquePerOwner can also be set in data-unique-per-owner. | buttons, uniquePerOwner (optional, default=False) | None |
 
 #### HTML elements with automatic Javascript behavior
 
@@ -2165,6 +2170,22 @@ You may configure this further using the following attributes:
 - `data-ajax-handle-form`: If your loaded ajax page contains forms, you may set this to `true` to make the form response appear in this modal as well. Make sure the page loaded in response to this form is also in ajax (doesn't contain the page's boilerplate).
     -  If you need the form response to be displayed in a modal of a different size, you may provide `data-ajax-modal-after-form-size`
     -  It will understand that you got an error if your return form response contains a `form` with `.error-list`, and handle the form within the modal again (without changing the size)
+
+###### Load an Ajax page in a popover
+
+- Add attributes `data-ajax-popover` and `title` to any button or link:
+
+```html
+<a href="/something/" data-ajax-popover="/ajax/something/" title="something"></a>
+```
+
+It will open the ajax version of the page in a bootstrap modal instead of opening a new page. Users may right click on the link to open the original link in a new tab if they want. It will also open the page if they disable Javascript.
+
+While the ajax page is loading, the popover will open and display a loader.
+
+In case of an error, the default function `genericAjaxError` will be called.
+
+Unline modal loading, the URL doesn't change.
 
 ###### Smooth scroll to an anchor
 
@@ -2244,6 +2265,7 @@ Functions called (in this order):
 | loadTimezones | See ⎡[Timezones](#timezones)⎦ |
 | loadMarkdown | See ⎡[Markdown](#markdown)⎦ |
 | reloadDisqus | Will force reload Disqus script that displays the total number of comments in the link to the comment section of a page. |
+| directAddCollectible($('[data-quick-add-to-collection="true"]')) | Will load Javascript utility to quickly add collectibles to your collection. |
 
 Recommendations
 ===============

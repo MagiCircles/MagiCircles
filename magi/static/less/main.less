@@ -25,6 +25,45 @@
 
 .popover {
     font-family: inherit;
+    width: 300px;
+    max-width: 100%;
+    .flaticon-loading {
+        display: block;
+        text-align: center;
+        font-size: 30px;
+    }
+    .top-item, .top-item + br {
+        display: none;
+    }
+    .about-table {
+        td, th {
+            padding: 4px;
+        }
+        tr:first-child {
+            td, th {
+                border-top: 0;
+            }
+        }
+        td:first-child {
+            width: auto;
+            [class^="flaticon-"] {
+                line-height: 21px;
+                font-size: 21px;
+            }
+            img {
+                height: 21px;
+            }
+        }
+        .btn {
+            padding: 5px 10px;
+            font-size: 12px;
+            line-height: 1.5;
+            border-radius: 3px;
+            img {
+                height: 12px;
+            }
+        }
+    }
 }
 
 .simple-shadow(@color) {
@@ -260,6 +299,10 @@ table.text-center th {
 	font-size: 0.8em;
 	padding-right: 10px;
     }
+}
+
+.below-item-buttons {
+    margin: 10px 0;
 }
 
 .default-index {
@@ -685,6 +728,10 @@ nav {
     }
 }
 
+.panel {
+    margin-bottom: 0;
+}
+
 #profiletabs {
     li {
 	width: 50%;
@@ -768,7 +815,23 @@ nav {
        }
    }
 
-   .panel-main { .custom-panel(darken(@mainColor, 25%)); }
+   .panel-main { .panel-simple-variant(@mainColor); }
+   .alert-main { .alert-simple-variant(@mainColor); }
+   .btn-main { .button-variant(white, @mainColor, darken(@mainColor, 2%)); }
+   .btn-link-main { .button-variant(@mainColor, @transparent, @transparent); }
+   .a-main { .a-variant(@mainColor); }
+   .progress-bar-main { .progress-bar-variant(@mainColor); }
+   &.jumbotron-main { .jumbotron_per_color(@mainColor); }
+   .well-main { .well_per_color(@mainColor); }
+
+   .panel-secondary { .panel-simple-variant(@secondaryColor); }
+   .alert-secondary { .alert-simple-variant(@secondaryColor); }
+   .btn-secondary { .button-variant(white, @secondaryColor, darken(@secondaryColor, 2%)); }
+   .btn-link-secondary { .button-variant(@secondaryColor, @transparent, @transparent); }
+   .a-secondary { .a-variant(@secondaryColor); }
+   .progress-bar-secondary { .progress-bar-variant(@secondaryColor); }
+   &.jumbotron-secondary { .jumbotron_per_color(@secondaryColor); }
+   .well-secondary { .well_per_color(@secondaryColor); }
 
    .text-main { color: @mainColor; }
    .text-secondary { color: @secondaryColor; }
@@ -1156,10 +1219,27 @@ nav {
 
 .panel-default-account {
     border-radius: 10px;
-    .default-account {
-        border-radius: 9px 9px 0 0;
+    margin-bottom: 20px;
+    .panel-heading {
+        background-position: center 26%;
+        background-size: 100%;
+    }
+    .panel-heading-inside {
+        border-radius: 8px 8px 0 0;
         padding: 40px 60px;
         padding-bottom: 80px;
+    }
+    .nav-tabs {
+        margin: 0 -30px;
+        padding: 0 30px;
+    }
+    .account-center {
+        width: 100px;
+        max-width: 100%;
+    }
+    .default-account {
+        border-radius: 9px 9px 0 0;
+        padding: 0;
     }
     .panel-body {
         padding: 30px;
@@ -1194,6 +1274,14 @@ nav {
             td, th {
                 border-top: 0;
             }
+        }
+    }
+}
+
+@media(max-width:768px) {
+    .panel-default-account {
+        .panel-heading {
+            background-size: 150%;
         }
     }
 }

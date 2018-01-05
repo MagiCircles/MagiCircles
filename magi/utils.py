@@ -114,7 +114,7 @@ class CuteFormTransform:
     No, ImagePath, Flaticon, FlaticonWithText = range(4)
     default_field_type = [CuteFormType.Images, CuteFormType.Images, CuteFormType.HTML, CuteFormType.HTML]
 
-def cuteFormFieldsForContext(cuteform_fields, context, form=None, prefix=None):
+def cuteFormFieldsForContext(cuteform_fields, context, form=None, prefix=None, ajax=False):
     """
     Adds the necesary context to call cuteform in javascript.
     Prefix is a prefix to add to all selectors. Can be useful to isolate your cuteform within areas of your page.
@@ -126,6 +126,7 @@ def cuteFormFieldsForContext(cuteform_fields, context, form=None, prefix=None):
         selector: will be #id_{field_name} if not specified,
         transform: when to_cuteform is a lambda: CuteFormTransform.No, .ImagePath, .Flaticon, .FlaticonWithText
         image_folder: only when to_cuteform = 'images' or transform = 'images', will specify the images path,
+        extra_settings: dictionary of options passed to cuteform,
     }
     """
     if not cuteform_fields:
@@ -181,7 +182,9 @@ def cuteFormFieldsForContext(cuteform_fields, context, form=None, prefix=None):
         }
         # Add extra settings if any
         if 'extra_settings' in field:
-            context['cuteform_fields'][selector].update(field['extra_settings'])
+            context['cuteform_fields'][selector].update(field['extra_settings'] if not ajax else {
+                k:v for k, v in field['extra_settings'].items()
+                if 'modal' not in k })
         for choice in choices:
             key, value = choice if isinstance(choice, tuple) else (choice.id, choice)
             if key == '':

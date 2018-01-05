@@ -12,7 +12,7 @@
 {% block submit %}{{ form.action_sentence }}{% endblock %}
 
 {% block beforefields %}
-{% if form_name == 'delete' %}
+{% if form_name|first == 'd' %}{# delete form #}
 {% include 'include/alert.html' with alert_type='danger' alert_message=form.alert_message %}
 {% elif alert_message %}
 {% include 'include/alert.html' %}
@@ -27,7 +27,7 @@
 
 {% block otherbuttons %}
 {% if back_to_list_button %}<a href="/{{ plural_name }}/" class="btn btn-link">{% trans 'Back to' %} {% trans plural_title %}</a>{% endif %}
-{% if form_name != 'delete' and otherbuttons_template %}{% include otherbuttons_template|add:'.html' %}{% endif %}
+{% if form_name|first != 'd' and otherbuttons_template %}{% include otherbuttons_template|add:'.html' %}{% endif %}
 {% endblock %}
 
 {% block belowform %}

@@ -14,11 +14,25 @@
 	    color: @heading-bg-color;
 	    background-color: @heading-text-color;
 	}
+        .panel-heading-inside {
+            background-image: linear-gradient(220deg, fade(@heading-bg-color, 95%), @transparent, @transparent, fade(@heading-bg-color, 95%));
+            @media(max-width:768px) {
+                background-image: linear-gradient(160deg, fade(@heading-bg-color, 95%), @transparent, @transparent, fade(@heading-bg-color, 95%));
+            }
+        }
+    }
+    .nav-tabs {
+        background-image: linear-gradient(0deg, fade(@heading-bg-color, 50%), @transparent);
     }
     & > .panel-footer {
 	+ .panel-collapse > .panel-body {
 	    border-bottom-color: @border;
 	}
+    }
+    @media(max-width:768px) {
+        .panel-heading-inside {
+            background-image: linear-gradient(0deg, fade(@heading-bg-color, 95%), @transparent, @transparent, fade(@heading-bg-color, 95%));
+        }
     }
 }
 
