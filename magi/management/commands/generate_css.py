@@ -12,7 +12,7 @@ class Command(BaseCommand):
         resource_path = '/'.join(('static', 'less', 'per-color-generator.less'))
         template = pkg_resources.resource_string(resource_package, resource_path)
 
-        all_colors = u'@import "mixins/magicircles.less";\n'
+        all_colors = u''
         for color in USER_COLORS:
             all_colors += template.replace('HEX_COLOR', color[3]).replace('COLOR_NAME', color[0]).replace('COLOR', color[2])
         print all_colors

@@ -408,11 +408,13 @@ The ⎡[Quick Start](#quick-start)⎦ section above will do all this for you, bu
 
 17. Create your LESS main file in `sample/static/less/style.less`:
    ```css
-    /* Uncomment this line when you need to compile LESS -> CSS */
-    /* @import "../../../env/lib/python2.7/site-packages/magi/static/less/main.less"; */
+    /* Uncomment these lines when you need to compile LESS -> CSS */
+    // @import "../../../env/lib/python2.7/site-packages/magi/static/less/main.less";
+    // @import "../../../env/lib/python2.7/site-packages/magi/static/less/mixins/magicircles.less";
 
-    /* Comment this line when you need to compile LESS -> CSS */
+    /* Comment these lines when you need to compile LESS -> CSS */
     @import "main.less";
+    @import "mixins/magicircles.less";
 
     /******************************************/
     /* Variables */
