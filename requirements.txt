@@ -10,7 +10,7 @@ argparse==1.2.1
 boto==2.36.0
 disqus-python==0.4.2
 django-bootstrap-form==3.2
-django-bootstrap-form-horizontal==0.0.4
+git+https://github.com/db0company/django-bootstrap-form-horizontal
 django-common-helpers==0.7.0
 django-cors-headers==1.1.0
 django-filter==0.9.1
