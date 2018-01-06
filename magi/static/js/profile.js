@@ -68,7 +68,7 @@ function profileLoadActivities(tab_name, user_id, onDone) {
 function loadCollectionForOwner(load_url, callback) {
     return function(tab_name, user_id, onDone) {
         $.get(load_url + '?owner=' + user_id, function(data) {
-            onDone($.trim(data) === '' ? '<div class="alert alert-warning">' + gettext('No result.') + '</div>' : data, function() {
+            onDone($.trim(data) === '' ? '<div class="padding20"><div class="alert alert-warning">' + gettext('No result.') + '</div></div>' : data, function() {
                 if (callback) {
                     callback();
                 }
