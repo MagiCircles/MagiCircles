@@ -31,7 +31,7 @@
 	      <br><a href="#following"{% if not profile_user.total_following %} style="display: none"{% endif %}><strong>{{ profile_user.total_following }}</strong> {% trans 'Following' %}</a>
 	    </div>
 	    <h1 class="text-secondary" id="username" data-user-id="{{ profile_user.id }}">{{ profile_user.username }}</h1>
-	    {% if profile_user.preferences.i_status and profile_user.preferences.i_status != 'THANKS' %}<a href="/donate/"><h2 style="color: {{ profile_user.preferences.status_color }}">{{ profile_user.preferences.status }}</h2></a>{% endif %}
+	    {% if profile_user.preferences.i_status and profile_user.preferences.i_status != 'THANKS' %}<a href="/donate/"><h2 style="color: {{ profile_user.preferences.status_color }}">{{ profile_user.preferences.t_status }}</h2></a>{% endif %}
 	    <br>
 	    <div class="description to-markdown">{% if profile_user.preferences.description %}{{ profile_user.preferences.description }}{% endif %}</div>
             {% include 'include/below_item.html' with buttons_only=True show_item_buttons=True %}
