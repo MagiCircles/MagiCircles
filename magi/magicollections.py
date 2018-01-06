@@ -1169,10 +1169,12 @@ class UserCollection(MagiCollection):
             account_collection = getMagiCollection('account')
             afterjs = u'<script>'
 
-            # Account buttons & tabs
+            # Account fields, buttons and tabs
             afterjs += u'var account_tab_callbacks = {'
             if account_collection:
                 for account in user.all_accounts:
+                    # Fields
+                    account.fields = account_collection.to_fields(account)
                     # Buttons
                     account.buttons_to_show = account_collection.item_view.buttons_per_item(request, context, account)
                     account.show_item_buttons_justified = account_collection.item_view.show_item_buttons_justified
