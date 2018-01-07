@@ -520,6 +520,7 @@ class MagiCollection(object):
             if collectible_collection.add_view.quick_add_to_collection:
                 extra_attributes['quick-add-to-collection'] = 'true'
                 extra_attributes['parent-item'] = self.name
+                extra_attributes['parent-item-id'] = item.id
                 add_to_id_from_request = request.GET.get(u'add_to_{}'.format(collectible_collection.name))
                 if add_to_id_from_request:
                     extra_attributes['quick-add-to-id'] = add_to_id_from_request
