@@ -491,7 +491,7 @@ class _UserCheckEmailUsernameForm(MagiForm):
                 code='unique_together',
                 params={'field_labels': t['Username']},
             )
-        if models.User.objects.filter(username__iexact=username).exclude(username__exact=username).count():
+        if models.User.objects.filter(username__iexact=username).exclude(id=self.instance.id if not self.is_creating else None).count():
             raise forms.ValidationError(
                 message=t["%(model_name)s with this %(field_labels)s already exists."],
                 code='unique_together',
