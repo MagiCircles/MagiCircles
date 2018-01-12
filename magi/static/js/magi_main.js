@@ -55,9 +55,9 @@ function hideStaffButtons(show, showTooltip /* optional, = true */) {
     if ($('.staff-only').length > 0) {
 	show = typeof show == 'undefined' ? false : show;
 	if (show) {
-	    $('.staff-only').show('slow');
+            $('.staff-only').show();
 	} else {
-	    $('.staff-only').hide('slow');
+            $('.staff-only').hide();
 	}
 	$('a[href="#hideStaffButtons"]').show('slow', function() {
 	    loadToolTips();
@@ -406,11 +406,15 @@ function directAddCollectible(buttons, uniquePerOwner) {
                                     button.data('alt-message', button.find('.message').text().trim());
                                     button.find('.message').text(alt_message);
                                     button.prop('title', alt_message);
+                                    if (button.data('toggle') == 'tooltip') {
                                     button.tooltip('fixTitle');
+                                    }
                                     button.data('original-title', alt_message);
                                 }
                                 button.find('.badge').show();
+                                if (button.data('toggle') == 'tooltip') {
 	                        button.tooltip('hide');
+                            }
                             }
                             else {
                                 genericAjaxError({ responseText: 'Error' });
@@ -435,11 +439,15 @@ function directAddCollectible(buttons, uniquePerOwner) {
                                     button.data('alt-message', button.find('.message').text());
                                     button.find('.message').text(alt_message);
                                     button.prop('title', alt_message);
+                                    if (button.data('toggle') == 'tooltip') {
                                     button.tooltip('fixTitle');
+                                    }
                                     button.data('original-title', alt_message);
                                 }
                                 button.find('.badge').hide();
+                                if (button.data('toggle') == 'tooltip') {
 	                        button.tooltip('hide');
+                            }
                             }
                             else {
                                 genericAjaxError({ responseText: 'Error' });
