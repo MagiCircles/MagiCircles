@@ -454,6 +454,17 @@ class AccountForm(AutoForm):
                         self.collection.get_profile_account_tabs(self.request, RAW_CONTEXT, self.instance).items()
                     ],
                 )
+        if 'level' in self.fields and not self.is_creating:
+            self.previous_level = self.instance.level
+
+    def save(self, commit=True):
+        instance = super(AccountForm, self).save(commit=False)
+        if not self.is_creating and 'level' in self.fields and instance.level != self.previous_level and has_field(instance, '_cache_leaderboards_last_update'):
+            instance._cache_leaderboards_last_update = None
+        if commit:
+            instance.save()
+        return instance
+
 
     class Meta:
         model = models.Account
