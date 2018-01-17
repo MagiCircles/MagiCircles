@@ -68,12 +68,15 @@ def globalContext(request):
     context['javascript_translated_terms_json'] = simplejson.dumps({ term: unicode(_(term)) for term in context['javascript_translated_terms']})
     context['localized_language'] = LANGUAGES_DICT.get(get_language(), '')
     if '/ajax/' not in context['current_url']:
+        context['ajax'] = False
         cuteFormFieldsForContext({
             'language': {
                 'selector': '#switchLanguage',
                 'choices': django_settings.LANGUAGES,
             },
         }, context)
+    else:
+        context['ajax'] = True
     return context
 
 def getGlobalContext(request):

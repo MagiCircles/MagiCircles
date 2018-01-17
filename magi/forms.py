@@ -66,20 +66,23 @@ class HiddenModelChoiceField(forms.IntegerField):
                  *args, **kwargs):
         self.queryset = queryset
         self.to_field_name = to_field_name
+        self.values = {}
         super(HiddenModelChoiceField, self).__init__(*args, **kwargs)
 
     def to_python(self, value):
+        if value in self.values:
+            return self.values[value]
         if value in self.empty_values:
             return None
         try:
             key = self.to_field_name
-            value = self.queryset.get(**{key: value})
+            self.values[value] = self.queryset.get(**{key: value})
         except (ValueError, self.queryset.model.DoesNotExist):
             raise forms.ValidationError(
                 _('Select a valid choice. %(value)s is not one of the available choices.'),
                 params={ 'value': value }, code='invalid_choice',
             )
-        return value
+        return self.values[value]
 
 ############################################################
 # Recommended form for any MagiCollection item

@@ -6,6 +6,7 @@ from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.utils.formats import dateformat
 from django.core.exceptions import PermissionDenied
+from django.utils.datastructures import MultiValueDictKeyError
 from django.http import Http404
 from django.db.models import Count, Q, Prefetch, FieldDoesNotExist
 from magi.views import indexExtraContext
@@ -292,6 +293,23 @@ class MagiCollection(object):
                 back_to_list_button = False
                 max_per_user = 3000
 
+                def extra_context(self, context):
+                    # Display which item is being added
+                    try:
+                        image = context['request'].GET[u'{}_image'.format(parent_collection.name)]
+                    except MultiValueDictKeyError:
+                        image = None
+                    if not context.get('ajax', False):
+                        form_name = u'add_{}'.format(self.collection.name)
+                        add_form = context['forms'][form_name]
+                        item = add_form.fields[item_field_name].to_python(add_form.item_id)
+                        context['page_title'] = u'{}: {}'.format(context['page_title'], unicode(item))
+                        image = item.image_url
+                    if image:
+                        context['imagetitle'] = image
+                        context['imagetitle_size'] = 100
+                        context['icontitle'] = None
+
                 def redirect_after_add(self, request, item, ajax):
                     if ajax:
                         return '/ajax/successadd/'
@@ -508,13 +526,14 @@ class MagiCollection(object):
                 del(buttons[name])
                 continue
             extra_attributes = {}
-            url_to_collectible_add_with_item = lambda url: u'{url}?{item_name}_id={item_id}'.format(
-                url=url, item_name=self.name, item_id=item.id)
+            url_to_collectible_add_with_item = lambda url: u'{url}?{item_name}_id={item_id}&{item_name}_image={item_image}'.format(
+                url=url, item_name=self.name, item_id=item.id, item_image=item.image_url)
             buttons[name]['show'] = view.show_collect_button[name] if isinstance(view.show_collect_button, dict) else view.show_collect_button
             buttons[name]['title'] = collectible_collection.add_sentence
             buttons[name]['badge'] = getattr(item, u'total_{}'.format(name), 0)
             buttons[name]['icon'] = 'add'
             buttons[name]['image'] = collectible_collection.image
+            buttons[name]['ajax_title'] = u'{}: {}'.format(collectible_collection.add_sentence, unicode(item))
             if collectible_collection.add_view.unique_per_owner:
                 extra_attributes['unique-per-owner'] = 'true'
             if collectible_collection.add_view.quick_add_to_collection:
@@ -530,7 +549,6 @@ class MagiCollection(object):
                 delete_sentence = unicode(_('Delete {thing}')).format(thing=unicode(collectible_collection.title).lower())
                 if buttons[name]['badge'] > 0:
                     extra_attributes['alt-message'] = buttons[name]['title']
-                    buttons[name]['ajax_title'] = buttons[name]['title']
                     buttons[name]['title'] = delete_sentence
                 else:
                     extra_attributes['alt-message'] = delete_sentence
