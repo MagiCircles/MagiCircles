@@ -983,7 +983,7 @@ class AccountCollection(MagiCollection):
             ('Unrealistic Level', 'Your level is unrealistic, so we edited it. Please provide screenshots of your game to prove it and we\'ll change it back. Thank you for your understanding.'),
         ])
         for field in self.queryset.model._meta.fields:
-            if not field.name.startswith('_') and field.name not in ['id', 'owner', 'creation', 'level']:
+            if not field.name.startswith('_') and field.name not in ['id', 'owner', 'creation', 'level', 'default_tab']:
                 name = field.name
                 if name.startswith('i_'):
                     name = name[2:]
