@@ -989,7 +989,7 @@ class AccountCollection(MagiCollection):
                     name = name[2:]
                 name = name.replace('_', ' ').title()
                 if isinstance(field, models.models.fields.CharField):
-                    templates[u'Inappropriate {}'.format(name)] = 'Your account\'s {} was inappropriate. ' + please_understand_template_sentence.format(name)
+                    templates[u'Inappropriate {}'.format(name)] = u'Your account\'s {} was inappropriate. {}'.format(name.lower(), please_understand_template_sentence)
         return templates
 
     def to_fields(self, item, *args, **kwargs):
