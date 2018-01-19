@@ -1604,7 +1604,7 @@ class BadgeCollection(MagiCollection):
         alert_duplicate = False
 
         def extra_context(self, context):
-            form_name = u'add_{}'.format(self.name)
+            form_name = u'add_{}'.format(self.collection.name)
             if hasattr(context['forms'][form_name], 'badge'):
                 context['alert_message'] = string_concat(_('Badge'), ': ', unicode(context['forms'][form_name].badge))
                 context['alert_type'] = 'info'
