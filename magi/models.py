@@ -501,8 +501,9 @@ class Report(MagiModel):
     @property
     def reported_thing_plural_name(self):
         if not self._reported_thing_plural_name:
-            self._reported_thing_plural_name = getMagiCollection(name).plural_name
+            self._reported_thing_plural_name = getMagiCollection(self.reported_thing).plural_name
         return self._reported_thing_plural_name
+    _reported_thing_plural_name = None
 
     @property
     def item_view_enabled(self):
