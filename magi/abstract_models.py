@@ -128,9 +128,9 @@ class BaseAccount(CacheOwner):
     collection_name = 'account'
 
     owner = models.ForeignKey(User, related_name='accounts')
-    creation = models.DateTimeField(_('Join Date'), auto_now_add=True)
-    nickname = models.CharField(_('Nickname'), max_length=200, null=True, help_text=_('Give a nickname to your new account to easily differenciate it from your other accounts when you\'re managing them.'))
-    start_date = models.DateField(_('Start Date'), null=True)
+    creation = models.DateTimeField(_('Join date'), auto_now_add=True)
+    nickname = models.CharField(_('Nickname'), max_length=200, null=True, help_text=_('Give a nickname to your account to easily differenciate it from your other accounts when you\'re managing them.'))
+    start_date = models.DateField(_('Start date'), null=True)
     level = models.PositiveIntegerField(_('Level'), null=True)
 
     default_tab = models.CharField(_('Default tab'), max_length=100, null=True)
