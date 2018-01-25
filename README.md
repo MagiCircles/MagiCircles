@@ -65,32 +65,42 @@ Similarly, it is not allowed to monetize a website that uses MagiCircles using a
 
 1. [Start a new website](#start-a-new-website)
     1. [Requirements](#requirements)
-    1. [Quick Start](#quick-start)
+    1. [Quick start](#quick-start)
     1. [Full starting guide](#full-starting-guide)
     1. [Start coding!](#start-coding)
     1. [Frequent problems](#frequent-problems)
 1. [Files tree](#files-tree)
-1.  [Website Settings](#website-settings)
+1. [Website Settings](#website-settings)
 1. [Collections](#collections)
     1. [Models](#models)
-      	1. [Inherit from MagiModel and provide a name](#inherit-from-magiModel-and-provide-a-name)
-	    1. [Have an owner](#have-an-owner)
-	    1. [Override `__unicode__`](#override-unicode-)
+        1. [Inherit from MagiModel and provide a name](#inherit-from-magimodel-and-provide-a-name)
+        1. [Have an owner](#have-an-owner)
+        1. [Override `__unicode__`](#override-__unicode__)
+        1. [MagiModel utils](#magimodel-utils)
+            1. [MagiModel collection utils](#magimodel-collection-utils)
+            1. [MagiModel Images](#magimodel-images)
+            1. [BaseAccount model](#baseaccount-model)
+            1. [Save choices values as integer rather than strings](#save-choices-values-as-integer-rather-than-strings)
+            1. [Store comma separated values](#store-comma-separated-values)
+            1. [Transform images before saving them](#transform-images-before-saving-them)
+            1. [Check choices at form level instead of model level](#check-choices-at-form-level-instead-of-model-level)
     1. [MagiCollection](#magicollection)
-      	1. [Views](#views)
+        1. [Views](#views)
             1. [All views](#all-views)
             1. [List view](#list-view)
             1. [Item view](#item-view)
             1. [Add view](#add-view)
             1. [Edit view](#edit-view)
-        1. [Collectible](#collectible)
-        1. [CuteForm](#cuteform)
-        1. [Item types](#item-types)
-        1. [to_field method](#to-field-method)
+        1. [MagiCollection utils](#magicollection-utils)
+            1. [Collectible](#collectible)
+            1. [CuteForm](#cuteform)
+            1. [Item types](#item-types)
+            1. [to_field method](#to_field-method)
+            1. [AccountCollection](#accountcollection)
     1. [MagiForm](#magiform)
     1. [MagiFilter](#magifilter)
         1. [Search and ordering](#search-and-ordering)
-        2. [Configure fields](#configure-fields)
+        1. [Configure fields](#configure-fields)
 1. [Enabled Pages](#enabled-pages)
 1. [Default pages and collections](#default-pages-and-collections)
     1. [Default pages](#default-pages)
@@ -99,14 +109,11 @@ Similarly, it is not allowed to monetize a website that uses MagiCircles using a
     1. [Enable/Disable/Configure default pages and collections](#enabledisableconfigure-default-pages-and-collections)
 1. [Nav bar lists](#nav-bar-lists)
 1. [API](#api)
+    1. [MagiSerializer](#magiserializer)
+    1. [ImageField](#imagefield)
+    1. [IField](#ifield)
+    1. [Full Example](#full-example)
 1. [Utils](#utils)
-    1. [MagiModel utils](magimodel-utils)
-        1. [MagiModel collection utils](#magimodel-collection-utils)
-        1. [MagiModel Images](#magimodel-images)
-        1. [Save choices values as integer rather than strings](#save-choices-values-as-integer-rather-than-strings)
-        1. [Store comma separated values](#store-comma-separated-values)
-        1. [Transform images before saving them](#transform-images-before-saving-them)
-        1. [Check choices at form level instead of model level](#check-choices-at-form-level-instead-of-model-level)
     1. [Python](#python)
         1. [Models upload](#models-upload)
         1. [Access MagiCollections](#access-magicollections)
@@ -117,7 +124,7 @@ Similarly, it is not allowed to monetize a website that uses MagiCircles using a
         1. [Tools](#tools)
     1. [Javascript](#javascript)
         1. [HTML elements with automatic Javascript behavior](#html-elements-with-automatic-javascript-behavior)
-	      1. [Commons](#commons)
+        1. [Commons](#commons)
 1. [Recommendations](#recommendations)
     1. [Don't concatenate translated strings](#dont-concatenate-translated-strings)
     1. [Internal cache for foreign keys in models](#internal-cache-for-foreign-keys-in-models)
@@ -128,8 +135,8 @@ Similarly, it is not allowed to monetize a website that uses MagiCircles using a
     1. [Disable activities](#disable-activities)
     1. [Disable activities but keep news for staff members](#disable-activities-but-keep-news-for-staff-members)
 1. [Production Environment](#production-environment)
-1. [Flaticon](#flaticon)
 1. [Translations](#translations)
+1. [Flaticon](#flaticon)
 1. [Migrate from MagiCircles1 to MagiCircles2](#migrate-from-magicircles1-to-magicircles2)
 
 Start a new website
@@ -547,7 +554,7 @@ git push
    ```
 
 23. Start setting up your settings, custom pages and collections:
-    - See ⎡[Webite Settings](#website-settings)⎦
+    - See ⎡[Website Settings](#website-settings)⎦
     - See ⎡[Collections](#collections)⎦
     - See ⎡[Enabled pages](#enabled-pages)⎦
 
@@ -637,7 +644,7 @@ This is the recommended file tree for your MagiCircles projects. Many of the fil
 - `manage.py`: default django script script to run commands
 - `requirements.txt`: your python dependencies
 
-Webite Settings
+Website Settings
 ===============
 
 Your settings file is located in `sample/settings.py`.
@@ -646,7 +653,7 @@ Required settings:
 
 | Setting | About |
 |---------|-------|
-| ACCOUNT_MODEL | Your custom model to handle game accounts (`models.Account`) |
+| ACCOUNT_MODEL | Your custom model to handle game accounts (`models.Account`). It's highly recommended to make it inherit from `magi.abstract_models.BaseAccount`. |
 | COLOR | The dominant hex color of the website, must be the same than @mainColor in LESS ("#4a86e8") |
 | DISQUS_SHORTNAME | Go to [Disqus](https://disqus.com/admin/create/) to create a new website and provide the shortname of your new website here. It will be used to display comment sections under some of your pages or collections. :warning: Make sure you disable adertisments in your disqus website settings! |
 | GAME_NAME | Full name of the game that the website is about ("Sample Game") |
@@ -660,6 +667,7 @@ Optional settings:
 | Setting | About | Default value |
 |---------|-------|---------------|
 | ABOUT_PHOTO | Path of the image in `sample/static/img` folder | "engildeby.gif" |
+| ACCOUNT_TAB_ORDERING | List of tabs names in the order you would like them to appear for each profile account tabs. Missing tab names in this list will just appear at the end.  | None (order not guaranteed) |
 | ACTIVITY_TAGS | List of tuples (raw value, full localizable tag name) for the tags that can be added ao an activity | None |
 | BUG_TRACKER_URL | Full URL where people can see issues (doesn't have to be github) | Full URL created from the GITHUB_REPOSITORY value |
 | CALL_TO_ACTION | A sentence shown on the default index page to encourage visitors to sign up | _('Join the community!') |
@@ -857,6 +865,268 @@ def __unicode__(self):
     return u'{rarity}'.format(rarity=self.rarity)
 ```
 
+
+### MagiModel utils
+
+#### MagiModel collection utils
+
+All your models that inherit from `MagiModel` or `BaseMagiModel` provide the following class methods:
+
+| Name | Description | Parameters | Return value |
+|------|-------------|------------|--------------|
+| selector_to_owner | Django model query selector you can use to retrieve the User object that correspond to the owner of this instance. | None | String query selector (example: 'owner', 'account__owner', 'chapter__book__owner') |
+| owner_ids | Get the list of ids of the fk_as_owner. For example, for a card that uses accounts as owner, it would return the list of account ids owned by the user. For the 'chapter__book__owner' case, it would return the list of chapters owned by the user. | user | List of ids |
+| owner_collection | For example for account would return AccountCollection. | None | An instance of a MagiCollection or None |
+
+All your models that inherit from `MagiModel` or `BaseMagiModel` provide the following methods:
+
+| Name | Description | Parameters | Return value |
+|------|-------------|------------|--------------|
+| is_owner | Is the user in parameters the owner of this instance? | user | True or False |
+
+All your models that inherit from `MagiModel` (not `BaseMagiModel`) provide the following properties (not meant to be overriden):
+
+| Key | Value | Example |
+|-----|-------|---------|
+| `collection` | Associated MagiCollection object (retrieved using the `collection_name`) | Instance of IdolCollection |
+| `collection_title` | MagiCollection setting for localized title | _('Idol') |
+| `collection_plural_name` | MagiCollection setting for non-localized plural | For 'idol', it would be  `idols`, for 'activity', it would be `activities` |
+| `item_url` | The URL to the ItemView | `/idol/1/Nozomi/` |
+| `ajax_item_url` | The URL to the ajax ItemView | `/ajax/idol/1/` |
+| `full_item_url` | The URL to the ItemView with the domain | `//sample.com/idol/1/Nozomi/` |
+| `http_item_url` | The URL to the ItemView with the domain and `http` (when `//` URLs are not supported, such as in emails or when sharing) | `http://sample.com/idol/1/Nozomi/` |
+| `edit_url` | The URL of the EditView | `/idols/edit/1/` |
+| `ajax_edit_url` | The URL of the ajax EditView | `/ajax/idols/edit/1/` |
+| `report_url` | The URL to report this item | `/idols/report/1/` |
+| `open_sentence` | Localized sentence to open this item (open the ItemView) | `Open idol` |
+| `edit_sentence` | Localized sentence to edit this item, also used to open the page to edit this item (EditView)  | `Edit idol` |
+| `delete_sentence` | Localized sentence to delete this item | `Delete idol` |
+| `report_sentence` | Localized sentence to report this item, or open the page to report this item | `Report idol` |
+
+These properties are only available for `MagiModel` and not `BaseMagiModel`.
+
+#### MagiModel Images
+
+If your model contains images, you may access the following properties for each of the images, where `image` is the name of the field:
+
+| Key | Value | Example |
+|-----|-------|---------|
+| `image_url` | The full url of the `image` field | `//i.sample.com/static/uploaded/idols/Nozomi.png` |
+| `http_image_url` | The full url of the `image` field with `http` (when `//` URLs are not supported, such as in emails or when sharing) | `http://i.sample.com/static/uploaded/idols/Nozomi.png` |
+
+#### BaseAccount model
+
+You have to provide the model class that corresponds to an account (see [Start a new website](#start-a-new-website)):
+
+```python
+   from magi.abstract_models import BaseAccount
+
+   class Account(BaseAccount):
+       class Meta:
+           pass
+```
+
+By using `BaseAccount` and the default `AccountCollection` classes, MagiCircles will provide default templates and default behavior.
+
+Some fields are not in `BaseAccount`, but if you add them in your `Account` model, templates and logic will know how to handle expected behavior:
+
+| Expected field name | Recommended field type | Behavior |
+|---------------------|------------------------|----------|
+| `friend_id` | models.PositiveIntegerField(_('Friend ID'), null=True) | Displayed on the account details both on leaderboard and profile. |
+| `show_friend_id` | models.BooleanField(_('Should your friend ID be visible to other players?'), default=True) | Will show/hide friend id displayed on the account details both on leaderboard, profile, and profile account tab "about". |
+| `center` | models.ForeignKey('CollectibleCard', verbose_name=_('Center'), related_name='center_of_account', null=True, on_delete=models.SET_NULL) | Will select_related on profile only (not leaderboard) and display the center instead of the avatar on profile page accounts. <ul><li>`.image` is required</li><li>`.color` will be used as a class `panel-`, otherwise css color in preferences</li><li>`.art` will be used as an image background instead of side small image if present.</li></ul> |
+| `screenshot` | models.ImageField(_('Screenshot'), help_text=_('In-game profile screenshot'), upload_to=uploadItem('account_screenshot'), null=True) | Used for self service verifications. Becomes required when user tries to jump 10+ levels and level is > 200. |
+
+Note that even though you need the exact same field name, you can give it a label of your choice to have a display name that matches your needs.
+
+If you want to personalize the templates and behavior of the default accounts, you can override variables and methods in both `Account` model and `AccountCollection` class.
+
+Note that you can't remove any model field in `BaseAccount`. If you don't want to use one, just delete it from the fields in the form so it never gets populated.
+
+#### Save choices values as integer rather than strings
+
+Instead of saving your choice field as a string which values is from a list of string choices, use integers. It makes the database queries faster when filtering.
+
+To do that, start your field name with `i_` like so:
+
+```python
+from magi.models import MagiModel, i_choices
+
+class Card(MagiModel):
+
+    POWER_CHOICES = (
+        _('Happy'),
+        _('Cool'),
+        _('Rock'),
+    )
+    i_power = models.PositiveIntegerField(choices=i_choices(POWER_CHOICES), default=0)
+```
+
+It will be stored as an integer in the database, but you can easily access the human readable value with:
+
+```python
+card.power   # will return _('Cool')
+card.i_power # will return 1
+```
+
+Note: your model must contain the list of choices with the right naming: `power` -> `POWER_CHOICES`, `super_power` -> `SUPER_POWER_CHOICES`.
+
+Note: Do not use dictionaries, as the order is not guaranteed. You may use an OrderedDict instead of a list of tuples if needed.
+
+If you need a clear way to compare the value, you may want to use untranslated values:
+
+```python
+if card.power == _('Happy'): # comparing translated strings doesn't work
+   ...
+```
+
+To do so, you can provide a string key to your choices like so:
+
+```python
+from magi.models import MagiModel, i_choices
+
+class Card(MagiModel):
+
+    POWER_CHOICES = (
+        ('happy', _('Happy')),
+        ('cool', _('Cool')),
+        ('rock', _('Rock')),
+    )
+    i_power = models.PositiveIntegerField(choices=i_choices(POWER_CHOICES), default=0)
+```
+
+You may now do:
+
+```python
+if card.power == 'happy':
+   ...
+```
+
+And you can access the translated value with:
+
+```python
+card.t_power # translated "Happy"
+```
+
+If filtering by these choices is done very often, you may also set a db index:
+```python
+    i_power = models.PositiveIntegerField(choices=i_choices(POWER_CHOICES), default=0, db_index=True)
+```
+
+If you need to initialize or update the value outside of the context of a form, you may want to retrieve the integer value for a given string field. You can do so using the class method `get_i`:
+
+```python
+new_card = models.Card.objects.create(name='Julia', i_power=models.Card.get_i('power', 'rock'))
+# or
+new_card.i_power = models.Card.get_i('power', 'cool')
+```
+
+Similarly, you may retrieve the integer value from the string value using `get_reverse_i`:
+
+```python
+print models.Card.get_reverse_i('cool') # will print 1
+```
+
+Note: If you want to change your choices in the future, keep in mind that you might need to update your database manually to reflect the correct integer values.
+
+You can still call your field `i_something` if you would like to enjoy the handy shortcuts provided by i_ but still want to store your value as something else than an integer. You just need to specify that your choices don't use i_choices using `SOMETHING_WITHOUT_I_CHOICES` like so:
+
+```python
+class Article(BaseMagiModel):
+    LANGUAGE_CHOICES = (
+        ('en', _('English')),
+        ('es', _('Spanish')),
+        ('ru', _('Russian')),
+        ('it', _('Italian')),
+    )
+    LANGUAGE_WITHOUT_I_CHOICES = True
+    i_language = models.CharField(_('Language'), max_length=10, choices=LANGUAGE_CHOICES, default='en')
+
+print article.language # will print en
+print article.i_language # will print en
+print article.t_language # will print English
+```
+
+#### Store comma separated values
+
+While the recommended Django way of storing a list of values in a model is to use a separate model with `ManyToMany`, it can be quite costly, since you will need extra queries to retrieve the values. For simple list of values like strings, you can store them as comma separated values.
+
+To do so, start your field name with `c_`, like so:
+
+```python
+class Card(MagiModel):
+    c_abilities = models.TextField(blank=True, null=True)
+```
+
+You may now access the CSV values in a convenient array like so:
+
+```python
+print card.abilities # ["fly", "dance", "heal"] (list)
+print card.c_abilities # "fly","dance","heal" (string)
+```
+
+You may limit your CSV values to a list of choices like so:
+
+```python
+class Card(MagiModel):
+    ABILITIES_CHOICES = (
+        ('fly', _('Fly')),
+        ('dance', _('Dance')),
+        ('sing', _('Sing')),
+        ('heal', _('Heal')),
+    )
+    c_abilities = models.TextField(blank=True, null=True)
+```
+
+Choices will not be enforced at the database level, but will help MagiForms show checkboxes.
+
+You can get the list of translated CSV values using `t_`. It will return an ordered dictionary.
+
+```python
+card.t_abilities # { 'fly': _('Fly'), 'dance': _('Dance'), 'heal': _('Heal') }
+```
+
+If choices are not provided or are provided without translations, it's going to return a dictionary with the same value as key and value.
+
+Some methods are available directly in MagiModel to add and remove values from the CSV:
+
+| Name | Description | Parameters | Return value |
+|------|-------------|------------|--------------|
+| add_c | Add strings to a CSV formatted c_something | field_name, to_add | None |
+| remove_c | Remove strings from a CSV formatted c_something | field_name, to_remove | None |
+| save_c | Completely replace any existing CSV formatted list into c_something | field_name, c | None |
+
+You still need to call `save` on your instance to save the values in database.
+
+Example:
+
+```
+card = model.Card.objects.get(id=1)
+card.add_c('abilities', ['fly', 'dance'])
+card.save()
+```
+
+#### Transform images before saving them
+
+You may provide a `tinypng_settings` dictionary in your MagiModel to let your future MagiForm know how to transform your images before saving them.
+
+For the full details of the dictionary, see ⎡[Optimize images with TinyPNG](#optimize-images-with-tinypng)⎦.
+
+#### Check choices at form level instead of model level
+
+It's recommended to add the choices in your field and let django validators and your database engine do the work for you.
+
+If for some reason you can't or don't want to enforce it at the model level, you can enforce the choices at the form level (when using MagiForm):
+
+```python
+class Idol(MagiModel):
+    LANGUAGE_SOFT_CHOICES = (
+        ('en', _('English')),
+        ('es', _('Spanish')),
+    )
+    i_language = models.CharField(max_length=10)
+```
+
 ## MagiCollection
 
 Collections available should be configured in `sample/magicollections.py`. It's a class that inherits from `MagiCollection`.
@@ -869,7 +1139,7 @@ class IdolCollection(MagiCollection):
     queryset = models.Idol.objects.all()
 ```
 
-For each collection, you may also override the fields and methods. When overriding methods, it's recommended to call its `super`.
+For each collection, you may also override the fields and methods. When overriding methods, it's recommended to call its `super`. Not doing so may cause unexpected behavior.
 
 - Required settings:
 
@@ -938,7 +1208,7 @@ For each collection, you may also override the fields and methods. When overridi
 | buttons_per_item | Used to display buttons below item, only for ItemView and ListView. Any new dictionary within the returned dictionary of buttons must contain the following keys: show, has_permissions, title, url, classes and may contain icon, image, url, open_in_new_window, ajax_url, ajax_title, extra_attributes. Can be overriden in ItemView and ListView. | view, request, context, item | Dictionary of dictionary | Will automatically determine and fill up buttons for collectibles, edit, report. |
 | get_queryset | Queryset used to retrieve the item(s). Can be overriden per view. | queryset, parameters, request | Django queryset | The queryset given as parameters |
 | form_class | Form class to add / edit an item. Doesn't have to be a method (see above). Can be overriden per view. | request, context | A form class | AutoForm |
-| to_fields | See ⎡[to_fields method](#to-field-method)⎦ |
+| to_fields | See ⎡[to_fields method](#to_field-method)⎦ |
 
 ### Views
 
@@ -1055,7 +1325,7 @@ List view for a staff member will hide all the staff buttons by default and you 
 | add_button_subtitle | A button to add an item will be displayed on top of the page, with a subtitle. | _('Become a contributor to help us fill the database') | _('Share your adventures!') |
 | show_title | Should a title be displayed on top of the page? If set to `True`, the title will be the `plural_title` in the collection. | False | |
 | full_width | By default, the page will be in a bootstrap container, which will limit its width to a maximum, depending on the screen size. You may change this to `True` to always get the full width | False | |
-| show_relevant_fields_on_ordering | By default, when an `ordering` is specified in the search bar, the specified ordering field will be displayed under each item (see ⎡[to_fields method](#to-field-method)⎦). | True | |
+| show_relevant_fields_on_ordering | By default, when an `ordering` is specified in the search bar, the specified ordering field will be displayed under each item (see ⎡[to_fields method](#to_field-method)⎦). | True | |
 | hide_sidebar | By default, the side bar will be open when you open the page. You may leave it close by default, but keep in mind that it's very unlikely that your users will find it by themselves. | False | |
 | filter_cuteform | See ⎡[CuteForm](#cuteform)⎦. Can be specified in collection. | | |
 | default_ordering | String name of a field (only one) | '-creation' | 'level' |
@@ -1195,7 +1465,9 @@ See also: [settings available in all views](#all-views).
 
 See also: [methods available in all views](#all-views).
 
-### Collectible
+### MagiCollection utils
+
+#### Collectible
 
 ![](http://i.imgur.com/r3FrVK5.png)
 
@@ -1256,7 +1528,7 @@ class CardCollection(MagiCollection):
     }
 ```
 
-### CuteForm
+#### CuteForm
 
 ![](http://i.imgur.com/nL7JVGw.png)
 
@@ -1278,7 +1550,7 @@ Dictionary of:
     - `transform`: when to_cuteform is a lambda: CuteFormTransform.No, .ImagePath, .Flaticon, .FlaticonWithText
     - `image_folder`: only when to_cuteform = 'images' or transform = .ImagePath, will specify the images path
 
-### Item types
+#### Item types
 
 ![](http://i.imgur.com/AUcuMU8.png)
 
@@ -1310,7 +1582,7 @@ For each type, you may specify the following settings in its dictionary:
 
 The type will be passed to the formClass when it's initialized, which allows you to reuse the same form class for all your types if you'd like.
 
-### to_field method
+#### to_field method
 
 `to_field` is a method in collections.
 
@@ -1354,6 +1626,20 @@ In ListView, when ordering is specified:
 In ItemView, when using the default template:
 
 ![](http://i.imgur.com/ikMoXCq.png)
+
+#### AccountCollection
+
+You can override the following variables in account collection:
+
+| View | Name | Type | Description |
+|------|------|------|-------------|
+| Add view | simpler_form | Form class | If you provide it, it will use it instead of the form_class by default and display an "Advanced" button to switch back to the full form. |
+
+You can override the following methods in account collection:
+
+| View | Name | Parameters | Return value | Description |
+|------|------|------------|--------------|-------------|
+| None | get_profile_account_tabs | request, context, account | Ordered dict that: <ul><li>MUST contain name, callback (except for about)</li><li>May contain icon, image, callback</li></ul> | List of tabs displayed on profile page, called by ItemView of User (corresponds to profile view) |
 
 ## MagiForm
 
@@ -1764,241 +2050,9 @@ class CardViewSet(viewsets.ModelViewSet):
 Utils
 ===
 
-## MagiModel utils
-
-### MagiModel collection utils
-
-All your models that inherit from `MagiModel` or `BaseMagiModel` provide the following class methods:
-
-| Name | Description | Parameters | Return value |
-|------|-------------|------------|--------------|
-| selector_to_owner | Django model query selector you can use to retrieve the User object that correspond to the owner of this instance. | None | String query selector (example: 'owner', 'account__owner', 'chapter__book__owner') |
-| owner_ids | Get the list of ids of the fk_as_owner. For example, for a card that uses accounts as owner, it would return the list of account ids owned by the user. For the 'chapter__book__owner' case, it would return the list of chapters owned by the user. | user | List of ids |
-| owner_collection | For example for account would return AccountCollection. | None | An instance of a MagiCollection or None |
-
-All your models that inherit from `MagiModel` or `BaseMagiModel` provide the following methods:
-
-| Name | Description | Parameters | Return value |
-|------|-------------|------------|--------------|
-| is_owner | Is the user in parameters the owner of this instance? | user | True or False |
-
-All your models that inherit from `MagiModel` (not `BaseMagiModel`) provide the following properties (not meant to be overriden):
-
-| Key | Value | Example |
-|-----|-------|---------|
-| `collection` | Associated MagiCollection object (retrieved using the `collection_name`) | Instance of IdolCollection |
-| `collection_title` | MagiCollection setting for localized title | _('Idol') |
-| `collection_plural_name` | MagiCollection setting for non-localized plural | For 'idol', it would be  `idols`, for 'activity', it would be `activities` |
-| `item_url` | The URL to the ItemView | `/idol/1/Nozomi/` |
-| `ajax_item_url` | The URL to the ajax ItemView | `/ajax/idol/1/` |
-| `full_item_url` | The URL to the ItemView with the domain | `//sample.com/idol/1/Nozomi/` |
-| `http_item_url` | The URL to the ItemView with the domain and `http` (when `//` URLs are not supported, such as in emails or when sharing) | `http://sample.com/idol/1/Nozomi/` |
-| `edit_url` | The URL of the EditView | `/idols/edit/1/` |
-| `ajax_edit_url` | The URL of the ajax EditView | `/ajax/idols/edit/1/` |
-| `report_url` | The URL to report this item | `/idols/report/1/` |
-| `open_sentence` | Localized sentence to open this item (open the ItemView) | `Open idol` |
-| `edit_sentence` | Localized sentence to edit this item, also used to open the page to edit this item (EditView)  | `Edit idol` |
-| `delete_sentence` | Localized sentence to delete this item | `Delete idol` |
-| `report_sentence` | Localized sentence to report this item, or open the page to report this item | `Report idol` |
-
-These properties are only available for `MagiModel` and not `BaseMagiModel`.
-
-### MagiModel Images
-
-If your model contains images, you may access the following properties for each of the images, where `image` is the name of the field:
-
-| Key | Value | Example |
-|-----|-------|---------|
-| `image_url` | The full url of the `image` field | `//i.sample.com/static/uploaded/idols/Nozomi.png` |
-| `http_image_url` | The full url of the `image` field with `http` (when `//` URLs are not supported, such as in emails or when sharing) | `http://i.sample.com/static/uploaded/idols/Nozomi.png` |
-
-### Save choices values as integer rather than strings
-
-Instead of saving your choice field as a string which values is from a list of string choices, use integers. It makes the database queries faster when filtering.
-
-To do that, start your field name with `i_` like so:
-
-```python
-from magi.models import MagiModel, i_choices
-
-class Card(MagiModel):
-
-    POWER_CHOICES = (
-        _('Happy'),
-        _('Cool'),
-        _('Rock'),
-    )
-    i_power = models.PositiveIntegerField(choices=i_choices(POWER_CHOICES), default=0)
-```
-
-It will be stored as an integer in the database, but you can easily access the human readable value with:
-
-```python
-card.power   # will return _('Cool')
-card.i_power # will return 1
-```
-
-Note: your model must contain the list of choices with the right naming: `power` -> `POWER_CHOICES`, `super_power` -> `SUPER_POWER_CHOICES`.
-
-Note: Do not use dictionaries, as the order is not guaranteed. You may use an OrderedDict instead of a list of tuples if needed.
-
-If you need a clear way to compare the value, you may want to use untranslated values:
-
-```python
-if card.power == _('Happy'): # comparing translated strings doesn't work
-   ...
-```
-
-To do so, you can provide a string key to your choices like so:
-
-```python
-from magi.models import MagiModel, i_choices
-
-class Card(MagiModel):
-
-    POWER_CHOICES = (
-        ('happy', _('Happy')),
-        ('cool', _('Cool')),
-        ('rock', _('Rock')),
-    )
-    i_power = models.PositiveIntegerField(choices=i_choices(POWER_CHOICES), default=0)
-```
-
-You may now do:
-
-```python
-if card.power == 'happy':
-   ...
-```
-
-And you can access the translated value with:
-
-```python
-card.t_power # translated "Happy"
-```
-
-If filtering by these choices is done very often, you may also set a db index:
-```python
-    i_power = models.PositiveIntegerField(choices=i_choices(POWER_CHOICES), default=0, db_index=True)
-```
-
-If you need to initialize or update the value outside of the context of a form, you may want to retrieve the integer value for a given string field. You can do so using the class method `get_i`:
-
-```python
-new_card = models.Card.objects.create(name='Julia', i_power=models.Card.get_i('power', 'rock'))
-# or
-new_card.i_power = models.Card.get_i('power', 'cool')
-```
-
-Similarly, you may retrieve the integer value from the string value using `get_reverse_i`:
-
-```python
-print models.Card.get_reverse_i('cool') # will print 1
-```
-
-Note: If you want to change your choices in the future, keep in mind that you might need to update your database manually to reflect the correct integer values.
-
-You can still call your field `i_something` if you would like to enjoy the handy shortcuts provided by i_ but still want to store your value as something else than an integer. You just need to specify that your choices don't use i_choices using `SOMETHING_WITHOUT_I_CHOICES` like so:
-
-```python
-class Article(BaseMagiModel):
-    LANGUAGE_CHOICES = (
-        ('en', _('English')),
-        ('es', _('Spanish')),
-        ('ru', _('Russian')),
-        ('it', _('Italian')),
-    )
-    LANGUAGE_WITHOUT_I_CHOICES = True
-    i_language = models.CharField(_('Language'), max_length=10, choices=LANGUAGE_CHOICES, default='en')
-
-print article.language # will print en
-print article.i_language # will print en
-print article.t_language # will print English
-```
-
-### Store comma separated values
-
-While the recommended Django way of storing a list of values in a model is to use a separate model with `ManyToMany`, it can be quite costly, since you will need extra queries to retrieve the values. For simple list of values like strings, you can store them as comma separated values.
-
-To do so, start your field name with `c_`, like so:
-
-```python
-class Card(MagiModel):
-    c_abilities = models.TextField(blank=True, null=True)
-```
-
-You may now access the CSV values in a convenient array like so:
-
-```python
-print card.abilities # ["fly", "dance", "heal"] (list)
-print card.c_abilities # "fly","dance","heal" (string)
-```
-
-You may limit your CSV values to a list of choices like so:
-
-```python
-class Card(MagiModel):
-    ABILITIES_CHOICES = (
-        ('fly', _('Fly')),
-        ('dance', _('Dance')),
-        ('sing', _('Sing')),
-        ('heal', _('Heal')),
-    )
-    c_abilities = models.TextField(blank=True, null=True)
-```
-
-Choices will not be enforced at the database level, but will help MagiForms show checkboxes.
-
-You can get the list of translated CSV values using `t_`. It will return an ordered dictionary.
-
-```python
-card.t_abilities # { 'fly': _('Fly'), 'dance': _('Dance'), 'heal': _('Heal') }
-```
-
-If choices are not provided or are provided without translations, it's going to return a dictionary with the same value as key and value.
-
-Some methods are available directly in MagiModel to add and remove values from the CSV:
-
-| Name | Description | Parameters | Return value |
-|------|-------------|------------|--------------|
-| add_c | Add strings to a CSV formatted c_something | field_name, to_add | None |
-| remove_c | Remove strings from a CSV formatted c_something | field_name, to_remove | None |
-| save_c | Completely replace any existing CSV formatted list into c_something | field_name, c | None |
-
-You still need to call `save` on your instance to save the values in database.
-
-Example:
-
-```
-card = model.Card.objects.get(id=1)
-card.add_c('abilities', ['fly', 'dance'])
-card.save()
-```
-
-### Transform images before saving them
-
-You may provide a `tinypng_settings` dictionary in your MagiModel to let your future MagiForm know how to transform your images before saving them.
-
-For the full details of the dictionary, see ⎡[Optimize images with TinyPNG](#optimize-images-with-tinypng)⎦.
-
-### Check choices at form level instead of model level
-
-It's recommended to add the choices in your field and let django validators and your database engine do the work for you.
-
-If for some reason you can't or don't want to enforce it at the model level, you can enforce the choices at the form level (when using MagiForm):
-
-```python
-class Idol(MagiModel):
-    LANGUAGE_SOFT_CHOICES = (
-        ('en', _('English')),
-        ('es', _('Spanish')),
-    )
-    i_language = models.CharField(max_length=10)
-```
-
 ## Python
 
-#### Models upload
+### Models upload
 
 ```python
 from magi.utils import uploadToRandom, uploadItem
@@ -2011,7 +2065,7 @@ class Idol(MagiModel):
 - `uploadItem` will use the `__unicode__` function of the model to name the file, in addition to random characters (to make sure browsers load the latest uploaded images when re-written). It is useful for SEO purposes and recommended for the main collections (cards, characters, ...).
 - `uploadRandom` will just generate a random string as the file name. It's only recommended when the `__unicode__` of the model is meaningless or for user-submitted content (activities for example).
 
-#### Access MagiCollections
+### Access MagiCollections
 
 - From anywhere:
   ```python
@@ -2031,7 +2085,7 @@ class Idol(MagiModel):
 
 Both are not recommended, and you'll usually find other ways to get the information you need than by accessing the collection object.
 
-#### Optimize images with TinyPNG
+### Optimize images with TinyPNG
 
 If you use the recommended MagiForm classes, you don't need to worry about optimizing images yourself. Outside of this context, you may use `shrinkImageFromData`:
 
@@ -2058,11 +2112,11 @@ Settings can be either:
 
 See [TinyPNG's documentation](https://tinypng.com/developers/reference) for more details about how images get resized.
 
-#### Validators
+### Validators
 
 Validators may be used on forms and models.
 
-##### FutureOnlyValidator and PastOnlyValidator
+#### FutureOnlyValidator and PastOnlyValidator
 
 ```python
 from magi.utils import PastOnlyValidator
@@ -2074,7 +2128,7 @@ class Account(MagiModel):
 
 In this example, if you try to set the start_date to some time in the future, it will raise an error.
 
-#### Other tools
+### Other tools
 
 | Name | Description | Parameters | Return value |
 |------|-------------|------------|--------------|
@@ -2093,7 +2147,7 @@ In this example, if you try to set the start_date to some time in the future, it
 | redirectToProfile | Raises an exception that will make the current request redirect to the profile of the authenticated user. If specified, will redirect to a specific account anchor within the profile. | request, account=None | None (raises an exception) |
 | redirectWhenNotAuthenticated | Will check if the current user is authenticated, and if not, will redirect to the signup page with `next` set as the `current_url` | request, context, next_title=None | None (raises an exception) |
 | send_email | Send an email | subject, template_name, to=[], context={}, from_email=django_settings.AWS_SES_RETURN_PATH | None |
-| setSubField | Mostly used when overriding `to_fields`. See ⎡[to_fields method](#to-field-method)⎦. | fields, field_name, value, key='icon' | None (updates fields in place) |
+| setSubField | Mostly used when overriding `to_fields`. See ⎡[to_fields method](#to_field-method)⎦. | fields, field_name, value, key='icon' | None (updates fields in place) |
 | torfc2822 | Date format frequently used in Javascript | date | string |
 | tourldash | Takes any string and returns a URL-friendly string. Example: "Hi! You're awesome." becomes "Hi-You-re-awesome" | string | string
 
@@ -2143,11 +2197,11 @@ All the following functions are available in all pages. You can call them from a
 | genericAjaxError | You may use this function to handle errors in your ajax calls. It will simply display the error in an alert | xhr, ajaxOptions, thrownError | None |
 | directAddCollectible | To be used with buttons to add an item to your collection. Instead of loading the form to add in a modal, will attempt to load it in the background and submit it, then update the counter of total collected items. uniquePerOwner can also be set in data-unique-per-owner. | buttons, uniquePerOwner (optional, default=False) | None |
 
-#### HTML elements with automatic Javascript behavior
+### HTML elements with automatic Javascript behavior
 
 There are some classes you can add to your HTML elements that will automatically make them do something for you. It allows you to avoid loading a Javascript file just to run something simple and common.
 
-###### Load an Ajax page in a modal
+#### Load an Ajax page in a modal
 
 - Add an attribute `data-ajax-url` to any button or link.
 
@@ -2173,7 +2227,7 @@ You may configure this further using the following attributes:
     -  If you need the form response to be displayed in a modal of a different size, you may provide `data-ajax-modal-after-form-size`
     -  It will understand that you got an error if your return form response contains a `form` with `.error-list`, and handle the form within the modal again (without changing the size)
 
-###### Load an Ajax page in a popover
+#### Load an Ajax page in a popover
 
 - Add attributes `data-ajax-popover` and `title` to any button or link:
 
@@ -2189,20 +2243,20 @@ In case of an error, the default function `genericAjaxError` will be called.
 
 Unline modal loading, the URL doesn't change.
 
-###### Smooth scroll to an anchor
+#### Smooth scroll to an anchor
 
 - Add a class `.page-scroll` to any link to an anchor within the same page
 
 ![](http://i.imgur.com/jKxMLrX.gif)
 
-###### Make a form only submittable once
+#### Make a form only submittable once
 
 - Add a class `.form-loader` to any button
 
 It will show a loader inside the button when you click it, and make it invalid.
 It should only be used for forms handled server side that expect a page reload (ie will not work if you use Ajax to submit the form)
 
-###### Hide staff-only buttons
+#### Hide staff-only buttons
 
 - Add a class `.staff-only` to any HTML element
 
@@ -2210,7 +2264,7 @@ It's important to hide staff only buttons by default, allowing staff members to 
 
 A button in the bottom left corner of the website allows staff members to show all the staff only buttons.
 
-###### Countdowns
+#### Countdowns
 
 - Add a class `.countdown` and an attribute `data-date` to any HTML element
 
@@ -2220,7 +2274,7 @@ It requires the [countdown javascript library](http://rendro.github.io/countdown
 
 You may provide `data-format` to specify a sentence. For example: `data="Only {time} left! Play now!"` will display `Only 1 day 2 hours 5 minutes 36 seconds left! Play now!`. The `{time}` sentence will be translated, so it's recommended to make sure the sentence you provide is also translated.
 
-###### Timezones
+#### Timezones
 
 - Add a class `.timezone` to an HTMl element, with an inner element with a class `.datetime` should
 
@@ -2236,7 +2290,7 @@ In that case, the user may put their mouse over this element to see the date in 
 
 It requires the [timeago javascript library](http://timeago.yarp.com/), which will be loaded asynchronosly only if at least one `.timezone` element with `data-timeago` set to `true` is present in the page.
 
-###### Markdown
+#### Markdown
 
 - Add a class `.to-markdown` to any HTML element
 
@@ -2244,7 +2298,7 @@ The content will be converted in HTML using the markdown format. It will also au
 
 It requires the [marked javascript library](https://github.com/chjj/marked), which will be loaded asynchronosly only if at least one `.to-markdown` element is present in the page.
 
-#### Commons
+### Commons
 
 A bunch of "common" functions are called together when:
 - on load of any page
