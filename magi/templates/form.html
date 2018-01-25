@@ -22,7 +22,7 @@
     {% block afterfields %}{% endblock %}{% if afterfields %}{{ afterfields|getattribute:form_name }}{% endif %}
     <div class="pull-right">
       {% block otherbuttons %}
-      {% endblock %}{% if otherbutons %}{{ otherbutons|getattribute:form_name }}{% endif %}
+      {% endblock %}{% if otherbuttons %}{{ otherbuttons|getattribute:form_name }}{% endif %}
       <button type="submit" name="{{ form_name }}" class="btn btn-main btn-lg generic-form-submit-button" data-form-loader="true">{% block submit %}{% trans 'Apply Changes' %}{% endblock %}</button>
     </div>
   </form>

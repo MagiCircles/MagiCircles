@@ -12,6 +12,7 @@ class IChoicesTestModelTestCase(TestCase):
         self.rarity_i = models.IChoicesTest.get_i('rarity', 'N')
         self.language_i = 'it'
         self.notification_i = models.IChoicesTest.get_i('notification', 'follow')
+        self.play_with_i = None
 
         self.ichoices_test = models.IChoicesTest.objects.create(
             i_attribute=self.attribute_i,
@@ -20,6 +21,7 @@ class IChoicesTestModelTestCase(TestCase):
             i_rarity=self.rarity_i,
             i_language=self.language_i,
             i_notification=self.notification_i,
+            i_play_with=self.play_with_i,
         )
 
     def test_i_choices(self):
@@ -41,6 +43,13 @@ class IChoicesTestModelTestCase(TestCase):
         self.assertEqual(i_choices(models.IChoicesTest.NOTIFICATION_CHOICES), [
             (0, _('When someone likes your activity.')),
             (1, _('When someone follows you.')),
+        ])
+        self.assertEqual(i_choices(models.IChoicesTest.PLAY_WITH_CHOICES), [
+            (0, _('Thumbs')),
+            (1, _('All fingers')),
+            (2, _('Index fingers')),
+            (3, _('One hand')),
+            (4,  _('Other')),
         ])
 
     # Class methods
@@ -76,6 +85,13 @@ class IChoicesTestModelTestCase(TestCase):
             (0, ('like', _('When someone likes your activity.'))),
             (1, ('follow', _('When someone follows you.'))),
         ])
+        self.assertEqual(models.IChoicesTest.get_choices('play_with'), [
+            (0, ('Thumbs', _('Thumbs'))),
+            (1, ('Fingers', _('All fingers'))),
+            (2, ('Index', _('Index fingers'))),
+            (3, ('Hand', _('One hand'))),
+            (4,  ('Other', _('Other'))),
+        ])
 
     def test_get_i(self):
         self.assertEqual(self.attribute_i, 1)
@@ -84,6 +100,7 @@ class IChoicesTestModelTestCase(TestCase):
         self.assertEqual(self.rarity_i, 0)
         self.assertEqual(self.language_i, 'it')
         self.assertEqual(self.notification_i, 1)
+        self.assertEqual(self.play_with_i, None)
 
     def test_get_reverse_i(self):
         self.assertEqual(models.IChoicesTest.get_reverse_i('attribute', 2), 'cool')
@@ -92,6 +109,7 @@ class IChoicesTestModelTestCase(TestCase):
         self.assertEqual(models.IChoicesTest.get_reverse_i('rarity', 0), 'N')
         self.assertEqual(models.IChoicesTest.get_reverse_i('language', 'ru'), 'ru')
         self.assertEqual(models.IChoicesTest.get_reverse_i('notification', 1), 'follow')
+        self.assertEqual(models.IChoicesTest.get_reverse_i('play_with', None), None)
 
     def test_get_verbose_i(self):
         self.assertEqual(models.IChoicesTest.get_verbose_i('attribute', 2), 'cool')
@@ -100,6 +118,7 @@ class IChoicesTestModelTestCase(TestCase):
         self.assertEqual(models.IChoicesTest.get_verbose_i('rarity', 0), 'N')
         self.assertEqual(models.IChoicesTest.get_verbose_i('language', 'ru'), _('Russian'))
         self.assertEqual(models.IChoicesTest.get_verbose_i('notification', 1), _('When someone follows you.'))
+        self.assertEqual(models.IChoicesTest.get_verbose_i('play_with', None), None)
 
     # Instance properties
 
@@ -110,6 +129,7 @@ class IChoicesTestModelTestCase(TestCase):
         self.assertEqual(self.ichoices_test.i_rarity, self.rarity_i)
         self.assertEqual(self.ichoices_test.i_language, self.language_i)
         self.assertEqual(self.ichoices_test.i_notification, self.notification_i)
+        self.assertEqual(self.ichoices_test.i_play_with, self.play_with_i)
 
     def test_something(self):
         self.assertEqual(self.ichoices_test.attribute, 'pure')
@@ -118,6 +138,7 @@ class IChoicesTestModelTestCase(TestCase):
         self.assertEqual(self.ichoices_test.rarity, 'N')
         self.assertEqual(self.ichoices_test.language, 'it')
         self.assertEqual(self.ichoices_test.notification, 'follow')
+        self.assertEqual(self.ichoices_test.play_with, None)
 
     def test_t_something(self):
         self.assertEqual(self.ichoices_test.t_attribute, 'pure')
@@ -126,6 +147,7 @@ class IChoicesTestModelTestCase(TestCase):
         self.assertEqual(self.ichoices_test.t_rarity, 'N')
         self.assertEqual(self.ichoices_test.t_language, _('Italian'))
         self.assertEqual(self.ichoices_test.t_notification, _('When someone follows you.'))
+        self.assertEqual(self.ichoices_test.t_play_with, None)
 
     # Instance methods
 

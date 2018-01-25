@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from django.contrib.auth.models import User
 from django.utils.translation import ugettext_lazy as _
 from django.db import models
@@ -70,6 +71,31 @@ class IChoicesTest(BaseMagiModel):
     @property
     def notification_icon(self):
         return self.notification_value('icon')
+
+    PLAY_WITH = OrderedDict([
+        ('Thumbs', {
+            'translation': _('Thumbs'),
+            'icon': 'thumbs'
+        }),
+        ('Fingers', {
+            'translation': _('All fingers'),
+            'icon': 'fingers'
+        }),
+        ('Index', {
+            'translation': _('Index fingers'),
+            'icon': 'index'
+        }),
+        ('Hand', {
+            'translation': _('One hand'),
+            'icon': 'fingers'
+        }),
+        ('Other', {
+            'translation': _('Other'),
+            'icon': 'sausage'
+        }),
+    ])
+    PLAY_WITH_CHOICES = [(_name, _info['translation']) for _name, _info in PLAY_WITH.items()]
+    i_play_with = models.PositiveIntegerField(_('Play with'), choices=i_choices(PLAY_WITH_CHOICES), null=True)
 
 class CCSVTest(BaseMagiModel):
 

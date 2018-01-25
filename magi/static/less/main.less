@@ -194,7 +194,7 @@ table.text-center th {
     }
 }
 
-.modal {
+#cuteform-modal {
     img.cuteform-elt {
 	width: auto;
 	height: 100px;
@@ -798,6 +798,17 @@ nav {
 	    padding: 3px;
 	    margin-bottom: 5px;
 	}
+    }
+}
+
+[data-form-name="edit_account"] {
+    #id_center + .cuteform {
+        .cuteform-elt {
+        }
+	.cuteform-elt:not([data-cuteform-text="---------"]) {
+            width: 100px;
+            border-radius: 8px;
+        }
     }
 }
 

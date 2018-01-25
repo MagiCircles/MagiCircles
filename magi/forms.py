@@ -457,8 +457,28 @@ class AccountForm(AutoForm):
                         self.collection.get_profile_account_tabs(self.request, RAW_CONTEXT, self.instance).items()
                     ],
                 )
+        self.previous_level = None
         if 'level' in self.fields and not self.is_creating:
             self.previous_level = self.instance.level
+        self.previous_screenshot = None
+        if 'screenshot' in self.fields and not self.is_creating:
+            self.previous_screenshot = unicode(self.instance.screenshot)
+
+    def clean_screenshot(self):
+        new_level = self.cleaned_data.get('level')
+        screenshot_image = self.cleaned_data.get('screenshot')
+        new_screenshot = unicode(screenshot_image)
+        if (new_level
+            and new_level != self.previous_level
+            and has_field(self.Meta.model, 'screenshot')
+            and new_level >= 200
+            and (new_level - (self.previous_level or 0)) >= 10
+            and new_screenshot == unicode(self.previous_screenshot)):
+            raise forms.ValidationError(
+                message=_('Please provide an updated screenshot of your in-game profile to prove your level.'),
+                code='level_proof_screenshot',
+            )
+        return new_screenshot
 
     def save(self, commit=True):
         instance = super(AccountForm, self).save(commit=False)
@@ -472,7 +492,7 @@ class AccountForm(AutoForm):
     class Meta:
         model = models.Account
         fields = '__all__'
-        optional_fields = ('start_date', 'level', 'center', 'friend_id', 'nickname')
+        optional_fields = ('start_date', 'level', 'center', 'friend_id', 'nickname', 'screenshot')
         save_owner_on_creation = True
 
 ############################################################

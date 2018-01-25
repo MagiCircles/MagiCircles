@@ -40,6 +40,16 @@ def i_choices(choices):
         return []
     return [(i, choice[1] if isinstance(choice, tuple) else choice) for i, choice in enumerate(choices)]
 
+def getInfoFromChoices(field_name, details, key):
+    def _getInfo(instance):
+        value = getattr(instance, field_name)
+        if (not value
+            or value not in details
+            or key not in details[value]):
+            return None
+        return details[value][key]
+    return _getInfo
+
 ############################################################
 # Utils for owner
 
@@ -130,6 +140,8 @@ class BaseMagiModel(models.Model):
                 if (c[0] if isinstance(c, tuple) else c) == string
             )
         except StopIteration:
+            if string is None:
+                return None
             raise KeyError(string)
 
     @classmethod
@@ -145,6 +157,8 @@ class BaseMagiModel(models.Model):
                 if index == i
             )
         except StopIteration:
+            if i is None:
+                return None
             raise KeyError(i)
 
     @classmethod
@@ -160,6 +174,8 @@ class BaseMagiModel(models.Model):
                 if index == i
             )
         except StopIteration:
+            if i is None:
+                return None
             raise KeyError(i)
 
     def add_c(self, field_name, to_add):

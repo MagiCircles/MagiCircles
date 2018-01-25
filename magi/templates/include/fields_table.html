@@ -22,6 +22,9 @@
 	{% elif field.type == 'title_text' %}
 	<strong>{{ field.title }}</strong><br>
 	<p>{{ field.value }}</p>
+	{% elif field.type == 'text_annotation' %}
+	<span>{{ field.value }}</span><br />
+	<small class="text-muted">{{ field.annotation }}</small>
 	{% elif field.type == 'image' %}
 	<a href="{{ field.value }}" target="_blank"{% if field.ajax_link %} data-ajax-url="{{ field.ajax_link }}" data-ajax-title="{{ field.value }}"{% endif %}>
 	  <img src="{{ field.value }}" alt="{{ field.verbose_name }}">

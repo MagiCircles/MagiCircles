@@ -457,7 +457,15 @@ def shrinkImageFromData(data, filename, settings={}):
     return dataToImageFile(data)
 
 ############################################################
-# UserLink image URL
+# Image URLs
+
+def staticImageURL(path, folder=None, extension=None):
+    return u'{}img/{}{}{}'.format(
+        RAW_CONTEXT['static_url'],
+        u'{}/'.format(folder) if folder else '',
+        path,
+        u'.{}'.format(extension) if extension else '',
+    )
 
 def linkToImageURL(link):
-    return '{}img/links/{}.png'.format(RAW_CONTEXT['static_url'], link.i_type)
+    return staticImageURL(u'links/{}'.format(link.i_type), u'png')

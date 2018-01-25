@@ -61,7 +61,7 @@
 	    {% callWithContext dict=link function='show_link_callback' %}
 	    {% if result_of_callwithcontext %}
 	    <li class="{% if current == link_name %}active{% endif %}{% if link.is_list %} dropdown{% endif %}">
-	      <a href="{{ link.url|default_if_none:'#' }}"{% if link.is_list %} class="dropdown-toggle" data-toggle="dropdown" id="navBarIDDropDown{{ link_name }}"{% endif %}>
+	      <a href="{% if link.url %}{{ link.url }}{% else %}#{% endif %}"{% if link.is_list %} class="dropdown-toggle" data-toggle="dropdown" id="navBarIDDropDown{{ link_name }}"{% endif %}>
 		{% if link.icon %}
 		<i class="flaticon-{{ link.icon }}"></i>
 		{% elif link.image %}

@@ -11,7 +11,7 @@ from django.http import Http404
 from django.db.models import Count, Q, Prefetch, FieldDoesNotExist
 from magi.views import indexExtraContext
 from magi.utils import AttrDict, ordinalNumber, justReturn, propertyFromCollection, getMagiCollections, getMagiCollection, CuteFormType, CuteFormTransform, redirectWhenNotAuthenticated, custom_item_template, getAccountIdsFromSession
-from magi.raw import please_understand_template_sentence, donators_adjectives
+from magi.raw import please_understand_template_sentence
 from magi.django_translated import t
 from magi.middleware.httpredirect import HttpRedirectException
 from magi.settings import ACCOUNT_MODEL, SHOW_TOTAL_ACCOUNTS, PROFILE_TABS, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTER_TO_URL, GET_GLOBAL_CONTEXT, DONATE_IMAGE, ON_USER_EDITED, ON_PREFERENCES_EDITED, ACCOUNT_TAB_ORDERING
@@ -373,6 +373,7 @@ class MagiCollection(object):
         Available types:
         - text
         - title_text (needs 'title')
+        - text_annotation (needs 'annotation', which corresponds to a small, grey text under the main text)
         - image (needs images with 'value', 'ajax_link')
         - images
         - bool
@@ -422,12 +423,13 @@ class MagiCollection(object):
                 continue
             if only_fields and field_name not in only_fields:
                 continue
+            value = None
             if field_name.startswith('i_'):
                 field_name = field_name[2:]
+                value = getattr(item, u't_{}'.format(field_name))
             is_foreign_key = (isinstance(field, models.models.ForeignKey)
                               or isinstance(field, models.models.OneToOneField))
-            value = None
-            if not is_foreign_key:
+            if not value and not is_foreign_key:
                 try:
                     value = getattr(item, field_name, None)
                 except AttributeError:
@@ -992,21 +994,23 @@ class AccountCollection(MagiCollection):
                     templates[u'Inappropriate {}'.format(name)] = u'Your account\'s {} was inappropriate. {}'.format(name.lower(), please_understand_template_sentence)
         return templates
 
-    def to_fields(self, item, *args, **kwargs):
-        fields = super(AccountCollection, self).to_fields(item, *args, icons={
+    def to_fields(self, item, icons={}, *args, **kwargs):
+        icons.update({
             'creation': 'date',
             'start_date': 'date',
             'level': 'max-level',
             'friend_id': 'id',
-        }, **kwargs)
+            'screenshot': 'id',
+        })
+        fields = super(AccountCollection, self).to_fields(item, *args, icons=icons, **kwargs)
         if hasattr(item, 'cached_leaderboard') and item.cached_leaderboard:
             fields['leaderboard'] = {
                 'verbose_name': _('Leaderboard position'),
                 'icon': 'trophy',
             }
             if item.cached_leaderboard > 3:
-                fields['leaderboard']['type'] = 'text'
-                fields['leaderboard']['value'] = u'#{}'.format(item.cached_leaderboard)
+                fields['leaderboard']['type'] = 'html'
+                fields['leaderboard']['value'] = u'<h4>#{}</h4>'.format(item.cached_leaderboard)
             else:
                 fields['leaderboard']['type'] = 'image_link'
                 fields['leaderboard']['link'] = '/accounts/'
@@ -1048,6 +1052,25 @@ class AccountCollection(MagiCollection):
         alert_duplicate = False
         allow_next = True
         max_per_user = 10
+        simpler_form = None
+
+        def form_class(self, request, context):
+            form_class = super(AccountCollection.AddView, self).form_class(request, context)
+            if self.simpler_form and 'advanced' not in request.GET:
+                form_class = self.simpler_form
+            return form_class
+
+        def extra_context(self, context):
+            super(AccountCollection.AddView, self).extra_context(context)
+            if self.simpler_form:
+                form_name = u'add_{}'.format(self.collection.name)
+                if 'otherbuttons' not in context:
+                    context['otherbuttons'] = {}
+                if 'advanced' in context['request'].GET:
+                    context['advanced'] = True
+                    context['otherbuttons'][form_name] = mark_safe(u'<a href="?simple" class="btn btn-link">{}</a>'.format(_('Simple')))
+                else:
+                    context['otherbuttons'][form_name] = mark_safe(u'<a href="?advanced" class="btn btn-link">{}</a>'.format(_('Advanced')))
 
         def redirect_after_add(self, request, instance, ajax=False):
             if ajax: # Ajax is not allowed for profile url

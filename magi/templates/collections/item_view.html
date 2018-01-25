@@ -4,9 +4,11 @@
 
 {% block afterjs %}
 <script>
+  {% if ajax_reload_url %}
   var ajax_reload_url = '{{ ajax_reload_url }}';
   var reload_urls_start_with = [{% for url in reload_urls_start_with %}'{{ url }}', {% endfor %}];
   var reload_item = false;
+  {% endif %}
 </script>
 {% endblock %}
 
