@@ -91,6 +91,7 @@ class CacheOwner(MagiModel):
     def cached_owner(self):
         if not self._cache_owner_last_update or self._cache_owner_last_update < timezone.now() - datetime.timedelta(days=self._cache_owner_days):
             self.force_cache_owner()
+        preferences_model = RAW_CONTEXT.get('preferences_model')
         full_item_url = '{}user/{}/{}/'.format(django_settings.SITE_URL, self.owner_id, self._cache_owner_username)
         http_item_url = u'http:' + full_item_url if 'http' not in full_item_url else full_item_url
         return AttrDict({
@@ -105,13 +106,13 @@ class CacheOwner(MagiModel):
             'share_url': http_item_url,
             'preferences': AttrDict({
                 'i_status': self._cache_owner_preferences_i_status,
-                'status': dict(RAW_CONTEXT['preferences_model'].STATUS_CHOICES)[self._cache_owner_preferences_i_status] if self._cache_owner_preferences_i_status else None,
+                'status': dict(preferences_model.STATUS_CHOICES)[self._cache_owner_preferences_i_status] if preferences_model and self._cache_owner_preferences_i_status else None,
                 'twitter': self._cache_owner_preferences_twitter,
                 'color': self._cache_owner_color,
-                'localized_color': RAW_CONTEXT['preferences_model'].get_localized_color(self._cache_owner_color),
-                'hex_color': RAW_CONTEXT['preferences_model'].get_hex_color(self._cache_owner_color),
-                'rgb_color': RAW_CONTEXT['preferences_model'].get_rgb_color(self._cache_owner_color),
-                'css_color': RAW_CONTEXT['preferences_model'].get_css_color(self._cache_owner_color),
+                'localized_color': preferences_model.get_localized_color(self._cache_owner_color) if preferences_model else None,
+                'hex_color': preferences_model.get_hex_color(self._cache_owner_color) if preferences_model else None,
+                'rgb_color': preferences_model.get_rgb_color(self._cache_owner_color) if preferences_model else None,
+                'css_color': preferences_model.get_css_color(self._cache_owner_color) if preferences_model else None,
             }),
         })
 
