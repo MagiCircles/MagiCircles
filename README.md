@@ -1047,6 +1047,36 @@ print article.i_language # will print en
 print article.t_language # will print English
 ```
 
+If you want to provide more details for a specific choice, you can use a sub dictionary and create the choices from there, then use `getInfoFromChoices` to retrieve the details easily like so:
+
+```python
+from magi.item_model import BaseMagiModel, getInfoFromChoices
+
+class Article(BaseMagiModel):
+    LANGUAGES = OrderedDict([
+        ('ja', {
+            'translation': _('Japanese'),
+            'image': 'ja',
+        }),
+        ('en', {
+            'translation': _('English'),
+            'image': 'us',
+        }),
+        ('tw', {
+            'translation': _('Taiwanese'),
+            'image': 'tw',
+        }),
+        ('kr', {
+            'translation': _('Korean'),
+            'image': 'kr',
+        }),
+    ])
+    LANGUAGE_CHOICES = [(_name, _info['translation']) for _name, _info in LANGUAGES.items()]
+    i_language = models.PositiveIntegerField(_('Language'), choices=i_choices(LANGUAGE_CHOICES))
+    language_image = property(getInfoFromChoices('language', LANGUAGES, 'image'))
+    language_image_url = property(lambda _a: staticImageURL(_a.language_image, folder=u'language', extension='png'))
+```
+
 #### Store comma separated values
 
 While the recommended Django way of storing a list of values in a model is to use a separate model with `ManyToMany`, it can be quite costly, since you will need extra queries to retrieve the values. For simple list of values like strings, you can store them as comma separated values.
@@ -2148,8 +2178,9 @@ In this example, if you try to set the start_date to some time in the future, it
 | redirectWhenNotAuthenticated | Will check if the current user is authenticated, and if not, will redirect to the signup page with `next` set as the `current_url` | request, context, next_title=None | None (raises an exception) |
 | send_email | Send an email | subject, template_name, to=[], context={}, from_email=django_settings.AWS_SES_RETURN_PATH | None |
 | setSubField | Mostly used when overriding `to_fields`. See ⎡[to_fields method](#to_field-method)⎦. | fields, field_name, value, key='icon' | None (updates fields in place) |
+| staticImageURL | Returns the full URL of a static asset (in `sample/static/img/...`) | path, folder=None, extension=None | string |
 | torfc2822 | Date format frequently used in Javascript | date | string |
-| tourldash | Takes any string and returns a URL-friendly string. Example: "Hi! You're awesome." becomes "Hi-You-re-awesome" | string | string
+| tourldash | Takes any string and returns a URL-friendly string. Example: "Hi! You're awesome." becomes "Hi-You-re-awesome" | string | string |
 
 ## Templates
 
