@@ -86,7 +86,7 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
     context['collection'] = collection
     if context['item_template'] == 'default':
         context['top_illustration'] = collection.item_view.top_illustration
-        context['item_fields'] = collection.to_fields(context['item'])
+        context['item_fields'] = collection.item_view.to_fields(context['item'])
 
     # Ajax items reloader
     if not ajax and collection.item_view.auto_reloader and collection.item_view.ajax:
@@ -236,7 +236,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
             collection.list_view.foreach_items(i, item, context)
         if context.get('show_relevant_fields_on_ordering', False):
             context['include_below_item'] = True
-            item.relevant_fields_to_show = collection.to_fields(item, only_fields=context['plain_ordering'], in_list=True)
+            item.relevant_fields_to_show = collection.list_view.to_fields(item, only_fields=context['plain_ordering'])
         item.buttons_to_show = collection.list_view.buttons_per_item(request, context, item)
         item.show_item_buttons_justified = collection.list_view.show_item_buttons_justified
         item.show_item_buttons_as_icons = collection.list_view.show_item_buttons_as_icons

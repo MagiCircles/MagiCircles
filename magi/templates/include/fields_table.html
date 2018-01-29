@@ -75,6 +75,10 @@
 	{% elif field.type == 'long_text' %}
         <strong class="long-text-title">{{ field.verbose_name }}</strong>
         {{ field.value }}
+        {% elif field.type == 'list' %}
+        <ul>{% for value in field.value %}
+          <li>{{ value }}</li>
+        {% endfor %}</ul>
 	{% elif field.type == 'itunes' %}
         <div class="itunes" data-itunes-id="{{ field.value }}"></div>
 	{% elif field.type == 'html' %}

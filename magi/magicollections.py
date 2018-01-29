@@ -254,23 +254,6 @@ class MagiCollection(object):
             def add_sentence(self):
                 return _(u'Add to your {thing}').format(thing=self.plural_title.lower())
 
-            def to_fields(self, item, *args, **kwargs):
-                fields = super(_CollectibleCollection, self).to_fields(item, *args, to_dict=False, **kwargs)
-                item_parent = getattr(item, item_field_name)
-                fields = [
-                    (item_field_name, {
-                        'type': 'text_with_link',
-                        'verbose_name': parent_collection.title,
-                        'value': unicode(item_parent),
-                        'icon': parent_collection.icon,
-                        'image': parent_collection.image,
-                        'link': item_parent.item_url,
-                        'ajax_link': item_parent.ajax_item_url,
-                        'link_text': unicode(_(u'Open {thing}')).format(thing=unicode(parent_collection.title).lower()),
-                    }),
-                ] + fields
-                return OrderedDict(fields)
-
             class ListView(MagiCollection.ListView):
                 filter_form = _CollectibleFilterForm
                 item_padding = '7px 0'
@@ -287,6 +270,23 @@ class MagiCollection(object):
 
                 def extra_context(self, context):
                     context['item_parent'] = getattr(context['item'], item_field_name)
+
+                def to_fields(self, item, *args, **kwargs):
+                    fields = super(_CollectibleCollection.ItemView, self).to_fields(item, *args, to_dict=False, **kwargs)
+                    item_parent = getattr(item, item_field_name)
+                    fields = [
+                        (item_field_name, {
+                            'type': 'text_with_link',
+                            'verbose_name': parent_collection.title,
+                            'value': unicode(item_parent),
+                            'icon': parent_collection.icon,
+                            'image': parent_collection.image,
+                            'link': item_parent.item_url,
+                            'ajax_link': item_parent.ajax_item_url,
+                            'link_text': unicode(_(u'Open {thing}')).format(thing=unicode(parent_collection.title).lower()),
+                        }),
+                    ] + fields
+                    return OrderedDict(fields)
 
             class AddView(MagiCollection.AddView):
                 alert_duplicate = False
@@ -361,7 +361,7 @@ class MagiCollection(object):
     def share_image(self, context, item):
         return self.image
 
-    def to_fields(self, item, to_dict=True, only_fields=None, in_list=False, icons={}, images={}):
+    def to_fields(self, view, item, to_dict=True, only_fields=None, icons={}, images={}):
         """
         Used only when template = 'default' or when 'ordering' is specified in a list
         Returns a dictionary of dictinaries with:
@@ -377,6 +377,7 @@ class MagiCollection(object):
         - image (needs images with 'value', 'ajax_link')
         - images
         - bool
+        - list ('value' becomes a lit of values)
         - link (needs 'link_text')
         - image_link (needs 'link', 'link_text')
         - images_links (needs images with 'value', 'ajax_link', 'link', 'link_text')
@@ -427,6 +428,9 @@ class MagiCollection(object):
             if field_name.startswith('i_'):
                 field_name = field_name[2:]
                 value = getattr(item, u't_{}'.format(field_name))
+            if field_name.startswith('c_'):
+                field_name = field_name[2:]
+                value = getattr(item, u't_{}'.format(field_name)).values()
             is_foreign_key = (isinstance(field, models.models.ForeignKey)
                               or isinstance(field, models.models.OneToOneField))
             if not value and not is_foreign_key:
@@ -451,6 +455,8 @@ class MagiCollection(object):
                     d['link_text'] = unicode(_(u'Open {thing}')).format(thing=d['verbose_name'])
                 except AttributeError:
                     continue
+            elif field.name.startswith('c_'): # original field name
+                d['type'] = 'list'
             elif isinstance(field, models.models.ManyToManyField):
                 d['type'] = 'text_with_link'
                 d['value'] = getattr(item, 'cached_total_' + field_name).unicode
@@ -687,6 +693,9 @@ class MagiCollection(object):
         def buttons_per_item(self, *args, **kwargs):
             return self.collection.buttons_per_item(self, *args, **kwargs)
 
+        def to_fields(self, *args, **kwargs):
+            return self.collection.to_fields(self, *args, **kwargs)
+
         def show_add_button(self, request):
             return True
 
@@ -796,6 +805,9 @@ class MagiCollection(object):
 
         def get_queryset(self, queryset, parameters, request):
             return super(MagiCollection.ItemView, self).get_queryset(self.collection._collectibles_queryset(self, queryset, request), parameters, request)
+
+        def to_fields(self, *args, **kwargs):
+            return self.collection.to_fields(self, *args, **kwargs)
 
         def buttons_per_item(self, *args, **kwargs):
             return self.collection.buttons_per_item(self, *args, **kwargs)
@@ -994,7 +1006,7 @@ class AccountCollection(MagiCollection):
                     templates[u'Inappropriate {}'.format(name)] = u'Your account\'s {} was inappropriate. {}'.format(name.lower(), please_understand_template_sentence)
         return templates
 
-    def to_fields(self, item, icons={}, *args, **kwargs):
+    def to_fields(self, view, item, icons={}, *args, **kwargs):
         icons.update({
             'creation': 'date',
             'start_date': 'date',
@@ -1002,20 +1014,7 @@ class AccountCollection(MagiCollection):
             'friend_id': 'id',
             'screenshot': 'id',
         })
-        fields = super(AccountCollection, self).to_fields(item, *args, icons=icons, **kwargs)
-        if hasattr(item, 'cached_leaderboard') and item.cached_leaderboard:
-            fields['leaderboard'] = {
-                'verbose_name': _('Leaderboard position'),
-                'icon': 'trophy',
-            }
-            if item.cached_leaderboard > 3:
-                fields['leaderboard']['type'] = 'html'
-                fields['leaderboard']['value'] = u'<h4>#{}</h4>'.format(item.cached_leaderboard)
-            else:
-                fields['leaderboard']['type'] = 'image_link'
-                fields['leaderboard']['link'] = '/accounts/'
-                fields['leaderboard']['link_text'] = u'#{}'.format(item.cached_leaderboard)
-                fields['leaderboard']['value'] = item.leaderboard_image_url
+        fields = super(AccountCollection, self).to_fields(view, item, *args, icons=icons, **kwargs)
         if 'nickname' in fields:
             del(fields['nickname'])
         if 'default_tab' in fields:
@@ -1047,6 +1046,23 @@ class AccountCollection(MagiCollection):
         template = 'defaultAccountItem'
         comments_enabled = False
         show_edit_button_superuser_only = True
+
+        def to_fields(self, item, *args, **kwargs):
+            fields = super(AccountCollection.ItemView, self).to_fields(item, *args, **kwargs)
+            if hasattr(item, 'cached_leaderboard') and item.cached_leaderboard:
+                fields['leaderboard'] = {
+                    'verbose_name': _('Leaderboard position'),
+                    'icon': 'trophy',
+                }
+                if item.cached_leaderboard > 3:
+                    fields['leaderboard']['type'] = 'html'
+                    fields['leaderboard']['value'] = u'<h4>#{}</h4>'.format(item.cached_leaderboard)
+                else:
+                    fields['leaderboard']['type'] = 'image_link'
+                    fields['leaderboard']['link'] = '/accounts/'
+                    fields['leaderboard']['link_text'] = u'#{}'.format(item.cached_leaderboard)
+                    fields['leaderboard']['value'] = item.leaderboard_image_url
+            return fields
 
     class AddView(MagiCollection.AddView):
         alert_duplicate = False
@@ -1216,7 +1232,7 @@ class UserCollection(MagiCollection):
             if account_collection:
                 for account in user.all_accounts:
                     # Fields
-                    account.fields = account_collection.to_fields(account)
+                    account.fields = account_collection.item_view.to_fields(account)
                     # Buttons
                     account.buttons_to_show = account_collection.item_view.buttons_per_item(request, context, account)
                     account.show_item_buttons_justified = account_collection.item_view.show_item_buttons_justified

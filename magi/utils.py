@@ -356,8 +356,13 @@ def dumpModel(instance):
 # Set a field in a sub dictionary
 
 def setSubField(fields, field_name, value, key='icon'):
-    if field_name in fields:
-        fields[field_name][key] = value(field_name) if callable(value) else value
+    if isinstance(fields, list):
+        for name, details in fields:
+            if name == field_name:
+                details[key] = value(field_name) if callable(value) else value
+    else:
+        if field_name in fields:
+            fields[field_name][key] = value(field_name) if callable(value) else value
 
 ############################################################
 # Join / Split data stored as string in database

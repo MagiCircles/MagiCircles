@@ -95,7 +95,7 @@ Similarly, it is not allowed to monetize a website that uses MagiCircles using a
             1. [Collectible](#collectible)
             1. [CuteForm](#cuteform)
             1. [Item types](#item-types)
-            1. [to_field method](#to_field-method)
+            1. [to_fields method](#to_field-method)
             1. [AccountCollection](#accountcollection)
     1. [MagiForm](#magiform)
     1. [MagiFilter](#magifilter)
@@ -1376,6 +1376,7 @@ See also: [settings available in all views](#all-views).
 | buttons_per_item | Used to display buttons below item. Any new dictionary within the returned dictionary of buttons must contain the following keys: show, has_permissions, title, url, classes and may contain icon, image, url, open_in_new_window, ajax_url, ajax_title. Can be specified in collection. | request, context, item | Dictionary of dictionary | Method from collection will be called |
 | foreach_item | Function called for all the elements about to be displayed, that takes the item position, the item and the context ([example](https://gist.github.com/db0company/819ec1900fb207f865be69b92ce62c8e#file-magicirclesexamples-py-L23)). If you can, provide a property inside the model's class instead, to avoid an extra loop. | index, item, context | None | None |
 | show_add_button | Should a button be displayed at the beginning to let users add new items (if they have the permission to do so)? | request | Boolean | returns `True` |
+| to_fields | See ⎡[to_fields method](#to_field-method)⎦ |
 | top_buttons | Will be called to display buttons at the beginning of the list view. Any new dictionary within the returned dictionary of buttons must contain the following keys: show, has_permissions, url, classes, title and may contain ajax_url, open_in_new_window, icon, image, subtitle | request, context | Dictionary of dictionary | Will automatically determine which add buttons should be displayed. |
 
 See also: [methods available in all views](#all-views).
@@ -1420,6 +1421,7 @@ See also: [settings available in all views](#all-views).
 | buttons_per_item | Used to display buttons below item. Any new dictionary within the returned dictionary of buttons must contain the following keys: show, has_permissions, title, url, classes and may contain icon, image, url, open_in_new_window, ajax_url, ajax_title. Can be specified in collection. | request, context, item | Dictionary of dictionary | Method from collection will be called |
 | get_item | How is the item retrieved using the `pk` (=id) provided in the URL? For example, in the URL `/card/12/super-rare-lily/`, `pk` will be `12` | request, pk (in URL) | a dictionary that will be used with the queryset to get a single item | `{ 'pk': pk }` |
 | reverse_url | Allows you to have URLs with just a string and find the item with thout, instead of the id. For example, the default URL of a profile is `/user/1/db0/`, but with this, you can make `/user/db0/` and still be able to retrieve the corresponding user, without knowing its id. | string (text in URL, for example if the URL is `/user/tom/`, this will be `'tom'`) | a dictionary that will be used with the queryset to get a single item | None |
+| to_fields | See ⎡[to_fields method](#to_field-method)⎦ |
 
 See also: [methods available in all views](#all-views)⎦.
 
@@ -1612,9 +1614,11 @@ For each type, you may specify the following settings in its dictionary:
 
 The type will be passed to the formClass when it's initialized, which allows you to reuse the same form class for all your types if you'd like.
 
-#### to_field method
+#### to_fields method
 
-`to_field` is a method in collections.
+`to_fields` is a method in collections. It can also be overrided per view for ItemView and ListView.
+
+You may override it in both the collection and the views. As long as you call the super, both logics will be called.
 
 - Where is it called?
     - **ListView:** Will be called when `ordering` is specified to show the field(s) details, with `only_fields` in parameters. For example, if you order the list by level, the level is going to be displayed under the item, because it's very likely that you'll want to compare that between the items.
@@ -1622,7 +1626,8 @@ The type will be passed to the formClass when it's initialized, which allows you
 - Can it be overriden?
     - You may override this function, but you should always call its `super`.
 - Parameters
-    - `item, to_dict=True, only_fields=None, in_list=False, icons={}, images={}`
+    - `view,item, to_dict=True, only_fields=None, icons={}, images={}`
+    - The same method in ItemView and ListView will take the same parameters except the view.
     - `item` is the item object, an instance of an `MagiModel`
     - `to_dict` will return a dict by default, otherwise a list or pair. Useful if you plan to change the order or insert items at certain positions.
     - `only_fields` if specified will ignore any other field
@@ -1633,17 +1638,21 @@ The type will be passed to the formClass when it's initialized, which allows you
         - verbose_name
         - value
         - type
-        - optional: icon, image, link, link_text, ajax_link
+        - optional: icon, image, link, link_text, ajax_link, images
     - Available types:
         - text
         - title_text (needs 'title')
-        - image
+        - text_annotation (needs 'annotation', which corresponds to a small, grey text under the main text)
+        - image (needs images with 'value', 'ajax_link')
+        - images
         - bool
+        - list ('value' becomes a lit of values)
         - link (needs 'link_text')
         - image_link (needs 'link', 'link_text')
+        - images_links (needs images with 'value', 'ajax_link', 'link', 'link_text')
         - button (needs 'link_text')
         - text_with_link (needs 'link' and 'link_text', will show a 'View all' button)
-        - timezone_datetime (useful when showing another timezone, otherwise use text. needs 'timezones' list. can be 'local')
+        - timezone_datetime (needs 'ago' and 'timezones' list. can be 'local')
         - long_text
         - html
 - Default
