@@ -431,6 +431,8 @@ class MagiCollection(object):
             if field_name.startswith('c_'):
                 field_name = field_name[2:]
                 value = getattr(item, u't_{}'.format(field_name)).values()
+                if not value:
+                    continue
             is_foreign_key = (isinstance(field, models.models.ForeignKey)
                               or isinstance(field, models.models.OneToOneField))
             if not value and not is_foreign_key:
