@@ -476,18 +476,17 @@ class AccountForm(AutoForm):
     def clean_screenshot(self):
         new_level = self.cleaned_data.get('level')
         screenshot_image = self.cleaned_data.get('screenshot')
-        new_screenshot = unicode(screenshot_image)
         if (new_level
             and new_level != self.previous_level
             and has_field(self.Meta.model, 'screenshot')
             and new_level >= 200
             and (new_level - (self.previous_level or 0)) >= 10
-            and new_screenshot == unicode(self.previous_screenshot)):
+            and unicode(screenshot_image) == unicode(self.previous_screenshot)):
             raise forms.ValidationError(
                 message=_('Please provide an updated screenshot of your in-game profile to prove your level.'),
                 code='level_proof_screenshot',
             )
-        return new_screenshot
+        return screenshot_image
 
     def save(self, commit=True):
         instance = super(AccountForm, self).save(commit=False)
