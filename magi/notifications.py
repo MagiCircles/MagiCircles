@@ -10,7 +10,7 @@ def pushNotification(user, notification_type, values, url_values=None, image=Non
         owner=user,
         i_message=models.Notification.get_i('message', notification_type),
         c_message_data=join_data(*values),
-        url_data=(join_data(*url_values) if url_values else None),
+        c_url_data=(join_data(*url_values) if url_values else None),
         image=image)
     models.UserPreferences.objects.filter(pk=user.preferences.pk).update(unread_notifications=F('unread_notifications') + 1)
     return notification
