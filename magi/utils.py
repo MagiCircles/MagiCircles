@@ -473,4 +473,4 @@ def staticImageURL(path, folder=None, extension=None):
     )
 
 def linkToImageURL(link):
-    return staticImageURL(u'links/{}'.format(link.i_type), u'png')
+    return staticImageURL(u'links/{}'.format(link.i_type), extension=u'png')
