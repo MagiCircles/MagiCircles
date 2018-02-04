@@ -4,7 +4,7 @@ from dateutil.relativedelta import relativedelta
 from multiupload.fields import MultiFileField
 from django import forms
 from django.http.request import QueryDict
-from django.db.models.fields import BLANK_CHOICE_DASH, FieldDoesNotExist
+from django.db.models.fields import BLANK_CHOICE_DASH, FieldDoesNotExist, TextField, CharField
 from django.db.models import Q
 from django.forms.models import model_to_dict, fields_for_model
 from django.conf import settings as django_settings
@@ -373,10 +373,19 @@ class MagiFiltersForm(AutoForm):
                                 if selector.endswith('__isnull') and not filter.to_value:
                                     filters[selector] = value = not value
                                     original_selector = selector[:(-1 * len('__isnull'))]
-                                    if value:
-                                        condition = condition | Q(**{ original_selector: '' })
-                                    else:
-                                        exclude = { original_selector: '' }
+                                    # Get what corresponds to an empty value
+                                    empty_value = None
+                                    try:
+                                        model_field = queryset.model._meta.get_field(original_selector)
+                                        if isinstance(model_field, TextField) or isinstance(model_field, CharField):
+                                            empty_value = ''
+                                    except FieldDoesNotExist: pass
+                                    if empty_value is not None:
+                                        if value: # Also include empty values
+                                            condition = condition | Q(**{ original_selector: empty_value })
+                                        else: # Exclude empty values
+                                            # need to check if int then 0 else ''
+                                            exclude = { original_selector: empty_value }
                         # MultipleChoiceField
                         elif (isinstance(self.fields[field_name], forms.fields.MultipleChoiceField)
                               or filter.multiple):
