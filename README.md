@@ -1503,8 +1503,6 @@ See also: [methods available in all views](#all-views).
 
 ![](http://i.imgur.com/r3FrVK5.png)
 
-:warning: This is a work in progress. The following guide doesn't work yet. Currently, collections have to be made collecible manually.
-
 To make a collection collectible, you need to provide a [model](#model). The model should always have either an `owner` or an `account` foreign key, allowing users to collect them.
 
 ```python
@@ -1547,17 +1545,27 @@ class CardCollection(MagiCollection):
 
 When customizing your collectible's MagiCollection, keep in mind that types are not compatible and shouldn't be used in a collectible's MagiCollection.
 
-You may provide multiple collectibles for one collection. For example, you may want to allow users to save the cards they own and their favorite cards. To do so, you can provide a dictionary as a collectible. The keys must correspond to `collection_name` provided in the models.
+You may provide multiple collectibles for one collection. For example, you may want to allow users to save the cards they own and their favorite cards. To do so, you can provide a list to collectible. The name of the collections will be infered from `collection_name` variable within the model.
 
 ```python
 from magi.magicollections import MagiCollection
 from sample import models
 
 class CardCollection(MagiCollection):
-    collectible = {
-        'collectiblecard': models.CollectibleCard,
-        'wishedcard': models.WishedCard,
-    }
+    collectible = [
+        models.CollectibleCard,
+        models.WishedCard,
+    ]
+```
+
+The selector to the item foreign key inside the collectible item model will be inferred from the model name (`Card` model -> `card`) but you can specify it within the collectible item model:
+
+```shell
+class StarterCard(AccountAsOwnerModel):
+    collection_name = 'startercard'
+    selector_to_collected_item = 'starter'
+
+    starter = models.ForeignKey(Card)
 ```
 
 #### CuteForm
