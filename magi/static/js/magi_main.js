@@ -307,7 +307,11 @@ function _loadTimezones() {
 function loadTimezones() {
     if ($('[data-timeago]').length > 0 && typeof jQuery.timeago == 'undefined') {
         $.getScript(static_url + 'bower/jquery-timeago/jquery.timeago.js', function() {
-            $.getScript(static_url + 'bower/jquery-timeago/locales/jquery.timeago.' + $('html').attr('lang')+ '.js', _loadTimezones);
+            $.getScript(static_url + 'bower/jquery-timeago/locales/jquery.timeago.' + $('html').attr('lang')+ '.js', function() {
+                jQuery.timeago.settings.allowPast = true;
+                jQuery.timeago.settings.allowFuture = true;
+                _loadTimezones();
+            });
         });
     } else {
         _loadTimezones();
