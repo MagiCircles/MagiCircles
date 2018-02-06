@@ -122,7 +122,8 @@ class MagiCollection(object):
                         and not view.show_collect_button.get(name, True))
                     or not collection.add_view.has_permissions(request, {})):
                     continue
-                item_field_name = snakecase(self.queryset.model.__name__)
+                item_field_name = getattr(collection.queryset.model, 'selector_to_collected_item',
+                                          snakecase(self.queryset.model.__name__))
                 fk_owner = collection.queryset.model.fk_as_owner if collection.queryset.model.fk_as_owner else 'owner'
                 fk_owner_ids = ','.join(unicode(i) for i in (
                     getAccountIdsFromSession(request)
