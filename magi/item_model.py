@@ -376,9 +376,9 @@ class MagiModel(BaseMagiModel):
 
     def __unicode__(self):
         try:
-            return self.collection_title
+            return unicode(self.collection_title)
         except AttributeError:
-            return self.collection_name
+            return unicode(self.collection_name)
 
     class Meta:
         abstract = True
