@@ -189,7 +189,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
             context['reload_urls_start_with'] += [cc.get_add_url() for cc in collection.collectible_collections.values()]
 
     context['ordering'] = ordering
-    context['page_title'] = _(u'List of all the {things}').format(things=collection.plural_title.lower())
+    context['page_title'] = _(u'{things} list').format(things=collection.plural_title)
     context['total_pages'] = int(math.ceil(context['total_results'] / page_size))
     context['items'] = queryset
     context['page'] = page + 1

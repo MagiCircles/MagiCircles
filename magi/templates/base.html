@@ -6,7 +6,7 @@
 <html lang="{{ LANGUAGE_CODE }}" class="html-current-{{ current }}{% if shortcut_url != None %} html-shortcut-{{ shortcut_url }}{% endif %}">
   <head>
     <meta charset="UTF-8">
-    <title>{% block title %}{% if page_title %}{{ page_title }}{% else %}{% trans site_description %}{% endif %}{% endblock %} | {{ site_name }}{% if page_title %} - {{ site_description }}{% endif %}</title>
+    <title>{% block title %}{% if page_title %}{{ page_title }}{% else %}{{ game_name }}{% endif %}{% endblock %} | {{ site_name }}{% if page_title %} - {{ game_name }}{% endif %}</title>
 
     <link rel="shortcut icon" type="image/x-icon" href="{{ static_url }}favicon.ico" />
     <link rel="stylesheet" href="{{ static_url }}bower/bootstrap/dist/css/bootstrap.min.css">
