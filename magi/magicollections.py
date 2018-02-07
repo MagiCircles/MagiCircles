@@ -537,6 +537,7 @@ class MagiCollection(object):
                 del(buttons[name])
                 continue
             extra_attributes = {}
+            quick_add_to_collection = collectible_collection.add_view.quick_add_to_collection(request, item)
             url_to_collectible_add_with_item = lambda url: u'{url}?{item_name}_id={item_id}&{item_name}_image={item_image}'.format(
                 url=url, item_name=self.name, item_id=item.id, item_image=item.image_url)
             buttons[name]['show'] = view.show_collect_button[name] if isinstance(view.show_collect_button, dict) else view.show_collect_button
@@ -547,7 +548,7 @@ class MagiCollection(object):
             buttons[name]['ajax_title'] = u'{}: {}'.format(collectible_collection.add_sentence, unicode(item))
             if collectible_collection.add_view.unique_per_owner:
                 extra_attributes['unique-per-owner'] = 'true'
-            if collectible_collection.add_view.quick_add_to_collection:
+            if quick_add_to_collection:
                 extra_attributes['quick-add-to-collection'] = 'true'
                 extra_attributes['parent-item'] = self.name
                 extra_attributes['parent-item-id'] = item.id
@@ -556,7 +557,14 @@ class MagiCollection(object):
                     extra_attributes['quick-add-to-id'] = add_to_id_from_request
                     extra_attributes['quick-add-to-fk-as-owner'] = collectible_collection.queryset.model.fk_as_owner or 'owner'
 
-            if collectible_collection.add_view.unique_per_owner and collectible_collection.add_view.quick_add_to_collection:
+            if collectible_collection.add_view.unique_per_owner and not quick_add_to_collection:
+                edit_sentence = unicode(_('Edit {thing}')).format(thing=unicode(collectible_collection.title).lower())
+                if buttons[name]['badge'] > 0:
+                    extra_attributes['alt-message'] = buttons[name]['title']
+                    buttons[name]['title'] = edit_sentence
+                else:
+                    extra_attributes['alt-message'] = edit_sentence
+            if collectible_collection.add_view.unique_per_owner and quick_add_to_collection:
                 delete_sentence = unicode(_('Delete {thing}')).format(thing=unicode(collectible_collection.title).lower())
                 if buttons[name]['badge'] > 0:
                     extra_attributes['alt-message'] = buttons[name]['title']
@@ -857,7 +865,9 @@ class MagiCollection(object):
         alert_duplicate = True
         back_to_list_button = True
         unique_per_owner = False
-        quick_add_to_collection = False # for collectibles only
+
+        def quick_add_to_collection(self, request):
+            return False # for collectibles only
 
         @property
         def filter_cuteform(self):

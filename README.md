@@ -1449,7 +1449,6 @@ todo
 | max_per_user_per_day | Will limit how many a user can add within 24 hours. | None | 24 |
 | max_per_user_per_hour | Will limit how many a user can add within an hour. | None | 3 |
 | unique_per_owner | Will specify that only one of this item can be added. Will redirect to edit page when trying to add again. | False | |
-| quick_add_to_collection | (Collectibles only) Will automatically load javascript utility "directAddCollectible" to add to your collection in one click. Will load the form and attempt to submit it in the background, so will only work if all the fields in the form are optional or have a default selected/entered value when the form is loaded. Combined with “unique_per_owner”, will allow users to easily add or delete with one click. | False | |
 
 See also: [settings available in all views](#all-views).
 
@@ -1460,6 +1459,7 @@ See also: [settings available in all views](#all-views).
 | before_save | Function called before the form is saved. Not recommended, overload `save`in your form instead | request, instance, type=None | instance | Just returns the instance |
 | after_save | Function called after the form is saved. Not recommended, overload `save`in your form instead | request, instance, type=None | instance | Just returns the instance |
 | form_class | Form class to add an item. Doesn't have to be a method (see above). Can be specified in collection. | request, context | A form class | AutoForm |
+| quick_add_to_collection | (Collectibles only) Will automatically load javascript utility "directAddCollectible" to add to your collection in one click. Will load the form and attempt to submit it in the background, so will only work if all the fields in the form are optional or have a default selected/entered value when the form is loaded. Combined with “unique_per_owner”, will allow users to easily add or delete with one click. | request, parent_item | True or False | False |
 | redirect_after_add | Where should the user be redirected after the item has been added successfully? | request, item, ajax | URL to redirect to | Redirect to the item view of the item that has been created if the item view is enabled, otherwise to the list view |
 
 See also: [methods available in all views](#all-views).

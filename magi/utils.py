@@ -6,6 +6,7 @@ from django.core.files.temp import NamedTemporaryFile
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import resolve
 from django.core.validators import BaseValidator
+from django.http import Http404
 from django.utils.deconstruct import deconstructible
 from django.utils.translation import ugettext_lazy as _, get_language
 from django.utils.formats import dateformat
@@ -335,6 +336,19 @@ def redirectWhenNotAuthenticated(request, context, next_title=None):
         if context.get('current_url', '').startswith('/ajax/'):
             raise HttpRedirectException(u'/signup/')
         raise HttpRedirectException(u'/signup/{}'.format((u'?next={}{}'.format(context['current_url'], u'&next_title={}'.format(unicode(next_title)) if next_title else u'')) if 'current_url' in context else ''))
+
+############################################################
+# Fail safe get_object_or_404
+
+def get_one_object_or_404(queryset, *args, **kwargs):
+    """
+    Equivalent of get_object_or_404 but if more than 1, will return first result
+    """
+    existing = queryset.filter(**kwargs)
+    try:
+        return existing[0]
+    except IndexError:
+        raise Http404('No %s matches the given query.' % queryset.model._meta.object_name)
 
 ############################################################
 # Dump model

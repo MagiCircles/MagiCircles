@@ -5,11 +5,11 @@ from collections import OrderedDict
 from django.utils.translation import ugettext_lazy as _, string_concat
 from django.shortcuts import render
 from magi.middleware.httpredirect import HttpRedirectException
-from django.shortcuts import render, get_object_or_404, redirect
+from django.shortcuts import render, redirect
 from django.http import Http404
 from django.core.exceptions import PermissionDenied
 
-from magi.utils import getGlobalContext, cuteFormFieldsForContext
+from magi.utils import getGlobalContext, cuteFormFieldsForContext, get_one_object_or_404
 from magi.forms import ConfirmDelete, filter_ids
 from magi.settings import SITE_IMAGE
 
@@ -66,7 +66,7 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
         options = collection.item_view.reverse_url(reverse)
     else:
         options = collection.item_view.get_item(request, pk)
-    context['item'] = get_object_or_404(queryset, **options) if not item else item
+    context['item'] = get_one_object_or_404(queryset, **options) if not item else item
     collection.item_view.check_owner_permissions(request, context, context['item'])
 
     if shortcut_url is not None:
@@ -333,7 +333,7 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
     collection.edit_view.check_permissions(request, context)
     context = _modification_view(context, name, collection.edit_view)
     queryset = collection.edit_view.get_queryset(collection.queryset, _get_filters(request.GET, extra_filters), request)
-    instance = get_object_or_404(queryset, **collection.edit_view.get_item(request, pk))
+    instance = get_one_object_or_404(queryset, **collection.edit_view.get_item(request, pk))
     context['type'] = None
     collection.edit_view.check_owner_permissions(request, context, instance)
     if collection.types:
