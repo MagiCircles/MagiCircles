@@ -18,6 +18,9 @@ class Command(BaseCommand):
             all_colors += template.replace('HEX_COLOR', color[3]).replace('COLOR_NAME', color[0]).replace('COLOR', color[2])
         print all_colors
 
-        with open(os.path.join(django_settings.BASE_DIR + '/' + django_settings.SITE + '/static/less/generated_colors.less', 'w+')) as f:
+        path = os.path.join(django_settings.BASE_DIR, django_settings.SITE, 'static', 'less', 'generated_colors.less')
+        print path
+
+        with open(path, 'w+') as f:
             f.write(all_colors.encode('UTF-8'))
             f.close()
