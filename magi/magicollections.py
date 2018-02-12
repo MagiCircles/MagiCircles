@@ -537,7 +537,7 @@ class MagiCollection(object):
                 del(buttons[name])
                 continue
             extra_attributes = {}
-            quick_add_to_collection = collectible_collection.add_view.quick_add_to_collection(request, item)
+            quick_add_to_collection = collectible_collection.add_view.quick_add_to_collection(request)
             url_to_collectible_add_with_item = lambda url: u'{url}?{item_name}_id={item_id}&{item_name}_image={item_image}'.format(
                 url=url, item_name=self.name, item_id=item.id, item_image=item.image_url)
             buttons[name]['show'] = view.show_collect_button[name] if isinstance(view.show_collect_button, dict) else view.show_collect_button

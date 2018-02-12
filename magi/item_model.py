@@ -178,6 +178,19 @@ class BaseMagiModel(models.Model):
                 return None
             raise KeyError(i)
 
+    @classmethod
+    def get_csv_values(self, field_name, values, translated=True):
+        if not isinstance(values, list):
+            values = split_data(values)
+        if not translated:
+            return values
+        choices = {
+            (choice[0] if isinstance(choice, tuple) else choice):
+            (choice[1] if isinstance(choice, tuple) else _(choice))
+            for choice in getattr(self, '{name}_CHOICES'.format(name=field_name.upper()), [])
+        }
+        return OrderedDict([(c, choices.get(c, c)) for c in values])
+
     def add_c(self, field_name, to_add):
         """
         Add strings from a CSV formatted c_something
@@ -214,7 +227,7 @@ class BaseMagiModel(models.Model):
                     return type(self).get_verbose_i(name, getattr(self, 'i_{name}'.format(name=name)))
                 # For a CSV value: return dict {value: translated value}
                 elif hasattr(self, 'c_{name}'.format(name=name)):
-                    return self._c_to_t(name)
+                    return type(self).get_csv_values(name, getattr(self, name))
             # When accessing "something_url" for an image, return the url
             elif name.endswith('_url'):
                 field_name = name.replace('http_', '')[:-4]
@@ -224,16 +237,8 @@ class BaseMagiModel(models.Model):
                             else get_image_url(self, field_name))
             # When accessing "something" and "c_something" exists, returns the list of CSV values
             elif hasattr(self, 'c_{name}'.format(name=name)):
-                return split_data(getattr(self, 'c_{name}'.format(name=name)))
+                return type(self).get_csv_values(name, getattr(self, 'c_{name}'.format(name=name)), translated=False)
         raise AttributeError("%r object has no attribute %r" % (self.__class__, name))
-
-    def _c_to_t(self, name):
-        choices = {
-            (choice[0] if isinstance(choice, tuple) else choice):
-            (choice[1] if isinstance(choice, tuple) else _(choice))
-            for choice in getattr(self, '{name}_CHOICES'.format(name=name.upper()), [])
-        }
-        return OrderedDict([(c, choices.get(c, c)) for c in getattr(self, name)])
 
     class Meta:
         abstract = True
