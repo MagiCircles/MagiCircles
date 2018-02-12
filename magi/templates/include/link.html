@@ -1,0 +1,21 @@
+{# link must contain: url, type, value #}
+{# link may contain: translate_type, flaticon, image_url #}
+<a href="{{ link.url }}" target="_blank">
+  <div class="row"><div class="col-xs-8"><strong>
+	{% if link.translate_type %}
+	{% load i18n %}
+	{% trans link.type %}
+	{% else %}
+	{{ link.type }}
+	{% endif %}
+    </strong></div>
+    <div class="col-xs-4 text-right">
+      {% if link.flaticon %}
+      <i class="flaticon-{{ link.flaticon }}"></i>
+      {% elif link.image_url %}
+      <img src="{{ link.image_url }}" alt="{{ link.type }}" width="24" height="24">
+      {% endif %}
+    </div>
+  </div>
+  {{ link.value }}
+</a>

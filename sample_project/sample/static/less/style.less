@@ -1,11 +1,32 @@
+/* Uncomment these lines when you need to compile LESS -> CSS */
+// @import "../../../env/lib/python2.7/site-packages/magi/static/less/main.less";
+// @import "../../../env/lib/python2.7/site-packages/magi/static/less/mixins/magicircles.less";
+
+/* Comment these lines when you need to compile LESS -> CSS */
 @import "main.less";
-@import "mixins/buttons.less";
-@import "mixins/a.less";
+@import "mixins/magicircles.less";
+
+/******************************************/
+/* Variables */
 
 @mainColor: #4a86e8;
 @secondaryColor: #73c024;
+
+/******************************************/
+/* Tools */
+
+/******************************************/
+/* MagiCircles */
 
 html {
     .setup-sidebar(@mainColor);
     .magicircles(@mainColor, @secondaryColor);
 }
+
+@import "generated_colors.less";
+
+/******************************************/
+/* Single pages */
+
+/******************************************/
+/* MagiCollections */

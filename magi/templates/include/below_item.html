@@ -1,0 +1,35 @@
+{# Required: show_relevant_fields_on_ordering, show_item_buttons, item (item.buttons_to_show, item.show_item_buttons_in_one_line, item.show_item_buttons_justified, item.relevant_fields_to_show) #}
+{% if show_item_buttons and item.buttons_to_show %}
+<div class="below-item-buttons{% if item.show_item_buttons_in_one_line %} btn-group {% if item.show_item_buttons_justified %}btn-group-justified{% endif %}{% endif %}">
+  {% for name, button in item.buttons_to_show.items %}
+  {% if button.show and button.has_permissions %}
+  <a href="{{ button.url }}" data-btn-name="{{ name }}"
+     class="{% for class in button.classes %}{{ class }} {% endfor %}"
+     title="{{ button.title }}"
+     {% for attr, value in button.extra_attributes.items %}data-{{ attr }}="{{ value }}"
+     {% endfor %}
+     {% if button.open_in_new_window %} target="_blank"{% endif %}
+     {% if item.show_item_buttons_as_icons %}
+     data-toggle="tooltip"
+     data-placement="top"
+     data-container="body"
+     {% endif %}
+     {% if button.ajax_url %}
+     data-ajax-url="{{ button.ajax_url }}"
+     data-ajax-title="{% if button.ajax_title %}{{ button.ajax_title }}{% else %}{{ button.title }}{% endif %}"
+     data-ajax-handle-form="true"
+     {% endif %}>
+    {% if button.icon %}<i class="flaticon-{{ button.icon }}"></i>
+    {% elif button.image %}<img src="{{ static_url }}img/{{ button.image }}.png" height="39" />{% endif %}
+    {% if not item.show_item_buttons_as_icons %}<span class="message">{{ button.title }}</span>{% endif %}
+    {% if button.badge != None %}<span class="badge progress-bar-main"{% if not button.badge %} style="display: none;"{% endif %}>{{ button.badge }}</span>{% endif %}
+  </a>
+  {% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+{% if not buttons_only %}
+{% if show_relevant_fields_on_ordering and item.relevant_fields_to_show %}
+{% include 'include/fields_table.html' with fields=item.relevant_fields_to_show bottom=False %}
+{% endif %}
+{% endif %}

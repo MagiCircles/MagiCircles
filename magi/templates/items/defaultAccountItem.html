@@ -1,0 +1,30 @@
+{% with account=item %}
+<div class="well well-{{ account.cached_owner.preferences.css_color }} default-account">
+  {% with leaderboard=account.cached_leaderboard %}
+  {% if leaderboard %}<div class="leaderboard">
+    {% if leaderboard <= 3 %}
+    <img src="{{ account.leaderboard_image_url }}" alt="{{ leaderboard }}" />
+    {% else %}
+    <span>#{{ leaderboard }}</span>
+    {% endif %}
+  </div>{% endif %}
+  {% endwith %}
+  <div class="default-account-buttons">
+    {% include 'include/below_item.html' with buttons_only=True show_item_buttons=True %}
+  </div>
+  {% if not without_link %}<a href="{{ account.cached_owner.item_url }}">{% endif %}
+    <div class="row">
+      <div class="col-md-2">
+        {% include 'include/avatar.html' with av_user=account.cached_owner av_size=30 av_image_size=100 av_fixed=True %}
+      </div>
+      <div class="col-md-8">
+        <h3 class="username">{{ account.nickname|default_if_none:account.cached_owner.username }}</h3>
+      </div>
+      <div class="col-md-2">
+        <h3 class="level">{{ account.level|default_if_none:"??" }}</h3>
+        {% if account.friend_id and account.show_friend_id %}<div class="friend_id"><small>{{ account.friend_id }}</small></div>{% endif %}
+     </div>
+    </div>
+    {% if not without_link %}</a>{% endif %}
+</div>
+{% endwith %}

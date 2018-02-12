@@ -1,0 +1,46 @@
+{% load l10n %}
+{% for account in profile_user.all_accounts %}
+<div class="panel panel-{% if account.center and account.center.color %}{{ account.center.color }}{% else %}{{ account.cached_owner.preferences.css_color }}{% endif %} panel-default-account"
+     data-account-id="{{ account.id }}" id="{{ account.id }}">
+  <div class="panel-heading default-account"{% if account.center and account.center.art %} style="background-image: url('{{ account.center.art_url }}');"{% endif %}><div class="panel-heading-inside">
+    <div class="row">
+      {% if not account.center or not account.center.art %}<div class="col-md-2">
+        {% if account.center %}
+        <a href="{{ account.center.item_url }}" data-ajax-url="{{ account.center.ajax_item_url }}" data-ajax-title="{{ account.center }}">
+          <img src="{{ account.center.image_url }}" alt="{{ account.center }}" class="account-center">
+        </a>
+        {% else %}
+        {% include 'include/avatar.html' with av_user=account.cached_owner av_size=30 av_image_size=100 av_fixed=True %}
+        {% endif %}
+      </div>{% endif %}
+      <div class="col-md-{% if account.center and account.center.art %}10{% else %}8{% endif %}">
+        <h3 class="username">{{ account.nickname|default_if_none:account.cached_owner.username }}</h3>
+      </div>
+      <div class="col-md-2">
+        <h3 class="level">{{ account.level|default_if_none:"??" }}</h3>
+        {% if account.friend_id and account.show_friend_id %}<div class="friend_id"><small>{{ account.friend_id }}</small></div>{% endif %}
+      </div>
+    </div>
+  </div></div>
+  <div class="panel-body">
+    <ul class="nav nav-tabs account-tabs">
+      {# account.tabs (o dict), .tabs_size, .opened_tab #}
+      {# tab.name, .icon, .image #}
+      {% for tab_name, tab in account.tabs.items %}
+      <li{% if account.opened_tab == tab_name %} class="active"{% endif %} style="width: {% localize off %}{{ account.tabs_size }}{% endlocalize %}%;"><a href="#account-{{ account.id }}-tab-{{ tab_name }}" data-toggle="tab">
+	  {% if tab.icon %}<i class="flaticon-{{ tab.icon }}"></i><span class="hidden-xs hidden-sm">{% endif %}
+	    {{ tab.name }}{% if tab.icon %}</span>{% endif %}
+      </a></li>
+      {% endfor %}
+    </ul>
+    <!-- Tab panes -->
+    <div class="tab-content">
+      {% for tab_name, tab in account.tabs.items %}
+      <div role="tabpanel" class="tab-pane{% if account.opened_tab == tab_name %} active{% endif %}" id="account-{{ account.id }}-tab-{{ tab_name }}" data-tab-name="{{ tab_name }}">{% if tab_name == 'about' %}
+        {% include 'include/fields_table.html' with item=account fields=account.fields bottom=True %}
+      {% endif %}</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endfor %}

@@ -1,0 +1,22 @@
+{# required variables: name, item, #}
+{% extends "base.html" %}
+{% load tools %}
+
+{% block afterjs %}
+<script>
+  {% if ajax_reload_url %}
+  var ajax_reload_url = '{{ ajax_reload_url }}';
+  var reload_urls_start_with = [{% for url in reload_urls_start_with %}'{{ url }}', {% endfor %}];
+  var reload_item = false;
+  {% endif %}
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="{% if not full_width %}container {% endif %}item-container">
+  {% include 'items/'|add:item_template|add:'.html' %}
+  {% if include_below_item %}{% include 'include/below_item.html' %}{% endif %}
+  <br><br>
+  {% if comments_enabled %}{% include 'include/disqus.html' with disqus_identifier=name|add:'-'|addint:item.pk %}{% endif %}
+</div>
+{% endblock %}

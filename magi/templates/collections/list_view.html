@@ -1,0 +1,107 @@
+{# [list_page] required variables: items, per_line, col_size, title, total_results, page_size, page #}
+{# [list_page] optional variables: show_no_result #}
+{# required variables: plural_title, plural_name, show_search_results #}
+{# optional variables: top_buttons, filter_form #}
+
+{% extends "base.html" %}
+{% load i18n %}
+{% load tools %}
+{% load bootstrap %}
+{% get_current_language as LANGUAGE_CODE %}
+
+{% block js %}
+{% if hide_sidebar %}
+<script>
+  if ($(window).width() < 768) {
+    $('#wrapper').removeClass('toggled');
+  }
+  $('#sidebar-wrapper').show();
+  $('#togglebutton').show();
+</script>
+{% endif %}
+{% if filter_form and filter_cuteform %}
+<script>
+  var cuteform_fields = {{ filter_cuteform_json|safe }};
+</script>
+{% endif %}
+{% endblock %}
+{% block afterjs %}
+{% if ajax_pagination %}
+<script>
+  {% if ajax_pagination_callback %}
+  {{ ajax_pagination_callback }}();
+  {% endif %}
+  pagination('/ajax/{{ plural_name }}/', ''{% if ajax_pagination_callback %}, {{ ajax_pagination_callback }}{% endif %});
+</script>
+{% endif %}
+<script>
+  var ajax_reload_url = '{{ ajax_reload_url }}';
+  var ajax_pagination_callback = {{ ajax_pagination_callback|default_if_none:'null' }};
+  var reload_data_item = '{{ collection.name }}';
+  var reload_urls_start_with = [{% for url in reload_urls_start_with %}'{{ url }}', {% endfor %}];
+  var ids_to_reload = [];
+</script>
+{% endblock %}
+
+{% block content %}
+{% if filter_form %}
+<div id="wrapper" class="active{% if hide_sidebar %} toggled{% endif %}">
+  <nav id="sidebar-wrapper"{% if hide_sidebar %} style="display: none;"{% endif %}>
+    <form class="form-horizontal" method="get" action="" role="form">
+      {{ filter_form|bootstrap }}
+      <br>
+      <button type="submit" class="btn btn-lg btn-secondary btn-block"><i class="flaticon-search"></i> {% t 'Search' %}</button>
+    </form>
+  </nav>
+  <div id="page-content-wrapper">
+    <a href="#" id="togglebutton"{% if hide_sidebar %} style="display: none;"{% endif %}>
+      <i class="flaticon-search"></i>
+      <i class="flaticon-toggler hidder"></i>
+    </a>
+    {% else %}
+    <div class="{% if not full_width %}container{% endif %}">
+    {% endif %}{# filter_form #}
+    <div class="collection-page-wrapper{% if not full_width %} as-container{% endif %}">
+      <h1 class="padding50 text-center{% if not show_title %} hidden{% endif %}">{% trans plural_title %}</h1>
+      {% if before_template %}
+      {% include before_template|add:'.html' %}
+      {% endif %}
+      {% if top_buttons and top_buttons_total %}
+      <div class="top_buttons">
+        <div class="row">
+          {% for name, button in top_buttons.items %}
+          {% if button.show and button.has_permissions %}
+          <div class="col-md-{{ top_buttons_col_size }}">
+            <a href="{{ button.url }}"
+               class="{% for class in button.classes %}{{ class }} {% endfor %}"
+               title="{{ button.title }}"
+               {% if button.ajax_url %}
+               data-ajax-url="{{ button.ajax_url }}"
+               data-ajax-title="{% if button.ajax_title %}{{ button.ajax_title }}{% else %}{{ button.title }}{% endif %}"
+               data-ajax-handle-form="true"
+               {% endif %}>
+              {% if button.icon %}<i class="flaticon-{{ button.icon }}"></i>
+              {% elif button.image %}<img src="{{ static_url }}img/{{ button.image }}.png" height="39" />{% endif %}
+              {{ button.title }}
+              {% if button.subtitle %}<br /><small>{{ button.subtitle }}</small>{% endif %}
+            </a>
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+      {% if total_results and show_search_results %}
+      <div class="padding20 total-search-results">
+	{% trans total_results_sentence %}
+      </div>
+      {% endif %}
+      {% include "collections/list_page.html" %}
+    </div>
+    {% if filter_form %}
+  </div> <!-- page-content-wrapper -->
+</div> <!-- wrapper -->
+{% else %}
+</div> <!-- container -->
+{% endif %}
+{% endblock %}

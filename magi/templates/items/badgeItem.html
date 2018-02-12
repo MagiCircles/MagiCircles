@@ -1,0 +1,26 @@
+{% with badge=item %}
+{% if show_user %}
+<br>
+<div class="row">
+  <div class="col-xs-3">
+    {% include 'include/avatar.html' with av_user=badge.user av_size=22 av_image_size=60 av_link=True av_external=True %}
+  </div>
+  <div class="col-xs-9">
+    <h3>{{ badge.user.username }}</h3>
+  </div>
+</div>
+{% endif %}
+<a href="{{ badge.item_url }}" data-ajax-url="{{ badge.ajax_item_url }}" data-ajax-title="{{ badge }}">
+  <div class="user-badge badge-color{{ badge.rank|default_if_none:"" }}"
+       style="background-image: url('{{ badge.image_url }}');">
+    <img src="{{ static_url }}img/badges/badge{{ badge.rank|default_if_none:"" }}.png">
+  </div>
+  <div class="caption-wrapper">
+    <div class="caption">
+      <h1 class="ribbon">
+	<strong class="ribbon-content">{{ badge }}</strong>
+      </h1>
+    </div>
+  </div>
+</a>
+{% endwith %}

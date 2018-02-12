@@ -1,0 +1,148 @@
+{# variables: fields, bottom, item (item.buttons_to_show), user #}
+{% load tools %}
+{% load magi_tags %}
+  <table class="table about-table">
+    {% for field_name, field in fields.items %}
+    <tr data-field="{{ field_name }}">
+      <td>
+	{% if field.icon %}
+	<i class="flaticon-{{ field.icon }}"></i>
+	{% elif field.image %}
+	<img src="{{ field.image }}" alt="{{ field.verbose_name }}">
+	{% endif %}
+      </td>
+      {% if field.type != 'long_text' %}<th>{{ field.verbose_name }}</th>{% endif %}
+      <td{% if field.type == 'long_text' %} colspan="2"{% endif %}>
+	{% if field.type == 'text_with_link' %}
+	{{ field.value }}<br>
+	<a href="{{ field.link }}" target="_blank"{% if field.ajax_link %} data-ajax-url="{{ field.ajax_link }}" data-ajax-title="{{ field.value }}"{% endif %}>
+	  {{ field.link_text }}
+	  <i class="flaticon-link fontx0-8"></i>
+	</a>
+	{% elif field.type == 'title_text' %}
+	<strong>{{ field.title }}</strong><br>
+	<p>{{ field.value }}</p>
+	{% elif field.type == 'text_annotation' %}
+	<span>{{ field.value }}</span><br />
+	<small class="text-muted">{{ field.annotation }}</small>
+	{% elif field.type == 'image' %}
+	<a href="{{ field.value }}" target="_blank"{% if field.ajax_link %} data-ajax-url="{{ field.ajax_link }}" data-ajax-title="{{ field.value }}"{% endif %}>
+	  <img src="{{ field.value }}" alt="{{ field.verbose_name }}">
+	</a>
+	{% elif field.type == 'images' %}
+        {% for image in field.images %}
+	<a href="{{ image.value }}" target="_blank"{% if image.ajax_link %} data-ajax-url="{{ image.ajax_link }}" data-ajax-title="{{ image.value }}"{% endif %}>
+	  <img src="{{ image.value }}" alt="{{ image.verbose_name }}">
+	</a>
+        {% endfor %}
+	{% elif field.type == 'image_link'  %}
+        <a href="{{ field.link }}" target="_blank"{% if field.ajax_link %} data-ajax-url="{{ field.ajax_link }}" data-ajax-title="{{ field.link_text }}"{% endif %}>
+	  <img src="{{ field.value }}" alt="{{ field.link_text }}">
+        </a>
+	{% elif field.type == 'images_links'  %}
+        {% for image in field.images %}
+        <a href="{{ image.link }}" target="_blank"{% if image.ajax_link %} data-ajax-url="{{ image.ajax_link }}" data-ajax-title="{{ image.link_text }}"{% endif %}>
+	  <img src="{{ image.value }}" alt="{{ image.link_text }}">
+        </a>
+        {% endfor %}
+	{% elif field.type == 'bool' %}
+	{% if field.value %}
+	<i class="flaticon-checked"></i> {% t 'Yes' %}
+	{% else %}
+	<i class="flaticon-delete"></i> {% t 'No' %}
+	{% endif %}
+	{% elif field.type == 'link' %}
+	<a href="{{ field.value }}" target="_blank"{% if field.ajax_link %} data-ajax-url="{{ field.ajax_link }}" data-ajax-title="{{ field.value }}"{% endif %}>
+	  {{ field.link_text }}
+	</a>
+	{% elif field.type == 'button' %}
+	<a href="{{ field.value }}" target="_blank" class="btn btn-lg btn-secondary"{% if field.ajax_link %} data-ajax-url="{{ field.ajax_link }}" data-ajax-title="{{ field.value }}"{% endif %}>
+	  {{ field.link_text }}
+	</a>
+	{% elif field.type == 'timezone_datetime' %}
+	{% for timezone in field.timezones %}
+	<span class="timezone" data-to-timezone="{{ timezone }}"
+	      {% if forloop.counter0 != 0 %} style="display: none;"{% endif %}>
+	  <span class="datetime">{{ field.value|torfc2822 }}</span>
+	  (<span class="current_timezone">UTC</span>)
+	</span><br>
+	{% endfor %}
+        {% if field.ago %}
+        <small class="text-muted"><span class="timezone" data-timeago="true" style="display: none;">
+	    <span class="datetime">{{ field.value|torfc2822 }}</span>
+	</span></small>
+        {% endif %}
+	{% elif field.type == 'long_text' %}
+        <strong class="long-text-title">{{ field.verbose_name }}</strong>
+        {{ field.value }}
+        {% elif field.type == 'list' %}
+        <ul>{% for value in field.value %}
+          <li>{{ value }}</li>
+        {% endfor %}</ul>
+	{% elif field.type == 'itunes' %}
+        <div class="itunes" data-itunes-id="{{ field.value }}"></div>
+	{% elif field.type == 'html' %}
+	{{ field.value|safe }}
+	{% else %}
+	{{ field.value }}
+	{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    {% if item.buttons_to_show and bottom %}
+    {% for name, button in item.buttons_to_show.items %}
+    {% if button.show and button.has_permissions %}
+    <tr{% if 'staff-only' in button.classes %} class="staff-only"{% endif %}>
+      <td>
+        {% if button.icon %}<i class="flaticon-{{ button.icon }}"></i>
+        {% elif button.image %}<img src="{{ static_url }}img/{{ button.image }}.png" height="39" />{% endif %}
+      </td>
+      <th>{{ button.title }}</th>
+      <td>
+        <a href="{{ button.url }}" data-btn-name="{{ name }}"
+           class="{% for class in button.classes %}{% if class != 'staff-only' %}{{ class }} {% endif %}{% endfor %}"
+           title="{{ button.title }}"
+           {% for attr, value in button.extra_attributes.items %}data-{{ attr }}="{{ value }}"
+           {% endfor %}
+           {% if button.open_in_new_window %} target="_blank"{% endif %}
+           {% if button.ajax_url %}
+           data-ajax-url="{{ button.ajax_url }}"
+           data-ajax-title="{% if button.ajax_title %}{{ button.ajax_title }}{% else %}{{ button.title }}{% endif %}"
+           data-ajax-handle-form="true"
+           {% endif %}>
+          {% if button.icon %}<i class="flaticon-{{ button.icon }}"></i>
+          {% elif button.image %}<img src="{{ static_url }}img/{{ button.image }}.png" height="39" />{% endif %}
+          {% if not item.show_item_buttons_as_icons %}<span class="message">{{ button.title }}</span>{% endif %}
+          {% if button.badge != None %}<span class="badge progress-bar-main"{% if not button.badge %} style="display: none;"{% endif %}>{{ button.badge }}</span>{% endif %}
+        </a>
+      </td>
+    </tr>
+    {% endif %}
+    {% endfor %}
+    {% endif %}
+    {% if bottom %}
+    {% load i18n %}
+    {% if comments_enabled %}
+    <tr>
+      <td><i class="flaticon-comments"></i></td>
+      <th>{% trans 'Comments' %}</th>
+      <td>
+	<a href="{{ item.http_item_url }}#disqus_thread" class="btn btn-lg btn-secondary"{% if current != item.collection_name|add:'_item' %} target="_blank"{% endif %}>
+	  {% trans 'Comments' %}
+	</a>
+      </td>
+    </tr>
+    {% endif %}
+    {% if share_enabled %}
+    <tr>
+      <td><i class="flaticon-link"></i></td>
+      <th>{% trans 'Share' %}</th>
+      <td>
+	<span class="btn-group">
+	  {% include 'include/share.html' with share_url=item.share_url share_btn_class="secondary btn-lg" share_sentence=item %}
+	</span>
+      </td>
+    </tr>
+    {% endif %}
+    {% endif %}
+  </table>

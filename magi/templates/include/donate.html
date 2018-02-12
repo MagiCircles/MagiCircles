@@ -1,0 +1,28 @@
+{% load i18n %}
+<div class="padding50">
+  <div class="row">
+    {% if donate_image %}
+    <div class="col-md-4">
+      <img src="{{ static_url }}img/{{ donate_images_folder }}{{ donate_image }}" class="img-responsive donate-image">
+    </div>
+    {% endif %}
+    <div class="col-md-{% if donate_image %}8{% else %}12{% endif %} text-center ">
+      <p class="big-text donate-text"><br>{% trans 'If you like the website, please consider donating' %}. {% trans 'This will help us cover the costs of the servers and allow us to keep it running for free and without ads.' %}</p>
+    </div>
+  </div>
+  <br><br>
+  {% if show_paypal %}
+  <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top" class="text-center">
+    <input type="hidden" name="cmd" value="_s-xclick">
+    <input type="hidden" name="hosted_button_id" value="VJPSFRC2ZQSKS">
+    <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">
+    <img alt="" border="0" src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif" width="1" height="1">
+  </form>
+  {% else %}
+  <a href="https://www.patreon.com/db0company" target="_blank">
+    <img src="{{ static_url }}img/patreon.png" alt="Patreon" class="img-responsive">
+  </a>
+  {% endif %}
+  <br><br><br><br><br><br><br><br><br><br><br><br>
+  <h1 class="padding50 text-center">{% trans 'Donators' %}</h1>
+</div>

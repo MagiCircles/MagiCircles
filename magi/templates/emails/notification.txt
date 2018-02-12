@@ -1,0 +1,7 @@
+{# variables: notification, user (= receiver), site_url, all_enabled #}{% load i18n %}{% trans 'Hi' %} {{ user.username }},
+
+{{ notification.localized_message }}
+
+{{ notification.url_open_sentence }}: {{ notification.full_website_url }}
+
+{% trans 'Click here to turn off email notifications.' %}: {{ site_url }}settings/#emails

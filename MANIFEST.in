@@ -1,6 +1,6 @@
 include LICENSE
 include README.md
-recursive-include web/static *
-recursive-include web/templates *.html
-recursive-include web/templates *.txt
-recursive-include web/locale *.po
+recursive-include magi/static *
+recursive-include magi/templates *.html
+recursive-include magi/templates *.txt
+recursive-include magi/locale *.po

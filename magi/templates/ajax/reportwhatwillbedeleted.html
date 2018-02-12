@@ -1,0 +1,22 @@
+{% load tools %}
+{% if not hide_warning %}
+Deleting this {{ report.reported_thing }} forever also means you're deleting:
+{% endif %}
+<ul>
+  {% for thing in to_delete %}
+  {% if thing|isList %}
+  {% include 'ajax/reportwhatwillbedeleted.html' with to_delete=thing hide_warning=True %}
+  {% else %}
+  <li>{% if thing.collection %}{{ thing.collection.title }}{% else %}{{ thing|modelName }}{% endif %}:
+    {% if thing.collection and thing.collection.item_view.enabled %}
+    <a href="{{ thing.item_url }}" target="_blank">{{ thing }}</a>
+    {% else %}
+    {{ thing }}
+    {% endif %}</li>
+  {% endif %}
+  {% endfor %}
+</ul>
+{% if not hide_warning %}
+<h1 class="text-danger">Are you sure you want to delete this {{ report.reported_thing }} + all these other things?</h1>
+<h3><i>You can't cancel this afterwards.</i></h3>
+{% endif %}

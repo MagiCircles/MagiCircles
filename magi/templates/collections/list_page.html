@@ -1,0 +1,34 @@
+{# required variables: items, per_line, col_size, col_break, name, total_results, page_size, page #}
+{# optional variables: show_no_result #}
+
+{% load i18n %}
+{% load tools %}
+{% if items|length == 0 %}
+{% if show_no_result %}
+<div class="padding50 no-result-wrapper">
+  {% if no_result_template %}
+  {% include no_result_template|add:'.html' %}
+  {% else %}
+  <h4 class="padding50 alert alert-info no-result-alert">
+    {% trans 'No result.' %}
+  </h4>
+  {% endif %}
+</div>
+{% endif %}
+{% else %}
+<div class="row items">
+  {% for item in items %}
+  {% if forloop.counter0 != 0 and forloop.counter0|mod:per_line %}
+</div><div class="row items">
+  {% endif%}
+  <div class="col-{{ col_break }}-{{ col_size }}" data-item="{{ collection.name }}" data-item-id="{{ item.id }}">
+    {% include 'items/'|add:item_template|add:'.html' %}
+    {% if include_below_item %}{% include 'include/below_item.html' %}{% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% include 'include/pagination.html' %}
+{% endif %}
+{% if is_last_page and after_template %}
+{% include after_template|add:'.html' %}
+{% endif %}
