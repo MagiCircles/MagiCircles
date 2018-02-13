@@ -70,6 +70,11 @@ if hasattr(settings_module, 'CONTACT_REDDIT'):
 else:
     CONTACT_REDDIT = 'db0company'
 
+if hasattr(settings_module, 'CONTACT_DISCORD'):
+    CONTACT_DISCORD = getattr(settings_module, 'CONTACT_DISCORD')
+else:
+    CONTACT_DISCORD = 'https://discord.gg/mehDTsv'
+
 if hasattr(settings_module, 'CONTACT_FACEBOOK'):
     CONTACT_FACEBOOK = getattr(settings_module, 'CONTACT_FACEBOOK')
 else:
@@ -242,6 +247,11 @@ if hasattr(settings_module, 'GAME_URL'):
     GAME_URL = getattr(settings_module, 'GAME_URL')
 else:
     GAME_URL = None
+
+if hasattr(settings_module, 'FEEDBACK_FORM'):
+    FEEDBACK_FORM = getattr(settings_module, 'FEEDBACK_FORM')
+else:
+    FEEDBACK_FORM = None
 
 if hasattr(settings_module, 'HASHTAGS'):
     HASHTAGS = getattr(settings_module, 'HASHTAGS')

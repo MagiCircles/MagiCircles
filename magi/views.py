@@ -18,7 +18,7 @@ from magi import models
 from magi.raw import donators_adjectives
 from magi.utils import getGlobalContext, ajaxContext, redirectToProfile, tourldash, redirectWhenNotAuthenticated, dumpModel, send_email, emailContext, getMagiCollection, cuteFormFieldsForContext, CuteFormType, FAVORITE_CHARACTERS_IMAGES
 from magi.notifications import pushNotification
-from magi.settings import SITE_NAME, GAME_NAME, ENABLED_PAGES, FAVORITE_CHARACTERS, TWITTER_HANDLE, BUG_TRACKER_URL, GITHUB_REPOSITORY, CONTRIBUTE_URL, CONTACT_EMAIL, CONTACT_REDDIT, CONTACT_FACEBOOK, ABOUT_PHOTO, WIKI, HELP_WIKI, LATEST_NEWS, SITE_LONG_DESCRIPTION, CALL_TO_ACTION, TOTAL_DONATORS, GAME_DESCRIPTION, GAME_URL, ON_USER_EDITED, ON_PREFERENCES_EDITED, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, SITE_LOGO_PER_LANGUAGE
+from magi.settings import SITE_NAME, GAME_NAME, ENABLED_PAGES, FAVORITE_CHARACTERS, TWITTER_HANDLE, BUG_TRACKER_URL, GITHUB_REPOSITORY, CONTRIBUTE_URL, CONTACT_EMAIL, CONTACT_REDDIT, CONTACT_FACEBOOK, CONTACT_DISCORD, FEEDBACK_FORM, ABOUT_PHOTO, WIKI, HELP_WIKI, LATEST_NEWS, SITE_LONG_DESCRIPTION, CALL_TO_ACTION, TOTAL_DONATORS, GAME_DESCRIPTION, GAME_URL, ON_USER_EDITED, ON_PREFERENCES_EDITED, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, SITE_LOGO_PER_LANGUAGE
 from magi.views_collections import item_view, list_view
 from raw import other_sites
 
@@ -111,12 +111,16 @@ def aboutDefaultContext(request):
     context['about_description_template'] = 'include/about_description'
     context['about_photo'] = ABOUT_PHOTO
     context['site_long_description'] = SITE_LONG_DESCRIPTION
-    context['twitter'] = TWITTER_HANDLE
-    context['email'] = CONTACT_EMAIL
-    context['reddit_user'] = CONTACT_REDDIT
-    context['facebook'] = CONTACT_FACEBOOK
-    context['bug_tracker_url'] = BUG_TRACKER_URL
-    context['github_repository'] = GITHUB_REPOSITORY
+    context['feedback_form'] = FEEDBACK_FORM
+    context['contact_methods'] = [
+        ('Discord', 'discord', CONTACT_DISCORD),
+        ('Twitter', 'twitter', u'https://twitter.com/{}/'.format(TWITTER_HANDLE) if TWITTER_HANDLE else None),
+        ('Reddit', 'reddit', u'https://www.reddit.com/user/{}/'.format(CONTACT_REDDIT) if CONTACT_REDDIT else None),
+        ('Facebook', 'facebook', u'https://facebook.com/{}/'.format(CONTACT_FACEBOOK) if CONTACT_FACEBOOK else None),
+        (_('Email'), 'flaticon-contact', CONTACT_EMAIL if CONTACT_EMAIL else None),
+        ('GitHub', 'github', u'https://github.com/{}/{}/'.format(GITHUB_REPOSITORY[0], GITHUB_REPOSITORY[1]) if GITHUB_REPOSITORY else None),
+        ('Bug tracker', 'flaticon-album', BUG_TRACKER_URL if BUG_TRACKER_URL and not FEEDBACK_FORM else None),
+    ]
     context['franchise'] = _('{site} is not a representative and is not associated with {game}. Its logos and images are Trademarks of {company}.').format(site=_(SITE_NAME), game=_(GAME_NAME), company=_('the company that owns {game}').format(game=GAME_NAME))
     context['staff'] = models.User.objects.filter(is_staff=True).select_related('preferences')
     context['api_enabled'] = False

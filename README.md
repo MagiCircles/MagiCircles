@@ -674,6 +674,7 @@ Optional settings:
 | CONTACT_EMAIL | Main contact email address | Value in django settings `AWS_SES_RETURN_PATH` |
 | CONTACT_FACEBOOK | Contact Facebook username or page | "db0company" |
 | CONTACT_REDDIT | Contact reddit username | "db0company" |
+| CONTACT_DISCORD | Contact Discord server invite URL | "https://discord.gg/mehDTsv" |
 | CONTRIBUTE_URL | Full URL of the guide (or README) for developers who would like to contribute | [link](https://github.com/SchoolIdolTomodachi/SchoolIdolAPI/wiki/Contribute) |
 | DONATE_IMAGE | Path of the image in DONATE_IMAGES_FOLDER | None |
 | DONATORS_STATUS_CHOICES | List of tuples (status, full string) for the statuses of donators, statuses must be THANKS, SUPPORTER, LOVER, AMBASSADOR, PRODUCER and DEVOTEE | "Thanks", "Player", "Super Player", "Extreme Player", "Master Player", "Ultimate Player" |
@@ -684,6 +685,7 @@ Optional settings:
 | FAVORITE_CHARACTERS | List of tuples (id, full name, image path - must be squared image and full url) for each character that can be set as a favorite on users' profiles, if it's in a database it's recommended to use [Generated Settings](#generated-settings) to save them once in a while | None |
 | FAVORITE_CHARACTER_NAME | String that will be localized to specify what's a "character". Must contain `{nth}` (example: "{nth} Favorite Idol") | "{nth} Favorite Character" |
 | FAVORITE_CHARACTER_TO_URL | A function that will return the URL to get more info about that character. This function takes a link object with value (full name), raw_value (id), image | lambda _: '#' |
+| FEEDBACK_FORM | URL of a form used to gather feedback from user. When not specified, it will just link to the bug tracker. | None |
 | GAME_DESCRIPTION | A long description of the game. Used on the about game page. | None (just shows game image) |
 | GAME_URL | A link to the official homepage of the game. Used on the about game page. | None (just shows game image) |
 | GET_GLOBAL_CONTEXT | Function that takes a request and return a context, must call `globalContext` in `magi.utils` | None |

@@ -158,6 +158,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
             'url_variables': [
                 ('wiki_url', '[^/]+'),
             ],
+            'navbar_link': False,
         },
     ]),
     ('deletelink', {
