@@ -143,6 +143,23 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
             'navbar_link': False,
         },
     ]),
+    ('wiki', [
+        {
+            'enabled': False,
+            'custom': False,
+            'title': _('Wiki'),
+            'icon': 'about',
+        },
+        {
+            'enabled': False,
+            'custom': False,
+            'icon': 'about',
+            'title': _('Wiki'),
+            'url_variables': [
+                ('wiki_url', '[^/]+'),
+            ],
+        },
+    ]),
     ('deletelink', {
         'ajax': True,
         'custom': False,

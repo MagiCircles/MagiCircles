@@ -28,7 +28,12 @@ else:
 if hasattr(settings_module, 'GITHUB_REPOSITORY'):
     GITHUB_REPOSITORY = getattr(settings_module, 'GITHUB_REPOSITORY')
 else:
-    GITHUB_REPOSITORY = ('SchoolIdolTomodachi', 'MagiCircles')
+    GITHUB_REPOSITORY = ('MagiCircles', 'MagiCircles')
+
+if hasattr(settings_module, 'HELP_WIKI'):
+    HELP_WIKI = getattr(settings_module, 'HELP_WIKI')
+else:
+    HELP_WIKI = ('MagiCircles', 'MagiCircles')
 
 if hasattr(settings_module, 'WIKI'):
     WIKI = getattr(settings_module, 'WIKI')

@@ -18,7 +18,7 @@ from magi import models
 from magi.raw import donators_adjectives
 from magi.utils import getGlobalContext, ajaxContext, redirectToProfile, tourldash, redirectWhenNotAuthenticated, dumpModel, send_email, emailContext, getMagiCollection, cuteFormFieldsForContext, CuteFormType, FAVORITE_CHARACTERS_IMAGES
 from magi.notifications import pushNotification
-from magi.settings import SITE_NAME, GAME_NAME, ENABLED_PAGES, FAVORITE_CHARACTERS, TWITTER_HANDLE, BUG_TRACKER_URL, GITHUB_REPOSITORY, CONTRIBUTE_URL, CONTACT_EMAIL, CONTACT_REDDIT, CONTACT_FACEBOOK, ABOUT_PHOTO, WIKI, LATEST_NEWS, SITE_LONG_DESCRIPTION, CALL_TO_ACTION, TOTAL_DONATORS, GAME_DESCRIPTION, GAME_URL, ON_USER_EDITED, ON_PREFERENCES_EDITED, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, SITE_LOGO_PER_LANGUAGE
+from magi.settings import SITE_NAME, GAME_NAME, ENABLED_PAGES, FAVORITE_CHARACTERS, TWITTER_HANDLE, BUG_TRACKER_URL, GITHUB_REPOSITORY, CONTRIBUTE_URL, CONTACT_EMAIL, CONTACT_REDDIT, CONTACT_FACEBOOK, ABOUT_PHOTO, WIKI, HELP_WIKI, LATEST_NEWS, SITE_LONG_DESCRIPTION, CALL_TO_ACTION, TOTAL_DONATORS, GAME_DESCRIPTION, GAME_URL, ON_USER_EDITED, ON_PREFERENCES_EDITED, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, SITE_LOGO_PER_LANGUAGE
 from magi.views_collections import item_view, list_view
 from raw import other_sites
 
@@ -221,15 +221,20 @@ def settings(request):
 ############################################################
 # Help / Wiki
 
-def help(request, wiki_url='Home'):
+def custom_wiki(wiki, wiki_name, request, wiki_url):
     context = getGlobalContext(request)
     context['wiki_url'] = wiki_url
-    context['wiki'] = WIKI
-    context['full_wiki_url'] = 'https://github.com/{}/{}/wiki/'.format(WIKI[0], WIKI[1])
+    context['page_title'] = wiki_name if wiki_url in ['Home', '_Sidebar'] else u'{} - {}'.format(wiki_url.replace('_', ' ').replace('-', ' '), wiki_name)
+    context['wiki'] = wiki
+    context['full_wiki_url'] = 'https://github.com/{}/{}/wiki/'.format(wiki[0], wiki[1])
     context['js_files'] = ['bower/marked/lib/marked', 'bower/github-wiki/js/githubwiki', 'wiki']
     return render(request, 'pages/wiki.html', context)
 
-wiki = help
+def help(request, wiki_url='_Sidebar'):
+    return custom_wiki(HELP_WIKI, _('Help'), request, wiki_url)
+
+def wiki(request, wiki_url='Home'):
+    return custom_wiki(WIKI, _('Wiki'), request, wiki_url)
 
 ############################################################
 # Map

@@ -2,10 +2,10 @@
 {% load i18n %}
 {% get_current_language as LANGUAGE_CODE %}
 
-{% block title %}{% trans 'Wiki' %}{% endblock %}
 {% block js %}
 <script>
   var site_url = '{{ site_url }}';
+  var current = '{{ current }}';
   var github_repository_username = '{{ wiki.0 }}';
   var github_repository_name = '{{ wiki.1 }}';
 </script>
@@ -15,23 +15,22 @@
 {% load tools %}
 <div class="container">
   <h1 class="text-center padding50">
-    {% if wiki_url == 'Home' %}
-    {% trans 'Wiki' %}
-    <span id="wiki-title" class="hidden">Home</span>
-    {% else %}
-    <span id="wiki-title">{{ wiki_url }}</span>
-    <br><a href="/help/"><small>{% trans 'Back to Wiki Home' %}</small></a>
+    <span id="wiki-title" data-url="{{ wiki_url }}">{{ page_title }}</span>
+    {% if wiki_url != 'Home' and wiki_url != '_Sidebar' %}
+    <br><a href="/{{ current }}/"><small>{% trans 'Back to wiki home' %}</small></a>
     {% endif %}
   </h1>
   <div class="row">
+    {% if wiki_url != '_Sidebar' %}
     <div class="col-lg-3">
       <div id="wiki-sidebar"></div>
-	<br><br><br>
-	<a href="{{ full_wiki_url }}_new" target="_blank">{% trans 'Create a new wiki page' %}</a><br>
-	<a href="{{ full_wiki_url }}_Sidebar/_edit" target="_blank">{% trans 'Edit the sidebar' %}</a><br>
-	<small class="text-muted"><i>{% trans 'Note: You need an account on GitHub to add/edit wiki pages' %}</i></small>
+	    <br><br><br>
+	    <a href="{{ full_wiki_url }}_new" target="_blank">{% trans 'Create a new wiki page' %}</a><br>
+	    <a href="{{ full_wiki_url }}_Sidebar/_edit" target="_blank">{% trans 'Edit the sidebar' %}</a><br>
+	    <small class="text-muted"><i>{% trans 'Note: You need an account on GitHub to add/edit wiki pages' %}</i></small>
     </div>
-    <div class="col-lg-8">
+    {% endif %}
+    <div class="col-lg-{% if wiki_url == '_Sidebar' %}12{% else %}8{% endif %}">
       <div id="wiki-content"></div>
       <div class="text-right">
 	<br><br><br>

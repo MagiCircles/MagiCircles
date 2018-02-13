@@ -687,9 +687,10 @@ Optional settings:
 | GAME_DESCRIPTION | A long description of the game. Used on the about game page. | None (just shows game image) |
 | GAME_URL | A link to the official homepage of the game. Used on the about game page. | None (just shows game image) |
 | GET_GLOBAL_CONTEXT | Function that takes a request and return a context, must call `globalContext` in `magi.utils` | None |
-| GITHUB_REPOSITORY | Tuple (Username, repository) for the sources of this website, used in about page | ('SchoolIdolTomodachi', 'MagiCircles') |
+| GITHUB_REPOSITORY | Tuple (Username, repository) for the sources of this website, used in about page | ('MagiCircles', 'MagiCircles') |
 | GOOGLE_ANALYTICS | Tracking number for Google Analytics | 'UA-67529921-1' |
 | HASHTAGS | List of hashtags when sharing on Twitter + used as keywords for the page (without `#`) | [] |
+| HELP_WIKI | Tuple (Username, repository) for the GitHub wiki pages to display the help pages | ('MagiCircles', 'MagiCircles') |
 | JAVASCRIPT_TRANSLATED_TERMS | Terms used in `gettext` function in Javascript, must contain `DEFAULT_JAVASCRIPT_TRANSLATED_TERMS` in `magi.default_settings` | None |
 | LATEST NEWS | A list of dictionaries that should contain image, title, url and may contain hide_title, used if you keep the default index page to show a carousel. Recommended to get this from [generated Settings](#generated-settings). | None |
 | LAUNCH_DATE | If you want to tease your community before officially opening the website, or just let your staff team test it, you can set a launch date. It will make all the pages and collections only available to staff and make the homepage a countdown before the website opens. Example: `import datetime, pytz datetime.datetime(2017, 04, 9, 12, 0, 0, tzinfo=pytz.UTC)` | None |
@@ -1911,10 +1912,14 @@ Some pages and collections are provided by default.
 | /about/ | Yes | About page with a description of the website, the owners, the staff members and credits. |
 | /prelaunch/ | Yes | Useful page when `LAUNCH_DATE` is provided in settings. Will display a countdown. |
 | /map/ | Yes | A world map of all the users who provided their location. |
-| /help/ | Yes | The homepage of the wiki of the website, with FAQ and guides. |
-| /help/{wiki_url}/ | Yes | A specific page in the wiki. |
+| /help/ | Yes | The homepage of the help pages of the website, with FAQ and guides. |
+| /help/{wiki_url}/ | Yes | A specific page in the help pages. |
+| /wiki/ | No | The homepage of the wiki of the website, with FAQ and guides. |
+| /wiki/{wiki_url}/ | No | A specific page in the wiki. |
 | /twitter_avatar/{twitter}/ | Yes | A handy URL that will redirect to the Twitter avatar URL. |
+
 Ajax:
+
 | URL | Enabled by default | Details |
 |-----|--------------------|---------|
 | /ajax/about/ | Yes | Ajax version of the about page, see above. |
