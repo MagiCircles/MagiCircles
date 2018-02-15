@@ -15,6 +15,7 @@ function disableButton(button) {
 }
 
 function formloaders() {
+    $('button[data-form-loader=true]').closest('form').attr('novalidate', true);
     $('button[data-form-loader=true]').click(function(e) {
         $(this).html('<i class="flaticon-loading"></i>');
         disableButton($(this));
@@ -51,32 +52,33 @@ function dateInputSupport() {
 // *****************************************
 // Hide Staff Buttons
 
-function hideStaffButtons(show, showTooltip /* optional, = true */) {
-    if ($('.staff-only').length > 0) {
-        show = typeof show == 'undefined' ? false : show;
-        if (show) {
-            $('.staff-only').show();
-        } else {
-            $('.staff-only').hide();
-        }
-        $('a[href="#hideStaffButtons"]').show('slow', function() {
-            loadToolTips();
-            if (typeof showTooltip == 'undefined' || showTooltip == true) {
-                $('a[href="#hideStaffButtons"]').tooltip('show');
-                setTimeout(function() {
-                    $('a[href="#hideStaffButtons"]').tooltip('hide');
-                }, 2000);
-            }
-        });
-        $('a[href="#hideStaffButtons"]').unbind('click');
-        $('a[href="#hideStaffButtons"]').click(function(e) {
-            e.preventDefault();
-            $(this).blur();
-            hideStaffButtons(!show);
-            return false;
-        });
-        staff_buttons_hidden = !show;
+var staff_buttons_hidden = true;
+
+function hideStaffButtons(show) {
+    if (show) {
+        $('.staff-only').show();
+        staff_buttons_hidden = false;
+    } else {
+        $('.staff-only').hide();
+        staff_buttons_hidden = true;
     }
+}
+
+function loadStaffOnlyButtons() {
+    let button = $('a[href="#hideStaffButtons"]');
+    if ($('.staff-only').length < 1) {
+        button.hide();
+        return;
+    }
+    button.show();
+    hideStaffButtons(!staff_buttons_hidden);
+    button.unbind('click');
+    button.click(function(e) {
+        e.preventDefault();
+        hideStaffButtons(staff_buttons_hidden);
+        $(this).blur();
+        return false;
+    });
 }
 
 // *****************************************
@@ -148,12 +150,16 @@ function ajaxModals() {
             }
             var button_height = button.height();
             var button_width = button.width();
-            button.html('<i class="flaticon-loading"></i>');
+            button.html('<div class="text-center"><i class="flaticon-loading"></i></div>');
+            var loader_wrapper = button.find('div');
+            loader_wrapper.height(button_height);
+            loader_wrapper.width(button_width);
             var loader = button.find('.flaticon-loading');
-            loader.height(button_height);
-            loader.width(button_width);
-            loader.css('line-height', button_height + 'px');
-            loader.css('font-size', (button_height - (button_height * 0.4)) + 'px');
+            let smaller = button_height < button_width ? button_height : button_width;
+            loader.height(smaller);
+            loader.width(smaller);
+            loader.css('line-height', smaller + 'px');
+            loader.css('font-size', (smaller - (smaller * 0.4)) + 'px');
             $.get(button.data('ajax-url'), function(data) {
                 button.css('display', button_display);
                 button.html(button_content);
@@ -596,7 +602,7 @@ function loadCommons(onPageLoad /* optional = false */) {
     loadPopovers();
     formloaders();
     dateInputSupport();
-    hideStaffButtons(false, onPageLoad);
+    loadStaffOnlyButtons();
     ajaxModals();
     ajaxPopovers();
     loadCountdowns();
