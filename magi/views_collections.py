@@ -197,6 +197,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['page_size'] = page_size
     context['show_no_result'] = not ajax
     context['show_search_results'] = bool(request.GET)
+    context['show_owner'] = 'show_owner' in request.GET
     context['name'] = name
     context['title'] = collection.title
     context['reportable'] = collection.reportable
@@ -216,7 +217,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['share_image'] = _get_share_image(context, collection.list_view)
     context['full_width'] = collection.list_view.full_width
     context['col_break'] = collection.list_view.col_break
-    context['per_line'] = collection.list_view.per_line
+    context['per_line'] = int(request.GET['max_per_line']) if 'max_per_line' in request.GET and int(request.GET['max_per_line']) < collection.list_view.per_line else collection.list_view.per_line
     context['col_size'] = int(math.ceil(12 / context['per_line']))
     context['ajax_item_popover'] = collection.list_view.ajax_item_popover
     context['item_view_enabled'] = collection.item_view.enabled

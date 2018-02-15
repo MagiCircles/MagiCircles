@@ -79,6 +79,14 @@ def get_allow_multiple_per_owner(cls):
 def get_is_owner(instance, user):
     return user and instance.owner_id == user.id
 
+def get_owner_unicode(instance):
+    if instance.fk_as_owner:
+        fk_as_owner = getattr(instance, u'cached_{}'.format(instance.fk_as_owner))
+        if not fk_as_owner:
+            fk_as_owner = getattr(instance, instance.fk_as_owner)
+        return fk_as_owner.unicode if hasattr(fk_as_owner, 'unicode') else unicode(fk_as_owner)
+    return instance.owner.unicode if hasattr(instance.owner, 'unicode') else unicode(instance.owner)
+
 ############################################################
 # BaseMagiModel
 
@@ -111,6 +119,7 @@ class BaseMagiModel(models.Model):
     allow_multiple_per_owner = classmethod(get_allow_multiple_per_owner)
     owner_collection = classmethod(get_owner_collection)
     is_owner = get_is_owner
+    owner_unicode = property(get_owner_unicode)
 
     @classmethod
     def get_choices(self, field_name):
@@ -351,6 +360,7 @@ def addMagiModelProperties(modelClass, collection_name):
     modelClass.allow_multiple_per_owner = classmethod(get_allow_multiple_per_owner)
     modelClass.owner_collection = classmethod(get_owner_collection)
     modelClass.is_owner = get_is_owner
+    modelClass.owner_unicode = property(get_owner_unicode)
 
 ############################################################
 # MagiModel

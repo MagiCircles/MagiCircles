@@ -175,16 +175,38 @@ class MagiCollection(object):
                     # Owner field
                     if model_class.fk_as_owner:
                         self.fields[model_class.fk_as_owner].empty_label = None
-                        filtered_queryset = self.fields[model_class.fk_as_owner].queryset.filter(**{
+                        fq = filtered_queryset = self.fields[model_class.fk_as_owner].queryset.filter(**{
                             model_class.selector_to_owner()[len(model_class.fk_as_owner) + 2:]:
                             self.request.user
                         })
+                        if self.collection and self.collection.add_view.unique_per_owner:
+                            # Exclude fk_as_owner that already have it
+                            filtered_queryset = filtered_queryset.exclude(**{
+                                u'{}__{}'.format(
+                                    getattr(model_class, model_class.fk_as_owner).field.related_query_name(),
+                                    item_field_name,
+                                ): self.item_id
+                            })
                         self.fields[model_class.fk_as_owner].choices = [
                             (c.id, unicode(c)) for c in filtered_queryset
                         ]
                         total_choices = len(self.fields[model_class.fk_as_owner].choices)
                         if total_choices == 0:
-                            collection = model_class.owner_collection()
+                            if self.collection and self.collection.add_view.unique_per_owner:
+                                # If user still has fk_as_owners but no more to add from, redirect to edit
+                                total_owners = len(fq if model_class.fk_as_owner != 'account' else getAccountIdsFromSession(self.request))
+                                if total_owners:
+                                    if total_owners == 1:
+                                        existing = self.collection.edit_view.get_queryset(self.collection.queryset, {}, self.request).filter(**self.collection.edit_view.get_item(self.request, 'unique'))
+                                        try: raise HttpRedirectException(existing[0].ajax_edit_url if self.ajax else existing[0].edit_url) # Redirect to edit
+                                        except IndexError: pass
+                                    raise HttpRedirectException(u'{}?owner={}&{}={}&show_owner&max_per_line=3'.format(
+                                        self.collection.get_list_url(ajax=self.ajax),
+                                        self.request.user.id,
+                                        item_field_name,
+                                        self.item_id,
+                                    ))
+                                collection = model_class.owner_collection()
                             if collection:
                                 raise HttpRedirectException(u'{}?next={}'.format(
                                     collection.get_add_url(ajax=self.ajax),
@@ -193,11 +215,37 @@ class MagiCollection(object):
                         if total_choices > 0:
                             self.fields[model_class.fk_as_owner].initial = self.fields[model_class.fk_as_owner].choices[0][0]
                         if total_choices == 1:
+                            collection = model_class.owner_collection()
+                            self.beforefields = mark_safe(u'<p class="col-sm-offset-4">{}</p><br>'.format(
+                                _('Adding to your {thing} {name}').format(
+                                    thing=unicode(collection.title).lower(),
+                                    name=self.fields[model_class.fk_as_owner].choices[0][1],
+                                )))
                             self.fields[model_class.fk_as_owner] = forms.HiddenModelChoiceField(
                                 queryset=filtered_queryset,
                                 initial=self.fields[model_class.fk_as_owner].initial,
                                 widget=forms.forms.HiddenInput,
                             )
+                # Collectible: retrieve passed data or get item
+                if self.collection and self.collection.add_view.add_to_collection_variables and not isinstance(self, forms.MagiFiltersForm):
+                    self.collectible_variables = {}
+                    missing = False
+                    # add variables from GET parameters
+                    for variable in self.collection.add_view.add_to_collection_variables:
+                        get = u'{}_{}'.format(parent_collection.name, variable)
+                        if get not in self.request.GET:
+                            missing = True
+                            break
+                        else:
+                            self.collectible_variables[variable] = self.request.GET[get]
+                    # add variables from item
+                    if missing:
+                        if self.is_creating:
+                            item = self.fields[item_field_name].to_python(self.item_id)
+                        else:
+                            item = getattr(self.instance, item_field_name)
+                        for variable in self.collection.add_view.add_to_collection_variables:
+                            self.collectible_variables[variable] = unicode(getattr(item, variable))
 
             class Meta:
                 model = model_class
@@ -287,7 +335,10 @@ class MagiCollection(object):
                             'link_text': unicode(_(u'Open {thing}')).format(thing=unicode(parent_collection.title).lower()),
                         }),
                     ] + fields
-                    return OrderedDict(fields)
+                    fields = OrderedDict(fields)
+                    if model_class.fk_as_owner and model_class.fk_as_owner in fields:
+                        del(fields[model_class.fk_as_owner])
+                    return fields
 
             class AddView(MagiCollection.AddView):
                 alert_duplicate = False
@@ -295,21 +346,14 @@ class MagiCollection(object):
                 max_per_user = 3000
 
                 def extra_context(self, context):
-                    # Display which item is being added
-                    try:
-                        image = context['request'].GET[u'{}_image'.format(parent_collection.name)]
-                    except MultiValueDictKeyError:
-                        image = None
-                    if not context.get('ajax', False):
-                        form_name = u'add_{}'.format(self.collection.name)
-                        add_form = context['forms'][form_name]
-                        item = add_form.fields[item_field_name].to_python(add_form.item_id)
-                        context['page_title'] = u'{}: {}'.format(context['page_title'], unicode(item))
-                        image = item.image_url
-                    if image:
-                        context['imagetitle'] = image
-                        context['imagetitle_size'] = 100
-                        context['icontitle'] = None
+                    # Display which item is being added using the image
+                    add_form = context['forms'][u'add_{}'.format(self.collection.name)]
+                    if hasattr(add_form, 'collectible_variables'):
+                        image = add_form.collectible_variables.get('image_url')
+                        if image:
+                            context['imagetitle'] = image
+                            context['imagetitle_size'] = 100
+                            context['icontitle'] = None
 
                 def redirect_after_add(self, request, item, ajax):
                     if ajax:
@@ -420,7 +464,7 @@ class MagiCollection(object):
         for field in item._meta.fields:
             field_name = field.name
             if (field_name.startswith('_')
-                or field_name in ['id', 'owner', 'owner_id']
+                or field_name in ['id']
                 or field_name == 'image'):
                 continue
             if only_fields and field_name not in only_fields:
@@ -450,14 +494,19 @@ class MagiCollection(object):
                 'image': images.get(field_name, None),
             }
             if is_foreign_key:
-                try:
-                    d['type'] = 'text_with_link'
-                    d['value'] = getattr(item, 'cached_' + field_name).unicode
-                    d['link'] = getattr(item, 'cached_' + field_name).item_url
-                    d['ajax_link'] = getattr(item, 'cached_' + field_name).ajax_item_url
-                    d['link_text'] = unicode(_(u'Open {thing}')).format(thing=d['verbose_name'])
-                except AttributeError:
+                cache = getattr(item, 'cached_' + field_name, None)
+                if not cache:
                     continue
+                link = getattr(cache, 'item_url')
+                if link:
+                    d['type'] = 'text_with_link'
+                    d['value'] = getattr(cache, 'unicode', field_name)
+                    d['link'] = link
+                    d['ajax_link'] = getattr(cache, 'ajax_item_url')
+                    d['link_text'] = unicode(_(u'Open {thing}')).format(thing=d['verbose_name'])
+                else:
+                    d['type'] = 'text'
+                    d['value'] = getattr(cache, 'unicode', field_name)
             elif field.name.startswith('c_'): # original field name
                 d['type'] = 'list'
             elif isinstance(field, models.models.ManyToManyField):
@@ -538,8 +587,13 @@ class MagiCollection(object):
                 continue
             extra_attributes = {}
             quick_add_to_collection = collectible_collection.add_view.quick_add_to_collection(request)
-            url_to_collectible_add_with_item = lambda url: u'{url}?{item_name}_id={item_id}&{item_name}_image={item_image}'.format(
-                url=url, item_name=self.name, item_id=item.id, item_image=item.image_url)
+            url_to_collectible_add_with_item = lambda url: u'{url}?{item_name}_id={item_id}&{variables}'.format(
+                url=url, item_name=self.name, item_id=item.id,
+                variables=u'&'.join([
+                    u'{}_{}={}'.format(self.name, variable, getattr(item, variable))
+                    for variable in collectible_collection.add_view.add_to_collection_variables
+                    if hasattr(item, variable)]),
+                )
             buttons[name]['show'] = view.show_collect_button[name] if isinstance(view.show_collect_button, dict) else view.show_collect_button
             buttons[name]['title'] = collectible_collection.add_sentence
             buttons[name]['badge'] = getattr(item, u'total_{}'.format(name), 0)
@@ -558,12 +612,16 @@ class MagiCollection(object):
                     extra_attributes['quick-add-to-fk-as-owner'] = collectible_collection.queryset.model.fk_as_owner or 'owner'
 
             if collectible_collection.add_view.unique_per_owner and not quick_add_to_collection:
-                edit_sentence = unicode(_('Edit {thing}')).format(thing=unicode(collectible_collection.title).lower())
-                if buttons[name]['badge'] > 0:
-                    extra_attributes['alt-message'] = buttons[name]['title']
-                    buttons[name]['title'] = edit_sentence
-                else:
-                    extra_attributes['alt-message'] = edit_sentence
+                if collectible_collection.queryset.model.fk_as_owner == 'account' and buttons[name]['badge'] >= len(getAccountIdsFromSession(request)):
+                    edit_sentence = unicode(_('Edit {thing}')).format(
+                        thing=unicode(collectible_collection.title
+                                      if len(getAccountIdsFromSession(request)) == 1
+                                      else collectible_collection.plural_title).lower())
+                    if buttons[name]['badge'] > 0:
+                        extra_attributes['alt-message'] = buttons[name]['title']
+                        buttons[name]['title'] = edit_sentence
+                    else:
+                        extra_attributes['alt-message'] = edit_sentence
             if collectible_collection.add_view.unique_per_owner and quick_add_to_collection:
                 delete_sentence = unicode(_('Delete {thing}')).format(thing=unicode(collectible_collection.title).lower())
                 if buttons[name]['badge'] > 0:
@@ -868,6 +926,8 @@ class MagiCollection(object):
 
         def quick_add_to_collection(self, request):
             return False # for collectibles only
+
+        add_to_collection_variables = ['image_url']
 
         @property
         def filter_cuteform(self):

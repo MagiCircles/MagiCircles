@@ -104,7 +104,7 @@ class MagiForm(forms.ModelForm):
         self.c_choices = []
         self.hidden_foreign_keys_querysets = {}
         # If is creating and item is unique, redirect to edit unique
-        if self.is_creating and self.collection and not isinstance(self, MagiFiltersForm) and self.collection.add_view.unique_per_owner:
+        if self.is_creating and self.collection and not isinstance(self, MagiFiltersForm) and not self.Meta.model.fk_as_owner and self.collection.add_view.unique_per_owner:
             existing = self.collection.edit_view.get_queryset(self.collection.queryset, {}, self.request).filter(**self.collection.edit_view.get_item(self.request, 'unique'))
             try: raise HttpRedirectException(existing[0].ajax_edit_url if self.ajax else existing[0].edit_url) # Redirect to edit
             except IndexError: pass # Can add!
@@ -313,7 +313,7 @@ class MagiFiltersForm(AutoForm):
         self.empty_permitted = True
         # Add add_to_{} to fields that are collectible and have a quick add option
         for collection_name, collection in self.collection.collectible_collections.items():
-            if collection.add_view.enabled and collection.add_view.quick_add_to_collection:
+            if collection.queryset.model.fk_as_owner and collection.add_view.enabled and collection.add_view.quick_add_to_collection(self.request):
                 self.fields[u'add_to_{}'.format(collection_name)] = forms.IntegerField(required=False, widget=forms.HiddenInput)
                 setattr(self, u'add_to_{}_filter'.format(collection_name), MagiFilter(noop=True))
         # Remove search from field if search_fields is not specified

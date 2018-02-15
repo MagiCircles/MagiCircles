@@ -22,10 +22,12 @@ class AccountAsOwnerModel(MagiModel):
     _cache_account_days = 200 # Change to a lower value if owner can change
     _cache_account_last_update = models.DateTimeField(null=True)
     _cache_account_owner_id = models.PositiveIntegerField(null=True)
+    _cache_account_unicode = models.CharField(max_length=100, null=True)
 
     def update_cache_account(self):
         self._cache_account_last_update = timezone.now()
         self._cache_account_owner_id = self.account.owner_id
+        self._cache_account_unicode = unicode(self.account)
 
     def force_cache_account(self):
         self.update_cache_account()
@@ -36,11 +38,18 @@ class AccountAsOwnerModel(MagiModel):
         if (not self._cache_account_last_update
             or self._cache_account_last_update < timezone.now() - datetime.timedelta(days=self._cache_account_days)):
             self.force_cache_account()
+        item_url = u'/user/{}/#{}'.format(self._cache_account_owner_id, self.account_id)
+        ajax_item_url = u'/ajax/account/{}/'.format(self.account_id)
+        full_item_url = '{}{}'.format(django_settings.SITE_URL, item_url)
+        http_item_url = u'http:' + full_item_url if 'http' not in full_item_url else full_item_url
         return AttrDict({
             'pk': self.account_id,
             'id': self.account_id,
-            'unicode': u'#{}'.format(self.account_id),
+            'unicode': self._cache_account_unicode,
+            'item_url': item_url, 'ajax_item_url': ajax_item_url,
+            'full_item_url': full_item_url, 'http_item_url': http_item_url,
             'owner': AttrDict({
+                'unicode': unicode(self._cache_account_owner_id),
                 'id': self._cache_account_owner_id,
                 'pk': self._cache_account_owner_id,
             }),
