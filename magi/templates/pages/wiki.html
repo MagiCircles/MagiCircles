@@ -13,31 +13,40 @@
 
 {% block content %}
 {% load tools %}
-<div class="container">
-  <h1 class="text-center padding50">
-    <span id="wiki-title" data-url="{{ wiki_url }}">{{ page_title }}</span>
-    {% if wiki_url != 'Home' and wiki_url != '_Sidebar' %}
-    <br><a href="/{{ current }}/"><small>{% trans 'Back to wiki home' %}</small></a>
-    {% endif %}
-  </h1>
-  <div class="row">
-    {% if wiki_url != '_Sidebar' %}
-    <div class="col-lg-3">
+
+{% if wiki_url != '_Sidebar' %}
+<div id="wrapper" class="active">
+  <nav id="sidebar-wrapper">
+    <div class="padded-inner-sidebar">
       <div id="wiki-sidebar"></div>
-	    <br><br><br>
-	    <a href="{{ full_wiki_url }}_new" target="_blank">{% trans 'Create a new wiki page' %}</a><br>
-	    <a href="{{ full_wiki_url }}_Sidebar/_edit" target="_blank">{% trans 'Edit the sidebar' %}</a><br>
-	    <small class="text-muted"><i>{% trans 'Note: You need an account on GitHub to add/edit wiki pages' %}</i></small>
+      <br><br><br>
+      <a href="{{ full_wiki_url }}_new" target="_blank">{% trans 'Create a new wiki page' %}</a><br>
+      <a href="{{ full_wiki_url }}_Sidebar/_edit" target="_blank">{% trans 'Edit the sidebar' %}</a><br>
+      <small class="text-muted"><i>{% trans 'Note: You need an account on GitHub to add/edit wiki pages' %}</i></small>
     </div>
+  </nav>
+  <div id="page-content-wrapper">
+    <a href="#" id="togglebutton">
+      <i class="flaticon-search"></i>
+      <i class="flaticon-toggler hidder"></i>
+    </a>
     {% endif %}
-    <div class="col-lg-{% if wiki_url == '_Sidebar' %}12{% else %}8{% endif %}">
+    <div class="page-content-inner as-small-container">
+      <h1 class="text-center padding50">
+        <span id="wiki-title" data-url="{{ wiki_url }}">{{ page_title }}</span>
+        {% if wiki_url != 'Home' and wiki_url != '_Sidebar' %}
+        <br><a href="/{{ current }}/"><small>{% trans 'Back to wiki home' %}</small></a>
+        {% endif %}
+      </h1>
       <div id="wiki-content"></div>
       <div class="text-right">
-	<br><br><br>
-	<a href="{{ full_wiki_url }}Home/_edit" target="_blank" class="btn btn-main btn-lg edit-link">{% trans 'Edit this wiki page' %}</a><br>
-	<small class="text-muted"><i>{% trans 'Note: You need an account on GitHub to add/edit wiki pages' %}</i></small>
+        <br><br><br>
+        <a href="{{ full_wiki_url }}Home/_edit" target="_blank" class="btn btn-main btn-lg edit-link">{% trans 'Edit this wiki page' %}</a><br>
+        <small class="text-muted"><i>{% trans 'Note: You need an account on GitHub to add/edit wiki pages' %}</i></small>
       </div>
     </div>
+    {% if wiki_url != '_Sidebar' %}
   </div>
 </div>
+{% endif %}
 {% endblock %}

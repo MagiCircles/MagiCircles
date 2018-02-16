@@ -84,10 +84,16 @@
     }
 }
 
+.page-content-inner,
 .collection-page-wrapper {
     margin: 0 15px;
     &.as-container {
 	max-width: 1170px;
+	margin: auto;
+	padding: 1px 10px;
+    }
+    &.as-small-container {
+	max-width: 800px;
 	margin: auto;
 	padding: 1px 10px;
     }
@@ -233,10 +239,6 @@ table.text-center th {
 	font-size: 0.7em;
 	float: right;
     }
-}
-
-#sidebar-wrapper form {
-    padding-bottom: 60px;
 }
 
 #cf_alert_div {
@@ -465,7 +467,7 @@ body.current-map, html.html-current-map {
     }
 }
 
-#wiki-content {
+#wiki-content, #wiki-sidebar {
     a:not(.internal-wiki-link) {
 	&:after {
 	    font-family: Flaticon;
@@ -635,11 +637,19 @@ form .form-group ul[id^=id_c_] {
 }
 
 #sidebar-wrapper {
-    form {
+    .padded-inner-sidebar {
 	padding: 0 20px;
+        padding-bottom: 60px;
 	.form-group {
 	    margin: 5px 0;
 	}
+        .a-variant(white);
+        a {
+            color: lighten(@secondaryColor, 20%);
+        }
+        .text-muted {
+            color: fade(white, 50%);
+        }
     }
 }
 
