@@ -95,7 +95,7 @@ Similarly, it is not allowed to monetize a website that uses MagiCircles using a
             1. [Collectible](#collectible)
             1. [CuteForm](#cuteform)
             1. [Item types](#item-types)
-            1. [to_fields method](#to_field-method)
+            1. [to_fields method](#to_fields-method)
             1. [AccountCollection](#accountcollection)
     1. [MagiForm](#magiform)
     1. [MagiFilter](#magifilter)
@@ -1241,7 +1241,7 @@ For each collection, you may also override the fields and methods. When overridi
 | buttons_per_item | Used to display buttons below item, only for ItemView and ListView. Any new dictionary within the returned dictionary of buttons must contain the following keys: show, has_permissions, title, url, classes and may contain icon, image, url, open_in_new_window, ajax_url, ajax_title, extra_attributes. Can be overriden in ItemView and ListView. | view, request, context, item | Dictionary of dictionary | Will automatically determine and fill up buttons for collectibles, edit, report. |
 | get_queryset | Queryset used to retrieve the item(s). Can be overriden per view. | queryset, parameters, request | Django queryset | The queryset given as parameters |
 | form_class | Form class to add / edit an item. Doesn't have to be a method (see above). Can be overriden per view. | request, context | A form class | AutoForm |
-| to_fields | See ⎡[to_fields method](#to_field-method)⎦ |
+| to_fields | See ⎡[to_fields method](#to_fields-method)⎦ |
 
 ### Views
 
@@ -1341,7 +1341,10 @@ List view for a staff member will hide all the staff buttons by default and you 
 |-----|-------|---------|---------|
 | filter_form | Django form that will appear on the right side panel and allow people to search / filter. It's recommended to make it inherit from `MagiFilter`. | None (no side bar) | [Example](https://gist.github.com/db0company/819ec1900fb207f865be69b92ce62c8e#file-magicirclesexamples-py-L8) |
 | ajax_pagination_callback | The name of a javascript function to call everytime a new page loads (including the first time) | None | "updateCards" (See [Example](https://gist.github.com/db0company/b9fde532eafb333beb57ab7903e69749#file-magicirclesexamples-js-L1)) |
+| alt_views | See ⎡[Alt views](#alt-views)⎦. | [] | |
 | auto_reloader | Should items be automatically reloaded when there is a change in ajax? (for example, when an item is edited through a modal within the same page) | True | |
+| display_style | Choice between `rows` and `table` | `rows` | |
+| display_style_table_fields | When `display_style` is `table`, provide the list of fields displayed in the table | ['image', 'name'] | |
 | item_buttons_classes | Classes used for the buttons under items. Can be specified in collection. | Value from collection | |
 | item_template | Path of the HTML template in `sample/templates/items/` to display the item (without `.html`). If you don't want to use the default one, it's highly recommended to use the standard name for custom templates. To do so, use `custom_item_template` in `magi.utils`. | "default_item_in_list" | "cardDetails" |
 | item_padding | Padding (in px) around the item, only applied when using the default template. | 20 | |
@@ -1358,7 +1361,7 @@ List view for a staff member will hide all the staff buttons by default and you 
 | add_button_subtitle | A button to add an item will be displayed on top of the page, with a subtitle. | _('Become a contributor to help us fill the database') | _('Share your adventures!') |
 | show_title | Should a title be displayed on top of the page? If set to `True`, the title will be the `plural_title` in the collection. | False | |
 | full_width | By default, the page will be in a bootstrap container, which will limit its width to a maximum, depending on the screen size. You may change this to `True` to always get the full width | False | |
-| show_relevant_fields_on_ordering | By default, when an `ordering` is specified in the search bar, the specified ordering field will be displayed under each item (see ⎡[to_fields method](#to_field-method)⎦). | True | |
+| show_relevant_fields_on_ordering | By default, when an `ordering` is specified in the search bar, the specified ordering field will be displayed under each item (see ⎡[to_fields method](#to_fields-method)⎦). | True | |
 | hide_sidebar | By default, the side bar will be open when you open the page. You may leave it close by default, but keep in mind that it's very unlikely that your users will find it by themselves. | False | |
 | filter_cuteform | See ⎡[CuteForm](#cuteform)⎦. Can be specified in collection. | | |
 | default_ordering | String name of a field (only one) | '-creation' | 'level' |
@@ -1377,9 +1380,13 @@ See also: [settings available in all views](#all-views).
 | Name | Description | Parameters | Return value | Default |
 |------|-------------|------------|--------------|---------|
 | buttons_per_item | Used to display buttons below item. Any new dictionary within the returned dictionary of buttons must contain the following keys: show, has_permissions, title, url, classes and may contain icon, image, url, open_in_new_window, ajax_url, ajax_title. Can be specified in collection. | request, context, item | Dictionary of dictionary | Method from collection will be called |
+| table_fields_headers | When `display_style` is `table`, provide a list of headers at the top of the table. | fields, view=None | List of pairs (name, verbose_name) | Will get them from the models verbose_names and make them from the field name otherwise (overall_max -> Overall max) |
+| table_fields_headers_sections | When `display_style` is `table`, allows to use colspans in table headers and have 2 layers of headers if needed | view=None | List of tuple (name, verbose_name, colspan) | [] |
 | foreach_item | Function called for all the elements about to be displayed, that takes the item position, the item and the context ([example](https://gist.github.com/db0company/819ec1900fb207f865be69b92ce62c8e#file-magicirclesexamples-py-L23)). If you can, provide a property inside the model's class instead, to avoid an extra loop. | index, item, context | None | None |
 | show_add_button | Should a button be displayed at the beginning to let users add new items (if they have the permission to do so)? | request | Boolean | returns `True` |
-| to_fields | See ⎡[to_fields method](#to_field-method)⎦ |
+| to_fields | See ⎡[to_fields method](#to_fields-method)⎦ |
+| ordering_fields | See ⎡[to_fields method](#to_fields-method)⎦ |
+| table_fields | See ⎡[to_fields method](#to_fields-method)⎦ |
 | top_buttons | Will be called to display buttons at the beginning of the list view. Any new dictionary within the returned dictionary of buttons must contain the following keys: show, has_permissions, url, classes, title and may contain ajax_url, open_in_new_window, icon, image, subtitle | request, context | Dictionary of dictionary | Will automatically determine which add buttons should be displayed. |
 
 See also: [methods available in all views](#all-views).
@@ -1407,7 +1414,7 @@ todo
 | Key | Value | Default | Example |
 |-----|-------|---------|---------|
 | item_buttons_classes | Classes used for the buttons under items. Can be specified in collection. | Value from collection | |
-| template | Path of the HTML template in `sample/templates/items/` to display the item (without `.html`). By default, will use the defaut view with the image on top and the list of fields below it. See ⎡[to_fields method](#to_field-method)⎦ for more details about the `default` template. If you don't want to use the default one, it's highly recommended to use the standard name for custom templates. To do so, use `custom_item_template` in `magi.utils`. | "default" | "cardItem" |
+| template | Path of the HTML template in `sample/templates/items/` to display the item (without `.html`). By default, will use the defaut view with the image on top and the list of fields below it. See ⎡[to_fields method](#to_fields-method)⎦ for more details about the `default` template. If you don't want to use the default one, it's highly recommended to use the standard name for custom templates. To do so, use `custom_item_template` in `magi.utils`. | "default" | "cardItem" |
 | item_padding | Padding (in px) around the item, only applied when using the default template. | 20 | |
 | top_illustration | If the `default` template is used, it will show either the `image` in the object or its name. You may display something else by specifying the path of a HTML template (full path in template folder), without `.html`. | None | `include/topCard` |
 | show_edit_button | Should a button to edit the item be displayed under the item (if the user has permissions to edit)? Set this to `False` is your template already includes a button to edit the item. | True | |
@@ -1424,7 +1431,7 @@ See also: [settings available in all views](#all-views).
 | buttons_per_item | Used to display buttons below item. Any new dictionary within the returned dictionary of buttons must contain the following keys: show, has_permissions, title, url, classes and may contain icon, image, url, open_in_new_window, ajax_url, ajax_title. Can be specified in collection. | request, context, item | Dictionary of dictionary | Method from collection will be called |
 | get_item | How is the item retrieved using the `pk` (=id) provided in the URL? For example, in the URL `/card/12/super-rare-lily/`, `pk` will be `12` | request, pk (in URL) | a dictionary that will be used with the queryset to get a single item | `{ 'pk': pk }` |
 | reverse_url | Allows you to have URLs with just a string and find the item with thout, instead of the id. For example, the default URL of a profile is `/user/1/db0/`, but with this, you can make `/user/db0/` and still be able to retrieve the corresponding user, without knowing its id. | string (text in URL, for example if the URL is `/user/tom/`, this will be `'tom'`) | a dictionary that will be used with the queryset to get a single item | None |
-| to_fields | See ⎡[to_fields method](#to_field-method)⎦ |
+| to_fields | See ⎡[to_fields method](#to_fields-method)⎦ |
 
 See also: [methods available in all views](#all-views)⎦.
 
@@ -1593,6 +1600,39 @@ Dictionary of:
     - `transform`: when to_cuteform is a lambda: CuteFormTransform.No, .ImagePath, .Flaticon, .FlaticonWithText
     - `image_folder`: only when to_cuteform = 'images' or transform = .ImagePath, will specify the images path
 
+#### Alt views
+
+List views can have alternative views. For example, you may want to provide a condensed table of data to show stats.
+
+Your alt view must provide:
+- `verbose_name`
+
+You can provide (which will override value in list view):
+- `template`
+- `display_style`
+- `display_style_table_fields`
+- `per_line`
+
+```python
+class CardCollection(MagiCollection):
+    ...
+    class ListView(MagiCollection.ListView):
+        ...
+        alt_views = MagiCollection.ListView.alt_views + [
+            ('statistics', {
+                'verbose_name': _('Statistics'),
+                'template': 'default_item_table_view',
+                'display_style': 'table',
+                'display_style_table_fields': [
+                    'image', 'image_trained',
+                    'smile_min', 'smile_max', 'smile_trained_max',
+                    'pure_min', 'pure_max', 'pure_trained_max',
+                    'cool_min', 'cool_max', 'cool_trained_max',
+                ],
+            }),
+        ]
+```
+
 #### Item types
 
 ![](http://i.imgur.com/AUcuMU8.png)
@@ -1629,21 +1669,24 @@ The type will be passed to the formClass when it's initialized, which allows you
 
 `to_fields` is a method in collections. It can also be overrided per view for ItemView and ListView.
 
-You may override it in both the collection and the views. As long as you call the super, both logics will be called.
-
 - Where is it called?
     - **ListView:** Will be called when `ordering` is specified to show the field(s) details, with `only_fields` in parameters. For example, if you order the list by level, the level is going to be displayed under the item, because it's very likely that you'll want to compare that between the items.
+    - **ListView:** Will be called when `display_style` is `table`, with force_all_fields=True and only_fields = the value of `display_style_table_fields`.
     - **ItemView:** If you use the default template, it will show a table with all the fields returned by this function.
 - Can it be overriden?
     - You may override this function, but you should always call its `super`.
 - Parameters
-    - `view,item, to_dict=True, only_fields=None, icons={}, images={}`
+    - `view, item, to_dict=True, only_fields=[], icons={}, images={}, force_all_fields=False, order=None, extra_fields=[], exclude_fields=[]`
     - The same method in ItemView and ListView will take the same parameters except the view.
     - `item` is the item object, an instance of an `MagiModel`
-    - `to_dict` will return a dict by default, otherwise a list or pair. Useful if you plan to change the order or insert items at certain positions.
-    - `only_fields` if specified will ignore any other field
     - `icons` is a dictionary of the icons associated with the fields
     - `images` is a dictionary of the images associated with the fields
+    - (DEPRECATED SOON) `to_dict` will return a dict by default, otherwise a list or pair. Useful if you plan to change the order or ionsert items at certain positions.
+    - `only_fields` if specified will ignore any other field
+    - `force_all_Fields` will return empty fields when not finding fields data, should be coupled with `only_fields`
+    - `order` lets you provide an ordering of the fields, all other fields will be added at the end
+    - `extra_fields` lets you provide fields that can't be determined automatically from the model
+    - `exclude_fields` will exclude the fields with the given name
 - Return value
     - Returns a dictionary of key = field name, value = dictionary with:
         - verbose_name
@@ -1668,6 +1711,10 @@ You may override it in both the collection and the views. As long as you call th
         - html
 - Default
     - Will automatically guess what should be displayed from the model fields and `reverse`  in the model if specified.
+
+You may override it in both the collection and the views. As long as you call the super, both logics will be called.
+
+In ListView, if you want to separate functions called for ordering or table by using `ordering_fields` and `table_fields`. The default behavior for these 2 functions is to call `to_fields`.
 
 In ListView, when ordering is specified:
 
@@ -1778,6 +1825,8 @@ class CardForm(AutoForm):
 While `MagiFiltersForm` is very similar to `MagiForm`, it doesn't have any logic to "save" an item.
 
 It provides a method `filter_queryset` that takes a queryset, the parameters (as a dictionary), the current request and returns a queryset.
+
+If your collection provides alt views, a selector to pick the view will also be available in the side bar filters.
 
 ### Search and ordering
 
@@ -2201,7 +2250,7 @@ In this example, if you try to set the start_date to some time in the future, it
 | redirectToProfile | Raises an exception that will make the current request redirect to the profile of the authenticated user. If specified, will redirect to a specific account anchor within the profile. | request, account=None | None (raises an exception) |
 | redirectWhenNotAuthenticated | Will check if the current user is authenticated, and if not, will redirect to the signup page with `next` set as the `current_url` | request, context, next_title=None | None (raises an exception) |
 | send_email | Send an email | subject, template_name, to=[], context={}, from_email=django_settings.AWS_SES_RETURN_PATH | None |
-| setSubField | Mostly used when overriding `to_fields`. See ⎡[to_fields method](#to_field-method)⎦. | fields, field_name, value, key='icon' | None (updates fields in place) |
+| setSubField | Mostly used when overriding `to_fields`. See ⎡[to_fields method](#to_fields-method)⎦. | fields, field_name, value, key='icon' | None (updates fields in place) |
 | staticImageURL | Returns the full URL of a static asset (in `sample/static/img/...`) | path, folder=None, extension=None | string |
 | torfc2822 | Date format frequently used in Javascript | date | string |
 | tourldash | Takes any string and returns a URL-friendly string. Example: "Hi! You're awesome." becomes "Hi-You-re-awesome" | string | string |
@@ -2921,7 +2970,7 @@ Migrate from MagiCircles1 to MagiCircles2
     - All views: `ajax_callback`, `check_owner_permissions`, `check_permissions`, `enabled`, `get_queryset`, `logout_required`, `multipart`, `owner_only`, `shortcut_urls`
         - Note: `filter_queryset` is now called `get_queryset` and should be used for semantically different operations. Filtering should be done using `MagiFiltersForm`.
         - Note: `types` is not in the collection itself and not per view.
-    - List View: `filter_cuteform`, `hide_sidebar`, `item_template`, `show_edit_button`, `show_relevant_fields_on_ordering`, `item_padding`
+    - List View: `filter_cuteform`, `hide_sidebar`, `item_template`, `show_edit_button`, `show_relevant_fields_on_ordering`, `item_padding`, `display_style`, `display_style_table_fields`, `alt_views`, `table_fields_headers`, `table_fields_headers_sections`, `ordering_fields`, `table_fields`
     - Item View: `show_edit_button`, `top_illustration`, `get_item`, `reverse_url`, `item_padding`
     - Add View: `filter_cuteform`, `max_per_user_per_hour`, `max_per_user_per_day`, `max_per_user`
     - Edit View: `form_class`, `get_item`

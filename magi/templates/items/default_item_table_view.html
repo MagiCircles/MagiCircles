@@ -1,0 +1,59 @@
+{# TODO just a for with to_representation when MagiField is ready #}
+{% for field_name, field in item.table_fields.items %}
+<td data-field="{{ field_name }}">
+	{% if field.type == 'text_with_link' %}
+	{{ field.value }}<br>
+	<a href="{{ field.link }}" target="_blank"{% if field.ajax_link %} data-ajax-url="{{ field.ajax_link }}" data-ajax-title="{{ field.value }}"{% endif %}>
+	  {{ field.link_text }}
+	  <i class="flaticon-link fontx0-8"></i>
+	</a>
+	{% elif field.type == 'title_text' %}
+	<strong>{{ field.title }}</strong><br>
+	<p>{{ field.value }}</p>
+	{% elif field.type == 'text_annotation' %}
+	<span>{{ field.value }}</span><br />
+	<small class="text-muted">{{ field.annotation }}</small>
+	{% elif field.type == 'image' %}
+	<a href="{{ field.value }}" target="_blank"{% if field.ajax_link %} data-ajax-url="{{ field.ajax_link }}" data-ajax-title="{{ field.value }}"{% endif %}>
+	  <img src="{{ field.value }}" alt="{{ field.verbose_name }}">
+	</a>
+	{% elif field.type == 'images' %}
+        {% for image in field.images %}
+	<a href="{{ image.value }}" target="_blank"{% if image.ajax_link %} data-ajax-url="{{ image.ajax_link }}" data-ajax-title="{{ image.value }}"{% endif %}>
+	  <img src="{{ image.value }}" alt="{{ image.verbose_name }}">
+	</a>
+        {% endfor %}
+	{% elif field.type == 'image_link'  %}
+        <a href="{{ field.link }}" target="_blank"{% if field.ajax_link %} data-ajax-url="{{ field.ajax_link }}" data-ajax-title="{{ field.link_text }}"{% endif %}>
+	  <img src="{{ field.value }}" alt="{{ field.link_text }}">
+        </a>
+	{% elif field.type == 'images_links'  %}
+        {% for image in field.images %}
+        <a href="{{ image.link }}" target="_blank"{% if image.ajax_link %} data-ajax-url="{{ image.ajax_link }}" data-ajax-title="{{ image.link_text }}"{% endif %}>
+	  <img src="{{ image.value }}" alt="{{ image.link_text }}">
+        </a>
+        {% endfor %}
+	{% elif field.type == 'link' %}
+	<a href="{{ field.value }}" target="_blank"{% if field.ajax_link %} data-ajax-url="{{ field.ajax_link }}" data-ajax-title="{{ field.value }}"{% endif %}>
+	  {{ field.link_text }}
+	</a>
+	{% elif field.type == 'button' %}
+	<a href="{{ field.value }}" target="_blank" class="btn btn-lg btn-secondary"{% if field.ajax_link %} data-ajax-url="{{ field.ajax_link }}" data-ajax-title="{{ field.value }}"{% endif %}>
+	  {{ field.link_text }}
+	</a>
+	{% elif field.type == 'long_text' %}
+        <strong class="long-text-title">{{ field.verbose_name }}</strong>
+        {{ field.value }}
+        {% elif field.type == 'list' %}
+        <ul>{% for value in field.value %}
+          <li>{{ value }}</li>
+        {% endfor %}</ul>
+	{% elif field.type == 'itunes' %}
+        <div class="itunes" data-itunes-id="{{ field.value }}"></div>
+	{% elif field.type == 'html' %}
+	{{ field.value|safe }}
+	{% else %}
+	{{ field.value }}
+	{% endif %}
+</td>
+{% endfor %}

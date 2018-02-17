@@ -309,6 +309,9 @@ class MagiFiltersForm(AutoForm):
     ordering_filter = MagiFilter(multiple=False)
     reverse_order = forms.BooleanField(label=_('Reverse order'))
 
+    view = forms.ChoiceField(label=_('View'))
+    view_filter = MagiFilter(noop=True)
+
     def __init__(self, *args, **kwargs):
         super(MagiFiltersForm, self).__init__(*args, **kwargs)
         self.empty_permitted = True
@@ -330,6 +333,15 @@ class MagiFiltersForm(AutoForm):
             if self.collection:
                 self.fields['ordering'].initial = self.collection.list_view.plain_default_ordering
                 self.fields['reverse_order'].initial = self.collection.list_view.default_ordering.startswith('-')
+        if 'view' in self.fields and self.collection and self.collection.list_view.alt_views:
+            if not self.collection.list_view._alt_view_choices:
+                self.collection.list_view._alt_view_choices = [
+                    (view_name, view.get('verbose_name', view_name))
+                    for view_name, view in self.collection.list_view.alt_views
+                ]
+            self.fields['view'].choices = self.collection.list_view._alt_view_choices
+        else:
+            del(self.fields['view'])
         for field_name, field in self.fields.items():
             # Add blank choice to list of choices that don't have one
             if (field.required and isinstance(field, forms.fields.ChoiceField)

@@ -16,18 +16,26 @@
 </div>
 {% endif %}
 {% else %}
-<div class="row items">
+{% if display_style == 'rows' %}<div class="row items">{% endif %}
+  {% if display_style == 'table' %}<div class="table-responsive"><table class="table collection-table">
+    {% if table_fields_headers_sections %}<tr class="table-headers-sections">{% for name, verbose_name, colspan in table_fields_headers_sections %}
+      <th data-header-field="{{ name }}" colspan="{{ colspan }}">{{ verbose_name }}</th class="table-headers">{% endfor %}{% endif %}
+    <tr>{% for name, verbose_name in table_fields_headers %}
+      <th data-header-field="{{ name }}">{{ verbose_name }}</th>
+    {% endfor %}</tr>
+    {% endif %}
   {% for item in items %}
-  {% if forloop.counter0 != 0 and forloop.counter0|mod:per_line %}
+  {% if display_style == 'rows' and forloop.counter0 != 0 and forloop.counter0|mod:per_line %}
 </div><div class="row items">
   {% endif%}
-  <div class="col-{{ col_break }}-{{ col_size }}" data-item="{{ collection.name }}" data-item-id="{{ item.id }}">
+  <{% if display_style == 'rows' %}div class="col-{{ col_break }}-{{ col_size }}"{% elif display_style == 'table' %}tr{% else %}div{% endif %} data-item="{{ collection.name }}" data-item-id="{{ item.id }}">
     {% if show_owner %}{{ item.owner_unicode }}{% endif %}
     {% include 'items/'|add:item_template|add:'.html' %}
-    {% if include_below_item %}{% include 'include/below_item.html' %}{% endif %}
-  </div>
-  {% endfor %}
-</div>
+    {% if display_style != 'table' and include_below_item %}{% include 'include/below_item.html' %}{% endif %}
+  </{% if display_style == 'table' %}tr{% else %}div{% endif %}>
+{% endfor %}
+{% if display_style == 'rows' %}</div>{% endif %}
+{% if display_style == 'table' %}</table></div>{% endif %}
 {% include 'include/pagination.html' %}
 {% endif %}
 {% if is_last_page and after_template %}

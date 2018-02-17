@@ -188,6 +188,12 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
         if collection.collectible_collections:
             context['reload_urls_start_with'] += [cc.get_add_url() for cc in collection.collectible_collections.values()]
 
+    # Alt views
+    context['alt_view'] = None
+    alt_views = dict(collection.list_view.alt_views)
+    if 'view' in request.GET and request.GET['view'] in alt_views:
+        context['view'] = request.GET['view']
+        context['alt_view'] = alt_views[context['view']]
     context['ordering'] = ordering
     context['page_title'] = _(u'{things} list').format(things=collection.plural_title)
     context['total_pages'] = int(math.ceil(context['total_results'] / page_size))
@@ -206,6 +212,8 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['no_result_template'] = collection.list_view.no_result_template
     context['after_template'] = collection.list_view.after_template
     context['item_template'] = collection.list_view.item_template
+    if context['alt_view'] and 'template' in context['alt_view']:
+        context['item_template'] = context['alt_view']['template']
     context['item_padding'] = collection.list_view.item_padding
     context['show_title'] = collection.list_view.show_title
     context['plural_title'] = collection.plural_title
@@ -216,14 +224,26 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['js_files'] = collection.list_view.js_files
     context['share_image'] = _get_share_image(context, collection.list_view)
     context['full_width'] = collection.list_view.full_width
+    context['display_style'] = collection.list_view.display_style
+    if context['alt_view'] and 'display_style' in context['alt_view']:
+        context['display_style'] = context['alt_view']['display_style']
+    context['display_style_table_fields'] = collection.list_view.display_style_table_fields
+    if context['alt_view'] and 'display_style_table_fields' in context['alt_view']:
+        context['display_style_table_fields'] = context['alt_view']['display_style_table_fields']
     context['col_break'] = collection.list_view.col_break
     context['per_line'] = int(request.GET['max_per_line']) if 'max_per_line' in request.GET and int(request.GET['max_per_line']) < collection.list_view.per_line else collection.list_view.per_line
+    if context['alt_view'] and 'per_line' in context['alt_view']:
+        context['per_line'] = context['alt_view']['per_line']
     context['col_size'] = int(math.ceil(12 / context['per_line']))
     context['ajax_item_popover'] = collection.list_view.ajax_item_popover
     context['item_view_enabled'] = collection.item_view.enabled
     context['ajax_item_view_enabled'] = context['item_view_enabled'] and collection.item_view.ajax and not context['ajax_item_popover']
     context['include_below_item'] = False # May be set to true below
     context['collection'] = collection
+
+    if context['display_style'] == 'table':
+        context['table_fields_headers'] = collection.list_view.table_fields_headers(context['display_style_table_fields'], view=context['view'])
+        context['table_fields_headers_sections'] = collection.list_view.table_fields_headers_sections(view=context['view'])
 
     if not ajax:
         context['top_buttons'] = collection.list_view.top_buttons(request, context)
@@ -237,7 +257,9 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
             collection.list_view.foreach_items(i, item, context)
         if context.get('show_relevant_fields_on_ordering', False):
             context['include_below_item'] = True
-            item.relevant_fields_to_show = collection.list_view.to_fields(item, only_fields=context['plain_ordering'])
+            item.relevant_fields_to_show = collection.list_view.ordering_fields(item, only_fields=context['plain_ordering'])
+        if context['display_style'] == 'table':
+            item.table_fields = collection.list_view.table_fields(item, only_fields=context['display_style_table_fields'], force_all_fields=True)
         item.buttons_to_show = collection.list_view.buttons_per_item(request, context, item)
         item.show_item_buttons_justified = collection.list_view.show_item_buttons_justified
         item.show_item_buttons_as_icons = collection.list_view.show_item_buttons_as_icons

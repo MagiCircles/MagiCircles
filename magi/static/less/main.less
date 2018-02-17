@@ -124,7 +124,7 @@
     }
 }
 
-.about-table {
+.about-table, .collection-table {
     td:first-child > [class^="flaticon-"] {
 	font-size: 2em;
     }
@@ -132,12 +132,14 @@
 	max-height: 200px;
 	max-width: 100%;
     }
-    td:first-child {
+    td:first-child, &.collection-table td {
 	width: 60px;
-	text-align: center;
 	img {
 	    max-width: 50px;
 	}
+    }
+    td:first-child {
+	text-align: center;
     }
     td:last-child {
         .flaticon-delete {
@@ -179,6 +181,10 @@
                 text-decoration: none;
             }
         }
+    }
+    .table-headers-sections th {
+        text-align: center;
+        font-weight: bold;
     }
 }
 

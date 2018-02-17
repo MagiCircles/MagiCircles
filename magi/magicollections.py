@@ -200,7 +200,7 @@ class MagiCollection(object):
                                         existing = self.collection.edit_view.get_queryset(self.collection.queryset, {}, self.request).filter(**self.collection.edit_view.get_item(self.request, 'unique'))
                                         try: raise HttpRedirectException(existing[0].ajax_edit_url if self.ajax else existing[0].edit_url) # Redirect to edit
                                         except IndexError: pass
-                                    raise HttpRedirectException(u'{}?owner={}&{}={}&show_owner&max_per_line=3'.format(
+                                    raise HttpRedirectException(u'{}?owner={}&{}={}&view=quick_edit&max_per_line=3'.format(
                                         self.collection.get_list_url(ajax=self.ajax),
                                         self.request.user.id,
                                         item_field_name,
@@ -313,6 +313,33 @@ class MagiCollection(object):
                 show_add_button = justReturn(False)
                 ajax_item_popover = True
 
+                alt_views = MagiCollection.ListView.alt_views + [
+                    ('quick_edit', {
+                        'verbose_name': _('Quick edit'),
+                        'template': 'default_item_table_view',
+                        'display_style': 'table',
+                        'display_style_table_fields': ['image'] + ([model_class.fk_as_owner] if model_class.fk_as_owner else []) + ['edit_button'],
+                    }),
+                ]
+
+                def table_fields(self, item, *args, **kwargs):
+                    image = getattr(item, 'image_url')
+                    fields = super(_CollectibleCollection.ListView, self).table_fields(item, *args, extra_fields=(
+                        [(('image', { 'verbose_name': unicode(item), 'value': image, 'type': 'image' })
+                          if image else ('name', {
+                                  'verbose_name': unicode(item), 'value': unicode(item), 'type': 'text',
+                          }))] + [('edit_button', {
+                              'verbose_name': item.edit_sentence, 'value': item.edit_url,
+                              'ajax_link': item.ajax_edit_url, 'link_text': item.edit_sentence, 'type': 'button',
+                          })]), **kwargs)
+                    if (model_class.fk_as_owner and model_class.fk_as_owner in fields
+                        and 'ajax_link' in fields[model_class.fk_as_owner]):
+                        del(fields[model_class.fk_as_owner]['ajax_link'])
+                    return fields
+
+                def table_fields_headers(self, fields, view=None):
+                    return []
+
             class ItemView(MagiCollection.ItemView):
                 comments_enabled = False
                 share_enabled = False
@@ -320,10 +347,9 @@ class MagiCollection(object):
                 def extra_context(self, context):
                     context['item_parent'] = getattr(context['item'], item_field_name)
 
-                def to_fields(self, item, *args, **kwargs):
-                    fields = super(_CollectibleCollection.ItemView, self).to_fields(item, *args, to_dict=False, **kwargs)
+                def to_fields(self, item, extra_fields=[], force_all_fields=False, *args, **kwargs):
                     item_parent = getattr(item, item_field_name)
-                    fields = [
+                    extra_fields += [
                         (item_field_name, {
                             'type': 'text_with_link',
                             'verbose_name': parent_collection.title,
@@ -334,9 +360,10 @@ class MagiCollection(object):
                             'ajax_link': item_parent.ajax_item_url,
                             'link_text': unicode(_(u'Open {thing}')).format(thing=unicode(parent_collection.title).lower()),
                         }),
-                    ] + fields
-                    fields = OrderedDict(fields)
-                    if model_class.fk_as_owner and model_class.fk_as_owner in fields:
+                    ]
+                    fields = super(_CollectibleCollection.ItemView, self).to_fields(
+                        item, *args, extra_fields=extra_fields, force_all_fields=force_all_fields, **kwargs)
+                    if not force_all_fields and model_class.fk_as_owner and model_class.fk_as_owner in fields:
                         del(fields[model_class.fk_as_owner])
                     return fields
 
@@ -406,43 +433,15 @@ class MagiCollection(object):
     def share_image(self, context, item):
         return self.image
 
-    def to_fields(self, view, item, to_dict=True, only_fields=None, icons={}, images={}):
-        """
-        Used only when template = 'default' or when 'ordering' is specified in a list
-        Returns a dictionary of dictinaries with:
-        - verbose_name
-        - value
-        - type
-        - optional: icon, image, link, link_text, ajax_link, images
-        Takes an object that inherits from MagiModel and returns a dictionary of field name -> value
-        Available types:
-        - text
-        - title_text (needs 'title')
-        - text_annotation (needs 'annotation', which corresponds to a small, grey text under the main text)
-        - image (needs images with 'value', 'ajax_link')
-        - images
-        - bool
-        - list ('value' becomes a lit of values)
-        - link (needs 'link_text')
-        - image_link (needs 'link', 'link_text')
-        - images_links (needs images with 'value', 'ajax_link', 'link', 'link_text')
-        - button (needs 'link_text')
-        - text_with_link (needs 'link' and 'link_text', will show a 'View all' button)
-        - timezone_datetime (needs 'ago' and 'timezones' list. can be 'local')
-        - long_text
-        - html
-        Optional parameters:
-        - to_dict will return a dict by default, otherwise a list or pair. Useful if you plan to change the order or insert items at certain positions.
-        - only_fields if specified will ignore any other field
-        - icons is a dictionary of the icons associated with the fields
-        - images is a dictionary of the images associated with the fields
-        """
+    def to_fields(self, view, item, to_dict=True, only_fields=[], icons={}, images={}, force_all_fields=False, order=None, extra_fields=[], exclude_fields=[]):
         name_fields = []
         many_fields = []
         collectible_fields = []
         # Fields from reverse
         for (field_name, url, verbose_name) in getattr(item, 'reverse_related', []):
             if only_fields and field_name not in only_fields:
+                continue
+            if field_name in exclude_fields:
                 continue
             try:
                 total = getattr(item, 'cached_total_{}'.format(field_name))
@@ -463,9 +462,11 @@ class MagiCollection(object):
         # Fields from model
         for field in item._meta.fields:
             field_name = field.name
+            if field_name in exclude_fields:
+                continue
             if (field_name.startswith('_')
                 or field_name in ['id']
-                or field_name == 'image'):
+                or (field_name == 'image' and 'image' not in only_fields)):
                 continue
             if only_fields and field_name not in only_fields:
                 continue
@@ -540,8 +541,29 @@ class MagiCollection(object):
                 name_fields.append((field_name, d))
             else:
                 model_fields.append((field_name, d))
-        fields = name_fields + many_fields + model_fields
-        return OrderedDict(fields) if to_dict else fields
+        fields = name_fields + many_fields + model_fields + extra_fields
+
+        # Re-order fields
+        if order or force_all_fields:
+            dict_fields = dict(fields)
+            sorted_fields = OrderedDict()
+            for field_name in (order or []):
+                if only_fields and field_name not in only_fields:
+                    continue
+                if field_name in dict_fields:
+                    sorted_fields[field_name] = dict_fields[field_name]
+                elif force_all_fields:
+                    sorted_fields[field_name] = { 'verbose_name': '', 'type': 'text', 'value': '' }
+            for field_name in (only_fields if only_fields else dict_fields.keys()):
+                if field_name not in sorted_fields:
+                    sorted_fields[field_name] = dict_fields[field_name] if field_name in dict_fields else { 'verbose_name': '', 'type': 'text', 'value': '' }
+            if to_dict:
+                fields = sorted_fields
+            else:
+                fields = sorted_fields.items()
+        elif to_dict:
+            fields = OrderedDict(fields)
+        return fields
 
     #######################
     # Buttons
@@ -728,6 +750,8 @@ class MagiCollection(object):
             pass
 
         # Optional variables with default values
+        display_style = 'rows'
+        display_style_table_fields = ['image', 'name']
         per_line = 3
         col_break = 'md'
         page_size = 12
@@ -755,6 +779,8 @@ class MagiCollection(object):
         hide_sidebar = False
         item_template = 'default_item_in_list'
         auto_reloader = True
+        _alt_view_choices = None # Cache
+        alt_views = []
 
         def get_queryset(self, queryset, parameters, request):
             return super(MagiCollection.ListView, self).get_queryset(self.collection._collectibles_queryset(self, queryset, request), parameters, request)
@@ -764,6 +790,23 @@ class MagiCollection(object):
 
         def to_fields(self, *args, **kwargs):
             return self.collection.to_fields(self, *args, **kwargs)
+
+        ordering_fields = to_fields
+
+        def table_fields(self, *args, **kwargs):
+            return self.collection.item_view.to_fields(*args, **kwargs)
+
+        def table_fields_headers(self, fields, view=None):
+            headers = []
+            for field_name in fields:
+                try:
+                    headers.append((field_name, self.collection.queryset.model._meta.get_field(field_name).verbose_name))
+                except FieldDoesNotExist:
+                    headers.append((field_name, field_name.replace('_', ' ').title()))
+            return headers
+
+        def table_fields_headers_sections(self, view=None):
+            return []
 
         def show_add_button(self, request):
             return True
@@ -1087,12 +1130,7 @@ class AccountCollection(MagiCollection):
             'friend_id': 'id',
             'screenshot': 'id',
         })
-        fields = super(AccountCollection, self).to_fields(view, item, *args, icons=icons, **kwargs)
-        if 'nickname' in fields:
-            del(fields['nickname'])
-        if 'default_tab' in fields:
-            del(fields['default_tab'])
-        return fields
+        return super(AccountCollection, self).to_fields(view, item, *args, icons=icons, **kwargs)
 
     class ListView(MagiCollection.ListView):
         item_template = 'defaultAccountItem'
@@ -1135,6 +1173,10 @@ class AccountCollection(MagiCollection):
                     fields['leaderboard']['link'] = '/accounts/'
                     fields['leaderboard']['link_text'] = u'#{}'.format(item.cached_leaderboard)
                     fields['leaderboard']['value'] = item.leaderboard_image_url
+            if 'nickname' in fields:
+                del(fields['nickname'])
+            if 'default_tab' in fields:
+                del(fields['default_tab'])
             return fields
 
     class AddView(MagiCollection.AddView):
