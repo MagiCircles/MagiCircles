@@ -47,11 +47,13 @@
 {% if filter_form %}
 <div id="wrapper" class="active{% if hide_sidebar %} toggled{% endif %}">
   <nav id="sidebar-wrapper"{% if hide_sidebar %} style="display: none;"{% endif %}>
-    <form class="padded-inner-sidebar form-horizontal" method="get" action="" role="form">
-      {{ filter_form|bootstrap }}
-      <br>
+    <form class="form-horizontal" method="get" action="" role="form">
+      <div class="padded-inner-sidebar">
+        {{ filter_form|bootstrap }}
+        <br>
+      </div>
+      <div class="sticky-buttons"><button type="submit" class="btn btn-lg btn-secondary btn-block"><i class="flaticon-search"></i> {% t 'Search' %}</button></div>
     </form>
-    <div class="sticky-buttons"><button type="submit" class="btn btn-lg btn-secondary btn-block"><i class="flaticon-search"></i> {% t 'Search' %}</button></div>
   </nav>
   <div id="page-content-wrapper">
     <a href="#" id="togglebutton"{% if hide_sidebar %} style="display: none;"{% endif %}>
