@@ -1676,7 +1676,7 @@ The type will be passed to the formClass when it's initialized, which allows you
 - Can it be overriden?
     - You may override this function, but you should always call its `super`.
 - Parameters
-    - `view, item, to_dict=True, only_fields=[], icons={}, images={}, force_all_fields=False, order=None, extra_fields=[], exclude_fields=[]`
+    - `view, item, to_dict=True, only_fields=[], icons={}, images={}, force_all_fields=False, order=[], extra_fields=[], exclude_fields=[]`
     - The same method in ItemView and ListView will take the same parameters except the view.
     - `item` is the item object, an instance of an `MagiModel`
     - `icons` is a dictionary of the icons associated with the fields

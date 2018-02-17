@@ -433,7 +433,7 @@ class MagiCollection(object):
     def share_image(self, context, item):
         return self.image
 
-    def to_fields(self, view, item, to_dict=True, only_fields=[], icons={}, images={}, force_all_fields=False, order=None, extra_fields=[], exclude_fields=[]):
+    def to_fields(self, view, item, to_dict=True, only_fields=[], icons={}, images={}, force_all_fields=False, order=[], extra_fields=[], exclude_fields=[]):
         name_fields = []
         many_fields = []
         collectible_fields = []
@@ -543,7 +543,7 @@ class MagiCollection(object):
                 model_fields.append((field_name, d))
         fields = name_fields + many_fields + model_fields + extra_fields
 
-        # Re-order fields
+       # Re-order fields
         if order or force_all_fields:
             dict_fields = dict(fields)
             sorted_fields = OrderedDict()
