@@ -347,7 +347,8 @@ class MagiCollection(object):
                 def extra_context(self, context):
                     context['item_parent'] = getattr(context['item'], item_field_name)
 
-                def to_fields(self, item, extra_fields=[], force_all_fields=False, *args, **kwargs):
+                def to_fields(self, item, extra_fields=None, force_all_fields=False, *args, **kwargs):
+                    if extra_fields is None: extra_fields = []
                     item_parent = getattr(item, item_field_name)
                     extra_fields += [
                         (item_field_name, {
@@ -433,7 +434,13 @@ class MagiCollection(object):
     def share_image(self, context, item):
         return self.image
 
-    def to_fields(self, view, item, to_dict=True, only_fields=[], icons={}, images={}, force_all_fields=False, order=[], extra_fields=[], exclude_fields=[]):
+    def to_fields(self, view, item, to_dict=True, only_fields=None, icons=None, images=None, force_all_fields=False, order=None, extra_fields=None, exclude_fields=None):
+        if extra_fields is None: extra_fields = []
+        if exclude_fields is None: exclude_fields = []
+        if only_fields is None: only_fields = []
+        if order is None: order = []
+        if icons is None: icons = {}
+        if images is None: images = {}
         name_fields = []
         many_fields = []
         collectible_fields = []
@@ -1122,7 +1129,8 @@ class AccountCollection(MagiCollection):
                     templates[u'Inappropriate {}'.format(name)] = u'Your account\'s {} was inappropriate. {}'.format(name.lower(), please_understand_template_sentence)
         return templates
 
-    def to_fields(self, view, item, icons={}, *args, **kwargs):
+    def to_fields(self, view, item, icons=None, *args, **kwargs):
+        if icons is None: icons = {}
         icons.update({
             'creation': 'date',
             'start_date': 'date',
