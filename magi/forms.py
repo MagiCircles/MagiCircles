@@ -94,6 +94,7 @@ class HiddenModelChoiceField(forms.IntegerField):
 # - When `save_owner_on_creation` is True in Meta form object, will save the field `owner` using the current user
 
 class MagiForm(forms.ModelForm):
+    error_css_class = ''
     def __init__(self, *args, **kwargs):
         self.request = kwargs.pop('request', None)
         self.collection = kwargs.pop('collection', None)
