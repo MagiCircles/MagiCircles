@@ -25,6 +25,7 @@ $(document).ready(function() {
 
     // Sidebar
     if ($('#wiki-sidebar').length > 0) {
+        $('#wiki-sidebar').html('<div class="loader"><i class="flaticon-loading"></i></div>');
         githubwiki.get('_Sidebar.md', function(data) {
             $('#wiki-sidebar').html(data);
             afterLoadWiki($('#wiki-sidebar'));
@@ -32,6 +33,7 @@ $(document).ready(function() {
     }
 
     // Main page
+    $('#wiki-content').html('<div class="loader"><i class="flaticon-loading"></i></div>');
     githubwiki.get(wikiPageUrl + '.md', function(data) {
         $('#wiki-content').html(data);
         afterLoadWiki($('#wiki-content'));
