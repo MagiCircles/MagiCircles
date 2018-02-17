@@ -50,8 +50,8 @@
     <form class="padded-inner-sidebar form-horizontal" method="get" action="" role="form">
       {{ filter_form|bootstrap }}
       <br>
-      <button type="submit" class="btn btn-lg btn-secondary btn-block"><i class="flaticon-search"></i> {% t 'Search' %}</button>
     </form>
+    <div class="sticky-buttons"><button type="submit" class="btn btn-lg btn-secondary btn-block"><i class="flaticon-search"></i> {% t 'Search' %}</button></div>
   </nav>
   <div id="page-content-wrapper">
     <a href="#" id="togglebutton"{% if hide_sidebar %} style="display: none;"{% endif %}>

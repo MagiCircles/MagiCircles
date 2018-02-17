@@ -651,7 +651,7 @@ form .form-group ul[id^=id_c_] {
 #sidebar-wrapper {
     .padded-inner-sidebar {
 	padding: 0 20px;
-        padding-bottom: 60px;
+        padding-bottom: 160px;
 	.form-group {
 	    margin: 5px 0;
 	}
@@ -662,6 +662,17 @@ form .form-group ul[id^=id_c_] {
         .text-muted {
             color: fade(white, 50%);
         }
+    }
+    .sticky-buttons {
+        -webkit-background-clip:padding;
+        -moz-background-clip:padding;
+        background-clip:padding-box;
+        border-top: 5px dashed @mainColor;//darken(@mainColor, 5%);
+        background: darken(@mainColor, 5%);
+        position: fixed;
+        width: 250px;
+	padding: 20px;
+        bottom: 0;
     }
 }
 
