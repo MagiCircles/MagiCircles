@@ -258,11 +258,19 @@ class MagiCollection(object):
                 super(_CollectibleFilterForm, self).__init__(*args, **kwargs)
                 self.fields['owner'] = forms.forms.IntegerField(required=False, widget=forms.forms.HiddenInput)
                 self.owner_filter = forms.MagiFilter(selector=model_class.selector_to_owner())
+                # fk_as_owner
                 if model_class.fk_as_owner:
                     self.fields[model_class.fk_as_owner] = forms.forms.IntegerField(required=False, widget=forms.forms.HiddenInput)
                     setattr(self, u'{}_filter'.format(model_class.fk_as_owner), forms.MagiFilter(
                         selector=model_class.fk_as_owner
                     ))
+                # Collected item field
+                if item_field_name in self.fields:
+                    self.fields[item_field_name] = forms.HiddenModelChoiceField(
+                        queryset=self.fields[item_field_name].queryset,
+                        initial=self.fields[item_field_name].initial,
+                        widget=forms.forms.HiddenInput,
+                    )
 
             class Meta:
                 model = model_class
