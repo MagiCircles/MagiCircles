@@ -200,7 +200,7 @@ class MagiCollection(object):
                                         existing = self.collection.edit_view.get_queryset(self.collection.queryset, {}, self.request).filter(**self.collection.edit_view.get_item(self.request, 'unique'))
                                         try: raise HttpRedirectException(existing[0].ajax_edit_url if self.ajax else existing[0].edit_url) # Redirect to edit
                                         except IndexError: pass
-                                    raise HttpRedirectException(u'{}?owner={}&{}={}&view=quick_edit&max_per_line=3'.format(
+                                    raise HttpRedirectException(u'{}?owner={}&{}={}&view=quick_edit&ajax_modal_only'.format(
                                         self.collection.get_list_url(ajax=self.ajax),
                                         self.request.user.id,
                                         item_field_name,
