@@ -16,8 +16,8 @@
 </div>
 {% endif %}
 {% else %}
-{% if display_style == 'rows' %}<div class="row items">{% endif %}
-  {% if display_style == 'table' %}<div class="table-responsive"><table class="table collection-table">
+{% if display_style == 'rows' %}<div class="row items" id="{{ collection.name }}-page-{{ page }}" data-page-number="{{ page }}">{% endif %}
+  {% if display_style == 'table' %}<div class="table-responsive"><table class="table collection-table" data-page-number="{{ page }}">
     {% if table_fields_headers_sections %}<tr class="table-headers-sections">{% for name, verbose_name, colspan in table_fields_headers_sections %}
       <th data-header-field="{{ name }}" colspan="{{ colspan }}">{{ verbose_name }}</th class="table-headers">{% endfor %}{% endif %}
     <tr>{% for name, verbose_name in table_fields_headers %}
@@ -34,7 +34,7 @@
     {% if display_style != 'table' and include_below_item %}{% include 'include/below_item.html' %}{% endif %}
   </{% if display_style == 'table' %}tr{% else %}div{% endif %}>
 {% endfor %}
-{% if display_style == 'rows' %}</div>{% endif %}
+{% if display_style == 'rows' %}</div><div id="{{ collection.name }}-end-of-page-{{ page }}"></div>{% endif %}
 {% if display_style == 'table' %}</table></div>{% endif %}
 {% include 'include/pagination.html' %}
 {% endif %}
