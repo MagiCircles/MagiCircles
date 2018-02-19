@@ -709,7 +709,7 @@ function pagination(nextPageUrl, newPageParameters, newPageCallback /* optional 
     var button = $('#load_more');
     if (button.length > 0
         && button.find('.loader').length == 0
-        ($(window).scrollTop() + $(window).height()) >= ($(document).height() - button.height() - 600)) {
+        && ($(window).scrollTop() + $(window).height()) >= ($(document).height() - button.height() - 600)) {
         load_more_function(nextPageUrl, newPageParameters, newPageCallback, false);
     }
     $(window).scroll(
