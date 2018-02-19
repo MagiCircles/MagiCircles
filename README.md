@@ -819,9 +819,9 @@ If you have multiple layers of foreign keys before finding the owner, you may sp
 
 ```python
 class Paragraph(MagiModel):
-    chapter = model.ForeignKey(Chapter, related_name='paragraphs')
+    chapter = models.ForeignKey(Chapter, related_name='paragraphs')
     fk_as_owner = 'chapter'
-    selector_to_owner = 'chapter__book__owner'
+    selector_to_owner = classmethod(justReturn('chapter__book__owner'))
     ...
 ```
 
