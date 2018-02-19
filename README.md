@@ -880,6 +880,7 @@ All your models that inherit from `MagiModel` or `BaseMagiModel` provide the fol
 | selector_to_owner | Django model query selector you can use to retrieve the User object that correspond to the owner of this instance. | None | String query selector (example: 'owner', 'account__owner', 'chapter__book__owner') |
 | owner_ids | Get the list of ids of the fk_as_owner. For example, for a card that uses accounts as owner, it would return the list of account ids owned by the user. For the 'chapter__book__owner' case, it would return the list of chapters owned by the user. | user | List of ids |
 | owner_collection | For example for account would return AccountCollection. | None | An instance of a MagiCollection or None |
+| owners_queryset | Get the queryset that could get you the fk_as_owner (see owner_ids) | user | queryset |
 
 All your models that inherit from `MagiModel` or `BaseMagiModel` provide the following methods:
 

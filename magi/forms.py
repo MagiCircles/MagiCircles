@@ -224,6 +224,9 @@ class MagiForm(forms.ModelForm):
             instance.save()
         return instance
 
+    class Meta:
+        pass
+
 ############################################################
 # AutoForm will guess which fields to use in a model
 
@@ -316,11 +319,30 @@ class MagiFiltersForm(AutoForm):
         super(MagiFiltersForm, self).__init__(*args, **kwargs)
         self.empty_permitted = True
         # Add add_to_{} to fields that are collectible and have a quick add option
-        for collection_name, collection in self.collection.collectible_collections.items():
-            if collection.queryset.model.fk_as_owner and collection.add_view.enabled and collection.add_view.quick_add_to_collection(self.request):
-                self.fields[u'add_to_{}'.format(collection_name)] = forms.IntegerField(required=False, widget=forms.HiddenInput)
-                setattr(self, u'add_to_{}_filter'.format(collection_name), MagiFilter(noop=True))
-        # Remove search from field if search_fields is not specified
+        if self.request.user.is_authenticated():
+            for collection_name, collection in self.collection.collectible_collections.items():
+                if collection.queryset.model.fk_as_owner and collection.add_view.enabled and collection.add_view.quick_add_to_collection(self.request):
+                    setattr(self, u'add_to_{}_filter'.format(collection_name), MagiFilter(noop=True))
+                    queryset = collection.queryset.model.owners_queryset(self.request.user)
+                    initial = getattr(self.request, u'add_to_{}'.format(collection_name))
+                    # Check if only one option, hide picker
+                    total_fk_owner_ids = getattr(self.request, u'total_fk_owner_ids_{}'.format(collection_name), None)
+                    if total_fk_owner_ids is None:
+                        if collection.queryset.model.fk_as_owner == 'account':
+                            total_fk_owner_ids = len(getAccountIdsFromSession(self.request))
+                        else:
+                            total_fk_owner_ids = len(queryset)
+                    if total_fk_owner_ids <= 1:
+                        self.fields[u'add_to_{}'.format(collection_name)] = forms.IntegerField(
+                            initial=initial, widget=forms.HiddenInput(attrs=({'value': initial} if initial else {})),
+                        )
+                    else:
+                        self.fields = OrderedDict(
+                            [(u'add_to_{}'.format(collection_name), forms.ModelChoiceField(
+                                queryset=queryset, label=collection.add_sentence, required=True,
+                                initial=initial,
+                            ))] + self.fields.items())
+            # Remove search from field if search_fields is not specified
         if not hasattr(self, 'search_fields') and not hasattr(self, 'search_fields_exact'):
             del(self.fields['search'])
         # Remove ordering form field if ordering_fields is not specified

@@ -58,12 +58,17 @@ def get_selector_to_owner(cls):
         return u'{}__owner'.format(cls.fk_as_owner)
     return 'owner'
 
+def get_owners_queryset(cls, user):
+    if not cls.fk_as_owner:
+        return [user]
+    return cls._meta.get_field(cls.fk_as_owner).rel.to.objects.filter(**{
+        cls.selector_to_owner()[(len(cls.fk_as_owner) + 2):]:
+        user,
+    })
+
 def get_owner_ids(cls, user):
-    if not user.is_authenticated():
-        return []
     if cls.fk_as_owner:
-        return cls.objects.filter(**{ cls.selector_to_owner(): user }).distinct().values_list(
-            u'{}_id'.format(cls.fk_as_owner), flat=True)
+        return list(cls.owners_queryset(user).values_list('id', flat=True))
     return [user.id]
 
 def get_owner_collection(cls):
@@ -115,6 +120,7 @@ class BaseMagiModel(models.Model):
 
     fk_as_owner = None
     selector_to_owner = classmethod(get_selector_to_owner)
+    owners_queryset = classmethod(get_owners_queryset)
     owner_ids = classmethod(get_owner_ids)
     allow_multiple_per_owner = classmethod(get_allow_multiple_per_owner)
     owner_collection = classmethod(get_owner_collection)
@@ -356,6 +362,7 @@ def addMagiModelProperties(modelClass, collection_name):
 
     modelClass.fk_as_owner = None
     modelClass.selector_to_owner = classmethod(get_selector_to_owner)
+    modelClass.owners_queryset = classmethod(get_owners_queryset)
     modelClass.owner_ids = classmethod(get_owner_ids)
     modelClass.allow_multiple_per_owner = classmethod(get_allow_multiple_per_owner)
     modelClass.owner_collection = classmethod(get_owner_collection)

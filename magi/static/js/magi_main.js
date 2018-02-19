@@ -387,6 +387,8 @@ function directAddCollectible(buttons, uniquePerOwner) {
     buttons.each(function() {
         var button = $(this);
         var form_url = button.data('ajax-url');
+        var add_to_id = button.data('quick-add-to-id');
+        var fk_as_owner = button.data('quick-add-to-fk-as-owner');
         if (form_url.indexOf('/add/') < 0) {
             return;
         }
@@ -397,14 +399,14 @@ function directAddCollectible(buttons, uniquePerOwner) {
                 return;
             }
             var button_content = button.html();
-            if (!(typeof uniquePerOwner !== 'undefined' ? uniquePerOwner : button.data('unique-per-owner') === true) || button.find('.badge').text() === '0') {
+            if (!(typeof uniquePerOwner !== 'undefined' ? uniquePerOwner : button.data('unique-per-owner') === true)
+                || button.find('.badge').text() === '0') {
                 // Add
                 button.html('<i class="flaticon-loading"></i>');
                 $.get(form_url, function(data) {
                     var form = $(data).find('form');
-                    var add_to_id = button.data('quick-add-to-id');
                     if (typeof add_to_id !== 'undefined') {
-                        form.find('#id_' + button.data('quick-add-to-fk-as-owner')).val(add_to_id);
+                        form.find('#id_' + fk_as_owner).val(add_to_id);
                     }
                     form.ajaxSubmit({
                         success: function(data) {
@@ -436,7 +438,7 @@ function directAddCollectible(buttons, uniquePerOwner) {
             } else {
                 // Delete
                 button.html('<i class="flaticon-loading"></i>');
-                $.get('/ajax/' + button.data('btn-name') + '/edit/unique/?' + button.data('parent-item') + '_id=' + button.data('parent-item-id'), function(data) {
+                $.get('/ajax/' + button.data('btn-name') + '/edit/unique/?' + button.data('parent-item') + '_id=' + button.data('parent-item-id') + (fk_as_owner ? ('&' + fk_as_owner + '=' + add_to_id) : ''), function(data) {
                     var form = $(data).find('form[data-form-name^="delete_"]');
                     form.find('#id_confirm').prop('checked', true);
                     form.ajaxSubmit({

@@ -2,6 +2,8 @@ from collections import OrderedDict
 from django.contrib.auth.models import User
 from django.utils.translation import ugettext_lazy as _
 from django.db import models
+from magi.utils import justReturn
+from magi.abstract_models import CacheOwner
 from magi.item_model import MagiModel, BaseMagiModel, i_choices
 
 class Account(MagiModel):
@@ -115,3 +117,31 @@ class CCSVTest(BaseMagiModel):
         'NSFW'
     )
     c_tags = models.TextField(blank=True, null=True)
+
+class Book(CacheOwner):
+    owner = models.ForeignKey(User, related_name='books')
+
+class Chapter(CacheOwner):
+    book = models.ForeignKey(Book, related_name='chapters')
+    fk_as_owner = 'book'
+
+    @property
+    def owner(self):
+        return self.book.cached_owner
+
+    @property
+    def owner_id(self):
+        return self.book.owner_id
+
+class Paragraph(CacheOwner):
+    chapter = models.ForeignKey(Chapter, related_name='paragraphs')
+    fk_as_owner = 'chapter'
+    selector_to_owner = classmethod(justReturn('chapter__book__owner'))
+
+    @property
+    def owner(self):
+        return self.chapter.cached_owner
+
+    @property
+    def owner_id(self):
+        return self.chapter.cached_owner.id

@@ -125,10 +125,36 @@ class MagiCollection(object):
                 item_field_name = getattr(collection.queryset.model, 'selector_to_collected_item',
                                           snakecase(self.queryset.model.__name__))
                 fk_owner = collection.queryset.model.fk_as_owner if collection.queryset.model.fk_as_owner else 'owner'
-                fk_owner_ids = ','.join(unicode(i) for i in (
-                    getAccountIdsFromSession(request)
-                    if fk_owner == 'account'
-                    else collection.queryset.model.owner_ids(request.user)))
+                if collection.add_view.enabled and collection.add_view.quick_add_to_collection(request):
+                    # Quick add
+                    if not collection.queryset.model.fk_as_owner:
+                        # With owner
+                        fk_owner_ids = request.user.id
+                    else:
+                        # With fk_as_owner
+                        fk_owner_ids = request.GET.get(u'add_to_{}'.format(name))
+                        if fk_owner_ids:
+                            # Get from request
+                            fk_owner_ids = int(fk_owner_ids)
+                        else:
+                            # Get the first one in the list
+                            if collection.queryset.model.fk_as_owner == 'account':
+                                all_fk_owner_ids = getAccountIdsFromSession(request)
+                            else:
+                                all_fk_owner_ids = collection.queryset.model.owner_ids(request.user)
+                            try:
+                                fk_owner_ids = all_fk_owner_ids[0]
+                            except IndexError:
+                                fk_owner_ids = None
+                            setattr(request, u'total_fk_owner_ids_{}'.format(name), len(all_fk_owner_ids))
+                    setattr(request, u'add_to_{}'.format(name), fk_owner_ids)
+                else:
+                    fk_owner_ids = ','.join(unicode(i) for i in (
+                        getAccountIdsFromSession(request)
+                        if fk_owner == 'account'
+                        else collection.queryset.model.owner_ids(request.user)))
+                if not fk_owner_ids:
+                    continue
                 a = {
                     u'total_{}'.format(collection.name):
                     'SELECT COUNT(*) FROM {db_table} WHERE {item_field_name}_id = {item_db_table}.id AND {fk_owner}_id IN ({fk_owner_ids})'.format(
@@ -402,7 +428,12 @@ class MagiCollection(object):
 
                 def get_item(self, request, pk):
                     if pk == 'unique':
-                        return { model_class.selector_to_owner(): request.user, item_field_name: request.GET.get(item_field_name_id) }
+                        d = { item_field_name: request.GET.get(item_field_name_id) }
+                        if model_class.fk_as_owner:
+                            d[model_class.selector_to_owner()[:-7]] = request.GET.get(model_class.fk_as_owner)
+                        else:
+                            d['owner'] = request.user
+                        return d
                     return super(_CollectibleCollection.EditView, self).get_item(request, pk)
 
                 def redirect_after_edit(self, request, item, ajax):
@@ -623,7 +654,7 @@ class MagiCollection(object):
                 del(buttons[name])
                 continue
             extra_attributes = {}
-            quick_add_to_collection = collectible_collection.add_view.quick_add_to_collection(request)
+            quick_add_to_collection = collectible_collection.add_view.quick_add_to_collection(request) if request.user.is_authenticated() else False
             url_to_collectible_add_with_item = lambda url: u'{url}?{item_name}_id={item_id}&{variables}'.format(
                 url=url, item_name=self.name, item_id=item.id,
                 variables=u'&'.join([
@@ -643,11 +674,16 @@ class MagiCollection(object):
                 extra_attributes['quick-add-to-collection'] = 'true'
                 extra_attributes['parent-item'] = self.name
                 extra_attributes['parent-item-id'] = item.id
-                add_to_id_from_request = request.GET.get(u'add_to_{}'.format(collectible_collection.name))
-                if add_to_id_from_request:
-                    extra_attributes['quick-add-to-id'] = add_to_id_from_request
-                    extra_attributes['quick-add-to-fk-as-owner'] = collectible_collection.queryset.model.fk_as_owner or 'owner'
-
+                if collectible_collection.queryset.model.fk_as_owner:
+                    add_to_id_from_request = getattr(request, u'add_to_{}'.format(collectible_collection.name))
+                    if not add_to_id_from_request:
+                        quick_add_to_collection = False
+                        del(extra_attributes['quick-add-to-collection'])
+                        del(extra_attributes['parent-item'])
+                        del(extra_attributes['parent-item-id'])
+                    else:
+                        extra_attributes['quick-add-to-id'] = add_to_id_from_request
+                        extra_attributes['quick-add-to-fk-as-owner'] = collectible_collection.queryset.model.fk_as_owner or 'owner'
             if collectible_collection.add_view.unique_per_owner and not quick_add_to_collection:
                 if collectible_collection.queryset.model.fk_as_owner == 'account' and buttons[name]['badge'] >= len(getAccountIdsFromSession(request)):
                     edit_sentence = unicode(_('Edit {thing}')).format(
