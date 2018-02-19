@@ -1651,7 +1651,6 @@ class ActivityCollection(MagiCollection):
         alert_duplicate = False
         form_class = forms.ActivityForm
         max_per_user_per_hour = 3
-        unique_per_owner = True
 
     class EditView(MagiCollection.EditView):
         multipart = True
