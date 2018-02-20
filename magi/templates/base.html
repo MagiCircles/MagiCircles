@@ -197,6 +197,13 @@
       });
     </script>
     {% endif %}
+    {% if js_variables %}
+    <script>
+      {% for variable_name, variable in js_variables.items %}
+      var {{ variable_name }} = {{ variable }};
+      {% endfor %}
+    </script>
+    {% endif %}
     {% block afterjs %}{% endblock %}{% if afterjs %}{{ afterjs|safe }}{% endif %}
 
     <script>
