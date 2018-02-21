@@ -178,6 +178,13 @@
     <script src="{{ static_url }}bower/jquery-easing/jquery.easing.min.js"></script>
     <script src="{{ static_url }}bower/Autolinker.js/dist/Autolinker.min.js"></script>
     <script src="{{ static_url }}bower/CuteForm/cuteform.js"></script>
+    {% if js_variables %}
+    <script>
+      {% for key, variable in js_variables.items %}
+      var {{ key }} = {{ variable }};
+      {% endfor %}
+    </script>
+    {% endif %}
     <script>
       {% if cuteform_fields %}{% for selector, json in cuteform_fields_json.items %}
       cuteform($('{{ selector|safe }}'), {{ json|safe }});

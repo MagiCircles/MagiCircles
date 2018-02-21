@@ -8,6 +8,13 @@
 {% for js_file in js_files %}
 <script src="{% if js_file|startswith:'http' %}{{ js_file }}{% else %}{{ static_url }}{% if not js_file|startswith:'bower' %}js/{% endif %}{{ js_file }}.js?{{ static_files_version }}{% endif %}"></script>
 {% endfor %}
+{% if js_variables %}
+<script>
+  {% for key, variable in js_variables.items %}
+  var {{ key }} = {{ variable }};
+  {% endfor %}
+</script>
+{% endif %}
 <script>
   {% if cuteform_fields %}{% for selector, json in cuteform_fields_json.items %}
   cuteform($('{{ selector|safe }}'), {{ json|safe }});
