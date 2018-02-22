@@ -62,6 +62,8 @@ def has_field(model, field_name):
 # is valid when saved.
 
 class HiddenModelChoiceField(forms.IntegerField):
+    widget = forms.HiddenInput
+
     def __init__(self, queryset=None, to_field_name='pk',
                  *args, **kwargs):
         self.queryset = queryset
