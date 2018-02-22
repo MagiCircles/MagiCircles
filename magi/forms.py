@@ -366,16 +366,17 @@ class MagiFiltersForm(AutoForm):
             self.fields['view'].choices = self.collection.list_view._alt_view_choices
         else:
             del(self.fields['view'])
-        for field_name, field in self.fields.items():
-            # Add blank choice to list of choices that don't have one
-            if (field.required and isinstance(field, forms.fields.ChoiceField)
-                and field.choices and not field.initial):
-                choices = list(self.fields[field_name].choices)
-                if choices and choices[0][0] != '':
-                    self.fields[field_name].choices = BLANK_CHOICE_DASH + choices
-                    self.fields[field_name].initial = ''
-            # Marks all fields as not required
-            field.required = False
+        if getattr(self.Meta, 'all_optional', True):
+            for field_name, field in self.fields.items():
+                # Add blank choice to list of choices that don't have one
+                if (field.required and isinstance(field, forms.fields.ChoiceField)
+                    and field.choices and not field.initial):
+                    choices = list(self.fields[field_name].choices)
+                    if choices and choices[0][0] != '':
+                        self.fields[field_name].choices = BLANK_CHOICE_DASH + choices
+                        self.fields[field_name].initial = ''
+                # Marks all fields as not required
+                field.required = False
 
     def filter_queryset(self, queryset, parameters, request):
         # Generic filter for ids
