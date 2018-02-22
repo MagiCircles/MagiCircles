@@ -321,7 +321,7 @@ class MagiFiltersForm(AutoForm):
         super(MagiFiltersForm, self).__init__(*args, **kwargs)
         self.empty_permitted = True
         # Add add_to_{} to fields that are collectible and have a quick add option
-        if self.request.user.is_authenticated():
+        if self.collection and self.request.user.is_authenticated():
             for collection_name, collection in self.collection.collectible_collections.items():
                 if collection.queryset.model.fk_as_owner and collection.add_view.enabled and collection.add_view.quick_add_to_collection(self.request):
                     setattr(self, u'add_to_{}_filter'.format(collection_name), MagiFilter(noop=True))
