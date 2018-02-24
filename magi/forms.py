@@ -62,6 +62,8 @@ def has_field(model, field_name):
 # is valid when saved.
 
 class HiddenModelChoiceField(forms.IntegerField):
+    widget = forms.HiddenInput
+
     def __init__(self, queryset=None, to_field_name='pk',
                  *args, **kwargs):
         self.queryset = queryset
@@ -319,7 +321,7 @@ class MagiFiltersForm(AutoForm):
         super(MagiFiltersForm, self).__init__(*args, **kwargs)
         self.empty_permitted = True
         # Add add_to_{} to fields that are collectible and have a quick add option
-        if self.request.user.is_authenticated():
+        if self.collection and self.request.user.is_authenticated():
             for collection_name, collection in self.collection.collectible_collections.items():
                 if collection.queryset.model.fk_as_owner and collection.add_view.enabled and collection.add_view.quick_add_to_collection(self.request):
                     setattr(self, u'add_to_{}_filter'.format(collection_name), MagiFilter(noop=True))
@@ -364,16 +366,17 @@ class MagiFiltersForm(AutoForm):
             self.fields['view'].choices = self.collection.list_view._alt_view_choices
         else:
             del(self.fields['view'])
-        for field_name, field in self.fields.items():
-            # Add blank choice to list of choices that don't have one
-            if (field.required and isinstance(field, forms.fields.ChoiceField)
-                and field.choices and not field.initial):
-                choices = list(self.fields[field_name].choices)
-                if choices and choices[0][0] != '':
-                    self.fields[field_name].choices = BLANK_CHOICE_DASH + choices
-                    self.fields[field_name].initial = ''
-            # Marks all fields as not required
-            field.required = False
+        if getattr(self.Meta, 'all_optional', True):
+            for field_name, field in self.fields.items():
+                # Add blank choice to list of choices that don't have one
+                if (field.required and isinstance(field, forms.fields.ChoiceField)
+                    and field.choices and not field.initial):
+                    choices = list(self.fields[field_name].choices)
+                    if choices and choices[0][0] != '':
+                        self.fields[field_name].choices = BLANK_CHOICE_DASH + choices
+                        self.fields[field_name].initial = ''
+                # Marks all fields as not required
+                field.required = False
 
     def filter_queryset(self, queryset, parameters, request):
         # Generic filter for ids

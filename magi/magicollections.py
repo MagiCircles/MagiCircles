@@ -300,7 +300,7 @@ class MagiCollection(object):
 
             class Meta:
                 model = model_class
-                fields = '__all__'
+                fields = []
 
         class _CollectibleCollection(MagiCollection):
             name = model_class.collection_name

@@ -33,7 +33,7 @@ else:
 if hasattr(settings_module, 'HELP_WIKI'):
     HELP_WIKI = getattr(settings_module, 'HELP_WIKI')
 else:
-    HELP_WIKI = ('MagiCircles', 'MagiCircles')
+    HELP_WIKI = ('MagiCircles', 'Circles')
 
 if hasattr(settings_module, 'WIKI'):
     WIKI = getattr(settings_module, 'WIKI')

@@ -33,6 +33,12 @@
 	  <img src="{{ image.value }}" alt="{{ image.link_text }}">
         </a>
         {% endfor %}
+	{% elif field.type == 'bool' %}
+	{% if field.value %}
+	<i class="flaticon-checked"></i>
+	{% else %}
+	<i class="flaticon-delete"></i>
+	{% endif %}
 	{% elif field.type == 'link' %}
 	<a href="{{ field.value }}" target="_blank"{% if field.ajax_link %} data-ajax-url="{{ field.ajax_link }}" data-ajax-title="{{ field.value }}"{% endif %}>
 	  {{ field.link_text }}
@@ -57,3 +63,4 @@
 	{% endif %}
 </td>
 {% endfor %}
+{% if include_below_item %}<td data-field="buttons">{% include 'include/below_item.html' %}</td>{% endif %}

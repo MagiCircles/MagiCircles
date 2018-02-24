@@ -189,6 +189,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
             context['reload_urls_start_with'] += [cc.get_add_url() for cc in collection.collectible_collections.values()]
 
     # Alt views
+    context['view'] = None
     context['alt_view'] = None
     alt_views = dict(collection.list_view.alt_views)
     if 'view' in request.GET and request.GET['view'] in alt_views:
