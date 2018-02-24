@@ -362,10 +362,7 @@ class MagiCollection(object):
                         [(('image', { 'verbose_name': unicode(item), 'value': image, 'type': 'image' })
                           if image else ('name', {
                                   'verbose_name': unicode(item), 'value': unicode(item), 'type': 'text',
-                          }))] + [('edit_button', {
-                              'verbose_name': item.edit_sentence, 'value': item.edit_url,
-                              'ajax_link': item.ajax_edit_url, 'link_text': item.edit_sentence, 'type': 'button',
-                          })]), **kwargs)
+                          }))]), **kwargs)
                     if (model_class.fk_as_owner and model_class.fk_as_owner in fields
                         and 'ajax_link' in fields[model_class.fk_as_owner]):
                         del(fields[model_class.fk_as_owner]['ajax_link'])
@@ -373,6 +370,11 @@ class MagiCollection(object):
 
                 def table_fields_headers(self, fields, view=None):
                     return []
+
+                def extra_context(self, context):
+                    if context['view'] == 'quick_edit':
+                        context['include_below_item'] = True
+                        context['show_item_buttons'] = True
 
             class ItemView(MagiCollection.ItemView):
                 comments_enabled = False
