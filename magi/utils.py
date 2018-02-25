@@ -184,6 +184,9 @@ def cuteFormFieldsForContext(cuteform_fields, context, form=None, prefix=None, a
         context['cuteform_fields'][selector] = {
             CuteFormType.to_string[field_type]: {},
         }
+        # Add title if any
+        if 'title' in field:
+            context['cuteform_fields'][selector]['title'] = _(u'Select {}').format(unicode(field['title']).lower())
         # Add extra settings if any
         if 'extra_settings' in field:
             context['cuteform_fields'][selector].update(field['extra_settings'] if not ajax else {
