@@ -36,6 +36,14 @@
 
     <hr>
 
+    {% if staff_configurations.below_about and staff_configurations.below_about|getattribute:LANGUAGE_CODE %}
+    <div id="below-about"></div>
+    <br><br><br><br>
+    <div class="below-about to-markdown">{{ staff_configurations.below_about|getattribute:LANGUAGE_CODE }}</div>
+
+    <hr>
+    {% endif %}
+
     <div id="staff"></div>
     <br><br><br><br>
     <h1 class="text-main padding50">{% trans 'Staff members' %}</h1>

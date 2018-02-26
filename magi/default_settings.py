@@ -44,7 +44,7 @@ DEFAULT_ENABLED_NAVBAR_LISTS = OrderedDict([
     ('more', {
         'title': '',
         'icon': 'more',
-        'order': ['about', 'donate_list', 'help', 'map', 'report_list', 'badge_list'],
+        'order': ['about', 'donate_list', 'help', 'map', 'report_list', 'badge_list', 'staffconfiguration_list'],
         'url': '/about/',
     }),
 ])

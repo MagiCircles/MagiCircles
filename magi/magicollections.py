@@ -10,7 +10,7 @@ from django.utils.datastructures import MultiValueDictKeyError
 from django.http import Http404
 from django.db.models import Count, Q, Prefetch, FieldDoesNotExist
 from magi.views import indexExtraContext
-from magi.utils import AttrDict, ordinalNumber, justReturn, propertyFromCollection, getMagiCollections, getMagiCollection, CuteFormType, CuteFormTransform, redirectWhenNotAuthenticated, custom_item_template, getAccountIdsFromSession
+from magi.utils import AttrDict, ordinalNumber, justReturn, propertyFromCollection, getMagiCollections, getMagiCollection, CuteFormType, CuteFormTransform, redirectWhenNotAuthenticated, custom_item_template, getAccountIdsFromSession, setSubField
 from magi.raw import please_understand_template_sentence
 from magi.django_translated import t
 from magi.middleware.httpredirect import HttpRedirectException
@@ -596,6 +596,8 @@ class MagiCollection(object):
             dict_fields = dict(fields)
             sorted_fields = OrderedDict()
             for field_name in (order or []):
+                if field_name.startswith('i_') or field_name.startswith('c_'):
+                    field_name = field_name[2:]
                 if only_fields and field_name not in only_fields:
                     continue
                 if field_name in dict_fields:
@@ -603,6 +605,8 @@ class MagiCollection(object):
                 elif force_all_fields:
                     sorted_fields[field_name] = { 'verbose_name': '', 'type': 'text', 'value': '' }
             for field_name in (only_fields if only_fields else dict_fields.keys()):
+                if field_name.startswith('i_') or field_name.startswith('c_'):
+                    field_name = field_name[2:]
                 if field_name not in sorted_fields:
                     sorted_fields[field_name] = dict_fields[field_name] if field_name in dict_fields else { 'verbose_name': '', 'type': 'text', 'value': '' }
             if to_dict:
@@ -805,6 +809,7 @@ class MagiCollection(object):
         # Optional variables with default values
         display_style = 'rows'
         display_style_table_fields = ['image', 'name']
+        display_style_table_classes = ['table']
         per_line = 3
         col_break = 'md'
         page_size = 12
@@ -1555,6 +1560,76 @@ class UserCollection(MagiCollection):
             return super(UserCollection.EditView, self).redirect_after_edit(request, item, ajax)
 
 ############################################################
+# Staff Configuration Collection
+
+class StaffConfigurationCollection(MagiCollection):
+    enabled = False
+    title = 'Staff configuration'
+    plural_title = 'Staff configurations'
+    queryset = models.StaffConfiguration.objects.all().select_related('owner')
+    navbar_link_list = 'more'
+    navbar_link_list_divider_after = True
+    icon = 'settings'
+    form_class = forms.StaffConfigurationForm
+    reportable = False
+
+    filter_cuteform = {
+        'has_value': {
+            'type': CuteFormType.OnlyNone,
+        },
+        'i_language': {
+            'image_folder': 'language',
+        },
+    }
+
+    class ListView(MagiCollection.ListView):
+        staff_required = True
+        add_button_subtitle = None
+        item_template = 'default_item_table_view'
+        display_style = 'table'
+        display_style_table_fields = ['verbose_key', 'i_language', 'value', 'owner']
+        display_style_table_classes = MagiCollection.ListView.display_style_table_classes + ['table-striped']
+        before_template = 'include/beforeStaffConfigurations'
+        filter_form = forms.StaffConfigurationFilters
+        default_ordering = 'id'
+
+        def table_fields_headers(self, fields, view=None):
+            return []
+
+        def table_fields(self, item, *args, **kwargs):
+            fields = super(StaffConfigurationCollection.ListView, self).table_fields(item, *args, **kwargs)
+            setSubField(fields, 'owner', key='value', value='Last updated by:')
+            setSubField(fields, 'owner', key='link_text', value=item.cached_owner.unicode)
+            setSubField(fields, 'value', key='type', value=item.field_type)
+            setSubField(fields, 'value', key='value', value=item.representation_value)
+            return fields
+
+    class ItemView(MagiCollection.ItemView):
+        enabled = False
+
+    class AddView(MagiCollection.AddView):
+        staff_required = True
+        alert_duplicate = False
+
+        def check_permissions(self, request, context):
+            super(StaffConfigurationCollection.AddView, self).check_permissions(request, context)
+            if not request.user.is_superuser:
+                raise PermissionDenied()
+
+    class EditView(MagiCollection.EditView):
+        staff_required = True
+
+        def form_class(self, request, context):
+            if request.user.is_superuser:
+                return forms.StaffConfigurationForm
+            return forms.StaffConfigurationSimpleEditForm
+
+        def redirect_after_edit(self, request, item, ajax):
+            if ajax:
+                return '/ajax/successedit/'
+            return super(StaffConfigurationCollection.EditView, self).redirect_after_edit(request, item, ajax)
+
+############################################################
 # Activities Collection
 
 class ActivityCollection(MagiCollection):
@@ -1715,7 +1790,6 @@ class BadgeCollection(MagiCollection):
     title = _('Badge')
     plural_title = _('Badges')
     navbar_link_list = 'more'
-    navbar_link_list_divider_after = True
     queryset = models.Badge.objects.all()
     reportable = False
 

@@ -289,6 +289,68 @@ class UserLink(BaseMagiModel):
         return None
 
 ############################################################
+# Staff Configuration
+
+class StaffConfiguration(MagiModel):
+    collection_name = 'staffconfiguration'
+
+    owner = models.ForeignKey(User, related_name='added_configurations')
+    key = models.CharField(max_length=100)
+    verbose_key = models.CharField('Name', max_length=100)
+    value = models.TextField('Value', null=True)
+
+    LANGUAGE_CHOICES = django_settings.LANGUAGES
+    LANGUAGE_WITHOUT_I_CHOICES = True
+    LANGUAGE_SOFT_CHOICES = LANGUAGE_CHOICES
+    i_language = models.CharField(_('Language'), max_length=4, null=True)
+
+    is_long = models.BooleanField(default=False)
+    is_markdown = models.BooleanField(default=False)
+    is_boolean = models.BooleanField(default=False)
+
+    # Owner is always pre-selected
+    @property
+    def cached_owner(self):
+        self.owner.unicode = unicode(self.owner)
+        return self.owner
+
+    @property
+    def boolean_value(self):
+        if self.is_boolean:
+            if self.value == 'True':
+                return True
+            if self.value == 'False':
+                return False
+            return None
+        return self.value
+
+    @property
+    def representation_value(self):
+        if self.is_markdown:
+            return u'<div class="list-group-item to-markdown">{}</div>'.format(self.value) if self.value else ''
+        elif self.is_boolean:
+            if self.value == 'True':
+                return u'<i class="flaticon-checked"></i>'
+            if self.value == 'False':
+                return u'<i class="flaticon-delete"></i>'
+            return ''
+        return self.value or ''
+
+    @property
+    def field_type(self):
+        if self.key.endswith('_image_url') or self.key.endswith('_image'):
+            return 'image'
+        if self.is_markdown or self.is_boolean:
+            return 'html'
+        return 'text'
+
+    def __unicode__(self):
+        return self.verbose_key
+
+    class Meta:
+        unique_together = (('key', 'i_language'),)
+
+############################################################
 # Activity
 
 class Activity(MagiModel):

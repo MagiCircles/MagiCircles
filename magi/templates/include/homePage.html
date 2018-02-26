@@ -59,6 +59,7 @@
   </div>
   {% endif %}
   <div class="after-news"></div>
+  {% if staff_configurations.below_homepage_banners and staff_configurations.below_homepage_banners|getattribute:LANGUAGE_CODE %}<div class="below-banners to-markdown">{{ staff_configurations.below_homepage_banners|getattribute:LANGUAGE_CODE }}</div>{% endif %}
 </div>
 {% if user.is_authenticated and 'activity' in all_enabled %}
 <ul class="nav nav-tabs" id="hometabs">

@@ -111,11 +111,6 @@ class MagiForm(forms.ModelForm):
             existing = self.collection.edit_view.get_queryset(self.collection.queryset, {}, self.request).filter(**self.collection.edit_view.get_item(self.request, 'unique'))
             try: raise HttpRedirectException(existing[0].ajax_edit_url if self.ajax else existing[0].edit_url) # Redirect to edit
             except IndexError: pass # Can add!
-        # Fix optional fields
-        if hasattr(self.Meta, 'optional_fields'):
-            for field in self.Meta.optional_fields:
-                if field in self.fields:
-                    self.fields[field].required = False
         # Hidden foreign keys fields
         if hasattr(self.Meta, 'hidden_foreign_keys'):
             for field in self.Meta.hidden_foreign_keys:
@@ -125,11 +120,19 @@ class MagiForm(forms.ModelForm):
                         widget=forms.HiddenInput,
                         initial=(None if self.is_creating else getattr(self.instance, u'{}_id'.format(field))),
                     )
+        # Fix optional fields
         if hasattr(self.Meta, 'optional_fields'):
             for field in self.Meta.optional_fields:
                 if field in self.fields:
                     self.fields[field].required = False
         for name, field in self.fields.items():
+            # Fix optional fields using null=True
+            try:
+                model_field = self.Meta.model._meta.get_field(name)
+            except FieldDoesNotExist:
+                model_field = None
+            if model_field is not None and model_field.null:
+                self.fields[name].required = False
             # Fix dates fields
             if isinstance(field, forms.DateField):
                 self.fields[name], value = date_input(field, value=(getattr(self.instance, name, None) if not self.is_creating else None))
@@ -160,6 +163,11 @@ class MagiForm(forms.ModelForm):
                         choices=[(c[0], c[1]) if isinstance(c, tuple) else (c, c) for c in choices],
                         label=field.label,
                     )
+        # Fix force required fields
+        if hasattr(self.Meta, 'required_fields'):
+            for field in self.Meta.required_fields:
+                if field in self.fields:
+                    self.fields[field].required = True
 
     def clean(self):
         # Check max_per_user
@@ -370,7 +378,8 @@ class MagiFiltersForm(AutoForm):
         if getattr(self.Meta, 'all_optional', True):
             for field_name, field in self.fields.items():
                 # Add blank choice to list of choices that don't have one
-                if (field.required and isinstance(field, forms.fields.ChoiceField)
+                if (isinstance(field, forms.fields.ChoiceField)
+                    and not isinstance(field, forms.fields.MultipleChoiceField)
                     and field.choices and not field.initial):
                     choices = list(self.fields[field_name].choices)
                     if choices and choices[0][0] != '':
@@ -535,11 +544,9 @@ class AccountForm(AutoForm):
             instance.save()
         return instance
 
-
-    class Meta:
+    class Meta(AutoForm.Meta):
         model = models.Account
         fields = '__all__'
-        optional_fields = ('start_date', 'level', 'center', 'friend_id', 'nickname', 'screenshot')
         save_owner_on_creation = True
 
 ############################################################
@@ -600,12 +607,12 @@ class _UserCheckEmailUsernameForm(MagiForm):
 class CreateUserForm(_UserCheckEmailUsernameForm):
     password = forms.CharField(widget=forms.PasswordInput(), min_length=6, label=t['Password'])
 
-    class Meta:
+    class Meta(_UserCheckEmailUsernameForm.Meta):
         model = models.User
         fields = ('username', 'email', 'password')
 
 class UserForm(_UserCheckEmailUsernameForm):
-    class Meta:
+    class Meta(_UserCheckEmailUsernameForm.Meta):
         model = models.User
         fields = ('username', 'email',)
 
@@ -629,7 +636,7 @@ class EmailsPreferencesForm(MagiForm):
             self.request.user.preferences.save()
         return self.request.user.preferences
 
-    class Meta:
+    class Meta(MagiForm.Meta):
         model = models.UserPreferences
         fields = []
 
@@ -691,7 +698,7 @@ class UserPreferencesForm(MagiForm):
             instance.save()
         return instance
 
-    class Meta:
+    class Meta(MagiForm.Meta):
         model = models.UserPreferences
         fields = ('description', 'location', 'favorite_character1', 'favorite_character2', 'favorite_character3', 'color', 'birthdate','i_language', 'view_activities_language_only', 'default_tab')
 
@@ -734,7 +741,7 @@ class StaffEditUser(_UserCheckEmailUsernameForm):
             instance.save()
         return instance
 
-    class Meta:
+    class Meta(_UserCheckEmailUsernameForm.Meta):
         model = models.User
         fields = ('username', 'email')
 
@@ -763,7 +770,7 @@ class ChangePasswordForm(MagiForm):
         authenticate(username=self.user.username, password=self.cleaned_data['new_password'])
         login_action(self.request, self.user)
 
-    class Meta:
+    class Meta(MagiForm.Meta):
         model = models.User
         fields = []
 
@@ -786,7 +793,7 @@ class AddLinkForm(MagiForm):
                 ON_PREFERENCES_EDITED(self.request.user)
         return instance
 
-    class Meta:
+    class Meta(MagiForm.Meta):
         model = models.UserLink
         fields = ('i_type', 'value', 'i_relevance')
         save_owner_on_creation = True
@@ -795,7 +802,7 @@ class AddLinkForm(MagiForm):
 # Change language (on top bar)
 
 class LanguagePreferencesForm(MagiForm):
-    class Meta:
+    class Meta(MagiForm.Meta):
         model = models.UserPreferences
         fields = ('i_language',)
 
@@ -807,14 +814,72 @@ class ConfirmDelete(forms.Form):
     thing_to_delete = forms.IntegerField(widget=forms.HiddenInput, required=True)
 
 ############################################################
+# Staff configuration form
+
+class StaffConfigurationForm(AutoForm):
+    value = forms.NullBooleanField(required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(StaffConfigurationForm, self).__init__(*args, **kwargs)
+        if 'i_language' in self.fields:
+            self.fields['i_language'].choices = BLANK_CHOICE_DASH + self.fields['i_language'].choices
+        if 'value' in self.fields and (self.is_creating or not self.instance.is_boolean):
+            self.fields['value'] = forms.CharField(required=False)
+            if not self.is_creating and not self.instance.is_long:
+                self.fields['value'].widget = forms.TextInput()
+            else:
+                self.fields['value'].widget = forms.Textarea()
+        if not self.is_creating and self.instance.is_markdown and 'value' in self.fields:
+            if 'help' in RAW_CONTEXT['all_enabled']:
+                self.fields['value'].help_text = mark_safe(u'{} <a href="/help/Markdown" target="_blank">{}.</a>'.format(_(u'You may use Markdown formatting.'), _(u'Learn more')))
+            else:
+                self.fields['value'].help_text = _(u'You may use Markdown formatting.')
+
+    def save(self, commit=True):
+        instance = super(StaffConfigurationForm, self).save(commit=False)
+        # Save owner as last updater
+        instance.owner = self.request.user if self.request.user.is_authenticated() else None
+        print instance.value
+        print self.cleaned_data['value']
+        if commit:
+            instance.save()
+        return instance
+
+    class Meta(AutoForm.Meta):
+        model = models.StaffConfiguration
+        save_owner_on_creation = True
+
+class StaffConfigurationSimpleEditForm(StaffConfigurationForm):
+    class Meta(StaffConfigurationForm.Meta):
+        fields = ('verbose_key', 'value')
+
+class StaffConfigurationFilters(MagiFiltersForm):
+    search_fields = ['verbose_key', 'value']
+
+    has_value = forms.NullBooleanField()
+    has_value_filter = MagiFilter(selector='value__isnull')
+
+    i_language_filter = MagiFilter(to_queryset=lambda form, queryset, request, value: queryset.filter(
+        Q(i_language=value) | Q(i_language__isnull=True) | Q(i_language='')))
+
+    class Meta(MagiFiltersForm.Meta):
+        model = models.StaffConfiguration
+        fields = ('search', 'i_language', 'has_value')
+
+############################################################
 # Activity form
 
 class ActivityForm(MagiForm):
     def __init__(self, *args, **kwargs):
         super(ActivityForm, self).__init__(*args, **kwargs)
         self.fields['i_language'].initial = self.request.user.preferences.language if self.request.user.is_authenticated() and self.request.user.preferences.language else django_settings.LANGUAGE_CODE
+        if 'message' in self.fields:
+            if 'help' in RAW_CONTEXT['all_enabled']:
+                self.fields['message'].help_text = mark_safe(u'{} <a href="/help/Markdown" target="_blank">{}.</a>'.format(_(u'You may use Markdown formatting.'), _(u'Learn more')))
+            else:
+                self.fields['message'].help_text = _(u'You may use Markdown formatting.')
 
-    class Meta:
+    class Meta(MagiForm.Meta):
         model = models.Activity
         fields = ('message', 'c_tags', 'i_language', 'image')
         save_owner_on_creation = True
@@ -845,7 +910,7 @@ class FilterActivities(MagiFiltersForm):
             queryset = queryset.filter(modification__gte=timezone.now() - relativedelta(weeks=1))
         return queryset
 
-    class Meta:
+    class Meta(MagiFiltersForm.Meta):
         model = models.Activity
         fields = ('search', 'c_tags', 'with_image', 'i_language')
 
@@ -855,7 +920,7 @@ class FilterActivities(MagiFiltersForm):
 class FilterNotification(MagiFiltersForm):
     search_fields = ['c_message_data', 'c_url_data']
 
-    class Meta:
+    class Meta(MagiFiltersForm.Meta):
         model = models.Notification
         fields = ('search', 'i_message')
 
@@ -898,7 +963,7 @@ class ReportForm(MagiForm):
             instance.images.add(imageObject)
         return instance
 
-    class Meta:
+    class Meta(MagiForm.Meta):
         model = models.Report
         fields = ('reason', 'message', 'images')
         save_owner_on_creation = True
@@ -920,7 +985,7 @@ class FilterReports(MagiFiltersForm):
         self.fields['reported_thing'].choices = BLANK_CHOICE_DASH + [ (name, info['title']) for name, info in self.collection.types.items() ]
         self.fields['staff'].queryset = self.fields['staff'].queryset.filter(is_staff=True)
 
-    class Meta:
+    class Meta(MagiFiltersForm.Meta):
         model = models.Report
         fields = ('i_status', 'reported_thing', 'staff')
 
@@ -928,7 +993,7 @@ class FilterReports(MagiFiltersForm):
 # Donation Months forms
 
 class DonateForm(AutoForm):
-    class Meta:
+    class Meta(AutoForm.Meta):
         model = models.DonationMonth
         fields = '__all__'
         save_owner_on_creation = True
@@ -959,10 +1024,8 @@ class _BadgeForm(MagiForm):
             instance.save()
         return instance
 
-    class Meta:
+    class Meta(MagiForm.Meta):
         model = models.Badge
-        fields = ()
-        optional_fields = ('donation_month', 'url')
         save_owner_on_creation = True
 
 class ExclusiveBadgeForm(_BadgeForm):
@@ -975,6 +1038,7 @@ class ExclusiveBadgeForm(_BadgeForm):
         return instance
 
     class Meta(_BadgeForm.Meta):
+        required_fields = ('name',)
         fields = ('username', 'name', 'description', 'image', 'url', 'rank')
 
 class CopyBadgeForm(_BadgeForm):
@@ -1001,6 +1065,7 @@ class CopyBadgeForm(_BadgeForm):
         return instance
 
     class Meta(_BadgeForm.Meta):
+        required_fields = ('name',)
         fields = ('username', 'name', 'description', 'url', 'rank')
 
 class DonatorBadgeForm(_BadgeForm):
@@ -1049,6 +1114,6 @@ class FilterBadges(MagiFiltersForm):
     of_user = forms.IntegerField(widget=forms.HiddenInput)
     of_user_filter = MagiFilter(to_queryset=lambda form, queryset, request, value: queryset.filter(user_id=value, show_on_profile=True))
 
-    class Meta:
+    class Meta(MagiFiltersForm.Meta):
         model = models.Badge
         fields = ('search', 'rank', 'added_by', 'of_user')

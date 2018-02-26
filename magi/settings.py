@@ -130,6 +130,11 @@ if hasattr(settings_module, 'TOTAL_DONATORS'):
 else:
     TOTAL_DONATORS = 2
 
+if hasattr(settings_module, 'STAFF_CONFIGURATIONS'):
+    STAFF_CONFIGURATIONS = getattr(settings_module, 'STAFF_CONFIGURATIONS')
+else:
+    STAFF_CONFIGURATIONS = {}
+
 if hasattr(settings_module, 'EMPTY_IMAGE'):
     EMPTY_IMAGE = getattr(settings_module, 'EMPTY_IMAGE')
 else:
