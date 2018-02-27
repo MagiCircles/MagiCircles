@@ -302,7 +302,7 @@ class StaffConfiguration(MagiModel):
     LANGUAGE_CHOICES = django_settings.LANGUAGES
     LANGUAGE_WITHOUT_I_CHOICES = True
     LANGUAGE_SOFT_CHOICES = LANGUAGE_CHOICES
-    i_language = models.CharField(_('Language'), max_length=4, null=True)
+    i_language = models.CharField(_('Language'), max_length=10, null=True)
 
     is_long = models.BooleanField(default=False)
     is_markdown = models.BooleanField(default=False)
@@ -365,7 +365,7 @@ class Activity(MagiModel):
     LANGUAGE_CHOICES = django_settings.LANGUAGES
     LANGUAGE_WITHOUT_I_CHOICES = True
     LANGUAGE_SOFT_CHOICES = LANGUAGE_CHOICES
-    i_language = models.CharField(_('Language'), max_length=4)
+    i_language = models.CharField(_('Language'), max_length=10)
 
     TAGS_CHOICES = ACTIVITY_TAGS if ACTIVITY_TAGS else []
     c_tags = models.TextField(_('Tags'), blank=True, null=True)

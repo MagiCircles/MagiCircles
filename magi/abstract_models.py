@@ -115,7 +115,8 @@ class CacheOwner(MagiModel):
             'share_url': http_item_url,
             'preferences': AttrDict({
                 'i_status': self._cache_owner_preferences_i_status,
-                'status': dict(preferences_model.STATUS_CHOICES)[self._cache_owner_preferences_i_status] if preferences_model and self._cache_owner_preferences_i_status else None,
+                'status': self._cache_owner_preferences_i_status,
+                't_status': dict(preferences_model.STATUS_CHOICES)[self._cache_owner_preferences_i_status] if preferences_model and self._cache_owner_preferences_i_status else None,
                 'twitter': self._cache_owner_preferences_twitter,
                 'color': self._cache_owner_color,
                 'localized_color': preferences_model.get_localized_color(self._cache_owner_color) if preferences_model else None,
