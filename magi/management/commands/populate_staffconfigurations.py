@@ -21,7 +21,7 @@ class Command(BaseCommand):
         for language in LANGUAGES_DICT.keys():
             # Pages parts
             create({
-                'key': 'below_banners',
+                'key': 'below_homepage_banners',
                 'verbose_key': 'Below homepage banners',
                 'is_markdown': True,
                 'is_long': True,
