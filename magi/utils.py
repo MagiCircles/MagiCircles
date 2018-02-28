@@ -219,6 +219,8 @@ def cuteFormFieldsForContext(cuteform_fields, context, form=None, prefix=None, a
                         icon=cuteform_value,
                         text=u' {}'.format(value) if transform == CuteFormTransform.FlaticonWithText else '',
                     )
+                    if transform == CuteFormTransform.Flaticon:
+                        cuteform = u'<div data-toggle="tooltip" data-placement="top" data-trigger="hover" data-html="true" title="{}">{}</div>'.format(value, cuteform)
                 else:
                     cuteform = unicode(cuteform_value)
             # Add in key, value in context for field
