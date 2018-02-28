@@ -839,8 +839,6 @@ class StaffConfigurationForm(AutoForm):
         instance = super(StaffConfigurationForm, self).save(commit=False)
         # Save owner as last updater
         instance.owner = self.request.user if self.request.user.is_authenticated() else None
-        print instance.value
-        print self.cleaned_data['value']
         if commit:
             instance.save()
         return instance

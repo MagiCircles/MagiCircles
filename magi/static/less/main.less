@@ -217,6 +217,10 @@ table.text-center th {
         text-align: left;
         vertical-align: top;
     }
+    [data-field="value"] img {
+        width: 100%;
+        max-width: none;
+    }
 }
 
 [data-cuteform-text="---------"], .empty-image {
@@ -680,7 +684,7 @@ form .form-group ul[id^=id_c_] {
         -webkit-background-clip:padding;
         -moz-background-clip:padding;
         background-clip:padding-box;
-        border-top: 5px dashed @mainColor;//darken(@mainColor, 5%);
+        border-top: 5px dashed @mainColor;
         background: darken(@mainColor, 5%);
         position: fixed;
         width: 250px;
