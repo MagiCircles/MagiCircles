@@ -263,6 +263,16 @@ if hasattr(settings_module, 'HASHTAGS'):
 else:
     HASHTAGS = []
 
+if hasattr(settings_module, 'FIRST_COLLECTION'):
+    FIRST_COLLECTION = getattr(settings_module, 'FIRST_COLLECTION')
+else:
+    FIRST_COLLECTION = None
+
+if hasattr(settings_module, 'GET_STARTED_VIDEO'):
+    GET_STARTED_VIDEO = getattr(settings_module, 'GET_STARTED_VIDEO')
+else:
+    GET_STARTED_VIDEO = None
+
 if hasattr(settings_module, 'ON_USER_EDITED'):
     ON_USER_EDITED = getattr(settings_module, 'ON_USER_EDITED')
 else:

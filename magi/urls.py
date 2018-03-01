@@ -9,7 +9,7 @@ from django.utils import timezone
 from magi import views_collections, magicollections
 from magi import views as magi_views
 from magi import forms
-from magi.settings import RAW_CONTEXT, ENABLED_PAGES, ENABLED_NAVBAR_LISTS, SITE_NAME, EMAIL_IMAGE, GAME_NAME, SITE_DESCRIPTION, SITE_STATIC_URL, SITE_URL, GITHUB_REPOSITORY, SITE_LOGO, SITE_NAV_LOGO, JAVASCRIPT_TRANSLATED_TERMS, STATIC_UPLOADED_FILES_PREFIX, COLOR, SITE_IMAGE, TRANSLATION_HELP_URL, DISQUS_SHORTNAME, HASHTAGS, TWITTER_HANDLE, EMPTY_IMAGE, GOOGLE_ANALYTICS, STATIC_FILES_VERSION, PROFILE_TABS, LAUNCH_DATE, PRELAUNCH_ENABLED_PAGES, NAVBAR_ORDERING, ACCOUNT_MODEL, STAFF_CONFIGURATIONS
+from magi.settings import RAW_CONTEXT, ENABLED_PAGES, ENABLED_NAVBAR_LISTS, SITE_NAME, EMAIL_IMAGE, GAME_NAME, SITE_DESCRIPTION, SITE_STATIC_URL, SITE_URL, GITHUB_REPOSITORY, SITE_LOGO, SITE_NAV_LOGO, JAVASCRIPT_TRANSLATED_TERMS, STATIC_UPLOADED_FILES_PREFIX, COLOR, SITE_IMAGE, TRANSLATION_HELP_URL, DISQUS_SHORTNAME, HASHTAGS, TWITTER_HANDLE, EMPTY_IMAGE, GOOGLE_ANALYTICS, STATIC_FILES_VERSION, PROFILE_TABS, LAUNCH_DATE, PRELAUNCH_ENABLED_PAGES, NAVBAR_ORDERING, ACCOUNT_MODEL, STAFF_CONFIGURATIONS, FIRST_COLLECTION, GET_STARTED_VIDEO
 from magi.models import UserPreferences
 from magi.utils import redirectWhenNotAuthenticated
 
@@ -110,6 +110,9 @@ def _addToCollections(name, cls): # Class of the collection
                     if fk_as_owner not in collectible_collections:
                         collectible_collections[fk_as_owner] = {}
                     collectible_collections[fk_as_owner][collectible_collection.name] = collectible_collection
+                    if (collectible_collection.name == FIRST_COLLECTION and not collection.list_view.before_template
+                        and 'get_started' in STAFF_CONFIGURATIONS):
+                        collection.list_view.before_template = 'include/getstarted'
     return collection
 
 def _addToEnabledCollections(name, cls, is_custom):
@@ -323,6 +326,7 @@ RAW_CONTEXT['site_url'] = SITE_URL
 RAW_CONTEXT['github_repository'] = GITHUB_REPOSITORY
 RAW_CONTEXT['site_description'] = SITE_DESCRIPTION
 RAW_CONTEXT['staff_configurations'] = STAFF_CONFIGURATIONS
+RAW_CONTEXT['get_started_video'] = GET_STARTED_VIDEO
 RAW_CONTEXT['game_name'] = GAME_NAME
 RAW_CONTEXT['static_uploaded_files_prefix'] = STATIC_UPLOADED_FILES_PREFIX
 RAW_CONTEXT['static_url'] = SITE_STATIC_URL + 'static/'

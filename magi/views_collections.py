@@ -205,6 +205,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['show_no_result'] = not ajax
     context['show_search_results'] = bool(request.GET)
     context['show_owner'] = 'show_owner' in request.GET
+    context['get_started'] = 'get_started' in request.GET
     context['name'] = name
     context['title'] = collection.title
     context['reportable'] = collection.reportable

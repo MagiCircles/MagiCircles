@@ -14,7 +14,7 @@ from magi.utils import AttrDict, ordinalNumber, justReturn, propertyFromCollecti
 from magi.raw import please_understand_template_sentence
 from magi.django_translated import t
 from magi.middleware.httpredirect import HttpRedirectException
-from magi.settings import ACCOUNT_MODEL, SHOW_TOTAL_ACCOUNTS, PROFILE_TABS, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTER_TO_URL, GET_GLOBAL_CONTEXT, DONATE_IMAGE, ON_USER_EDITED, ON_PREFERENCES_EDITED, ACCOUNT_TAB_ORDERING
+from magi.settings import ACCOUNT_MODEL, SHOW_TOTAL_ACCOUNTS, PROFILE_TABS, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTER_TO_URL, GET_GLOBAL_CONTEXT, DONATE_IMAGE, ON_USER_EDITED, ON_PREFERENCES_EDITED, ACCOUNT_TAB_ORDERING, FIRST_COLLECTION
 from magi import models, forms
 
 ############################################################
@@ -310,6 +310,10 @@ class MagiCollection(object):
             navbar_link = False
             reportable = False
             form_class = _CollectibleForm
+
+            def __init__(self, *args, **kwargs):
+                super(_CollectibleCollection, self).__init__(*args, **kwargs)
+                self.parent_collection = parent_collection
 
             def get_list_url_for_authenticated_owner(self, request, ajax, item=None, fk_as_owner=None):
                 url = u'{url}?{parameters}'.format(
@@ -785,6 +789,14 @@ class MagiCollection(object):
     @property
     def edit_sentence(self):
         return _(u'Edit {thing}').format(thing=self.title.lower())
+
+    @property
+    def is_first_collection(self):
+        return self.name == FIRST_COLLECTION
+
+    @property
+    def is_first_collection_parent(self):
+        return getMagiCollection(FIRST_COLLECTION).parent_collection.name == self.name
 
     def __unicode__(self):
         return u'MagiCollection {}'.format(self.name)
@@ -1265,6 +1277,10 @@ class AccountCollection(MagiCollection):
         def redirect_after_add(self, request, instance, ajax=False):
             if ajax: # Ajax is not allowed for profile url
                 return '/ajax/successadd/'
+            if FIRST_COLLECTION:
+                collection = getMagiCollection(FIRST_COLLECTION)
+                if collection:
+                    return u'{}?get_started&add_to_{}={}'.format(collection.parent_collection.get_list_url(), collection.name, instance.id)
             return '{}#{}'.format(request.user.item_url, instance.id)
 
         def before_save(self, request, instance, type=None):
