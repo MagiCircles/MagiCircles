@@ -81,7 +81,7 @@ class HiddenModelChoiceField(forms.IntegerField):
             self.values[value] = self.queryset.get(**{key: value})
         except (ValueError, self.queryset.model.DoesNotExist):
             raise forms.ValidationError(
-                _('Select a valid choice. %(value)s is not one of the available choices.'),
+                t['Select a valid choice. %(value)s is not one of the available choices.'],
                 params={ 'value': value }, code='invalid_choice',
             )
         return self.values[value]

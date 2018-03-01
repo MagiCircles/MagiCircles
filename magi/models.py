@@ -97,7 +97,7 @@ class UserPreferences(BaseMagiModel):
 
     STATUS_WITHOUT_I_CHOICES = True
     STATUS_SOFT_CHOICES = STATUS_CHOICES
-    i_status = models.CharField(_('Status'), max_length=12, null=True)
+    i_status = models.CharField('Status', max_length=12, null=True)
     @property
     def status_color(self):
         return self.STATUS_COLORS[self.i_status] if self.i_status else None

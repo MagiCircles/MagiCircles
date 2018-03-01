@@ -22,4 +22,5 @@ t = {
     'Other': _('Other'),
     'Yes': _('Yes'),
     'No': _('No'),
+    'Select a valid choice. %(value)s is not one of the available choices.': _('Select a valid choice. %(value)s is not one of the available choices.'),
 }
