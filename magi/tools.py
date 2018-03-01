@@ -23,9 +23,9 @@ def getStaffConfigurations():
         if staffconfiguration.i_language:
             if staffconfiguration.key not in staff_configurations:
                 staff_configurations[staffconfiguration.key] = {}
-                staff_configurations[staffconfiguration.key][staffconfiguration.language] = staffconfiguration.value
-            else:
-                staff_configurations[staffconfiguration.key] = staffconfiguration.value
+            staff_configurations[staffconfiguration.key][staffconfiguration.language] = staffconfiguration.value
+        else:
+            staff_configurations[staffconfiguration.key] = staffconfiguration.value
     return staff_configurations, [
         latest_news[i] for i in range(1, 5)
         if latest_news[i] and latest_news[i].get('image') and latest_news[i].get('title') and latest_news[i].get('url') ]
