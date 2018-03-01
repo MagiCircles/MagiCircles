@@ -291,12 +291,7 @@ class MagiCollection(object):
                         selector=model_class.fk_as_owner
                     ))
                 # Collected item field
-                if item_field_name in self.fields:
-                    self.fields[item_field_name] = forms.HiddenModelChoiceField(
-                        queryset=self.fields[item_field_name].queryset,
-                        initial=self.fields[item_field_name].initial,
-                        widget=forms.forms.HiddenInput,
-                    )
+                self.fields[item_field_name] = forms.forms.IntegerField(required=False, widget=forms.forms.HiddenInput)
 
             class Meta:
                 model = model_class
@@ -436,7 +431,9 @@ class MagiCollection(object):
                     if pk == 'unique':
                         d = { item_field_name: request.GET.get(item_field_name_id) }
                         if model_class.fk_as_owner:
-                            d[model_class.selector_to_owner()[:-7]] = request.GET.get(model_class.fk_as_owner)
+                            fk_as_owner_id = request.GET.get(model_class.fk_as_owner)
+                            if fk_as_owner_id:
+                                d[model_class.selector_to_owner()[:-7]] = fk_as_owner_id
                         else:
                             d['owner'] = request.user
                         return d
