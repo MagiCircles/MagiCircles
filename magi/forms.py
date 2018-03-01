@@ -106,7 +106,7 @@ class MagiForm(forms.ModelForm):
         self.is_creating = not hasattr(self, 'instance') or not self.instance.pk
         self.c_choices = []
         self.hidden_foreign_keys_querysets = {}
-        # If is creating and item is unique, redirect to edit unique
+        # If is creating and item is unique per owner, redirect to edit unique
         if self.is_creating and self.collection and not isinstance(self, MagiFiltersForm) and not self.Meta.model.fk_as_owner and self.collection.add_view.unique_per_owner:
             existing = self.collection.edit_view.get_queryset(self.collection.queryset, {}, self.request).filter(**self.collection.edit_view.get_item(self.request, 'unique'))
             try: raise HttpRedirectException(existing[0].ajax_edit_url if self.ajax else existing[0].edit_url) # Redirect to edit

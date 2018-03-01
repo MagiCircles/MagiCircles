@@ -223,7 +223,10 @@ class MagiCollection(object):
                                 total_owners = len(fq if model_class.fk_as_owner != 'account' else getAccountIdsFromSession(self.request))
                                 if total_owners:
                                     if total_owners == 1:
-                                        existing = self.collection.edit_view.get_queryset(self.collection.queryset, {}, self.request).filter(**self.collection.edit_view.get_item(self.request, 'unique'))
+                                        existing = self.collection.edit_view.get_queryset(self.collection.queryset, {}, self.request).filter(**{
+                                            item_field_name: self.item_id,
+                                            model_class.selector_to_owner(): self.request.user,
+                                        })
                                         try: raise HttpRedirectException(existing[0].ajax_edit_url if self.ajax else existing[0].edit_url) # Redirect to edit
                                         except IndexError: pass
                                     raise HttpRedirectException(u'{}?owner={}&{}={}&view=quick_edit&ajax_modal_only'.format(
@@ -431,9 +434,7 @@ class MagiCollection(object):
                     if pk == 'unique':
                         d = { item_field_name: request.GET.get(item_field_name_id) }
                         if model_class.fk_as_owner:
-                            fk_as_owner_id = request.GET.get(model_class.fk_as_owner)
-                            if fk_as_owner_id:
-                                d[model_class.selector_to_owner()[:-7]] = fk_as_owner_id
+                            d[model_class.selector_to_owner()[:-7]] = request.GET.get(model_class.fk_as_owner)
                         else:
                             d['owner'] = request.user
                         return d
