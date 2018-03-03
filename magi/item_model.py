@@ -26,7 +26,7 @@ def get_http_image_url_from_path(imagePath):
     if not imageURL:
         return None
     if 'http' not in imageURL:
-        imageURL = 'http:' + imageURL
+        imageURL = 'https:' + imageURL
     return imageURL
 
 def get_http_image_url(instance, image_name='image'):
@@ -290,7 +290,7 @@ def get_full_item_url(instance):
 def get_http_item_url(instance):
     url = get_full_item_url(instance)
     if url and 'http' not in url:
-        url = 'http:' + url
+        url = 'https:' + url
     return url
 
 def get_share_url(instance):
