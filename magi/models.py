@@ -478,7 +478,7 @@ class Notification(MagiModel):
     ]
     MESSAGES_DICT = dict(MESSAGES)
     MESSAGE_CHOICES = [(key, _message['title']) for key, _message in MESSAGES]
-    i_message = models.PositiveIntegerField(_('Notification type'), choices=i_choices(MESSAGE_CHOICES))
+    i_message = models.PositiveIntegerField('Notification type', choices=i_choices(MESSAGE_CHOICES))
 
     c_message_data = models.TextField(blank=True, null=True)
     c_url_data = models.TextField(blank=True, null=True)

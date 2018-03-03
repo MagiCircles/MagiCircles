@@ -870,7 +870,13 @@ class MagiCollection(object):
                 try:
                     headers.append((field_name, self.collection.queryset.model._meta.get_field(field_name).verbose_name))
                 except FieldDoesNotExist:
-                    headers.append((field_name, field_name.replace('_', ' ').title()))
+                    try:
+                        headers.append((field_name, self.collection.queryset.model._meta.get_field(u'i_{}'.format(field_name)).verbose_name))
+                    except FieldDoesNotExist:
+                        try:
+                            headers.append((field_name, self.collection.queryset.model._meta.get_field(u'c_{}'.format(field_name)).verbose_name))
+                        except FieldDoesNotExist:
+                            headers.append((field_name, field_name.replace('_', ' ').title()))
             return headers
 
         def table_fields_headers_sections(self, view=None):
