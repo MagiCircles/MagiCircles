@@ -1,9 +1,11 @@
+import json, datetime
 from collections import OrderedDict
 from django.db import models
 from django.db.models.fields import FieldDoesNotExist
 from django.conf import settings as django_settings
 from django.utils.translation import ugettext_lazy as _, get_language
-from magi.utils import tourldash, getMagiCollection, join_data, split_data
+from django.utils import timezone
+from magi.utils import tourldash, getMagiCollection, join_data, split_data, AttrDict
 
 ############################################################
 # Utils for images
@@ -206,6 +208,48 @@ class BaseMagiModel(models.Model):
         }
         return OrderedDict([(c, choices.get(c, c)) for c in values])
 
+    @classmethod
+    def cached_json_extra(self, field_name, d):
+        # Call pre if provided
+        if hasattr(self, u'cached_{}_pre'.format(field_name)):
+            getattr(self, u'cached_{}_pre'.format(field_name))(d)
+
+        # Add default unicode if missing
+        if 'unicode' not in d:
+            d['unicode'] = d['name'] if 'name' in d else (d['id'] if 'id' in d else '?')
+
+        # TODO try to add a way to call __unicode__ smooth
+
+        if 'id' in d:
+            d['pk'] = d['id']
+            # Set collection item URLs
+            collection_name = getattr(self, u'_cached_{}_collection_name'.format(field_name), field_name)
+            d['item_url'] = u'/{}/{}/{}/'.format(collection_name, d['id'], d['unicode'])
+            d['ajax_item_url'] = u'/ajax/{}/{}/'.format(collection_name, d['id'])
+            d['full_item_url'] = u'{}{}/{}/{}/'.format(django_settings.SITE_URL, collection_name, d['id'], d['unicode'])
+            d['http_item_url'] = 'https:{}'.format(d['full_item_url']) if 'http' not in d['full_item_url'] else d['full_item_url']
+
+        # Set image url helpers
+        if 'image' in d:
+            d['image_url'] = get_image_url_from_path(d['image'])
+            d['http_image_url'] = get_http_image_url_from_path(d['image'])
+
+        # Call extra if provided
+        if hasattr(self, u'cached_{}_extra'.format(field_name)):
+            getattr(self, u'cached_{}_extra'.format(field_name))(d)
+        return d
+
+    @classmethod
+    def get_cached_json(self, field_name, value):
+        if value is None: return None
+        d = json.loads(value)#getattr(self, '_cache_j_{}'.format(name))))
+        if value is None: return None
+        if isinstance(d, list):
+            d = map(lambda _d: AttrDict(self.cached_json_extra(field_name, _d)), d)
+        else:
+            d = AttrDict(self.cached_json_extra(field_name, d))
+        return d
+
     def add_c(self, field_name, to_add):
         """
         Add strings from a CSV formatted c_something
@@ -227,6 +271,20 @@ class BaseMagiModel(models.Model):
         Completely replace any existing CSV formatted list into c_something
         """
         setattr(self, 'c_{name}'.format(name=field_name), join_data(*c))
+
+    def force_update_cache(self, field_name):
+        self.update_cache(field_name)
+        self.save()
+
+    def update_cache(self, field_name):
+        to_cache_method = getattr(self, u'to_cache_{}'.format(field_name), None)
+        if not to_cache_method:
+            raise NotImplementedError(u'to_cache_{f} method is required for {f} cache'.format(f=field_name))
+        setattr(self, u'_cache_{}_last_update'.format(field_name), timezone.now())
+        value = to_cache_method()
+        if value is not None:
+            value = json.dumps(value)
+        setattr(self, u'_cache_j_{}'.format(field_name), value)
 
     def __getattr__(self, name):
         # For choice fields with name "i_something", accessing "something" returns the string value
@@ -253,6 +311,20 @@ class BaseMagiModel(models.Model):
             # When accessing "something" and "c_something" exists, returns the list of CSV values
             elif hasattr(self, 'c_{name}'.format(name=name)):
                 return type(self).get_csv_values(name, getattr(self, 'c_{name}'.format(name=name)), translated=False)
+
+        # Return cache
+        if name.startswith('cached_'):
+            field_name = name[7:]
+            # Accessing cached_something when _cache_j_something exists
+            if hasattr(self, '_cache_j_{}'.format(field_name)):
+                days = getattr(self, u'_cache_{}_days'.format(field_name), None)
+                if not days or not hasattr(self, u'_cache_{}_last_update'.format(field_name)):
+                    raise NotImplementedError(u'_cache_{f}_days and _cache_{f}_last_update fields are required for {f} cache'.format(f=field_name))
+                last_update = getattr(self, u'_cache_{}_last_update'.format(field_name), None)
+                if not last_update or last_update < timezone.now() - datetime.timedelta(days=days):
+                    self.force_update_cache(field_name)
+                return type(self).get_cached_json(field_name, getattr(self, '_cache_j_{}'.format(field_name)))
+
         raise AttributeError("%r object has no attribute %r" % (self.__class__, name))
 
     class Meta:

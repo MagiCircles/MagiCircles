@@ -5,6 +5,7 @@ from django.db import models
 from magi.utils import justReturn
 from magi.abstract_models import CacheOwner
 from magi.item_model import MagiModel, BaseMagiModel, i_choices
+from magi.utils import uploadItem
 
 class Account(MagiModel):
     collection_name = 'account'
@@ -145,3 +146,63 @@ class Paragraph(CacheOwner):
     @property
     def owner_id(self):
         return self.chapter.cached_owner.id
+
+class Idol(MagiModel):
+    collection_name = 'idol'
+
+    owner = models.ForeignKey(User, related_name='added_idols')
+    name = models.CharField(max_length=100, unique=True)
+    japanese_name = models.CharField(max_length=100, null=True)
+    image = models.ImageField(upload_to=uploadItem('idols'))
+
+class Card(MagiModel):
+    owner = models.ForeignKey(User, related_name='added_cards')
+
+    idol = models.ForeignKey(Idol, related_name='cards', null=True)
+
+    # Cache idol
+
+    _cache_idol_days = 10
+    _cache_idol_last_update = models.DateTimeField(null=True)
+    _cache_j_idol = models.TextField(null=True)
+
+    @classmethod
+    def cached_idols_pre(self, d):
+        d['unicode'] = d['japanese_name'] if get_language() == 'ja' else d['name']
+        return d
+
+    def to_cache_idol(self):
+        if not self.idol_id:
+            return None
+        return {
+            'id': self.idol.id,
+            'name': self.idol.name,
+            'japanese_name': self.idol.japanese_name,
+            'image': unicode(self.idol.image),
+        }
+
+    # Cache gachas
+
+    _cached_gachas_collection_name = 'gacha'
+    _cache_gachas_days = 20
+    _cache_gachas_last_update = models.DateTimeField(null=True)
+    _cache_j_gachas = models.TextField(null=True)
+
+    def to_cache_gachas(self):
+        gachas = []
+        for gacha in Gacha.objects.filter(card_id=self.id):
+            gachas.append({
+                'id': gacha.id,
+                'name': gacha.name,
+                'image': unicode(gacha.image),
+            })
+        return gachas if gachas else None
+
+class Gacha(MagiModel):
+    collection_name = 'gacha'
+
+    owner = models.ForeignKey(User, related_name='added_gachas')
+    name = models.CharField(max_length=100, unique=True)
+    image = models.ImageField(upload_to=uploadItem('gacha'))
+
+    card = models.ForeignKey(Card, related_name='gachas', null=True)
