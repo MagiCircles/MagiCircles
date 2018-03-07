@@ -209,6 +209,24 @@ class BaseMagiModel(models.Model):
         return OrderedDict([(c, choices.get(c, c)) for c in values])
 
     @classmethod
+    def get_dict_values(self, field_name, values, translated):
+        if not values: return {}
+        d = json.loads(values)
+        if not translated:
+            return d
+        choices = {
+            (choice[0] if isinstance(choice, tuple) else choice):
+            (choice[1] if isinstance(choice, tuple) else _(choice))
+            for choice in getattr(self, u'{name}_CHOICES'.format(name=field_name.upper()), [])
+        }
+        return {
+            key: {
+                'value': value,
+                'verbose': choices.get(key, key),
+            } for key, value in d.items()
+        }
+
+    @classmethod
     def cached_json_extra(self, field_name, d):
         # Call pre if provided
         if hasattr(self, u'cached_{}_pre'.format(field_name)):
@@ -242,7 +260,7 @@ class BaseMagiModel(models.Model):
     @classmethod
     def get_cached_json(self, field_name, value):
         if value is None: return None
-        d = json.loads(value)#getattr(self, '_cache_j_{}'.format(name))))
+        d = json.loads(value)
         if value is None: return None
         if isinstance(d, list):
             d = map(lambda _d: AttrDict(self.cached_json_extra(field_name, _d)), d)
@@ -272,6 +290,19 @@ class BaseMagiModel(models.Model):
         """
         setattr(self, 'c_{name}'.format(name=field_name), join_data(*c))
 
+    def add_d(self, field_name, key, value):
+        current_d = getattr(self, field_name)
+        current_d[key] = value
+        setattr(self, u'd_{name}'.format(name=field_name), json.dumps(current_d))
+
+    def remove_d(self, field_name, key):
+        current_d = getattr(self, field_name)
+        del(current_d[key])
+        setattr(self, u'd_{name}'.format(name=field_name), json.dumps(current_d) if current_d else None)
+
+    def save_d(self, field_name, d):
+        setattr(self, u'd_{name}'.format(name=field_name), json.dumps(d) if d else None)
+
     def force_update_cache(self, field_name):
         self.update_cache(field_name)
         self.save()
@@ -288,7 +319,7 @@ class BaseMagiModel(models.Model):
 
     def __getattr__(self, name):
         # For choice fields with name "i_something", accessing "something" returns the string value
-        if not name.startswith('_') and not name.startswith('i_') and not name.startswith('c_'):
+        if not name.startswith('_') and not name.startswith('i_') and not name.startswith('c_') and not name.startswith('d_'):
             # When accessing "something" and "i_something exists, return the readable key for the choice
             if hasattr(self, u'i_{name}'.format(name=name)):
                 return type(self).get_reverse_i(name, getattr(self, u'i_{name}'.format(name=name)))
@@ -301,6 +332,9 @@ class BaseMagiModel(models.Model):
                 # For a CSV value: return dict {value: translated value}
                 elif hasattr(self, 'c_{name}'.format(name=name)):
                     return type(self).get_csv_values(name, getattr(self, name))
+                # For a dict: return dict {key: {'value': value, 'verbose': translation}}
+                elif hasattr(self, u'd_{name}'.format(name=name)):
+                    return type(self).get_dict_values(name, getattr(self, u'd_{name}'.format(name=name)), translated=True)
             # When accessing "something_url" for an image, return the url
             elif name.endswith('_url'):
                 field_name = name.replace('http_', '')[:-4]
@@ -311,6 +345,9 @@ class BaseMagiModel(models.Model):
             # When accessing "something" and "c_something" exists, returns the list of CSV values
             elif hasattr(self, 'c_{name}'.format(name=name)):
                 return type(self).get_csv_values(name, getattr(self, 'c_{name}'.format(name=name)), translated=False)
+            # When accessing "something" and "d_something" exists, returns the dict
+            elif hasattr(self, 'd_{name}'.format(name=name)):
+                return type(self).get_dict_values(name, getattr(self, u'd_{name}'.format(name=name)), translated=False)
 
         # Return cache
         if name.startswith('cached_'):

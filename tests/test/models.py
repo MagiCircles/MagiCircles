@@ -1,6 +1,6 @@
 from collections import OrderedDict
 from django.contrib.auth.models import User
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy as _, get_language
 from django.db import models
 from magi.utils import justReturn
 from magi.abstract_models import CacheOwner
@@ -206,3 +206,27 @@ class Gacha(MagiModel):
     image = models.ImageField(upload_to=uploadItem('gacha'))
 
     card = models.ForeignKey(Card, related_name='gachas', null=True)
+
+class TranslatedNames(BaseMagiModel):
+    # With choices, translatable
+    NAMES_CHOICES = (
+        ('ja', _('Japanese')),
+        ('ru', _('Russian')),
+        ('zh-hans', _('Chinese')),
+    )
+    d_names = models.TextField(null=True)
+
+    @property
+    def name(self):
+        return self.names.get(get_language(), 'Maria')
+
+    # With choices but not translation
+    COLOR_CHOICES = (
+        'blue',
+        'green',
+        'red',
+    )
+    d_colors = models.TextField(null=True)
+
+    # No choices
+    d_items = models.TextField(null=True)
