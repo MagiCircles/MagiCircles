@@ -17,10 +17,7 @@ from magi.utils import redirectWhenNotAuthenticated
 # Load dynamic module based on SITE
 
 views_module = __import__(settings.SITE + '.views', fromlist=[''])
-try:
-    custom_magicollections_module = __import__(settings.SITE + '.magicollections', fromlist=['']).__dict__
-except ImportError:
-    custom_magicollections_module = {}
+custom_magicollections_module = __import__(settings.SITE + '.magicollections', fromlist=['']).__dict__
 
 ############################################################
 # Vatiables
