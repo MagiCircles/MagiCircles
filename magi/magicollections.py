@@ -529,6 +529,12 @@ class MagiCollection(object):
                 value = getattr(item, u't_{}'.format(field_name)).values()
                 if not value:
                     continue
+            if field_name.startswith('d_'):
+                field_name = field_name[2:]
+                value = getattr(item, u't_{}'.format(field_name)).values()
+                value = mark_safe(u'<dl>{}</dl>'.format(u''.join([u'<dt>{verbose}</dt><dd>{value}</dd>'.format(**dt) for dt in value])))
+                if not value:
+                    continue
             is_foreign_key = (isinstance(field, models.models.ForeignKey)
                               or isinstance(field, models.models.OneToOneField))
             if not value and not is_foreign_key:
