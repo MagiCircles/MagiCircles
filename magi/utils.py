@@ -68,6 +68,7 @@ def globalContext(request):
     context['request'] = request
     context['javascript_translated_terms_json'] = simplejson.dumps({ term: unicode(_(term)) for term in context['javascript_translated_terms']})
     context['localized_language'] = LANGUAGES_DICT.get(get_language(), '')
+    context['current_language'] = get_language()
     if '/ajax/' not in context['current_url']:
         context['ajax'] = False
         cuteFormFieldsForContext({
