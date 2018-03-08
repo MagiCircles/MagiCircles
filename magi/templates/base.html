@@ -16,6 +16,7 @@
     {% else %}
     <link rel="stylesheet" href="{{ static_url }}css/style.css?{{ static_files_version }}">
     {% endif %}
+    {% block extracss %}{% endblock %}{% if extracss %}<style>{{ extracss|safe }}</style>{% endif %}
 
     <meta property="og:image" content="{% block shareimage %}{% if share_image %}{{ share_image }}{% else %}{{ full_site_image }}{% endif %}{% endblock %}"/>
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
