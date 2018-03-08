@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy as _, string_concat
 
 please_understand_template_sentence = 'Please understand that we have a very young audience, so we have to be very careful with what appears on our website.'
 
@@ -37,14 +37,8 @@ other_sites = [
     },
     {
         'name': 'Bandori Party',
-        'game_name': _('BanG Dream! Girls Band Party'),
+        'game_name': string_concat(_('BanG Dream!'), _('Girls Band Party')),
         'image': 'http://i.bandori.party/static/img/avatar.png',
         'url': 'http://bandori.party/',
-    },
-    {
-        'name': 'fr.gl',
-        'game_name': 'Glee Forever',
-        'image': 'http://fr.gl/static/img/avatar.png',
-        'url': 'http://fr.gl/',
     },
 ]
