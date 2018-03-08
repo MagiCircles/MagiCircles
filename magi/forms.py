@@ -105,6 +105,7 @@ class MagiForm(forms.ModelForm):
         super(MagiForm, self).__init__(*args, **kwargs)
         self.is_creating = not hasattr(self, 'instance') or not self.instance.pk
         self.c_choices = []
+        self.d_choices = {}
         self.hidden_foreign_keys_querysets = {}
         # If is creating and item is unique per owner, redirect to edit unique
         if self.is_creating and self.collection and not isinstance(self, MagiFiltersForm) and not self.Meta.model.fk_as_owner and self.collection.add_view.unique_per_owner:
@@ -155,6 +156,22 @@ class MagiForm(forms.ModelForm):
                         if not self.is_creating:
                             # Set the value in the object to the list to pre-select the right options
                             setattr(self.instance, name, getattr(self.instance, name[2:]))
+            # Add fields for d_ dict choices
+            elif name.startswith('d_') and not isinstance(self, MagiFiltersForm):
+                choices = getattr(self.Meta.model, u'{name}_CHOICES'.format(name=name[2:].upper()), None)
+                if choices is not None:
+                    self.d_choices[name] = []
+                    for choice in choices:
+                        key = choice[0] if isinstance(choice, tuple) else choice
+                        field_name = u'{}-{}'.format(name, key)
+                        self.d_choices[name].append((field_name, key))
+                        self.fields[field_name] = forms.CharField(
+                            required=False,
+                            label=u'{}: {}'.format(self.fields[name].label, choice[1] if isinstance(choice, tuple) else choice),
+                            initial=getattr(self.instance, name[2:]).get(key, None) if not self.is_creating else None,
+                        )
+                    del(self.fields[name])
+            # Make fields with soft choices use a ChoiceField
             elif getattr(self.Meta.model, u'{name}_SOFT_CHOICES'.format(name=name[2:].upper()), False):
                 choices = getattr(self.Meta.model, '{name}_CHOICES'.format(name=name[2:].upper()), None)
                 if choices is not None:
@@ -208,6 +225,13 @@ class MagiForm(forms.ModelForm):
         # Save owner on creation if specified
         if hasattr(self.Meta, 'save_owner_on_creation') and self.Meta.save_owner_on_creation and self.is_creating:
             instance.owner = self.request.user if self.request.user.is_authenticated() else None
+        # Save d_ dict choices
+        for dfield, choices in self.d_choices.items():
+            d = {}
+            for field, key in choices:
+                if self.cleaned_data[field]:
+                    d[key] = self.cleaned_data[field]
+            instance.save_d(dfield[2:], d)
         for field in self.fields.keys():
             # Fix empty strings to None
             if (hasattr(instance, field)
