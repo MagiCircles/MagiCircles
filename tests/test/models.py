@@ -209,16 +209,13 @@ class Gacha(MagiModel):
 
 class TranslatedNames(BaseMagiModel):
     # With choices, translatable
+    name = models.CharField(max_length=100)
     NAMES_CHOICES = (
         ('ja', _('Japanese')),
         ('ru', _('Russian')),
         ('zh-hans', _('Chinese')),
     )
     d_names = models.TextField(null=True)
-
-    @property
-    def name(self):
-        return self.names.get(get_language(), 'Maria')
 
     # With choices but not translation
     COLOR_CHOICES = (

@@ -5,7 +5,7 @@ from test import models
 
 class ItemModelDict(TestCase):
     def setUp(self):
-        self.item = models.TranslatedNames()
+        self.item = models.TranslatedNames(name='Maria')
 
     def test_empty(self):
         self.assertEqual(self.item.names, {})
@@ -78,13 +78,15 @@ class ItemModelDict(TestCase):
             },
         })
 
-    def test_name_attr(self):
+    def test_t_something_single(self):
         old_lang = get_language()
         self.item.save_d('names', {'ja': u'マリア', 'ru': u'Мария'})
         activate_language('ja')
-        self.assertEqual(self.item.name, u'マリア')
+        self.assertEqual(self.item.t_name, u'マリア')
         activate_language('ru')
-        self.assertEqual(self.item.name, u'Мария')
+        self.assertEqual(self.item.t_name, u'Мария')
+        activate_language('zh-hans')
+        self.assertEqual(self.item.t_name, u'Maria')
         activate_language('en')
-        self.assertEqual(self.item.name, u'Maria')
+        self.assertEqual(self.item.t_name, u'Maria')
         activate_language(old_lang)

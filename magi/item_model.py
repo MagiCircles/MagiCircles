@@ -335,6 +335,9 @@ class BaseMagiModel(models.Model):
                 # For a dict: return dict {key: {'value': value, 'verbose': translation}}
                 elif hasattr(self, u'd_{name}'.format(name=name)):
                     return type(self).get_dict_values(name, getattr(self, u'd_{name}'.format(name=name)), translated=True)
+                # For a dict, if no _s exists: return value for language
+                elif hasattr(self, u'd_{}s'.format(name)) and hasattr(self, name):
+                    return getattr(self, u't_{name}s'.format(name=name)).get(get_language(), { 'value': getattr(self, name) })['value']
             # When accessing "something_url" for an image, return the url
             elif name.endswith('_url'):
                 field_name = name.replace('http_', '')[:-4]
