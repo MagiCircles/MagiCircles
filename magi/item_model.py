@@ -245,7 +245,7 @@ class BaseMagiModel(models.Model):
             d['item_url'] = u'/{}/{}/{}/'.format(collection_name, d['id'], d['unicode'])
             d['ajax_item_url'] = u'/ajax/{}/{}/'.format(collection_name, d['id'])
             d['full_item_url'] = u'{}{}/{}/{}/'.format(django_settings.SITE_URL, collection_name, d['id'], d['unicode'])
-            d['http_item_url'] = 'https:{}'.format(d['full_item_url']) if 'http' not in d['full_item_url'] else d['full_item_url']
+            d['http_item_url'] = u'https:{}'.format(d['full_item_url']) if 'http' not in d['full_item_url'] else d['full_item_url']
 
         # Set image url helpers
         if 'image' in d:
