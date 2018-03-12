@@ -167,11 +167,14 @@ class MagiCollection(object):
                 queryset = queryset.extra(select=a)
         return queryset
 
-    def form_class(self, request, context):
-        class AutoForm(forms.AutoForm):
+    def to_form_class(self):
+        class _Form(forms.AutoForm):
             class Meta:
                 model = self.queryset.model
-        return AutoForm
+        self._form_class = _Form
+
+    def form_class(self, request, context):
+        return self._form_class
 
     def collectible_to_class(self, model_class):
         """
@@ -462,6 +465,8 @@ class MagiCollection(object):
     report_allow_edit = True
     report_allow_delete = True
 
+    translated_fields = None
+
     @property
     def plural_name(self):
         return '{}s'.format(self.name)
@@ -636,6 +641,7 @@ class MagiCollection(object):
     show_item_buttons_in_one_line = True
     show_edit_button = True
     show_edit_button_superuser_only = False
+    show_translate_button = True
     show_report_button = True
     show_collect_button = True # Can also be a dictionary when multiple collectibles
 
@@ -658,7 +664,7 @@ class MagiCollection(object):
                 'ajax_title': False, # By default will use title
                 'classes': (view.item_buttons_classes
                             + (['btn-block'] if not view.show_item_buttons_in_one_line else [])),
-            }) for button_name in self.collectible_collections.keys() + ['edit', 'report']
+            }) for button_name in self.collectible_collections.keys() + ['edit', 'translate', 'report']
         ])
         # Collectible buttons
         for name, collectible_collection in self.collectible_collections.items():
@@ -760,6 +766,14 @@ class MagiCollection(object):
                      or not item.is_owner(request.user))
                     and not view.staff_required):
                     buttons['edit']['classes'].append('staff-only')
+        # Translation button
+        if self.translated_fields:
+            buttons['translate'] = buttons['edit'].copy()
+            buttons['translate']['title'] = unicode(_('Edit {}')).format(unicode(_('Translations')).lower())
+            buttons['translate']['icon'] = 'world'
+            buttons['translate']['url'] = u'{}{}translate'.format(buttons['translate']['url'], '&' if '?' in buttons['translate']['url'] else '?')
+            if 'ajax_url' in buttons['translate']['url']:
+                buttons['translate']['ajax_url'] = u'{}{}translate'.format(buttons['translate']['ajax_url'], '&' if '?' in buttons['translate']['ajax_url'] else '?')
         # Report buttons
         if self.reportable:
             buttons['report']['show'] = view.show_report_button
@@ -839,6 +853,7 @@ class MagiCollection(object):
         show_item_buttons_in_one_line = property(propertyFromCollection('show_item_buttons_in_one_line'))
         show_edit_button = property(propertyFromCollection('show_edit_button'))
         show_edit_button_superuser_only = property(propertyFromCollection('show_edit_button_superuser_only'))
+        show_translate_button = property(propertyFromCollection('show_translate_button'))
         show_report_button = property(propertyFromCollection('show_report_button'))
         show_collect_button = property(propertyFromCollection('show_collect_button'))
 
@@ -989,6 +1004,7 @@ class MagiCollection(object):
             return True if self.template == 'default' else self.collection.show_item_buttons_as_icons
         show_edit_button = property(propertyFromCollection('show_edit_button'))
         show_edit_button_superuser_only = property(propertyFromCollection('show_edit_button_superuser_only'))
+        show_translate_button = property(propertyFromCollection('show_translate_button'))
         show_report_button = property(propertyFromCollection('show_report_button'))
         show_collect_button = property(propertyFromCollection('show_collect_button'))
         # Note: if you use the 'default' template, the following 2 will be ignored:
@@ -1111,6 +1127,12 @@ class MagiCollection(object):
             if str(type(self.collection.form_class)) == '<type \'instancemethod\'>':
                 return self.collection.form_class(request, context)
             return self.collection.form_class
+
+        def to_translate_form_class(self):
+            self._translate_form_class = forms.to_translate_form_class(self)
+
+        def translate_form_class(self, request, context):
+            return self._translate_form_class
 
         def redirect_after_edit(self, request, item, ajax):
             if self.collection.item_view.enabled:

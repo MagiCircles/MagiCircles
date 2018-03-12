@@ -362,7 +362,11 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
     instance = get_one_object_or_404(queryset, **collection.edit_view.get_item(request, pk))
     context['type'] = None
     collection.edit_view.check_owner_permissions(request, context, instance)
-    if collection.types:
+    isTranslate = 'translate' in request.GET
+    if isTranslate:
+        formClass = collection.edit_view.translate_form_class
+        context['icontitle'] = 'world'
+    elif collection.types:
         type = instance.type
         context['type'] = type
         formClass = collection.types[type].get('form_class', collection.edit_view.form_class)
@@ -374,7 +378,7 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
         context['icontitle'] = collection.icon
     if str(_type(formClass)) == '<type \'instancemethod\'>':
         formClass = formClass(request, context)
-    allowDelete = collection.edit_view.allow_delete and 'disable_delete' not in request.GET
+    allowDelete = not isTranslate and collection.edit_view.allow_delete and 'disable_delete' not in request.GET
     form = formClass(instance=instance, request=request, ajax=ajax, collection=collection)
     if allowDelete:
         formDelete = ConfirmDelete(initial={
@@ -394,7 +398,7 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
             instance = form.save(commit=False)
             instance = collection.edit_view.before_save(request, instance)
             instance.save()
-            if collection.edit_view.savem2m:
+            if collection.edit_view.savem2m and not isTranslate:
                 form.save_m2m()
             instance = collection.edit_view.after_save(request, instance)
             redirectURL = collection.edit_view.redirect_after_edit(request, instance, ajax)

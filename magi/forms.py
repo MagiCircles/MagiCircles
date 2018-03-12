@@ -160,16 +160,17 @@ class MagiForm(forms.ModelForm):
             elif name.startswith('d_') and not isinstance(self, MagiFiltersForm):
                 choices = getattr(self.Meta.model, u'{name}_CHOICES'.format(name=name[2:].upper()), None)
                 if choices is not None:
-                    self.d_choices[name] = []
-                    for choice in choices:
-                        key = choice[0] if isinstance(choice, tuple) else choice
-                        field_name = u'{}-{}'.format(name, key)
-                        self.d_choices[name].append((field_name, key))
-                        self.fields[field_name] = forms.CharField(
-                            required=False,
-                            label=u'{}: {}'.format(self.fields[name].label, choice[1] if isinstance(choice, tuple) else choice),
-                            initial=getattr(self.instance, name[2:]).get(key, None) if not self.is_creating else None,
-                        )
+                    if not self.collection.translated_fields or name[2:-1] not in self.collection.translated_fields:
+                        self.d_choices[name] = []
+                        for choice in choices:
+                            key = choice[0] if isinstance(choice, tuple) else choice
+                            field_name = u'{}-{}'.format(name, key)
+                            self.d_choices[name].append((field_name, key))
+                            self.fields[field_name] = forms.CharField(
+                                required=False,
+                                label=u'{}: {}'.format(self.fields[name].label, choice[1] if isinstance(choice, tuple) else choice),
+                                initial=getattr(self.instance, name[2:]).get(key, None) if not self.is_creating else None,
+                            )
                     del(self.fields[name])
             # Make fields with soft choices use a ChoiceField
             elif getattr(self.Meta.model, u'{name}_SOFT_CHOICES'.format(name=name[2:].upper()), False):
@@ -274,6 +275,38 @@ class AutoForm(MagiForm):
             if (field.startswith('_')
                 or field == 'owner'):
                 del(self.fields[field])
+
+############################################################
+# Translate form
+
+def to_translate_form_class(view):
+    if not view.collection.translated_fields:
+        return None
+    class _TranslateForm(MagiForm):
+        def __init__(self, *args, **kwargs):
+            super(_TranslateForm, self).__init__(*args, **kwargs)
+            self.d_choices = {}
+            for name in view.collection.translated_fields:
+                choices = getattr(self.Meta.model, u'{name}S_CHOICES'.format(name=name.upper()), None)
+                if choices is not None:
+                    self.d_choices[name] = []
+                    for choice in choices:
+                        key = choice[0] if isinstance(choice, tuple) else choice
+                        field_name = u'{}-{}'.format(name, key)
+                        self.d_choices[name].append((field_name, key))
+                        self.fields[field_name] = forms.CharField(
+                            required=False,
+                            label=u'{}: {}'.format(self.Meta.model._meta.get_field(u'd_{}s'.format(name)).verbose_name, choice[1] if isinstance(choice, tuple) else choice),
+                            initial=getattr(self.instance, u'{}s'.format(name)).get(key, None),
+                        )
+                        default = getattr(self.instance, name, None)
+                        if default:
+                            self.fields[field_name].help_text = u'{}: {}'.format(_('Default'), default)
+            # TODO find a way to only show languages translators can speak
+        class Meta:
+            model = view.collection.queryset.model
+            fields = []
+    return _TranslateForm
 
 ############################################################
 # MagiFiltersForm

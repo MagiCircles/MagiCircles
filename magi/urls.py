@@ -89,6 +89,8 @@ def _addToCollections(name, cls): # Class of the collection
     collection.item_view = collection.ItemView(collection)
     collection.add_view = collection.AddView(collection)
     collection.edit_view = collection.EditView(collection)
+    collection.to_form_class()
+    collection.edit_view.to_translate_form_class()
     if not launched:
         for view in ['list', 'item', 'add', 'edit']:
             getattr(collection, view + '_view').staff_required = True
