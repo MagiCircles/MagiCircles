@@ -160,12 +160,12 @@ class MagiForm(forms.ModelForm):
             elif name.startswith('d_') and not isinstance(self, MagiFiltersForm):
                 choices = getattr(self.Meta.model, u'{name}_CHOICES'.format(name=name[2:].upper()), None)
                 if choices is not None:
-                    if not self.collection.translated_fields or name[2:-1] not in self.collection.translated_fields:
-                        self.d_choices[name] = []
+                    if not self.collection.translated_fields or name[2:-1] not in self.collection.translated_fields or getattr(self, 'is_translate_form', False):
+                        self.d_choices[name[2:]] = []
                         for choice in choices:
                             key = choice[0] if isinstance(choice, tuple) else choice
                             field_name = u'{}-{}'.format(name, key)
-                            self.d_choices[name].append((field_name, key))
+                            self.d_choices[name[2:]].append((field_name, key))
                             self.fields[field_name] = forms.CharField(
                                 required=False,
                                 label=u'{}: {}'.format(self.fields[name].label, choice[1] if isinstance(choice, tuple) else choice),
@@ -232,7 +232,7 @@ class MagiForm(forms.ModelForm):
             for field, key in choices:
                 if self.cleaned_data[field]:
                     d[key] = self.cleaned_data[field]
-            instance.save_d(dfield[2:], d)
+            instance.save_d(dfield, d)
         for field in self.fields.keys():
             # Fix empty strings to None
             if (hasattr(instance, field)
@@ -284,28 +284,12 @@ def to_translate_form_class(view):
         return None
     class _TranslateForm(MagiForm):
         def __init__(self, *args, **kwargs):
+            self.is_translate_form = True
             super(_TranslateForm, self).__init__(*args, **kwargs)
-            self.d_choices = {}
-            for name in view.collection.translated_fields:
-                choices = getattr(self.Meta.model, u'{name}S_CHOICES'.format(name=name.upper()), None)
-                if choices is not None:
-                    self.d_choices[name] = []
-                    for choice in choices:
-                        key = choice[0] if isinstance(choice, tuple) else choice
-                        field_name = u'{}-{}'.format(name, key)
-                        self.d_choices[name].append((field_name, key))
-                        self.fields[field_name] = forms.CharField(
-                            required=False,
-                            label=u'{}: {}'.format(self.Meta.model._meta.get_field(u'd_{}s'.format(name)).verbose_name, choice[1] if isinstance(choice, tuple) else choice),
-                            initial=getattr(self.instance, u'{}s'.format(name)).get(key, None),
-                        )
-                        default = getattr(self.instance, name, None)
-                        if default:
-                            self.fields[field_name].help_text = u'{}: {}'.format(_('Default'), default)
             # TODO find a way to only show languages translators can speak
         class Meta:
             model = view.collection.queryset.model
-            fields = []
+            fields = [u'd_{}s'.format(_n) for _n in view.collection.translated_fields] if view.collection.translated_fields else []
     return _TranslateForm
 
 ############################################################

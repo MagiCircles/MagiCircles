@@ -1,7 +1,7 @@
 import string, datetime, random
 from collections import OrderedDict
 from stringcase import snakecase
-from django.utils.translation import ugettext_lazy as _, string_concat
+from django.utils.translation import ugettext_lazy as _, string_concat, get_language
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.utils.formats import dateformat
@@ -536,10 +536,18 @@ class MagiCollection(object):
                     continue
             if field_name.startswith('d_'):
                 field_name = field_name[2:]
+                # Skip translated strings
+                if self.translated_fields and field_name.endswith('s') and field_name[:-1] in self.translated_fields:
+                    continue
+                # Show dictionary
                 value = getattr(item, u't_{}'.format(field_name)).values()
                 value = mark_safe(u'<dl>{}</dl>'.format(u''.join([u'<dt>{verbose}</dt><dd>{value}</dd>'.format(**dt) for dt in value])))
                 if not value:
                     continue
+            if self.translated_fields and field_name in self.translated_fields:
+                value = getattr(item, u't_{}'.format(field_name), None)
+                if get_language() != 'en' and not getattr(item, u'{}s'.format(field_name), {}).get(get_language(), None):
+                    value = mark_safe(u'<a href="https://translate.google.com/#en/{to}/{value}" target="_blank">{value} <i class="flaticon-link"></i></a>'.format(to=get_language(), value=value))
             is_foreign_key = (isinstance(field, models.models.ForeignKey)
                               or isinstance(field, models.models.OneToOneField))
             if not value and not is_foreign_key:
@@ -772,6 +780,7 @@ class MagiCollection(object):
             buttons['translate']['title'] = unicode(_('Edit {}')).format(unicode(_('Translations')).lower())
             buttons['translate']['icon'] = 'world'
             buttons['translate']['url'] = u'{}{}translate'.format(buttons['translate']['url'], '&' if '?' in buttons['translate']['url'] else '?')
+            buttons['translate']['ajax_url'] = u'{}{}translate'.format(buttons['translate']['ajax_url'], '&' if '?' in buttons['translate']['ajax_url'] else '?')
             if 'ajax_url' in buttons['translate']['url']:
                 buttons['translate']['ajax_url'] = u'{}{}translate'.format(buttons['translate']['ajax_url'], '&' if '?' in buttons['translate']['ajax_url'] else '?')
         # Report buttons
