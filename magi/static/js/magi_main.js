@@ -57,9 +57,16 @@ var staff_buttons_hidden = true;
 function hideStaffButtons(show) {
     if (show) {
         $('.staff-only').show();
+        $('.staff-only').closest('.btn-group').each(function () {
+            $(this).find('.btn:not(.staff-only)').last().css('border-top-right-radius', 0).css('border-bottom-right-radius', 0);
+        })
         staff_buttons_hidden = false;
     } else {
         $('.staff-only').hide();
+        $('.staff-only').closest('.btn-group').each(function () {
+            var radius = $(this).find('.btn:not(.staff-only)').first().css('border-top-left-radius');
+            $(this).find('.btn:not(.staff-only)').last().css('border-top-right-radius', radius).css('border-bottom-right-radius', radius);
+        })
         staff_buttons_hidden = true;
     }
 }
