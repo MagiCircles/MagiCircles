@@ -287,7 +287,7 @@ def to_translate_form_class(view):
             self.is_translate_form = True
             super(_TranslateForm, self).__init__(*args, **kwargs)
             # TODO find a way to only show languages translators can speak
-        class Meta:
+        class Meta(MagiForm.Meta):
             model = view.collection.queryset.model
             fields = [u'd_{}s'.format(_n) for _n in view.collection.translated_fields] if view.collection.translated_fields else []
     return _TranslateForm
