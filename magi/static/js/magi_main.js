@@ -168,6 +168,10 @@ function ajaxModals() {
             loader.css('line-height', smaller + 'px');
             loader.css('font-size', (smaller - (smaller * 0.4)) + 'px');
             $.get(button.data('ajax-url'), function(data) {
+                if (data && data.indexOf('<!DOCTYPE html>') !== -1) {
+                    window.location.href = button.data('ajax-url').replace('/ajax/', '/');
+                    return false;
+                }
                 button.css('display', button_display);
                 button.html(button_content);
                 var title = button.data('ajax-title');
