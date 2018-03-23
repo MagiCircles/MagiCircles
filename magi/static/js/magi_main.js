@@ -488,7 +488,7 @@ function directAddCollectible(buttons, uniquePerOwner) {
 // Items reloaders
 
 function itemsReloaders() {
-    if (typeof ids_to_reload != 'undefined') {
+    if (typeof ajax_reloaders != 'undefined') {
         $.each(reload_urls_start_with, function(index, url_start_with) {
             $('[href^="' + url_start_with + '"]:not(.reload-handler)').click(function(e) {
                 var item_id = $(this).closest('[data-item-id]').data('item-id');
@@ -497,6 +497,9 @@ function itemsReloaders() {
             });
         });
     }
+
+    return ;
+    // TO DO
     if (typeof reload_item != 'undefined') {
         $.each(reload_urls_start_with, function(index, url_start_with) {
             $('[href^="' + url_start_with + '"]:not(.reload-item-handler)').click(function(e) {
@@ -507,47 +510,47 @@ function itemsReloaders() {
     }
 }
 
-var reloaderLocation;
-
 function modalItemsReloaders() {
-    if (typeof ids_to_reload != 'undefined') {
-        reloaderLocation = location.search;
-        $('.modal').on('hidden.bs.modal', function(e) {
-            ids_to_reload = $.unique(ids_to_reload);
-            if (ids_to_reload.length > 0) {
-                $.get(ajax_reload_url + reloaderLocation + (reloaderLocation == '' ? '?' : '&') + 'ids=' + ids_to_reload.join(',')
-                    + '&page_size=' + ids_to_reload.length, function(data) {
-                        var html = $(data);
-                        $.each(ids_to_reload, function(index, id) {
-                            var previous_item = $('[data-item="' + reload_data_item + '"][data-item-id="' + id + '"]');
-                            var new_item = html.find('[data-item="' + reload_data_item + '"][data-item-id="' + id + '"]');
-                            if (new_item.length == 0) {
-                                // If not returned, remove it
-                                previous_item.remove();
-                            } else {
-                                // Replace element
-                                previous_item.replaceWith(new_item);
-                            }
-                        });
-                        ids_to_reload = [];
-                        if (ajax_pagination_callback) {
-                            ajax_pagination_callback();
-                        }
+    if (typeof ajax_reloaders != 'undefined') {
+        $.each(ajax_reloaders, function (data_item, reloader) {
+            $('.modal').on('hidden.bs.modal', function(e) {
+                ids_to_reload = $.unique(reloader.ids_to_reload);
+                if (ids_to_reload.length > 0) {
+                    $.get(reloader.reload_url + 'ids=' + ids_to_reload.join(',')
+                          + '&page_size=' + ids_to_reload.length, function(data) {
+                              var html = $(data);
+                              $.each(ids_to_reload, function(index, id) {
+                                  var previous_item = $('[data-item="' + data_item + '"][data-item-id="' + id + '"]');
+                                  var new_item = html.find('[data-item="' + data_item + '"][data-item-id="' + id + '"]');
+                                  if (new_item.length == 0) {
+                                      // If not returned, remove it
+                                      previous_item.remove();
+                                  } else {
+                                      // Replace element
+                                      previous_item.replaceWith(new_item);
+                                  }
+                              });
+                              ids_to_reload = [];
+                              if (reloader.pagination_callback) {
+                                  reloader.pagination_callback();
+                              }
+                              loadCommons();
+                          });
+                }
+            });
+        });
+        return ;
+        if (typeof reload_item != 'undefined') {
+            $('.modal').on('hidden.bs.modal', function(e) {
+                if (reload_item === true) {
+                    $.get(ajax_reload_url, function(data) {
+                        $('.item-container').html(data);
+                        reload_item = false;
                         loadCommons();
                     });
-            }
-        });
-    }
-    if (typeof reload_item != 'undefined') {
-        $('.modal').on('hidden.bs.modal', function(e) {
-            if (reload_item === true) {
-                $.get(ajax_reload_url, function(data) {
-                    $('.item-container').html(data);
-                    reload_item = false;
-                    loadCommons();
-                });
-            }
-        });
+                }
+            });
+        }
     }
 }
 

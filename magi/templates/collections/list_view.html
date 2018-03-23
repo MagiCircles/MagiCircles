@@ -35,11 +35,19 @@
 </script>
 {% endif %}
 <script>
-  var ajax_reload_url = '{{ ajax_reload_url }}';
-  var ajax_pagination_callback = {{ ajax_pagination_callback|default_if_none:'null' }};
-  var reload_data_item = '{{ collection.name }}';
-  var reload_urls_start_with = [{% for url in reload_urls_start_with %}'{{ url }}', {% endfor %}];
-  var ids_to_reload = [];
+  var ajax_reloaders = {
+      '{{ collection.name }}': {
+          reload_url: '{{ ajax_reload_url }}{% if '?' in ajax_reload_url %}&{% else %}?{% endif %}{{ request.GET.urlencode }}',
+          pagination_callback: {{ ajax_pagination_callback|default_if_none:'null' }},
+          urls_start_with: [{% for url in reload_urls_start_with %}'{{ url }}', {% endfor %}],
+          ids_to_reload: [],
+      },
+  };
+  // var ajax_reload_url = '{{ ajax_reload_url }}';
+  // var ajax_pagination_callback = {{ ajax_pagination_callback|default_if_none:'null' }};
+  // var reload_data_item = '{{ collection.name }}';
+  // var reload_urls_start_with = [{% for url in reload_urls_start_with %}'{{ url }}', {% endfor %}];
+  // var ids_to_reload = [];
 </script>
 {% endblock %}
 
