@@ -2044,7 +2044,7 @@ class DonateCollection(MagiCollection):
         page_size = 1
         per_line = 1
         default_ordering = '-date'
-        show_title = True
+        show_title = False
         show_edit_button_superuser_only = True
         show_add_button_superuser_only = True
         before_template = 'include/donate'
