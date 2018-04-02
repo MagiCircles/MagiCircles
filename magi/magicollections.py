@@ -975,9 +975,12 @@ class MagiCollection(object):
             return self.collection.plural_title
 
         @property
+        def plain_default_ordering_list(self):
+            return [o[1:] if o.startswith('-') else o for o in self.default_ordering.split(',')]
+
+        @property
         def plain_default_ordering(self):
-            default_ordering = self.default_ordering.split(',')[0]
-            return default_ordering[1:] if default_ordering.startswith('-') else default_ordering
+            return self.plain_default_ordering_list[0]
 
     class ItemView(_View):
         view = 'item_view'

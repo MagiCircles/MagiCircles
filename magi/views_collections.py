@@ -134,7 +134,8 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
         reverse = ('reverse_order' in request.GET and request.GET['reverse_order']) or not request.GET or len(request.GET) == 1
         prefix = '-' if reverse else ''
         ordering = [prefix + ordering for ordering in request.GET['ordering'].split(',')]
-        if collection.list_view.show_relevant_fields_on_ordering and prefix + request.GET['ordering'] != collection.list_view.default_ordering:
+        if (collection.list_view.show_relevant_fields_on_ordering
+            and request.GET['ordering'] != ','.join(collection.list_view.plain_default_ordering_list)):
             context['show_relevant_fields_on_ordering'] = True
             context['plain_ordering'] = [o[1:] if o.startswith('-') else o for o in ordering]
     else:
