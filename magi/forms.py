@@ -166,10 +166,13 @@ class MagiForm(forms.ModelForm):
                             key = choice[0] if isinstance(choice, tuple) else choice
                             field_name = u'{}-{}'.format(name, key)
                             self.d_choices[name[2:]].append((field_name, key))
+                            try: singular_field = self.Meta.model._meta.get_field(name[2:-1])
+                            except FieldDoesNotExist: singular_field = None
                             self.fields[field_name] = forms.CharField(
                                 required=False,
                                 label=u'{}: {}'.format(self.fields[name].label, choice[1] if isinstance(choice, tuple) else choice),
                                 initial=getattr(self.instance, name[2:]).get(key, None) if not self.is_creating else None,
+                                widget=forms.Textarea if singular_field and isinstance(singular_field, TextField) else forms.TextInput,
                             )
                     del(self.fields[name])
             # Make fields with soft choices use a ChoiceField

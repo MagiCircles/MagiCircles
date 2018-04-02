@@ -39,6 +39,13 @@ class ItemModelDict(TestCase):
         self.assertEqual(self.item.d_names, None)
         self.assertEqual(self.item.names, {})
 
+    def test_get_choices(self):
+        self.assertEqual(models.TranslatedNames.get_choices('names'), [
+            (0, ('ja', _('Japanese'))),
+            (1, ('ru', _('Russian'))),
+            (2, ('zh-hans', _('Chinese'))),
+        ])
+
     def test_t_something(self):
         self.item.save_d('names', {'ja': u'マリア', 'ru': u'Мария'})
         self.assertEqual(self.item.t_names, {
