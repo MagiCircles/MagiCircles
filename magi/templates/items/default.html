@@ -2,12 +2,12 @@
   <div class="text-center top-item" style="padding: {{ item_padding }}px;">
     {% if top_illustration %}
     {% include top_illustration|add:'.html' %}
-    {% else %}
-    {% if item.image %}
+    {% elif item.to_top_image_item %}
+    <img src="{{ item.to_top_image }}" alt="{{ item }}" class="{{ item.collection_name }}-image">
+    {% elif item.image %}
     <img src="{{ item.image_url }}" alt="{{ item }}" class="{{ item.collection_name }}-image">
     {% else %}
     {{ item }}
-    {% endif %}
     {% endif %}
   </div>
   <br>

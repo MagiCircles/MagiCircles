@@ -2,7 +2,9 @@
   {% if item_view_enabled %}
   <a href="{{ item.item_url }}"{% if ajax_item_view_enabled %} data-ajax-url="{{ item.ajax_item_url }}" data-ajax-title="{{ item }}"{% endif %}{% if ajax_item_popover %} data-ajax-popover="{{ item.ajax_item_url }}" title="{{ item }}"{% endif %}>
     {% endif %}
-    {% if item.image %}
+    {% if item.to_top_image_list %}
+    <img src="{{ item.to_top_image_list }}" alt="{{ item }}" class="{{ item.collection_name }}-image">
+    {% elif item.image %}
     <img src="{{ item.image_url }}" alt="{{ item }}" class="{{ item.collection_name }}-image img-responsive">
     {% else %}
     {{ item }}
