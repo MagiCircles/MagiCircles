@@ -228,6 +228,12 @@ class BaseMagiModel(models.Model):
 
     @classmethod
     def cached_json_extra(self, field_name, d):
+        # Get original model class for cached thing
+        try: original_cls = self._meta.get_field(field_name).rel.to
+        except FieldDoesNotExist: original_cls = None
+        original_cls = getattr(self, u'_cache_{}_fk_class'.format(field_name), original_cls)
+        if callable(original_cls): original_cls = original_cls()
+
         # Call pre if provided
         if hasattr(self, u'cached_{}_pre'.format(field_name)):
             getattr(self, u'cached_{}_pre'.format(field_name))(d)
@@ -239,18 +245,32 @@ class BaseMagiModel(models.Model):
         # TODO try to add a way to call __unicode__ smooth
 
         if 'id' in d:
-            d['pk'] = d['id']
+            if 'pk' not in d:
+                d['pk'] = d['id']
             # Set collection item URLs
             collection_name = getattr(self, u'_cached_{}_collection_name'.format(field_name), field_name)
-            d['item_url'] = u'/{}/{}/{}/'.format(collection_name, d['id'], d['unicode'])
-            d['ajax_item_url'] = u'/ajax/{}/{}/'.format(collection_name, d['id'])
-            d['full_item_url'] = u'{}{}/{}/{}/'.format(django_settings.SITE_URL, collection_name, d['id'], d['unicode'])
-            d['http_item_url'] = u'https:{}'.format(d['full_item_url']) if 'http' not in d['full_item_url'] else d['full_item_url']
+            if 'item_url' not in d:
+                d['item_url'] = u'/{}/{}/{}/'.format(collection_name, d['id'], tourldash(d['unicode']))
+            if 'ajax_item_url' not in d:
+                d['ajax_item_url'] = u'/ajax/{}/{}/'.format(collection_name, d['id'])
+            if 'full_item_url' not in d:
+                d['full_item_url'] = u'{}{}/{}/{}/'.format(django_settings.SITE_URL, collection_name, d['id'], tourldash(d['unicode']))
+            if 'http_item_url' not in d:
+                d['http_item_url'] = u'https:{}'.format(d['full_item_url']) if 'http' not in d['full_item_url'] else d['full_item_url']
 
         # Set image url helpers
         if 'image' in d:
-            d['image_url'] = get_image_url_from_path(d['image'])
-            d['http_image_url'] = get_http_image_url_from_path(d['image'])
+            if 'image_url' not in d:
+                d['image_url'] = get_image_url_from_path(d['image'])
+            if 'http_image_url' not in d:
+                d['http_image_url'] = get_http_image_url_from_path(d['image'])
+
+        if original_cls:
+            for k in d.keys():
+                # i_ fields
+                if k.startswith('i_'):
+                    d[k[2:]] = original_cls.get_reverse_i(k[2:], d[k])
+                    d['t_{}'.format(k[2:])] = original_cls.get_verbose_i(k[2:], d[k])
 
         # Call extra if provided
         if hasattr(self, u'cached_{}_extra'.format(field_name)):

@@ -50,7 +50,6 @@ class IChoicesTest(BaseMagiModel):
     LANGUAGE_WITHOUT_I_CHOICES = True
     i_language = models.CharField(_('Language'), max_length=10, choices=LANGUAGE_CHOICES, default='en')
 
-
     NOTIFICATIONS = [
         ('like', {
             'title': _(u'When someone likes your activity.'),
@@ -187,6 +186,7 @@ class Card(MagiModel):
     _cache_gachas_days = 20
     _cache_gachas_last_update = models.DateTimeField(null=True)
     _cache_j_gachas = models.TextField(null=True)
+    _cache_gachas_fk_class = classmethod(lambda _s: Gacha)
 
     def to_cache_gachas(self):
         gachas = []
@@ -195,6 +195,10 @@ class Card(MagiModel):
                 'id': gacha.id,
                 'name': gacha.name,
                 'image': unicode(gacha.image),
+                'i_attribute': gacha.i_attribute,
+                'i_power': gacha.i_power,
+                'i_super_power': gacha.i_super_power,
+                'i_rarity': gacha.i_rarity,
             })
         return gachas if gachas else None
 
@@ -206,6 +210,29 @@ class Gacha(MagiModel):
     image = models.ImageField(upload_to=uploadItem('gacha'))
 
     card = models.ForeignKey(Card, related_name='gachas', null=True)
+
+    ATTRIBUTE_CHOICES = (
+        'smile',
+        'pure',
+        'cool',
+    )
+    i_attribute = models.PositiveIntegerField(choices=i_choices(ATTRIBUTE_CHOICES), default=0)
+
+    POWER_CHOICES = (
+        _('Happy'),
+        _('Cool'),
+        _('Rock'),
+    )
+    i_power = models.PositiveIntegerField(choices=i_choices(POWER_CHOICES), default=0)
+
+    SUPER_POWER_CHOICES = (
+        ('happy', _('Happy')),
+        ('cool', _('Cool')),
+        ('rock', _('Rock')),
+    )
+    i_super_power = models.PositiveIntegerField(choices=i_choices(SUPER_POWER_CHOICES), default=0)
+
+    i_rarity = models.PositiveIntegerField(choices=i_choices(['N', 'R', 'SR']), default=0)
 
 class TranslatedNames(BaseMagiModel):
     # With choices, translatable
