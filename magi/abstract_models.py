@@ -19,41 +19,29 @@ class AccountAsOwnerModel(MagiModel):
     """
     fk_as_owner = 'account'
 
+    # Cache account
+
     _cache_account_days = 200 # Change to a lower value if owner can change
     _cache_account_last_update = models.DateTimeField(null=True)
-    _cache_account_owner_id = models.PositiveIntegerField(null=True)
-    _cache_account_unicode = models.CharField(max_length=100, null=True)
+    _cache_j_account = models.TextField(null=True)
 
-    def update_cache_account(self):
-        self._cache_account_last_update = timezone.now()
-        self._cache_account_owner_id = self.account.owner_id
-        self._cache_account_unicode = unicode(self.account)
+    @classmethod
+    def cached_account_extra(self, d):
+        d['owner']['pk'] = d['owner']['id']
+        d['owner']['unicode'] = unicode(d['owner']['id'])
+        d['item_url'] = u'/user/{}/#{}'.format(d['owner']['id'], d['id'])
+        d['full_item_url'] = u'{}{}'.format(django_settings.SITE_URL, d['item_url'])
+        d['http_item_url'] = u'http:' + d['full_item_url'] if 'http' not in d['full_item_url'] else d['full_item_url']
+        d['owner'] = AttrDict(d['owner'])
 
-    def force_cache_account(self):
-        self.update_cache_account()
-        self.save()
-
-    @property
-    def cached_account(self):
-        if (not self._cache_account_last_update
-            or self._cache_account_last_update < timezone.now() - datetime.timedelta(days=self._cache_account_days)):
-            self.force_cache_account()
-        item_url = u'/user/{}/#{}'.format(self._cache_account_owner_id, self.account_id)
-        ajax_item_url = u'/ajax/account/{}/'.format(self.account_id)
-        full_item_url = '{}{}'.format(django_settings.SITE_URL, item_url)
-        http_item_url = u'http:' + full_item_url if 'http' not in full_item_url else full_item_url
-        return AttrDict({
-            'pk': self.account_id,
+    def to_cache_account(self):
+        return {
             'id': self.account_id,
-            'unicode': self._cache_account_unicode,
-            'item_url': item_url, 'ajax_item_url': ajax_item_url,
-            'full_item_url': full_item_url, 'http_item_url': http_item_url,
-            'owner': AttrDict({
-                'unicode': unicode(self._cache_account_owner_id),
-                'id': self._cache_account_owner_id,
-                'pk': self._cache_account_owner_id,
-            }),
-        })
+            'unicode': unicode(self),
+            'owner': {
+                'id': self.account.owner_id,
+            },
+        }
 
     @property
     def owner(self):
