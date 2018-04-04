@@ -2,10 +2,8 @@
   <div class="text-center top-item" style="padding: {{ item_padding }}px;">
     {% if top_illustration %}
     {% include top_illustration|add:'.html' %}
-    {% elif item.to_top_image_item %}
-    <img src="{{ item.to_top_image }}" alt="{{ item }}" class="{{ item.collection_name }}-image">
-    {% elif item.image %}
-    <img src="{{ item.image_url }}" alt="{{ item }}" class="{{ item.collection_name }}-image">
+    {% elif item.top_image_item or item.top_image or item.image %}
+    <img src="{% if item.top_image_item %}{{ item.top_image_item }}{% elif item.top_image %}{{ item.top_image }}{% else %}{{ item.image_url }}{% endif %}" alt="{{ item }}" class="{{ item.collection_name }}-image">
     {% else %}
     {{ item }}
     {% endif %}
