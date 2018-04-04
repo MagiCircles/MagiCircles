@@ -10,6 +10,7 @@ from django.http import Http404
 from django.utils.deconstruct import deconstructible
 from django.utils.translation import ugettext_lazy as _, get_language
 from django.utils.formats import dateformat
+from django.utils.safestring import mark_safe
 from django.utils import timezone
 from django.template import Context
 from django.template.loader import get_template
@@ -330,6 +331,9 @@ def tourldash(string):
         return ''
     s =  u''.join(e if e.isalnum() else u'-' for e in string)
     return u'-'.join([s for s in s.split(u'-') if s])
+
+def jsv(v):
+    return mark_safe(simplejson.dumps(v))
 
 ############################################################
 # Redirections
