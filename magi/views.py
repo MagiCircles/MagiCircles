@@ -348,9 +348,9 @@ def moderatereport(request, report, action):
             send_email(context['subject'], template_name='report', to=[context['user'].email], context=context)
         # Notify owner
         if thing.owner:
-            translation_activate(thing.owner.preferences.language if thing.owner.preferences.language else 'en')
+            translation_activate(thing.real_owner.preferences.language if thing.real_owner.preferences.language else 'en')
             context['sentence'] = _(u'Your {thing} has been reported, and a moderator confirmed it should be {verb}.').format(thing=_(report.reported_thing_title), verb=_(u'edited'))
-            context['user'] = thing.owner
+            context['user'] = thing.real_owner
             context['show_donation'] = False
             context['subject'] = u'{} {}'.format(SITE_NAME, unicode(_(u'Your {thing} has been {verb}').format(thing=_(report.reported_thing_title), verb=_(u'edited'))))
             send_email(context['subject'], template_name='report', to=[context['user'].email], context=context)
@@ -376,9 +376,9 @@ def moderatereport(request, report, action):
                 send_email(context['subject'], template_name='report', to=[context['user'].email], context=context)
         # Notify owner
         if thing.owner:
-            translation_activate(thing.owner.preferences.language if thing.owner.preferences.language else 'en')
+            translation_activate(thing.real_owner.preferences.language if thing.real_owner.preferences.language else 'en')
             context['sentence'] = _(u'Your {thing} has been reported, and a moderator confirmed it should be {verb}.').format(thing=_(report.reported_thing_title), verb=_(u'edited'))
-            context['user'] = thing.owner
+            context['user'] = thing.real_owner
             context['show_donation'] = False
             context['subject'] = u'{} {}'.format(SITE_NAME, unicode(_(u'Your {thing} has been {verb}').format(thing=_(report.reported_thing_title), verb=_(u'deleted'))))
             send_email(context['subject'], template_name='report', to=[context['user'].email], context=context)

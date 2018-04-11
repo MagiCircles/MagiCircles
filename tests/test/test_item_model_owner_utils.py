@@ -1,9 +1,13 @@
 from django.test import TestCase
+from magi import models as magi_models
 from test import models
 
 class ItemModelOwnerUtilslTestCase(TestCase):
     def setUp(self):
         self.user = models.User.objects.create(id=123, username='134')
+        self.user.preferences = magi_models.UserPreferences(user=self.user)
+        self.user.preferences.save()
+        self.user.save()
         self.book = models.Book.objects.create(owner=self.user, id=1)
         self.book2 = models.Book.objects.create(owner=self.user, id=2)
         self.chapters = {}
@@ -43,3 +47,36 @@ class ItemModelOwnerUtilslTestCase(TestCase):
         self.assertEqual(models.Book.owner_ids(self.user), [123])
         self.assertEqual(models.Chapter.owner_ids(self.user), [1,2])
         self.assertEqual(models.Paragraph.owner_ids(self.user), [1, 2, 3, 4])
+
+    def test_real_owner(self):
+        self.assertEqual(self.user.real_owner, self.user)
+        self.assertEqual(self.book.real_owner, self.user)
+        self.assertEqual(self.chapters[1].real_owner, self.user)
+        self.assertEqual(self.paragraphs[1][1].real_owner, self.user)
+
+    def test_cache_owner(self):
+        cached_owner = {
+            'username': '134',
+            'http_item_url': 'http://test.com/user/123/134/',
+            'item_url': '/user/123/134/',
+            'preferences': {
+                'status': None,
+                't_status': None,
+                'localized_color': None,
+                'rgb_color': None,
+                'color': None,
+                'hex_color': None,
+                'twitter': None,
+                'css_color': None,
+                'i_status': None,
+            },
+            'share_url': 'http://test.com/user/123/134/',
+            'email': u'',
+            'full_item_url': 'http://test.com/user/123/134/',
+            'pk': 123,
+            'id': 123,
+            'ajax_item_url': '/ajax/user/123/'
+        }
+        self.assertEqual(self.book.cached_owner, cached_owner)
+        self.assertEqual(self.chapters[1].cached_owner, cached_owner)
+        self.assertEqual(self.paragraphs[1][1].cached_owner, cached_owner)

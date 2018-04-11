@@ -74,11 +74,11 @@ class CacheOwner(MagiModel):
         Recommended to use select_related('owner', 'owner__preferences') when calling this method
         """
         self._cache_owner_last_update = timezone.now()
-        self._cache_owner_username = self.owner.username
-        self._cache_owner_email = self.owner.email
-        self._cache_owner_preferences_i_status = self.owner.preferences.i_status
-        self._cache_owner_preferences_twitter = self.owner.preferences.twitter
-        self._cache_owner_color = self.owner.preferences.color
+        self._cache_owner_username = self.real_owner.username
+        self._cache_owner_email = self.real_owner.email
+        self._cache_owner_preferences_i_status = self.real_owner.preferences.i_status
+        self._cache_owner_preferences_twitter = self.real_owner.preferences.twitter
+        self._cache_owner_color = self.real_owner.preferences.color
 
     def force_cache_owner(self):
         self.update_cache_owner()

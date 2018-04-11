@@ -1,11 +1,12 @@
 import json, datetime
 from collections import OrderedDict
+from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.fields import FieldDoesNotExist
 from django.conf import settings as django_settings
 from django.utils.translation import ugettext_lazy as _, get_language
 from django.utils import timezone
-from magi.utils import tourldash, getMagiCollection, join_data, split_data, AttrDict
+from magi.utils import tourldash, getMagiCollection, join_data, split_data, AttrDict, getSubField
 
 ############################################################
 # Utils for images
@@ -94,6 +95,19 @@ def get_owner_unicode(instance):
         return fk_as_owner.unicode if hasattr(fk_as_owner, 'unicode') else unicode(fk_as_owner)
     return instance.owner.unicode if hasattr(instance.owner, 'unicode') else unicode(instance.owner)
 
+def get_real_owner(instance):
+    """
+    In case of a cached owner, ensure the retriaval of the actual owner object.
+    Performs extra query, use with caution.
+    """
+    if isinstance(instance, User):
+        return instance
+    if isinstance(instance.__class__.owner, property):
+        if not getattr(instance, '_real_owner', None) or True:
+            instance._real_owner = getSubField(type(instance).objects.select_related(instance.selector_to_owner()).get(id=instance.id), instance.selector_to_owner().split('__'))
+        return instance._real_owner
+    return instance.owner
+
 ############################################################
 # BaseMagiModel
 
@@ -128,6 +142,7 @@ class BaseMagiModel(models.Model):
     owner_collection = classmethod(get_owner_collection)
     is_owner = get_is_owner
     owner_unicode = property(get_owner_unicode)
+    real_owner = property(get_real_owner)
 
     @classmethod
     def get_choices(self, field_name):
@@ -500,6 +515,7 @@ def addMagiModelProperties(modelClass, collection_name):
     modelClass.owner_collection = classmethod(get_owner_collection)
     modelClass.is_owner = get_is_owner
     modelClass.owner_unicode = property(get_owner_unicode)
+    modelClass.real_owner = property(get_real_owner)
 
 ############################################################
 # MagiModel
