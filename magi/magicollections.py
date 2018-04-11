@@ -66,7 +66,6 @@ class _View(object):
             if not request.user.is_staff:
                 raise PermissionDenied()
         if self.permissions_required:
-            print self.permissions_required
             redirectWhenNotAuthenticated(request, context, next_title=self.get_page_title())
             if not hasPermissions(request.user, self.permissions_required):
                 raise PermissionDenied()
@@ -811,7 +810,8 @@ class MagiCollection(object):
                 if (((view.show_edit_button_superuser_only
                       and not request.user.is_superuser)
                      or view.show_edit_button_permissions_only
-                     and not hasPermissions(request.user, view.show_edit_button_permissions_only))
+                     and (not request.user.is_authenticated()
+                          or not hasPermissions(request.user, view.show_edit_button_permissions_only)))
                     and buttons['edit']['has_permissions']
                     and not item.is_owner(request.user)):
                     buttons['edit']['show'] = False
