@@ -5,8 +5,11 @@ from magi import models
 
 def create(d):
     try:
+        if not d.get('i_language', None) and models.StaffConfiguration.objects.filter(key=d['key']).count():
+            print 'Failed to create {} with error: {}'.format(d['key'], 'Already exists')
+            return
         models.StaffConfiguration.objects.create(owner_id=1, **d)
-        print u'Created {}{}'.format(d['key'], u'for language {}'.format(d['i_language']) if 'i_language' in d else '')
+        print u'Created {}{}'.format(d['key'], u' for language {}'.format(d['i_language']) if 'i_language' in d else '')
     except Exception as e:
         print 'Failed to create {} with error: {}'.format(d['key'], e)
 
@@ -23,6 +26,20 @@ class Command(BaseCommand):
             create({
                 'key': 'below_homepage_banners',
                 'verbose_key': 'Below homepage banners',
+                'is_markdown': True,
+                'is_long': True,
+                'i_language': language,
+            })
+            create({
+                'key': 'about_us',
+                'verbose_key': '"About us" section in about page (second section)',
+                'is_markdown': True,
+                'is_long': True,
+                'i_language': language,
+            })
+            create({
+                'key': 'about_the_website',
+                'verbose_key': '"About" section in about page (first section)',
                 'is_markdown': True,
                 'is_long': True,
                 'i_language': language,
@@ -65,6 +82,10 @@ class Command(BaseCommand):
                 'is_boolean': True,
                 'value': 'True',
             })
+        create({
+            'key': 'about_image',
+            'verbose_key': 'Image under "About us" section in about page (second section)',
+        })
         # create({
         #     'key': '',
         #     'verbose_key': '',
