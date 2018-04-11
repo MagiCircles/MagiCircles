@@ -958,6 +958,9 @@ class StaffConfigurationFilters(MagiFiltersForm):
     has_value = forms.NullBooleanField()
     has_value_filter = MagiFilter(selector='value__isnull')
 
+    with_translations = forms.NullBooleanField()
+    with_translations_filter = MagiFilter(selector='i_language__isnull')
+
     i_language_filter = MagiFilter(to_queryset=lambda form, queryset, request, value: queryset.filter(
         Q(i_language=value) | Q(i_language__isnull=True) | Q(i_language='')))
 

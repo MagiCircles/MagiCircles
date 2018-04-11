@@ -1733,8 +1733,8 @@ class UserCollection(MagiCollection):
 
 class StaffConfigurationCollection(MagiCollection):
     enabled = False
-    title = 'Staff configuration'
-    plural_title = 'Staff configurations'
+    title = 'Configuration'
+    plural_title = 'Configurations'
     queryset = models.StaffConfiguration.objects.all().select_related('owner')
     navbar_link_list = 'more'
     icon = 'settings'
@@ -1748,7 +1748,10 @@ class StaffConfigurationCollection(MagiCollection):
 
     filter_cuteform = {
         'has_value': {
-            'type': CuteFormType.OnlyNone,
+            'type': CuteFormType.YesNo,
+        },
+        'with_translations': {
+            'type': CuteFormType.YesNo,
         },
         'i_language': {
             'image_folder': 'language',
