@@ -838,7 +838,6 @@ class StaffEditUser(_UserCheckEmailUsernameForm):
         else:
             instance.preferences.c_groups = self.old_c_groups
         instance.preferences.save()
-        efwrgehtry
         if commit:
             instance.save()
         return instance
