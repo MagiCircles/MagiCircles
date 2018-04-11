@@ -96,6 +96,7 @@
                 {% endif %}
                 {% endfor %}
                 {% if link.is_list and link_name == 'more' %}
+                <li class="divider"></li>
                 <li>
                   <form action="{% if user.is_authenticated %}/ajax/changelanguage/{% else %}/i18n/setlang/{% endif %}" method="post" style="padding: 3px 20px;">
                     {% csrf_token %}

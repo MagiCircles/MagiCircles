@@ -16,6 +16,7 @@ from django.template import Context
 from django.template.loader import get_template
 from django.db import models
 from django.db.models.fields import BLANK_CHOICE_DASH
+from django.db.models import Q
 from django.forms.models import model_to_dict
 from django.forms import NullBooleanField
 from django.core.mail import EmailMultiAlternatives
@@ -40,6 +41,150 @@ class AttrDict(dict):
     def __init__(self, *args, **kwargs):
         super(AttrDict, self).__init__(*args, **kwargs)
         self.__dict__ = self
+
+############################################################
+# Permissions and groups utils
+
+def hasGroup(user, group):
+    return group in user.preferences.groups
+
+def hasPermission(user, permission):
+    """
+    Has the given permission.
+    """
+    if user.is_superuser:
+        return True
+    for group in user.preferences.groups:
+        if permission in user.preferences.GROUPS.get(group, {}).get('permissions', []):
+            return True
+    return False
+
+def hasOneOfPermissions(user, permissions):
+    """
+    Has at least one of the listed permissions.
+    """
+    if user.is_superuser:
+        return True
+    for group in user.preferences.groups:
+        for permission in permissions:
+            if permission in user.preferences.GROUPS.get(group, {}).get('permissions', []):
+                return True
+    return False
+
+def hasPermissions(user, permissions):
+    """
+    Has all the listed permissions.
+    """
+    if user.is_superuser:
+        return True
+    permissions = { p: False for p in permissions }
+    for group in user.preferences.groups:
+        for permission in permissions:
+            if permission in user.preferences.GROUPS.get(group, {}).get('permissions', []):
+                permissions[permission] = True
+    return all(permissions.values())
+
+def groupsForAllPermissions(groups):
+    """
+    Dictionary of permission -> dict of groups
+    """
+    a = {}
+    for group_name, group in groups.items():
+        for permission in group.get('permissions', []):
+            if permission not in a:
+                a[permission] = {}
+            a[permission][group_name] = group
+    return a
+
+def allPermissions(groups):
+    """
+    List of all existing permissions
+    """
+    return groupsForAllPermissions(groups).keys()
+
+def groupsPerPermission(groups, permission):
+    """
+    List of groups that have this permission
+    """
+    return groupsForAllPermissions(groups).get(permission, [])
+
+def groupsWithPermissions(groups, permissions):
+    """
+    List of groups that all these permissions
+    Example:
+    - group1: a, b, c
+    - group2: a, b, d, e
+    groupsWithPermissions(..., [a, b]) -> dict with group1, group2
+    groupsWithPermissions(..., [c, a]) -> dict with group1
+    """
+    g = {}
+    for group_name, group in groups.items():
+        has_all = True
+        for permission in permissions:
+            if permission not in group.get('permissions', []):
+                has_all = False
+                break
+        if has_all:
+            g[group_name] = group
+    return g
+
+def groupsWithOneOfPermissions(groups, permissions):
+    """
+    List of groups that have one of these permissions
+    Example:
+    - group1: a, b, c
+    - group2: a, b, d, e
+    groupsWithOneOfPermissions(..., [c, a]) -> dict with group1, group2
+    """
+    g = {}
+    all = groupsForAllPermissions(groups)
+    for permission in permissions:
+        for group_name, group in all.get(permission, {}).items():
+            g[group_name] = group
+    return g
+
+def usersWithGroup(queryset, group):
+    """
+    Users in this group
+    """
+    return queryset.filter(preferences__c_groups__contains=u'"{}"'.format(group))
+
+def usersWithGroups(queryset, groups):
+    """
+    Users in all these groups
+    """
+    return queryset.filter(**{ 'preferences__c_groups__contains': u'"{}"'.format(group) for group in groups })
+
+def usersWithOneOfGroups(queryset, groups):
+    """
+    Users in at least one of these groups
+    """
+    q = Q()
+    for group in groups:
+        q |= Q(preferences__c_groups__contains=u'"{}"'.format(group))
+    return queryset.filter(q)
+
+def usersWithPermission(queryset, groups, permission):
+    """
+    Users with this permission
+    """
+    groups = groupsPerPermission(groups, permission)
+    return usersWithOneOfGroups(queryset, groups) if groups else []
+
+def usersWithPermissions(queryset, groups, permissions):
+    """
+    Users with all these permissions
+    """
+    # TODO: not working, need to find all the combinations of groups that work then make a query with all these groups
+    groups = groupsWithPermissions(groups, permissions)
+    return usersWithOneOfGroups(queryset, groups) if groups else []
+
+def usersWithOneOfPermissions(queryset, groups, permissions):
+    """
+    Users with at least one of these permissions
+    """
+    groups = groupsWithOneOfPermissions(groups, permissions)
+    return usersWithOneOfGroups(queryset, groups) if groups else []
 
 ############################################################
 # Helpers for MagiCollections

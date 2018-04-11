@@ -21,7 +21,7 @@ from magi.django_translated import t
 from magi import models
 from magi.default_settings import RAW_CONTEXT
 from magi.settings import FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTERS, USER_COLORS, GAME_NAME, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, ON_PREFERENCES_EDITED, PROFILE_TABS
-from magi.utils import ordinalNumber, randomString, shrinkImageFromData, getMagiCollection, getAccountIdsFromSession
+from magi.utils import ordinalNumber, randomString, shrinkImageFromData, getMagiCollection, getAccountIdsFromSession, hasPermission, toHumanReadable, usersWithPermission
 
 ############################################################
 # Internal utils
@@ -751,35 +751,88 @@ class StaffEditUser(_UserCheckEmailUsernameForm):
 
     def __init__(self, *args, **kwargs):
         instance = kwargs.pop('instance', None)
-        preferences_fields = ('description', 'location', 'i_status', 'donation_link', 'donation_link_title')
+        preferences_fields = ('description', 'location', 'i_status', 'donation_link', 'donation_link_title', 'c_groups')
         preferences_initial = model_to_dict(instance.preferences, preferences_fields) if instance is not None else {}
         super(StaffEditUser, self).__init__(initial=preferences_initial, instance=instance, *args, **kwargs)
         self.fields.update(fields_for_model(models.UserPreferences, preferences_fields))
-        self.fields['i_status'] = forms.ChoiceField(
-            required=False,
-            choices=(BLANK_CHOICE_DASH + [(c[0], c[1]) if isinstance(c, tuple) else (c, c) for c in instance.preferences.STATUS_SOFT_CHOICES]),
-            label=self.fields['i_status'].label,
-        )
-        self.fields['donation_link_title'].help_text = 'If the donator is not interested in adding a link but are eligible for it, write "Not interested" and leave ""Donation link" empty'
         self.old_location = instance.preferences.location if instance else None
-        if not self.is_creating:
+
+        # edit_roles permission
+        if 'c_groups' in self.fields:
+            if hasPermission(self.request.user, 'edit_roles'):
+                choices = [
+                    (key, mark_safe(u'<b>{}</b><br><p>{}<small class="text-muted">{}</small></p><ul>{}</ul>'.format(
+                        group['translation'],
+                        u'<small class="text-danger">Requires staff status</small><br>' if group.get('requires_staff', False) else u'',
+                        group['description'],
+                        u''.join([u'<li style="display: list-item"><small>{}</small></li>'.format(toHumanReadable(p)) for p in group.get('permissions', [])]),
+                    ))) for key, group in instance.preferences.GROUPS.items()
+                ]
+                self.fields['c_groups'] = forms.MultipleChoiceField(
+                    required=False,
+                    widget=forms.CheckboxSelectMultiple,
+                    choices=choices,
+                    label=self.fields['c_groups'].label,
+                )
+                self.instance.preferences.c_groups = self.instance.preferences.groups
+            else:
+                del(self.fields['c_groups'])
+
+        # edit_staff_status permission
+        if 'is_staff' in self.fields:
+            if hasPermission(self.request.user, 'edit_staff_status'):
+                self.fields['is_staff'].help_text = 'Some roles require staff status, so you might need to remove the roles before being able to revoke staff status.'
+            else:
+                del(self.fields['is_staff'])
+
+        # edit_donator_status permission
+        if 'i_status' in self.fields:
+            if hasPermission(self.request.user, 'edit_donator_status'):
+                self.fields['i_status'].help_text = None
+                self.fields['i_status'] = forms.ChoiceField(
+                    required=False,
+                    choices=(BLANK_CHOICE_DASH + [(c[0], c[1]) if isinstance(c, tuple) else (c, c) for c in instance.preferences.STATUS_SOFT_CHOICES]),
+                    label=self.fields['i_status'].label,
+                )
+            else:
+                del(self.fields['i_status'])
+        if 'donation_link' in self.fields:
+            if not hasPermission(self.request.user, 'edit_donator_status'):
+                del(self.fields['donation_link'])
+        if 'donation_link_title' in self.fields:
+            if hasPermission(self.request.user, 'edit_donator_status'):
+                self.fields['donation_link_title'].help_text = 'If the donator is not interested in adding a link but are eligible for it, write "Not interested" and leave ""Donation link" empty'
+            else:
+                del(self.fields['donation_link_title'])
+
+        # edit_reported_things
+        if not hasPermission(self.request.user, 'edit_reported_things'):
+            for field_name in ['username', 'email', 'description', 'location', 'force_remove_avatar']:
+                if field_name in self.fields:
+                    del(self.fields[field_name])
+        else:
             self.fields['force_remove_avatar'].help_text = mark_safe('Check this box if the avatar is inappropriate. It will force the default avatar. <img src="{avatar_url}" alt="{username}" height="40" width="40">'.format(avatar_url=instance.image_url, username=instance.username))
 
     def save(self, commit=True):
         instance = super(StaffEditUser, self).save(commit=False)
-        if self.cleaned_data['force_remove_avatar'] and instance.email:
+        if 'force_remove_avatar' in self.fields and self.cleaned_data['force_remove_avatar'] and instance.email:
             splitEmail = instance.email.split('@')
             localPart = splitEmail.pop(0)
             instance.email = localPart.split('+')[0] + u'+' + randomString(4) + '@' + ''.join(splitEmail)
-        if self.old_location != self.cleaned_data['location']:
+        if 'location' in self.fields and self.old_location != self.cleaned_data['location']:
             instance.preferences.location = self.cleaned_data['location']
             instance.preferences.location_changed = True
             instance.preferences.latitude = None
             instance.preferences.longitude = None
-        instance.preferences.description = self.cleaned_data['description']
-        instance.preferences.i_status = self.cleaned_data['i_status']
-        instance.preferences.donation_link = self.cleaned_data['donation_link']
-        instance.preferences.donation_link_title = self.cleaned_data['donation_link_title']
+        for field_name in ['description', 'i_status', 'donation_link', 'donation_link_title']:
+            if field_name in self.fields and field_name in self.cleaned_data:
+                setattr(instance.preferences, field_name, self.cleaned_data[field_name])
+        if not instance.is_staff and 'c_groups' in self.fields and 'c_groups' in self.cleaned_data:
+            instance.preferences.save_c('groups', self.cleaned_data['c_groups'])
+            for group in instance.preferences.groups:
+                if instance.preferences.GROUPS[group].get('requires_staff', False):
+                    instance.is_staff = True
+                    break
         instance.preferences.save()
         if commit:
             instance.save()
@@ -787,7 +840,7 @@ class StaffEditUser(_UserCheckEmailUsernameForm):
 
     class Meta(_UserCheckEmailUsernameForm.Meta):
         model = models.User
-        fields = ('username', 'email')
+        fields = ('is_staff', 'username', 'email')
 
 class ChangePasswordForm(MagiForm):
     old_password = forms.CharField(widget=forms.PasswordInput(), label=_('Old Password'))
@@ -1025,7 +1078,11 @@ class FilterReports(MagiFiltersForm):
     def __init__(self, *args, **kwargs):
         super(FilterReports, self).__init__(*args, **kwargs)
         self.fields['reported_thing'].choices = BLANK_CHOICE_DASH + [ (name, info['title']) for name, info in self.collection.types.items() ]
-        self.fields['staff'].queryset = self.fields['staff'].queryset.filter(is_staff=True)
+        self.fields['staff'].queryset = usersWithPermission(
+            self.fields['staff'].queryset,
+            self.request.user.preferences.GROUPS,
+            'moderate_reports',
+        )
 
     class Meta(MagiFiltersForm.Meta):
         model = models.Report

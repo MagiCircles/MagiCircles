@@ -67,6 +67,29 @@
     <a href="/accounts/add/" class="btn btn-lg btn-main"><i class="flaticon-add"></i> {{ add_account_sentence }}</a>
   </div>
 </form>
+
+{% if user.groups %}
+<h1 id="groups" class="text-center padding50"><i class="flaticon-about"></i> Your groups</h1>
+<br>
+<form class="container_form">
+  <div class="list-group">
+    {% for group, details in user.preferences.groups_and_details.items %}
+    <div class="list-group-item">
+      <h4 class="list-group-item-heading">{{ details.translation }}</h4>
+      <p class="list-group-item-text">
+        {% if details.permissions %}
+        <ul>
+          {% for permission in details.verbose_permissions %}
+          <li>{{ permission }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </p>
+    </div>
+    {% endfor %}
+  </div>
+</form>
+{% endif %}
 <br><br><br><br><br><br>
 {% endif %}
 {% endblock %}

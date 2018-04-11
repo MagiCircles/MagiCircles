@@ -11,7 +11,7 @@ from magi import views as magi_views
 from magi import forms
 from magi.settings import RAW_CONTEXT, ENABLED_PAGES, ENABLED_NAVBAR_LISTS, SITE_NAME, EMAIL_IMAGE, GAME_NAME, SITE_DESCRIPTION, SITE_STATIC_URL, SITE_URL, GITHUB_REPOSITORY, SITE_LOGO, SITE_NAV_LOGO, JAVASCRIPT_TRANSLATED_TERMS, STATIC_UPLOADED_FILES_PREFIX, COLOR, SITE_IMAGE, TRANSLATION_HELP_URL, DISQUS_SHORTNAME, HASHTAGS, TWITTER_HANDLE, EMPTY_IMAGE, GOOGLE_ANALYTICS, STATIC_FILES_VERSION, PROFILE_TABS, LAUNCH_DATE, PRELAUNCH_ENABLED_PAGES, NAVBAR_ORDERING, ACCOUNT_MODEL, STAFF_CONFIGURATIONS, FIRST_COLLECTION, GET_STARTED_VIDEO
 from magi.models import UserPreferences
-from magi.utils import redirectWhenNotAuthenticated
+from magi.utils import redirectWhenNotAuthenticated, hasPermissions, hasOneOfPermissions
 
 ############################################################
 # Load dynamic module based on SITE
@@ -218,11 +218,23 @@ for collection in collections.values():
 # URLs for pages
 
 def getPageShowLinkLambda(page):
-    return (lambda context: not (
-        (page.get('authentication_required', False) and not context['request'].user.is_authenticated())
-        or (page.get('logout_required', False) and context['request'].user.is_authenticated())
-        or (page.get('staff_required', False) and not context['request'].user.is_staff))
-    )
+    def _showLink(context):
+        permissions_required = page.get('permissions_required', [])
+        one_of_permissions_required = page.get('one_of_permissions_required', [])
+        return not (
+            (page.get('authentication_required', False) and not context['request'].user.is_authenticated())
+            or (page.get('logout_required', False) and context['request'].user.is_authenticated())
+            or (page.get('staff_required', False) and not context['request'].user.is_staff)
+            or (permissions_required and (
+                not context['request'].user.is_authenticated()
+                or not hasPermissions(context['request'].user, permissions_required)
+            ))
+            or (one_of_permissions_required and (
+                not context['request'].user.is_authenticated()
+                or not hasOneOfPermissions(context['request'].user, one_of_permissions_required)
+            ))
+        )
+    return _showLink
 
 def page_view(name, page):
     function = (

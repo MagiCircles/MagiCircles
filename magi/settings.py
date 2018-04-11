@@ -1,6 +1,6 @@
 from django.conf import settings as django_settings
-from magi.default_settings import DEFAULT_ENABLED_NAVBAR_LISTS, DEFAULT_ENABLED_PAGES, RAW_CONTEXT, DEFAULT_JAVASCRIPT_TRANSLATED_TERMS, DEFAULT_PROFILE_TABS, DEFAULT_PRELAUNCH_ENABLED_PAGES, DEFAULT_NAVBAR_ORDERING
-from magi.utils import globalContext
+from magi.default_settings import DEFAULT_ENABLED_NAVBAR_LISTS, DEFAULT_ENABLED_PAGES, RAW_CONTEXT, DEFAULT_JAVASCRIPT_TRANSLATED_TERMS, DEFAULT_PROFILE_TABS, DEFAULT_PRELAUNCH_ENABLED_PAGES, DEFAULT_NAVBAR_ORDERING, DEFAULT_GROUPS
+from magi.utils import globalContext, toHumanReadable
 from django.utils.translation import ugettext_lazy as _, string_concat
 
 settings_module = __import__(django_settings.SITE + '.settings', globals(), locals(), ['*'])
@@ -174,6 +174,16 @@ if hasattr(settings_module, 'PRELAUNCH_ENABLED_PAGES'):
     PRELAUNCH_ENABLED_PAGES = getattr(settings_module, 'PRELAUNCH_ENABLED_PAGES')
 else:
     PRELAUNCH_ENABLED_PAGES = DEFAULT_PRELAUNCH_ENABLED_PAGES
+
+if hasattr(settings_module, 'GROUPS'):
+    GROUPS = getattr(settings_module, 'GROUPS')
+else:
+    GROUPS = DEFAULT_GROUPS
+
+for _g, _d in GROUPS: # Add verbose_permissions
+    if 'permissions' in _d:
+        _d['verbose_permissions'] = [toHumanReadable(_p) for _p in _d['permissions']]
+        _d['name'] = _g
 
 ############################################################
 # Optional settings without default values (= None)

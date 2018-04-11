@@ -10,7 +10,7 @@ from django.utils.datastructures import MultiValueDictKeyError
 from django.http import Http404
 from django.db.models import Count, Q, Prefetch, FieldDoesNotExist
 from magi.views import indexExtraContext
-from magi.utils import AttrDict, ordinalNumber, justReturn, propertyFromCollection, getMagiCollections, getMagiCollection, CuteFormType, CuteFormTransform, redirectWhenNotAuthenticated, custom_item_template, getAccountIdsFromSession, setSubField
+from magi.utils import AttrDict, ordinalNumber, justReturn, propertyFromCollection, getMagiCollections, getMagiCollection, CuteFormType, CuteFormTransform, redirectWhenNotAuthenticated, custom_item_template, getAccountIdsFromSession, setSubField, hasPermission, hasPermissions, hasOneOfPermissions
 from magi.raw import please_understand_template_sentence
 from magi.django_translated import t
 from magi.middleware.httpredirect import HttpRedirectException
@@ -40,7 +40,9 @@ class _View(object):
     ajax_callback = None
     enabled = True
     logout_required = False
-    staff_required = False
+    staff_required = property(propertyFromCollection('staff_required'))
+    permissions_required = property(propertyFromCollection('permissions_required'))
+    one_of_permissions_required = property(propertyFromCollection('one_of_permissions_required'))
     ajax = True
 
     def get_global_context(self, request):
@@ -63,12 +65,38 @@ class _View(object):
             redirectWhenNotAuthenticated(request, context, next_title=self.get_page_title())
             if not request.user.is_staff:
                 raise PermissionDenied()
+        if self.permissions_required:
+            print self.permissions_required
+            redirectWhenNotAuthenticated(request, context, next_title=self.get_page_title())
+            if not hasPermissions(request.user, self.permissions_required):
+                raise PermissionDenied()
+        if self.one_of_permissions_required:
+            redirectWhenNotAuthenticated(request, context, next_title=self.get_page_title())
+            if not hasOneOfPermissions(request.user, self.one_of_permissions_required):
+                raise PermissionDenied()
 
     def check_owner_permissions(self, request, context, item):
-        if item.owner_id and getattr(self, 'owner_only', False):
-            redirectWhenNotAuthenticated(request, context, next_title=self.get_page_title())
-            if not request.user.is_staff and item.owner_id != request.user.id:
-                raise PermissionDenied()
+        if item.owner_id:
+            owner_only = getattr(self, 'owner_only', False)
+            if owner_only:
+                redirectWhenNotAuthenticated(request, context, next_title=self.get_page_title())
+                if item.owner_id != request.user.id:
+                    raise PermissionDenied()
+            owner_or_staff_only = getattr(self, 'owner_or_staff_only', False)
+            if owner_or_staff_only:
+                redirectWhenNotAuthenticated(request, context, next_title=self.get_page_title())
+                if not request.user.is_staff and item.owner_id != request.user.id:
+                    raise PermissionDenied()
+            owner_only_or_permissions_required = getattr(self, 'owner_only_or_permissions_required', [])
+            if owner_only_or_permissions_required:
+                redirectWhenNotAuthenticated(request, context, next_title=self.get_page_title())
+                if item.owner_id != request.user.id and not hasPermissions(request.user, owner_only_or_permissions_required):
+                    raise PermissionDenied()
+            owner_only_or_one_of_permissions_required = getattr(self, 'owner_only_or_one_of_permissions_required', [])
+            if owner_only_or_one_of_permissions_required:
+                redirectWhenNotAuthenticated(request, context, next_title=self.get_page_title())
+                if item.owner_id != request.user.id and not hasOneOfPermissions(request.user, owner_only_or_one_of_permissions_required):
+                    raise PermissionDenied()
 
     #######################
     # Tools - not meant to be overriden
@@ -465,6 +493,10 @@ class MagiCollection(object):
     navbar_link = True
     multipart = False
 
+    staff_required = False
+    permissions_required = []
+    one_of_permissions_required = []
+
     reportable = True
     report_edit_templates = {}
     report_delete_templates = {}
@@ -656,6 +688,7 @@ class MagiCollection(object):
     show_item_buttons_in_one_line = True
     show_edit_button = True
     show_edit_button_superuser_only = False
+    show_edit_button_permissions_only = []
     show_translate_button = True
     show_report_button = True
     show_collect_button = True # Can also be a dictionary when multiple collectibles
@@ -759,7 +792,12 @@ class MagiCollection(object):
             buttons['edit']['icon'] = 'edit'
             if (self.edit_view.authentication_required
                 and not self.edit_view.owner_only
+                and not self.edit_view.owner_or_staff_only
+                and not self.edit_view.owner_only_or_permissions_required
+                and not self.edit_view.owner_only_or_one_of_permissions_required
                 and not self.edit_view.staff_required
+                and not self.edit_view.permissions_required
+                and not self.edit_view.one_of_permissions_required
                 and not request.user.is_authenticated()):
                 buttons['edit']['has_permissions'] = True
                 buttons['edit']['url'] = u'/signup/?next={url}&next_title={title}'.format(
@@ -768,22 +806,26 @@ class MagiCollection(object):
                 )
             else:
                 buttons['edit']['has_permissions'] = self.edit_view.has_permissions(request, context, item=item)
-                if (view.show_edit_button_superuser_only
+                if self.types:
+                    buttons['edit']['has_permissions'] = buttons['edit']['has_permissions'] and self.edit_view.has_type_permissions(request, context, type=item.type, item=item)
+                if (((view.show_edit_button_superuser_only
+                      and not request.user.is_superuser)
+                     or view.show_edit_button_permissions_only
+                     and not hasPermissions(request.user, view.show_edit_button_permissions_only))
                     and buttons['edit']['has_permissions']
-                    and not item.is_owner(request.user)
-                    and request.user.is_staff
-                    and not request.user.is_superuser):
+                    and not item.is_owner(request.user)):
                     buttons['edit']['show'] = False
                 buttons['edit']['url'] = item.edit_url
                 if self.edit_view.ajax:
                     buttons['edit']['ajax_url'] = item.ajax_edit_url
                 if ((self.edit_view.staff_required
-                     or not item.is_owner(request.user))
+                     and not item.is_owner(request.user))
                     and not view.staff_required):
                     buttons['edit']['classes'].append('staff-only')
         # Translation button
         if self.translated_fields:
             buttons['translate'] = buttons['edit'].copy()
+            buttons['translate']['has_permissions'] = self.edit_view.has_translate_permissions(request, context)
             buttons['translate']['title'] = unicode(_('Edit {}')).format(unicode(_('Translations')).lower())
             buttons['translate']['icon'] = 'world'
             buttons['translate']['url'] = u'{}{}translate'.format(buttons['translate']['url'], '&' if '?' in buttons['translate']['url'] else '?')
@@ -873,12 +915,14 @@ class MagiCollection(object):
         show_item_buttons_in_one_line = property(propertyFromCollection('show_item_buttons_in_one_line'))
         show_edit_button = property(propertyFromCollection('show_edit_button'))
         show_edit_button_superuser_only = property(propertyFromCollection('show_edit_button_superuser_only'))
+        show_edit_button_permissions_only = property(propertyFromCollection('show_edit_button_permissions_only'))
         show_translate_button = property(propertyFromCollection('show_translate_button'))
         show_report_button = property(propertyFromCollection('show_report_button'))
         show_collect_button = property(propertyFromCollection('show_collect_button'))
 
         top_buttons_classes = ['btn', 'btn-lg', 'btn-block', 'btn-main']
         show_add_button_superuser_only = False
+        show_add_button_permission_only = False
         authentication_required = False
         distinct = True
         add_button_subtitle = _('Become a contributor to help us fill the database')
@@ -955,14 +999,18 @@ class MagiCollection(object):
                     ),
                     'title': self.collection.add_sentence,
                 }
-                if (self.show_add_button_superuser_only
+                if (((self.show_add_button_superuser_only
+                      and not request.user.is_superuser)
+                     or (self.show_add_button_permission_only
+                         and not hasPermission(request.user, self.show_add_button_permission_only)))
                     and for_all_buttons['has_permissions']
-                    and request.user.is_staff
-                    and not request.user.is_superuser):
+                    and request.user.is_staff):
                     for_all_buttons['show'] = False
                 if self.collection.types:
                     for (type, button) in self.collection.types.items():
                         if not button.get('show_button', True):
+                            continue
+                        if not self.collection.add_view.has_type_permissions(request, context, type=type):
                             continue
                         buttons[u'add_{}'.format(type)] = dict({
                             'url': self.collection.get_add_url(type=type),
@@ -1009,6 +1057,9 @@ class MagiCollection(object):
         # Optional variables with default values
         authentication_required = False
         owner_only = False
+        owner_or_staff_only = False
+        owner_only_or_permissions_required = []
+        owner_only_or_one_of_permissions_required = []
         comments_enabled = True
         share_enabled = True
         full_width = False
@@ -1027,6 +1078,7 @@ class MagiCollection(object):
             return True if self.template == 'default' else self.collection.show_item_buttons_as_icons
         show_edit_button = property(propertyFromCollection('show_edit_button'))
         show_edit_button_superuser_only = property(propertyFromCollection('show_edit_button_superuser_only'))
+        show_edit_button_permissions_only = property(propertyFromCollection('show_edit_button_permissions_only'))
         show_translate_button = property(propertyFromCollection('show_translate_button'))
         show_report_button = property(propertyFromCollection('show_report_button'))
         show_collect_button = property(propertyFromCollection('show_collect_button'))
@@ -1109,11 +1161,21 @@ class MagiCollection(object):
                 return item.item_url if not ajax else item.ajax_item_url
             return self.collection.get_list_url(ajax)
 
+        def check_type_permissions(self, request, context, type=None):
+            pass
+
         #######################
         # Tools - not meant to be overriden
 
         def get_page_title(self):
             return self.collection.add_sentence
+
+        def has_type_permissions(self, request, context, type=None):
+            try:
+                self.check_type_permissions(request, context, type=type)
+            except (PermissionDenied, HttpRedirectException, Http404):
+                return False
+            return True
 
     class EditView(_View):
         view = 'edit_view'
@@ -1134,7 +1196,14 @@ class MagiCollection(object):
         # Optional variables with default values
         authentication_required = True
         allow_delete = False
-        owner_only = True
+        @property
+        def owner_only(self):
+            return not self.collection.reportable and not self.staff_required
+        owner_or_staff_only = False
+        @property
+        def owner_only_or_permissions_required(self):
+            return ['edit_reported_things'] if self.collection.reportable and not self.staff_required else []
+        owner_only_or_one_of_permissions_required = []
         savem2m = False
         back_to_list_button = True
 
@@ -1173,6 +1242,15 @@ class MagiCollection(object):
                 return { 'owner': request.user }
             return { 'pk': pk }
 
+        def check_translate_permissions(self, request, context):
+            if not request.user.is_authenticated():
+                raise PermissionDenied()
+            if not hasPermission(request.user, 'translate_items'):
+                raise PermissionDenied()
+
+        def check_type_permissions(self, request, context, type=None, item=None):
+            pass
+
         #######################
         # Tools - not meant to be overriden
 
@@ -1180,6 +1258,20 @@ class MagiCollection(object):
             if item:
                 return u'{}: {}'.format(item.edit_sentence, unicode(item))
             return self.collection.edit_sentence
+
+        def has_translate_permissions(self, request, context):
+            try:
+                self.check_translate_permissions(request, context)
+            except (PermissionDenied, HttpRedirectException, Http404):
+                return False
+            return True
+
+        def has_type_permissions(self, request, context, type=None, item=None):
+            try:
+                self.check_type_permissions(request, context, type=type, item=item)
+            except (PermissionDenied, HttpRedirectException, Http404):
+                return False
+            return True
 
 ############################################################
 ############################################################
@@ -1385,7 +1477,7 @@ class UserCollection(MagiCollection):
         item_template = custom_item_template
         default_ordering = 'username'
         show_item_buttons = False
-        show_edit_button_superuser_only = True
+        show_edit_button_permissions_only = ['see_profile_edit_button']
         per_line = 6
         page_size = 30
 
@@ -1408,7 +1500,7 @@ class UserCollection(MagiCollection):
         show_item_buttons = False
         show_item_buttons_justified = False
         item_buttons_classes = ['btn', 'btn-link']
-        show_edit_button_superuser_only = True
+        show_edit_button_permissions_only = ['see_profile_edit_button']
         ajax = False
         shortcut_urls = [
             ('me', 'me'),
@@ -1608,6 +1700,12 @@ class UserCollection(MagiCollection):
 
     class EditView(MagiCollection.EditView):
         staff_required = True
+        one_of_permissions_required = [
+            'edit_staff_status',
+            'edit_roles',
+            'edit_reported_things',
+            'edit_donator_status',
+        ]
         form_class = forms.StaffEditUser
 
         def check_owner_permissions(self, request, context, item):
@@ -1639,10 +1737,14 @@ class StaffConfigurationCollection(MagiCollection):
     plural_title = 'Staff configurations'
     queryset = models.StaffConfiguration.objects.all().select_related('owner')
     navbar_link_list = 'more'
-    navbar_link_list_divider_after = True
     icon = 'settings'
     form_class = forms.StaffConfigurationForm
     reportable = False
+    one_of_permissions_required = [
+        'advanced_staff_configurations',
+        'edit_staff_configurations',
+        'translate_staff_configurations',
+    ]
 
     filter_cuteform = {
         'has_value': {
@@ -1654,7 +1756,6 @@ class StaffConfigurationCollection(MagiCollection):
     }
 
     class ListView(MagiCollection.ListView):
-        staff_required = True
         add_button_subtitle = None
         item_template = 'default_item_table_view'
         display_style = 'table'
@@ -1663,6 +1764,12 @@ class StaffConfigurationCollection(MagiCollection):
         before_template = 'include/beforeStaffConfigurations'
         filter_form = forms.StaffConfigurationFilters
         default_ordering = 'id'
+
+        def get_queryset(self, queryset, parameters, request):
+            # Translators can only see translatable configurations
+            if not hasOneOfPermissions(request.user, ['edit_staff_configurations', 'advanced_staff_configurations']):
+                queryset = queryset.exclude(Q(i_language__isnull=True) | Q(i_language=''))
+            return queryset
 
         def table_fields_headers(self, fields, view=None):
             return []
@@ -1679,19 +1786,22 @@ class StaffConfigurationCollection(MagiCollection):
         enabled = False
 
     class AddView(MagiCollection.AddView):
-        staff_required = True
         alert_duplicate = False
-
-        def check_permissions(self, request, context):
-            super(StaffConfigurationCollection.AddView, self).check_permissions(request, context)
-            if not request.user.is_superuser:
-                raise PermissionDenied()
+        permissions_required = ['advanced_staff_configurations']
+        one_of_permissions_required = []
 
     class EditView(MagiCollection.EditView):
-        staff_required = True
+        owner_only = False
+
+        def check_owner_permissions(self, request, context, item):
+            super(StaffConfigurationCollection.EditView, self).check_owner_permissions(request, context, item)
+            # Translators don't have permissions to edit non translatable configurations
+            if (not hasOneOfPermissions(request.user, ['edit_staff_configurations', 'advanced_staff_configurations'])
+                and not item.i_language):
+                raise PermissionDenied()
 
         def form_class(self, request, context):
-            if request.user.is_superuser:
+            if hasPermission(request.user, 'advanced_staff_configurations'):
                 return forms.StaffConfigurationForm
             return forms.StaffConfigurationSimpleEditForm
 
@@ -1823,10 +1933,9 @@ class NotificationCollection(MagiCollection):
         per_line = 1
         page_size = 5
         default_ordering = 'seen,-creation,-id'
+        authentication_required = True
 
         def get_queryset(self, queryset, parameters, request):
-            if not request.user.is_authenticated():
-                raise HttpRedirectException(u'/signup/?next=/notifications/&next_title={}'.format(unicode(_('Notifications'))))
             if 'ajax_modal_only' in parameters:
                 queryset = queryset.filter(seen=False)
             return queryset.filter(owner=request.user)
@@ -1940,7 +2049,9 @@ class BadgeCollection(MagiCollection):
 
         def check_permissions(self, request, context):
             super(BadgeCollection.ListView, self).check_permissions(request, context)
-            if hasattr(request, 'GET') and 'of_user' not in request.GET and not request.user.is_staff:
+            if (hasattr(request, 'GET') and 'of_user' not in request.GET
+                and (not request.user.is_authenticated()
+                     or not hasOneOfPermissions(request.user, self.collection.AddView.one_of_permissions_required))):
                 raise PermissionDenied()
 
     class ItemView(MagiCollection.ItemView):
@@ -1952,8 +2063,13 @@ class BadgeCollection(MagiCollection):
 
     class AddView(MagiCollection.AddView):
         staff_required = True
+        one_of_permissions_required = ['add_donation_badges', 'add_badges']
         multipart = True
         alert_duplicate = False
+
+        def check_type_permissions(self, request, context, type=None):
+            if type == 'donator' and not hasPermission(request.user, 'add_donation_badges'):
+                raise PermissionDenied()
 
         def extra_context(self, context):
             form_name = u'add_{}'.format(self.collection.name)
@@ -1966,15 +2082,19 @@ class BadgeCollection(MagiCollection):
 
     class EditView(MagiCollection.EditView):
         staff_required = True
+        one_of_permissions_required = ['add_donation_badges', 'add_badges']
         multipart = True
         allow_delete = True
+
+        def check_type_permissions(self, request, context, type=None, item=None):
+            if type == 'donator' and not hasPermission(request.user, 'add_donation_badges'):
+                raise PermissionDenied()
 
 ############################################################
 # Report Collection
 
 class ReportCollection(MagiCollection):
     navbar_link_list = 'more'
-    navbar_link_list_divider_before = True
     icon = 'fingers'
     queryset = models.Report.objects.all().select_related('owner', 'owner__preferences', 'staff', 'staff__preferences').prefetch_related(Prefetch('images', to_attr='all_images'))
     reportable = False
@@ -2001,6 +2121,7 @@ class ReportCollection(MagiCollection):
         item_template = custom_item_template
         show_title = True
         staff_required = True
+        permissions_required = ['moderate_reports']
         show_edit_button = False
         per_line = 1
         js_files = ['reports']
@@ -2012,7 +2133,7 @@ class ReportCollection(MagiCollection):
     class ItemView(MagiCollection.ItemView):
         template = custom_item_template
         comments_enabled = False
-        owner_only = True
+        owner_only_or_permissions_required = ['moderate_reports']
         show_edit_button = False
         js_files = ['reports']
         ajax_callback = 'updateReport'
@@ -2077,8 +2198,10 @@ class DonateCollection(MagiCollection):
 
     class AddView(MagiCollection.AddView):
         staff_required = True
+        permissions_required = ['manage_donation_months']
         multipart = True
 
     class EditView(MagiCollection.EditView):
         staff_required = True
+        permissions_required = ['manage_donation_months']
         multipart = True

@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% load tools %}
+{% block content %}
+<div class="container">
+  <h1 class="padding20 text-center">Collections</h1>
+  {% for collection_name, collection in collections.items %}
+  <h2>
+    {% if collection.icon %}
+    <i class="flaticon-{{ collection.icon }}"></i>
+    {% elif collection.image %}
+    <img src="{{ static_url }}img/{{ collection.image }}.png" height="30" />
+    {% endif %}
+    {{ collection.title }} <small class="text-muted">{{ collection.name }}</small>
+  </h2>
+
+  <table class="table table-hover">
+
+    {% if collection.reportable %}
+    <tr>
+      <th>Reportable</th>
+      <td class="text-right">
+        {% if collection.report_allow_edit %}
+        <i class="flaticon-edit"></i> ({{ collection.report_edit_templates|length }})
+        {% endif %}
+        {% if collection.report_allow_delete %}
+        <i class="flaticon-delete"></i> ({{ collection.report_delete_templates|length }})
+        {% endif %}
+      </td>
+    </tr>
+    {% endif %}
+
+    {% if collection.types %}
+    <tr>
+      <th>Types</th>
+      <td class="text-right">
+        {% for type in collection.types.keys %}<span class="label label-info">{{ type }}</span> {% endfor %}
+      </td>
+    </tr>
+    {% endif %}
+
+    {% if collection.collectible_collections %}
+    <tr>
+      <th>Collectible</th>
+      <td class="text-right">
+        {% for cc in collection.collectible_collections %}<span class="label label-warning">{{ cc }}</span> {% endfor %}
+      </td>
+    </tr>
+    {% endif %}
+
+    {% if collection.translated_fields %}
+    <tr>
+      <th>Fields that can be translated by translators</th>
+      <td class="text-right">
+        {% for t in collection.translated_fields %}<span class="label label-success">{{ t }}</span> {% endfor %}
+      </td>
+    </tr>
+    {% endif %}
+
+  </div>
+
+
+  <table class="table table-striped table-bordered">
+
+    <tr>
+      {% for view in collection.all_views %}
+      <th style="width: 25%">
+        {{ view.view_title }}
+      </th>
+      {% endfor %}
+    </tr>
+    <tr>
+      {% for view in collection.all_views %}
+      <td>
+        {% if not view.enabled %}
+        <p class="text-danger"><i class="flaticon-delete"></i> Disabled</p>
+        {% else %}
+        <h4 class="pull-left">Permissions</h4>
+        <p class="text-right" style="color: red;">
+          {% if view.authentication_required %}<i class="flaticon-logout text-warning"></i><br>{% endif %}
+          {% if view.logout_required %}Logout required<br>{% endif %}
+          {% if view.staff_required %}Staff required<br>{% endif %}
+          {% if view.permissions_required %}
+          All:&nbsp;{% include 'include/show_permissions_and_groups.html' with permissions=view.permissions_required %}{% endif %}
+          {% if view.one_of_permissions_required %}
+          One of:&nbsp;{% include 'include/show_permissions_and_groups.html' with permissions=view.one_of_permissions_required %}{% endif %}
+          {% if view.owner_only %}Owner only<br>{% endif %}
+          {% if view.owner_or_staff_only %}Owner or staff only<br>{% endif %}
+          {% if view.owner_only_or_permissions_required %}
+          Owner only or:&nbsp;{% include 'include/show_permissions_and_groups.html' with permissions=view.owner_only_or_permissions_required %}{% endif %}
+          {% if view.owner_only_or_one_of_permissions_required %}
+          Owner only or one of:&nbsp;{% include 'include/show_permissions_and_groups.html' with permissions=view.owner_only_or_one_of_permissions_required %}{% endif %}
+          {% if not view.authentication_required and not view.logout_required and not view.staff_required and not view.permissions_required and not view.one_of_permissions_required and not view.owner_only and not view.owner_or_staff_only and not view.owner_only_or_permissions_required and not view.owner_only_or_one_of_permissions_required %}<i class="flaticon-world text-muted"></i>{% endif %}
+        </p>
+
+        {% if view.view == 'edit_view' %}
+        <hr>
+        <h4 class="pull-left">Allow delete</h4>
+        <p class="text-right">
+          {% if view.allow_delete %}<i class="flaticon-checked"></i>
+          {% else %}<i class="flaticon-delete"></i>{% endif %}
+        </p>
+        {% endif %}
+
+        {% endif %}
+
+      </td>
+      {% endfor %}
+    </tr>
+  </table>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% load tools %}{% for p in permissions %}<span
+                            class="label label-default"
+                            data-toggle="popover"
+                            title="Groups with this permission"
+                            data-content="<ul class='text-muted'>
+                                          {% with groups=groups_per_permissions|getattribute:p %}
+                                          {% for group_name, group in groups.items %}
+                                          <li>{{ group.translation }}</li>
+                                          {% endfor %}
+                                          {% endwith %}</ul>"
+                            data-trigger="hover"
+                            data-placement="top"
+                            data-html="true">
+  {{ p }}
+</span> {% endfor %}<br>

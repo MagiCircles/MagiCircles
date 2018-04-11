@@ -1,4 +1,5 @@
 import hashlib, urllib, datetime, os
+from collections import OrderedDict
 from django.db import models
 from django.contrib.auth.models import User
 from django.core import validators
@@ -8,7 +9,7 @@ from django.utils.formats import dateformat
 from django.forms.models import model_to_dict
 from django.conf import settings as django_settings
 from magi.utils import AttrDict, randomString, getMagiCollection, uploadToRandom, uploadItem, linkToImageURL
-from magi.settings import ACCOUNT_MODEL, GAME_NAME, COLOR, SITE_STATIC_URL, DONATORS_STATUS_CHOICES, USER_COLORS, FAVORITE_CHARACTERS, SITE_URL, SITE_NAME, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, ACTIVITY_TAGS
+from magi.settings import ACCOUNT_MODEL, GAME_NAME, COLOR, SITE_STATIC_URL, DONATORS_STATUS_CHOICES, USER_COLORS, FAVORITE_CHARACTERS, SITE_URL, SITE_NAME, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, ACTIVITY_TAGS, GROUPS
 from magi.item_model import MagiModel, BaseMagiModel, get_image_url, i_choices, addMagiModelProperties
 from magi.abstract_models import CacheOwner
 
@@ -112,6 +113,19 @@ class UserPreferences(BaseMagiModel):
     unread_notifications = models.PositiveIntegerField(default=0)
     invalid_email = models.BooleanField(default=False)
 
+    GROUPS_CHOICES = [(_k, _v['translation']) for _k, _v in GROUPS]
+    GROUPS = OrderedDict(GROUPS)
+    c_groups = models.TextField(_('Roles'), blank=True, null=True)
+
+    @property
+    def groups_and_details(self):
+        return {
+            group: self.GROUPS[group]
+            for group in self.groups
+        }
+
+    d_extra = models.TextField(blank=True, null=True)
+
     def localized_favorite_character(self, number):
         if getattr(self, 'favorite_character{}'.format(number)) and FAVORITE_CHARACTERS:
             try:
@@ -213,7 +227,7 @@ class UserPreferences(BaseMagiModel):
         """
         self.email_notifications_turned_off_string = ','.join([str(i) for i in turned_off])
 
-    # Cache
+    # Cache twitter
     _cache_twitter = models.CharField(max_length=32, null=True, blank=True) # changed when links are modified
 
     @property

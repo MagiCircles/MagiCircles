@@ -16,7 +16,7 @@ from django.views.decorators.csrf import csrf_exempt
 from magi.forms import CreateUserForm, UserForm, UserPreferencesForm, AddLinkForm, ChangePasswordForm, EmailsPreferencesForm, LanguagePreferencesForm
 from magi import models
 from magi.raw import donators_adjectives
-from magi.utils import getGlobalContext, ajaxContext, redirectToProfile, tourldash, redirectWhenNotAuthenticated, dumpModel, send_email, emailContext, getMagiCollection, cuteFormFieldsForContext, CuteFormType, FAVORITE_CHARACTERS_IMAGES
+from magi.utils import getGlobalContext, ajaxContext, redirectToProfile, tourldash, redirectWhenNotAuthenticated, dumpModel, send_email, emailContext, getMagiCollection, getMagiCollections, cuteFormFieldsForContext, CuteFormType, FAVORITE_CHARACTERS_IMAGES, groupsForAllPermissions, hasPermission
 from magi.notifications import pushNotification
 from magi.settings import SITE_NAME, GAME_NAME, ENABLED_PAGES, FAVORITE_CHARACTERS, TWITTER_HANDLE, BUG_TRACKER_URL, GITHUB_REPOSITORY, CONTRIBUTE_URL, CONTACT_EMAIL, CONTACT_REDDIT, CONTACT_FACEBOOK, CONTACT_DISCORD, FEEDBACK_FORM, ABOUT_PHOTO, WIKI, HELP_WIKI, LATEST_NEWS, SITE_LONG_DESCRIPTION, CALL_TO_ACTION, TOTAL_DONATORS, GAME_DESCRIPTION, GAME_URL, ON_USER_EDITED, ON_PREFERENCES_EDITED, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, SITE_LOGO_PER_LANGUAGE
 from magi.views_collections import item_view, list_view
@@ -288,7 +288,7 @@ def deletelink(request, pk):
     return HttpResponse('')
 
 def moderatereport(request, report, action):
-    if not request.user.is_authenticated() or not request.user.is_staff or request.method != 'POST':
+    if not request.user.is_authenticated() or not hasPermission(request.user, 'moderate_reports') or request.method != 'POST':
         raise PermissionDenied()
     report = get_object_or_404(models.Report.objects.exclude(owner=request.user).select_related('owner', 'owner__preferences'), pk=report, i_status=models.Report.get_i('status', 'Pending'))
 
@@ -398,7 +398,7 @@ def moderatereport(request, report, action):
     })
 
 def reportwhatwillbedeleted(request, report):
-    if not request.user.is_authenticated() or not request.user.is_staff:
+    if not request.user.is_authenticated() or not hasPermission(request.user, 'moderate_reports'):
         raise PermissionDenied()
     context = ajaxContext(request)
     # Get the report
@@ -493,3 +493,16 @@ def successdelete(request):
     context = ajaxContext(request)
     context['success_sentence'] = _('Successfully deleted!')
     return render(request, 'pages/ajax/success.html', context)
+
+############################################################
+# Dev
+
+def collections(request):
+    context = getGlobalContext(request)
+    redirectWhenNotAuthenticated(request, context, next_title='Collections details')
+    if not hasPermission(request.user, 'see_collections_details'):
+        raise PermissionDenied()
+    context['page_title'] = 'Dev / Collections'
+    context['collections'] = getMagiCollections()
+    context['groups_per_permissions'] = groupsForAllPermissions(request.user.preferences.GROUPS)
+    return render(request, 'pages/dev/collections.html', context)

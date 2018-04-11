@@ -296,6 +296,7 @@ def add_view(request, name, collection, type=None, ajax=False, shortcut_url=None
             raise Http404
         with_types = True
         context['type'] = type
+        collection.add_view.check_type_permissions(request, context, type=type)
         formClass = collection.types[type].get('form_class', collection.add_view.form_class)
         context['imagetitle'] = collection.types[type].get('image', collection.image)
         context['icontitle'] = collection.types[type].get('icon', collection.icon)
@@ -357,19 +358,23 @@ def add_view(request, name, collection, type=None, ajax=False, shortcut_url=None
 
 def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, shortcut_url=None, **kwargs):
     context = collection.edit_view.get_global_context(request)
-    collection.edit_view.check_permissions(request, context)
+    context['is_translate'] = 'translate' in request.GET
+    if context['is_translate']:
+        collection.edit_view.check_translate_permissions(request, context)
+    else:
+        collection.edit_view.check_permissions(request, context)
     context = _modification_view(context, name, collection.edit_view)
     queryset = collection.edit_view.get_queryset(collection.queryset, _get_filters(request.GET, extra_filters), request)
     instance = get_one_object_or_404(queryset, **collection.edit_view.get_item(request, pk))
     context['type'] = None
     collection.edit_view.check_owner_permissions(request, context, instance)
-    isTranslate = 'translate' in request.GET
-    if isTranslate:
+    if context['is_translate']:
         formClass = collection.edit_view.translate_form_class
         context['icontitle'] = 'world'
     elif collection.types:
         type = instance.type
         context['type'] = type
+        collection.edit_view.check_type_permissions(request, context, type=type, item=instance)
         formClass = collection.types[type].get('form_class', collection.edit_view.form_class)
         context['imagetitle'] = collection.types[type].get('image', collection.image)
         context['icontitle'] = collection.types[type].get('icon', collection.icon)
@@ -379,7 +384,7 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
         context['icontitle'] = collection.icon
     if str(_type(formClass)) == '<type \'instancemethod\'>':
         formClass = formClass(request, context)
-    allowDelete = not isTranslate and collection.edit_view.allow_delete and 'disable_delete' not in request.GET
+    allowDelete = not context['is_translate'] and collection.edit_view.allow_delete and 'disable_delete' not in request.GET
     form = formClass(instance=instance, request=request, ajax=ajax, collection=collection)
     if allowDelete:
         formDelete = ConfirmDelete(initial={
@@ -399,7 +404,7 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
             instance = form.save(commit=False)
             instance = collection.edit_view.before_save(request, instance)
             instance.save()
-            if collection.edit_view.savem2m and not isTranslate:
+            if collection.edit_view.savem2m and not context['is_translate']:
                 form.save_m2m()
             instance = collection.edit_view.after_save(request, instance)
             redirectURL = collection.edit_view.redirect_after_edit(request, instance, ajax)
