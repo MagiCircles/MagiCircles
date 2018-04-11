@@ -21,7 +21,7 @@ from magi.django_translated import t
 from magi import models
 from magi.default_settings import RAW_CONTEXT
 from magi.settings import FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTERS, USER_COLORS, GAME_NAME, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, ON_PREFERENCES_EDITED, PROFILE_TABS
-from magi.utils import ordinalNumber, randomString, shrinkImageFromData, getMagiCollection, getAccountIdsFromSession, hasPermission, toHumanReadable, usersWithPermission
+from magi.utils import ordinalNumber, randomString, shrinkImageFromData, getMagiCollection, getAccountIdsFromSession, hasPermission, toHumanReadable, usersWithPermission, staticImageURL
 
 ############################################################
 # Internal utils
@@ -170,7 +170,11 @@ class MagiForm(forms.ModelForm):
                             except FieldDoesNotExist: singular_field = None
                             self.fields[field_name] = forms.CharField(
                                 required=False,
-                                label=u'{}: {}'.format(self.fields[name].label, choice[1] if isinstance(choice, tuple) else choice),
+                                label=self.fields[name].label,
+                                help_text=mark_safe(u'<img src="{}" height="20" /> {}'.format(
+                                    staticImageURL(key, folder='language', extension='png'),
+                                    choice[1] if isinstance(choice, tuple) else choice,
+                                )),
                                 initial=getattr(self.instance, name[2:]).get(key, None) if not self.is_creating else None,
                                 widget=forms.Textarea if singular_field and isinstance(singular_field, TextField) else forms.TextInput,
                             )
