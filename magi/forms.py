@@ -758,6 +758,7 @@ class StaffEditUser(_UserCheckEmailUsernameForm):
         self.old_location = instance.preferences.location if instance else None
 
         # edit_roles permission
+        self.old_c_groups = self.instance.preferences.c_groups
         if 'c_groups' in self.fields:
             if hasPermission(self.request.user, 'edit_roles'):
                 choices = [
@@ -827,13 +828,17 @@ class StaffEditUser(_UserCheckEmailUsernameForm):
         for field_name in ['description', 'i_status', 'donation_link', 'donation_link_title']:
             if field_name in self.fields and field_name in self.cleaned_data:
                 setattr(instance.preferences, field_name, self.cleaned_data[field_name])
-        if not instance.is_staff and 'c_groups' in self.fields and 'c_groups' in self.cleaned_data:
+        if 'c_groups' in self.fields and 'c_groups' in self.cleaned_data:
             instance.preferences.save_c('groups', self.cleaned_data['c_groups'])
-            for group in instance.preferences.groups:
-                if instance.preferences.GROUPS[group].get('requires_staff', False):
-                    instance.is_staff = True
-                    break
+            if not instance.is_staff:
+                for group in instance.preferences.groups:
+                    if instance.preferences.GROUPS[group].get('requires_staff', False):
+                        instance.is_staff = True
+                        break
+        else:
+            instance.preferences.c_groups = self.old_c_groups
         instance.preferences.save()
+        efwrgehtry
         if commit:
             instance.save()
         return instance
