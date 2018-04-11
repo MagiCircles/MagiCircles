@@ -1235,7 +1235,7 @@ class AccountCollection(MagiCollection):
     @property
     def report_edit_templates(self):
         templates = OrderedDict([
-            ('Unrealistic Level', 'Your level is unrealistic, so we edited it. Please provide screenshots of your game to prove it and we\'ll change it back. Thank you for your understanding.'),
+            ('Unrealistic Level', 'Your level is unrealistic, so we edited it. If this was a mistake, please upload a screenshot of your game to the details of your account to prove your level and change it back. Thank you for your understanding.'),
         ])
         for field in self.queryset.model._meta.fields:
             if not field.name.startswith('_') and field.name not in ['id', 'owner', 'creation', 'level', 'default_tab']:
@@ -2026,7 +2026,7 @@ class ReportCollection(MagiCollection):
 
         def extra_context(self, context):
             context['alert_message'] = mark_safe(u'{message}<ul>{list}</ul>'.format(
-                message=_(u'Only submit a report if there is a problem with this specific {thing}. If it\'s about something else, your report will be ignored. For example, don\'t report an account or a profile if there is a problem with an activity. Look for "Report" buttons on the following to report individually:').format(thing=context['type']),
+                message=_(u'Only submit a report if there is a problem with this specific {thing}. If it\'s about something else, your report will be ignored. For example, don\'t report an account or a profile if there is a problem with an activity. Look for "Report" buttons on the following to report individually:').format(thing=self.collection.types[context['type']]['title'].lower()),
                 list=''.join([u'<li>{}</li>'.format(unicode(type['plural_title'])) for name, type in self.collection.types.items() if name != context['type']]),
             ))
             return context
