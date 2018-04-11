@@ -82,6 +82,12 @@ class _View(object):
             return False
         return True
 
+    def view_title(self):
+        return self.view.replace('_', ' ').capitalize()
+
+    def __unicode__(self):
+        return u'{}: {}'.format(self.collection, self.view_title)
+
 class MagiCollection(object):
     # Required variables
     @property
@@ -825,6 +831,10 @@ class MagiCollection(object):
     @property
     def is_first_collection_parent(self):
         return getMagiCollection(FIRST_COLLECTION).parent_collection.name == self.name
+
+    @property
+    def all_views(self):
+        return [self.list_view, self.item_view, self.add_view, self.edit_view]
 
     def __unicode__(self):
         return u'MagiCollection {}'.format(self.name)
