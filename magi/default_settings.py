@@ -39,6 +39,10 @@ DEFAULT_GROUPS = [
         'translation': _('Manager'),
         'description': 'The leader of our staff team is here to make sure that the website is doing well! They make sure we all get things done together and the website keeps getting new users everyday.',
         'permissions': ['edit_roles', 'edit_staff_status', 'edit_donator_status', 'see_profile_edit_button', 'edit_staff_configurations', 'add_badges', 'see_collections_details'],
+    }),
+    ('circles', {
+        'translation': string_concat('Circles - ', _('Manager')),
+        'description': 'Supervises and helps the creation and growth of all the websites. Advises but generally doesn\'t interfere with the managers\' decisions.',
         'requires_staff': True,
     }),
     ('team', {
@@ -46,18 +50,31 @@ DEFAULT_GROUPS = [
         'description': 'Knows all the team members and discuss with them on a regular basis to make sure they are all active.',
         'permissions': ['edit_staff_status', 'edit_roles', 'see_profile_edit_button'],
         'requires_staff': True,
+        'outside_permissions': [
+            'Administrate the contributors on GitHub',
+            'Administrate the contributors on Tweetdeck',
+            'Administrate the moderators on Disqus',
+        ],
     }),
     ('finance', {
         'translation': _('Finance manager'),
         'description': 'The finances manager keeps track of our monthly spending and donations, makes sure donators get their rewards, and we have enough funds every month to cover the server and other expenses.',
         'permissions': ['add_donation_badges', 'manage_donation_months', 'edit_donator_status'],
         'requires_staff': True,
+        'requires_staff': True,
+        'outside_permissions': [
+            'Access Patreon manager',
+            'Access donators forms responses',
+        ],
     }),
     ('db', {
         'translation': _('Database maintainer'),
         'description': 'We gather all the game data in one convenient place for you~ Some of our team members extract the assets and data directly from the game, some enter missing info manually. We do our best to publish all the game data as soon as it gets published!',
         'permissions': ['manage_main_items'],
         'requires_staff': True,
+        'outside_permissions': [
+            'API key',
+        ],
     }),
     ('cm', {
         'translation': _('Community manager'),
@@ -69,6 +86,9 @@ DEFAULT_GROUPS = [
         'translation': string_concat(_('Community manager'), ' (', _('Twitter'), ')'),
         'description': 'We got you covered with all the game news on Twitter! Thanks to our active team, you know that by following us on Twitter, you\'ll never miss anything!',
         'requires_staff': True,
+        'outside_permissions': [
+            'Tweetdeck',
+        ],
     }),
     ('external_cm', {
         'translation': _('External communication'),
@@ -79,6 +99,12 @@ DEFAULT_GROUPS = [
         'translation': _('Support'),
         'description': 'Need help with our website or the game? Our support team is here to help you and answer your questions!',
         'requires_staff': True,
+        'outside_permissions': [
+            'Tweetdeck',
+            'Receive private messages on Facebook',
+            'Receive private messages on Reddit',
+            'Receive emails',
+        ],
     }),
     ('a_moderator', {
         'translation': string_concat(_('Moderator'), ' (', _('Active'), ')'),
@@ -90,18 +116,36 @@ DEFAULT_GROUPS = [
         'description': 'When something gets reported, our team of decisive moderators will make a decision on whether or not it should be edited or deleted. This 2-steps system ensures that our team makes fair decisions!',
         'permissions': ['moderate_reports', 'edit_reported_things'],
         'requires_staff': True,
+        'outside_permissions': [
+            'Disqus moderation',
+        ],
     }),
     ('entertainer', {
         'translation': _('Community entertainer'),
         'description': 'We keep the community active and happy by organizing fun stuff: contests, giveaways, games, etc. We\'re open to feedback and ideas!',
         'permissions': ['edit_staff_configurations', 'add_badges'],
         'requires_staff': True,
+        'outside_permissions': [
+            'Tweetdeck',
+        ],
+    }),
+    ('discord', {
+        'translation': string_concat(_('Moderator'), ' (Discord)'),
+        'description': '',
+        'permissions': ['translate_items', 'translate_staff_configurations'],
+        'requires_staff': False,
+        'outside_permissions': [
+            'Discord moderator role',
+        ],
     }),
     ('translator', {
         'translation': _('Translator'),
         'description': 'Many people can\'t understand English very well, so by doing so our amazing translators work hard to translate our websites in many languages. By doing so they\'re helping hundreds of people access the information we provide easily and comfortably.',
         'permissions': ['translate_items', 'translate_staff_configurations'],
         'requires_staff': False,
+        'outside_permissions': [
+            'POEditor access',
+        ],
     }),
     ('design', {
         'translation': _('Graphic designer'),

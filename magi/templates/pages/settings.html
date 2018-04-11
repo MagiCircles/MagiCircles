@@ -83,6 +83,9 @@
           {% for permission in details.verbose_permissions %}
           <li>{{ permission }}</li>
           {% endfor %}
+          {% for permission in details.outside_permissions %}
+          <li>{{ permission }}</li>
+          {% endfor %}
         </ul>
         {% endif %}
       </p>
