@@ -332,6 +332,9 @@ def tourldash(string):
     s =  u''.join(e if e.isalnum() else u'-' for e in string)
     return u'-'.join([s for s in s.split(u'-') if s])
 
+def toHumanReadable(string):
+    return string.lower().replace('_', ' ').replace('-', ' ').capitalize()
+
 def jsv(v):
     return mark_safe(simplejson.dumps(v))
 
