@@ -391,6 +391,21 @@ def setSubField(fields, field_name, value, key='icon'):
         if field_name in fields:
             fields[field_name][key] = value(field_name) if callable(value) else value
 
+def getSubField(fields, l, default=None):
+    ret = fields
+    for i in l:
+        if isinstance(ret, dict):
+            try:
+                ret = ret[i]
+            except KeyError:
+                return default
+        else:
+            try:
+                ret = getattr(ret, i)
+            except AttributeError:
+                return default
+    return ret
+
 ############################################################
 # Join / Split data stored as string in database
 
