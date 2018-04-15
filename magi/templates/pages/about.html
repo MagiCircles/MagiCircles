@@ -1,6 +1,7 @@
 {% extends extends %}
 {% load i18n %}
 {% load tools %}
+{% load magi_tags %}
 {% get_current_language as LANGUAGE_CODE %}
 
 {% block title %}{% trans 'About' %}{% endblock %}
@@ -57,33 +58,208 @@
     <h1 class="text-main padding50">{% trans 'Staff members' %}</h1>
 
     <div class="row">
-      {% for user in staff %}
-      {% if forloop.counter0|mod:3 %}
+      {% for staff_member in staff %}
+      {% if forloop.counter0|mod:2 %}
     </div><div class="row">
       {% endif%}
-      <div class="col-md-4">
-	      <div class="panel panel-{{ user.preferences.css_color }} panel-donation">
-	        <div class="panel-heading">
-	          <strong>{{ user.username }}</strong> -
-	          {% if user.is_superuser %}
-	          {% trans 'Owner' %}
-	          {% else %}
-	          {% trans 'Staff' %}
-	          {% endif %}
-	        </div>
-	        <div class="panel-body">
-	          <div class="row">
-	            <div class="col-xs-5">
-		            {% include 'include/avatar.html' with av_user=user av_image_size=150 av_size=30 av_link=True av_external=True %}
-	            </div>
-	            <div class="col-xs-7">
-		            <a href="/user/{{ user.username}}/" target="_blank" class="btn btn-{{ user.preferences.css_color }} btn-lg">
-		              {% trans 'Profile' %}
-		            </a>
-	            </div>
-	          </div>
-	        </div>
-	      </div>
+      <div class="col-md-6">
+        <div class="staff-profile a-{{ staff_member.preferences.css_color }}">
+          <div class="text-center">
+            <a href="{{ staff_member.item_url }}" target="_blank">
+              <img src="{% if staff_member.staff_details and staff_member.staff_details.image %}{{ staff_member.staff_details.image_url }}{% else %}{{ staff_member.image_url }}{% endif %}" class="img-circle staff-photo">
+              </a>
+          </div>
+	  <h3 class="text-center text-{{ staff_member.preferences.css_color }}">
+            {{ staff_member.username }}
+          </h3>
+          <div class="text-center groups">
+            {% for group, details in staff_member.preferences.groups_and_details.items %}
+            {# <img alt="{{ details.translation }}" src="{{ static_url }}img/groups/{{ group }}.png" height="30"> #}
+            <h4
+              data-toggle="popover"
+              title="{{ details.translation }}"
+              data-content="<img class='pull-right' height='80' src='{{ static_url }}img/groups/{{ group }}.png' alt='{{ details.translation }}'> {{ details.description }}"
+              data-placement="bottom"
+              data-trigger="hover"
+              data-html="true"
+              >
+              {{ details.translation }}
+              <i class="flaticon-about"></i>
+            </h4>
+            {% endfor %}
+          </div>
+          {% if staff_member.staff_details.description %}
+          <blockquote class="text-muted fontx0-8 to-markdown">{{ staff_member.staff_details.description }}</blockquote>
+          {% endif %}
+          <div class="staff-trivia text-center">
+            {% if staff_member.staff_details.preferred_name %}
+            <span class="mini">{{ staff_member.staff_details.preferred_name }}</span>
+            {% endif %}
+            {% if staff_member.staff_details.pronouns %}
+            <span class="mini">{{ staff_member.staff_details.pronouns }}</span>
+            {% endif %}
+            {% if staff_member.staff_details.nickname %}
+            <span class="mini">{{ staff_member.staff_details.nickname }}</span>
+            {% endif %}
+            {% if staff_member.staff_details.favorite_food %}
+            <span class="mini">
+              <span class="text-{{ staff_member.preferences.css_color }}">
+                <i class="flaticon-heart text-{{ staff_member.preferences.css_color }}"></i>
+              </span>
+              {{ staff_member.staff_details.t_favorite_food }}
+            </span>
+            {% endif %}
+            {% if staff_member.staff_details.hobbies %}
+            <span class="mini">
+              <span class="text-{{ staff_member.preferences.css_color }}">
+                <i class="flaticon-star text-{{ staff_member.preferences.css_color }}"></i>
+              </span>
+              {{ staff_member.staff_details.t_hobbies }}
+            </span>
+            {% endif %}
+            {% if staff_member.staff_details.timezone or staff_member.preferences.location %}
+            <span class="mini">
+              <span class="text-{{ staff_member.preferences.css_color }}">
+                <i class="flaticon-world text-{{ staff_member.preferences.css_color }}"></i>
+              </span>
+              {% if staff_member.preferences.location %}
+              <a href="{{ staff_member.location_url }}" target="_blank" class="a-nodifference">
+                {{ staff_member.preferences.location }}
+              </a>
+              {% else %}
+              {{ staff_member.staff_details.timezone }}
+              {% endif %}
+              {% if staff_member.staff_details.timezone %}
+              <small class="text-muted">
+                (<span
+                   class="timezone"
+                   data-to-timezone="{{ staff_member.staff_details.timezone }}"
+                   data-hide-year="true"
+                   data-month-format="short"
+                   style="display: none;"
+                   ><span class="datetime">{{ now|torfc2822 }}</span></span>)
+              </small>
+              {% endif %}
+            </span>
+            {% endif %}
+            {% if staff_member.preferences.birthdate %}
+            <span class="mini">
+              <span class="text-{{ staff_member.preferences.css_color }}">
+                <i class="flaticon-event text-{{ staff_member.preferences.css_color }}"></i>
+              </span>
+              <a href="{{ staff_member.birthday_url }}" target="_blank" class="a-nodifference">
+                {{ staff_member.formatted_birthday }}
+              </a>
+            </span>
+            {% endif %}
+          </div>
+          <div class="text-center fontx0-8 hashtags">
+            {% for hashtag in staff_member.staff_details.hashtags %}
+            {{ hashtag }}
+            {% if not forloop.last %}/{% endif %}
+            {% endfor %}
+          </div>
+          {% if staff_member.all_links %}
+          <div class="text-center staff-links">
+            {% for link in staff_member.all_links %}
+            <a href="{{ link.url }}" target="_blank" class="btn btn-circle btn-{{ staff_member.preferences.css_color }}">
+              {% if link.flaticon %}
+              <i class="flaticon-{{ link.flaticon }}"></i>
+              {% elif link.image_url %}
+              <img src="{{ link.image_url }}" alt="{{ link.type }}">
+              {% endif %}
+            </a>
+            {% endfor %}
+          </div>
+          {% endif %}
+          {% if user.is_staff %}
+          <div class="staff-only list-group">
+            <div class="list-group-item">
+              <h4 class="list-group-item-heading">Discord username</h4>
+              <p class="list-group-item-text">
+                {{ staff_member.staff_details.discord_username }}
+              </p>
+            </div>
+            <div class="list-group-item">
+              <h4 class="list-group-item-heading">Staff since</h4>
+              <p class="list-group-item-text">
+                {% if staff_member.staff_details.staff_since %}
+                <span class="timezone" data-timeago="true" data-to-timezone="Local time">
+	          <span class="datetime">{{ staff_member.staff_details.staff_since|torfc2822 }}</span>
+	          (<span class="current_timezone">UTC</span>)
+	        </span>
+                {% else %}
+                ?
+                {% endif %}
+              </p>
+            </div>
+            <div class="list-group-item">
+              <h4 class="list-group-item-heading">Timezone</h4>
+              <p class="list-group-item-text">
+                {% if staff_member.staff_details.timezone %}
+                {{ staff_member.staff_details.timezone }}<br>
+                <i class="text-muted">Right now, for {{ staff_member.username }}, it's:</i>
+                <strong
+                  class="alert alert-info timezone"
+                  data-to-timezone="{{ staff_member.staff_details.timezone }}"
+                  data-hide-year="true"
+                  data-month-format="short"
+                  style="display: none;"
+                  ><span class="datetime">{{ now|torfc2822 }}</span></strong><br><br>
+                {% else %}
+                ?
+                {% endif %}
+              </p>
+            </div>
+            <div class="list-group-item">
+              <h4 class="list-group-item-heading">Availability</h4>
+              <div class="list-group-item-text">
+                {% if staff_member.show_calendar %}
+                <table class="text-center table table-bordered table-condensed staff-availability">
+                  {% for row in staff_member.availability_calendar %}
+                  <tr{% if forloop.counter0 != 0 %} class="fontx0-8"{% endif %}>
+                    {% for col in row %}
+                    <td{% if col == 'yes' %} class="success"{% elif col == 'no' %} class="active"{% endif %}
+                          width="{% if staff_member.calendar_with_timezone %}{% if forloop.counter0 == 0 or forloop.counter0 == 1 %}15{% else %}10{% endif %}{% else %}{% if forloop.counter0 == 0 %}20{% else %}10{% endif %}{% endif %}%">
+                      {% if col != 'yes' and col != 'no' %}{{ col }}{% endif %}
+                    </td>
+                    {% endfor %}
+                  </tr>
+                  {% endfor %}
+                </table>
+                {% if staff_member.staff_details.availability_details %}
+                <blockquote class="fontx0-8 text-muted">{{ staff_member.staff_details.availability_details }}</blockquote>
+                {% endif %}
+                {% elif staff_member.staff_details.availability_details %}
+                <blockquote class="fontx0-8 text-muted">{{ staff_member.staff_details.availability_details }}</blockquote>
+                {% else %}
+                Unknown availability.
+                {% endif %}
+                {% if staff_member.staff_details.timezone %}
+                {% if staff_member.staff_details.d_availability or staff_member.staff_details.d_weekend_availability %}
+                Right now, {{ staff_member.username }} is:
+                {% if staff_member.staff_details.available_now %}
+                <strong class="alert alert-success">AVAILABLE</strong>
+                {% else %}
+                <strong class="alert alert-danger">NOT AVAILABLE</strong>
+                {% endif %}
+                <br><br>
+                {% endif %}
+                {% endif %}
+              </div>
+            </div>
+            <div class="list-group-item">
+              <h4 class="list-group-item-heading">Experience with the community</h4>
+              <p class="list-group-item-text to-markdown">{% if staff_member.staff_details.experience %}{{ staff_member.staff_details.experience }}{% else %}?{% endif %}
+              </p>
+            </div>
+            <div class="list-group-item">
+              <h4 class="list-group-item-heading">Other experience</h4>
+              <p class="list-group-item-text to-markdown">{% if staff_member.staff_details.other_experience %}{{ staff_member.staff_details.other_experience }}{% else %}?{% endif %}
+            </div>
+          </div>
+          {% endif %}
+        </div>
       </div>
       {% endfor %}
     </div>

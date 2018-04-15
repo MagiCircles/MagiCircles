@@ -166,17 +166,30 @@ class MagiForm(forms.ModelForm):
                             key = choice[0] if isinstance(choice, tuple) else choice
                             field_name = u'{}-{}'.format(name, key)
                             self.d_choices[name[2:]].append((field_name, key))
-                            try: singular_field = self.Meta.model._meta.get_field(name[2:-1])
-                            except FieldDoesNotExist: singular_field = None
+                            widget = forms.TextInput
+                            if getattr(self, 'is_translate_form', False):
+                                try: singular_field = self.Meta.model._meta.get_field(name[2:-1])
+                                except FieldDoesNotExist: singular_field = None
+                                if singular_field and isinstance(singular_field, TextField):
+                                    widget = forms.Textarea
+                                default = getattr(self.instance, name[2:-1], None)
+                                help_text = mark_safe(u'{original}<img src="{img}" height="20" /> {lang}{default}'.format(
+                                    img=staticImageURL(key, folder='language', extension='png'),
+                                    lang=choice[1] if isinstance(choice, tuple) else choice,
+                                    default=u' <code>EN: {}</code>'.format(default or 'no value'),
+                                    original=u'{}<br>'.format(self.fields[name].help_text) if self.fields[name].help_text else '',
+                                ))
+                            else:
+                                help_text = mark_safe(u'{original}{key}'.format(
+                                    original=u'{}<br>'.format(self.fields[name].help_text) if self.fields[name].help_text else '',
+                                    key=choice[1] if isinstance(choice, tuple) else choice,
+                                ))
                             self.fields[field_name] = forms.CharField(
                                 required=False,
                                 label=self.fields[name].label,
-                                help_text=mark_safe(u'<img src="{}" height="20" /> {}'.format(
-                                    staticImageURL(key, folder='language', extension='png'),
-                                    choice[1] if isinstance(choice, tuple) else choice,
-                                )),
+                                help_text=help_text,
                                 initial=getattr(self.instance, name[2:]).get(key, None) if not self.is_creating else None,
-                                widget=forms.Textarea if singular_field and isinstance(singular_field, TextField) else forms.TextInput,
+                                widget=widget,
                             )
                     del(self.fields[name])
             # Make fields with soft choices use a ChoiceField
@@ -196,11 +209,12 @@ class MagiForm(forms.ModelForm):
 
     def clean(self):
         # Check max_per_user
-        if (self.collection
-            and self.request and self.request.user.is_authenticated()):
+        owner = getattr(self, 'to_owner', self.request.user)
+        if (self.is_creating and self.collection
+            and self.request and owner.is_authenticated()):
             if self.collection.add_view.max_per_user_per_hour:
                 already_added = self.Meta.model.objects.filter(**{
-                    self.Meta.model.selector_to_owner(): self.request.user,
+                    self.Meta.model.selector_to_owner(): owner,
                     'creation__gte': timezone.now() - relativedelta(hours=1),
                 }).count()
                 if already_added >= self.collection.add_view.max_per_user_per_hour:
@@ -209,7 +223,7 @@ class MagiForm(forms.ModelForm):
                         .format(things=unicode(self.collection.plural_title).lower()))
             if self.collection.add_view.max_per_user_per_day:
                 already_added = self.Meta.model.objects.filter(**{
-                    self.Meta.model.selector_to_owner(): self.request.user,
+                    self.Meta.model.selector_to_owner(): owner,
                     'creation__gte': timezone.now() - relativedelta(days=1),
                 }).count()
                 if already_added >= self.collection.add_view.max_per_user_per_day:
@@ -218,7 +232,7 @@ class MagiForm(forms.ModelForm):
                         .format(things=unicode(self.collection.plural_title).lower()))
             if self.collection.add_view.max_per_user:
                 already_added = self.Meta.model.objects.filter(**{
-                    self.Meta.model.selector_to_owner(): self.request.user
+                    self.Meta.model.selector_to_owner(): owner
                 }).count()
                 if already_added >= self.collection.add_view.max_per_user:
                     raise forms.ValidationError(unicode(_('You already have {total} {things}. You can only add up to {max} {things}.')).format(
@@ -232,7 +246,11 @@ class MagiForm(forms.ModelForm):
         instance = super(MagiForm, self).save(commit=False)
         # Save owner on creation if specified
         if hasattr(self.Meta, 'save_owner_on_creation') and self.Meta.save_owner_on_creation and self.is_creating:
-            instance.owner = self.request.user if self.request.user.is_authenticated() else None
+            owner = getattr(self, 'to_owner', None)
+            if owner:
+                instance.owner = owner
+            else:
+                instance.owner = self.request.user if self.request.user.is_authenticated() else None
         # Save d_ dict choices
         for dfield, choices in self.d_choices.items():
             d = {}
@@ -766,11 +784,16 @@ class StaffEditUser(_UserCheckEmailUsernameForm):
         if 'c_groups' in self.fields:
             if hasPermission(self.request.user, 'edit_roles'):
                 choices = [
-                    (key, mark_safe(u'<b>{}</b><br><p>{}<small class="text-muted">{}</small></p><ul>{}</ul>'.format(
-                        group['translation'],
-                        u'<small class="text-danger">Requires staff status</small><br>' if group.get('requires_staff', False) else u'',
-                        group['description'],
-                        u''.join([u'<li style="display: list-item"><small>{}</small></li>'.format(toHumanReadable(p)) for p in group.get('permissions', [])]),
+                    (key, mark_safe(u'<img class="pull-right" height="60" alt="{name}" src="{img}"><b>{name}</b><br><p>{reqstaff}<small class="text-muted">{description}</small></p><ul>{perms}</ul>{operms}<br>'.format(
+                        img=staticImageURL(key, folder='groups', extension='png'),
+                        name=group['translation'],
+                        reqstaff=u'<small class="text-danger">Requires staff status</small><br>' if group.get('requires_staff', False) else u'',
+                        description=group['description'],
+                        perms=u''.join([u'<li style="display: list-item"><small>{}</small></li>'.format(toHumanReadable(p)) for p in group.get('permissions', [])]),
+                        operms=u'<br><div class="alert alert-danger"><small>Make sure you also grant/revoke {user} the following permissions <b>manually</b>:</small> <ul>{permissions}</ul></div>'.format(
+                            user=instance.username,
+                            permissions=''.join([u'<li style="display: list-item"><small>{}</small></li>'.format(p) for p in group['outside_permissions']]),
+                        ) if group.get('outside_permissions', []) else u'',
                     ))) for key, group in instance.preferences.GROUPS.items()
                 ]
                 self.fields['c_groups'] = forms.MultipleChoiceField(
@@ -951,6 +974,7 @@ class StaffConfigurationForm(AutoForm):
     class Meta(AutoForm.Meta):
         model = models.StaffConfiguration
         save_owner_on_creation = True
+        fields = '__all__'
 
 class StaffConfigurationSimpleEditForm(StaffConfigurationForm):
     class Meta(StaffConfigurationForm.Meta):
@@ -971,6 +995,49 @@ class StaffConfigurationFilters(MagiFiltersForm):
     class Meta(MagiFiltersForm.Meta):
         model = models.StaffConfiguration
         fields = ('search', 'i_language', 'has_value')
+
+############################################################
+# Staff details form
+
+class StaffDetailsForm(AutoForm):
+    for_user = forms.CharField(required=True)
+
+    def clean_for_user(self):
+        try:
+            return models.User.objects.get(username=self.cleaned_data['for_user'], is_staff=True)
+        except ObjectDoesNotExist:
+            raise forms.ValidationError('User doesn\'t exist or is not staff')
+
+    @property
+    def to_owner(self):
+        return self.cleaned_data.get('for_user', self.request.user)
+
+    def __init__(self, *args, **kwargs):
+        super(StaffDetailsForm, self).__init__(*args, **kwargs)
+        for field_name in self.fields:
+            if field_name == 'for_user':
+                continue
+            if field_name in models.StaffDetails.PUBLIC_FIELDS:
+                self.fields[field_name].help_text = mark_safe(u'{} (Public)'.format(self.fields[field_name].help_text))
+            else:
+                self.fields[field_name].help_text = mark_safe(u'{} (Only staff can see it)'.format(self.fields[field_name].help_text))
+        if self.is_creating and hasPermission(self.request.user, 'edit_staff_details'):
+            pass
+        elif 'for_user' in self.fields:
+            del(self.fields['for_user'])
+        for field_name in self.fields.keys():
+            if field_name.startswith('d_availability') or field_name.startswith('d_weekend_availability'):
+                self.fields[field_name] = forms.BooleanField(
+                    label=self.fields[field_name].help_text,
+                    help_text=self.fields[field_name].label,
+                    initial=self.fields[field_name].initial,
+                    required=False,
+                )
+
+    class Meta(AutoForm.Meta):
+        model = models.StaffDetails
+        save_owner_on_creation = True
+        fields = ['for_user', 'discord_username', 'preferred_name', 'pronouns', 'image', 'description', 'favorite_food', 'hobbies', 'nickname', 'c_hashtags', 'staff_since', 'i_timezone', 'availability_details', 'experience', 'other_experience', 'd_availability', 'd_weekend_availability']
 
 ############################################################
 # Activity form
@@ -1137,6 +1204,7 @@ class _BadgeForm(MagiForm):
     class Meta(MagiForm.Meta):
         model = models.Badge
         save_owner_on_creation = True
+        fields = '__all__'
 
 class ExclusiveBadgeForm(_BadgeForm):
     def save(self, commit=True):

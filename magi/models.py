@@ -1,4 +1,5 @@
-import hashlib, urllib, datetime, os
+import hashlib, urllib, datetime, os, pytz
+from dateutil.relativedelta import relativedelta
 from collections import OrderedDict
 from django.db import models
 from django.contrib.auth.models import User
@@ -119,10 +120,11 @@ class UserPreferences(BaseMagiModel):
 
     @property
     def groups_and_details(self):
-        return {
-            group: self.GROUPS[group]
+        return OrderedDict([
+            (group, self.GROUPS[group])
             for group in self.groups
-        }
+            if group in self.GROUPS
+        ])
 
     d_extra = models.TextField(blank=True, null=True)
 
@@ -363,6 +365,171 @@ class StaffConfiguration(MagiModel):
 
     class Meta:
         unique_together = (('key', 'i_language'),)
+
+############################################################
+# Staff details
+
+class StaffDetails(MagiModel):
+    collection_name = 'staffdetails'
+
+    owner = models.OneToOneField(User, related_name='staff_details', on_delete=models.CASCADE, unique=True)
+
+    discord_username = models.CharField('Discord username', max_length=100, null=True)
+    preferred_name = models.CharField('What would you prefer to be called?', max_length=100, null=True)
+    pronouns = models.CharField('Preferred pronouns', max_length=32, null=True)
+
+    image = models.ImageField(_('Image'), upload_to=uploadToRandom('staff_photos/'), null=True, help_text='Photograph of yourself. Real life photos look friendlier when we introduce the team. If you really don\'t want to show your face, you can use an avatar, but we prefer photos :)')
+    description = models.TextField('Self introduction', help_text='You can use markdown to add links.', null=True)
+
+    favorite_food = models.CharField(max_length=100, null=True)
+    FAVORITE_FOODS_CHOICES = [ l for l in django_settings.LANGUAGES if l[0] != 'en' ]
+    d_favorite_foods = models.TextField(_('Favorite food'), null=True)
+
+    hobbies = models.CharField(max_length=100, null=True)
+    HOBBIESS_CHOICES = [ l for l in django_settings.LANGUAGES if l[0] != 'en' ]
+    d_hobbiess = models.TextField(_('hobbies'), null=True)
+
+    nickname = models.CharField('Super hero / Rock star name', null=True, max_length=100)
+    c_hashtags = models.CharField('Hashtags that describe yourself', help_text='Separate with comma', null=True, max_length=200)
+    staff_since = models.DateField('Staff since', null=True)
+
+    TIMEZONE_CHOICES = pytz.common_timezones
+    i_timezone = models.PositiveIntegerField('Timezone', choices=i_choices(TIMEZONE_CHOICES), null=True)
+
+    AVAILABILITY_CHOICES = [(_a, _a.replace('-', ' - ').replace('am', ' am').replace('pm', ' pm')) for _a in [
+        '6am-8am','8am-10am','10am-noon','noon-2pm','2pm-4pm',
+        '4pm-6pm','6pm-8pm','8pm-10pm', '10pm-midnight','midnight-2am', '2am-6am',
+    ]]
+    WEEKEND_AVAILABILITY_CHOICES = AVAILABILITY_CHOICES
+    d_availability = models.TextField('When do you plan to perform your staff tasks on WEEKDAYS (Monday to Friday)? (in your timezone)', null=True)
+    d_weekend_availability = models.TextField('When do you plan to perform your staff tasks on WEEKENDS (Saturday and Sunday)? (in your timezone)', null=True)
+    availability_details = models.TextField('Availability details', null=True, help_text='if your schedule doesn\'t match the weekdays / weekends schema')
+
+    _I_TO_T_AVAILABILITY = dict(i_choices(AVAILABILITY_CHOICES, translation=True))
+    _I_TO_AVAILABILITY = dict(i_choices(AVAILABILITY_CHOICES, translation=False))
+    _AVAILABILITY_TO_I = { _v: _k for _k, _v in i_choices(AVAILABILITY_CHOICES, translation=False) }
+
+    @property
+    def availability_calendar(self):
+        calendar = [['', 'M', 'T', 'W', 'T', 'F', 'S', 'S']] + [
+            [self._I_TO_AVAILABILITY[i] if j == 0 else 'no' for j in range(8)]
+            for i in range(len(self.AVAILABILITY_CHOICES))
+        ]
+        for a, v in self.availability.items():
+            if v:
+                for i in range(5):
+                    calendar[self._AVAILABILITY_TO_I[a]][i + 1] = 'yes'
+        for a, v in self.weekend_availability.items():
+            if v:
+                for i in range(5, 7):
+                    calendar[self._AVAILABILITY_TO_I[a]][i + 1] = 'yes'
+        return calendar
+
+    def _strtime_to_int(self, time):
+        time = time.replace('am', '')
+        if time == 'midnight':
+            time = 0
+        elif time == 'noon':
+            time = 12
+        elif 'pm' in time:
+            time = int(time.replace('pm', '')) + 12
+        else:
+            time = int(time)
+        return time
+
+    def _int_to_strtime(self, integer):
+        if integer == 0 or integer == 24:
+            return 'midnight'
+        elif integer == 12:
+            return 'noon'
+        if integer > 12:
+            return u'{} pm'.format(integer - 12)
+        return u'{} am'.format(integer)
+
+    def _hour_timezone_convert(self, hour, other_timezone):
+        today = datetime.datetime.today()
+        past_monday = today - datetime.timedelta(days=today.weekday())
+        new_date = past_monday.replace(hour=hour, tzinfo=pytz.timezone(self.timezone))
+        new_date_with_other_timezone = new_date.astimezone(pytz.timezone(other_timezone))
+        return new_date_with_other_timezone.hour
+
+    def _availability_time_to_timezone(self, time, other_timezone):
+        new_time = []
+        for time in time.split('-'):
+            integer_time = self._strtime_to_int(time)
+            integer_other_timezone = self._hour_timezone_convert(integer_time, other_timezone)
+            strtime_other_timezone = self._int_to_strtime(integer_other_timezone)
+            new_time.append(strtime_other_timezone)
+        return ' - '.join(new_time)
+
+    def availability_calendar_timezone(self, other_timezone=None):
+        weekdays = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+        if self.timezone and other_timezone:
+            padding = 2
+            weekdays = [self.timezone.split('/')[-1], other_timezone.split('/')[-1]] + weekdays
+            def to_default_value(i, j):
+                if j == 0:
+                    return self._I_TO_T_AVAILABILITY[i]
+                elif j == 1:
+                    return self._availability_time_to_timezone(self._I_TO_AVAILABILITY[i], other_timezone)
+                return 'no'
+        else:
+            padding = 1
+            weekdays = [self.timezone.split('/')[-1] if self.timezone else ''] + weekdays
+            def to_default_value(i, j):
+                if j == 0:
+                    return self._I_TO_AVAILABILITY[i]
+                return 'no'
+        calendar = [weekdays] + [
+            [to_default_value(i, j) for j in range(7 + padding)]
+            for i in range(len(self.AVAILABILITY_CHOICES))
+        ]
+        for a, v in self.availability.items():
+            if v:
+                for i in range(5):
+                    calendar[self._AVAILABILITY_TO_I[a] + 1][i + padding] = 'yes'
+        for a, v in self.weekend_availability.items():
+            if v:
+                for i in range(5, 7):
+                    calendar[self._AVAILABILITY_TO_I[a] + 1][i + padding] = 'yes'
+        return calendar
+
+    @property
+    def availability_calendar(self):
+        return self.availability_calendar_timezone()
+
+    def _hour_to_closest_timerange(self, hour):
+        if hour % 2:
+            hour -= 1
+        if hour > 2 and hour < 6:
+            hour = 2
+        if hour == 2:
+            next_hour = 6
+        else:
+            next_hour = (hour + 2) % 24
+        strtime = self._int_to_strtime(hour)
+        strtime_next = self._int_to_strtime(next_hour)
+        return u'{}-{}'.format(strtime.replace(' ', ''), strtime_next.replace(' ', ''))
+
+    @property
+    def available_now(self):
+        if not self.timezone:
+            return None
+        today = datetime.datetime.today().replace(tzinfo=pytz.utc)
+        date_of_timezone = today.astimezone(pytz.timezone(self.timezone))
+        timerange = self._hour_to_closest_timerange(date_of_timezone.hour)
+        if date_of_timezone.weekday() < 5:
+            return bool(self.availability.get(timerange, False))
+        return bool(self.weekend_availability.get(timerange, False))
+
+    experience = models.TextField('Experience with the community', null=True, help_text='What are your previous/current experiences as an admin, moderator or middleman in the game\'s community or similar?')
+    other_experience = models.TextField('Other experience', null=True, help_text='Other relevant experience as an admin/moderator, your professional background, education, experience working with people, managing social networks, etc.')
+
+    PUBLIC_FIELDS = ['image', 'description', 'favorite_food', 'hobbies', 'nickname', 'c_hashtags', 'preferred_name', 'pronouns', 'timezone']
+    STAFF_ONLY_FIELDS = ['discord_username', 'staff_since', 'availability', 'weekend_availability', 'experience', 'other_experience']
+
+    def __unicode__(self):
+        return u'{} staff details'.format(self.owner.username)
 
 ############################################################
 # Activity

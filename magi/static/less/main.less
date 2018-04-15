@@ -154,6 +154,15 @@
         padding: 8px 0 16px 0;
         font-weight: bold;
     }
+    td:last-child {
+        .long-text-title, .long-text-value {
+            text-align: left;
+            ul {
+                list-style-type: disc;
+                padding: 8px;
+            }
+        }
+    }
     .text-muted {
 	color: #ccc;
 	font-size: 0.8em;
@@ -310,6 +319,45 @@ table.text-center th {
     white-space: normal !important;
     word-wrap: break-word;
     word-break: normal;
+}
+
+.btn-circle {
+    width: 30px;
+    height: 30px;
+    text-align: center;
+    padding: 6px 0;
+    font-size: 12px;
+    line-height: 1.428571429;
+    border-radius: 15px;
+    img {
+        height: 18px;
+    }
+}
+
+.btn-circle.btn-lg {
+    width: 50px;
+    height: 50px;
+    padding: 10px 16px;
+    font-size: 18px;
+    line-height: 1.33;
+    border-radius: 25px;
+    img {
+        margin: -20px;
+        height: 30px;
+    }
+}
+
+.btn-circle.btn-xl {
+    width: 70px;
+    height: 70px;
+    padding: 10px 16px;
+    font-size: 24px;
+    line-height: 1.33;
+    border-radius: 35px;
+    img {
+        margin: 0 -60px;
+        height: 50px;
+    }
 }
 
 .faded {
@@ -873,6 +921,64 @@ nav {
 	&:last-child {
 	    width: 10%;
 	}
+    }
+}
+
+.staff-profile {
+    margin-bottom: 50px;
+    .popover img {
+        box-sizing: content-box;
+        padding: 0 0 20px 20px;
+    }
+    h4 {
+        display: inline-block;
+    }
+    .groups {
+        padding: 2px 0 12px 0;
+        h4 {
+            padding: 2px;
+        }
+        .flaticon-about {
+            padding-left: 4px;
+            font-size: 14px;
+            color: #ccc;
+        }
+    }
+    .staff-photo {
+        max-width: 100%;
+        width: 200px;
+    }
+    .mini {
+        display: inline-block;
+        padding: 8px;
+        white-space: nowrap;
+    }
+    .hashtags {
+        color: #ccc;
+        max-width: 100%;
+        width: 400px;
+        padding: 8px;
+        margin: auto;
+    }
+    .staff-links {
+        padding: 10px 0;
+        width: 300px;
+        max-width: 100%;
+        margin: auto;
+        .btn {
+            margin: 3px 1px;
+        }
+    }
+    .staff-availability {
+        td[width="15%"], td[width="20%"] {
+            font-size: 0.8em;
+            white-space: nowrap;
+        }
+        tr:first-child {
+            td[width="15%"], td[width="20%"] {
+                font-size: 0.7em;
+            }
+        }
     }
 }
 

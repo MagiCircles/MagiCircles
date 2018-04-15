@@ -1,5 +1,5 @@
 from django.conf import settings as django_settings
-from magi.default_settings import DEFAULT_ENABLED_NAVBAR_LISTS, DEFAULT_ENABLED_PAGES, RAW_CONTEXT, DEFAULT_JAVASCRIPT_TRANSLATED_TERMS, DEFAULT_PROFILE_TABS, DEFAULT_PRELAUNCH_ENABLED_PAGES, DEFAULT_NAVBAR_ORDERING, DEFAULT_GROUPS
+from magi.default_settings import DEFAULT_ENABLED_NAVBAR_LISTS, DEFAULT_ENABLED_PAGES, RAW_CONTEXT, DEFAULT_JAVASCRIPT_TRANSLATED_TERMS, DEFAULT_PROFILE_TABS, DEFAULT_PRELAUNCH_ENABLED_PAGES, DEFAULT_NAVBAR_ORDERING, DEFAULT_GROUPS, DEFAULT_GLOBAL_OUTSIDE_PERMISSIONS
 from magi.utils import globalContext, toHumanReadable
 from django.utils.translation import ugettext_lazy as _, string_concat
 
@@ -180,10 +180,21 @@ if hasattr(settings_module, 'GROUPS'):
 else:
     GROUPS = DEFAULT_GROUPS
 
-for _g, _d in GROUPS: # Add verbose_permissions
+if hasattr(settings_module, 'GLOBAL_OUTSIDE_PERMISSIONS'):
+    GLOBAL_OUTSIDE_PERMISSIONS = getattr(settings_module, 'GLOBAL_OUTSIDE_PERMISSIONS')
+else:
+    GLOBAL_OUTSIDE_PERMISSIONS = DEFAULT_GLOBAL_OUTSIDE_PERMISSIONS
+
+for _g, _d in GROUPS:
+    _d['name'] = _g
+    # Add staff details edit permission
+    if _d.get('requires_staff', False):
+        if 'permissions' not in _d:
+            _d['permissions'] = []
+        _d['permissions'].append('edit_own_staff_profile')
+    # Add verbose_permissions
     if 'permissions' in _d:
         _d['verbose_permissions'] = [toHumanReadable(_p) for _p in _d['permissions']]
-        _d['name'] = _g
 
 ############################################################
 # Optional settings without default values (= None)

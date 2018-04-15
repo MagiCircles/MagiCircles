@@ -5,7 +5,7 @@ from django.utils.translation import ugettext_lazy as _, string_concat, get_lang
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.utils.formats import dateformat
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.utils.datastructures import MultiValueDictKeyError
 from django.http import Http404
 from django.db.models import Count, Q, Prefetch, FieldDoesNotExist
@@ -14,7 +14,7 @@ from magi.utils import AttrDict, ordinalNumber, justReturn, propertyFromCollecti
 from magi.raw import please_understand_template_sentence
 from magi.django_translated import t
 from magi.middleware.httpredirect import HttpRedirectException
-from magi.settings import ACCOUNT_MODEL, SHOW_TOTAL_ACCOUNTS, PROFILE_TABS, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTER_TO_URL, GET_GLOBAL_CONTEXT, DONATE_IMAGE, ON_USER_EDITED, ON_PREFERENCES_EDITED, ACCOUNT_TAB_ORDERING, FIRST_COLLECTION
+from magi.settings import ACCOUNT_MODEL, SHOW_TOTAL_ACCOUNTS, PROFILE_TABS, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTER_TO_URL, GET_GLOBAL_CONTEXT, DONATE_IMAGE, ON_USER_EDITED, ON_PREFERENCES_EDITED, ACCOUNT_TAB_ORDERING, FIRST_COLLECTION, GLOBAL_OUTSIDE_PERMISSIONS
 from magi import models, forms
 
 ############################################################
@@ -204,6 +204,7 @@ class MagiCollection(object):
         class _Form(forms.AutoForm):
             class Meta:
                 model = self.queryset.model
+                fields = '__all__'
         self._form_class = _Form
 
     def form_class(self, request, context):
@@ -1714,6 +1715,15 @@ class UserCollection(MagiCollection):
             if item.is_owner(request.user):
                 raise PermissionDenied()
 
+        def extra_context(self, context):
+            if hasPermission(context['request'].user, 'edit_roles') and GLOBAL_OUTSIDE_PERMISSIONS:
+                if 'afterfields' not in context:
+                    context['afterfields'] = {}
+                context['afterfields']['edit_user'] = mark_safe(u'<div class="alert alert-danger">If you are making {user} a new staff, or if you are revoking the staff status of {user}, make sure you also <b>manually grant or revoke</b> the following permissions: <ul>{permissions}</ul></div>'.format(
+                    user=context['item'].username,
+                    permissions=u''.join([u'<li>{}</li>'.format(p) for p in GLOBAL_OUTSIDE_PERMISSIONS]),
+                ))
+
         def after_save(self, request, instance):
             models.onUserEdited(instance)
             if ON_USER_EDITED:
@@ -1812,6 +1822,61 @@ class StaffConfigurationCollection(MagiCollection):
             if ajax:
                 return '/ajax/successedit/'
             return super(StaffConfigurationCollection.EditView, self).redirect_after_edit(request, item, ajax)
+
+############################################################
+# Staff Details Collections
+
+class StaffDetailsCollection(MagiCollection):
+    title = 'Staff profile'
+    plural_title = 'Staff profiles'
+    queryset = models.StaffDetails.objects.all().select_related('owner')
+    navbar_link_list = 'more'
+    icon = 'id'
+    translated_fields = ('hobbies', 'favorite_food')
+    reportable = False
+    form_class = forms.StaffDetailsForm
+    multipart = True
+
+    class ListView(MagiCollection.ListView):
+        one_of_permissions_required = ['edit_own_staff_profile', 'translate_items', 'edit_staff_details']
+        add_button_subtitle = None
+
+        def get_queryset(self, queryset, parameters, request):
+            if not hasOneOfPermissions(request.user, ['translate_items', 'edit_staff_details']):
+                try:
+                    sd = models.StaffDetails.objects.get(owner=request.user)
+                    raise HttpRedirectException(sd.edit_url)
+                except ObjectDoesNotExist:
+                    raise HttpRedirectException(self.collection.get_add_url())
+            return queryset
+
+    class ItemView(MagiCollection.ItemView):
+        enabled = False
+
+    class AddView(MagiCollection.AddView):
+        alert_duplicate = False
+        max_per_user = 1
+        one_of_permissions_required = ['edit_own_staff_profile']
+        js_files = ['staffdetails']
+        ajax_callback = 'updateStaffDetailsForm'
+
+    class EditView(MagiCollection.EditView):
+        one_of_permissions_required = ['edit_own_staff_profile', 'translate_items', 'edit_staff_details']
+        owner_only = False
+        owner_only_or_permissions_required = ['edit_staff_details']
+        js_files = ['staffdetails']
+        ajax_callback = 'updateStaffDetailsForm'
+
+        def redirect_after_edit(self, request, item, ajax):
+            if ajax:
+                return '/ajax/successedit/'
+            if not hasOneOfPermissions(request.user, ['translate_items', 'edit_staff_details']):
+                return '/successedit/'
+            return super(StaffDetailsCollection.EditView, self).redirect_after_edit(request, item, ajax)
+
+        def check_owner_permissions(self, request, context, item):
+            if not context.get('is_translate', False):
+                super(StaffDetailsCollection.EditView, self).check_owner_permissions(request, context, item)
 
 ############################################################
 # Activities Collection

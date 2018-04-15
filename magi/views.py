@@ -3,22 +3,25 @@ import math, datetime, random
 from collections import OrderedDict
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, JsonResponse
+from django.core.urlresolvers import resolve
 from django.contrib.auth.views import login as login_view
 from django.contrib.auth.views import logout as logout_view
 from django.contrib.auth import authenticate, login as login_action
 from django.contrib.admin.utils import get_deleted_objects
 from django.utils.translation import ugettext_lazy as _, string_concat, get_language, activate as translation_activate
+from django.utils.safestring import mark_safe
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.utils.http import urlquote
+from django.utils.formats import dateformat
 from django.utils import timezone
-from django.db.models import Count
+from django.db.models import Count, Prefetch
 from django.views.decorators.csrf import csrf_exempt
 from magi.forms import CreateUserForm, UserForm, UserPreferencesForm, AddLinkForm, ChangePasswordForm, EmailsPreferencesForm, LanguagePreferencesForm
 from magi import models
 from magi.raw import donators_adjectives
-from magi.utils import getGlobalContext, ajaxContext, redirectToProfile, tourldash, redirectWhenNotAuthenticated, dumpModel, send_email, emailContext, getMagiCollection, getMagiCollections, cuteFormFieldsForContext, CuteFormType, FAVORITE_CHARACTERS_IMAGES, groupsForAllPermissions, hasPermission
+from magi.utils import getGlobalContext, ajaxContext, redirectToProfile, tourldash, redirectWhenNotAuthenticated, dumpModel, send_email, emailContext, getMagiCollection, getMagiCollections, cuteFormFieldsForContext, CuteFormType, FAVORITE_CHARACTERS_IMAGES, groupsForAllPermissions, hasPermission, setSubField, staticImageURL
 from magi.notifications import pushNotification
-from magi.settings import SITE_NAME, GAME_NAME, ENABLED_PAGES, FAVORITE_CHARACTERS, TWITTER_HANDLE, BUG_TRACKER_URL, GITHUB_REPOSITORY, CONTRIBUTE_URL, CONTACT_EMAIL, CONTACT_REDDIT, CONTACT_FACEBOOK, CONTACT_DISCORD, FEEDBACK_FORM, ABOUT_PHOTO, WIKI, HELP_WIKI, LATEST_NEWS, SITE_LONG_DESCRIPTION, CALL_TO_ACTION, TOTAL_DONATORS, GAME_DESCRIPTION, GAME_URL, ON_USER_EDITED, ON_PREFERENCES_EDITED, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, SITE_LOGO_PER_LANGUAGE
+from magi.settings import SITE_NAME, GAME_NAME, ENABLED_PAGES, FAVORITE_CHARACTERS, TWITTER_HANDLE, BUG_TRACKER_URL, GITHUB_REPOSITORY, CONTRIBUTE_URL, CONTACT_EMAIL, CONTACT_REDDIT, CONTACT_FACEBOOK, CONTACT_DISCORD, FEEDBACK_FORM, ABOUT_PHOTO, WIKI, HELP_WIKI, LATEST_NEWS, SITE_LONG_DESCRIPTION, CALL_TO_ACTION, TOTAL_DONATORS, GAME_DESCRIPTION, GAME_URL, ON_USER_EDITED, ON_PREFERENCES_EDITED, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, SITE_LOGO_PER_LANGUAGE, GLOBAL_OUTSIDE_PERMISSIONS
 from magi.views_collections import item_view, list_view
 from raw import other_sites
 
@@ -122,7 +125,49 @@ def aboutDefaultContext(request):
         ('Bug tracker', 'flaticon-album', BUG_TRACKER_URL if BUG_TRACKER_URL and not FEEDBACK_FORM else None),
     ]
     context['franchise'] = _('{site} is not a representative and is not associated with {game}. Its logos and images are Trademarks of {company}.').format(site=_(SITE_NAME), game=_(GAME_NAME), company=_('the company that owns {game}').format(game=GAME_NAME))
-    context['staff'] = models.User.objects.filter(is_staff=True).select_related('preferences')
+    context['staff'] = models.User.objects.filter(is_staff=True).select_related('preferences', 'staff_details').prefetch_related(
+        Prefetch('links', queryset=models.UserLink.objects.order_by('-i_relevance'), to_attr='all_links'),
+    ).extra(select={
+        'length_of_groups': 'Length(c_groups)',
+        'is_manager': 'CASE WHEN c_groups LIKE "%manager%" THEN 1 ELSE 0 END',
+    }).order_by('-is_manager', '-length_of_groups')
+
+    staff_details_collection = getMagiCollection('staffdetails')
+    try:
+        my_timezone = request.user.staff_details.timezone if request.user.is_staff else None
+    except ObjectDoesNotExist:
+        my_timezone = None
+    for staff_member in context['staff']:
+        # Add staff member location URL
+        if staff_member.preferences.location:
+            latlong = '{},{}'.format(staff_member.preferences.latitude, staff_member.preferences.longitude) if staff_member.preferences.latitude else None
+            staff_member.location_url = u'/map/?center={}&zoom=10'.format(latlong) if 'map' in context['all_enabled'] and latlong else u'https://www.google.com/maps?q={}'.format(staff_member.preferences.location)
+
+        # Add staff member birthday URL and formatting
+        if staff_member.preferences.birthdate:
+            staff_member.formatted_birthday = dateformat.format(staff_member.preferences.birthdate, "F d")
+            today = datetime.date.today()
+            birthday = staff_member.preferences.birthdate.replace(year=today.year)
+            if birthday < today:
+                birthday = birthday.replace(year=today.year + 1)
+            staff_member.birthday_url = 'https://www.timeanddate.com/countdown/birthday?iso={date}T00&msg={username}%27s+birthday'.format(date=dateformat.format(birthday, "Ymd"), username=staff_member.username)
+
+        # Availability calendar
+        try:
+            staff_member.has_staff_details = bool(staff_member.staff_details.id) if staff_member.is_staff else None
+        except models.StaffDetails.DoesNotExist:
+            staff_member.has_staff_details = False
+            staff_member.staff_details = models.StaffDetails()
+        if request.user.is_staff and staff_member.has_staff_details and (staff_member.staff_details.d_availability or staff_member.staff_details.d_weekend_availability):
+            staff_member.show_calendar = True
+            if my_timezone and staff_member.staff_details.timezone:
+                staff_member.availability_calendar = staff_member.staff_details.availability_calendar_timezone(my_timezone)
+                staff_member.calendar_with_timezone = True
+            else:
+                staff_member.availability_calendar = staff_member.staff_details.availability_calendar
+                staff_member.calendar_with_timezone = False
+
+    context['now'] = timezone.now()
     context['api_enabled'] = False
     context['contribute_url'] = CONTRIBUTE_URL
     context['other_sites'] = other_sites
@@ -151,6 +196,7 @@ def settings(request):
     context['add_account_sentence'] = _(u'Add {thing}').format(thing=_('Account'))
     context['add_link_sentence'] = _(u'Add {thing}').format(thing=_('Link'))
     context['delete_link_sentence'] = _(u'Delete {thing}').format(thing=_('Link'))
+    context['global_outside_permissions'] = GLOBAL_OUTSIDE_PERMISSIONS
     context['forms'] = OrderedDict([
         ('preferences', UserPreferencesForm(instance=context['preferences'], request=request)),
         ('form', UserForm(instance=request.user, request=request)),
@@ -480,19 +526,22 @@ def follow(request, username):
     })
 
 def successedit(request):
-    context = ajaxContext(request)
+    ajax = request.path_info.startswith('/ajax/')
+    context = ajaxContext(request) if ajax else getGlobalContext(request)
     context['success_sentence'] = _('Successfully edited!')
-    return render(request, 'pages/ajax/success.html', context)
+    return render(request, 'pages/ajax/success.html' if ajax else 'pages/success.html', context)
 
 def successadd(request):
-    context = ajaxContext(request)
+    ajax = request.path_info.startswith('/ajax/')
+    context = ajaxContext(request) if ajax else getGlobalContext(request)
     context['success_sentence'] = _('Successfully added!')
-    return render(request, 'pages/ajax/success.html', context)
+    return render(request, 'pages/ajax/success.html' if ajax else 'pages/success.html', context)
 
 def successdelete(request):
-    context = ajaxContext(request)
+    ajax = request.path_info.startswith('/ajax/')
+    context = ajaxContext(request) if ajax else getGlobalContext(request)
     context['success_sentence'] = _('Successfully deleted!')
-    return render(request, 'pages/ajax/success.html', context)
+    return render(request, 'pages/ajax/success.html' if ajax else 'pages/success.html', context)
 
 ############################################################
 # Dev

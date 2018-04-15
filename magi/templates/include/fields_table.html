@@ -74,7 +74,7 @@
         {% endif %}
 	{% elif field.type == 'long_text' %}
         <strong class="long-text-title">{{ field.verbose_name }}</strong>
-        {{ field.value }}
+        <div class="long-text-value">{{ field.value }}</div>
         {% elif field.type == 'list' %}
         <ul>{% for value in field.value %}
           <li>{{ value }}</li>

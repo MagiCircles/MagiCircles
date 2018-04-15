@@ -34,13 +34,19 @@ DEFAULT_JAVASCRIPT_TRANSLATED_TERMS = [
 ############################################################
 # Groups
 
+DEFAULT_GLOBAL_OUTSIDE_PERMISSIONS = [
+    'Staff/Contributor Discord role',
+    'GitHub read access to the website\'s repository',
+]
+
 DEFAULT_GROUPS = [
     ('manager', {
         'translation': _('Manager'),
         'description': 'The leader of our staff team is here to make sure that the website is doing well! They make sure we all get things done together and the website keeps getting new users everyday.',
-        'permissions': ['edit_roles', 'edit_staff_status', 'edit_donator_status', 'see_profile_edit_button', 'edit_staff_configurations', 'add_badges', 'see_collections_details'],
+        'permissions': ['edit_roles', 'edit_staff_status', 'edit_donator_status', 'see_profile_edit_button', 'edit_staff_configurations', 'add_badges', 'see_collections_details', 'manage_main_items', 'edit_staff_details'],
+        'requires_staff': True,
     }),
-    ('circles', {
+    ('circles_manager', {
         'translation': string_concat('Circles - ', _('Manager')),
         'description': 'Supervises and helps the creation and growth of all the websites. Advises but generally doesn\'t interfere with the managers\' decisions.',
         'requires_staff': True,
@@ -48,7 +54,7 @@ DEFAULT_GROUPS = [
     ('team', {
         'translation': _('Team manager'),
         'description': 'Knows all the team members and discuss with them on a regular basis to make sure they are all active.',
-        'permissions': ['edit_staff_status', 'edit_roles', 'see_profile_edit_button'],
+        'permissions': ['edit_staff_status', 'edit_roles', 'see_profile_edit_button', 'edit_staff_details'],
         'requires_staff': True,
         'outside_permissions': [
             'Administrate the contributors on GitHub',
@@ -69,7 +75,13 @@ DEFAULT_GROUPS = [
     }),
     ('db', {
         'translation': _('Database maintainer'),
-        'description': 'We gather all the game data in one convenient place for you~ Some of our team members extract the assets and data directly from the game, some enter missing info manually. We do our best to publish all the game data as soon as it gets published!',
+        'description': 'We gather all the game data in one convenient place for you! Our database maintainers manually update the details as soon as they are available.',
+        'permissions': ['manage_main_items'],
+        'requires_staff': True,
+    }),
+    ('dbapi', {
+        'translation': string_concat(_('Database maintainer'), ' (API)'),
+        'description': 'Our database maintainers extract assets and data and automatically update our website. They do their best to publish all the details as soon they are available.',
         'permissions': ['manage_main_items'],
         'requires_staff': True,
         'outside_permissions': [
@@ -129,10 +141,14 @@ DEFAULT_GROUPS = [
             'Tweetdeck',
         ],
     }),
+    ('assistant', {
+        'translation': _('Backup staff'),
+        'description': 'Our super heroes, magicians and jack-of-all-trades. There\'s nothing they can\'t do! We call them to the rescue whenever something needs to get done and they quickly and efficiently help our website and community.',
+        'requires_staff': True,
+    }),
     ('discord', {
         'translation': string_concat(_('Moderator'), ' (Discord)'),
-        'description': '',
-        'permissions': ['translate_items', 'translate_staff_configurations'],
+        'description': 'Help keep Circle\'s private server well organized and fun for all our staff and contributors.',
         'requires_staff': False,
         'outside_permissions': [
             'Discord moderator role',
@@ -184,7 +200,7 @@ DEFAULT_ENABLED_NAVBAR_LISTS = OrderedDict([
     ('more', {
         'title': '',
         'icon': 'more',
-        'order': ['about', 'donate_list', 'help', 'map', 'report_list', 'badge_list', 'staffconfiguration_list', 'collections'],
+        'order': ['about', 'donate_list', 'help', 'map', 'staffdetails_list', 'report_list', 'badge_list', 'staffconfiguration_list', 'collections'],
         'url': '/about/',
     }),
 ])
@@ -359,21 +375,54 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
             ('report', '\d+'),
         ],
     }),
-    ('successedit', {
-        'ajax': True,
-        'custom': False,
-        'navbar_link': False,
-    }),
-    ('successadd', {
-        'ajax': True,
-        'custom': False,
-        'navbar_link': False,
-    }),
-    ('successdelete', {
-        'ajax': True,
-        'custom': False,
-        'navbar_link': False,
-    }),
+    ('about', [
+        {
+            'title': _('About'),
+            'custom': False,
+            'icon': 'about',
+            'navbar_link_list': 'more',
+        },
+        {
+            'ajax': True,
+            'title': _('About'),
+            'custom': False,
+            'icon': 'about',
+            'navbar_link_list': 'more',
+        },
+    ]),
+    ('successedit', [
+        {
+            'custom': False,
+            'navbar_link': False,
+        },
+        {
+            'ajax': True,
+            'custom': False,
+            'navbar_link': False,
+        },
+    ]),
+    ('successadd', [
+        {
+            'custom': False,
+            'navbar_link': False,
+        },
+        {
+            'ajax': True,
+            'custom': False,
+            'navbar_link': False,
+        },
+    ]),
+    ('successdelete', [
+        {
+            'custom': False,
+            'navbar_link': False,
+        },
+        {
+            'ajax': True,
+            'custom': False,
+            'navbar_link': False,
+        },
+    ]),
 ])
 
 ############################################################

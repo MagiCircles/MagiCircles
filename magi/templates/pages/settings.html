@@ -72,21 +72,52 @@
 <h1 id="groups" class="text-center padding50"><i class="flaticon-about"></i> Your groups</h1>
 <br>
 <form class="container_form">
+  {% if user.is_staff and global_outside_permissions %}
+  <div class="alert alert-warning">
+    <h5>External permissions for all staff members.</h5>
+    <p>
+      <small class="text-muted">
+        Added manually.
+        Contact the <b>team manager</b> if you don't have them.
+      </small>
+    </p>
+    <ul>
+      {% for permission in global_outside_permissions %}
+      <li>{{ permission }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
   <div class="list-group">
     {% for group, details in user.preferences.groups_and_details.items %}
     <div class="list-group-item">
-      <h4 class="list-group-item-heading">{{ details.translation }}</h4>
+      <img class="pull-right" alt="{{ details.translation }}" src="{{ static_url }}img/groups/{{ group }}.png" height="100">
+      <h3 class="list-group-item-heading">{{ details.translation }}</h3>
       <p class="list-group-item-text">
-        <small class="text-muted">{{ details.description }}</small>
+        <blockquote class="fontx0-8">{{ details.description }}</blockquote>
         {% if details.permissions %}
+        <h5>Permissions</h5>
         <ul>
           {% for permission in details.verbose_permissions %}
           <li>{{ permission }}</li>
           {% endfor %}
-          {% for permission in details.outside_permissions %}
-          <li>{{ permission }}</li>
-          {% endfor %}
         </ul>
+        {% endif %}
+        {% if details.outside_permissions %}
+        <div class="alert alert-warning">
+          <h5>External permissions</h5>
+          <p>
+            <small class="text-muted">
+              Added manually.
+              Contact the <b>team manager</b> if you don't have them.
+            </small>
+          </p>
+          <ul>
+            {% for permission in details.outside_permissions %}
+            <li>{{ permission }}</li>
+            {% endfor %}
+          </ul>
+        </div>
         {% endif %}
       </p>
     </div>

@@ -294,11 +294,11 @@ function _loadTimezones() {
         var date = new Date(elt.find('.datetime').text());
         var timezone = elt.data('to-timezone');
         var options = {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: 'numeric',
-            minute: 'numeric',
+            year: elt.data('year-format') || (elt.data('hide-year') ? undefined : 'numeric'),
+            month: elt.data('month-format') || (elt.data('hide-month') ? undefined : 'long'),
+            day: elt.data('day-format') || (elt.data('hide-day') ? undefined : 'numeric'),
+            hour: elt.data('hour-format') || (elt.data('hide-hour') ? undefined : 'numeric'),
+            minute: elt.data('minute-format') || (elt.data('hide-minute') ? undefined : 'numeric'),
         };
         if (typeof timezone != 'undefined' && timezone != '' && timezone != 'Local time') {
             options['timeZone'] = timezone;
