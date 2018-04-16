@@ -95,4 +95,4 @@ def getattribute(value, arg):
     elif str(arg) in value:
         return value.get(arg)
     try: return value[arg]
-    except: return settings.TEMPLATE_STRING_IF_INVALID
+    except: return None

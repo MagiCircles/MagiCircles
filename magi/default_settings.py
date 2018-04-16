@@ -93,6 +93,13 @@ DEFAULT_GROUPS = [
         'description': 'We got you covered with all the game news on the website! Thanks to our active team, you know that by following our latest activities, you\'ll never miss anything!',
         'permissions': ['edit_staff_configurations'],
         'requires_staff': True,
+        'stats': [
+            {
+                'model': 'Activity',
+                'filters': { 'c_tags__icontains': '"staff"' },
+                'template': _('Posted {total} news'),
+            },
+        ],
     }),
     ('twitter_cm', {
         'translation': string_concat(_('Community manager'), ' (', _('Twitter'), ')'),
@@ -122,6 +129,12 @@ DEFAULT_GROUPS = [
         'translation': string_concat(_('Moderator'), ' (', _('Active'), ')'),
         'description': 'We want all of our users of all ages to have a pleasant a safe stay in our website. That\'s why our team of moderators use the website everyday and report anything that might be inappropriate or invalid!',
         'requires_staff': True,
+        'stats': [
+            {
+                'model': 'Report',
+                'template': _('Submitted {total} reports'),
+            },
+        ],
     }),
     ('d_moderator', {
         'translation': string_concat(_('Moderator'), ' (', _('Decisive'), ')'),
@@ -131,6 +144,14 @@ DEFAULT_GROUPS = [
         'outside_permissions': [
             'Disqus moderation',
         ],
+        'stats': [
+            {
+                'model': 'Report',
+                'selector_to_owner': 'staff',
+                'filters': { 'i_status__in': [1, 2] },
+                'template': _('Edited or deleted {total} reported items'),
+            },
+        ],
     }),
     ('entertainer', {
         'translation': _('Community entertainer'),
@@ -139,6 +160,13 @@ DEFAULT_GROUPS = [
         'requires_staff': True,
         'outside_permissions': [
             'Tweetdeck',
+        ],
+        'stats': [
+            {
+                'model': 'Activity',
+                'filters': { 'c_tags__icontains': '"communityevent"' },
+                'template': _('Organized and posted about {total} community events'),
+            },
         ],
     }),
     ('assistant', {

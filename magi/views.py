@@ -167,6 +167,18 @@ def aboutDefaultContext(request):
                 staff_member.availability_calendar = staff_member.staff_details.availability_calendar
                 staff_member.calendar_with_timezone = False
 
+        # Stats
+        staff_member.stats = {}
+        for group, details in staff_member.preferences.groups_and_details.items():
+            stats = details.get('stats', [])
+            staff_member.stats[group] = []
+            if stats:
+                for stat in stats:
+                    model = getattr(models, stat['model'])
+                    total = model.objects.filter(**{ stat.get('selector_to_owner', model.selector_to_owner()): staff_member }).filter(**(stat.get('filters', {}))).count()
+                    if total:
+                        staff_member.stats[group].append(mark_safe(unicode(stat['template']).format(total=u'<strong>{}</strong>'.format(total))))
+
     context['now'] = timezone.now()
     context['api_enabled'] = False
     context['contribute_url'] = CONTRIBUTE_URL

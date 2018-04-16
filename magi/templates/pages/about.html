@@ -74,11 +74,11 @@
           </h3>
           <div class="text-center groups">
             {% for group, details in staff_member.preferences.groups_and_details.items %}
-            {# <img alt="{{ details.translation }}" src="{{ static_url }}img/groups/{{ group }}.png" height="30"> #}
+            {% with stats=staff_member.stats|getattribute:group %}
             <h4
               data-toggle="popover"
               title="{{ details.translation }}"
-              data-content="<img class='pull-right' height='80' src='{{ static_url }}img/groups/{{ group }}.png' alt='{{ details.translation }}'> {{ details.description }}"
+              data-content="<img class='pull-right' height='80' src='{{ static_url }}img/groups/{{ group }}.png' alt='{{ details.translation }}'> {{ details.description }}{% if stats %}<hr /><ul>{% for stat in stats %}<li>{{ stat }}</li>{% endfor %}</ul>{% endif %}"
               data-placement="bottom"
               data-trigger="hover"
               data-html="true"
@@ -86,6 +86,7 @@
               {{ details.translation }}
               <i class="flaticon-about"></i>
             </h4>
+            {% endwith %}
             {% endfor %}
           </div>
           {% if staff_member.staff_details.description %}
