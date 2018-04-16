@@ -132,7 +132,6 @@ def aboutDefaultContext(request):
         'is_manager': 'CASE WHEN c_groups LIKE "%manager%" THEN 1 ELSE 0 END',
     }).order_by('-is_manager', '-length_of_groups')
 
-    staff_details_collection = getMagiCollection('staffdetails')
     try:
         my_timezone = request.user.staff_details.timezone if request.user.is_staff else None
     except ObjectDoesNotExist:
