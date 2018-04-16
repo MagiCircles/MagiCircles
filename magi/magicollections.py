@@ -1660,9 +1660,16 @@ class UserCollection(MagiCollection):
                 birthday = user.preferences.birthdate.replace(year=today.year)
                 if birthday < today:
                     birthday = birthday.replace(year=today.year + 1)
+                if user.preferences.show_birthdate_year:
+                    value = u'{} ({})'.format(
+                        user.preferences.birthdate,
+                        _(u'{age} years old').format(age=user.preferences.age),
+                    )
+                else:
+                    value = dateformat.format(user.preferences.birthdate, "F d")
                 meta_links.append(AttrDict({
                     'type': 'Birthdate',
-                    'value': u'{} ({})'.format(user.preferences.birthdate, _(u'{age} years old').format(age=user.preferences.age)),
+                    'value': value,
                     'translate_type': True,
                     'flaticon': 'event',
                     'url': 'https://www.timeanddate.com/countdown/birthday?iso={date}T00&msg={username}%27s+birthday'.format(date=dateformat.format(birthday, "Ymd"), username=user.username),

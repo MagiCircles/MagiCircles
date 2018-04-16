@@ -766,7 +766,7 @@ class UserPreferencesForm(MagiForm):
 
     class Meta(MagiForm.Meta):
         model = models.UserPreferences
-        fields = ('description', 'location', 'favorite_character1', 'favorite_character2', 'favorite_character3', 'color', 'birthdate','i_language', 'view_activities_language_only', 'default_tab')
+        fields = ('description', 'location', 'favorite_character1', 'favorite_character2', 'favorite_character3', 'color', 'birthdate', 'show_birthdate_year', 'i_language', 'view_activities_language_only', 'default_tab')
 
 class StaffEditUser(_UserCheckEmailUsernameForm):
     force_remove_avatar = forms.BooleanField(required=False)
