@@ -82,7 +82,7 @@ DEFAULT_GROUPS = [
         'description': 'We gather all the game data in one convenient place for you! Our database maintainers manually update the details as soon as they are available.',
         'permissions': ['manage_main_items'],
         'requires_staff': True,
-        'guide': '/help/Database%20maintainer%20guide',
+        'guide': '/help/Database%20maintainers%20guide',
     }),
     ('dbapi', {
         'translation': string_concat(_('Database maintainer'), ' (API)'),
@@ -92,7 +92,7 @@ DEFAULT_GROUPS = [
         'outside_permissions': [
             'API key',
         ],
-        'guide': '/help/Database%20maintainer%20guide',
+        'guide': '/help/Database%20maintainers%20guide',
     }),
     ('cm', {
         'translation': _('Community manager'),
