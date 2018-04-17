@@ -14,11 +14,12 @@
       {% if field.type != 'long_text' %}<th><span class="verbose-name">{{ field.verbose_name }}</span>{% if field.verbose_name_subtitle %}<br><small class="text-muted verbose-name-subtitle">{{ field.verbose_name_subtitle }}</small></br>{% endif %}</th>{% endif %}
       <td{% if field.type == 'long_text' %} colspan="2"{% endif %}>
 	{% if field.type == 'text_with_link' %}
-	{{ field.value }}<br>
-	<a href="{{ field.link }}" target="_blank"{% if field.ajax_link %} data-ajax-url="{{ field.ajax_link }}" data-ajax-title="{{ field.value }}"{% endif %}>
-	  {{ field.link_text }}
-	  <i class="flaticon-link fontx0-8"></i>
-	</a>
+	<span class="text_with_link">{{ field.value }}<br>
+	  <a href="{{ field.link }}" target="_blank"{% if field.ajax_link %} data-ajax-url="{{ field.ajax_link }}" data-ajax-title="{{ field.value }}"{% endif %}>
+	    {{ field.link_text }}
+	    <i class="flaticon-link fontx0-8"></i>
+	</a></span>
+	{% if field.image %}<img src="{{ field.image }}" alt="{{ field.link_text }}" class="text_with_link_image">{% endif %}
 	{% elif field.type == 'title_text' %}
 	<strong>{{ field.title }}</strong><br>
 	<p>{{ field.value }}</p>
