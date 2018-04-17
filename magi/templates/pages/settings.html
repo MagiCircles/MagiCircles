@@ -120,6 +120,13 @@
         </div>
         {% endif %}
       </p>
+      {% if details.guide %}
+      <div class="text-right">
+        <a class="btn btn-lg btn-secondary" href="{{ details.guide }}" target="_blank">
+          Read the {{ details.translation }} guide
+        </a>
+      </div>
+      {% endif %}
     </div>
     {% endfor %}
   </div>

@@ -45,11 +45,13 @@ DEFAULT_GROUPS = [
         'description': 'The leader of our staff team is here to make sure that the website is doing well! They make sure we all get things done together and the website keeps getting new users everyday.',
         'permissions': ['edit_roles', 'edit_staff_status', 'edit_donator_status', 'see_profile_edit_button', 'edit_staff_configurations', 'add_badges', 'see_collections_details', 'manage_main_items', 'edit_staff_details'],
         'requires_staff': True,
+        'guide': '/help/Managers%20guide',
     }),
     ('circles_manager', {
         'translation': string_concat('Circles - ', _('Manager')),
         'description': 'Supervises and helps the creation and growth of all the websites. Advises but generally doesn\'t interfere with the managers\' decisions.',
         'requires_staff': True,
+        'guide': '/help/Circles%20managers%20guide',
     }),
     ('team', {
         'translation': _('Team manager'),
@@ -61,6 +63,7 @@ DEFAULT_GROUPS = [
             'Administrate the contributors on Tweetdeck',
             'Administrate the moderators on Disqus',
         ],
+        'guide': '/help/Team%20managers%20guide',
     }),
     ('finance', {
         'translation': _('Finance manager'),
@@ -72,12 +75,14 @@ DEFAULT_GROUPS = [
             'Access Patreon manager',
             'Access donators forms responses',
         ],
+        'guide': '/help/Finance%20managers%20guide',
     }),
     ('db', {
         'translation': _('Database maintainer'),
         'description': 'We gather all the game data in one convenient place for you! Our database maintainers manually update the details as soon as they are available.',
         'permissions': ['manage_main_items'],
         'requires_staff': True,
+        'guide': '/help/Database%20maintainer%20guide',
     }),
     ('dbapi', {
         'translation': string_concat(_('Database maintainer'), ' (API)'),
@@ -87,6 +92,7 @@ DEFAULT_GROUPS = [
         'outside_permissions': [
             'API key',
         ],
+        'guide': '/help/Database%20maintainer%20guide',
     }),
     ('cm', {
         'translation': _('Community manager'),
@@ -100,6 +106,7 @@ DEFAULT_GROUPS = [
                 'template': _('Posted {total} news'),
             },
         ],
+        'guide': '/help/Community%20managers%20guide',
     }),
     ('twitter_cm', {
         'translation': string_concat(_('Community manager'), ' (', _('Twitter'), ')'),
@@ -108,11 +115,13 @@ DEFAULT_GROUPS = [
         'outside_permissions': [
             'Tweetdeck',
         ],
+        'guide': '/help/Community%20managers%20guide',
     }),
     ('external_cm', {
         'translation': _('External communication'),
         'description': 'We\'re very active on other social media, such as Facebook, reddit and various forums! Our team will take the time to inform the other community about our website news and hopefully get more users from there, as well as valuable feedback to improve the website!',
         'requires_staff': True,
+        'guide': '/help/External%20communication%20guide',
     }),
     ('support', {
         'translation': _('Support'),
@@ -124,6 +133,7 @@ DEFAULT_GROUPS = [
             'Receive private messages on Reddit',
             'Receive emails',
         ],
+        'guide': '/help/Support%20guide',
     }),
     ('a_moderator', {
         'translation': string_concat(_('Moderator'), ' (', _('Active'), ')'),
@@ -135,6 +145,7 @@ DEFAULT_GROUPS = [
                 'template': _('Submitted {total} reports'),
             },
         ],
+        'guide': '/help/Moderators%20guide',
     }),
     ('d_moderator', {
         'translation': string_concat(_('Moderator'), ' (', _('Decisive'), ')'),
@@ -152,6 +163,7 @@ DEFAULT_GROUPS = [
                 'template': _('Edited or deleted {total} reported items'),
             },
         ],
+        'guide': '/help/Moderators%20guide',
     }),
     ('entertainer', {
         'translation': _('Community entertainer'),
@@ -168,11 +180,13 @@ DEFAULT_GROUPS = [
                 'template': _('Organized and posted about {total} community events'),
             },
         ],
+        'guide': '/help/Community%20entertainers%20guide',
     }),
     ('assistant', {
         'translation': _('Backup staff'),
         'description': 'Our super heroes, magicians and jack-of-all-trades. There\'s nothing they can\'t do! We call them to the rescue whenever something needs to get done and they quickly and efficiently help our website and community.',
         'requires_staff': True,
+        'guide': '/help/Backup%20staff%20guide',
     }),
     ('discord', {
         'translation': string_concat(_('Moderator'), ' (Discord)'),
@@ -181,6 +195,7 @@ DEFAULT_GROUPS = [
         'outside_permissions': [
             'Discord moderator role',
         ],
+        'guide': '/help/Discord%20moderators%20guide',
     }),
     ('translator', {
         'translation': _('Translator'),
@@ -190,28 +205,33 @@ DEFAULT_GROUPS = [
         'outside_permissions': [
             'POEditor access',
         ],
+        'guide': '/help/Translators%20guide',
     }),
     ('design', {
         'translation': _('Graphic designer'),
         'description': 'Our graphic designers help with banners, flyers, or any other graphic edit we need to communicate about the website or organize special events.',
         'requires_staff': False,
+        'guide': '/help/Join%20the%20graphic%20design%20team',
     }),
     ('artist', {
         'translation': _('Artist'),
         'description': 'Our artists help with illustrations and drawings we need to communicate about the website or organize special events.',
         'requires_staff': False,
+        'guide': '/help/Join%20the%20graphic%20design%20team',
     }),
     ('developer', {
         'translation': _('Developer'),
         'description': 'Developers contribute to the website by adding new features or fixing bugs, and overall maintaining the website.',
         'permissions': ['advanced_staff_configurations', 'see_collections_details'],
         'requires_staff': False,
+        'guide': '/help/Developers%20guide',
     }),
     ('sysadmin', {
         'translation': _('System administrator'),
         'description': 'Our system administrators take care of the infrasturcture of our websites, including maintaining the servers, deploying new versions, ensuring that we scale according to traffic and under budget, and overall instrastructure monitoring.',
         'permissions': ['advanced_staff_configurations', 'see_collections_details'],
         'requires_staff': False,
+        'guide': '/help/System%30administrator%20guide',
     }),
 ]
 
