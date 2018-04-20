@@ -820,13 +820,13 @@ class MagiCollection(object):
                 buttons['edit']['url'] = item.edit_url
                 if self.edit_view.ajax:
                     buttons['edit']['ajax_url'] = item.ajax_edit_url
-                if (self.edit_view.staff_required
+                if (request.user.is_staff
+                    and self.edit_view.staff_required
                     and not view.staff_required):
                     buttons['edit']['classes'].append('staff-only')
         # Translation button
         if self.translated_fields:
             buttons['translate'] = buttons['edit'].copy()
-            buttons['translate']['classes'] = [c for c in buttons['translate']['classes'] if c != 'staff-only']
             buttons['translate']['has_permissions'] = self.edit_view.has_translate_permissions(request, context)
             buttons['translate']['title'] = unicode(_('Edit {}')).format(unicode(_('Translations')).lower())
             buttons['translate']['icon'] = 'world'
