@@ -826,6 +826,7 @@ class MagiCollection(object):
         # Translation button
         if self.translated_fields:
             buttons['translate'] = buttons['edit'].copy()
+            buttons['translate']['classes'] = [c for c in buttons['translate']['classes'] if c != 'staff-only']
             buttons['translate']['has_permissions'] = self.edit_view.has_translate_permissions(request, context)
             buttons['translate']['title'] = unicode(_('Edit {}')).format(unicode(_('Translations')).lower())
             buttons['translate']['icon'] = 'world'
