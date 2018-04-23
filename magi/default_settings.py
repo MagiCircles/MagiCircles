@@ -36,7 +36,7 @@ DEFAULT_JAVASCRIPT_TRANSLATED_TERMS = [
 
 DEFAULT_GLOBAL_OUTSIDE_PERMISSIONS = [
     'Staff/Contributor Discord role',
-    'GitHub read access to the website\'s repository',
+    'GitHub read access to the website\'s repository (edit the wiki, report issues for developers)',
 ]
 
 DEFAULT_GROUPS = [
