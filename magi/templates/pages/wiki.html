@@ -15,9 +15,13 @@
 {% load tools %}
       <div id="wiki-sidebar"></div>
       <br><br><br>
-      <a href="{{ full_wiki_url }}_new" target="_blank">{% trans 'Create a new wiki page' %}</a><br>
-      <a href="{{ full_wiki_url }}_Sidebar/_edit" target="_blank">{% trans 'Edit the sidebar' %}</a><br>
-      <small class="text-muted"><i>{% trans 'Note: You need an account on GitHub to add/edit wiki pages' %}</i></small>
+      {% if user.is_staff %}
+      <div class="staff-only">
+        <a href="{{ full_wiki_url }}_new" target="_blank">Create a new wiki page</a><br>
+        <a href="{{ full_wiki_url }}_Sidebar/_edit" target="_blank">Edit the sidebar</a><br>
+        <small class="text-muted"><i>Note: You need an account on GitHub to add/edit wiki pages</i></small>
+      </div>
+      {% endif %}
 {% endblock %}
 
 {% block sidebar_content %}
@@ -30,7 +34,11 @@
       <div id="wiki-content"></div>
       <div class="text-right">
         <br><br><br>
-        <a href="{{ full_wiki_url }}Home/_edit" target="_blank" class="btn btn-main btn-lg edit-link">{% trans 'Edit this wiki page' %}</a><br>
-        <small class="text-muted"><i>{% trans 'Note: You need an account on GitHub to add/edit wiki pages' %}</i></small>
+        {% if user.is_staff %}
+        <div class="staff-only">
+          <a href="{{ full_wiki_url }}Home/_edit" target="_blank" class="btn btn-main btn-lg edit-link">Edit this wiki page</a><br>
+          <small class="text-muted"><i>Note: You need an account on GitHub to add/edit wiki pages</i></small>
+        </div>
+        {% endif %}
       </div>
 {% endblock %}
