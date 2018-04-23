@@ -286,7 +286,7 @@ def custom_wiki(wiki, wiki_name, request, wiki_url):
     context = getGlobalContext(request)
     context['wiki_url'] = wiki_url
     context['page_title'] = wiki_name if wiki_url in ['Home', '_Sidebar'] else u'{} - {}'.format(wiki_url.replace('_', ' ').replace('-', ' '), wiki_name)
-    context['show_side_bar'] = wiki_url != '_Sidebar'
+    context['hide_side_bar'] = wiki_url == '_Sidebar'
     context['small_container'] = True
     context['wiki'] = wiki
     context['full_wiki_url'] = 'https://github.com/{}/{}/wiki/'.format(wiki[0], wiki[1])
