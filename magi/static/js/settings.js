@@ -1,5 +1,6 @@
 
 $(document).ready(function() {
+    // Delete links
     $('a[href=#deleteLink]').click(function(e) {
 	e.preventDefault();
 	var link = $(this).closest('tr');
@@ -8,4 +9,6 @@ $(document).ready(function() {
 	});
 	return false;
     });
+    // Format hide tags form
+    d_FieldCheckBoxes($('[id^="id_d_hidden_tags-"]'));
 });

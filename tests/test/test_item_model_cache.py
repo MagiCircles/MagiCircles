@@ -38,12 +38,23 @@ class ItemModelCacheTestCase(TestCase):
             i_super_power=self.super_power_i,
             i_rarity=self.rarity_i,
         )
-        self.card.force_update_cache('idol')
-        self.card.force_update_cache('gachas')
+        self.card.update_cache('idol')
+        self.card.update_cache('gachas')
+
+        # doesnt have last_update, always needs to be manually updated
+        self.card.update_cache('idol_name')
+        self.card.update_cache('gacha_names')
+
+        self.card.save()
 
         self.card_without_gacha = models.Card.objects.create(
             owner=self.user,
         )
+
+    def test_get_cached_free_format(self):
+        self.assertEqual(self.card.cached_idol_name, u'Deby')
+        self.assertEqual(self.card.cached_idol_japanese_name, u'デビ')
+        self.assertEqual(self.card.cached_total_gachas, 2)
 
     def test_get_cached_one(self):
         self.assertEqual(self.card.cached_idol, {
@@ -115,6 +126,15 @@ class ItemModelCacheTestCase(TestCase):
             }
         ])
 
+    def test_get_cached_csv(self):
+        self.assertEqual(self.card.cached_gacha_names, ['Gacha get all the cards', 'A different gacha'])
+        self.assertEqual(self.card.cached_gacha_ids, [1, 2])
+
     def test_get_cached_none(self):
         self.assertEqual(self.card_without_gacha.cached_idol, None)
         self.assertEqual(self.card_without_gacha.cached_gachas, None)
+        self.assertEqual(self.card_without_gacha.cached_gacha_ids, [])
+        self.assertEqual(self.card_without_gacha.cached_gacha_names, [])
+        self.assertEqual(self.card_without_gacha.cached_idol_name, None)
+        self.assertEqual(self.card_without_gacha.cached_idol_japanese_name, None)
+        self.assertEqual(self.card_without_gacha.cached_total_gachas, 0)

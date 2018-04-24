@@ -29,9 +29,17 @@
 </div><div class="row items">
   {% endif%}
   <{% if display_style == 'rows' %}div class="col-{{ col_break }}-{{ col_size }}"{% elif display_style == 'table' %}tr{% else %}div{% endif %} data-item="{{ collection.name }}" data-item-id="{{ item.id }}">
+
+    {% if item.blocked %}
+    {% if display_style == 'table' %}<td colspan="42">{% endif %}
+      {% include 'items/'|add:item_blocked_template|add:'.html' %}
+    {% if display_style == 'table' %}</td>{% endif %}
+    {% else %}
     {% if show_owner %}{{ item.owner_unicode }}{% endif %}
     {% include 'items/'|add:item_template|add:'.html' %}
     {% if display_style != 'table' and include_below_item %}{% include 'include/below_item.html' %}{% endif %}
+    {% endif %}
+
   </{% if display_style == 'table' %}tr{% else %}div{% endif %}>
 {% endfor %}
 {% if display_style == 'rows' %}</div><div id="{{ collection.name }}-end-of-page-{{ page }}"></div>{% endif %}

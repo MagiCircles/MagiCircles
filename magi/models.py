@@ -7,9 +7,10 @@ from django.core import validators
 from django.utils.translation import ugettext_lazy as _, string_concat
 from django.utils import timezone
 from django.utils.formats import dateformat
+from django.utils.dateparse import parse_date
 from django.forms.models import model_to_dict
 from django.conf import settings as django_settings
-from magi.utils import AttrDict, randomString, getMagiCollection, uploadToRandom, uploadItem, linkToImageURL
+from magi.utils import AttrDict, randomString, getMagiCollection, uploadToRandom, uploadItem, linkToImageURL, hasGroup, hasPermission, hasOneOfPermissions, hasPermissions
 from magi.settings import ACCOUNT_MODEL, GAME_NAME, COLOR, SITE_STATIC_URL, DONATORS_STATUS_CHOICES, USER_COLORS, FAVORITE_CHARACTERS, SITE_URL, SITE_NAME, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, ACTIVITY_TAGS, GROUPS
 from magi.item_model import MagiModel, BaseMagiModel, get_image_url, i_choices, addMagiModelProperties
 from magi.abstract_models import CacheOwner
@@ -40,6 +41,29 @@ User.image_url = property(avatar)
 User.http_image_url = property(avatar)
 User.owner_id = property(lambda u: u.id)
 User.owner = property(lambda u: u)
+User.hasGroup = lambda u, group: hasGroup(u, group)
+User.hasPermission = lambda u, permission: hasPermission(u, permission)
+User.hasOneOfPermissions = lambda u, permissions: hasOneOfPermissions(u, permissions)
+User.hasPermissions = lambda u, permissions: hasPermissions(u, permissions)
+
+############################################################
+
+ACTIVITY_TAGS_DICT = dict(ACTIVITY_TAGS or {})
+
+ACTIVITY_TAGS_CHOICES = [
+    (_tag,
+     _details.get('translation', _tag)
+     if isinstance(_details, dict)
+     else _details)
+    for (_tag, _details) in ACTIVITY_TAGS
+] if ACTIVITY_TAGS else []
+
+ACTIVITIES_TAGS_HIDDEN_BY_DEFAULT = [
+    (tag[0] if isinstance(tag, tuple) else tag) for tag in (ACTIVITY_TAGS or [])
+    if (isinstance(tag, tuple)
+        and isinstance(tag[1], dict)
+        and tag[1].get('hidden_by_default', False)
+    )]
 
 ############################################################
 # Utility Models
@@ -129,6 +153,12 @@ class UserPreferences(BaseMagiModel):
             if group in self.GROUPS
         ])
 
+    HIDDEN_TAGS = ACTIVITY_TAGS
+    HIDDEN_TAGS_CHOICES = ACTIVITY_TAGS_CHOICES
+    d_hidden_tags = models.TextField(_('Hide tags'), null=True)
+
+    blocked = models.ManyToManyField(User, related_name='blocked_by')
+
     d_extra = models.TextField(blank=True, null=True)
 
     def localized_favorite_character(self, number):
@@ -206,6 +236,8 @@ class UserPreferences(BaseMagiModel):
     def get_age(self, birthdate):
         if not birthdate:
             return None
+        if isinstance(birthdate, str) or isinstance(birthdate, unicode):
+            birthdate = parse_date(birthdate)
         today = datetime.date.today()
         return today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
     @property
@@ -238,6 +270,16 @@ class UserPreferences(BaseMagiModel):
     @property
     def twitter(self):
         return self._cache_twitter
+
+    # Cache blocked
+    _cache_c_blocked_ids = models.TextField(null=True) # changed when blocked are modified
+
+    def to_cache_blocked_ids(self):
+        return self.blocked.all().values_list('id', flat=True)
+
+    @classmethod
+    def cached_blocked_ids_map(self, i):
+        return int(i)
 
     class Meta:
         verbose_name_plural = "list of userpreferences"
@@ -541,8 +583,8 @@ class Activity(MagiModel):
     collection_name = 'activity'
 
     creation = models.DateTimeField(auto_now_add=True)
-    modification = models.DateTimeField(auto_now=True)
-    owner = models.ForeignKey(User, related_name='activities')
+    modification = models.DateTimeField(auto_now=True, db_index=True)
+    owner = models.ForeignKey(User, related_name='activities', db_index=True)
     message = models.TextField(_('Message'))
     likes = models.ManyToManyField(User, related_name="liked_activities")
 
@@ -551,7 +593,8 @@ class Activity(MagiModel):
     LANGUAGE_SOFT_CHOICES = LANGUAGE_CHOICES
     i_language = models.CharField(_('Language'), max_length=10)
 
-    TAGS_CHOICES = ACTIVITY_TAGS if ACTIVITY_TAGS else []
+    TAGS = ACTIVITY_TAGS
+    TAGS_CHOICES = ACTIVITY_TAGS_CHOICES
     c_tags = models.TextField(_('Tags'), blank=True, null=True)
 
     image = models.ImageField(_('Image'), upload_to=uploadToRandom('activities/'), null=True, blank=True, help_text=_('Only post official artworks, artworks you own, or fan artworks that are approved by the artist and credited.'))
@@ -563,6 +606,22 @@ class Activity(MagiModel):
     }
 
     # Cache
+
+    # Updated manually when activity is updated
+    _cache_hidden_by_default = models.BooleanField(default=False, db_index=True)
+
+    def to_cache_hidden_by_default(self):
+        return bool([True for tag in self.tags if tag in ACTIVITIES_TAGS_HIDDEN_BY_DEFAULT])
+
+    # Updated manually when someone likes or unlikes the activity
+    _cache_total_likes_update_on_none = True
+    _cache_total_likes = models.PositiveIntegerField(null=True)
+
+    def to_cache_total_likes(self):
+        return self.likes.count()
+
+    # Updated manually on user edited on user edited
+    # or auto updated when cached_owner is accessed and cache older than 20d
     _cache_days = 20
     _cache_last_update = models.DateTimeField(null=True)
     _cache_owner_username = models.CharField(max_length=32, null=True)
@@ -622,6 +681,39 @@ class Activity(MagiModel):
 
     class Meta:
         verbose_name_plural = "activities"
+
+############################################################
+# Activities utilities
+
+def getTagsWithPermissionToAdd(request):
+    return [
+        (tag[0] if isinstance(tag, tuple) else tag)
+        for tag in (ACTIVITY_TAGS or [])
+        if (not isinstance(tag, tuple)
+            or not isinstance(tag[1], dict)
+            or tag[1].get('has_permission_to_add', lambda r: True)(request)
+        )]
+
+def checkTagPermission(tag, request):
+    details = ACTIVITY_TAGS_DICT[tag]
+    return True if not isinstance(details, dict) else details.get('has_permission_to_show', lambda r: True)(request)
+
+def getHiddenTags(request):
+    return ([tag for tag, hidden in request.user.preferences.hidden_tags.items() if hidden]
+            if request.user.is_authenticated() and request.user.preferences.hidden_tags
+            else ACTIVITIES_TAGS_HIDDEN_BY_DEFAULT)
+
+def getAllowedTags(request, is_creating=False):
+    hidden = getHiddenTags(request)
+    can_add = getTagsWithPermissionToAdd(request) if is_creating else None
+    return [
+        (_tag,
+         _details.get('translation', _tag)
+         if isinstance(_details, dict)
+         else _details)
+        for (_tag, _details) in ACTIVITY_TAGS
+        if _tag not in hidden and (not is_creating or _tag in can_add)
+    ]
 
 def saveActivityCacheOwnerWithoutChangingModification(activity):
     Activity.objects.filter(id=activity.id).update(**{

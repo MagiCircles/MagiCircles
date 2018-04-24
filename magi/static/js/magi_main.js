@@ -886,6 +886,29 @@ function loadBadges(tab_name, user_id, onDone) {
 }
 
 // *****************************************
+// d_FieldCheckBoxes
+
+function _hideDetails() {
+    let formGroup = $(this).closest('.form-group');
+    formGroup.find('.help-block').hide();
+}
+
+function _switchBold() {
+    let formGroup = $(this).closest('.form-group');
+    formGroup.find('label').css('font-weight', 'normal');
+    formGroup.find('.help-block').css('font-weight', 'bold');
+    if ($(window).width() > 762) {
+        formGroup.find('.help-block').css('margin-left', '-50%');;
+        formGroup.find('.help-block').css('width', '150%');;
+    }
+}
+
+function d_FieldCheckBoxes(selector) {
+    selector.each(_switchBold);
+    selector.not(":eq(0)").each(_hideDetails);
+}
+
+// *****************************************
 // iTunes
 
 function pauseAllSongs() {

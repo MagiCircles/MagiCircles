@@ -23,7 +23,7 @@
     <div class="pull-right">
       {% block otherbuttons %}
       {% endblock %}{% if otherbuttons %}{{ otherbuttons|getattribute:form_name }}{% endif %}{% if form.otherbuttons %}{{ form.otherbuttons }}{% endif %}
-      <button type="submit" name="{{ form_name }}" class="btn btn-main btn-lg generic-form-submit-button" data-form-loader="true">{% block submit %}{% trans 'Apply Changes' %}{% endblock %}</button>
+      <button type="submit" name="{{ form_name }}" class="btn btn-main btn-lg generic-form-submit-button" data-form-loader="true">{% block submit %}{% if form.submit_title %}{{ form.submit_title }}{% else %}{% trans 'Apply Changes' %}{% endif %}{% endblock %}</button>
     </div>
   </form>
 <br><br>

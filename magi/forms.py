@@ -5,6 +5,7 @@ from multiupload.fields import MultiFileField
 from django import forms
 from django.http.request import QueryDict
 from django.db.models.fields import BLANK_CHOICE_DASH, FieldDoesNotExist, TextField, CharField
+from django.db.models.fields.files import ImageField
 from django.db.models import Q
 from django.forms.models import model_to_dict, fields_for_model
 from django.conf import settings as django_settings
@@ -160,7 +161,7 @@ class MagiForm(forms.ModelForm):
             elif name.startswith('d_') and not isinstance(self, MagiFiltersForm):
                 choices = getattr(self.Meta.model, u'{name}_CHOICES'.format(name=name[2:].upper()), None)
                 if choices is not None:
-                    if not self.collection.translated_fields or name[2:-1] not in self.collection.translated_fields or getattr(self, 'is_translate_form', False):
+                    if not self.collection or not self.collection.translated_fields or name[2:-1] not in self.collection.translated_fields or getattr(self, 'is_translate_form', False):
                         self.d_choices[name[2:]] = []
                         for choice in choices:
                             key = choice[0] if isinstance(choice, tuple) else choice
@@ -211,6 +212,7 @@ class MagiForm(forms.ModelForm):
         # Check max_per_user
         owner = getattr(self, 'to_owner', self.request.user)
         if (self.is_creating and self.collection
+            and not isinstance(self, MagiFiltersForm)
             and self.request and owner.is_authenticated()):
             if self.collection.add_view.max_per_user_per_hour:
                 already_added = self.Meta.model.objects.filter(**{
@@ -255,7 +257,8 @@ class MagiForm(forms.ModelForm):
         for dfield, choices in self.d_choices.items():
             d = {}
             for field, key in choices:
-                if self.cleaned_data[field]:
+                if (self.cleaned_data[field]
+                    or key in getattr(self.Meta, 'd_save_falsy_values_for_keys', {}).get(dfield, [])):
                     d[key] = self.cleaned_data[field]
             instance.save_d(dfield, d)
         for field in self.fields.keys():
@@ -491,7 +494,10 @@ class MagiFiltersForm(AutoForm):
                                     empty_value = None
                                     try:
                                         model_field = queryset.model._meta.get_field(original_selector)
-                                        if isinstance(model_field, TextField) or isinstance(model_field, CharField):
+                                        if (isinstance(model_field, TextField)
+                                            or isinstance(model_field, CharField)
+                                            or isinstance(model_field, ImageField)
+                                        ):
                                             empty_value = ''
                                     except FieldDoesNotExist: pass
                                     if empty_value is not None:
@@ -705,6 +711,45 @@ class EmailsPreferencesForm(MagiForm):
     class Meta(MagiForm.Meta):
         model = models.UserPreferences
         fields = []
+
+class SecurityPreferencesForm(MagiForm):
+    def __init__(self, *args, **kwargs):
+        super(SecurityPreferencesForm, self).__init__(*args, **kwargs)
+        new_d = self.instance.hidden_tags.copy()
+        for default_hidden in models.ACTIVITIES_TAGS_HIDDEN_BY_DEFAULT:
+            if default_hidden not in new_d:
+                new_d[default_hidden] = True
+        self.instance.save_d('hidden_tags', new_d)
+        self.old_hidden_tags = self.instance.hidden_tags
+        for field_name in self.fields.keys():
+            if field_name.startswith('d_hidden_tags'):
+                self.fields[field_name] = forms.BooleanField(
+                    label=self.fields[field_name].help_text,
+                    help_text=self.fields[field_name].label,
+                    required=False,
+                    initial=self.instance.hidden_tags.get(field_name.replace('d_hidden_tags-', ''), False),
+                )
+
+    def clean(self):
+        # Check permission to show tags
+        for field_name in self.fields.keys():
+            if field_name.startswith('d_hidden_tags'):
+                tag = field_name.replace('d_hidden_tags-', '')
+                if (self.old_hidden_tags.get(tag, False)
+                    and not self.cleaned_data.get(field_name, False)):
+                    r = models.checkTagPermission(tag, self.request)
+                    if r != True:
+                        raise forms.ValidationError(u'{} {}'.format(
+                            _(u'You are not allowed to see activities with the tag "{tag}".').format(
+                                tag=self.fields[field_name].label,
+                            ), r))
+
+    class Meta(MagiForm.Meta):
+        model = models.UserPreferences
+        fields = ('d_hidden_tags',)
+        d_save_falsy_values_for_keys = {
+            'hidden_tags': models.ACTIVITIES_TAGS_HIDDEN_BY_DEFAULT,
+        }
 
 class UserPreferencesForm(MagiForm):
     color = forms.ChoiceField(required=False, choices=[], label=_('Color'))
@@ -935,11 +980,14 @@ class LanguagePreferencesForm(MagiForm):
         fields = ('i_language',)
 
 ############################################################
-# Confirm delete - works with everything
+# Confirm - works with everything
 
 class ConfirmDelete(forms.Form):
     confirm = forms.BooleanField(required=True, initial=False, label=_('Confirm'))
     thing_to_delete = forms.IntegerField(widget=forms.HiddenInput, required=True)
+
+class Confirm(forms.Form):
+    confirm = forms.BooleanField(required=True, initial=False, label=_('Confirm'))
 
 ############################################################
 # Staff configuration form
@@ -1051,6 +1099,16 @@ class ActivityForm(MagiForm):
                 self.fields['message'].help_text = mark_safe(u'{} <a href="/help/Markdown" target="_blank">{}.</a>'.format(_(u'You may use Markdown formatting.'), _(u'Learn more')))
             else:
                 self.fields['message'].help_text = _(u'You may use Markdown formatting.')
+        # Only allow users to add tags they are allowed to see
+        if 'c_tags' in self.fields:
+            self.fields['c_tags'].choices = models.getAllowedTags(self.request, is_creating=True)
+
+    def save(self, commit=False):
+        instance = super(ActivityForm, self).save(commit=False)
+        instance.update_cache('hidden_by_default')
+        if commit:
+            instance.save()
+        return instance
 
     class Meta(MagiForm.Meta):
         model = models.Activity
@@ -1070,6 +1128,12 @@ class FilterActivities(MagiFiltersForm):
     with_image_filter = MagiFilter(selector='image__isnull')
 
     owner_id = forms.IntegerField(widget=forms.HiddenInput)
+
+    def __init__(self, *args, **kwargs):
+        super(FilterActivities, self).__init__(*args, **kwargs)
+        # Only allow users to filter by tags they are allowed to see
+        if 'c_tags' in self.fields:
+            self.fields['c_tags'].choices = models.getAllowedTags(self.request)
 
     def filter_queryset(self, queryset, parameters, request):
         queryset = super(FilterActivities, self).filter_queryset(queryset, parameters, request)

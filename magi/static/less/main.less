@@ -1019,6 +1019,20 @@ nav {
     }
 }
 
+[data-form-name="security"] {
+    .form-group {
+        display: inline-block;
+        .col-sm-4 {
+            display: none;
+        }
+        .col-sm-8 {
+            width: auto;
+            margin: 0 10px;
+
+        }
+    }
+}
+
 
 @keyframes blinker {
     50% { opacity: 0.7; }
@@ -1052,6 +1066,7 @@ nav {
    .jumbotron-main { .jumbotron_per_color(@mainColor); }
    .well-main { .well_per_color(@mainColor); }
 
+   .table-secondary { .table-color(@secondaryColor, #fff); }
    .panel-secondary { .panel-simple-variant(@secondaryColor); }
    .alert-secondary { .alert-simple-variant(@secondaryColor); }
    .btn-secondary { .button-variant(white, @secondaryColor, darken(@secondaryColor, 2%)); }
@@ -1515,4 +1530,30 @@ nav {
             }
         }
     }
+}
+
+.blocked-info, .default-blocked-in-list, .table-blocked tr {
+    background: linear-gradient(45deg, rgba(255,255,255,0.2) 25%, rgba(0,0,0,0) 25%, rgba(0,0,0,0) 50%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.2) 75%, rgba(0,0,0,0) 75%, rgba(0,0,0,0) 0), rgba(237,237,237,1);
+    background-size: 50px 50px;
+}
+
+.table-blocked>tbody>tr>td {
+    vertical-align: middle;
+    .flaticon-fingers {
+        font-size: 30px;
+    }
+}
+
+.blocked-info {
+    text-align: center;
+    padding: 100px;
+    border-radius: 10px;
+    margin: 40px 0;
+    font-size: 2em;
+}
+
+.default-blocked-in-list {
+    text-align: left;
+    padding: 20px;
+    opacity: 0.6;
 }

@@ -1,0 +1,7 @@
+<p class="default-blocked_in-list">
+  <i class="flaticon-fingers"></i> <span>{{ item.blocked_message }}</span>
+  <a href="/block/{{ item.owner_id }}/?next={{ item.item_url }}"
+     class="btn btn-sm btn-danger pull-right" target="_blank">
+    {{ item.unblock_button }}
+  </a>
+</p>

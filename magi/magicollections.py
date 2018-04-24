@@ -272,7 +272,7 @@ class MagiCollection(object):
                                         item_field_name,
                                         self.item_id,
                                     ))
-                                collection = model_class.owner_collection()
+                            collection = model_class.owner_collection()
                             if collection:
                                 raise HttpRedirectException(u'{}?next={}'.format(
                                     collection.get_add_url(ajax=self.ajax),
@@ -933,6 +933,7 @@ class MagiCollection(object):
         show_relevant_fields_on_ordering = True
         hide_sidebar = False
         item_template = 'default_item_in_list'
+        item_blocked_template = 'default_blocked_template_in_list'
         auto_reloader = True
         _alt_view_choices = None # Cache
         alt_views = []
@@ -1484,6 +1485,7 @@ class UserCollection(MagiCollection):
         page_size = 30
 
         def get_queryset(self, queryset, parameters, request):
+            queryset = super(UserCollection.ListView, self).get_queryset(queryset, parameters, request)
             if 'followers_of' in parameters:
                 queryset = queryset.filter(preferences__following__username=parameters['followers_of'])
             if 'followed_by' in parameters:
@@ -1509,6 +1511,20 @@ class UserCollection(MagiCollection):
         ]
         accounts_template = 'include/defaultAccountsForProfile'
 
+        def buttons_per_item(self, request, context, item):
+            buttons = super(UserCollection.ItemView, self).buttons_per_item(request, context, item)
+            user = context['item']
+            if request.user.is_authenticated() and user.id != request.user.id:
+                buttons['block'] = {
+                    'classes': self.item_buttons_classes,
+                    'show': True,
+                    'url': u'/block/{}/'.format(user.id),
+                    'icon': 'fingers',
+                    'title': _(u'Block {username}').format(username=user.username),
+                    'has_permissions': True,
+                }
+            return buttons
+
         def get_item(self, request, pk):
             if pk == 'me':
                 if request.user.is_authenticated():
@@ -1523,6 +1539,7 @@ class UserCollection(MagiCollection):
             }
 
         def get_queryset(self, queryset, parameters, request):
+            queryset = super(UserCollection.ItemView, self).get_queryset(queryset, parameters, request)
             if request.user.is_authenticated():
                 queryset = queryset.extra(select={
                     'followed': 'SELECT COUNT(*) FROM {table}_following WHERE userpreferences_id = {id} AND user_id = auth_user.id'.format(
@@ -1787,6 +1804,7 @@ class StaffConfigurationCollection(MagiCollection):
         default_ordering = 'id'
 
         def get_queryset(self, queryset, parameters, request):
+            queryset = super(StaffConfigurationCollection.ListView, self).get_queryset(queryset, parameters, request)
             # Translators can only see translatable configurations
             if not hasOneOfPermissions(request.user, ['edit_staff_configurations', 'advanced_staff_configurations']):
                 queryset = queryset.exclude(Q(i_language__isnull=True) | Q(i_language=''))
@@ -1850,6 +1868,7 @@ class StaffDetailsCollection(MagiCollection):
         add_button_subtitle = None
 
         def get_queryset(self, queryset, parameters, request):
+            queryset = super(StaffDetailsCollection.ListView, self).get_queryset(queryset, parameters, request)
             if not hasOneOfPermissions(request.user, ['translate_items', 'edit_staff_details']):
                 try:
                     sd = models.StaffDetails.objects.get(owner=request.user)
@@ -1893,7 +1912,7 @@ class ActivityCollection(MagiCollection):
     title = _('Activity')
     plural_title = _('Activities')
     plural_name = 'activities'
-    queryset = models.Activity.objects.all().annotate(total_likes=Count('likes'))
+    queryset = models.Activity.objects.all()
     navbar_link = False
     icon = 'comments'
 
@@ -1924,7 +1943,6 @@ class ActivityCollection(MagiCollection):
                     user_id=request.user.id,
                 ),
             })
-        queryset = queryset.annotate(total_likes=Count('likes'))
         return queryset
 
     filter_cuteform = {
@@ -1959,7 +1977,15 @@ class ActivityCollection(MagiCollection):
         shortcut_urls = ['']
 
         def get_queryset(self, queryset, parameters, request):
-            return self.collection._get_queryset_for_list_and_item(queryset, parameters, request)
+            queryset = super(ActivityCollection.ListView, self).get_queryset(queryset, parameters, request)
+            queryset = self.collection._get_queryset_for_list_and_item(queryset, parameters, request)
+            # Exclude hidden tags
+            if request.user.is_authenticated() and request.user.preferences.hidden_tags:
+                for tag in models.getHiddenTags(request):
+                    queryset = queryset.exclude(c_tags__contains=u'"{}"'.format(tag))
+            else:
+                queryset = queryset.exclude(_cache_hidden_by_default=True)
+            return queryset
 
         def extra_context(self, context):
             super(ActivityCollection.ListView, self).extra_context(context)
@@ -1978,7 +2004,35 @@ class ActivityCollection(MagiCollection):
             return [cls for cls in super(ActivityCollection.ItemView, self).item_buttons_classes if cls != 'btn-secondary'] + ['btn-link']
 
         def get_queryset(self, queryset, parameters, request):
+            queryset = super(ActivityCollection.ItemView, self).get_queryset(queryset, parameters, request)
             return self.collection._get_queryset_for_list_and_item(queryset, parameters, request)
+
+        def extra_context(self, context):
+            super(ActivityCollection.ItemView, self).extra_context(context)
+            # Show warning on hidden tags
+            context['item'].hidden_reasons = []
+            tags = context['item'].tags
+            error_message = _(u'You are not allowed to see activities with the tag "{tag}".')
+
+            for tag in models.getHiddenTags(context['request']):
+                if tag in tags:
+                    details = models.ACTIVITY_TAGS_DICT.get(tag, {})
+                    if not isinstance(details, dict):
+                        details = {}
+                    has_permission = details.get('has_permission_to_show', lambda r: True)(context['request'])
+                    if has_permission != True:
+                        context['item'].hidden_reasons.append(u'{} {}'.format(
+                            error_message.format(tag=details.get('translation', tag)),
+                            has_permission,
+                        ))
+                    else:
+                        context['item'].hidden_reasons.append(u'{} {}'.format(
+                            error_message.format(tag=details.get('translation', tag)),
+                            _('You can change which tags you would like to see or hide in your settings.'),
+                        ))
+            if context['item'].hidden_reasons:
+                context['page_title'] = None
+                context['comments_enabled'] = False
 
     class AddView(MagiCollection.AddView):
         multipart = True
@@ -1990,6 +2044,11 @@ class ActivityCollection(MagiCollection):
         multipart = True
         allow_delete = True
         form_class = forms.ActivityForm
+
+        def redirect_after_delete(self, request, item, ajax):
+            if ajax:
+                return '/ajax/successdelete/'
+            return super(ActivityCollection.EditView, self).redirect_after_delete(request, item, ajax)
 
 ############################################################
 # Notification Collection
@@ -2012,6 +2071,7 @@ class NotificationCollection(MagiCollection):
         authentication_required = True
 
         def get_queryset(self, queryset, parameters, request):
+            queryset = super(NotificationCollection.ListView, self).get_queryset(queryset, parameters, request)
             if 'ajax_modal_only' in parameters:
                 queryset = queryset.filter(seen=False)
             return queryset.filter(owner=request.user)
@@ -2106,6 +2166,7 @@ class BadgeCollection(MagiCollection):
         filter_form = forms.FilterBadges
 
         def get_queryset(self, queryset, parameters, request):
+            queryset = super(BadgeCollection.ListView, self).get_queryset(queryset, parameters, request)
             if 'of_user' in parameters and parameters['of_user']:
                 request.context_show_user = False
             else:
@@ -2135,6 +2196,7 @@ class BadgeCollection(MagiCollection):
         comments_enabled = False
 
         def get_queryset(self, queryset, parameters, request):
+            queryset = super(BadgeCollection.ItemView, self).get_queryset(queryset, parameters, request)
             return queryset.select_related('owner')
 
     class AddView(MagiCollection.AddView):
@@ -2262,6 +2324,7 @@ class DonateCollection(MagiCollection):
         add_button_subtitle = ''
 
         def get_queryset(self, queryset, parameters, request):
+            queryset = super(DonateCollection.ListView, self).get_queryset(queryset, parameters, request)
             return queryset.filter(date__lte=timezone.now())
 
         def extra_context(self, context):

@@ -296,12 +296,19 @@ class BaseMagiModel(models.Model):
     def get_cached_json(self, field_name, value):
         if value is None: return None
         d = json.loads(value)
-        if value is None: return None
+        if d is None: return None
         if isinstance(d, list):
             d = map(lambda _d: AttrDict(self.cached_json_extra(field_name, _d)), d)
         else:
             d = AttrDict(self.cached_json_extra(field_name, d))
         return d
+
+    @classmethod
+    def get_cached_csv(self, field_name, value):
+        if value is None: return []
+        values = split_data(value)
+        map_method = getattr(self, u'cached_{}_map'.format(field_name), None)
+        return [map_method(i) for i in values] if map_method else values
 
     def add_c(self, field_name, to_add):
         """
@@ -348,9 +355,23 @@ class BaseMagiModel(models.Model):
             raise NotImplementedError(u'to_cache_{f} method is required for {f} cache'.format(f=field_name))
         setattr(self, u'_cache_{}_last_update'.format(field_name), timezone.now())
         value = to_cache_method()
-        if value is not None:
+        if hasattr(self, '_cache_j_{}'.format(field_name)):
             value = json.dumps(value)
-        setattr(self, u'_cache_j_{}'.format(field_name), value)
+            setattr(self, u'_cache_j_{}'.format(field_name), value)
+        elif hasattr(self, '_cache_c_{}'.format(field_name)):
+            value = join_data(*value)
+            setattr(self, u'_cache_c_{}'.format(field_name), value)
+        setattr(self, u'_cache_{}'.format(field_name), value)
+
+    def _force_on_last_update_or_none(self, field_name, prefix=''):
+        days = getattr(self, u'_cache_{}_days'.format(field_name), None)
+        if days and hasattr(self, u'_cache_{}_last_update'.format(field_name)):
+            last_update = getattr(self, u'_cache_{}_last_update'.format(field_name), None)
+            if not last_update or last_update < timezone.now() - datetime.timedelta(days=days):
+                self.force_update_cache(field_name)
+        if (getattr(self, u'_cache_{}_update_on_none'.format(field_name), False)
+            and getattr(self, u'_cache_{}{}'.format(prefix, field_name)) is None):
+            self.force_update_cache(field_name)
 
     def __getattr__(self, name):
         # For choice fields with name "i_something", accessing "something" returns the string value
@@ -392,13 +413,16 @@ class BaseMagiModel(models.Model):
             field_name = name[7:]
             # Accessing cached_something when _cache_j_something exists
             if hasattr(self, '_cache_j_{}'.format(field_name)):
-                days = getattr(self, u'_cache_{}_days'.format(field_name), None)
-                if not days or not hasattr(self, u'_cache_{}_last_update'.format(field_name)):
-                    raise NotImplementedError(u'_cache_{f}_days and _cache_{f}_last_update fields are required for {f} cache'.format(f=field_name))
-                last_update = getattr(self, u'_cache_{}_last_update'.format(field_name), None)
-                if not last_update or last_update < timezone.now() - datetime.timedelta(days=days):
-                    self.force_update_cache(field_name)
+                self._force_on_last_update_or_none(field_name, prefix='j_')
                 return type(self).get_cached_json(field_name, getattr(self, '_cache_j_{}'.format(field_name)))
+            # Accessing cached_something when _cache_c_something exists
+            elif hasattr(self, '_cache_c_{}'.format(field_name)):
+                self._force_on_last_update_or_none(field_name, prefix='j_')
+                return type(self).get_cached_csv(field_name, getattr(self, '_cache_c_{}'.format(field_name)))
+            # Accessing cached_something when _cache_something exists
+            elif hasattr(self, '_cache_{}'.format(field_name)):
+                self._force_on_last_update_or_none(field_name)
+                return getattr(self, '_cache_{}'.format(field_name))
 
         raise AttributeError("%r object has no attribute %r" % (self.__class__, name))
 

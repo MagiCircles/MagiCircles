@@ -25,6 +25,21 @@
 	</small><br>
 	<strong class="owner">{{ activity.cached_owner.username }}</strong>
 	<br>
+        {% if activity.hidden_reasons %}
+        <br>
+        {% for reason in activity.hidden_reasons %}
+        <div class="alert alert-danger">
+          <div class="row">
+            <div class="col-sm-1 text-center hidden-xs">
+              <i class="flaticon-fingers fontx2"></i>
+            </div>
+            <div class="col-sm-11">
+              {{ reason }}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+        {% else %}
 	{% if activity.image %}
 	<a href="{{ activity.image_url }}" target="_blank" class="a-nodifference activity-image" style="background-image: url('{{ activity.image_url }}');"><i class="flaticon-link"></i></a>
 	{% endif %}
@@ -48,7 +63,7 @@
 	      <a href="/signup/?next={{ current_url }}" class="btn btn-link"><i class="flaticon-heart"></i> {% trans 'Like' %}</a>
 	      {% endif %}
 	      <div class="btn btn-link hidden-loader" style="display: none;"><i class="flaticon-loading"></i></div>
-	      <a href="#likecount" class="btn btn-link" data-manual-popover="true">{{ activity.total_likes|add:1 }}</a>
+	      <a href="#likecount" class="btn btn-link" data-manual-popover="true">{{ activity.cached_total_likes|add:1 }}</a>
 	    </div>
 	    {% if current != 'activity_item' %}
 	    <div class="btn-group writecomments">
@@ -59,6 +74,7 @@
             {% include 'include/below_item.html' with buttons_only=True show_item_buttons=True %}
 	  </form>
 	</div>
+        {% endif %}
       </div>
     </div>
   </div>

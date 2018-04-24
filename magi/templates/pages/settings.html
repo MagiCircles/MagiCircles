@@ -12,6 +12,8 @@
 {% trans 'Change your password' %}
 {% elif form_name == 'emails' %}
 {% trans 'Emails' %}
+{% elif form_name == 'security' %}
+{% trans 'Security' %}
 {% else %}
 {% trans 'Settings' %}
 {% endif %}
@@ -37,6 +39,23 @@
 {% endblock %}
 
 {% block beforefields %}
+{% if form_name == 'security' and blocked %}
+<table class="table table-blocked table-padded table-rounded">
+  {% for blocked_user in blocked %}
+  <tr>
+    <td><i class="flaticon-fingers"></i></td>
+    <td>
+      {{ blocked_user.block_message }}
+    </td>
+    <td class="text-right" width="200">
+      <a href="/block/{{ blocked_user.id }}/" class="btn btn-lg btn-danger" target="_blank">
+        {{ blocked_user.unblock_message }}
+    </a></td>
+  </tr>
+  {% endfor %}
+</table>
+<br>
+{% endif %}
 {% endblock %}
 
 {% block belowform %}
@@ -54,11 +73,11 @@
 <h1 id="accounts" class="text-center padding50">{% trans 'Accounts' %}</h1>
 <br>
 <form class="container_form">
-  <table class="table">
+  <table class="table table-main table-padded table-rounded">
     {% for account in accounts %}
     <tr>
       <td><h4>{{ account }}</h4></td>
-      <td class="text-right"><a href="{{ account.edit_url }}" class="btn btn-lg btn-main">{{ account.edit_sentence }}</a></td>
+      <td class="text-right"><a href="{{ account.edit_url }}" class="btn btn-lg btn-secondary">{{ account.edit_sentence }}</a></td>
     </tr>
     {% endfor %}
   </table>
@@ -68,7 +87,7 @@
   </div>
 </form>
 
-{% if user.groups %}
+{% if user.preferences.groups %}
 <h1 id="groups" class="text-center padding50"><i class="flaticon-about"></i> Your groups</h1>
 <br>
 <form class="container_form">

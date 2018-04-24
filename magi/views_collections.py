@@ -69,6 +69,20 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
     context['item'] = get_one_object_or_404(queryset, **options) if not item else item
     collection.item_view.check_owner_permissions(request, context, context['item'])
 
+    if request.user.is_authenticated() and context['item'].owner_id in request.user.preferences.cached_blocked_ids:
+        if ajax:
+            try:
+                username = context['item'].owner.username
+            except AttributeError:
+                username = _('this user')
+            context['item'].blocked_message = _(u'You blocked {username}.').format(username=username)
+            context['item'].unblock_button = _(u'Unblock {username}').format(username=username)
+            return render(request, 'items/default_blocked_template_in_list.html', context)
+        raise HttpRedirectException(u'/block/{id}/?next={next_url}'.format(
+            id=context['item'].owner_id,
+            next_url=context['current_url'],
+        ))
+
     if shortcut_url is not None:
         context['shortcut_url'] = shortcut_url
     context['ajax'] = ajax
@@ -215,6 +229,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['no_result_template'] = collection.list_view.no_result_template
     context['after_template'] = collection.list_view.after_template
     context['item_template'] = collection.list_view.item_template
+    context['item_blocked_template'] = collection.list_view.item_blocked_template
     if context['alt_view'] and 'template' in context['alt_view']:
         context['item_template'] = context['alt_view']['template']
     context['item_padding'] = collection.list_view.item_padding
@@ -270,6 +285,14 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
         item.show_item_buttons_in_one_line = collection.list_view.show_item_buttons_in_one_line
         if collection.list_view.show_item_buttons and [True for b in item.buttons_to_show.values() if b['show'] and b['has_permissions']]:
             context['include_below_item'] = True
+        if request.user.is_authenticated() and item.owner_id in request.user.preferences.cached_blocked_ids:
+            item.blocked = True
+            try:
+                username = item.owner.username
+            except AttributeError:
+                username = _('this user')
+            item.blocked_message = _(u'You blocked {username}.').format(username=username)
+            item.unblock_button = _(u'Unblock {username}').format(username=username)
 
     collection.list_view.extra_context(context)
 

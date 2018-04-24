@@ -180,6 +180,22 @@ class Card(MagiModel):
             'image': unicode(self.idol.image),
         }
 
+    # Cache idol name (it wouldn't make sense in a real life scenario to cache name when json cache exists)
+
+    _cache_idol_name = models.CharField(max_length=100, null=True)
+
+    def to_cache_idol_name(self):
+        return self.idol.name if self.idol_id else None
+
+    # Cache idol japanese name (it wouldn't make sense in a real life scenario to cache name when json cache exists)
+
+    _cache_idol_japanese_name_days = 20
+    _cache_idol_japanese_name_last_update = models.DateTimeField(null=True)
+    _cache_idol_japanese_name = models.CharField(max_length=100, null=True)
+
+    def to_cache_idol_japanese_name(self):
+        return self.idol.japanese_name if self.idol_id else None
+
     # Cache gachas
 
     _cached_gachas_collection_name = 'gacha'
@@ -201,6 +217,34 @@ class Card(MagiModel):
                 'i_rarity': gacha.i_rarity,
             })
         return gachas if gachas else None
+
+    # Cache gachas names (it wouldn't make sense in a real life scenario to cache names when json cache exists)
+
+    _cache_c_gacha_names = models.TextField(null=True)
+
+    def to_cache_gacha_names(self):
+        return Gacha.objects.filter(card_id=self.id).values_list('name', flat=True)
+
+    # Cache gachas ids (it wouldn't make sense in a real life scenario to cache ids when json cache exists)
+
+    _cache_gacha_ids_days = 20
+    _cache_gacha_ids_last_update = models.DateTimeField(null=True)
+    _cache_c_gacha_ids = models.TextField(null=True)
+
+    def to_cache_gacha_ids(self):
+        return Gacha.objects.filter(card_id=self.id).values_list('id', flat=True)
+
+    @classmethod
+    def cached_gacha_ids_map(self, i):
+        return int(i)
+
+    # Cache total gachas (it wouldn't make sense in a real life scenario to cache total when json cache exists)
+
+    _cache_total_gachas_update_on_none = True
+    _cache_total_gachas = models.PositiveIntegerField(null=True)
+
+    def to_cache_total_gachas(self):
+        return self.gachas.count()
 
 class Gacha(MagiModel):
     collection_name = 'gacha'

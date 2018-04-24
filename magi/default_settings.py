@@ -168,7 +168,7 @@ DEFAULT_GROUPS = [
     ('entertainer', {
         'translation': _('Community entertainer'),
         'description': 'We keep the community active and happy by organizing fun stuff: contests, giveaways, games, etc. We\'re open to feedback and ideas!',
-        'permissions': ['edit_staff_configurations', 'add_badges'],
+        'permissions': ['edit_staff_configurations', 'add_badges', 'post_community_event_activities'],
         'requires_staff': True,
         'outside_permissions': [
             'Tweetdeck',
@@ -366,6 +366,13 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
             'navbar_link': False,
         },
     ]),
+    ('block', {
+        'navbar_link': False,
+        'custom': False,
+        'url_variables': [
+            ('pk', '\d+'),
+        ],
+    }),
     ('collections', {
         'title': 'Collections',
         'custom': False,

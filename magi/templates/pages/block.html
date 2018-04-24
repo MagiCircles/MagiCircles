@@ -1,0 +1,14 @@
+{% extends "form.html" %}
+
+{% block beforeform %}
+{% if not blocking %}
+<div class="blocked-info">
+  <h1><i class="flaticon-fingers"></i></h1>
+  <p>{{ info_message }}</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block beforefields %}
+{% include 'include/alert.html' %}
+{% endblock %}

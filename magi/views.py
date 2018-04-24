@@ -16,7 +16,8 @@ from django.utils.formats import dateformat
 from django.utils import timezone
 from django.db.models import Count, Prefetch
 from django.views.decorators.csrf import csrf_exempt
-from magi.forms import CreateUserForm, UserForm, UserPreferencesForm, AddLinkForm, ChangePasswordForm, EmailsPreferencesForm, LanguagePreferencesForm
+from magi.middleware.httpredirect import HttpRedirectException
+from magi.forms import CreateUserForm, UserForm, UserPreferencesForm, AddLinkForm, ChangePasswordForm, EmailsPreferencesForm, LanguagePreferencesForm, SecurityPreferencesForm, Confirm
 from magi import models
 from magi.raw import donators_adjectives
 from magi.utils import getGlobalContext, ajaxContext, redirectToProfile, tourldash, redirectWhenNotAuthenticated, dumpModel, send_email, emailContext, getMagiCollection, getMagiCollections, cuteFormFieldsForContext, CuteFormType, FAVORITE_CHARACTERS_IMAGES, groupsForAllPermissions, hasPermission, setSubField, staticImageURL
@@ -213,6 +214,7 @@ def settings(request):
         ('form', UserForm(instance=request.user, request=request)),
         ('changePassword', ChangePasswordForm(request=request)),
         ('emails', EmailsPreferencesForm(request=request)),
+        ('security', SecurityPreferencesForm(instance=context['preferences'], request=request)),
         ('addLink', AddLinkForm(request=request)),
     ])
     if request.method == 'POST':
@@ -248,8 +250,20 @@ def settings(request):
                     if form.is_valid():
                         form.save()
                         redirectToProfile(request)
+                elif form_name == 'security':
+                    form = SecurityPreferencesForm(request.POST, instance=context['preferences'], request=request)
+                    if form.is_valid():
+                        form.save()
+                        models.onPreferencesEdited(request.user)
+                        if ON_PREFERENCES_EDITED:
+                            ON_PREFERENCES_EDITED(request.user)
+                        redirectToProfile(request)
                 context['forms'][form_name] = form
     context['links'] = list(request.user.links.all())
+    context['blocked'] = list(request.user.preferences.blocked.all())
+    for blocked_user in context['blocked']:
+        blocked_user.block_message = _(u'You blocked {username}.').format(username=blocked_user.username)
+        blocked_user.unblock_message = _(u'Unblock {username}').format(username=blocked_user.username)
     context['js_files'] = ['settings']
     filter_cuteform = {
         'i_language': {
@@ -328,6 +342,42 @@ def mapDefaultContext(request):
 
 def map(request):
     return render(request, 'pages/map.html', mapDefaultContext(request))
+
+############################################################
+# Block
+
+def block(request, pk, unblock=False):
+    context = getGlobalContext(request)
+    redirectWhenNotAuthenticated(request, context, next_title=_('Settings'))
+    user = get_object_or_404(models.User, pk=pk)
+    block = True
+    if request.user.preferences.blocked.filter(pk=user.pk).exists():
+        block = False
+        context['info_message'] = _(u'You blocked {username}.').format(username=user.username)
+    context['blocking'] = block
+    title = _(u'Block {username}').format(username=user.username) if block else _(u'Unblock {username}').format(username=user.username)
+    context['page_title'] = title
+    context['extends'] = 'base.html'
+    context['form'] = Confirm()
+    context['alert_message'] = (_(u'Are you sure you want to block {username}? You will not be able to see any content created by {username}.') if block else _(u'Are you sure you want to unblock {username}?')).format(username=user.username)
+    context['alert_type'] = 'danger'
+    context['alert_flaticon'] = 'fingers'
+    if request.method == 'POST':
+        context['form'] = Confirm(request.POST)
+        if context['form'].is_valid():
+            if block:
+                request.user.preferences.blocked.add(user)
+                redirect_url = context['current_url']
+            else:
+                request.user.preferences.blocked.remove(user)
+                redirect_url = user.item_url
+            if 'next' in request.GET:
+                redirect_url = request.GET['next']
+            request.user.preferences.update_cache('blocked_ids')
+            request.user.preferences.save()
+            raise HttpRedirectException(redirect_url)
+    context['form'].submit_title = title
+    return render(request, 'pages/block.html', context)
 
 ############################################################
 # Avatar redirection for gravatar + twitter
@@ -492,6 +542,7 @@ def likeactivity(request, pk):
         raise PermissionDenied()
     if 'like' in request.POST and not activity.liked:
         activity.likes.add(request.user)
+        activity.update_cache('total_likes')
         activity.save()
         pushNotification(activity.owner, 'like', [unicode(request.user), unicode(activity)], url_values=[str(activity.id), tourldash(unicode(activity))], image=activity.image)
         return JsonResponse({
@@ -500,6 +551,7 @@ def likeactivity(request, pk):
         })
     if 'unlike' in request.POST and activity.liked:
         activity.likes.remove(request.user)
+        activity.update_cache('total_likes')
         activity.save()
         return JsonResponse({
             'total_likes': activity.total_likes,
