@@ -273,13 +273,19 @@ class UserPreferences(BaseMagiModel):
 
     # Cache blocked
     _cache_c_blocked_ids = models.TextField(null=True) # changed when blocked are modified
+    _cache_c_blocked_by_ids = models.TextField(null=True) # changed when blocked of other user are modified
 
     def to_cache_blocked_ids(self):
         return self.blocked.all().values_list('id', flat=True)
 
+    def to_cache_blocked_by_ids(self):
+        return User.objects.filter(preferences__blocked__id=self.user_id).values_list('id', flat=True)
+
     @classmethod
     def cached_blocked_ids_map(self, i):
         return int(i)
+
+    cached_blocked_by_ids_map = cached_blocked_ids_map
 
     class Meta:
         verbose_name_plural = "list of userpreferences"

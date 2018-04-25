@@ -349,7 +349,7 @@ def map(request):
 def block(request, pk, unblock=False):
     context = getGlobalContext(request)
     redirectWhenNotAuthenticated(request, context, next_title=_('Settings'))
-    user = get_object_or_404(models.User, pk=pk)
+    user = get_object_or_404(models.User.objects.select_related('preferences'), pk=pk)
     block = True
     if request.user.preferences.blocked.filter(pk=user.pk).exists():
         block = False
@@ -367,6 +367,8 @@ def block(request, pk, unblock=False):
         if context['form'].is_valid():
             if block:
                 request.user.preferences.blocked.add(user)
+                request.user.preferences.following.remove(user)
+                user.preferences.following.remove(request.user)
                 redirect_url = context['current_url']
             else:
                 request.user.preferences.blocked.remove(user)
@@ -375,6 +377,8 @@ def block(request, pk, unblock=False):
                 redirect_url = request.GET['next']
             request.user.preferences.update_cache('blocked_ids')
             request.user.preferences.save()
+            user.preferences.update_cache('blocked_by_ids')
+            user.preferences.save()
             raise HttpRedirectException(redirect_url)
     context['form'].submit_title = title
     return render(request, 'pages/block.html', context)
@@ -538,6 +542,9 @@ def likeactivity(request, pk):
     activity = get_object_or_404(models.Activity.objects.extra(select={
         'liked': 'SELECT COUNT(*) FROM magi_activity_likes WHERE activity_id = magi_activity.id AND user_id={}'.format(request.user.id),
     }).annotate(total_likes=Count('likes')).select_related('owner', 'owner__preferences'), pk=pk)
+    # If the owner of the liked activity blocked the authenticated user
+    if activity.cached_owner.id in request.user.preferences.cached_blocked_by_ids:
+        raise PermissionDenied()
     if activity.cached_owner.username == request.user.username:
         raise PermissionDenied()
     if 'like' in request.POST and not activity.liked:
@@ -569,6 +576,9 @@ def follow(request, username):
     user = get_object_or_404(models.User.objects.extra(select={
         'followed': 'SELECT COUNT(*) FROM magi_userpreferences_following WHERE userpreferences_id = {} AND user_id = auth_user.id'.format(request.user.preferences.id),
     }).annotate(total_followers=Count('followers')).select_related('preferences'), username=username)
+    # If the user being followed blocked the authenticated user
+    if user.id in request.user.preferences.cached_blocked_by_ids:
+        raise PermissionDenied()
     if 'follow' in request.POST and not user.followed:
         request.user.preferences.following.add(user)
         request.user.preferences.save()
