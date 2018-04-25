@@ -1654,8 +1654,10 @@ class UserCollection(MagiCollection):
             if FAVORITE_CHARACTERS:
                 for i in range(1, 4):
                     if getattr(user.preferences, 'favorite_character{}'.format(i)):
+                        name = (_(FAVORITE_CHARACTER_NAME) if FAVORITE_CHARACTER_NAME else _('{nth} Favorite Character')).format(nth=_(ordinalNumber(i)))
                         link = AttrDict({
-                            'type': (_(FAVORITE_CHARACTER_NAME) if FAVORITE_CHARACTER_NAME else _('{nth} Favorite Character')).format(nth=_(ordinalNumber(i))),
+                            'type': name,
+                            't_type': name,
                             # May be used by FAVORITE_CHARACTER_TO_URL
                             'raw_value': getattr(user.preferences, 'favorite_character{}'.format(i)),
                             'value': user.preferences.localized_favorite_character(i),
