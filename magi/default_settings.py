@@ -42,7 +42,7 @@ DEFAULT_GLOBAL_OUTSIDE_PERMISSIONS = [
 DEFAULT_GROUPS = [
     ('manager', {
         'translation': _('Manager'),
-        'description': 'The leader of our staff team is here to make sure that the website is doing well! They make sure we all get things done together and the website keeps getting new users everyday.',
+        'description': 'The leader of our staff team is here to make sure that the website is doing well! They make sure we all get things done together and the website keeps getting new users everyday. They\'re also the decision maker in case of conflicts that can\'t be resolved via votes.',
         'permissions': ['edit_roles', 'edit_staff_status', 'edit_donator_status', 'see_profile_edit_button', 'edit_staff_configurations', 'add_badges', 'see_collections_details', 'manage_main_items', 'edit_staff_details'],
         'requires_staff': True,
         'guide': '/help/Managers%20guide',
@@ -55,7 +55,7 @@ DEFAULT_GROUPS = [
     }),
     ('team', {
         'translation': _('Team manager'),
-        'description': 'Knows all the team members and discuss with them on a regular basis to make sure they are all active.',
+        'description': 'Knows all the team members and discuss with them on a regular basis to make sure they are all active. Ensures that the staff team is only composed of active members, keep track of members who are taking a break, regularly check with members if they\'re still interested, and help members retire if they want to. They are also in charge of assigning and revoking most permissions.',
         'permissions': ['edit_staff_status', 'edit_roles', 'see_profile_edit_button', 'edit_staff_details'],
         'requires_staff': True,
         'outside_permissions': [
@@ -67,7 +67,7 @@ DEFAULT_GROUPS = [
     }),
     ('finance', {
         'translation': _('Finance manager'),
-        'description': 'The finances manager keeps track of our monthly spending and donations, makes sure donators get their rewards, and we have enough funds every month to cover the server and other expenses.',
+        'description': 'Keeps track of our monthly spending and donations, makes sure donators get their rewards, and we have enough funds every month to cover the server and other expenses.',
         'permissions': ['add_donation_badges', 'manage_donation_months', 'edit_donator_status'],
         'requires_staff': True,
         'requires_staff': True,
@@ -86,7 +86,7 @@ DEFAULT_GROUPS = [
     }),
     ('dbapi', {
         'translation': string_concat(_('Database maintainer'), ' (API)'),
-        'description': 'Our database maintainers extract assets and data and automatically update our website. They do their best to publish all the details as soon they are available.',
+        'description': 'Extracts assets and data and automatically updates our website. They do their best to publish all the details as soon they are available.',
         'permissions': ['manage_main_items'],
         'requires_staff': True,
         'outside_permissions': [
