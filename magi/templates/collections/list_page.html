@@ -33,9 +33,13 @@
     {% if item.blocked_by %}
     <div class="hidden">blocked</div>
     {% elif item.blocked %}
-      {% if display_style == 'table' %}<td colspan="42">{% endif %}
-        {% include 'items/'|add:item_blocked_template|add:'.html' %}
+    {% if not item_blocked_template %}
+    <div class="hidden">blocked</div>
+    {% else %}
+    {% if display_style == 'table' %}<td colspan="42">{% endif %}
+      {% include 'items/'|add:item_blocked_template|add:'.html' %}
       {% if display_style == 'table' %}</td>{% endif %}
+    {% endif %}
     {% else %}
     {% if show_owner %}{{ item.owner_unicode }}{% endif %}
     {% include 'items/'|add:item_template|add:'.html' %}
