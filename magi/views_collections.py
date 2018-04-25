@@ -69,7 +69,7 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
     context['item'] = get_one_object_or_404(queryset, **options) if not item else item
     collection.item_view.check_owner_permissions(request, context, context['item'])
 
-    if request.user.is_authenticated():
+    if request.user.is_authenticated() and collection.blockable:
         # Blocked
         if context['item'].owner_id in request.user.preferences.cached_blocked_ids:
             if ajax:
@@ -290,7 +290,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
         item.show_item_buttons_in_one_line = collection.list_view.show_item_buttons_in_one_line
         if collection.list_view.show_item_buttons and [True for b in item.buttons_to_show.values() if b['show'] and b['has_permissions']]:
             context['include_below_item'] = True
-        if request.user.is_authenticated():
+        if request.user.is_authenticated() and collection.blockable:
             if item.owner_id in request.user.preferences.cached_blocked_ids:
                 item.blocked = True
                 try:

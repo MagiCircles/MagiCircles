@@ -498,6 +498,7 @@ class MagiCollection(object):
     one_of_permissions_required = []
 
     reportable = True
+    blockable = True
     report_edit_templates = {}
     report_delete_templates = {}
     report_allow_edit = True
@@ -1777,6 +1778,7 @@ class StaffConfigurationCollection(MagiCollection):
     icon = 'settings'
     form_class = forms.StaffConfigurationForm
     reportable = False
+    blockable = False
     one_of_permissions_required = [
         'advanced_staff_configurations',
         'edit_staff_configurations',
@@ -1862,6 +1864,7 @@ class StaffDetailsCollection(MagiCollection):
     icon = 'id'
     translated_fields = ('hobbies', 'favorite_food')
     reportable = False
+    blockable = False
     form_class = forms.StaffDetailsForm
     multipart = True
 
@@ -2110,6 +2113,7 @@ class BadgeCollection(MagiCollection):
     navbar_link_list = 'more'
     queryset = models.Badge.objects.all()
     reportable = False
+    blockable = False
 
     types = OrderedDict([
         ('exclusive', {
@@ -2238,6 +2242,7 @@ class ReportCollection(MagiCollection):
     icon = 'fingers'
     queryset = models.Report.objects.all().select_related('owner', 'owner__preferences', 'staff', 'staff__preferences').prefetch_related(Prefetch('images', to_attr='all_images'))
     reportable = False
+    blockable = False
 
     @property
     def types(self):
@@ -2312,6 +2317,7 @@ class DonateCollection(MagiCollection):
     navbar_link_list = 'more'
     queryset =  models.DonationMonth.objects.all().prefetch_related(Prefetch('badges', queryset=models.Badge.objects.select_related('user', 'user__preferences').order_by('-show_on_profile'), to_attr='all_badges'))
     reportable = False
+    blockable = False
     form_class = forms.DonateForm
 
     class ListView(MagiCollection.ListView):
