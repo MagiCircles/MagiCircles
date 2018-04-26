@@ -628,3 +628,20 @@ def collections(request):
     context['collections'] = getMagiCollections()
     context['groups_per_permissions'] = groupsForAllPermissions(request.user.preferences.GROUPS)
     return render(request, 'pages/dev/collections.html', context)
+
+############################################################
+# Errors
+
+def handler500(request):
+    return render(request, 'pages/error.html', {
+        'error_code': 500,
+        'page_title': 'Server error',
+        'error_details': mark_safe('If the problem persists, please <a href="/about/#contact">contact us</a>.'),
+    })
+
+def handler403(request):
+    return render(request, 'pages/error.html', {
+        'error_code': 403,
+        'page_title': 'Permission denied',
+        'error_details': 'You are not allowed to access this page.',
+    })
