@@ -62,9 +62,7 @@
     <div class="row">
       <div class="col-md-8">
 	<div class="padding50">
-          <div class="to-markdown">
-            {{ staff_configurations.below_about|getattribute:LANGUAGE_CODE }}
-          </div>
+          <div class="to-markdown">{{ staff_configurations.below_about|getattribute:LANGUAGE_CODE }}</div>
         </div>
       </div>
       {% if staff_configurations.below_about_image %}
@@ -381,8 +379,7 @@
     <div class="row">
       <div class="col-md-{% if api_enabled %}8{% else %}12{% endif %}">
 	<h1 class="text-main">{% trans 'Contribute' %} <small><i class="flaticon-developer"></i> {% trans 'Dev' %}</small></h1>
-        <br>
-	      <p class="margin50">
+	      <div class="padding50">
 	        {% blocktrans %}Our project is open-source and open for contributions. We are more than happy to accept pull-requests on GitHub!{% endblocktrans %}
 	        <br><br>
 	        {% blocktrans %}The website has been made using{% endblocktrans %} <a href="https://docs.djangoproject.com/">Django</a>, {% trans 'so in Python 2. We also use' %} <a href="http://lesscss.org/">LESS CSS</a>, <a href="http://getbootstrap.com/">Bootstrap</a>, <a href="http://jquery.com/">JQuery</a> {% t 'and' %} <a href="http://bower.io/">Bower</a> {% trans 'for the front-end of the website.' %}
@@ -393,12 +390,12 @@
 	            {% trans 'Get Started' %}
 	          </a>
 	        </div>
-	      </p>
+	      </div>
       </div>
       {% if api_enabled %}
       <div class="col-md-4">
-	      <h1 class="text-main padding50">API <small><i class="flaticon-developer"></i> {% trans 'Dev' %}</small></h1>
-	      <p class="margin50">
+	      <h1 class="text-main">API <small><i class="flaticon-developer"></i> {% trans 'Dev' %}</small></h1>
+	      <p class="padding50">
 	        {% blocktrans %}If you're a developer and you would like to get the data of the game in a convenient format, we provide a public REST API to get the game data, our users datacards, and more!{% endblocktrans %}
 	        <div class="text-right">
 	          <a href="/api/" class="btn btn-main btn-lg" target="_blank">
