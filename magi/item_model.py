@@ -356,10 +356,10 @@ class BaseMagiModel(models.Model):
         setattr(self, u'_cache_{}_last_update'.format(field_name), timezone.now())
         value = to_cache_method()
         if hasattr(self, '_cache_j_{}'.format(field_name)):
-            value = json.dumps(value)
+            value = json.dumps(value) if value else None
             setattr(self, u'_cache_j_{}'.format(field_name), value)
         elif hasattr(self, '_cache_c_{}'.format(field_name)):
-            value = join_data(*value)
+            value = join_data(*value) if value else None
             setattr(self, u'_cache_c_{}'.format(field_name), value)
         setattr(self, u'_cache_{}'.format(field_name), value)
 
