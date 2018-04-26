@@ -84,7 +84,15 @@ class Command(BaseCommand):
             })
         create({
             'key': 'about_image',
+            'verbose_key': 'Image under "About" section in about page (first section)',
+        })
+        create({
+            'key': 'about_us_image',
             'verbose_key': 'Image under "About us" section in about page (second section)',
+        })
+        create({
+            'key': 'below_about_image',
+            'verbose_key': 'Image under the custom section under "About us" in about page',
         })
         # create({
         #     'key': '',
