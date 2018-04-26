@@ -161,6 +161,14 @@ class UserPreferences(BaseMagiModel):
 
     d_extra = models.TextField(blank=True, null=True)
 
+    @property
+    def favorite_characters(self):
+        return [c for c in [
+            self.favorite_character1,
+            self.favorite_character2,
+            self.favorite_character3,
+        ] if c]
+
     def localized_favorite_character(self, number):
         if getattr(self, 'favorite_character{}'.format(number)) and FAVORITE_CHARACTERS:
             try:
