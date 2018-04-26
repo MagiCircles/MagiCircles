@@ -63,7 +63,7 @@ class _View(object):
             redirectWhenNotAuthenticated(request, context, next_title=self.get_page_title())
         if self.staff_required:
             redirectWhenNotAuthenticated(request, context, next_title=self.get_page_title())
-            if not request.user.is_staff:
+            if not request.user.is_staff and not request.user.is_superuser:
                 raise PermissionDenied()
         if self.permissions_required:
             redirectWhenNotAuthenticated(request, context, next_title=self.get_page_title())
@@ -79,12 +79,12 @@ class _View(object):
             owner_only = getattr(self, 'owner_only', False)
             if owner_only:
                 redirectWhenNotAuthenticated(request, context, next_title=self.get_page_title())
-                if item.owner_id != request.user.id:
+                if item.owner_id != request.user.id and not request.user.is_superuser:
                     raise PermissionDenied()
             owner_or_staff_only = getattr(self, 'owner_or_staff_only', False)
             if owner_or_staff_only:
                 redirectWhenNotAuthenticated(request, context, next_title=self.get_page_title())
-                if not request.user.is_staff and item.owner_id != request.user.id:
+                if not request.user.is_staff and item.owner_id != request.user.id and not request.user.is_superuser:
                     raise PermissionDenied()
             owner_only_or_permissions_required = getattr(self, 'owner_only_or_permissions_required', [])
             if owner_only_or_permissions_required:
