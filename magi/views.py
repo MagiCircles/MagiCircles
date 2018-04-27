@@ -182,8 +182,8 @@ def aboutDefaultContext(request):
     context['now'] = timezone.now()
     context['api_enabled'] = False
     context['contribute_url'] = CONTRIBUTE_URL
-    context['other_sites'] = other_sites
-    context['other_sites_colsize'] = int(math.ceil(12 / (len(context['other_sites']) - 1)))
+    context['other_sites'] = [s for s in other_sites if s['name'] != SITE_NAME]
+    context['other_sites_colsize'] = int(math.ceil(12 / (len(context['other_sites']))))
     context['ajax'] = context['current_url'].startswith('/ajax/')
     context['extends'] = 'base.html' if not context['ajax'] else 'ajax.html'
     return context
