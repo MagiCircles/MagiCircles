@@ -29,7 +29,7 @@ def avatar(user, size=200):
         default = django_settings.DEBUG_AVATAR
     if user.preferences.twitter:
         default = u'{}twitter_avatar/{}/'.format(SITE_URL if SITE_URL.startswith('http') else 'http:' + SITE_URL, user.preferences.twitter)
-    return ("http://www.gravatar.com/avatar/"
+    return ("https://www.gravatar.com/avatar/"
             + hashlib.md5(user.email.lower()).hexdigest()
             + "?" + urllib.urlencode({'d': default, 's': str(size)}))
 
