@@ -30,7 +30,7 @@
   {% endif%}
   <{% if display_style == 'rows' %}div class="col-{{ col_break }}-{{ col_size }}"{% elif display_style == 'table' %}tr{% else %}div{% endif %} data-item="{{ collection.name }}" data-item-id="{{ item.id }}">
 
-    {% if item.blocked_by %}
+    {% if item.blocked_by_owner %}
     <div class="hidden">blocked</div>
     {% elif item.blocked %}
     {% if not item_blocked_template %}

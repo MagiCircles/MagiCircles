@@ -300,7 +300,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
                 item.blocked_message = _(u'You blocked {username}.').format(username=username)
                 item.unblock_button = _(u'Unblock {username}').format(username=username)
             elif item.owner_id in request.user.preferences.cached_blocked_by_ids:
-                item.blocked_by = True
+                item.blocked_by_owner = True
 
     collection.list_view.extra_context(context)
 
