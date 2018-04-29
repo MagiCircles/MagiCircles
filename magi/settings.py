@@ -53,7 +53,7 @@ else:
 if hasattr(settings_module, 'CONTRIBUTE_URL'):
     CONTRIBUTE_URL = getattr(settings_module, 'CONTRIBUTE_URL')
 else:
-    CONTRIBUTE_URL = 'https://github.com/SchoolIdolTomodachi/SchoolIdolAPI/wiki/Contribute'
+    CONTRIBUTE_URL = '/help/Developers%20guide'
 
 if hasattr(settings_module, 'CALL_TO_ACTION'):
     CALL_TO_ACTION = getattr(settings_module, 'CALL_TO_ACTION')
@@ -123,7 +123,7 @@ else:
 if hasattr(settings_module, 'TRANSLATION_HELP_URL'):
     TRANSLATION_HELP_URL = getattr(settings_module, 'TRANSLATION_HELP_URL')
 else:
-    TRANSLATION_HELP_URL = 'https://github.com/SchoolIdolTomodachi/MagiCircles/wiki/Translate-the-website'
+    TRANSLATION_HELP_URL = '/help/Translators%20guide'
 
 if hasattr(settings_module, 'TOTAL_DONATORS'):
     TOTAL_DONATORS = getattr(settings_module, 'TOTAL_DONATORS')
