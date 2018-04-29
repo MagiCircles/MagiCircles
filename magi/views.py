@@ -43,8 +43,6 @@ def signup(request):
     if request.user.is_authenticated():
         redirectToProfile(request)
     context = getGlobalContext(request)
-    if context.get('launch_date', None):
-        return redirect('/prelaunch/')
     if request.method == "POST":
         form = CreateUserForm(request.POST, request=request)
         if form.is_valid():
@@ -56,6 +54,8 @@ def signup(request):
                 view_activities_language_only=ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT,
             )
             login_action(request, user)
+            if context.get('launch_date', None):
+                return redirect('/prelaunch/')
             url = '/accounts/add/{}{}'.format(
                 ('?next={}'.format(urlquote(request.GET['next'])) if 'next' in request.GET else ''),
                 ('&next_title={}'.format(request.GET['next_title']) if 'next' in request.GET and 'next_title' in request.GET else ''))
@@ -88,6 +88,8 @@ def indexExtraContext(context):
 
 def index(request):
     context = getGlobalContext(request)
+    if context.get('launch_date', None) and not request.user.is_staff:
+        return redirect('/prelaunch/')
     indexExtraContext(context)
     return render(request, 'pages/index.html', context)
 

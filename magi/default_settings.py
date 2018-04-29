@@ -513,7 +513,9 @@ DEFAULT_NAVBAR_ORDERING = [
 # Default prelaunch enabled pages
 
 DEFAULT_PRELAUNCH_ENABLED_PAGES = [
+    'index',
     'login',
+    'logout',
     'signup',
     'prelaunch',
     'about',

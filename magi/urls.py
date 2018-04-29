@@ -91,9 +91,8 @@ def _addToCollections(name, cls): # Class of the collection
     collection.edit_view = collection.EditView(collection)
     collection.to_form_class()
     collection.edit_view.to_translate_form_class()
-    if not launched:
-        for view in ['list', 'item', 'add', 'edit']:
-            getattr(collection, view + '_view').staff_required = True
+    for view in ['list', 'item', 'add', 'edit']:
+        getattr(collection, view + '_view').prelaunch_staff_required = not launched and u'{}_{}'.format(collection.name, view) not in PRELAUNCH_ENABLED_PAGES
     all_enabled.append(collection.name)
     collections[collection.name] = collection
     if collection.collectible:

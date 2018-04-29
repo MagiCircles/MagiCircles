@@ -49,7 +49,7 @@
         <div class="collapse navbar-collapse collapse">
           <ul class="nav navbar-nav navbar-right">
             {% for link_name, link in navbar_links.items %}
-            {% if link_name == 'more' and user.is_authenticated and 'notification' in all_enabled %}
+            {% if link_name == 'more' and user.is_authenticated and 'notification' in all_enabled and not launch_date %}
             <li data-link-name="notifications">
               <a href="/notifications/">
                 <i class="flaticon-world"></i>

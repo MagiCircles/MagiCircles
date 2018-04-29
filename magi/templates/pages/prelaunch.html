@@ -16,12 +16,18 @@
     <a href="/about/" data-ajax-url="/ajax/about/" class="btn btn-link btn-lg home-about-site-button">
       {% blocktrans %}About {{ site_name }}{% endblocktrans %}
     </a>
-    <h1><a href="http://twitter.com/{{ twitter }}" target="_blank" class="fontx2">{% trans 'Coming soon' %}</a></h1>
+    {% if not user.is_authenticated %}
+    <br><br><br>
+    <a href="/signup/" class="btn btn-xl btn-secondary">{% trans 'Pre-register' %}</a>
+    <br><br><br>
+    {% endif %}
+    <h1><a href="http://twitter.com/{{ twitter }}" target="_blank" class="fontx1-5">{% trans 'Coming soon' %}</a></h1>
     <h2 class="countdown" data-date="{{ launch_date|torfc2822 }}" data-format="{time}"></h2>
     <p class="timezone">
       <span class="datetime">{{ launch_date|torfc2822 }}</span>
       (<span class="current_timezone">UTC</span>)
     </p>
+    <br><br><br>
   </div>
 </div>
 {% endblock %}
