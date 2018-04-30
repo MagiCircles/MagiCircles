@@ -102,17 +102,6 @@
         {% endif %}
         <br><br>
         {% include 'include/disqus.html' with disqus_identifier='user-'|addint:profile_user.id %}
-        {% elif tab_name == 'activity' %}
-        {% if is_me and can_add_activity %}
-        <br>
-        <a class="btn btn-main btn-xl btn-lines btn-block btn-add-activity" href="/activities/add/">
-          <h3>{{ add_activity_sentence }}</h3>
-          <small>{{ add_activity_subtitle }}</small>
-        </a>
-        {% endif %}
-        <br>
-
-        <div id="activities"></div>
         {% endif %}</div>
       {% endfor %}
 

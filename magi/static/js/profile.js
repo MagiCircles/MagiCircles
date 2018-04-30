@@ -54,14 +54,15 @@ function handlefollow() {
 
 function profileLoadActivities(tab_name, user_id, onDone) {
     $.get('/ajax/activities/?owner_id=' + user_id, function(html) {
-	$('#activities').html(html);
-	if ($.trim($('#activities').text()) == '') {
-	    $('#activities').html('<div class="alert alert-warning">' + gettext('No result.') + '</div>');
-	} else {
-	    updateActivities();
-	    pagination('/ajax/activities/', '&owner_id=' + user_id, updateActivities);
-	}
-	onDone(undefined, undefined);
+        let add_activity_button = show_add_activity_button ? '<br><a class="btn btn-main btn-lg btn-lines btn-block btn-add-activity" href="/activities/add/"><h4>' + add_activity_sentence + '</h4><small>' + add_activity_subtitle + '</small></a><br>' : '';
+	if ($.trim(html) == '') {
+            onDone('<div class="padding20">' + add_activity_button + '<div class="alert alert-warning">' + gettext('No result.') + '</div></div>');
+        } else {
+	    onDone(add_activity_button + html, function() {
+                updateActivities();
+	        pagination('/ajax/activities/', '&owner_id=' + user_id, updateActivities);
+            });
+        }
     });
 }
 
@@ -76,16 +77,6 @@ function loadCollectionForOwner(load_url, callback) {
             });
         });
     }
-    $.get('/ajax/activities/?owner_id=' + user_id, function(html) {
-	$('#activities').html(html);
-	if ($.trim($('#activities').text()) == '') {
-	    $('#activities').html();
-	} else {
-	    updateActivities();
-	    pagination('/ajax/activities/', '&owner_id=' + user_id, updateActivities);
-	}
-	onDone(undefined, undefined);
-    });
 }
 
 function onProfileTabOpened() {

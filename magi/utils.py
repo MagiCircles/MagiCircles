@@ -481,7 +481,13 @@ def toHumanReadable(string):
     return string.lower().replace('_', ' ').replace('-', ' ').capitalize()
 
 def jsv(v):
-    return mark_safe(simplejson.dumps(v))
+    if isinstance(v, list) or isinstance(v, dict):
+        return mark_safe(simplejson.dumps(v))
+    if isinstance(v, bool):
+        return 'true' if v else 'false'
+    if isinstance(v, str) or isinstance(v, unicode):
+        return mark_safe(u'"{}"'.format(v))
+    return v
 
 ############################################################
 # Redirections
