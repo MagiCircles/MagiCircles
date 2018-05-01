@@ -1120,8 +1120,8 @@ class FilterActivities(MagiFiltersForm):
     ordering_fields = [
         ('modification', _('Last Update')),
         ('creation', _('Creation')),
-        ('total_likes,creation', string_concat(_('Most Popular'), ' (', _('All time'), ')')),
-        ('total_likes,id', string_concat(_('Most Popular'), ' (', _('This week'), ')')),
+        ('_cache_total_likes,creation', string_concat(_('Most Popular'), ' (', _('All time'), ')')),
+        ('_cache_total_likes,id', string_concat(_('Most Popular'), ' (', _('This week'), ')')),
     ]
 
     with_image = forms.NullBooleanField(label=_('Image'))
@@ -1143,8 +1143,8 @@ class FilterActivities(MagiFiltersForm):
             queryset = queryset.filter(language=request.LANGUAGE_CODE)
         elif ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT:
             queryset = queryset.filter(language=request.LANGUAGE_CODE)
-        if 'ordering' in parameters and parameters['ordering'] == 'total_likes,id':
-            queryset = queryset.filter(modification__gte=timezone.now() - relativedelta(weeks=1))
+        if 'ordering' in parameters and parameters['ordering'] == '_cache_total_likes,id':
+            queryset = queryset.filter(creation__gte=timezone.now() - relativedelta(weeks=1))
         return queryset
 
     class Meta(MagiFiltersForm.Meta):
