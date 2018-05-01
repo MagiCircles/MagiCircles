@@ -829,7 +829,7 @@ class MagiCollection(object):
         if self.translated_fields:
             buttons['translate'] = buttons['edit'].copy()
             buttons['translate']['has_permissions'] = self.edit_view.has_translate_permissions(request, context)
-            buttons['translate']['title'] = unicode(_('Edit {}')).format(unicode(_('Translations')).lower())
+            buttons['translate']['title'] = unicode(_('Edit {thing}')).format(thing=unicode(_('Translations')).lower())
             buttons['translate']['icon'] = 'world'
             buttons['translate']['url'] = u'{}{}translate'.format(buttons['translate']['url'], '&' if '?' in buttons['translate']['url'] else '?')
             buttons['translate']['ajax_url'] = u'{}{}translate'.format(buttons['translate']['ajax_url'], '&' if '?' in buttons['translate']['ajax_url'] else '?')
