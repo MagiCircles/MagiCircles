@@ -1,5 +1,5 @@
 from django.conf import settings as django_settings
-from magi.default_settings import DEFAULT_ENABLED_NAVBAR_LISTS, DEFAULT_ENABLED_PAGES, RAW_CONTEXT, DEFAULT_JAVASCRIPT_TRANSLATED_TERMS, DEFAULT_PROFILE_TABS, DEFAULT_PRELAUNCH_ENABLED_PAGES, DEFAULT_NAVBAR_ORDERING, DEFAULT_GROUPS, DEFAULT_GLOBAL_OUTSIDE_PERMISSIONS
+from magi.default_settings import DEFAULT_ENABLED_NAVBAR_LISTS, DEFAULT_ENABLED_PAGES, RAW_CONTEXT, DEFAULT_JAVASCRIPT_TRANSLATED_TERMS, DEFAULT_PROFILE_TABS, DEFAULT_PRELAUNCH_ENABLED_PAGES, DEFAULT_NAVBAR_ORDERING, DEFAULT_GROUPS, DEFAULT_GLOBAL_OUTSIDE_PERMISSIONS, DEFAULT_CONTACT_DISCORD
 from magi.utils import globalContext, toHumanReadable
 from django.utils.translation import ugettext_lazy as _, string_concat
 
@@ -73,7 +73,7 @@ else:
 if hasattr(settings_module, 'CONTACT_DISCORD'):
     CONTACT_DISCORD = getattr(settings_module, 'CONTACT_DISCORD')
 else:
-    CONTACT_DISCORD = 'https://discord.gg/mehDTsv'
+    CONTACT_DISCORD = DEFAULT_CONTACT_DISCORD
 
 if hasattr(settings_module, 'CONTACT_FACEBOOK'):
     CONTACT_FACEBOOK = getattr(settings_module, 'CONTACT_FACEBOOK')
@@ -184,17 +184,6 @@ if hasattr(settings_module, 'GLOBAL_OUTSIDE_PERMISSIONS'):
     GLOBAL_OUTSIDE_PERMISSIONS = getattr(settings_module, 'GLOBAL_OUTSIDE_PERMISSIONS')
 else:
     GLOBAL_OUTSIDE_PERMISSIONS = DEFAULT_GLOBAL_OUTSIDE_PERMISSIONS
-
-for _g, _d in GROUPS:
-    _d['name'] = _g
-    # Add staff details edit permission
-    if _d.get('requires_staff', False):
-        if 'permissions' not in _d:
-            _d['permissions'] = []
-        _d['permissions'].append('edit_own_staff_profile')
-    # Add verbose_permissions
-    if 'permissions' in _d:
-        _d['verbose_permissions'] = [toHumanReadable(_p) for _p in _d['permissions']]
 
 ############################################################
 # Optional settings without default values (= None)
@@ -315,3 +304,58 @@ STATIC_UPLOADED_FILES_PREFIX = django_settings.STATIC_UPLOADED_FILES_PREFIX
 django_settings.SITE_URL = SITE_URL
 django_settings.SITE_STATIC_URL = SITE_STATIC_URL
 django_settings.GET_GLOBAL_CONTEXT = GET_GLOBAL_CONTEXT
+
+############################################################
+# Post processing of settings
+
+def _set_permission_link_on_unset(d, permission, url):
+    if url and permission in d and not d[permission]:
+        d[permission] = url
+
+# GROUPS
+
+_permission_url_to_set = {
+    'team': {
+        'Administrate the contributors on GitHub': u'https://github.com/{}/{}/settings/collaboration'.format(GITHUB_REPOSITORY[0], GITHUB_REPOSITORY[1]),
+        'Administrate the moderators on Disqus': u'https://{}.disqus.com/admin/settings/moderators/'.format(DISQUS_SHORTNAME),
+    },
+    'support': {
+        'Receive private messages on Facebook': u'https://facebook.com/{}/'.format(CONTACT_FACEBOOK) if CONTACT_FACEBOOK else None,
+        'Receive private messages on Reddit': u'https://www.reddit.com/user/{}/'.format(CONTACT_REDDIT) if CONTACT_REDDIT else None,
+    },
+    'd_moderator': {
+        'Disqus moderation': u'https://{}.disqus.com/admin/moderate/#/pending'.format(DISQUS_SHORTNAME),
+    },
+    'manager': {
+        'Disqus moderation': u'https://{}.disqus.com/admin/moderate/#/pending'.format(DISQUS_SHORTNAME),
+    },
+}
+
+for _g, _d in GROUPS:
+    _d['name'] = _g
+    # Add missing outside permission urls based on settings
+    if 'outside_permissions' in _d:
+        for _p, _u in _permission_url_to_set.get(_g, {}).items():
+            _set_permission_link_on_unset(_d['outside_permissions'], _p, _u)
+    if _g == 'support' and FEEDBACK_FORM:
+        if 'outside_permissions' not in _d:
+            _d['outside_permissions'] = {}
+        _d['outside_permissions']['Feedback form'] = FEEDBACK_FORM
+    # Add staff details edit permission
+    if _d.get('requires_staff', False):
+        if 'permissions' not in _d:
+            _d['permissions'] = []
+        _d['permissions'].append('edit_own_staff_profile')
+    # Add verbose_permissions
+    if 'permissions' in _d:
+        _d['verbose_permissions'] = [toHumanReadable(_p) for _p in _d['permissions']]
+
+# GLOBAL_OUTSIDE_PERMISSIONS
+
+for _permission, _url in [
+        ('Bug tracker', BUG_TRACKER_URL),
+]:
+    _set_permission_link_on_unset(GLOBAL_OUTSIDE_PERMISSIONS, _permission, _url)
+
+if WIKI:
+    GLOBAL_OUTSIDE_PERMISSIONS['Wiki editor'] = 'https://github.com/{}/{}/wiki'.format(WIKI[0], WIKI[1])

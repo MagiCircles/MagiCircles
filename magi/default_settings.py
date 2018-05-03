@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from django.conf import settings as django_settings
 from django.utils.translation import ugettext_lazy as _, string_concat
 from magi.django_translated import t
 from django.conf import settings
@@ -32,18 +33,33 @@ DEFAULT_JAVASCRIPT_TRANSLATED_TERMS = [
 ]
 
 ############################################################
+
+DEFAULT_CONTACT_DISCORD = 'https://discord.gg/mehDTsv'
+DEFAULT_POEDITOR_URL = 'https://poeditor.com/join/project/h6kGEpdnmM'
+
+############################################################
 # Groups
 
-DEFAULT_GLOBAL_OUTSIDE_PERMISSIONS = [
-    'Staff/Contributor Discord role',
-    'GitHub read access to the website\'s repository (edit the wiki, report issues for developers)',
-]
+DEFAULT_GLOBAL_OUTSIDE_PERMISSIONS = {
+    'Staff/Contributor Discord': DEFAULT_CONTACT_DISCORD,
+    'Bug tracker': False, # Added in settings
+    # 'Wiki editor' added in settings
+}
 
 DEFAULT_GROUPS = [
     ('manager', {
         'translation': _('Manager'),
         'description': 'The leader of our staff team is here to make sure that the website is doing well! They make sure we all get things done together and the website keeps getting new users everyday. They\'re also the decision maker in case of conflicts that can\'t be resolved via votes.',
-        'permissions': ['edit_roles', 'edit_staff_status', 'edit_donator_status', 'see_profile_edit_button', 'edit_staff_configurations', 'add_badges', 'see_collections_details', 'manage_main_items', 'edit_staff_details'],
+        'permissions': [
+            'edit_roles', 'edit_staff_status', 'edit_donator_status', 'see_profile_edit_button',
+            'edit_staff_configurations', 'add_badges', 'see_collections_details', 'manage_main_items',
+            'edit_staff_details', 'moderate_reports', 'edit_reported_things', 'post_community_event_activities',
+            'translate_items', 'translate_staff_configurations',
+        ],
+        'outside_permissions': {
+            'Tweetdeck': 'https://tweetdeck.twitter.com/',
+            'Disqus moderation': False, # Added in settings
+        },
         'requires_staff': True,
         'guide': '/help/Managers%20guide',
     }),
@@ -58,11 +74,11 @@ DEFAULT_GROUPS = [
         'description': 'Knows all the team members and discuss with them on a regular basis to make sure they are all active. Ensures that the staff team is only composed of active members, keep track of members who are taking a break, regularly check with members if they\'re still interested, and help members retire if they want to. They are also in charge of assigning and revoking most permissions.',
         'permissions': ['edit_staff_status', 'edit_roles', 'see_profile_edit_button', 'edit_staff_details'],
         'requires_staff': True,
-        'outside_permissions': [
-            'Administrate the contributors on GitHub',
-            'Administrate the contributors on Tweetdeck',
-            'Administrate the moderators on Disqus',
-        ],
+        'outside_permissions': {
+            'Administrate the contributors on GitHub': False, # Added in settings
+            'Administrate the contributors on Tweetdeck': 'https://tweetdeck.twitter.com/',
+            'Administrate the moderators on Disqus': False, # Added in settings
+        },
         'guide': '/help/Team%20managers%20guide',
     }),
     ('finance', {
@@ -71,10 +87,10 @@ DEFAULT_GROUPS = [
         'permissions': ['add_donation_badges', 'manage_donation_months', 'edit_donator_status'],
         'requires_staff': True,
         'requires_staff': True,
-        'outside_permissions': [
-            'Access Patreon manager',
-            'Access donators forms responses',
-        ],
+        'outside_permissions': {
+            'Access Patreon manager': 'https://www.patreon.com/manageRewards',
+            'Access donators forms responses': 'https://docs.google.com/spreadsheets/d/18yFRsk3JpM-lIwT-Gp7teXVpliPgzBP7Lq2T7F6LJjk/edit',
+        },
         'guide': '/help/Finance%20managers%20guide',
     }),
     ('db', {
@@ -89,9 +105,9 @@ DEFAULT_GROUPS = [
         'description': 'Extracts assets and data and automatically updates our website. They do their best to publish all the details as soon they are available.',
         'permissions': ['manage_main_items'],
         'requires_staff': True,
-        'outside_permissions': [
-            'API key',
-        ],
+        'outside_permissions': {
+            'API key': '/o/applications/',
+        },
         'guide': '/help/Database%20maintainers%20guide',
     }),
     ('cm', {
@@ -112,9 +128,9 @@ DEFAULT_GROUPS = [
         'translation': string_concat(_('Community manager'), ' (', _('Twitter'), ')'),
         'description': 'We got you covered with all the game news on Twitter! Thanks to our active team, you know that by following us on Twitter, you\'ll never miss anything!',
         'requires_staff': True,
-        'outside_permissions': [
-            'Tweetdeck',
-        ],
+        'outside_permissions': {
+            'Tweetdeck': 'https://tweetdeck.twitter.com/',
+        },
         'guide': '/help/Community%20managers%20guide',
     }),
     ('external_cm', {
@@ -127,12 +143,13 @@ DEFAULT_GROUPS = [
         'translation': _('Support'),
         'description': 'Need help with our website or the game? Our support team is here to help you and answer your questions!',
         'requires_staff': True,
-        'outside_permissions': [
-            'Tweetdeck',
-            'Receive private messages on Facebook',
-            'Receive private messages on Reddit',
-            'Receive emails',
-        ],
+        'outside_permissions': {
+            'Tweetdeck': 'https://tweetdeck.twitter.com/',
+            'Receive private messages on Facebook': False, # Added in settings
+            'Receive private messages on Reddit': False, # Added in settings
+            'Receive emails': u'mailto:{}'.format(django_settings.AWS_SES_RETURN_PATH),
+            # 'Feedback form' added in settings if exists
+        },
         'guide': '/help/Support%20guide',
     }),
     ('a_moderator', {
@@ -152,9 +169,9 @@ DEFAULT_GROUPS = [
         'description': 'When something gets reported, our team of decisive moderators will make a decision on whether or not it should be edited or deleted. This 2-steps system ensures that our team makes fair decisions!',
         'permissions': ['moderate_reports', 'edit_reported_things'],
         'requires_staff': True,
-        'outside_permissions': [
-            'Disqus moderation',
-        ],
+        'outside_permissions': {
+            'Disqus moderation': False, # Added in settings
+        },
         'stats': [
             {
                 'model': 'Report',
@@ -170,9 +187,9 @@ DEFAULT_GROUPS = [
         'description': 'We keep the community active and happy by organizing fun stuff: contests, giveaways, games, etc. We\'re open to feedback and ideas!',
         'permissions': ['edit_staff_configurations', 'add_badges', 'post_community_event_activities'],
         'requires_staff': True,
-        'outside_permissions': [
-            'Tweetdeck',
-        ],
+        'outside_permissions': {
+            'Tweetdeck': 'https://tweetdeck.twitter.com/',
+        },
         'stats': [
             {
                 'model': 'Activity',
@@ -192,9 +209,9 @@ DEFAULT_GROUPS = [
         'translation': string_concat(_('Moderator'), ' (Discord)'),
         'description': 'Help keep Circle\'s private server well organized and fun for all our staff and contributors.',
         'requires_staff': False,
-        'outside_permissions': [
-            'Discord moderator role',
-        ],
+        'outside_permissions': {
+            'Discord moderation': DEFAULT_CONTACT_DISCORD,
+        },
         'guide': '/help/Discord%20moderators%20guide',
     }),
     ('translator', {
@@ -202,9 +219,9 @@ DEFAULT_GROUPS = [
         'description': 'Many people can\'t understand English very well, so by doing so our amazing translators work hard to translate our websites in many languages. By doing so they\'re helping hundreds of people access the information we provide easily and comfortably.',
         'permissions': ['translate_items', 'translate_staff_configurations'],
         'requires_staff': False,
-        'outside_permissions': [
-            'POEditor access',
-        ],
+        'outside_permissions': {
+            'POEditor': DEFAULT_POEDITOR_URL,
+        },
         'guide': '/help/Translators%20guide',
     }),
     ('design', {
@@ -244,6 +261,11 @@ DEFAULT_ENABLED_NAVBAR_LISTS = OrderedDict([
         'icon': 'profile',
         'order': ['user', 'settings', 'logout', 'login', 'signup'],
         'url': '/me/',
+    }),
+    ('staff', {
+        'title': '',
+        'icon': 'promo',
+        'url': '/settings/',
     }),
     ('more', {
         'title': '',
@@ -330,7 +352,6 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'custom': False,
         'icon': 'world',
         'navbar_link_list': 'more',
-        'divider_after': True,
     }),
     ('help', [
         {
@@ -376,7 +397,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
     ('collections', {
         'title': 'Collections',
         'custom': False,
-        'navbar_link_list': 'more',
+        'navbar_link_list': 'staff',
         'icon': 'developer',
         'permissions_required': ['see_collections_details'],
     }),
@@ -506,6 +527,7 @@ DEFAULT_PROFILE_TABS = OrderedDict([
 DEFAULT_NAVBAR_ORDERING = [
     'account_list',
     'you',
+    'staff',
     'more',
 ]
 

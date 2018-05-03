@@ -39,7 +39,7 @@ def getFormAsList(forms, form):
 
 @register.simple_tag(takes_context=True)
 def navbarGetURL(context, link):
-    if link['get_url']:
+    if link.get('get_url', None):
         return link['get_url'](context)
     return link['url']
 

@@ -9,9 +9,9 @@ from django.utils import timezone
 from magi import views_collections, magicollections
 from magi import views as magi_views
 from magi import forms
-from magi.settings import RAW_CONTEXT, ENABLED_PAGES, ENABLED_NAVBAR_LISTS, SITE_NAME, EMAIL_IMAGE, GAME_NAME, SITE_DESCRIPTION, SITE_STATIC_URL, SITE_URL, GITHUB_REPOSITORY, SITE_LOGO, SITE_NAV_LOGO, JAVASCRIPT_TRANSLATED_TERMS, STATIC_UPLOADED_FILES_PREFIX, COLOR, SITE_IMAGE, TRANSLATION_HELP_URL, DISQUS_SHORTNAME, HASHTAGS, TWITTER_HANDLE, EMPTY_IMAGE, GOOGLE_ANALYTICS, STATIC_FILES_VERSION, PROFILE_TABS, LAUNCH_DATE, PRELAUNCH_ENABLED_PAGES, NAVBAR_ORDERING, ACCOUNT_MODEL, STAFF_CONFIGURATIONS, FIRST_COLLECTION, GET_STARTED_VIDEO
+from magi.settings import RAW_CONTEXT, ENABLED_PAGES, ENABLED_NAVBAR_LISTS, SITE_NAME, EMAIL_IMAGE, GAME_NAME, SITE_DESCRIPTION, SITE_STATIC_URL, SITE_URL, GITHUB_REPOSITORY, SITE_LOGO, SITE_NAV_LOGO, JAVASCRIPT_TRANSLATED_TERMS, STATIC_UPLOADED_FILES_PREFIX, COLOR, SITE_IMAGE, TRANSLATION_HELP_URL, DISQUS_SHORTNAME, HASHTAGS, TWITTER_HANDLE, EMPTY_IMAGE, GOOGLE_ANALYTICS, STATIC_FILES_VERSION, PROFILE_TABS, LAUNCH_DATE, PRELAUNCH_ENABLED_PAGES, NAVBAR_ORDERING, ACCOUNT_MODEL, STAFF_CONFIGURATIONS, FIRST_COLLECTION, GET_STARTED_VIDEO, GLOBAL_OUTSIDE_PERMISSIONS, GROUPS
 from magi.models import UserPreferences
-from magi.utils import redirectWhenNotAuthenticated, hasPermissions, hasOneOfPermissions
+from magi.utils import redirectWhenNotAuthenticated, hasPermissions, hasOneOfPermissions, tourldash, groupsWithPermissions, groupsWithOneOfPermissions
 
 ############################################################
 # Load dynamic module based on SITE
@@ -64,11 +64,11 @@ def navbarAddLink(link_name, link, list_name=None):
                 'is_list': True,
                 # show_link_callback gets added when links get ordered
             }
-            navbar_links[list_name].update(ENABLED_NAVBAR_LISTS.get(list_name, {}))
+            navbar_links[list_name].update(ENABLED_NAVBAR_LISTS.get(list_name, OrderedDict()))
             if 'title' not in navbar_links[list_name]:
                 navbar_links[list_name]['title'] = _(string.capwords(list_name))
             if 'links' not in navbar_links[list_name]:
-                navbar_links[list_name]['links'] = {}
+                navbar_links[list_name]['links'] = OrderedDict()
         navbar_links[list_name]['links'][link_name] = link
     else:
         link['is_list'] = False
@@ -156,7 +156,6 @@ for collection in collections.values():
                 'icon': collection.icon,
                 'image': collection.image,
                 'auth': (True, False) if collection.list_view.authentication_required else (True, True),
-                'get_url': None,
                 'show_link_callback': getCollectionShowLinkLambda(collection),
                 'divider_before': collection.navbar_link_list_divider_before,
                 'divider_after': collection.navbar_link_list_divider_after,
@@ -267,22 +266,25 @@ for (name, pages) in ENABLED_PAGES.items():
         if name not in all_enabled:
             all_enabled.append(name)
         ajax = page.get('ajax', False)
-        if name == 'index':
-            urls.append(url(r'^$', page_view(name, page), name=name))
-        else:
-            url_variables = '/'.join(['(?P<{}>{})'.format(v[0], v[1]) for v in page.get('url_variables', [])])
-            urls.append(url(r'^{}{}{}[/]*$'.format('ajax/' if ajax else '', name, '/' + url_variables if url_variables else ''),
-                            page_view(name, page), name=name if not ajax else '{}_ajax'.format(name)))
+        redirect = page.get('redirect', None)
+        if not redirect:
+            if name == 'index':
+                urls.append(url(r'^$', page_view(name, page), name=name))
+            else:
+                url_variables = '/'.join(['(?P<{}>{})'.format(v[0], v[1]) for v in page.get('url_variables', [])])
+                urls.append(url(r'^{}{}{}[/]*$'.format('ajax/' if ajax else '', name, '/' + url_variables if url_variables else ''),
+                                page_view(name, page), name=name if not ajax else '{}_ajax'.format(name)))
         if not ajax:
             navbar_link = page.get('navbar_link', True)
             if navbar_link:
                 lambdas = [(v[2] if len(v) >= 3 else (lambda x: x)) for v in page.get('url_variables', [])]
                 link = {
                     'url_name': name,
-                    'url': '/{}/'.format(name),
+                    'url': redirect or '/{}/'.format(name),
                     'title': page['title'],
                     'icon': page.get('icon', None),
                     'image': page.get('image', None),
+                    'new_tab': page.get('new_tab', False),
                     'auth': page.get('navbar_link_auth', (True, True)),
                     'get_url': None if not page.get('url_variables', None) else (getURLLambda(name, lambdas)),
                     'show_link_callback': getPageShowLinkLambda(page),
@@ -291,10 +293,138 @@ for (name, pages) in ENABLED_PAGES.items():
                 }
                 navbarAddLink(name, link, page.get('navbar_link_list', None))
 
+############################################################
+# Add staff links to navbar
+
+for permission, url in GLOBAL_OUTSIDE_PERMISSIONS.items():
+    if url:
+        url_name = u'staff-global-{}'.format(tourldash(permission).lower())
+        navbarAddLink(url_name, {
+            'url_name': url_name,
+            'url': url,
+            'title': permission,
+            'show_link_callback': lambda context: context['request'].user.is_staff,
+            'new_tab': True,
+        }, 'staff')
+
+def _getPageShowLinkForGroupsLambda(group):
+    def _show_link_callback(context):
+        return context['request'].user.is_authenticated() and context['request'].user.hasGroup(group)
+    return _show_link_callback
+
+_groups_dict = dict(GROUPS)
+_links_for_groups = {}
+_links_to_show_first = []
+
+# Retrieve collections and pages that will be in staff dropdown to put them at the right place in order
+for collection in collections.values():
+    if (collection.navbar_link_list == 'staff'
+        and collection.list_view.enabled):
+        view_with_permissions = collection.list_view if collection.name != 'badge' else collection.add_view
+        if (collection.name != 'staffdetails'
+            and (view_with_permissions.permissions_required
+                 or view_with_permissions.one_of_permissions_required)):
+            groups = []
+            if view_with_permissions.permissions_required:
+                groups += groupsWithPermissions(_groups_dict, view_with_permissions.permissions_required).keys()
+            if view_with_permissions.one_of_permissions_required:
+                groups += groupsWithOneOfPermissions(_groups_dict, view_with_permissions.one_of_permissions_required).keys()
+            for group in groups:
+                if group not in _links_for_groups:
+                    _links_for_groups[group] = []
+                name = u'{}-{}_list'.format(group, collection.name)
+                _links_for_groups[group].append(name)
+                navbarAddLink(name, {
+                    'title': collection.plural_title,
+                    'url': collection.get_list_url(),
+                    'show_link_callback': _getPageShowLinkForGroupsLambda(group),
+                }, 'staff')
+                if u'{}_list'.format(collection.name) in navbar_links['staff']['links']:
+                    del(navbar_links['staff']['links'][u'{}_list'.format(collection.name)])
+        else:
+            _links_to_show_first.append(u'{}_list'.format(collection.name))
+for name, pages in ENABLED_PAGES.items():
+    if not isinstance(pages, list):
+        pages = [pages]
+    for page in pages:
+        if page.get('navbar_link_list') == 'staff':
+            if (page.get('permissions_required', [])
+                or page.get('one_of_permissions_required', [])):
+                groups = []
+                if page.get('permissions_required', []):
+                    groups += groupsWithPermissions(_groups_dict, page['permissions_required']).keys()
+                if page.get('one_of_permissions_required', []):
+                    groups += groupsWithOneOfPermissions(_groups_dict, page['one_of_permissions_required']).keys()
+                for group in groups:
+                    if group not in _links_for_groups:
+                        _links_for_groups[group] = []
+                    url_name = u'{}-{}'.format(group, name)
+                    navbarAddLink(url_name, {
+                        'title': page['title'],
+                        'url': page.get('redirect', None) or '/{}/'.format(name),
+                        'get_url': None if not page.get('url_variables', None) else (getURLLambda(name, lambdas)),
+                        'show_link_callback': _getPageShowLinkForGroupsLambda(group),
+                    }, 'staff')
+                    if name in navbar_links['staff']['links']:
+                        del(navbar_links['staff']['links'][name])
+                    _links_for_groups[group].append(url_name)
+            else:
+                _links_to_show_first.append(name)
+
+# Add outside permissions links to the navbar dropdowns
+_staff_order = _links_to_show_first
+for group, group_details in GROUPS:
+    links_to_add = []
+    for permission, url in group_details.get('outside_permissions', {}).items():
+        if url:
+            url_name = u'staff-{}-{}'.format(group, tourldash(permission).lower())
+            links_to_add.append((url_name, {
+                'url_name': url_name,
+                'url': url,
+                'title': permission,
+                'show_link_callback': _getPageShowLinkForGroupsLambda(group),
+                'new_tab': True,
+            }))
+    if links_to_add or _links_for_groups.get(group, []):
+        header_name = u'staff-header-{}'.format(group)
+        navbarAddLink(header_name, {
+            'title': group_details['translation'],
+            'image': 'groups/{}'.format(group),
+            'is_header': True,
+            'show_link_callback': _getPageShowLinkForGroupsLambda(group),
+         }, 'staff')
+        _staff_order.append(header_name)
+        _staff_order += _links_for_groups.get(group, [])
+        for url_name, link in links_to_add:
+            navbarAddLink(url_name, link, 'staff')
+            _staff_order.append(url_name)
+
+# Specify the order of the staff navbar
+navbar_links['staff']['order'] = _staff_order
+
+############################################################
+
 urlpatterns = patterns('', *urls)
 
 ############################################################
 # Re-order navbar
+
+def _getPageShowLinkForListsLambda(link):
+    """
+    In base template, when the link is a list, this lambda is expected to return the dict of links.
+    """
+    show_link_callback = link.get('show_link_callback', None)
+    if not link['links']:
+        return show_link_callback or (lambda c: {})
+    if show_link_callback:
+        return show_link_callback
+    def _show_link_callback(context):
+        return OrderedDict([
+            (sub_link_name, sub_link)
+            for sub_link_name, sub_link in link['links'].items()
+            if sub_link.get('show_link_callback', lambda c: True)(context)
+        ])
+    return _show_link_callback
 
 order = [link_name for link_name in navbar_links.keys() if link_name not in NAVBAR_ORDERING] + NAVBAR_ORDERING
 
@@ -302,13 +432,14 @@ RAW_CONTEXT['navbar_links'] = OrderedDict((key, navbar_links[key]) for key in or
 
 for link_name, link in RAW_CONTEXT['navbar_links'].items():
     if link['is_list']:
-        if link['links']:
-            link['show_link_callback'] = lambda c: True
-            if 'order' in link:
-                order = [link_name for link_name in link['links'].keys() if link_name not in link['order']] + link['order']
-                link['links'] = OrderedDict((key, link['links'][key]) for key in order if key in link['links'])
-        else:
-            link['show_link_callback'] = lambda c: False
+        if link['links'] and 'order' in link:
+            if 'headers' in link:
+                for header_name, header in link['headers']:
+                    header['is_header'] = True
+                link['links'].update(link['headers'])
+            order = [link_name for link_name in link['links'].keys() if link_name not in link['order']] + link['order']
+            link['links'] = OrderedDict((key, link['links'][key]) for key in order if key in link['links'])
+        link['show_link_callback'] = _getPageShowLinkForListsLambda(link)
 
 ############################################################
 # Remove profile tabs when some collections are disabled

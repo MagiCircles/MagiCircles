@@ -837,8 +837,10 @@ class StaffEditUser(_UserCheckEmailUsernameForm):
                         perms=u''.join([u'<li style="display: list-item"><small>{}</small></li>'.format(toHumanReadable(p)) for p in group.get('permissions', [])]),
                         operms=u'<br><div class="alert alert-danger"><small>Make sure you also grant/revoke {user} the following permissions <b>manually</b>:</small> <ul>{permissions}</ul></div>'.format(
                             user=instance.username,
-                            permissions=''.join([u'<li style="display: list-item"><small>{}</small></li>'.format(p) for p in group['outside_permissions']]),
-                        ) if group.get('outside_permissions', []) else u'',
+                            permissions=''.join([u'<li style="display: list-item"><small>{}</small></li>'.format(
+                                p if not u else u'<a href="{}" target="_blank">{} <i class="flaticon-link"></i></a>'.format(u, p),
+                            ) for p, u in group['outside_permissions'].items()]),
+                        ) if group.get('outside_permissions', {}) else u'',
                     ))) for key, group in instance.preferences.GROUPS.items()
                 ]
                 self.fields['c_groups'] = forms.MultipleChoiceField(

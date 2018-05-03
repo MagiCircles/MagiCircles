@@ -1752,7 +1752,9 @@ class UserCollection(MagiCollection):
                     context['afterfields'] = {}
                 context['afterfields']['edit_user'] = mark_safe(u'<div class="alert alert-danger">If you are making {user} a new staff, or if you are revoking the staff status of {user}, make sure you also <b>manually grant or revoke</b> the following permissions: <ul>{permissions}</ul></div>'.format(
                     user=context['item'].username,
-                    permissions=u''.join([u'<li>{}</li>'.format(p) for p in GLOBAL_OUTSIDE_PERMISSIONS]),
+                    permissions=u''.join([u'<li>{}</li>'.format(
+                        p if not u else u'<a href="{}" target="_blank">{} <i class="flaticon-link"></i></a>'.format(u, p),
+                    ) for p, u in GLOBAL_OUTSIDE_PERMISSIONS.items()]),
                 ))
 
         def after_save(self, request, instance):
@@ -1777,7 +1779,7 @@ class StaffConfigurationCollection(MagiCollection):
     title = 'Configuration'
     plural_title = 'Configurations'
     queryset = models.StaffConfiguration.objects.all().select_related('owner')
-    navbar_link_list = 'more'
+    navbar_link_list = 'staff'
     icon = 'settings'
     form_class = forms.StaffConfigurationForm
     reportable = False
@@ -1863,7 +1865,7 @@ class StaffDetailsCollection(MagiCollection):
     title = 'Staff profile'
     plural_title = 'Staff profiles'
     queryset = models.StaffDetails.objects.all().select_related('owner')
-    navbar_link_list = 'more'
+    navbar_link_list = 'staff'
     icon = 'id'
     translated_fields = ('hobbies', 'favorite_food')
     reportable = False
@@ -2017,6 +2019,7 @@ class ActivityCollection(MagiCollection):
 
         def extra_context(self, context):
             super(ActivityCollection.ItemView, self).extra_context(context)
+
             # Show warning on hidden tags
             context['item'].hidden_reasons = []
             tags = context['item'].tags
@@ -2113,7 +2116,7 @@ class BadgeCollection(MagiCollection):
     icon = 'achievement'
     title = _('Badge')
     plural_title = _('Badges')
-    navbar_link_list = 'more'
+    navbar_link_list = 'staff'
     queryset = models.Badge.objects.all()
     reportable = False
     blockable = False
@@ -2241,7 +2244,7 @@ class BadgeCollection(MagiCollection):
 # Report Collection
 
 class ReportCollection(MagiCollection):
-    navbar_link_list = 'more'
+    navbar_link_list = 'staff'
     icon = 'fingers'
     queryset = models.Report.objects.all().select_related('owner', 'owner__preferences', 'staff', 'staff__preferences').prefetch_related(Prefetch('images', to_attr='all_images'))
     reportable = False

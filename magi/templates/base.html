@@ -63,7 +63,7 @@
             {% callWithContext dict=link function='show_link_callback' %}
             {% if result_of_callwithcontext %}
             <li class="{% if current == link_name %}active{% endif %}{% if link.is_list %} dropdown{% endif %}" data-link-name="{{ link_name }}">
-              <a href="{% if link.url %}{{ link.url }}{% else %}#{% endif %}"{% if link.is_list %} class="dropdown-toggle" data-toggle="dropdown" id="navBarIDDropDown{{ link_name }}"{% endif %}>
+              <a href="{% if link.url %}{{ link.url }}{% else %}#{% endif %}"{% if link.is_list %} class="dropdown-toggle" data-toggle="dropdown" id="navBarIDDropDown{{ link_name }}"{% endif %}{% if link.new_tab %} target="_blank"{% endif %}>
                 {% if link.icon %}
                 <i class="flaticon-{{ link.icon }}"></i>
                 {% elif link.image %}
@@ -75,17 +75,25 @@
               </a>
               {% if link.is_list %}
               <ul class="dropdown-menu" role="menu">
-                {% for sub_link_name, sub_link in link.links.items %}
-                {% callWithContext dict=sub_link function='show_link_callback' %}
-                {% if result_of_callwithcontext %}
+                {% for sub_link_name, sub_link in result_of_callwithcontext.items %}
+                {% if sub_link.is_header %}
+                <li class="dropdown-header" data-link-name="{{ sub_link_name }}">
+                  {% if sub_link.icon %}
+                  <i class="flaticon-{{ sub_link.icon }}"></i>
+                  {% elif sub_link.image %}
+                  <img src="{{ static_url }}img/{{ sub_link.image }}.png" height="16" />
+                  {% endif %}
+                  {% navbarTitle link=sub_link %}
+                </li>
+                {% else %}
                 {% if sub_link.divider_before %}
                 <li class="divider"></li>
                 {% endif %}
                 <li class="{% if current == sub_link_name %}active{% endif %}" data-link-name="{{ sub_link_name }}">
-                  <a href="{% navbarGetURL link=sub_link %}">
+                  <a href="{% navbarGetURL link=sub_link %}"{% if sub_link.new_tab %} target="_blank"{% endif %}>
                     {% if sub_link.icon %}
                     <i class="flaticon-{{ sub_link.icon }}"></i>
-                    {% elif link.image %}
+                    {% elif sub_link.image %}
                     <img src="{{ static_url }}img/{{ sub_link.image }}.png" height="16" />
                     {% endif %}
                     {% navbarTitle link=sub_link %}
