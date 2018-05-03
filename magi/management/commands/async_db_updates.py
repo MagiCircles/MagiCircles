@@ -42,8 +42,9 @@ def update_markdown(model, field):
             headers={ 'content-type': u'text/plain' },
         )
         r.raise_for_status()
-        setattr(item, u'_cache_{}'.format(field.name[2:]), r.text)
-        item.save()
+        model.objects.filter(id=item.id).update(**{
+            u'_cache_{}'.format(field.name[2:]): r.text,
+        })
         print 'Done.'
         return True
     return False
