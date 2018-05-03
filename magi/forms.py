@@ -1128,7 +1128,7 @@ class ActivityForm(MagiForm):
         save_owner_on_creation = True
 
 class FilterActivities(MagiFiltersForm):
-    search_fields = ['message', 'c_tags']
+    search_fields = ['m_message', 'c_tags']
     ordering_fields = [
         ('modification', _('Last Update')),
         ('creation', _('Creation')),
