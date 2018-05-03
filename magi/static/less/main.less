@@ -625,7 +625,7 @@ body.current-map, html.html-current-map {
 .activity {
     background: white;
     border-bottom: 1px #eee solid;
-    padding: 40px 20px;
+    padding: 20px 0;
     .owner {
 	font-size: 1.2em;
     }
@@ -633,7 +633,8 @@ body.current-map, html.html-current-map {
 	color: #ccc;
     }
     .message {
-	padding: 10px;
+	padding: 10px 0;
+        overflow: auto;
 	img {
 	    max-width: 100%;
 	}
@@ -684,9 +685,18 @@ body.current-map, html.html-current-map {
 
 @media(min-width:768px) {
     .activity {
+        padding: 40px 20px;
 	.activity-image {
 	    height: 500px;
 	}
+    }
+}
+
+@media(max-width:768px) {
+    .activity {
+        .avatar_wrapper .flaticon-heart {
+	    display: none;
+        }
     }
 }
 

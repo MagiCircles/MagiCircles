@@ -43,7 +43,15 @@
 	{% if activity.image %}
 	<a href="{{ activity.image_url }}" target="_blank" class="a-nodifference activity-image" style="background-image: url('{{ activity.image_url }}');"><i class="flaticon-link"></i></a>
 	{% endif %}
-	<p class="message to-markdown">{{ activity.message }}</p>
+	<div class="message">
+          {% with message_details=activity.message %}
+          {% if message_details.0 %}
+          {{ message_details.1|safe }}
+          {% else %}
+          <div class="to-markdown">{{ message_details.1 }}</div>
+          {% endif %}
+          {% endwith %}
+        </div>
 	<div class="tags text-muted fontx0-8">{% for tag, t_tag in activity.t_tags.items %}<a href="/activities/?tags={{ tag }}" target="_blank" class="text-muted">#{{ t_tag }}</a> {% endfor %}</div>
 	<div class="socialbar">
 	  <div class="btn-group share">

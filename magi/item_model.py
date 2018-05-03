@@ -310,6 +310,13 @@ class BaseMagiModel(models.Model):
         map_method = getattr(self, u'cached_{}_map'.format(field_name), None)
         return [map_method(i) for i in values] if map_method else values
 
+    def _get_markdown_value(self, field_name):
+        html = getattr(self, u'_cache_{}'.format(field_name))
+        if html:
+            return True, html
+        markdown = getattr(self, u'm_{}'.format(field_name))
+        return False, markdown
+
     def add_c(self, field_name, to_add):
         """
         Add strings from a CSV formatted c_something
@@ -375,7 +382,7 @@ class BaseMagiModel(models.Model):
 
     def __getattr__(self, name):
         # For choice fields with name "i_something", accessing "something" returns the string value
-        if not name.startswith('_') and not name.startswith('i_') and not name.startswith('c_') and not name.startswith('d_'):
+        if not name.startswith('_') and not name.startswith('i_') and not name.startswith('c_') and not name.startswith('m_') and not name.startswith('d_'):
             # When accessing "something" and "i_something exists, return the readable key for the choice
             if hasattr(self, u'i_{name}'.format(name=name)):
                 return type(self).get_reverse_i(name, getattr(self, u'i_{name}'.format(name=name)))
@@ -407,6 +414,9 @@ class BaseMagiModel(models.Model):
             # When accessing "something" and "d_something" exists, returns the dict
             elif hasattr(self, 'd_{name}'.format(name=name)):
                 return type(self).get_dict_values(name, getattr(self, u'd_{name}'.format(name=name)), translated=False)
+            # When accessing "something" and "m_something" exists, returns the html value if exists
+            elif hasattr(self, 'm_{name}'.format(name=name)):
+                return self._get_markdown_value(name)
 
         # Return cache
         if name.startswith('cached_'):

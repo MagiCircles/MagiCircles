@@ -107,6 +107,7 @@ class MagiForm(forms.ModelForm):
         self.is_creating = not hasattr(self, 'instance') or not self.instance.pk
         self.c_choices = []
         self.d_choices = {}
+        self.m_previous_values = {}
         self.hidden_foreign_keys_querysets = {}
         # If is creating and item is unique per owner, redirect to edit unique
         if self.is_creating and self.collection and not isinstance(self, MagiFiltersForm) and not self.Meta.model.fk_as_owner and self.collection.add_view.unique_per_owner:
@@ -202,6 +203,9 @@ class MagiForm(forms.ModelForm):
                         choices=[(c[0], c[1]) if isinstance(c, tuple) else (c, c) for c in choices],
                         label=field.label,
                     )
+            # Save previous values of markdown fields
+            elif name.startswith('m_') and not isinstance(self, MagiFiltersForm) and not self.is_creating:
+                self.m_previous_values[name] = getattr(self.instance, name)
         # Fix force required fields
         if hasattr(self.Meta, 'required_fields'):
             for field in self.Meta.required_fields:
@@ -272,6 +276,12 @@ class MagiForm(forms.ModelForm):
             # Save CSV values
             if field.startswith('c_') and field in self.c_choices:
                 instance.save_c(field[2:], self.cleaned_data[field])
+            # Remove cached HTML for markdown fields
+            if (field.startswith('m_') and field in self.m_previous_values
+                and has_field(instance, field)
+                and self.m_previous_values[field] != getattr(instance, field)
+                and has_field(instance, u'_cache_{}'.format(field[2:]))):
+                setattr(instance, u'_cache_{}'.format(field[2:]), None)
             # Shrink images
             if (hasattr(instance, field)
                 and isinstance(self.fields[field], forms.Field)
@@ -1096,11 +1106,11 @@ class ActivityForm(MagiForm):
     def __init__(self, *args, **kwargs):
         super(ActivityForm, self).__init__(*args, **kwargs)
         self.fields['i_language'].initial = self.request.user.preferences.language if self.request.user.is_authenticated() and self.request.user.preferences.language else django_settings.LANGUAGE_CODE
-        if 'message' in self.fields:
+        if 'm_message' in self.fields:
             if 'help' in RAW_CONTEXT['all_enabled']:
-                self.fields['message'].help_text = mark_safe(u'{} <a href="/help/Markdown" target="_blank">{}.</a>'.format(_(u'You may use Markdown formatting.'), _(u'Learn more')))
+                self.fields['m_message'].help_text = mark_safe(u'{} <a href="/help/Markdown" target="_blank">{}.</a>'.format(_(u'You may use Markdown formatting.'), _(u'Learn more')))
             else:
-                self.fields['message'].help_text = _(u'You may use Markdown formatting.')
+                self.fields['m_message'].help_text = _(u'You may use Markdown formatting.')
         # Only allow users to add tags they are allowed to see
         if 'c_tags' in self.fields:
             self.fields['c_tags'].choices = models.getAllowedTags(self.request, is_creating=True)
@@ -1114,7 +1124,7 @@ class ActivityForm(MagiForm):
 
     class Meta(MagiForm.Meta):
         model = models.Activity
-        fields = ('message', 'c_tags', 'i_language', 'image')
+        fields = ('m_message', 'c_tags', 'i_language', 'image')
         save_owner_on_creation = True
 
 class FilterActivities(MagiFiltersForm):

@@ -530,6 +530,13 @@ def dumpModel(instance):
             dump[key] = unicode(dump[key])
     return dump
 
+def modelHasField(model, field_name):
+    try:
+        model._meta.get_field(field_name)
+        return True
+    except FieldDoesNotExist:
+        return False
+
 ############################################################
 # Set a field in a sub dictionary
 

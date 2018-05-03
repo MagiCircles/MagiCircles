@@ -599,7 +599,8 @@ class Activity(MagiModel):
     creation = models.DateTimeField(auto_now_add=True)
     modification = models.DateTimeField(auto_now=True, db_index=True)
     owner = models.ForeignKey(User, related_name='activities', db_index=True)
-    message = models.TextField(_('Message'))
+    m_message = models.TextField(_('Message'))
+
     likes = models.ManyToManyField(User, related_name="liked_activities")
 
     LANGUAGE_CHOICES = django_settings.LANGUAGES
@@ -620,6 +621,9 @@ class Activity(MagiModel):
     }
 
     # Cache
+
+    # Updated manually when activity is updated
+    _cache_message = models.TextField(null=True)
 
     # Updated manually when activity is updated
     _cache_hidden_by_default = models.BooleanField(default=False, db_index=True)
@@ -686,9 +690,13 @@ class Activity(MagiModel):
         """
         Return the first {length} characters without cutting words
         """
-        if len(self.message) <= length:
-            return self.message
-        return u' '.join(self.message[:length+1].split(' ')[0:-1]) + u'...'
+        message = self.m_message
+        if len(message) > length:
+            message = u' '.join(message[:length+1].split(' ')[0:-1]) + u'...'
+        for c in ['*', '>', '#', '-', '+', '![', '[', ']', '(', ')', 'https://', 'http://', '//']:
+            message = message.replace(c, ' ')
+        message = ' '.join(message.split())
+        return message
 
     def __unicode__(self):
         return self.summarize()
