@@ -132,8 +132,9 @@ def aboutDefaultContext(request):
         Prefetch('links', queryset=models.UserLink.objects.order_by('-i_relevance'), to_attr='all_links'),
     ).extra(select={
         'length_of_groups': 'Length(c_groups)',
-        'is_manager': 'CASE WHEN c_groups LIKE "%%manager%%" THEN 1 ELSE 0 END',
-    }).order_by('-is_manager', '-length_of_groups')
+        'is_manager': 'CASE WHEN c_groups LIKE \'%%\"manager\"%%\' THEN 1 ELSE 0 END',
+        'is_management': 'CASE WHEN c_groups LIKE "%%manager%%" THEN 1 ELSE 0 END',
+    }).order_by('-is_manager', '-is_management', '-length_of_groups')
 
     try:
         my_timezone = request.user.staff_details.timezone if request.user.is_staff else None
