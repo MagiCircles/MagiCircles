@@ -153,7 +153,7 @@ class UserPreferences(BaseMagiModel):
                 toHumanReadable(setting): value
                 for setting, value in settings.items()
             }
-            for group, settings in self.settings_per_groups.items()
+            for group, settings in (self.settings_per_groups or {}).items()
         }
         if 'translator' in s and 'Languages' in s['translator']:
             s['translator']['Languages'] = u', '.join([

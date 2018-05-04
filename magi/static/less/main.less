@@ -963,7 +963,17 @@ nav {
     }
 }
 
-.staff-profile {
+.contributor-profile {
+    display: inline-block;
+    vertical-align: top;
+    padding: 20px;
+    font-size: 0.9em;
+    h3, h4 {
+        font-size: 1.2em;
+    }
+}
+
+.staff-profile, .contributor-profile {
     margin-bottom: 50px;
     .popover img {
         box-sizing: content-box;
@@ -987,6 +997,10 @@ nav {
         max-width: 100%;
         width: 200px;
     }
+    .contributor-photo {
+        max-width: 100%;
+        width: 100px;
+    }
     .mini {
         display: inline-block;
         padding: 8px;
@@ -998,7 +1012,7 @@ nav {
         padding: 8px;
         margin: auto;
     }
-    .staff-links {
+    .contributor-links, .staff-links {
         padding: 10px 0;
         width: 300px;
         max-width: 100%;

@@ -129,19 +129,24 @@ def aboutDefaultContext(request):
         ('Bug tracker', 'flaticon-album', BUG_TRACKER_URL if BUG_TRACKER_URL and not FEEDBACK_FORM else None),
     ]
     context['franchise'] = _('{site} is not a representative and is not associated with {game}. Its logos and images are Trademarks of {company}.').format(site=_(SITE_NAME), game=_(GAME_NAME), company=_('the company that owns {game}').format(game=GAME_NAME))
-    context['staff'] = models.User.objects.filter(is_staff=True).select_related('preferences', 'staff_details').prefetch_related(
+    context['staff'] = list(models.User.objects.filter(is_staff=True).select_related('preferences', 'staff_details').prefetch_related(
         Prefetch('links', queryset=models.UserLink.objects.order_by('-i_relevance'), to_attr='all_links'),
     ).extra(select={
         'length_of_groups': 'Length(c_groups)',
         'is_manager': 'CASE WHEN c_groups LIKE \'%%\"manager\"%%\' THEN 1 ELSE 0 END',
         'is_management': 'CASE WHEN c_groups LIKE "%%manager%%" THEN 1 ELSE 0 END',
-    }).order_by('-is_manager', '-is_management', '-length_of_groups')
+    }).order_by('-is_manager', '-is_management', '-length_of_groups'))
+    context['contributors'] = list(models.User.objects.filter(is_staff=False, preferences__c_groups__isnull=False).exclude(preferences__c_groups='').select_related('preferences').prefetch_related(
+        Prefetch('links', queryset=models.UserLink.objects.order_by('-i_relevance'), to_attr='all_links'),
+    ).extra(select={
+        'length_of_groups': 'Length(c_groups)',
+    }))
 
     try:
         my_timezone = request.user.staff_details.timezone if request.user.is_staff else None
     except ObjectDoesNotExist:
         my_timezone = None
-    for staff_member in context['staff']:
+    for staff_member in context['staff'] + context['contributors']:
         # Add staff member location URL
         if staff_member.preferences.location:
             latlong = '{},{}'.format(staff_member.preferences.latitude, staff_member.preferences.longitude) if staff_member.preferences.latitude else None
@@ -155,6 +160,21 @@ def aboutDefaultContext(request):
             if birthday < today:
                 birthday = birthday.replace(year=today.year + 1)
             staff_member.birthday_url = 'https://www.timeanddate.com/countdown/birthday?iso={date}T00&msg={username}%27s+birthday'.format(date=dateformat.format(birthday, "Ymd"), username=staff_member.username)
+
+        # Stats
+        staff_member.stats = {}
+        for group, details in staff_member.preferences.groups_and_details.items():
+            stats = details.get('stats', [])
+            staff_member.stats[group] = []
+            if stats:
+                for stat in stats:
+                    model = getattr(models, stat['model'])
+                    total = model.objects.filter(**{ stat.get('selector_to_owner', model.selector_to_owner()): staff_member }).filter(**(stat.get('filters', {}))).count()
+                    if total:
+                        staff_member.stats[group].append(mark_safe(unicode(stat['template']).format(total=u'<strong>{}</strong>'.format(total))))
+
+        if not staff_member.is_staff:
+            continue
 
         # Availability calendar
         try:
@@ -170,18 +190,6 @@ def aboutDefaultContext(request):
             else:
                 staff_member.availability_calendar = staff_member.staff_details.availability_calendar
                 staff_member.calendar_with_timezone = False
-
-        # Stats
-        staff_member.stats = {}
-        for group, details in staff_member.preferences.groups_and_details.items():
-            stats = details.get('stats', [])
-            staff_member.stats[group] = []
-            if stats:
-                for stat in stats:
-                    model = getattr(models, stat['model'])
-                    total = model.objects.filter(**{ stat.get('selector_to_owner', model.selector_to_owner()): staff_member }).filter(**(stat.get('filters', {}))).count()
-                    if total:
-                        staff_member.stats[group].append(mark_safe(unicode(stat['template']).format(total=u'<strong>{}</strong>'.format(total))))
 
     context['now'] = timezone.now()
     context['api_enabled'] = False

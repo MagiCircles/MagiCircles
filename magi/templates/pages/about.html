@@ -288,6 +288,79 @@
       {% endfor %}
     </div>
 
+    <div id="contributors"></div>
+    <hr>
+
+    <br>
+    <h1 class="text-main">{% trans 'Contributors' %}</h1>
+    <br><br>
+
+
+    {% for contributor in contributors %}
+    <div class="contributor-profile a-{{ contributor.preferences.css_color }}">
+      <div class="text-center">
+        <a href="{{ contributor.item_url }}" target="_blank">
+          <img src="{{ contributor.image_url }}" class="img-circle contributor-photo">
+        </a>
+      </div>
+      <h3 class="text-center text-{{ contributor.preferences.css_color }}">
+        {{ contributor.username }}
+      </h3>
+      <div class="text-center groups">
+        {% for group, details in contributor.preferences.groups_and_details.items %}
+        {% with stats=contributor.stats|getattribute:group %}
+        <h4
+          data-toggle="popover"
+          title="{{ details.translation }}"
+          data-content="<img class='pull-right' height='80' src='{{ static_url }}img/groups/{{ group }}.png' alt='{{ details.translation }}'> {{ details.description }}{% if stats %}<hr /><ul>{% for stat in stats %}<li>{{ stat }}</li>{% endfor %}</ul>{% endif %}"
+          data-placement="bottom"
+          data-trigger="hover"
+          data-html="true"
+          >
+          {{ details.translation }}
+          <i class="flaticon-about"></i>
+        </h4>
+        {% endwith %}
+        {% endfor %}
+      </div>
+      {% if contributor.preferences.location %}
+      <span class="mini">
+        <span class="text-{{ contributor.preferences.css_color }}">
+          <i class="flaticon-world text-{{ contributor.preferences.css_color }}"></i>
+        </span>
+        {% if contributor.preferences.location %}
+        <a href="{{ contributor.location_url }}" target="_blank" class="a-nodifference">
+          {{ contributor.preferences.location }}
+        </a>
+        {% endif %}
+      </span>
+      {% endif %}
+      {% if contributor.preferences.birthdate %}
+      <span class="mini">
+        <span class="text-{{ contributor.preferences.css_color }}">
+          <i class="flaticon-event text-{{ contributor.preferences.css_color }}"></i>
+        </span>
+        <a href="{{ contributor.birthday_url }}" target="_blank" class="a-nodifference">
+          {{ contributor.formatted_birthday }}
+        </a>
+      </span>
+      {% endif %}
+      {% if contributor.all_links %}
+      <div class="text-center contributor-links">
+        {% for link in contributor.all_links %}
+        <a href="{{ link.url }}" target="_blank" class="btn btn-circle btn-{{ contributor.preferences.css_color }}">
+          {% if link.flaticon %}
+          <i class="flaticon-{{ link.flaticon }}"></i>
+          {% elif link.image_url %}
+          <img src="{{ link.image_url }}" alt="{{ link.type }}">
+          {% endif %}
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+
     <div id="contact"></div>
     <hr>
 
