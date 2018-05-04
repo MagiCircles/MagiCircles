@@ -24,11 +24,11 @@ def avatar(user, size=200):
     """
     Preferences in user objects must always be prefetched
     """
-    default = u'{}static/img/avatar.png'.format(SITE_STATIC_URL if SITE_STATIC_URL.startswith('http') else ('http:' + SITE_STATIC_URL if SITE_STATIC_URL.startswith('//') else 'http://' + SITE_STATIC_URL))
+    default = u'{}static/img/avatar.png'.format(SITE_STATIC_URL if SITE_STATIC_URL.startswith('http') else ('https:' + SITE_STATIC_URL if SITE_STATIC_URL.startswith('//') else 'https://' + SITE_STATIC_URL))
     if hasattr(django_settings, 'DEBUG_AVATAR'):
         default = django_settings.DEBUG_AVATAR
     if user.preferences.twitter:
-        default = u'{}twitter_avatar/{}/'.format(SITE_URL if SITE_URL.startswith('http') else 'http:' + SITE_URL, user.preferences.twitter)
+        default = u'{}twitter_avatar/{}/'.format(SITE_URL if SITE_URL.startswith('http') else 'https:' + SITE_URL, user.preferences.twitter)
     return ("https://www.gravatar.com/avatar/"
             + hashlib.md5(user.email.lower()).hexdigest()
             + "?" + urllib.urlencode({'d': default, 's': str(size)}))

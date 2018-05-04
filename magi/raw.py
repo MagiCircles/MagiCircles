@@ -20,25 +20,25 @@ other_sites = [
     {
         'name': 'School Idol Tomodachi',
         'game_name': 'LoveLive! School Idol Festival',
-        'image': 'http://i.schoolido.lu/android/icon.png',
+        'image': 'https://i.schoolido.lu/android/icon.png',
         'url': 'http://schoolido.lu/',
     },
     {
         'name': 'Stardust Run',
         'game_name': 'Pokémon Go',
-        'image': 'http://i.stardust.run/static/img/avatar.png',
-        'url': 'http://stardust.run/',
+        'image': 'https://i.stardust.run/static/img/avatar.png',
+        'url': 'https://stardust.run/',
     },
     {
         'name': 'Cinderella Producers',
         'game_name': 'THE iDOLM@STER Cinderella Girls: Starlight Stage',
-        'image': 'http://i.cinderella.pro/static/img/avatar.png',
-        'url': 'http://cinderella.pro/',
+        'image': 'https://i.cinderella.pro/static/img/avatar.png',
+        'url': 'https://cinderella.pro/',
     },
     {
         'name': 'Bandori Party',
         'game_name': string_concat(_('BanG Dream!'), _('Girls Band Party')),
-        'image': 'http://i.bandori.party/static/img/avatar.png',
-        'url': 'http://bandori.party/',
+        'image': 'https://i.bandori.party/static/img/avatar.png',
+        'url': 'https://bandori.party/',
     },
 ]
