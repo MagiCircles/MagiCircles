@@ -1751,7 +1751,7 @@ class UserCollection(MagiCollection):
         def check_owner_permissions(self, request, context, item):
             super(UserCollection.EditView, self).check_permissions(request, context)
             # Edit view is for staff only, but staff can't edit their own
-            if item.is_owner(request.user):
+            if item.is_owner(request.user) and not request.user.hasPermission('edit_roles'):
                 raise PermissionDenied()
 
         def extra_context(self, context):
