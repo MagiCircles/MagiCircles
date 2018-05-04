@@ -750,7 +750,7 @@ function paginationOnClick(buttonId, nextPageUrl, newPageParameters, newPageCall
 function reloadDisqus() {
     if ($('[href$="#disqus_thread"], .disqus-comment-count').length > 0) {
         window.DISQUSWIDGETS = undefined;
-        $.getScript('http://' + disqus_shortname + '.disqus.com/count.js');
+        $.getScript('https://' + disqus_shortname + '.disqus.com/count.js');
     }
 }
 
