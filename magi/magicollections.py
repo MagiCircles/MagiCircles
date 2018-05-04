@@ -1984,7 +1984,6 @@ class ActivityCollection(MagiCollection):
         before_template = 'include/homePage'
         default_ordering = '-modification'
         filter_form = forms.FilterActivities
-        hide_sidebar = True
         show_relevant_fields_on_ordering = False
         show_item_buttons = False
         show_item_buttons_justified = False
@@ -2011,6 +2010,7 @@ class ActivityCollection(MagiCollection):
             super(ActivityCollection.ListView, self).extra_context(context)
             if context.get('shortcut_url', None) == '': # Homepage of the site
                 indexExtraContext(context)
+                context['hide_sidebar'] = True
 
     class ItemView(MagiCollection.ItemView):
         template = custom_item_template
