@@ -645,7 +645,7 @@ def translations(request):
                 continue
             context['staffconfiguration_fields'] = [
                 (f.key, f.verbose_key) for f in models.StaffConfiguration.objects.extra(where=[
-                    '(SELECT COUNT(*) FROM {table} AS a WHERE a.key = key AND i_language = \'en\') >= 1'.format(
+                    '(SELECT COUNT(*) FROM {table} AS a WHERE a.key = `key` AND i_language = \'en\') >= 1'.format(
                         table=models.StaffConfiguration._meta.db_table,
                     ),
                 ]).filter(i_language=language).filter(Q(value__isnull=True) | Q(value=''))]
