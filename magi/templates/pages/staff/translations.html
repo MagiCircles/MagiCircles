@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+  <h1 class="padding20 text-center">Translations</h1>
+
+  <h2>
+    {% if see_all %}
+    <a href="." class="pull-right btn btn-main btn-lg">See only the languages you speak</a>
+    {% else %}
+    <a href="?see_all" class="pull-right btn btn-main btn-lg">See all languages</a>
+    {% endif %}
+    Total translations missing: {{ total }}
+  </h2>
+  {% for language, details in total_per_languages.items %}
+  <div style="display: inline-block" class="padding20">
+    <img src="{{ details.image }}" height="30" />
+    {{ details.verbose_name }}
+    <span href="#" class="badge">{{ details.total }}</span>
+  </div>
+  {% endfor %}
+
+  <br><br>
+
+  <p class="alert alert-info">
+    Click on any button below to open all the items that have a missing translation for the
+    specified language and field.
+  </p>
+
+  {% for collection in collections %}
+  <h2>
+    {% if collection.icon %}
+    <i class="flaticon-{{ collection.icon }}"></i>
+    {% elif collection.image %}
+    <img src="{{ static_url }}img/{{ collection.image }}.png" height="30" />
+    {% endif %}
+    {{ collection.title }}
+  </h2>
+    {% for language, details in collection.translated_fields_per_languages.items %}
+    <div style="display: inline-block" class="padding20">
+      <img src="{{ details.image }}" height="30" />
+      {{ details.verbose_name }}
+      {% for field in details.fields %}
+      <a href="{{ collection.list_url }}?missing_{{ field.name }}_translations={{ language }}"
+         class="btn btn-secondary btn-sm" target="_blank">
+        {{ field.verbose_name }} <span href="#" class="badge">{{ field.total }}</span>
+      </a>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  {% endfor %}
+
+  {% if total_staff_configurations_per_languages %}
+  <h2>
+    <i class="flaticon-settings"></i>
+    Configurations
+  </h2>
+  {% for language, details in total_staff_configurations_per_languages.items %}
+  <div style="display: inline-block" class="padding20">
+    <img src="{{ details.image }}" height="30" />
+    {{ details.verbose_name }}
+    {% for field, verbose in staffconfiguration_fields %}
+    <a href="/staffconfigurations/?key={{ field }}&i_language={{ language }}"
+       class="btn btn-secondary btn-sm" target="_blank">
+      {{ verbose }} <span href="#" class="badge">1</span>
+    </a>
+    {% endfor %}
+  </div>
+  <br>
+  {% endfor %}
+  {% endif %}
+
+  <br><br><br>
+
+  <div class="text-center">
+    <h2>See also:</h2>
+
+    {% if guide %}
+    <a href="{{ guide }}" class="btn btn-xl btn-secondary" target="_blank">
+      Translator guide
+    </a>
+    {% endif %}
+
+    {% if poeditor %}
+    <a href="{{ poeditor }}" class="btn btn-xl btn-secondary" target="_blank">
+      POEditor
+    </a>
+    {% endif %}
+
+  </div>
+
+  <br><br><br><br><br><br>
+
+</div>
+{% endblock %}

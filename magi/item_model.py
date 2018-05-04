@@ -242,6 +242,11 @@ class BaseMagiModel(models.Model):
         }
 
     @classmethod
+    def get_json_value(self, field_name, value):
+        if not value: return None
+        return json.loads(value)
+
+    @classmethod
     def cached_json_extra(self, field_name, d):
         # Get original model class for cached thing
         try: original_cls = self._meta.get_field(field_name).rel.to
@@ -352,6 +357,9 @@ class BaseMagiModel(models.Model):
     def save_d(self, field_name, d):
         setattr(self, u'd_{name}'.format(name=field_name), json.dumps(d) if d else None)
 
+    def save_j(self, field_name, j):
+        setattr(self, u'j_{name}'.format(name=field_name), json.dumps(j) if j else None)
+
     def force_update_cache(self, field_name):
         self.update_cache(field_name)
         self.save()
@@ -382,7 +390,7 @@ class BaseMagiModel(models.Model):
 
     def __getattr__(self, name):
         # For choice fields with name "i_something", accessing "something" returns the string value
-        if not name.startswith('_') and not name.startswith('i_') and not name.startswith('c_') and not name.startswith('m_') and not name.startswith('d_'):
+        if not name.startswith('_') and not name.startswith('i_') and not name.startswith('c_') and not name.startswith('m_') and not name.startswith('d_') and not name.startswith('j_'):
             # When accessing "something" and "i_something exists, return the readable key for the choice
             if hasattr(self, u'i_{name}'.format(name=name)):
                 return type(self).get_reverse_i(name, getattr(self, u'i_{name}'.format(name=name)))
@@ -417,6 +425,9 @@ class BaseMagiModel(models.Model):
             # When accessing "something" and "m_something" exists, returns the html value if exists
             elif hasattr(self, 'm_{name}'.format(name=name)):
                 return self._get_markdown_value(name)
+            # When accessing "something" and "j_something" exists, return the python variable (dict, list, ...)
+            elif hasattr(self, u'j_{}'.format(name)):
+                return type(self).get_json_value(name, getattr(self, u'j_{}'.format(name)))
 
         # Return cache
         if name.startswith('cached_'):

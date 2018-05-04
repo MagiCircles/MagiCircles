@@ -10,7 +10,7 @@ from django.utils.formats import dateformat
 from django.utils.dateparse import parse_date
 from django.forms.models import model_to_dict
 from django.conf import settings as django_settings
-from magi.utils import AttrDict, randomString, getMagiCollection, uploadToRandom, uploadItem, linkToImageURL, hasGroup, hasPermission, hasOneOfPermissions, hasPermissions
+from magi.utils import AttrDict, randomString, getMagiCollection, uploadToRandom, uploadItem, linkToImageURL, hasGroup, hasPermission, hasOneOfPermissions, hasPermissions, toHumanReadable, LANGUAGES_DICT
 from magi.settings import ACCOUNT_MODEL, GAME_NAME, COLOR, SITE_STATIC_URL, DONATORS_STATUS_CHOICES, USER_COLORS, FAVORITE_CHARACTERS, SITE_URL, SITE_NAME, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, ACTIVITY_TAGS, GROUPS
 from magi.item_model import MagiModel, BaseMagiModel, get_image_url, i_choices, addMagiModelProperties
 from magi.abstract_models import CacheOwner
@@ -144,6 +144,22 @@ class UserPreferences(BaseMagiModel):
     GROUPS_CHOICES = [(_k, _v['translation']) for _k, _v in GROUPS]
     GROUPS = OrderedDict(GROUPS)
     c_groups = models.TextField(_('Roles'), blank=True, null=True)
+    j_settings_per_groups = models.TextField(null=True)
+
+    @property
+    def t_settings_per_groups(self):
+        s = {
+            group: {
+                toHumanReadable(setting): value
+                for setting, value in settings.items()
+            }
+            for group, settings in self.settings_per_groups.items()
+        }
+        if 'translator' in s and 'Languages' in s['translator']:
+            s['translator']['Languages'] = u', '.join([
+                unicode(LANGUAGES_DICT.get(l, l)) for l in s['translator']['Languages']
+            ])
+        return s
 
     @property
     def groups_and_details(self):

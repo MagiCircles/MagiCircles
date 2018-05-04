@@ -829,6 +829,13 @@ class MagiCollection(object):
         if self.translated_fields:
             buttons['translate'] = buttons['edit'].copy()
             buttons['translate']['has_permissions'] = self.edit_view.has_translate_permissions(request, context)
+
+            if buttons['translate']['has_permissions'] and request.user.is_staff:
+                for field in self.translated_fields:
+                    if request.GET.get(u'missing_{}_translations'.format(field), None):
+                        buttons['translate']['classes'] = [c for c in buttons['translate']['classes'] if c != 'staff-only']
+                        break
+
             buttons['translate']['title'] = unicode(_('Edit {thing}')).format(thing=unicode(_('Translations')).lower())
             buttons['translate']['icon'] = 'world'
             buttons['translate']['url'] = u'{}{}translate'.format(buttons['translate']['url'], '&' if '?' in buttons['translate']['url'] else '?')
@@ -1739,6 +1746,7 @@ class UserCollection(MagiCollection):
             'edit_donator_status',
         ]
         form_class = forms.StaffEditUser
+        ajax_callback = 'updateStaffEditUserForm'
 
         def check_owner_permissions(self, request, context, item):
             super(UserCollection.EditView, self).check_permissions(request, context)
@@ -1876,6 +1884,8 @@ class StaffDetailsCollection(MagiCollection):
     class ListView(MagiCollection.ListView):
         one_of_permissions_required = ['edit_own_staff_profile', 'translate_items', 'edit_staff_details']
         add_button_subtitle = None
+        filter_form = forms.StaffDetailsFilterForm
+        hide_sidebar = True
 
         def get_queryset(self, queryset, parameters, request):
             queryset = super(StaffDetailsCollection.ListView, self).get_queryset(queryset, parameters, request)

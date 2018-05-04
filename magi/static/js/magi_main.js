@@ -485,6 +485,50 @@ function directAddCollectible(buttons, uniquePerOwner) {
 }
 
 // *****************************************
+// Translations see all buttons
+
+function translationsSeeAll() {
+    let button = $('a[href="#translations_see_all"]:not(.toggled)');
+    if (button.length > 0) {
+        let spoken_languages = button.data('spoken-languages').split(',');
+        function _toggle() {
+            let toggled = button.hasClass('toggled');
+            $('[id^="id_d_"]').each(function() {
+                let field = $(this);
+                if (toggled) {
+                    field.closest('.form-group').show();
+                } else {
+                    field.closest('.form-group').hide();
+                }
+                if (!toggled) {
+                    $.each(spoken_languages, function(i, language) {
+                        if (field.is('[id$=-' + language + ']')) {
+                            field.closest('.form-group').show();
+                            return;
+                        }
+                    });
+                }
+            });
+        }
+        _toggle();
+        button.show();
+        button.unbind('click');
+        button.click(function(e) {
+            e.preventDefault();
+            if ($(this).hasClass('toggled')) {
+                $(this).removeClass('toggled');
+                $(this).text('See all languages');
+            } else {
+                $(this).addClass('toggled');
+                $(this).text('See only the languages you speak');
+            }
+            _toggle();
+            return false;
+        });
+    }
+}
+
+// *****************************************
 // Items reloaders
 
 function itemsReloaders() {
@@ -624,6 +668,7 @@ function loadCommons(onPageLoad /* optional = false */) {
     reloadDisqus();
     itemsReloaders();
     directAddCollectible($('[data-quick-add-to-collection="true"]'));
+    translationsSeeAll();
 }
 
 // *****************************************
@@ -822,6 +867,24 @@ function updateActivities() {
         });
         return false;
     });
+}
+
+// *****************************************
+// Handle form to update users for staff
+
+function updateStaffEditUserForm() {
+    function _onCheck() {
+        $('[data-form-name="edit_user"] #id_c_groups input[name="c_groups"]').each(function() {
+            let form_group = $('[data-form-name="edit_user"] [id^=id_group_settings_' + $(this).val() + '_]').closest('.form-group');
+            if ($(this).prop('checked') !== true) {
+                form_group.hide();
+            } else {
+                form_group.show();
+            }
+        });
+    }
+    _onCheck();
+    $('[data-form-name="edit_user"] #id_c_groups input[name="c_groups"]').change(_onCheck);
 }
 
 // *****************************************

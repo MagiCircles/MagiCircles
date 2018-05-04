@@ -125,6 +125,16 @@
           <li>{{ permission }}</li>
           {% endfor %}
         </ul>
+        {% with settings=user.preferences.t_settings_per_groups|getattribute:group %}
+        {% if settings %}
+        Settings:
+        <ul>
+          {% for setting, value in settings.items %}
+          <li><strong>{{ setting }}</strong>: {{ value }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+        {% endwith %}
         {% endif %}
         {% if details.outside_permissions %}
         <div class="alert alert-warning">

@@ -324,6 +324,11 @@ def to_translate_form_class(view):
         def __init__(self, *args, **kwargs):
             self.is_translate_form = True
             super(_TranslateForm, self).__init__(*args, **kwargs)
+            spoken_languages = (self.request.user.preferences.settings_per_groups or {}).get('translator', {}).get('languages', {})
+            if spoken_languages:
+                self.beforefields = mark_safe(u'<a href="#translations_see_all" class="btn btn-main btn-sm pull-right" data-spoken-languages="{}" style="display: none">See all languages</a><br><br>'.format(
+                    u','.join(spoken_languages)))
+
             # TODO find a way to only show languages translators can speak
         class Meta(MagiForm.Meta):
             model = view.collection.queryset.model
@@ -404,6 +409,17 @@ class MagiFiltersForm(AutoForm):
     view = forms.ChoiceField(label=_('View'))
     view_filter = MagiFilter(noop=True)
 
+    def _to_missing_translation_lambda(self, field_name):
+        def _to_missing_translation(form, queryset, request, value=None):
+            return queryset.exclude(**{
+                u'{}__isnull'.format(field_name): True,
+            }).exclude(**{
+                field_name: '',
+            }).exclude(**{
+                u'd_{}s__contains'.format(field_name): u'"{}"'.format(value),
+            })
+        return _to_missing_translation
+
     def __init__(self, *args, **kwargs):
         super(MagiFiltersForm, self).__init__(*args, **kwargs)
         self.empty_permitted = True
@@ -431,7 +447,17 @@ class MagiFiltersForm(AutoForm):
                                 queryset=queryset, label=collection.add_sentence, required=True,
                                 initial=initial,
                             ))] + self.fields.items())
-            # Remove search from field if search_fields is not specified
+        # Add missing_{}_translations for all translatable fields if the current user has permission
+        if self.collection and self.request.user.is_authenticated() and self.request.user.hasPermission('translate_items') and self.collection.translated_fields:
+            for field_name in self.collection.translated_fields:
+                filter_field_name = u'missing_{}_translations'.format(field_name)
+                setattr(self, u'{}_filter'.format(filter_field_name), MagiFilter(
+                    to_queryset=self._to_missing_translation_lambda(field_name),
+                ))
+                self.fields[filter_field_name] = forms.CharField(
+                    widget=forms.HiddenInput
+                )
+        # Remove search from field if search_fields is not specified
         if not hasattr(self, 'search_fields') and not hasattr(self, 'search_fields_exact'):
             del(self.fields['search'])
         # Remove ordering form field if ordering_fields is not specified
@@ -859,6 +885,17 @@ class StaffEditUser(_UserCheckEmailUsernameForm):
                     choices=choices,
                     label=self.fields['c_groups'].label,
                 )
+                # Add settings
+                for key, group in instance.preferences.GROUPS.items():
+                    settings = group.get('settings', [])
+                    for setting in settings:
+                        field_name = u'group_settings_{}_{}'.format(key, setting)
+                        self.fields[field_name] = forms.CharField(
+                            required=False, label=u'Settings for {}: {}'.format(
+                                group['translation'],
+                                toHumanReadable(setting)
+                            ))
+                # Set default checkboxes
                 self.instance.preferences.c_groups = self.instance.preferences.groups
             else:
                 del(self.fields['c_groups'])
@@ -898,6 +935,15 @@ class StaffEditUser(_UserCheckEmailUsernameForm):
         else:
             self.fields['force_remove_avatar'].help_text = mark_safe('Check this box if the avatar is inappropriate. It will force the default avatar. <img src="{avatar_url}" alt="{username}" height="40" width="40">'.format(avatar_url=instance.image_url, username=instance.username))
 
+        # If languages for translator is specified, use a choice field
+        if 'group_settings_translator_languages' in self.fields:
+            self.fields['group_settings_translator_languages'] = forms.MultipleChoiceField(
+                required=False,
+                label=self.fields['group_settings_translator_languages'].label,
+                choices=django_settings.LANGUAGES,
+                initial=(instance.preferences.settings_per_groups or {}).get('translator', {}).get('languages', [])
+            )
+
     def save(self, commit=True):
         instance = super(StaffEditUser, self).save(commit=False)
         if 'force_remove_avatar' in self.fields and self.cleaned_data['force_remove_avatar'] and instance.email:
@@ -914,11 +960,19 @@ class StaffEditUser(_UserCheckEmailUsernameForm):
                 setattr(instance.preferences, field_name, self.cleaned_data[field_name])
         if 'c_groups' in self.fields and 'c_groups' in self.cleaned_data:
             instance.preferences.save_c('groups', self.cleaned_data['c_groups'])
-            if not instance.is_staff:
-                for group in instance.preferences.groups:
-                    if instance.preferences.GROUPS[group].get('requires_staff', False):
-                        instance.is_staff = True
-                        break
+            settings_to_save = {}
+            for group, details in instance.preferences.groups_and_details.items():
+                # Mark as staff if added role requires staff
+                if not instance.is_staff and instance.preferences.GROUPS[group].get('requires_staff', False):
+                    instance.is_staff = True
+                # Save settings for role
+                settings = details.get('settings', [])
+                if settings:
+                    settings_to_save[group] = {
+                        setting: self.cleaned_data.get(u'group_settings_{}_{}'.format(group, setting), None)
+                        for setting in settings
+                    }
+            instance.preferences.save_j('settings_per_groups', settings_to_save)
         else:
             instance.preferences.c_groups = self.old_c_groups
         instance.preferences.save()
@@ -1052,9 +1106,11 @@ class StaffConfigurationFilters(MagiFiltersForm):
     i_language_filter = MagiFilter(to_queryset=lambda form, queryset, request, value: queryset.filter(
         Q(i_language=value) | Q(i_language__isnull=True) | Q(i_language='')))
 
+    key = forms.CharField(widget=forms.HiddenInput)
+
     class Meta(MagiFiltersForm.Meta):
         model = models.StaffConfiguration
-        fields = ('search', 'i_language', 'has_value')
+        fields = ('search', 'i_language', 'has_value', 'key')
 
 ############################################################
 # Staff details form
@@ -1098,6 +1154,13 @@ class StaffDetailsForm(AutoForm):
         model = models.StaffDetails
         save_owner_on_creation = True
         fields = ['for_user', 'discord_username', 'preferred_name', 'pronouns', 'image', 'description', 'favorite_food', 'hobbies', 'nickname', 'c_hashtags', 'staff_since', 'i_timezone', 'availability_details', 'experience', 'other_experience', 'd_availability', 'd_weekend_availability']
+
+class StaffDetailsFilterForm(MagiFiltersForm):
+    search_fields = ['owner__username', 'discord_username', 'preferred_name', 'description', 'nickname']
+
+    class Meta:
+        model = models.StaffDetails
+        fields = ['search']
 
 ############################################################
 # Activity form

@@ -54,7 +54,6 @@ DEFAULT_GROUPS = [
             'edit_roles', 'edit_staff_status', 'edit_donator_status', 'see_profile_edit_button',
             'edit_staff_configurations', 'add_badges', 'see_collections_details', 'manage_main_items',
             'edit_staff_details', 'moderate_reports', 'edit_reported_things', 'post_community_event_activities',
-            'translate_items', 'translate_staff_configurations',
         ],
         'outside_permissions': {
             'Tweetdeck': 'https://tweetdeck.twitter.com/',
@@ -223,6 +222,7 @@ DEFAULT_GROUPS = [
             'POEditor': DEFAULT_POEDITOR_URL,
         },
         'guide': '/help/Translators%20guide',
+        'settings': ['languages'],
     }),
     ('design', {
         'translation': _('Graphic designer'),
@@ -393,6 +393,13 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'url_variables': [
             ('pk', '\d+'),
         ],
+    }),
+    ('translations', {
+        'title': 'Translations',
+        'custom': False,
+        'navbar_link_list': 'staff',
+        'icon': 'world',
+        'permissions_required': ['translate_items'],
     }),
     ('collections', {
         'title': 'Collections',
