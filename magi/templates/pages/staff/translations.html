@@ -14,7 +14,7 @@
   {% for language, details in total_per_languages.items %}
   <div style="display: inline-block" class="padding20">
     <img src="{{ details.image }}" height="30" />
-    {{ details.verbose_name }}
+    <a href="?language={{ language }}">{{ details.verbose_name }}</a>
     <span href="#" class="badge">{{ details.total }}</span>
   </div>
   {% endfor %}

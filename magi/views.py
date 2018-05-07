@@ -643,12 +643,15 @@ def translations(request):
     context['total_per_languages'] = {}
     context['total'] = 0
     context['see_all'] = 'see_all' in request.GET
-    spoken_languages = (request.user.preferences.settings_per_groups or {}).get('translator', {}).get('languages', {})
+    only_languages = (request.user.preferences.settings_per_groups or {}).get('translator', {}).get('languages', {})
+    if 'language' in request.GET:
+        only_languages = request.GET['language'].split(u',')
+        print only_languages
     if 'staffconfiguration' in context['all_enabled']:
         context['total_staff_configurations_per_languages'] = {}
         for language, verbose_name in django_settings.LANGUAGES:
-            if (spoken_languages
-                and language not in spoken_languages
+            if (only_languages
+                and language not in only_languages
                 and not context['see_all']):
                 continue
             context['staffconfiguration_fields'] = [
@@ -682,8 +685,8 @@ def translations(request):
                     django_settings.LANGUAGES,
                 )
                 for language, verbose_name in languages:
-                    if (spoken_languages
-                        and language not in spoken_languages
+                    if (only_languages
+                        and language not in only_languages
                         and not context['see_all']):
                         continue
                     if language not in c['translated_fields_per_languages']:
