@@ -57,7 +57,7 @@
 	  {{ field.link_text }}
 	</a>
 	{% elif field.type == 'button' %}
-	<a href="{{ field.value }}" target="_blank" class="btn btn-lg btn-secondary"{% if field.ajax_link %} data-ajax-url="{{ field.ajax_link }}" data-ajax-title="{{ field.value }}"{% endif %}>
+	<a href="{{ field.value }}" target="_blank" class="btn btn-lg btn-secondary"{% if field.ajax_link %} data-ajax-url="{{ field.ajax_link }}" data-ajax-title="{% if field.title %}{{ field.title }}{% else %}{{ field.link_text }}{% endif %}"{% endif %}>
 	  {{ field.link_text }}
 	</a>
 	{% elif field.type == 'timezone_datetime' %}

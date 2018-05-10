@@ -641,6 +641,10 @@ class MagiCollection(object):
             elif isinstance(field, models.models.FileField):
                 d['type'] = 'link'
                 d['link_text'] = t['Download']
+                d['value'] = getattr(item, field_name + '_url')
+                if not d['value']:
+                    continue
+                print d['value']
             elif field_name == 'itunes_id':
                 d['type'] = 'itunes'
             else:

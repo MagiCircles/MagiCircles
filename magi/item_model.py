@@ -9,31 +9,36 @@ from django.utils import timezone
 from magi.utils import tourldash, getMagiCollection, join_data, split_data, AttrDict, getSubField
 
 ############################################################
-# Utils for images
+# Utils for images / files
 
-def get_image_url_from_path(imagePath):
-    if not imagePath:
+def get_file_url_from_path(filePath):
+    if not filePath:
         return None
-    imageURL = unicode(imagePath)
-    if '//' in imageURL:
-        return imageURL
-    if imageURL.startswith(django_settings.SITE + '/'):
-        imageURL = imageURL.replace(django_settings.SITE + '/', '')
-    return u'{}{}'.format(django_settings.SITE_STATIC_URL, imageURL)
+    fileURL = unicode(filePath)
+    if '//' in fileURL:
+        return fileURL
+    if fileURL.startswith(django_settings.SITE + '/'):
+        fileURL = fileURL.replace(django_settings.SITE + '/', '')
+    return u'{}{}'.format(django_settings.SITE_STATIC_URL, fileURL)
 
-def get_image_url(instance, image_name='image'):
-    return get_image_url_from_path(getattr(instance, image_name))
+def get_file_url(instance, file_name='file'):
+    return get_file_url_from_path(getattr(instance, file_name))
 
-def get_http_image_url_from_path(imagePath):
-    imageURL = get_image_url_from_path(imagePath)
-    if not imageURL:
+def get_http_file_url_from_path(filePath):
+    fileURL = get_file_url_from_path(filePath)
+    if not fileURL:
         return None
-    if 'http' not in imageURL:
-        imageURL = 'https:' + imageURL
-    return imageURL
+    if 'http' not in fileURL:
+        fileURL = u'https:' + fileURL
+    return fileURL
 
-def get_http_image_url(instance, image_name='image'):
-    return get_http_image_url_from_path(getattr(instance, image_name))
+def get_http_file_url(instance, file_name='file'):
+    return get_http_file_url_from_path(getattr(instance, file_name))
+
+get_image_url_from_path = get_file_url_from_path
+get_image_url = get_file_url
+get_http_image_url_from_path = get_http_file_url_from_path
+get_http_image_url = get_http_file_url
 
 ############################################################
 # Utils for choices
@@ -409,13 +414,19 @@ class BaseMagiModel(models.Model):
                 # For a dict, if no _s exists: return value for language
                 elif hasattr(self, u'd_{}s'.format(name)) and hasattr(self, name):
                     return getattr(self, u't_{name}s'.format(name=name)).get(get_language(), { 'value': getattr(self, name) })['value']
-            # When accessing "something_url" for an image, return the url
+            # When accessing "something_url"
             elif name.endswith('_url'):
                 field_name = name.replace('http_', '')[:-4]
+                # For an image, return the url
                 if isinstance(self._meta.get_field(field_name), models.ImageField):
                     return (get_http_image_url(self, field_name)
                             if name.startswith('http_')
                             else get_image_url(self, field_name))
+                # For a file, return the url
+                elif isinstance(self._meta.get_field(field_name), models.FileField):
+                    return (get_http_file_url(self, field_name)
+                            if name.startswith('http_')
+                            else get_file_url(self, field_name))
             # When accessing "something" and "c_something" exists, returns the list of CSV values
             elif hasattr(self, 'c_{name}'.format(name=name)):
                 return type(self).get_csv_values(name, getattr(self, 'c_{name}'.format(name=name)), translated=False)
