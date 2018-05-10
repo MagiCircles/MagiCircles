@@ -24,6 +24,11 @@
 <div class="row">
   {% for badge in month.all_badges %}
   {% with donator=badge.user %}
+  {% if show_donator_details %}
+  <div class="staff-only">
+    {{ donator.email }}
+  </div>
+  {% endif %}
   {% if badge.show_on_profile %}
   {% if forloop.counter0 != 0 and forloop.counter0|mod:3 %}
 </div><div class="row items">
@@ -57,6 +62,7 @@
   {% else %}
   {% ifchanged donator.show_on_profile %}
 </div>
+<br>
 {% endifchanged %}
 {% if donator.preferences.donation_link_title %}
 <div class="btn-group">

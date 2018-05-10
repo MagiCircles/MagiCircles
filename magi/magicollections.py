@@ -2355,6 +2355,8 @@ class DonateCollection(MagiCollection):
             request = context['request']
             context['show_paypal'] = 'show_paypal' in request.GET
             context['donate_image'] = DONATE_IMAGE
+            if request.user.is_authenticated and request.user.hasPermission('manage_donation_months'):
+                context['show_donator_details'] = True
 
     class ItemView(MagiCollection.ItemView):
         enabled = False
