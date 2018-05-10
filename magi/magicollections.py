@@ -541,11 +541,15 @@ class MagiCollection(object):
                 total = getattr(item, 'cached_total_{}'.format(field_name))
             except AttributeError:
                 continue
+            if callable(verbose_name):
+                verbose_name = verbose_name()
             if total:
                 many_fields.append((field_name, {
-                    'verbose_name': verbose_name,
-                    'type': 'text_with_link',
-                    'value': u'{total} {items}'.format(total=total, items=_(verbose_name).lower()),
+                    'verbose_name': unicode(verbose_name).replace('{total}', ''),
+                    'type': 'text_with_link' if url else 'text',
+                    'value': (u'{total} {items}'.format(total=total, items=_(verbose_name).lower())
+                              if '{total}' not in unicode(verbose_name)
+                              else unicode(verbose_name).format(total=total)),
                     'ajax_link': u'/ajax/{}/?{}_id={}&ajax_modal_only'.format(url, item.collection_name, item.pk),
                     'link': u'/{}/?{}_id={}'.format(url, item.collection_name, item.pk),
                     'link_text': _('View all'),
