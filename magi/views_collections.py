@@ -173,6 +173,8 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     else:
         queryset = filter_ids(queryset, request)
 
+    if collection.list_view.distinct:
+        queryset = queryset.distinct()
     context['total_results'] = queryset.count()
     context['total_results_sentence'] = _('1 {object} matches your search:').format(object=collection.title) if context['total_results'] == 1 else _('{total} {objects} match your search:').format(total=context['total_results'], objects=collection.plural_title)
 
@@ -180,8 +182,6 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
         page = int(request.GET['page']) - 1
         if page < 0:
             page = 0
-    if collection.list_view.distinct:
-        queryset = queryset.distinct()
     queryset = queryset[(page * page_size):((page * page_size) + page_size)]
 
     if 'filter_form' in context:
@@ -247,6 +247,8 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['js_files'] = collection.list_view.js_files
     context['share_image'] = _get_share_image(context, collection.list_view)
     context['full_width'] = collection.list_view.full_width
+    if context['alt_view'] and 'full_width' in context['alt_view']:
+        context['full_width'] = context['alt_view']['full_width']
     context['display_style'] = collection.list_view.display_style
     if context['alt_view'] and 'display_style' in context['alt_view']:
         context['display_style'] = context['alt_view']['display_style']

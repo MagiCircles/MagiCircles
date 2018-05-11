@@ -550,8 +550,8 @@ class MagiCollection(object):
                     'value': (u'{total} {items}'.format(total=total, items=_(verbose_name).lower())
                               if '{total}' not in unicode(verbose_name)
                               else unicode(verbose_name).format(total=total)),
-                    'ajax_link': u'/ajax/{}/?{}_id={}&ajax_modal_only'.format(url, item.collection_name, item.pk),
-                    'link': u'/{}/?{}_id={}'.format(url, item.collection_name, item.pk),
+                    'ajax_link': u'/ajax/{}/?{}={}&ajax_modal_only'.format(url, item.collection_name, item.pk),
+                    'link': u'/{}/?{}={}'.format(url, item.collection_name, item.pk),
                     'link_text': _('View all'),
                     'icon': icons.get(field_name, None),
                     'image': images.get(field_name, None),
@@ -589,6 +589,8 @@ class MagiCollection(object):
                     continue
             if self.translated_fields and field_name in self.translated_fields:
                 value = getattr(item, u't_{}'.format(field_name), None)
+                if not value:
+                    continue
                 choices = dict(getattr(item, u'{name}S_CHOICES'.format(name=field_name.upper()), [])).keys()
                 if get_language() in choices and not getattr(item, u'{}s'.format(field_name), {}).get(get_language(), None):
                     value = mark_safe(u'<a href="https://translate.google.com/#en/{to}/{value}" target="_blank">{value} <i class="flaticon-link"></i></a>'.format(to=get_language(), value=value))
@@ -648,7 +650,6 @@ class MagiCollection(object):
                 d['value'] = getattr(item, field_name + '_url')
                 if not d['value']:
                     continue
-                print d['value']
             elif field_name == 'itunes_id':
                 d['type'] = 'itunes'
             else:
