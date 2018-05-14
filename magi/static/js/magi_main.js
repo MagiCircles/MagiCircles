@@ -256,6 +256,27 @@ function ajaxPopovers() {
 }
 
 // *****************************************
+// Load ranges
+
+function loadRanges() {
+    function _showValue() {
+        let input = $(this);
+        let formGroup = input.closest('.form-group');
+        let rangeValue = formGroup.find('.range-value');
+        let value = (input.data('show-value-prefix') || '') + input.val() + (input.data('show-value-suffix') || '');
+        if (rangeValue.length > 0) {
+            rangeValue.text(value);
+        } else {
+            formGroup.append('<div class="text-right range-value">' + value + '</div>');
+            //rangeValue = formGroup.find('.range-value');
+        }
+
+    }
+    $('input[data-show-value=true]').each(_showValue);
+    $('input[data-show-value=true]').on('input', _showValue);
+}
+
+// *****************************************
 // Load countdowns
 
 function _loadCountdowns() {
@@ -663,6 +684,7 @@ function loadCommons(onPageLoad /* optional = false */) {
     ajaxModals();
     ajaxPopovers();
     loadCountdowns();
+    loadRanges();
     loadTimezones();
     loadMarkdown();
     reloadDisqus();
