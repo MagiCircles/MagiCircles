@@ -52,7 +52,7 @@
           {% endif %}
           {% endwith %}
         </div>
-	<div class="tags text-muted fontx0-8">{% for tag, t_tag in activity.t_tags.items %}<a href="/activities/?tags={{ tag }}" target="_blank" class="text-muted">#{{ t_tag }}</a> {% endfor %}</div>
+	<div class="tags text-muted fontx0-8">{% for tag, t_tag in activity.t_tags.items %}<a href="/activities/?c_tags={{ tag }}" target="_blank" class="text-muted">#{{ t_tag }}</a> {% endfor %}</div>
 	<div class="socialbar">
 	  <div class="btn-group share">
 	    {% include 'include/share.html' with share_url=activity.http_item_url share_sentence=activity.shareSentence share_btn_class="main" %}
