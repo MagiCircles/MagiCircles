@@ -549,6 +549,7 @@ DEFAULT_PRELAUNCH_ENABLED_PAGES = [
     'prelaunch',
     'about',
     'about_game',
+    'donate_list',
     'changelanguage',
     'help',
 ]

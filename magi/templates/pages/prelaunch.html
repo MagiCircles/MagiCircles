@@ -22,11 +22,13 @@
     <br><br><br>
     {% endif %}
     <h1><a href="http://twitter.com/{{ twitter }}" target="_blank" class="fontx1-5">{% trans 'Coming soon' %}</a></h1>
+    {% if launch_date != True %}
     <h2 class="countdown" data-date="{{ launch_date|torfc2822 }}" data-format="{time}"></h2>
     <p class="timezone">
       <span class="datetime">{{ launch_date|torfc2822 }}</span>
       (<span class="current_timezone">UTC</span>)
     </p>
+    {% endif %}
     <br><br><br>
   </div>
 </div>

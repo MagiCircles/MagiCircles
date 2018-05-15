@@ -24,7 +24,7 @@ custom_magicollections_module = __import__(settings.SITE + '.magicollections', f
 
 navbar_links = OrderedDict()
 now = timezone.now()
-launched = not LAUNCH_DATE or LAUNCH_DATE < now
+launched = LAUNCH_DATE is None or (LAUNCH_DATE is not True and LAUNCH_DATE < now)
 collections = OrderedDict()
 enabled = {}
 all_enabled = []
