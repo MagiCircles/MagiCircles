@@ -344,6 +344,7 @@ class MagiCollection(object):
             navbar_link = False
             reportable = False
             form_class = _CollectibleForm
+            collectible_tab_name = property(lambda _s: _s.plural_title)
 
             def __init__(self, *args, **kwargs):
                 super(_CollectibleCollection, self).__init__(*args, **kwargs)
@@ -1321,7 +1322,7 @@ class AccountCollection(MagiCollection):
         if context['collectible_collections'] and 'account' in context['collectible_collections']:
             for collection_name, collection in context['collectible_collections']['account'].items():
                 tabs[collection_name] = {
-                    'name': collection.plural_title,
+                    'name': collection.collectible_tab_name,
                     'icon': collection.icon,
                     'image': collection.image,
                     'callback': mark_safe(u'loadCollectionForAccount(\'{load_url}\', {callback})'.format(
