@@ -3,7 +3,7 @@
 {% load magi_tags %}
   <table class="table about-table">
     {% for field_name, field in fields.items %}
-    <tr data-field="{{ field_name }}">
+    <tr data-field="{{ field_name }}"{% if field.type == 'long_text' %} class="long_text_field"{% endif %}>
       <td>
 	{% if field.icon %}
 	<i class="flaticon-{{ field.icon }}"></i>
