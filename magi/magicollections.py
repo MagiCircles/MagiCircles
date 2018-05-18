@@ -1,6 +1,5 @@
 import string, datetime, random
 from collections import OrderedDict
-from stringcase import snakecase
 from django.utils.translation import ugettext_lazy as _, string_concat, get_language
 from django.utils import timezone
 from django.utils.safestring import mark_safe
@@ -156,7 +155,7 @@ class MagiCollection(object):
                     or not collection.add_view.has_permissions(request, {})):
                     continue
                 item_field_name = getattr(collection.queryset.model, 'selector_to_collected_item',
-                                          snakecase(self.queryset.model.__name__))
+                                          self.queryset.model.__name__.lower())
                 fk_owner = collection.queryset.model.fk_as_owner if collection.queryset.model.fk_as_owner else 'owner'
                 if collection.add_view.enabled and collection.add_view.quick_add_to_collection(request):
                     # Quick add
@@ -216,7 +215,7 @@ class MagiCollection(object):
         You may override this function, but you're not really supposed to call it yourself.
         """
         parent_collection = self
-        item_field_name = snakecase(parent_collection.queryset.model.__name__)
+        item_field_name = parent_collection.queryset.model.__name__.lower()
         item_field_name_id = u'{}_id'.format(item_field_name)
 
         class _CollectibleForm(forms.AutoForm):
