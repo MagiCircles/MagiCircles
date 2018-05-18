@@ -490,6 +490,9 @@ def jsv(v):
         return mark_safe(u'"{}"'.format(v))
     return v
 
+def templateVariables(string):
+    return [x[1] for x in string._formatter_parser() if x[1]]
+
 ############################################################
 # Redirections
 
