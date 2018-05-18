@@ -116,6 +116,7 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
 
     context['include_below_item'] = False
     context['show_item_buttons'] = collection.item_view.show_item_buttons
+    context['item'].request = request
     context['item'].show_item_buttons_justified = collection.item_view.show_item_buttons_justified
     context['item'].show_item_buttons_as_icons = collection.item_view.show_item_buttons_as_icons
     context['item'].show_item_buttons_in_one_line = collection.item_view.show_item_buttons_in_one_line
@@ -279,6 +280,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
 
     context['show_item_buttons'] = collection.list_view.show_item_buttons
     for i, item in enumerate(queryset):
+        item.request = request
         if collection.list_view.foreach_items:
             collection.list_view.foreach_items(i, item, context)
         if context.get('show_relevant_fields_on_ordering', False):
@@ -454,6 +456,7 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
     context['action_sentence'] = instance.edit_sentence # Used as the page title
     form.action_sentence = instance.edit_sentence
     context['item'] = instance
+    context['item'].request = request
     context['share_image'] = _get_share_image(context, collection.edit_view, item=context['item'])
     _modification_views_page_titles(instance.edit_sentence, context, unicode(instance))
     context['ajax_callback'] = collection.edit_view.ajax_callback

@@ -572,6 +572,7 @@ def addMagiModelProperties(modelClass, collection_name):
     modelClass.is_owner = get_is_owner
     modelClass.owner_unicode = property(get_owner_unicode)
     modelClass.real_owner = property(get_real_owner)
+    modelClass.request = None
 
 ############################################################
 # MagiModel
@@ -581,6 +582,7 @@ class MagiModel(BaseMagiModel):
     The model you must inherit from
     """
     collection_name = ''
+    request = None
 
     collection = property(get_collection)
     collection_plural_name = property(get_collection_plural_name)
