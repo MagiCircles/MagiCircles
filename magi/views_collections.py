@@ -377,7 +377,7 @@ def add_view(request, name, collection, type=None, ajax=False, shortcut_url=None
     context['ajax_callback'] = collection.add_view.ajax_callback
     context['collection'] = collection
     if collection.add_view.alert_duplicate:
-        context['alert_message'] = _('Make sure the {thing} you\'re about to add doesn\'t already exist.').format(thing=_(collection.title))
+        context['alert_message'] = _('Make sure the {thing} you\'re about to add doesn\'t already exist.').format(thing=_(collection.title.lower()))
         context['alert_button_link'] = context['list_url']
         context['alert_button_string'] = _(collection.plural_title)
 
