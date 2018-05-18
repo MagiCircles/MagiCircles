@@ -28,6 +28,7 @@ from magi.default_settings import RAW_CONTEXT
 # Favorite characters
 
 FAVORITE_CHARACTERS_IMAGES = { id: image for (id, name, image) in getattr(django_settings, 'FAVORITE_CHARACTERS', []) }
+FAVORITE_CHARACTERS_NAMES = { id: name for (id, name, image) in getattr(django_settings, 'FAVORITE_CHARACTERS', []) }
 
 ############################################################
 # Languages
