@@ -1218,9 +1218,9 @@ class FilterActivities(MagiFiltersForm):
         if 'feed' in parameters and request.user.is_authenticated():
             queryset = queryset.filter(Q(owner__in=request.user.preferences.following.all()) | Q(owner_id=request.user.id))
         elif request.user.is_authenticated() and request.user.preferences.view_activities_language_only:
-            queryset = queryset.filter(language=request.LANGUAGE_CODE)
+            queryset = queryset.filter(i_language=request.LANGUAGE_CODE)
         elif ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT:
-            queryset = queryset.filter(language=request.LANGUAGE_CODE)
+            queryset = queryset.filter(i_language=request.LANGUAGE_CODE)
         if 'ordering' in parameters and parameters['ordering'] == '_cache_total_likes,id':
             queryset = queryset.filter(creation__gte=timezone.now() - relativedelta(weeks=1))
         return queryset
