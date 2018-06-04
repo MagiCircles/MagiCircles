@@ -4,36 +4,141 @@ from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings as django_settings
 from django.db import models
 from django.db.models import Q
+from magi import urls # Unused, ensures RAW_CONTEXT to be filled
 from magi.item_model import BaseMagiModel
-from magi.utils import modelHasField
+from magi.models import uploadItem
+from magi.utils import modelHasField, shrinkImageFromData, imageThumbnailFromData
 from magi import models as magi_models
+
+def get_next_item(model, field, modified_field_name):
+    try:
+        return model.objects.exclude(
+            Q(**{ u'{}__isnull'.format(field.name): True })
+            | Q(**{ field.name: '' })
+        ).filter(
+            Q(**{ u'{}__isnull'.format(modified_field_name): True })
+            | Q(**{ modified_field_name: '' })
+        )[0]
+
+    except IndexError:
+        return False
+
+def save_item(model, item, updated_fields, in_item=False):
+    if in_item:
+        for k, v in updated_fields.items():
+            setattr(item, k, v)
+        item.save()
+    else:
+        model.objects.filter(id=item.id).update(**updated_fields)
 
 # All callbacks return True or False whether or not they did something
 # When the first callback does something, the script stops
 
 def update_image(model, field):
-    if hasattr(model, u'_original_{}'.format(field.name)):
-        print 'todo convert with tinypng async'
-        return True
-    if hasattr(model, u'_thumbnail_{}'.format(field.name)):
-        print 'todo generate a thumbnail with tinypng'
-        return True
-    if hasattr(model, u'_2x_{}'.format(field.name)):
+    if field.name.startswith('_'):
+        return False
+    tinypng_api_key = getattr(django_settings, 'TINYPNG_API_KEY', None)
+    if tinypng_api_key and modelHasField(model, u'_original_{}'.format(field.name)):
+        if tinypng_compress(model, field):
+            return True
+    if tinypng_api_key and modelHasField(model, u'_tthumbnail_{}'.format(field.name)):
+        if tinypng_thumbnail(model, field):
+            return True
+    if modelHasField(model, u'_thumbnail_{}'.format(field.name)):
+        if thumbnail(model, field):
+            return True
+    return False
+    if modelHasField(model, u'_2x_{}'.format(field.name)):
+        if thumbnail(model, field):
+            return True
         print 'todo generate a 2x version with waifux2'
         return True
     return False
 
+def tinypng_compress(model, field):
+    original_field_name = u'_original_{}'.format(field.name)
+    item = get_next_item(model, field, original_field_name)
+    if not item:
+        return False
+    print 'Compressing on TinyPNG {} for {} #{}...'.format(
+        field.name, model.__name__, item.id
+    )
+    value = getattr(item, field.name)
+    filename = value.name
+    content = value.read()
+    if not content:
+        save_item(model, item, { original_field_name: unicode(value) })
+        print 'Empty file, discarded.'
+        return True
+    image = shrinkImageFromData(content, filename, settings=getattr(model, 'tinypng_settings', {}).get(field.name, {}))
+    prefix = field.upload_to.prefix + ('tiny' if field.upload_to.prefix.endswith('/') else '/tiny')
+    image.name = uploadItem(prefix)(item, filename)
+    save_item(model, item, {
+        original_field_name: unicode(value),
+        field.name: image,
+    }, in_item=True)
+    print 'Done.'
+    return True
+
+def tinypng_thumbnail(model, field):
+    thumbnail_field_name = u'_tthumbnail_{}'.format(field.name)
+    item = get_next_item(model, field, thumbnail_field_name)
+    if not item:
+        return False
+    print 'Generating thumbnail with TinyPNG {} for {} #{}...'.format(
+        field.name, model.__name__, item.id
+    )
+    value = getattr(item, field.name)
+    filename = value.name
+    prefix = field.upload_to.prefix + ('thumb' if field.upload_to.prefix.endswith('/') else '/thumb')
+    image_name = uploadItem(prefix)(item, filename)
+    content = value.read()
+    if not content:
+        save_item(model, item, { thumbnail_field_name: unicode(value) })
+        print 'Empty file, discarded.'
+        return True
+    tinypng_settings = getattr(model, 'tinypng_settings', {}).get(thumbnail_field_name, {}).copy()
+    for k, v in [
+            ('resize', 'thumb'),
+            ('width', 200),
+            ('height', 200),
+    ]:
+        if k not in tinypng_settings:
+            tinypng_settings[k] = v
+    image = shrinkImageFromData(content, image_name, settings=tinypng_settings)
+    image.name = image_name
+    save_item(model, item, { thumbnail_field_name: image }, in_item=True)
+    print 'Done.'
+    return True
+
+def thumbnail(model, field):
+    thumbnail_field_name = u'_thumbnail_{}'.format(field.name)
+    item = get_next_item(model, field, thumbnail_field_name)
+    if not item:
+        return False
+    print 'Generating a thumbnail {} for {} #{}...'.format(
+        field.name, model.__name__, item.id,
+    )
+    value = getattr(item, field.name)
+    filename = value.name
+    prefix = field.upload_to.prefix + ('thumb' if field.upload_to.prefix.endswith('/') else '/thumb')
+    image_name = uploadItem(prefix)(item, filename)
+    content = value.read()
+    if not content:
+        save_item(model, item, { thumbnail_field_name: unicode(value) })
+        print 'Empty file, discarded.'
+        return True
+    thumbnail_size = getattr(model, 'thumbnail_size', {}).get(field.name, {}).copy()
+    image = imageThumbnailFromData(content, image_name, width=thumbnail_size.get('width', 200), height=thumbnail_size.get('height', 200))
+    image.name = image_name
+    save_item(model, item, { thumbnail_field_name: image }, in_item=True)
+    print 'Done.'
+    return True
+
 def update_markdown(model, field):
     if modelHasField(model, u'_cache_{}'.format(field.name[2:])):
-        try:
-            item = model.objects.exclude(
-                Q(**{ u'{}__isnull'.format(field.name): True })
-                | Q(**{ field.name: '' })
-            ).filter(
-                Q(**{ u'_cache_{}__isnull'.format(field.name[2:]): True })
-                | Q(**{ u'_cache_{}'.format(field.name[2:]): '' })
-            )[0]
-        except IndexError:
+        item = get_next_item(model, field, u'_cache_{}'.format(field.name[2:]))
+        if not item:
             return False
         print u'Updating markdown {} for {} #{}...'.format(field.name, model.__name__, item.id)
         r = requests.post(
@@ -42,7 +147,7 @@ def update_markdown(model, field):
             headers={ 'content-type': u'text/plain' },
         )
         r.raise_for_status()
-        model.objects.filter(id=item.id).update(**{
+        save_item(model, item, {
             u'_cache_{}'.format(field.name[2:]): r.text,
         })
         print 'Done.'

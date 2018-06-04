@@ -93,7 +93,7 @@ class HiddenModelChoiceField(forms.IntegerField):
 # - Will make fields in `hidden_foreign_keys` hidden and not do an extra query to get choices
 # - Will show the correct date picker for date fields
 # - Will replace any empty string with None for better database consistency
-# - Will use tinypng to optimize images and will use settings specified in models
+# - Will use tinypng to optimize images specified in tinypng_on_save and will use settings specified in models
 # - When `save_owner_on_creation` is True in Meta form object, will save the field `owner` using the current user
 
 class MagiForm(forms.ModelForm):
@@ -283,7 +283,9 @@ class MagiForm(forms.ModelForm):
                 and has_field(instance, u'_cache_{}'.format(field[2:]))):
                 setattr(instance, u'_cache_{}'.format(field[2:]), None)
             # Shrink images
-            if (hasattr(instance, field)
+            if (hasattr(self.Meta, 'tinypng_on_save')
+                and field in self.Meta.tinypng_on_save
+                and hasattr(instance, field)
                 and isinstance(self.fields[field], forms.Field)
                 and has_field(instance, field)
                 and type(self.Meta.model._meta.get_field(field)) == models.models.ImageField):
@@ -1156,6 +1158,7 @@ class StaffDetailsForm(AutoForm):
     class Meta(AutoForm.Meta):
         model = models.StaffDetails
         save_owner_on_creation = True
+        tinypng_on_save = ('image',)
         fields = ['for_user', 'discord_username', 'preferred_name', 'pronouns', 'image', 'description', 'favorite_food', 'hobbies', 'nickname', 'c_hashtags', 'staff_since', 'i_timezone', 'availability_details', 'experience', 'other_experience', 'd_availability', 'd_weekend_availability']
 
 class StaffDetailsFilterForm(MagiFiltersForm):
@@ -1315,6 +1318,7 @@ class DonateForm(AutoForm):
     class Meta(AutoForm.Meta):
         model = models.DonationMonth
         fields = '__all__'
+        tinypng_on_save = ('image',)
         save_owner_on_creation = True
 
 ############################################################

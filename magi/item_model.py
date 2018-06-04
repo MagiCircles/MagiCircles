@@ -3,6 +3,7 @@ from collections import OrderedDict
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.fields import FieldDoesNotExist
+from django.db.models.fields.files import ImageFieldFile
 from django.conf import settings as django_settings
 from django.utils.translation import ugettext_lazy as _, get_language
 from django.utils import timezone
@@ -393,6 +394,20 @@ class BaseMagiModel(models.Model):
             and getattr(self, u'_cache_{}{}'.format(prefix, field_name)) is None):
             self.force_update_cache(field_name)
 
+    def get_thumbnail(self, field_name):
+        thumbnail = getattr(self, u'_tthumbnail_{}'.format(field_name), None)
+        if not thumbnail:
+            thumbnail = getattr(self, u'_thumbnail_{}'.format(field_name), None)
+        if not thumbnail:
+            thumbnail = getattr(self, field_name)
+        return thumbnail
+
+    def get_original(self, field_name):
+        return getattr(self, u'_original_{}'.format(field_name), getattr(self, field_name)) or getattr(self, field_name)
+
+    def get_2x(self, field_name):
+        return getattr(self, u'_2x_{}'.format(field_name))
+
     def __getattr__(self, name):
         # For choice fields with name "i_something", accessing "something" returns the string value
         if not name.startswith('_') and not name.startswith('i_') and not name.startswith('c_') and not name.startswith('m_') and not name.startswith('d_') and not name.startswith('j_'):
@@ -414,19 +429,44 @@ class BaseMagiModel(models.Model):
                 # For a dict, if no _s exists: return value for language
                 elif hasattr(self, u'd_{}s'.format(name)) and hasattr(self, name):
                     return getattr(self, u't_{name}s'.format(name=name)).get(get_language(), { 'value': getattr(self, name) })['value']
+            # When accessing "something_thumbnail"
+            elif name.endswith('_thumbnail'):
+                field_name = name[:-10]
+                return self.get_thumbnail(field_name)
+            # When accessing "something_original"
+            elif name.endswith('_original'):
+                field_name = name[:-9]
+                return self.get_original(field_name)
+            # When accessing "something_2x"
+            elif name.endswith('_2x'):
+                field_name = name[:-9]
+                return self.get_2x(field_name)
             # When accessing "something_url"
             elif name.endswith('_url'):
                 field_name = name.replace('http_', '')[:-4]
-                # For an image, return the url
-                if isinstance(self._meta.get_field(field_name), models.ImageField):
-                    return (get_http_image_url(self, field_name)
-                            if name.startswith('http_')
-                            else get_image_url(self, field_name))
-                # For a file, return the url
-                elif isinstance(self._meta.get_field(field_name), models.FileField):
-                    return (get_http_file_url(self, field_name)
-                            if name.startswith('http_')
-                            else get_file_url(self, field_name))
+                try:
+                    field = self._meta.get_field(field_name)
+                except FieldDoesNotExist:
+                    field = None
+                if field:
+                    # For an image, return the url
+                    if isinstance(self._meta.get_field(field_name), models.ImageField):
+                        return (get_http_image_url(self, field_name)
+                                if name.startswith('http_')
+                                else get_image_url(self, field_name))
+                    # For a file, return the url
+                    elif isinstance(self._meta.get_field(field_name), models.FileField):
+                        return (get_http_file_url(self, field_name)
+                                if name.startswith('http_')
+                                else get_file_url(self, field_name))
+                else:
+                    # If it's a string, just turn it into a path
+                    value = getattr(self, field_name)
+                    if (isinstance(value, basestring)
+                        or isinstance(value, ImageFieldFile)):
+                        return (get_http_file_url_from_path(unicode(value))
+                                if name.startswith('http_')
+                                else get_file_url_from_path(unicode(value)))
             # When accessing "something" and "c_something" exists, returns the list of CSV values
             elif hasattr(self, 'c_{name}'.format(name=name)):
                 return type(self).get_csv_values(name, getattr(self, 'c_{name}'.format(name=name)), translated=False)

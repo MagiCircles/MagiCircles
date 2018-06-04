@@ -1,5 +1,5 @@
 from __future__ import division
-import os, string, random, csv, tinify, cStringIO, pytz, simplejson, datetime
+import os, string, random, csv, tinify, cStringIO, pytz, simplejson, datetime, io
 from PIL import Image
 from django.conf import settings as django_settings
 from django.core.files.temp import NamedTemporaryFile
@@ -15,7 +15,7 @@ from django.utils import timezone
 from django.template import Context
 from django.template.loader import get_template
 from django.db import models
-from django.db.models.fields import BLANK_CHOICE_DASH
+from django.db.models.fields import BLANK_CHOICE_DASH, FieldDoesNotExist
 from django.db.models import Q
 from django.forms.models import model_to_dict
 from django.forms import NullBooleanField
@@ -426,6 +426,30 @@ class uploadItem(object):
             extension=extension,
         )
 
+@deconstructible
+class uploadThumb(uploadItem):
+    def __init__(self, prefix, length=6):
+        self.prefix = prefix + ('thumb' if prefix.endswith('/') else '/thumb')
+        self.length = length
+
+@deconstructible
+class uploadTthumb(uploadItem):
+    def __init__(self, prefix, length=6):
+        self.prefix = prefix + ('tthumb' if prefix.endswith('/') else '/tthumb')
+        self.length = length
+
+@deconstructible
+class uploadTiny(uploadItem):
+    def __init__(self, prefix, length=6):
+        self.prefix = prefix + ('tiny' if prefix.endswith('/') else '/tiny')
+        self.length = length
+
+@deconstructible
+class upload2x(uploadItem):
+    def __init__(self, prefix, length=6):
+        self.prefix = prefix + ('2x' if prefix.endswith('/') else '/2x')
+        self.length = length
+
 ############################################################
 # Get MagiCollection(s)
 
@@ -612,7 +636,7 @@ def PastOnlyValidator(value):
         raise ValidationError(_('This date cannot be in the future.'), code='past_value')
 
 ############################################################
-# Use TinyPNG to optimize images
+# Image manipulation
 
 def dataToImageFile(data):
     image = NamedTemporaryFile(delete=False)
@@ -620,7 +644,24 @@ def dataToImageFile(data):
     image.flush()
     return ImageFile(image)
 
+def imageThumbnailFromData(data, filename, width=200, height=200):
+    _, extension = os.path.splitext(filename)
+    extension = extension.lower()
+    image = Image.open(cStringIO.StringIO(data))
+    image.thumbnail((width, height))
+    output = io.BytesIO()
+    image.save(output, format={
+        'png': 'PNG',
+        'jpg': 'JPEG',
+        'jpeg': 'JPEG',
+        'gif': 'GIF',
+    }.get(extension.lower(), 'PNG'))
+    return dataToImageFile(output.getvalue())
+
 def shrinkImageFromData(data, filename, settings={}):
+    """
+    Optimize images with TinyPNG
+    """
     _, extension = os.path.splitext(filename)
     extension = extension.lower()
     api_key = getattr(django_settings, 'TINYPNG_API_KEY', None)
@@ -653,6 +694,23 @@ def shrinkImageFromData(data, filename, settings={}):
     elif settings.get('resize', None) == 'cover':
         source = source.resize(
             method='cover',
+            width=settings.get('width', 300),
+            height=settings.get('height', 300),
+        )
+    elif settings.get('resize', None) == 'scale':
+        if settings.get('width', None):
+            source = source.resize(
+                method='scale',
+                width=settings['width'],
+            )
+        if settings.get('height', None):
+            source = source.resize(
+                method='scale',
+                height=settings['height'],
+            )
+    elif settings.get('resize', None) == 'thumb':
+        source = source.resize(
+            method='thumb',
             width=settings.get('width', 300),
             height=settings.get('height', 300),
         )

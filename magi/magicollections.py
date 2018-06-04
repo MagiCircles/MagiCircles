@@ -632,10 +632,14 @@ class MagiCollection(object):
                 d['link'] = u'/{}/?{}={}'.format(field_name, item.collection_name, item.pk)
                 d['link_text'] = _('View all')
             elif isinstance(field, models.models.ImageField):
-                d['type'] = 'image'
-                d['value'] = getattr(item, field_name + '_url')
-                if not d['value']:
+                image_url = getattr(item, u'{}_url'.format(field_name, None))
+                if not image_url:
                     continue
+                d['type'] = 'image_link'
+                d['value'] = getattr(item, u'{}_thumbnail_url'.format(field_name))
+                d['link'] = getattr(item, u'{}_2x_url'.format(field_name), None) or getattr(item, u'{}_original_url'.format(field_name))
+                d['link_text'] = d['verbose_name']
+
             elif (isinstance(field, models.models.BooleanField)
                   or isinstance(field, models.models.NullBooleanField)):
                 d['type'] = 'bool'
