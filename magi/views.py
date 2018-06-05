@@ -1,6 +1,7 @@
 from __future__ import division
 import math, datetime, random
 from collections import OrderedDict
+from dateutil.relativedelta import relativedelta
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, JsonResponse
 from django.conf import settings as django_settings
@@ -21,7 +22,7 @@ from magi.middleware.httpredirect import HttpRedirectException
 from magi.forms import CreateUserForm, UserForm, UserPreferencesForm, AddLinkForm, ChangePasswordForm, EmailsPreferencesForm, LanguagePreferencesForm, SecurityPreferencesForm, Confirm
 from magi import models
 from magi.raw import donators_adjectives
-from magi.utils import getGlobalContext, ajaxContext, redirectToProfile, tourldash, toHumanReadable, redirectWhenNotAuthenticated, dumpModel, send_email, emailContext, getMagiCollection, getMagiCollections, cuteFormFieldsForContext, CuteFormType, FAVORITE_CHARACTERS_IMAGES, groupsForAllPermissions, hasPermission, setSubField, staticImageURL
+from magi.utils import getGlobalContext, ajaxContext, redirectToProfile, tourldash, toHumanReadable, redirectWhenNotAuthenticated, dumpModel, send_email, emailContext, getMagiCollection, getMagiCollections, cuteFormFieldsForContext, CuteFormType, FAVORITE_CHARACTERS_IMAGES, groupsForAllPermissions, hasPermission, setSubField, staticImageURL, getAccountIdsFromSession
 from magi.notifications import pushNotification
 from magi.settings import SITE_NAME, GAME_NAME, ENABLED_PAGES, FAVORITE_CHARACTERS, TWITTER_HANDLE, BUG_TRACKER_URL, GITHUB_REPOSITORY, CONTRIBUTE_URL, CONTACT_EMAIL, CONTACT_REDDIT, CONTACT_FACEBOOK, CONTACT_DISCORD, FEEDBACK_FORM, ABOUT_PHOTO, WIKI, HELP_WIKI, LATEST_NEWS, SITE_LONG_DESCRIPTION, CALL_TO_ACTION, TOTAL_DONATORS, GAME_DESCRIPTION, GAME_URL, ON_USER_EDITED, ON_PREFERENCES_EDITED, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, SITE_LOGO_PER_LANGUAGE, GLOBAL_OUTSIDE_PERMISSIONS
 from magi.views_collections import item_view, list_view
@@ -560,6 +561,15 @@ def likeactivity(request, pk):
     if activity.cached_owner.username == request.user.username:
         raise PermissionDenied()
     if 'like' in request.POST and not activity.liked:
+        # Only bump when user has enough "reputation"
+        # Reputation will be calculated based on more details, but for now
+        # users need to have joined more than 5 days ago and have at least
+        # one account added
+        # Activities can only be bumped once per hour
+        if (activity.last_bump < (timezone.now() - relativedelta(hours=1))
+            and request.user.date_joined < (timezone.now() - relativedelta(days=5))
+            and len(getAccountIdsFromSession(request)) >= 1):
+            activity.last_bump = timezone.now()
         activity.likes.add(request.user)
         activity.update_cache('total_likes')
         activity.save()

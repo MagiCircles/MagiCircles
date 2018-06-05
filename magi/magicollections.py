@@ -1995,7 +1995,7 @@ class ActivityCollection(MagiCollection):
         ajax_pagination_callback = 'updateActivities'
         no_result_template = 'include/activityFollowMessage'
         before_template = 'include/homePage'
-        default_ordering = '-modification'
+        default_ordering = '-last_bump'
         filter_form = forms.FilterActivities
         show_relevant_fields_on_ordering = False
         show_item_buttons = False

@@ -1183,10 +1183,15 @@ class ActivityForm(MagiForm):
         # Only allow users to add tags they are allowed to see
         if 'c_tags' in self.fields:
             self.fields['c_tags'].choices = models.getAllowedTags(self.request, is_creating=True)
+        self.previous_m_message = None
+        if 'm_message' in self.fields and not self.is_creating:
+            self.previous_m_message = self.instance.m_message
 
     def save(self, commit=False):
         instance = super(ActivityForm, self).save(commit=False)
         instance.update_cache('hidden_by_default')
+        if instance.m_message != self.previous_m_message:
+            instance.last_bump = timezone.now()
         if commit:
             instance.save()
         return instance
@@ -1199,7 +1204,7 @@ class ActivityForm(MagiForm):
 class FilterActivities(MagiFiltersForm):
     search_fields = ['m_message', 'c_tags']
     ordering_fields = [
-        ('modification', _('Last Update')),
+        ('last_bump', _('Hot')),
         ('creation', _('Creation')),
         ('_cache_total_likes,creation', string_concat(_('Most Popular'), ' (', _('All time'), ')')),
         ('_cache_total_likes,id', string_concat(_('Most Popular'), ' (', _('This week'), ')')),

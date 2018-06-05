@@ -613,7 +613,7 @@ class Activity(MagiModel):
     collection_name = 'activity'
 
     creation = models.DateTimeField(auto_now_add=True)
-    modification = models.DateTimeField(auto_now=True, db_index=True)
+    last_bump = models.DateTimeField(db_index=True)
     owner = models.ForeignKey(User, related_name='activities', db_index=True)
     m_message = models.TextField(_('Message'))
 
