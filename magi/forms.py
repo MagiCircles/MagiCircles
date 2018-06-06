@@ -283,18 +283,24 @@ class MagiForm(forms.ModelForm):
                 and has_field(instance, u'_cache_{}'.format(field[2:]))):
                 setattr(instance, u'_cache_{}'.format(field[2:]), None)
             # Shrink images
-            if (hasattr(self.Meta, 'tinypng_on_save')
-                and field in self.Meta.tinypng_on_save
-                and hasattr(instance, field)
+            if (hasattr(instance, field)
                 and isinstance(self.fields[field], forms.Field)
                 and has_field(instance, field)
                 and type(self.Meta.model._meta.get_field(field)) == models.models.ImageField):
                 image = self.cleaned_data[field]
                 if image and (isinstance(image, InMemoryUploadedFile) or isinstance(image, TemporaryUploadedFile)):
-                    filename = image.name
-                    image = shrinkImageFromData(image.read(), filename, settings=getattr(instance._meta.model, 'tinypng_settings', {}).get(field, {}))
-                    image.name = instance._meta.model._meta.get_field(field).upload_to(instance, filename)
-                    setattr(instance, field, image)
+                    if (hasattr(self.Meta, 'tinypng_on_save')
+                        and field in self.Meta.tinypng_on_save):
+                        filename = image.name
+                        image = shrinkImageFromData(image.read(), filename, settings=getattr(instance._meta.model, 'tinypng_settings', {}).get(field, {}))
+                        image.name = instance._meta.model._meta.get_field(field).upload_to(instance, filename)
+                        setattr(instance, field, image)
+                    else:
+                        # Remove any cached processed image
+                        setattr(instance, u'_tthumbnail_{}'.format(field), None)
+                        setattr(instance, u'_thumbnail_{}'.format(field), None)
+                        setattr(instance, u'_original_{}'.format(field), None)
+                        setattr(instance, u'_2x_{}'.format(field), None)
         if commit:
             instance.save()
         return instance
