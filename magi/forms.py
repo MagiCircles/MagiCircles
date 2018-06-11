@@ -1361,6 +1361,7 @@ class _BadgeForm(MagiForm):
     class Meta(MagiForm.Meta):
         model = models.Badge
         save_owner_on_creation = True
+        tinypng_on_save = ('image',)
         fields = '__all__'
 
 class ExclusiveBadgeForm(_BadgeForm):

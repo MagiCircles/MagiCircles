@@ -41,7 +41,7 @@
         {% endfor %}
         {% else %}
 	{% if activity.image %}
-	<a href="{{ activity.image_url }}" target="_blank" class="a-nodifference activity-image" style="background-image: url('{{ activity.image_url }}');"><i class="flaticon-link"></i></a>
+	<a href="{{ activity.image_original_url }}" target="_blank" class="a-nodifference activity-image" style="background-image: url('{{ activity.image_url }}');"><i class="flaticon-link"></i></a>
 	{% endif %}
 	<div class="message">
           {% with message_details=activity.message %}
