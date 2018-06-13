@@ -23,7 +23,7 @@
 {% if form_name == 'addLink' and links|length %}
 <h1 id="links" class="text-center padding50">{% trans 'Links' %}</h1>
 <br>
-<form class="container_form" action="#addLink">
+<form class="container_form" action="#addLink" data-form-name="addLink">
   <table class="table table-main table-padded table-rounded">
     {% for link in links %}
     <tr id="link{{link.id}}">
@@ -62,7 +62,7 @@
 {% if form_name == 'addLink' %}
 <h1 id="avatar" class="text-center padding50">{% trans 'Avatar' %}</h1>
 <br>
-<form class="container_form">
+<form class="container_form" data-form-name="avatar">
   <div class="alert alert-info">{% trans 'To change your avatar, use Gravatar with the same email address.' %}</div>
   <div class="text-right">
     <a href="https://github.com/SchoolIdolTomodachi/SchoolIdolAPI/wiki/How-to-change-your-avatar%3F" target="_blank" class="btn btn-lg btn-link">{% trans 'F.A.Q.' %}</a>
@@ -70,9 +70,9 @@
   </div>
 </form>
 
-<h1 id="accounts" class="text-center padding50">{% trans 'Accounts' %}</h1>
+<h1 id="accounts" class="text-center padding50">{{ accounts_title_sentence }}</h1>
 <br>
-<form class="container_form">
+<form class="container_form" data-form-name="accounts">
   <table class="table table-main table-padded table-rounded">
     {% for account in accounts %}
     <tr>
@@ -90,7 +90,7 @@
 {% if user.preferences.groups %}
 <h1 id="groups" class="text-center padding50"><i class="flaticon-about"></i> Your groups</h1>
 <br>
-<form class="container_form">
+<form class="container_form" data-form-name="groups">
   {% if user.is_staff and global_outside_permissions %}
   <div class="alert alert-warning">
     <h5>External permissions for all staff members.</h5>
