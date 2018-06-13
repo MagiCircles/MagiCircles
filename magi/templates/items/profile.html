@@ -14,7 +14,7 @@
         <div class="col-sm-10">
           <div class="info">
             <div class="pull-right text-right">
-              {% if user.is_authenticated and not profile_user.preferences.private and not is_me %}
+              {% if collection.item_view.follow_enabled and user.is_authenticated and not profile_user.preferences.private and not is_me %}
               <form method="POST" class="noform" id="follow" action="/ajax/follow/{{ profile_user.username }}/">
                 {% csrf_token %}
                 <input type="hidden" name="{% if profile_user.followed %}unfollow{% else %}follow{% endif %}">

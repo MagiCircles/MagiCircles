@@ -1524,6 +1524,7 @@ class UserCollection(MagiCollection):
         template = 'profile'
         js_files = ['profile']
         comments_enabled = False
+        follow_enabled = True
         show_item_buttons = False
         show_item_buttons_justified = False
         item_buttons_classes = ['btn', 'btn-link']
