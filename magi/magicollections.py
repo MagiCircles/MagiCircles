@@ -1400,8 +1400,10 @@ class AccountCollection(MagiCollection):
         comments_enabled = False
         show_edit_button_superuser_only = True
 
-        def to_fields(self, item, *args, **kwargs):
-            fields = super(AccountCollection.ItemView, self).to_fields(item, *args, **kwargs)
+        def to_fields(self, item, exclude_fields=None, *args, **kwargs):
+            if not exclude_fields: exclude_fields = []
+            exclude_fields.append('owner')
+            fields = super(AccountCollection.ItemView, self).to_fields(item, *args, exclude_fields=exclude_fields, **kwargs)
             if hasattr(item, 'cached_leaderboard') and item.cached_leaderboard:
                 fields['leaderboard'] = {
                     'verbose_name': _('Leaderboard position'),
