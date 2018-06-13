@@ -47,7 +47,7 @@ get_http_image_url = get_http_file_url
 def i_choices(choices, translation=True):
     if not choices:
         return []
-    return [(i, choice[1 if translation else 0] if isinstance(choice, tuple) else choice) for i, choice in enumerate(choices)]
+    return [(i, choice[1 if translation else 0] if isinstance(choice, tuple) else choice) for i, choice in enumerate(choices.items() if isinstance(choices, dict) else choices)]
 
 def getInfoFromChoices(field_name, details, key):
     def _getInfo(instance):
