@@ -193,6 +193,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
             ajax=ajax,
         )
 
+    context['ajax_modal_only'] = False
     if 'ajax_modal_only' in request.GET:
         # Will display a link to see the other results instead of the pagination button
         context['ajax_modal_only'] = True
@@ -223,7 +224,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['page'] = page + 1
     context['is_last_page'] = context['page'] == context['total_pages']
     context['page_size'] = page_size
-    context['show_no_result'] = not ajax
+    context['show_no_result'] = not ajax or context['ajax_modal_only']
     context['show_search_results'] = bool(request.GET)
     context['show_owner'] = 'show_owner' in request.GET
     context['get_started'] = 'get_started' in request.GET
