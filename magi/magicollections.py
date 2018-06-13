@@ -1746,6 +1746,8 @@ class UserCollection(MagiCollection):
             context['share_sentence'] = _('Check out {username}\'s awesome collection!').format(username=context['item'].username)
             context['share_url'] = context['item'].http_item_url
 
+            context['single_account_sentence'] = account_collection.title
+
             # Afterjs
             afterjs += u'</script>'
             context['afterjs'] = afterjs

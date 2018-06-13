@@ -218,9 +218,13 @@ def settings(request):
     redirectWhenNotAuthenticated(request, context, next_title=_('Settings'))
     context['preferences'] = request.user.preferences
     context['accounts'] = request.user.accounts.all()
-    context['add_account_sentence'] = _(u'Add {thing}').format(thing=_('Account'))
+
+    account_collection = getMagiCollection('account')
+    context['add_account_sentence'] = account_collection.add_sentence#_(u'Add {thing}').format(thing=_('Account'))
     context['add_link_sentence'] = _(u'Add {thing}').format(thing=_('Link'))
     context['delete_link_sentence'] = _(u'Delete {thing}').format(thing=_('Link'))
+    context['accounts_title_sentence'] = account_collection.plural_title
+
     context['global_outside_permissions'] = GLOBAL_OUTSIDE_PERMISSIONS
     context['forms'] = OrderedDict([
         ('preferences', UserPreferencesForm(instance=context['preferences'], request=request)),

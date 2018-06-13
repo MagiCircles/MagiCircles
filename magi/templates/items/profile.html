@@ -41,9 +41,11 @@
                 <i class="flaticon-more"></i>
               </a>
               {% endif %}
+              {% if collection.item_view.share_enabled %}
               <div class="btn-group">
                 {% include 'include/share.html' with share_btn_class=profile_user.preferences.css_color %}
               </div>
+              {% endif %}
             </div>
           </div>
         </div>
@@ -73,7 +75,7 @@
       {% for tab_name, tab in profile_tabs.items %}
       <li{% if opened_tab == tab_name %} class="active"{% endif %} style="width: {% localize off %}{{ profile_tabs_size }}{% endlocalize %}%;"><a href="#profile{{ tab_name }}" data-toggle="tab">
           {% if tab.icon %}<i class="flaticon-{{ tab.icon }}"></i><span class="hidden-xs hidden-sm">{% endif %}
-            {% if tab_name == 'account' and profile_user.all_accounts|length < 2 %}{% trans 'Account' %}{% else %}{{ tab.name }}{% endif %}{% if tab.icon %}</span>{% endif %}
+            {% if tab_name == 'account' and profile_user.all_accounts|length < 2 %}{{ single_account_sentence }}{% else %}{{ tab.name }}{% endif %}{% if tab.icon %}</span>{% endif %}
                                                                                </a></li>
       {% endfor %}
     </ul>
