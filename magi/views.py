@@ -162,7 +162,7 @@ def aboutDefaultContext(request):
                 birthday = birthday.replace(year=today.year + 1)
             staff_member.birthday_url = 'https://www.timeanddate.com/countdown/birthday?iso={date}T00&msg={username}%27s+birthday'.format(date=dateformat.format(birthday, "Ymd"), username=staff_member.username)
 
-        # Stats
+        # Stats & Details
         staff_member.stats = {}
         for group, details in staff_member.preferences.groups_and_details.items():
             stats = details.get('stats', [])
@@ -173,6 +173,11 @@ def aboutDefaultContext(request):
                     total = model.objects.filter(**{ stat.get('selector_to_owner', model.selector_to_owner()): staff_member }).filter(**(stat.get('filters', {}))).count()
                     if total:
                         staff_member.stats[group].append(mark_safe(unicode(stat['template']).format(total=u'<strong>{}</strong>'.format(total))))
+            settings = staff_member.preferences.t_settings_per_groups.get(group, None)
+            if settings:
+                for setting, value in settings.items():
+                    staff_member.stats[group].append(u'<strong>{}</strong>: {}'.format(
+                        setting, value))
 
         if not staff_member.is_staff:
             continue
