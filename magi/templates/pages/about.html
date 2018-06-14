@@ -112,17 +112,17 @@
             {% endwith %}
             {% endfor %}
           </div>
-          {% if staff_member.staff_details.description %}
+          {% if LANGUAGE_CODE == 'en' and staff_member.staff_details.description %}
           <blockquote class="text-muted fontx0-8 to-markdown">{{ staff_member.staff_details.description }}</blockquote>
           {% endif %}
           <div class="staff-trivia text-center">
             {% if staff_member.staff_details.preferred_name %}
             <span class="mini">{{ staff_member.staff_details.preferred_name }}</span>
             {% endif %}
-            {% if staff_member.staff_details.pronouns %}
+            {% if LANGUAGE_CODE == 'en' and staff_member.staff_details.pronouns %}
             <span class="mini">{{ staff_member.staff_details.pronouns }}</span>
             {% endif %}
-            {% if staff_member.staff_details.nickname %}
+            {% if LANGUAGE_CODE == 'en' and staff_member.staff_details.nickname %}
             <span class="mini">{{ staff_member.staff_details.nickname }}</span>
             {% endif %}
             {% if staff_member.staff_details.favorite_food %}
@@ -177,12 +177,14 @@
             </span>
             {% endif %}
           </div>
+          {% if LANGUAGE_CODE == 'en' %}
           <div class="text-center fontx0-8 hashtags">
             {% for hashtag in staff_member.staff_details.hashtags %}
             {{ hashtag }}
             {% if not forloop.last %}/{% endif %}
             {% endfor %}
           </div>
+          {% endif %}
           {% if staff_member.all_links %}
           <div class="text-center staff-links">
             {% for link in staff_member.all_links %}
