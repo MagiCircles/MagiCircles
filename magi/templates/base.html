@@ -42,7 +42,7 @@
             <span class="icon-bar"></span>
           </button>
           <a class="navbar-brand" href="/">
-            {% if site_nav_logo %}<img src="{{ static_url }}img/{{ site_nav_logo }}" class="logo hidden-xs hidden-sm"><span class="visible-xs visible-sm site-name">{{ site_name }}</span>{% else %}{{ site_name }}{% endif %}
+            {% if site_nav_logo %}<img src="{{ static_url }}img/{{ site_nav_logo }}?{{ static_files_version }}" class="logo hidden-xs hidden-sm"><span class="visible-xs visible-sm site-name">{{ site_name }}</span>{% else %}{{ site_name }}{% endif %}
           </a>
         </div>
         {% if current %}
@@ -67,7 +67,7 @@
                 {% if link.icon %}
                 <i class="flaticon-{{ link.icon }}"></i>
                 {% elif link.image %}
-                <img src="{{ static_url }}img/{{ link.image }}.png" height="16" />
+                <img src="{{ static_url }}img/{{ link.image }}.png?{{ static_files_version }}" height="16" />
                 {% endif %}
                 {% if link.image or link.icon %}<span class="hidden-sm"> &nbsp; {% else %}<span>{% endif %}
                     {% navbarTitle link=link %}
@@ -81,7 +81,7 @@
                   {% if sub_link.icon %}
                   <i class="flaticon-{{ sub_link.icon }}"></i>
                   {% elif sub_link.image %}
-                  <img src="{{ static_url }}img/{{ sub_link.image }}.png" height="16" />
+                  <img src="{{ static_url }}img/{{ sub_link.image }}.png?{{ static_files_version }}" height="16" />
                   {% endif %}
                   {% navbarTitle link=sub_link %}
                 </li>
@@ -94,7 +94,7 @@
                     {% if sub_link.icon %}
                     <i class="flaticon-{{ sub_link.icon }}"></i>
                     {% elif sub_link.image %}
-                    <img src="{{ static_url }}img/{{ sub_link.image }}.png" height="16" />
+                    <img src="{{ static_url }}img/{{ sub_link.image }}.png?{{ static_files_version }}" height="16" />
                     {% endif %}
                     {% navbarTitle link=sub_link %}
                   </a>

@@ -83,7 +83,7 @@
                data-ajax-handle-form="true"
                {% endif %}>
               {% if button.icon %}<i class="flaticon-{{ button.icon }}"></i>
-              {% elif button.image %}<img src="{{ static_url }}img/{{ button.image }}.png" height="39" />{% endif %}
+              {% elif button.image %}<img src="{{ static_url }}img/{{ button.image }}.png?{{ static_files_version }}" height="39" />{% endif %}
               {{ button.title }}
               {% if button.subtitle %}<br /><small>{{ button.subtitle }}</small>{% endif %}
             </a>

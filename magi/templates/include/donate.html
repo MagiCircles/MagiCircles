@@ -3,7 +3,7 @@
   <div class="row">
     {% if donate_image %}
     <div class="col-md-4">
-      <img src="{{ static_url }}img/{{ donate_images_folder }}{{ donate_image }}" class="img-responsive donate-image">
+      <img src="{{ static_url }}img/{{ donate_images_folder }}{{ donate_image }}?{{ static_files_version }}" class="img-responsive donate-image">
     </div>
     {% endif %}
     <div class="col-md-{% if donate_image %}8{% else %}12{% endif %} text-center ">
@@ -20,7 +20,7 @@
   </form>
   {% else %}
   <a href="https://www.patreon.com/db0company" target="_blank">
-    <img src="{{ static_url }}img/patreon.png" alt="Patreon" class="img-responsive">
+    <img src="{{ static_url }}img/patreon.png?{{ static_files_version }}" alt="Patreon" class="img-responsive">
   </a>
   {% endif %}
   <br><br><br><br><br><br><br><br><br><br><br><br>

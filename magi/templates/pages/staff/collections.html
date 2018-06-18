@@ -8,7 +8,7 @@
     {% if collection.icon %}
     <i class="flaticon-{{ collection.icon }}"></i>
     {% elif collection.image %}
-    <img src="{{ static_url }}img/{{ collection.image }}.png" height="30" />
+    <img src="{{ static_url }}img/{{ collection.image }}.png?{{ static_files_version }}" height="30" />
     {% endif %}
     {{ collection.title }} <small class="text-muted">{{ collection.name }}</small>
   </h2>

@@ -50,7 +50,7 @@
 	</p>
       </div>
       <div class="col-md-4">
-	<img src="{% if staff_configurations.about_us_image %}{{ staff_configurations.about_us_image }}{% else %}{{ static_url }}img/{{ about_photo }}{% endif %}" class="img-circle img-responsive img-thumbnail">
+	<img src="{% if staff_configurations.about_us_image %}{{ staff_configurations.about_us_image }}{% else %}{{ static_url }}img/{{ about_photo }}?{{ static_files_version }}{% endif %}" class="img-circle img-responsive img-thumbnail">
       </div>
     </div>
 
@@ -101,7 +101,7 @@
             <h4
               data-toggle="popover"
               title="{{ details.translation }}"
-              data-content="<img class='pull-right' height='80' src='{{ static_url }}img/groups/{{ group }}.png' alt='{{ details.translation }}'> {{ details.description }}{% if stats %}<hr /><ul>{% for stat in stats %}<li>{{ stat }}</li>{% endfor %}</ul>{% endif %}"
+              data-content="<img class='pull-right' height='80' src='{{ static_url }}img/groups/{{ group }}.png?{{ static_files_version }}' alt='{{ details.translation }}'> {{ details.description }}{% if stats %}<hr /><ul>{% for stat in stats %}<li>{{ stat }}</li>{% endfor %}</ul>{% endif %}"
               data-placement="bottom"
               data-trigger="hover"
               data-html="true"
@@ -315,7 +315,7 @@
           <h4
             data-toggle="popover"
             title="{{ details.translation }}"
-            data-content="<img class='pull-right' height='80' src='{{ static_url }}img/groups/{{ group }}.png' alt='{{ details.translation }}'> {{ details.description }}{% if stats %}<hr /><ul>{% for stat in stats %}<li>{{ stat }}</li>{% endfor %}</ul>{% endif %}"
+            data-content="<img class='pull-right' height='80' src='{{ static_url }}img/groups/{{ group }}.png?{{ static_files_version }}' alt='{{ details.translation }}'> {{ details.description }}{% if stats %}<hr /><ul>{% for stat in stats %}<li>{{ stat }}</li>{% endfor %}</ul>{% endif %}"
             data-placement="bottom"
             data-trigger="hover"
             data-html="true"
@@ -396,7 +396,7 @@
         {% for contact_method, image, url in contact_methods %}{% if url %}
         <a href="{{ url }}" target="_blank" class="btn btn-secondary btn-sm btn-with-images">
           {% if image|startswith:"flaticon-" %}<i class="{{ image }}"></i>
-          {% else %}<img src="{{ static_url }}img/links/{{ image }}.png" alt="{{ contact_method }}"/>{% endif %}
+          {% else %}<img src="{{ static_url }}img/links/{{ image }}.png?{{ static_files_version }}" alt="{{ contact_method }}"/>{% endif %}
           {{ contact_method }}
         </a>
         {% endif %}{% endfor %}

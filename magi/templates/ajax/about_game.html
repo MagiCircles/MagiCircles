@@ -10,7 +10,7 @@
     {% if game_url %}
     <a href="{{ game_url }}" target="_blank">
       {% endif %}
-      <img src="{{ static_url}}img/game.png" class="img-responsive about-game-image">
+      <img src="{{ static_url}}img/game.png?{{ static_files_version }}" class="img-responsive about-game-image">
       {% if game_url %}
     </a>
     {% endif %}

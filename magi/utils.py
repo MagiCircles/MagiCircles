@@ -356,10 +356,10 @@ def cuteFormFieldsForContext(cuteform_fields, context, form=None, prefix=None, a
                 if (field_type == CuteFormType.Images
                     and (field['to_cuteform'] in ['key', 'value']
                          or transform == CuteFormTransform.ImagePath)):
-                    cuteform = u'{static_url}img/{field_name}/{value}.png'.format(
-                        static_url=context['static_url'],
-                        field_name=field.get('image_folder', field_name),
-                        value=unicode(cuteform_value),
+                    cuteform = staticImageURL(
+                        unicode(cuteform_value),
+                        folder=field.get('image_folder', field_name),
+                        extension='png',
                     )
                 # Transform to flaticon
                 elif transform in [CuteFormTransform.Flaticon, CuteFormTransform.FlaticonWithText]:
@@ -726,12 +726,20 @@ def shrinkImageFromData(data, filename, settings={}):
 ############################################################
 # Image URLs
 
-def staticImageURL(path, folder=None, extension=None):
-    return u'{}img/{}{}{}'.format(
-        RAW_CONTEXT['static_url'],
-        u'{}/'.format(folder) if folder else '',
-        path,
-        u'.{}'.format(extension) if extension else '',
+def staticImageURL(path, folder=None, extension=None, versionned=True):
+    if not path:
+        return None
+    if path.startswith('//') or path.startswith('http://') or path.startswith('https://'):
+        return path
+    return u'{static}img/{folder}{path}{extension}{version}'.format(
+        static=RAW_CONTEXT['static_url'],
+        folder=u'{}/'.format(folder) if folder else '',
+        path=path,
+        extension=u'.{}'.format(extension) if extension else '',
+        version=u'' if not versionned else u'{suffix}{version}'.format(
+            suffix='?' if '?' not in path and '?' not in (extension or '') else '&',
+            version=RAW_CONTEXT['static_files_version'],
+        ),
     )
 
 def linkToImageURL(link):

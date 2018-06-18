@@ -11,7 +11,6 @@ from django.core.exceptions import PermissionDenied
 
 from magi.utils import getGlobalContext, cuteFormFieldsForContext, get_one_object_or_404
 from magi.forms import ConfirmDelete, filter_ids
-from magi.settings import SITE_IMAGE
 
 ############################################################
 # Internal utils

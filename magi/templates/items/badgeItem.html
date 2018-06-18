@@ -13,7 +13,7 @@
 <a href="{{ badge.item_url }}" data-ajax-url="{{ badge.ajax_item_url }}" data-ajax-title="{{ badge }}">
   <div class="user-badge badge-color{{ badge.rank|default_if_none:"" }}"
        style="background-image: url('{{ badge.image_url }}');">
-    <img src="{{ static_url }}img/badges/badge{{ badge.rank|default_if_none:"" }}.png">
+    <img src="{{ static_url }}img/badges/badge{{ badge.rank|default_if_none:"" }}.png?{{ static_files_version }}">
   </div>
   <div class="caption-wrapper">
     <div class="caption">

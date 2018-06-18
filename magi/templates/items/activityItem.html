@@ -11,11 +11,11 @@
 	{% if activity.language != LANGUAGE_CODE %}
 	<a href="https://translate.google.com/translate?js=n&sl={{ activity.language }}&tl={{ LANGUAGE_CODE }}&u={{ activity.http_item_url }}" class="language" target="_blank">
 	  <small>{% with from_language=activity.t_language to_language=localized_language %}{% blocktrans %}Translate from {{ from_language }} to {{ to_language }}{% endblocktrans %}{% endwith %}</small>
-	  <img src="{{ static_url }}img/language/{{ activity.language }}.png" alt="{{ activity.language }}">
+	  <img src="{{ static_url }}img/language/{{ activity.language }}.png?{{ static_files_version }}" alt="{{ activity.language }}">
 	</a>
 	{% elif activity.language != 'en' and user.is_authenticated and activity.cached_owner.username == user.username %}
 
-	<a href="{{ activity.edit_url }}" target="_blank" class="language" data-trigger="hover" data-toggle="tooltip" title="{% trans 'Language' %}: {{ activity.t_language }}<br>{{ activity.edit_sentence }}" data-html="true"><img src="{{ static_url }}img/language/{{ activity.language }}.png" alt="{{ activity.language }}"></a>
+	<a href="{{ activity.edit_url }}" target="_blank" class="language" data-trigger="hover" data-toggle="tooltip" title="{% trans 'Language' %}: {{ activity.t_language }}<br>{{ activity.edit_sentence }}" data-html="true"><img src="{{ static_url }}img/language/{{ activity.language }}.png?{{ static_files_version }}" alt="{{ activity.language }}"></a>
 	{% endif %}
 	<small class="date">
 	  <span class="timezone" data-timeago="true">

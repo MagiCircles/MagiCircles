@@ -114,7 +114,7 @@
   <div class="list-group">
     {% for group, details in user.preferences.groups_and_details.items %}
     <div class="list-group-item">
-      <img class="pull-right" alt="{{ details.translation }}" src="{{ static_url }}img/groups/{{ group }}.png" height="100">
+      <img class="pull-right" alt="{{ details.translation }}" src="{{ static_url }}img/groups/{{ group }}.png?{{ static_files_version }}" height="100">
       <h3 class="list-group-item-heading">{{ details.translation }}</h3>
       <p class="list-group-item-text">
         <blockquote class="fontx0-8">{{ details.description }}</blockquote>

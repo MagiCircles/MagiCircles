@@ -5,7 +5,7 @@
 {% if icontitle %}
 <i class="flaticon-{{ icontitle }} form-icontitle"></i>
 {% elif imagetitle %}
-<img src="{% if '//' not in imagetitle %}{{ static_url }}img/{% endif %}{{ imagetitle }}{% if '//' not in imagetitle %}.png{% endif %}" height="{% if imagetitle_size %}{{ imagetitle_size }}{% else %}39{% endif %}" class="modification-view-image-title form-imagetitle" />
+<img src="{% if '//' not in imagetitle %}{{ static_url }}img/{% endif %}{{ imagetitle }}{% if '//' not in imagetitle %}.png?{{ static_files_version }}{% endif %}" height="{% if imagetitle_size %}{{ imagetitle_size }}{% else %}39{% endif %}" class="modification-view-image-title form-imagetitle" />
 {% endif %}
 {% endblock %}
 

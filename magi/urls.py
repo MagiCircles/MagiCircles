@@ -11,7 +11,7 @@ from magi import views as magi_views
 from magi import forms
 from magi.settings import RAW_CONTEXT, ENABLED_PAGES, ENABLED_NAVBAR_LISTS, SITE_NAME, EMAIL_IMAGE, GAME_NAME, SITE_DESCRIPTION, SITE_STATIC_URL, SITE_URL, GITHUB_REPOSITORY, SITE_LOGO, SITE_NAV_LOGO, JAVASCRIPT_TRANSLATED_TERMS, STATIC_UPLOADED_FILES_PREFIX, COLOR, SITE_IMAGE, TRANSLATION_HELP_URL, DISQUS_SHORTNAME, HASHTAGS, TWITTER_HANDLE, EMPTY_IMAGE, GOOGLE_ANALYTICS, STATIC_FILES_VERSION, PROFILE_TABS, LAUNCH_DATE, PRELAUNCH_ENABLED_PAGES, NAVBAR_ORDERING, ACCOUNT_MODEL, STAFF_CONFIGURATIONS, FIRST_COLLECTION, GET_STARTED_VIDEO, GLOBAL_OUTSIDE_PERMISSIONS, GROUPS
 from magi.models import UserPreferences
-from magi.utils import redirectWhenNotAuthenticated, hasPermissions, hasOneOfPermissions, tourldash, groupsWithPermissions, groupsWithOneOfPermissions
+from magi.utils import redirectWhenNotAuthenticated, hasPermissions, hasOneOfPermissions, tourldash, groupsWithPermissions, groupsWithOneOfPermissions, staticImageURL
 
 ############################################################
 # Load dynamic module based on SITE
@@ -471,24 +471,24 @@ RAW_CONTEXT['get_started_video'] = GET_STARTED_VIDEO
 RAW_CONTEXT['game_name'] = GAME_NAME
 RAW_CONTEXT['static_uploaded_files_prefix'] = STATIC_UPLOADED_FILES_PREFIX
 RAW_CONTEXT['static_url'] = SITE_STATIC_URL + 'static/'
+RAW_CONTEXT['static_files_version'] = STATIC_FILES_VERSION
+RAW_CONTEXT['empty_image'] = EMPTY_IMAGE
 RAW_CONTEXT['full_static_url'] = u'http:{}'.format(RAW_CONTEXT['static_url']) if 'http' not in RAW_CONTEXT['static_url'] else RAW_CONTEXT['static_url']
-RAW_CONTEXT['site_logo'] = RAW_CONTEXT['static_url'] + 'img/' + SITE_LOGO if '//' not in SITE_LOGO else SITE_LOGO
+RAW_CONTEXT['site_logo'] = staticImageURL(SITE_LOGO)
 RAW_CONTEXT['full_site_logo'] = u'http:{}'.format(RAW_CONTEXT['site_logo']) if 'http' not in RAW_CONTEXT['site_logo'] else RAW_CONTEXT['site_logo']
 RAW_CONTEXT['site_nav_logo'] = SITE_NAV_LOGO
 RAW_CONTEXT['disqus_shortname'] = DISQUS_SHORTNAME
 RAW_CONTEXT['javascript_translated_terms'] = JAVASCRIPT_TRANSLATED_TERMS
 RAW_CONTEXT['site_color'] = COLOR
-RAW_CONTEXT['site_image'] = RAW_CONTEXT['static_url'] + 'img/' + SITE_IMAGE if '//' not in SITE_IMAGE else SITE_IMAGE
+RAW_CONTEXT['site_image'] = staticImageURL(SITE_IMAGE)
 RAW_CONTEXT['full_site_image'] = u'http:{}'.format(RAW_CONTEXT['site_image']) if 'http' not in RAW_CONTEXT['site_image'] else RAW_CONTEXT['site_image']
-RAW_CONTEXT['email_image'] = RAW_CONTEXT['static_url'] + 'img/' + EMAIL_IMAGE if '//' not in EMAIL_IMAGE else EMAIL_IMAGE
+RAW_CONTEXT['email_image'] = staticImageURL(EMAIL_IMAGE)
 RAW_CONTEXT['full_email_image'] = u'http:{}'.format(RAW_CONTEXT['email_image']) if 'http' not in RAW_CONTEXT['email_image'] else RAW_CONTEXT['email_image']
 RAW_CONTEXT['translation_help_url'] = TRANSLATION_HELP_URL
 RAW_CONTEXT['hashtags'] = HASHTAGS
 RAW_CONTEXT['twitter_handle'] = TWITTER_HANDLE
-RAW_CONTEXT['empty_image'] = EMPTY_IMAGE
-RAW_CONTEXT['full_empty_image'] = RAW_CONTEXT['static_url'] + 'img/' + RAW_CONTEXT['empty_image']
+RAW_CONTEXT['full_empty_image'] = staticImageURL(RAW_CONTEXT['empty_image'])
 RAW_CONTEXT['google_analytics'] = GOOGLE_ANALYTICS
-RAW_CONTEXT['static_files_version'] = STATIC_FILES_VERSION
 RAW_CONTEXT['preferences_model'] = UserPreferences
 
 if not launched:

@@ -43,7 +43,7 @@
     <div class="carousel-inner" role="listbox">
       {% for news in latest_news %}
       <a href="{{ news.url }}" class="item{% if forloop.counter0 == 0 %} active{% endif %}"{% if news.ajax %} data-ajax-url="{{ news.ajax }}" data-ajax-title="{{ news.title }}"{% endif %}>
-	<img src="{% if '//' in news.image %}{{ news.image }}{% else %}{{ static_url }}img/{{ news.image }}{% endif %}" alt="{{ news.title }}">
+	<img src="{% if '//' in news.image %}{{ news.image }}{% else %}{{ static_url }}img/{{ news.image }}?{{ static_files_version }}{% endif %}" alt="{{ news.title }}">
 	<div class="carousel-caption">
 	  {% if not news.hide_title %}<h2>{{ news.title }}</h2>{% endif %}
 	</div>

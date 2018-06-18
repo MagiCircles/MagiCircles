@@ -86,7 +86,7 @@ def indexExtraContext(context):
     if SITE_LOGO_PER_LANGUAGE:
         logo_per_language = SITE_LOGO_PER_LANGUAGE.get(get_language(), None)
         if logo_per_language:
-            context['site_logo'] = context['static_url'] + 'img/' + logo_per_language if '//' not in logo_per_language else logo_per_language
+            context['site_logo'] = staticImageURL(logo_per_language)
 
 def index(request):
     context = getGlobalContext(request)
