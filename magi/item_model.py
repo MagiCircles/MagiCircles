@@ -439,7 +439,7 @@ class BaseMagiModel(models.Model):
                 return self.get_original(field_name)
             # When accessing "something_2x"
             elif name.endswith('_2x'):
-                field_name = name[:-9]
+                field_name = name[:-3]
                 return self.get_2x(field_name)
             # When accessing "something_url"
             elif name.endswith('_url'):
