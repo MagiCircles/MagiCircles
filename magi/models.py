@@ -11,8 +11,8 @@ from django.utils.dateparse import parse_date
 from django.forms.models import model_to_dict
 from django.conf import settings as django_settings
 from magi.utils import AttrDict, randomString, getMagiCollection, uploadToRandom, uploadItem, uploadTiny, linkToImageURL, hasGroup, hasPermission, hasOneOfPermissions, hasPermissions, toHumanReadable, LANGUAGES_DICT
-from magi.settings import ACCOUNT_MODEL, GAME_NAME, COLOR, SITE_STATIC_URL, DONATORS_STATUS_CHOICES, USER_COLORS, FAVORITE_CHARACTERS, SITE_URL, SITE_NAME, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, ACTIVITY_TAGS, GROUPS
-from magi.item_model import MagiModel, BaseMagiModel, get_image_url, i_choices, addMagiModelProperties
+from magi.settings import ACCOUNT_MODEL, GAME_NAME, COLOR, SITE_STATIC_URL, DONATORS_STATUS_CHOICES, USER_COLORS, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_TO_URL, SITE_URL, SITE_NAME, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, ACTIVITY_TAGS, GROUPS
+from magi.item_model import MagiModel, BaseMagiModel, get_image_url, i_choices, addMagiModelProperties, getInfoFromChoices
 from magi.abstract_models import CacheOwner
 
 Account = ACCOUNT_MODEL
@@ -1001,6 +1001,38 @@ class Badge(MagiModel):
 
     def __unicode__(self):
         return self.translated_name
+
+############################################################
+# Prize
+
+class Prize(MagiModel):
+    collection_name = 'prize'
+
+    owner = models.ForeignKey(User, related_name='added_prizes')
+    name = models.CharField('Prize name', max_length=100)
+    image = models.ImageField('Prize image', upload_to=uploadItem('prize/'))
+    image2 = models.ImageField('2nd image', upload_to=uploadItem('prize/'), null=True)
+    image3 = models.ImageField('3rd image', upload_to=uploadItem('prize/'), null=True)
+    image4 = models.ImageField('4th image', upload_to=uploadItem('prize/'), null=True)
+    value = models.DecimalField('Value', null=True, help_text='in USD', max_digits=6, decimal_places=2)
+
+    CHARACTERS = OrderedDict([(unicode(_c[0]), _c) for _c in FAVORITE_CHARACTERS])
+    CHARACTER_CHOICES = [(_id, _details[1]) for _id, _details in CHARACTERS.items()]
+    CHARACTER_WITHOUT_I_CHOICES = True
+    i_character = models.CharField('Character', null=True, max_length=200, choices=CHARACTER_CHOICES)
+    character_image = property(getInfoFromChoices('character', CHARACTERS, 2))
+    character_url = property(lambda _s: FAVORITE_CHARACTER_TO_URL(AttrDict({
+        'value': _s.t_character,
+        'raw_value': _s.i_character,
+        'image': _s.character_image,
+    })))
+
+    m_details = models.TextField('Details', null=True)
+
+    giveaway_url = models.CharField('Giveaway URL', null=True, max_length=100, help_text='If you specify a giveaway URL, the prize will be considered unavailable for future giveaways')
+
+    def __unicode__(self):
+        return self.name
 
 ############################################################
 # Callbacks to call on UserPreferences or User edited

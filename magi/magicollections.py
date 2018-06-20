@@ -572,6 +572,8 @@ class MagiCollection(object):
             if field_name.startswith('i_'):
                 field_name = field_name[2:]
                 value = getattr(item, u't_{}'.format(field_name))
+            if field_name.startswith('m_'):
+                field_name = field_name[2:]
             if field_name.startswith('c_'):
                 field_name = field_name[2:]
                 value = getattr(item, u't_{}'.format(field_name)).values()
@@ -626,6 +628,8 @@ class MagiCollection(object):
                     d['value'] = getattr(cache, 'unicode', field_name)
             elif field.name.startswith('c_'): # original field name
                 d['type'] = 'list'
+            elif field.name.startswith('m_'): # original field name
+                d['type'] = 'markdown'
             elif isinstance(field, models.models.ManyToManyField):
                 d['type'] = 'text_with_link'
                 d['value'] = getattr(item, 'cached_total_' + field_name).unicode
@@ -930,6 +934,7 @@ class MagiCollection(object):
         page_size = 12
         item_padding = 20 # Only used with default item template
         ajax_item_popover = False
+        hide_icons = False
 
         item_buttons_classes = property(propertyFromCollection('item_buttons_classes'))
         show_item_buttons = property(propertyFromCollection('show_item_buttons'))
@@ -1090,6 +1095,7 @@ class MagiCollection(object):
         auto_reloader = True
         template = 'default'
         item_padding = 20 # Only used with default item template
+        hide_icons = False
 
         @property
         def show_item_buttons(self):
@@ -2387,4 +2393,55 @@ class DonateCollection(MagiCollection):
     class EditView(MagiCollection.EditView):
         staff_required = True
         permissions_required = ['manage_donation_months']
+        multipart = True
+
+############################################################
+# Prize Collection
+
+PRIZE_CUTEFORM = {
+    'i_character': {
+        'to_cuteform': lambda k, v: models.Prize.CHARACTERS[k][2],
+        'extra_settings': {
+	    'modal': 'true',
+	    'modal-text': 'true',
+        },
+    },
+    'has_giveaway': {
+        'type': CuteFormType.YesNo,
+    },
+}
+
+class PrizeCollection(MagiCollection):
+    enabled = False
+    queryset = models.Prize.objects.all()
+    form_class = forms.PrizeForm
+    navbar_link_list = 'staff'
+    filter_cuteform = PRIZE_CUTEFORM
+
+    def to_fields(self, view, item, *args, **kwargs):
+        fields = super(PrizeCollection, self).to_fields(view, item, *args, **kwargs)
+        setSubField(fields, 'value', key='value', value=u'US ${}'.format(item.value))
+        setSubField(fields, 'character', key='type', value='text_with_link')
+        setSubField(fields, 'character', key='link', value=lambda f: item.character_url)
+        setSubField(fields, 'character', key='link_text', value=lambda f: item.character)
+        setSubField(fields, 'character', key='image', value=lambda f: item.character_image)
+        return fields
+
+    class ListView(MagiCollection.ListView):
+        staff_required = True
+        one_of_permissions_required = ['add_prizes', 'manage_prizes']
+        filter_form = forms.PrizeFilterForm
+
+    class ItemView(MagiCollection.ItemView):
+        staff_required = True
+        hide_icons = True
+
+    class AddView(MagiCollection.AddView):
+        staff_required = True
+        one_of_permissions_required = ['add_prizes', 'manage_prizes']
+        multipart = True
+
+    class EditView(MagiCollection.EditView):
+        staff_required = True
+        owner_only_or_permissions_required = ['manage_prizes']
         multipart = True

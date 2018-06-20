@@ -54,7 +54,10 @@ def getInfoFromChoices(field_name, details, key):
         value = getattr(instance, field_name)
         if (not value
             or value not in details
-            or key not in details[value]):
+            or ((key >= len(details[value])
+                if isinstance(details[value], tuple)
+                else (key not in details[value])))
+        ):
             return None
         return details[value][key]
     return _getInfo
@@ -322,7 +325,7 @@ class BaseMagiModel(models.Model):
         return [map_method(i) for i in values] if map_method else values
 
     def _get_markdown_value(self, field_name):
-        html = getattr(self, u'_cache_{}'.format(field_name))
+        html = getattr(self, u'_cache_{}'.format(field_name), None)
         if html:
             return True, html
         markdown = getattr(self, u'm_{}'.format(field_name))

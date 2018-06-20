@@ -54,6 +54,7 @@ DEFAULT_GROUPS = [
             'edit_roles', 'edit_staff_status', 'edit_donator_status', 'see_profile_edit_button',
             'edit_staff_configurations', 'add_badges', 'see_collections_details', 'manage_main_items',
             'edit_staff_details', 'moderate_reports', 'edit_reported_things', 'post_community_event_activities',
+            'manage_prizes',
         ],
         'outside_permissions': {
             'Tweetdeck': 'https://tweetdeck.twitter.com/',
@@ -184,7 +185,7 @@ DEFAULT_GROUPS = [
     ('entertainer', {
         'translation': _('Community entertainer'),
         'description': 'We keep the community active and happy by organizing fun stuff: contests, giveaways, games, etc. We\'re open to feedback and ideas!',
-        'permissions': ['edit_staff_configurations', 'add_badges', 'post_community_event_activities'],
+        'permissions': ['edit_staff_configurations', 'add_badges', 'post_community_event_activities', 'add_prizes'],
         'requires_staff': True,
         'outside_permissions': {
             'Tweetdeck': 'https://tweetdeck.twitter.com/',

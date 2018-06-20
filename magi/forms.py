@@ -1453,3 +1453,26 @@ class FilterBadges(MagiFiltersForm):
     class Meta(MagiFiltersForm.Meta):
         model = models.Badge
         fields = ('search', 'rank', 'added_by', 'of_user')
+
+############################################################
+# Prizes form
+
+class PrizeForm(AutoForm):
+    class Meta(AutoForm.Meta):
+        model = models.Prize
+        fields = '__all__'
+        save_owner_on_creation = True
+
+class PrizeFilterForm(MagiFiltersForm):
+    search_fields = ['name', 'm_details']
+    ordering_fields = [
+        ('id', 'Creation'),
+        ('value', 'Value'),
+    ]
+
+    has_giveaway = forms.NullBooleanField(label='Assigned to a giveaway or already given away')
+    has_giveaway_filter = MagiFilter(selector='giveaway_url__isnull')
+
+    class Meta:
+        model = models.Prize
+        fields = ('search', 'has_giveaway', 'i_character', 'ordering', 'reverse_order')

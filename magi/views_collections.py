@@ -101,6 +101,7 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
     context['item_template'] = collection.item_view.template
     context['full_width'] = collection.item_view.full_width
     context['ajax_callback'] = collection.item_view.ajax_callback
+    context['hide_icons'] = collection.item_view.hide_icons
     context['collection'] = collection
     if context['item_template'] == 'default':
         context['top_illustration'] = collection.item_view.top_illustration
@@ -235,6 +236,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['no_result_template'] = collection.list_view.no_result_template
     context['after_template'] = collection.list_view.after_template
     context['item_template'] = collection.list_view.item_template
+    context['hide_icons'] = collection.list_view.hide_icons
     context['item_blocked_template'] = collection.list_view.item_blocked_template
     if context['alt_view'] and 'template' in context['alt_view']:
         context['item_template'] = context['alt_view']['template']
