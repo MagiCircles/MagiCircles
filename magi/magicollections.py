@@ -2417,6 +2417,7 @@ class PrizeCollection(MagiCollection):
     form_class = forms.PrizeForm
     navbar_link_list = 'staff'
     filter_cuteform = PRIZE_CUTEFORM
+    reportable = False
 
     def to_fields(self, view, item, *args, **kwargs):
         fields = super(PrizeCollection, self).to_fields(view, item, *args, **kwargs)
