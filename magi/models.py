@@ -1016,7 +1016,7 @@ class Prize(MagiModel):
     image4 = models.ImageField('4th image', upload_to=uploadItem('prize/'), null=True)
     value = models.DecimalField('Value', null=True, help_text='in USD', max_digits=6, decimal_places=2)
 
-    CHARACTERS = OrderedDict([(unicode(_c[0]), _c) for _c in FAVORITE_CHARACTERS])
+    CHARACTERS = OrderedDict([(unicode(_c[0]), _c) for _c in FAVORITE_CHARACTERS or []])
     CHARACTER_CHOICES = [(_id, _details[1]) for _id, _details in CHARACTERS.items()]
     CHARACTER_WITHOUT_I_CHOICES = True
     i_character = models.CharField('Character', null=True, max_length=200, choices=CHARACTER_CHOICES)
