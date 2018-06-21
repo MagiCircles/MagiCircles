@@ -1,3 +1,6 @@
+import datetime
+from django.utils import timezone
+from django.core.exceptions import ObjectDoesNotExist
 from magi.utils import tourldash
 from magi import models
 from magi.settings import SITE_URL
@@ -7,6 +10,35 @@ from magi.settings import SITE_URL
 
 def totalDonators():
     return models.UserPreferences.objects.filter(i_status__isnull=False).exclude(i_status__exact='').count()
+
+############################################################
+# Get latest donation month (for generated settings)
+
+def latestDonationMonth(failsafe=False):
+    now = timezone.now()
+    this_month = datetime.datetime(year=now.year, month=now.month, day=1)
+    try:
+        donation_month = models.DonationMonth.objects.get(date=this_month)
+    except ObjectDoesNotExist:
+        if not failsafe:
+            return None
+        try:
+            donation_month = models.DonationMonth.objects.order_by('-date')[0]
+        except IndexError:
+            donation_month = None
+    if not donation_month:
+        return {
+            'percent': 0,
+            'percent_int': 0,
+            'date': this_month,
+            'donations': 0,
+        }
+    return {
+        'percent': donation_month.percent,
+        'percent_int': donation_month.percent_int,
+        'date': donation_month.date,
+        'donations': donation_month.donations,
+    }
 
 ############################################################
 # Get staff configurations (for generated settings)

@@ -1326,6 +1326,13 @@ class FilterReports(MagiFiltersForm):
 # Donation Months forms
 
 class DonateForm(AutoForm):
+    def save(self, commit=True):
+        instance = super(DonateForm, self).save(commit=False)
+        instance.date = instance.date.replace(day=1)
+        if commit:
+            instance.save()
+        return instance
+
     class Meta(AutoForm.Meta):
         model = models.DonationMonth
         fields = '__all__'

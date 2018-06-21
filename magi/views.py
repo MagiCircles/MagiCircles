@@ -81,8 +81,12 @@ def indexExtraContext(context):
     now = timezone.now()
     if 'donate' in context['all_enabled']:
         context['this_month'] = datetime.datetime(year=now.year, month=now.month, day=1)
-        try: context['donation_month'] = models.DonationMonth.objects.get(date=context['this_month'])
-        except ObjectDoesNotExist: pass
+        if hasattr(django_settings, 'DONATION_MONTH'):
+            if django_settings.DONATION_MONTH:
+                context['donation_month'] = django_settings.DONATION_MONTH
+        else:
+            try: context['donation_month'] = models.DonationMonth.objects.get(date=context['this_month'])
+            except ObjectDoesNotExist: pass
     if SITE_LOGO_PER_LANGUAGE:
         logo_per_language = SITE_LOGO_PER_LANGUAGE.get(get_language(), None)
         if logo_per_language:

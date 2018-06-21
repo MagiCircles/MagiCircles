@@ -2394,6 +2394,7 @@ class DonateCollection(MagiCollection):
         staff_required = True
         permissions_required = ['manage_donation_months']
         multipart = True
+        allow_delete = True
 
 ############################################################
 # Prize Collection
