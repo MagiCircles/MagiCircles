@@ -76,7 +76,7 @@
 	{% elif field.type == 'long_text' %}
         <strong class="long-text-title">{{ field.verbose_name }}</strong>
         <div class="long-text-value">{{ field.value }}</div>
-        {% elif field.type == 'list' %}
+    {% elif field.type == 'list' %}
         <ul>{% for value in field.value %}
           <li>{{ value }}</li>
         {% endfor %}</ul>
@@ -102,7 +102,7 @@
     {% if item.buttons_to_show and bottom %}
     {% for name, button in item.buttons_to_show.items %}
     {% if button.show and button.has_permissions %}
-    <tr{% if 'staff-only' in button.classes %} class="staff-only"{% endif %}>
+    <tr{% if 'staff-only' in button.classes %} class="staff-only"{% endif %} data-field="{{ name }}">
       <td>
         {% if button.icon %}<i class="flaticon-{{ button.icon }}"></i>
         {% elif button.image %}<img src="{{ static_url }}img/{{ button.image }}.png?{{ static_files_version }}" height="39" />{% endif %}
@@ -133,7 +133,7 @@
     {% if bottom %}
     {% load i18n %}
     {% if comments_enabled %}
-    <tr>
+    <tr data-field="comments">
       <td><i class="flaticon-comments"></i></td>
       <th>{% trans 'Comments' %}</th>
       <td>
@@ -144,7 +144,7 @@
     </tr>
     {% endif %}
     {% if share_enabled %}
-    <tr>
+    <tr data-field="share">
       <td><i class="flaticon-link"></i></td>
       <th>{% trans 'Share' %}</th>
       <td>
