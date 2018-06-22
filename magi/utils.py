@@ -517,6 +517,9 @@ def jsv(v):
 def templateVariables(string):
     return [x[1] for x in string._formatter_parser() if x[1]]
 
+def snakeToCamelCase(string):
+    return ''.join(x.capitalize() or '_' for x in string.split('_'))
+
 ############################################################
 # Redirections
 
