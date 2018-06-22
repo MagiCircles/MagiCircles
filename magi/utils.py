@@ -474,6 +474,19 @@ def torfc2822(date):
     return date.strftime("%B %d, %Y %H:%M:%S %z")
 
 ############################################################
+# Event status using start and end date
+
+def getEventStatus(start_date, end_date):
+    if not end_date or not start_date:
+        return None
+    now = timezone.now()
+    if now > end_date:
+        return 'ended'
+    elif now > start_date:
+        return 'current'
+    return 'future'
+
+############################################################
 # Send email
 
 def send_email(subject, template_name, to=[], context={}, from_email=django_settings.AWS_SES_RETURN_PATH):
@@ -747,3 +760,27 @@ def staticImageURL(path, folder=None, extension=None, versionned=True):
 
 def linkToImageURL(link):
     return staticImageURL(u'links/{}'.format(link.i_type), extension=u'png')
+
+############################################################
+# HTML tools
+
+def toTimeZoneDateTime(date, timezones, ago=False):
+    if not date:
+        return u''
+    date = torfc2822(date)
+    return u'{}{}'.format(u'<br>'.join([
+        u'<span class="timezone" data-to-timezone="{timezone}"><span class="datetime">{date}</span>(<span class="current_timezone">UTC</span>)</span>'.format(
+            timezone=timezone,
+            date=date,
+        )
+        for timezone in timezones
+    ]), u'<br><small class="text-muted"><span class="timezone" data-timeago="true" style="display: none;"><span class="datetime">{date}</span></span></small>'.format(
+        date=date,
+    ) if ago else '')
+
+def toCountDown(date, sentence, classes=None):
+    if not date or date < timezone.now():
+        return u''
+    return u'<span class="countdown {classes}" data-date="{date}" data-format="{sentence}"></h4>'.format(
+        date=torfc2822(date), sentence=sentence, classes=u' '.join(classes or []),
+    )
