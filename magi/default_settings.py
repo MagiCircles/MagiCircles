@@ -264,7 +264,7 @@ DEFAULT_ENABLED_NAVBAR_LISTS = OrderedDict([
         'url': '/me/',
     }),
     ('staff', {
-        'title': '',
+        'title': 'Staff',
         'icon': 'promo',
         'url': '/settings/',
     }),
