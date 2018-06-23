@@ -9,7 +9,7 @@
     </div>
     <div class="col-md-7">
       <div class="progress">
-	<div class="progress-bar progress-bar-{% if month.percent == 100 %}success{% else %}main{% endif %} progress-bar-striped active" style="width: {% localize off %}{{ month.percent }}{% endlocalize %}%;">
+	<div class="progress-bar progress-bar-{% if month.percent == 100 %}success{% else %}danger{% endif %} progress-bar-striped active" style="width: {% localize off %}{{ month.percent }}{% endlocalize %}%;">
 	  {% if month.donations %}${{ month.donations }}{% endif %}
 	</div>
 	{% if not month.donations %}<span class="text-muted no-donation">{% trans 'No donation yet' %} :(</span>{% endif %}
