@@ -241,6 +241,9 @@
     </script>
     {% block js %}{% endblock %}{% if js %}{{ js }}{% endif %}
     {% block js2 %}{% endblock %}{% if js %}{{ js2 }}{% endif %}
+    {% if javascript_commons %}
+    <script src="{{ static_url }}js/commons.js?{{ static_files_version }}"></script>
+    {% endif %}
     <script src="{{ static_url }}js/magi_main.js?{{ static_files_version }}"></script>
     <script src="{{ static_url }}js/main.js?{{ static_files_version }}"></script>
     {% for js_file in js_files %}

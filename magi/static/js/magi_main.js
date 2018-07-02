@@ -739,6 +739,9 @@ function loadCommons(onPageLoad /* optional = false */) {
     directAddCollectible($('[data-quick-add-to-collection="true"]'));
     translationsSeeAll();
     deleteFormConfirm();
+    if (typeof customLoadCommons != 'undefined') {
+        customLoadCommons();
+    }
 }
 
 // *****************************************

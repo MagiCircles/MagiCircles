@@ -9,7 +9,42 @@ from django.utils import timezone
 from magi import views_collections, magicollections
 from magi import views as magi_views
 from magi import forms
-from magi.settings import RAW_CONTEXT, ENABLED_PAGES, ENABLED_NAVBAR_LISTS, SITE_NAME, EMAIL_IMAGE, GAME_NAME, SITE_DESCRIPTION, SITE_STATIC_URL, SITE_URL, GITHUB_REPOSITORY, SITE_LOGO, SITE_NAV_LOGO, JAVASCRIPT_TRANSLATED_TERMS, STATIC_UPLOADED_FILES_PREFIX, COLOR, SITE_IMAGE, TRANSLATION_HELP_URL, DISQUS_SHORTNAME, HASHTAGS, TWITTER_HANDLE, EMPTY_IMAGE, GOOGLE_ANALYTICS, STATIC_FILES_VERSION, PROFILE_TABS, LAUNCH_DATE, PRELAUNCH_ENABLED_PAGES, NAVBAR_ORDERING, ACCOUNT_MODEL, STAFF_CONFIGURATIONS, FIRST_COLLECTION, GET_STARTED_VIDEO, GLOBAL_OUTSIDE_PERMISSIONS, GROUPS
+from magi.settings import (
+    RAW_CONTEXT,
+    ENABLED_PAGES,
+    ENABLED_NAVBAR_LISTS,
+    SITE_NAME,
+    EMAIL_IMAGE,
+    GAME_NAME,
+    SITE_DESCRIPTION,
+    SITE_STATIC_URL,
+    SITE_URL,
+    GITHUB_REPOSITORY,
+    SITE_LOGO,
+    SITE_NAV_LOGO,
+    JAVASCRIPT_TRANSLATED_TERMS,
+    STATIC_UPLOADED_FILES_PREFIX,
+    COLOR,
+    SITE_IMAGE,
+    TRANSLATION_HELP_URL,
+    DISQUS_SHORTNAME,
+    HASHTAGS,
+    TWITTER_HANDLE,
+    EMPTY_IMAGE,
+    GOOGLE_ANALYTICS,
+    STATIC_FILES_VERSION,
+    PROFILE_TABS,
+    LAUNCH_DATE,
+    PRELAUNCH_ENABLED_PAGES,
+    NAVBAR_ORDERING,
+    ACCOUNT_MODEL,
+    STAFF_CONFIGURATIONS,
+    FIRST_COLLECTION,
+    GET_STARTED_VIDEO,
+    GLOBAL_OUTSIDE_PERMISSIONS,
+    GROUPS,
+    JAVASCRIPT_COMMONS,
+)
 from magi.models import UserPreferences
 from magi.utils import redirectWhenNotAuthenticated, hasPermissions, hasOneOfPermissions, tourldash, groupsWithPermissions, groupsWithOneOfPermissions, staticImageURL
 
@@ -479,6 +514,7 @@ RAW_CONTEXT['full_site_logo'] = u'http:{}'.format(RAW_CONTEXT['site_logo']) if '
 RAW_CONTEXT['site_nav_logo'] = SITE_NAV_LOGO
 RAW_CONTEXT['disqus_shortname'] = DISQUS_SHORTNAME
 RAW_CONTEXT['javascript_translated_terms'] = JAVASCRIPT_TRANSLATED_TERMS
+RAW_CONTEXT['javascript_commons'] = JAVASCRIPT_COMMONS
 RAW_CONTEXT['site_color'] = COLOR
 RAW_CONTEXT['site_image'] = staticImageURL(SITE_IMAGE)
 RAW_CONTEXT['full_site_image'] = u'http:{}'.format(RAW_CONTEXT['site_image']) if 'http' not in RAW_CONTEXT['site_image'] else RAW_CONTEXT['site_image']
