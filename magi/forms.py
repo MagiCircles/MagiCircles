@@ -639,16 +639,21 @@ class AccountForm(AutoForm):
             self.previous_level = self.instance.level
         self.previous_screenshot = None
         if 'screenshot' in self.fields and not self.is_creating:
-            self.previous_screenshot = unicode(self.instance.screenshot)
+            self.previous_screenshot = unicode(self.instance.screenshot) or ''
+        if 'level_on_screenshot_upload' in self.fields:
+            del(self.fields['level_on_screenshot_upload'])
 
     def clean_screenshot(self):
         new_level = self.cleaned_data.get('level')
-        screenshot_image = self.cleaned_data.get('screenshot')
+        screenshot_image = self.cleaned_data.get('screenshot') or ''
+        previous_level = 0
+        if not self.is_creating:
+            previous_level = getattr(self.instance, 'level_on_screenshot_upload', self.previous_level) or 0
         if (new_level
             and new_level != self.previous_level
             and has_field(self.Meta.model, 'screenshot')
             and new_level >= 200
-            and (new_level - (self.previous_level or 0)) >= 10
+            and (new_level - previous_level) >= 10
             and unicode(screenshot_image) == unicode(self.previous_screenshot)):
             raise forms.ValidationError(
                 message=_('Please provide an updated screenshot of your in-game profile to prove your level.'),
@@ -660,6 +665,9 @@ class AccountForm(AutoForm):
         instance = super(AccountForm, self).save(commit=False)
         if not self.is_creating and 'level' in self.fields and instance.level != self.previous_level and has_field(instance, '_cache_leaderboards_last_update'):
             instance._cache_leaderboards_last_update = None
+        # When level screenshot gets updated, update level_on_screenshot_upload
+        if unicode(self.previous_screenshot) != unicode(instance.screenshot):
+            instance.level_on_screenshot_upload = instance.level
         if commit:
             instance.save()
         return instance

@@ -1411,7 +1411,7 @@ class AccountCollection(MagiCollection):
 
         def to_fields(self, item, exclude_fields=None, *args, **kwargs):
             if not exclude_fields: exclude_fields = []
-            exclude_fields.append('owner')
+            exclude_fields += ['owner', 'level_on_screenshot_upload']
             fields = super(AccountCollection.ItemView, self).to_fields(item, *args, exclude_fields=exclude_fields, **kwargs)
             if hasattr(item, 'cached_leaderboard') and item.cached_leaderboard:
                 fields['leaderboard'] = {
