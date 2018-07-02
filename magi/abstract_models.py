@@ -168,9 +168,9 @@ class BaseAccount(CacheOwner):
 
     def __unicode__(self):
         if self.id:
-            return u'{} {}'.format(
+            return u'{}{}'.format(
                 self.nickname if self.nickname else self.cached_owner.username,
-                _(u'Level {level}').format(level=self.level) if self.level else '')
+                ' {}'.format(_(u'Level {level}').format(level=self.level)) if self.level else '')
         return u'Level {}'.format(self.level) if self.level else ''
 
     class Meta:

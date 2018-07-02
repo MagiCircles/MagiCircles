@@ -14,12 +14,59 @@ function disableButton(button) {
     });
 }
 
+function reenableButton(button) {
+    button.unbind('click');
+    if (button.data('previous-content')) {
+        button.html(button.data('previous-content'));
+    }
+    formloaders();
+}
+
 function formloaders() {
     $('button[data-form-loader=true]').closest('form').attr('novalidate', true);
     $('button[data-form-loader=true]').click(function(e) {
+        $(this).data('previous-content', $(this).html());
         $(this).html('<i class="flaticon-loading"></i>');
         disableButton($(this));
     });
+}
+
+function deleteFormConfirm() {
+    let form = $('form[data-form-name^="delete_"]');
+    if (form.length > 0) {
+        let thing_to_delete = form.data('form-name').substring(7);
+        let id_thing_to_delete = form.find('[name=thing_to_delete]').val();
+        if (form.closest('.modal').length > 0) {
+            // When loaded in a modal, just replace form with link
+            let title = form.closest('.modal').find('h1[id="' + form.data('form-name') + '"]');
+            form.replaceWith('<br><br><div class="text-center"><a href="/' + thing_to_delete + '/edit/'+ id_thing_to_delete + '/#delete_' + thing_to_delete + '">' + title.html() + '</a></div>');
+            title.hide();
+        } else {
+            // When loaded in its own page
+            // Prevent submit to show warning
+            form.off('submit');
+            form.submit(function(e) {
+                let checkbox = form.find('[name="confirm"]');
+                if (!checkbox.prop('checked')) {
+                    return;
+                }
+                e.preventDefault();
+                $.ajax({
+                    url: '/ajax/whatwillbedeleted/' + thing_to_delete + '/' + id_thing_to_delete + '/',
+                    success: function(html) {
+                        confirmModal(function() { // on confirmed
+                            form.off('submit');
+                            form.submit();
+                        }, function() { // on cancelled
+                            checkbox.prop('checked', false);
+                            reenableButton(form.find('[type=submit]'));
+                            return false;
+                        }, undefined, html);
+                    },
+                });
+            });
+        }
+    }
 }
 
 // *****************************************
@@ -177,16 +224,16 @@ function ajaxModals() {
                 var title = button.data('ajax-title');
                 title = typeof title == 'undefined' ? button_content : title;
                 modal_size = button.data('ajax-modal-size');
-                freeModal(title, data, modalButtons, modal_size);
+                freeModal(title, data, modalButtons, modal_size, $('#ajaxModal'));
                 if (typeof button.attr('href') != 'undefined') {
-                    $('#freeModal').data('original-url', button.attr('href'));
+                    $('#ajaxModal').data('original-url', button.attr('href'));
                 }
                 loadCommons();
                 if (typeof button.data('ajax-handle-form') != 'undefined') {
                     var ajaxModals_handleForms;
                     ajaxModals_handleForms = function() {
                         formloaders();
-                        $('#freeModal form').submit(function(e) {
+                        $('#ajaxModal form').submit(function(e) {
                             e.preventDefault();
                             var form_name = $(this).find('.generic-form-submit-button').attr('name');
                             $(this).ajaxSubmit({
@@ -199,10 +246,10 @@ function ajaxModals() {
                                         && typeof button.data('ajax-modal-after-form-size') != 'undefined') {
                                         form_modal_size = button.data('ajax-modal-after-form-size');
                                     }
-                                    freeModal(title, data, modalButtons, form_modal_size);
+                                    freeModal(title, data, modalButtons, form_modal_size, $('#ajaxModal'));
                                     if (typeof form_name != 'undefined'
-                                        && $('#freeModal form .generic-form-submit-button[name="' + form_name + '"]').length > 0
-                                        && $('#freeModal form .errorlist').length > 0) {
+                                        && $('#ajaxModal form .generic-form-submit-button[name="' + form_name + '"]').length > 0
+                                        && $('#ajaxModal form .errorlist').length > 0) {
                                         ajaxModals_handleForms();
                                     }
                                     loadCommons();
@@ -363,7 +410,7 @@ var realBack = false;
 var calledBack = false;
 
 function onBackButtonCloseModal() {
-    $('.modal').on('shown.bs.modal', function()  {
+    $('#ajaxModal').on('shown.bs.modal', function()  {
         var urlReplace;
         var original_url = $(this).data('original-url');
         if (typeof original_url != 'undefined') {
@@ -374,7 +421,7 @@ function onBackButtonCloseModal() {
         history.pushState(null, null, urlReplace);
     });
 
-    $('.modal').on('hidden.bs.modal', function()  {
+    $('#ajaxModal').on('hidden.bs.modal', function()  {
         if (realBack == false) {
             calledBack = true;
             history.back();
@@ -387,7 +434,7 @@ function onBackButtonCloseModal() {
             realBack = true;
         }
         calledBack = false;
-        $('.modal').modal('hide');
+        $('#ajaxModal').modal('hide');
     });
 }
 
@@ -691,6 +738,7 @@ function loadCommons(onPageLoad /* optional = false */) {
     itemsReloaders();
     directAddCollectible($('[data-quick-add-to-collection="true"]'));
     translationsSeeAll();
+    deleteFormConfirm();
 }
 
 // *****************************************
@@ -720,28 +768,29 @@ function gettext(term) {
 
 // Use true for modal_size to not change the size
 // Use 0 for buttons to remove all buttons
-function freeModal(title, body, buttons /* optional */, modal_size /* optional */) {
+function freeModal(title, body, buttons /* optional */, modal_size /* optional */, modal /* optional */) {
     keep_size = modal_size === true;
+    modal = modal ? modal : $('#freeModal');
     if (!keep_size) {
-        $('#freeModal .modal-dialog').removeClass('modal-lg');
-        $('#freeModal .modal-dialog').removeClass('modal-md');
-        $('#freeModal .modal-dialog').removeClass('modal-sm');
+        modal.find('.modal-dialog').removeClass('modal-lg');
+        modal.find('.modal-dialog').removeClass('modal-md');
+        modal.find('.modal-dialog').removeClass('modal-sm');
         if (typeof modal_size != 'undefined') {
-            $('#freeModal .modal-dialog').addClass('modal-' + modal_size);
+            modal.find('.modal-dialog').addClass('modal-' + modal_size);
         } else {
-            $('#freeModal .modal-dialog').addClass('modal-lg');
+            modal.find('.modal-dialog').addClass('modal-lg');
         }
     }
-    $('#freeModal .modal-header h4').html(title);
-    $('#freeModal .modal-body').html(body);
-    $('#freeModal .modal-footer').html('<button type="button" class="btn btn-main" data-dismiss="modal">OK</button>');
+    modal.find('.modal-header h4').html(title);
+    modal.find('.modal-body').html(body);
+    modal.find('.modal-footer').html('<button type="button" class="btn btn-main" data-dismiss="modal">OK</button>');
     if (buttons === 0) {
-        $('#freeModal .modal-footer').hide();
+        modal.find('.modal-footer').hide();
     } else if (typeof buttons != 'undefined') {
-        $('#freeModal .modal-footer').html(buttons);
-        $('#freeModal .modal-footer').show();
+        modal.find('.modal-footer').html(buttons);
+        modal.find('.modal-footer').show();
     }
-    $('#freeModal').modal('show');
+    modal.modal('show');
 }
 
 function confirmModal(onConfirmed, onCanceled /* optional */, title /* optional */, body /* optional */) {
@@ -749,16 +798,24 @@ function confirmModal(onConfirmed, onCanceled /* optional */, title /* optional 
     body = typeof body == 'undefined' ? gettext('You can\'t cancel this action afterwards.') : body;
     freeModal(title, body, '\
 <button type="button" class="btn btn-default">' + gettext('Cancel') + '</button>\
-<button type="button" class="btn btn-danger">' + gettext('Confirm') + '</button>');
-    $('#freeModal .modal-footer .btn-danger').click(function() {
+<button type="button" class="btn btn-danger">' + gettext('Confirm') + '</button>', undefined, $('#confirmModal'));
+    $('#confirmModal .modal-footer .btn-danger').click(function() {
         onConfirmed();
-        $('#freeModal').modal('hide');
+        $('#confirmModal').modal('hide');
     });
-    $('#freeModal .modal-footer .btn-default').click(function() {
-        if (typeof onCanceled != 'undefined') {
+    var cancelBeenCalled = false;
+    $('#confirmModal .modal-footer .btn-default').click(function() {
+        if (!cancelBeenCalled && typeof onCanceled != 'undefined') {
+            cancelBeenCalled = true;
             onCanceled();
         }
-        $('#freeModal').modal('hide');
+        $('#confirmModal').modal('hide');
+    });
+    $('#confirmModal').on('hidden.bs.modal', function()  {
+        if (!cancelBeenCalled && typeof onCanceled != 'undefined') {
+            cancelBeenCalled = true;
+            onCanceled();
+        }
     });
 }
 

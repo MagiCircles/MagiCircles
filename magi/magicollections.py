@@ -1237,6 +1237,9 @@ class MagiCollection(object):
         savem2m = False
         back_to_list_button = True
 
+        def allow_cascade_delete_up_to(self, request):
+            return 10
+
         @property
         def filter_cuteform(self):
             return self.collection.filter_cuteform
@@ -1469,6 +1472,9 @@ class AccountCollection(MagiCollection):
 
     class EditView(MagiCollection.EditView):
         allow_delete = True
+
+        def allow_cascade_delete_up_to(self, request):
+            return 25
 
         def redirect_after_edit(self, request, instance, ajax=False):
             if ajax:
@@ -2090,6 +2096,9 @@ class ActivityCollection(MagiCollection):
         allow_delete = True
         form_class = forms.ActivityForm
 
+        def allow_cascade_delete_up_to(self, request):
+            return 25
+
         def redirect_after_delete(self, request, item, ajax):
             if ajax:
                 return '/ajax/successdelete/'
@@ -2419,6 +2428,7 @@ class PrizeCollection(MagiCollection):
     navbar_link_list = 'staff'
     filter_cuteform = PRIZE_CUTEFORM
     reportable = False
+    icon = 'present'
 
     def to_fields(self, view, item, *args, **kwargs):
         fields = super(PrizeCollection, self).to_fields(view, item, *args, **kwargs)
@@ -2447,3 +2457,4 @@ class PrizeCollection(MagiCollection):
         staff_required = True
         owner_only_or_permissions_required = ['manage_prizes']
         multipart = True
+        allow_delete = True

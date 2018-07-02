@@ -1,0 +1,24 @@
+{% load tools %}
+{% if not hide_warning %}
+<div class="alert alert-danger fontx1-5">
+  {{ warnings.0 }}
+  {% endif %}
+  <ul>
+    {% for thing in to_delete %}
+    {% if thing|isList %}
+    {% include 'ajax/whatwillbedeleted.html' with to_delete=thing hide_warning=True %}
+    {% else %}
+    <li>{% if thing.collection %}{{ thing.collection.title }}{% else %}{{ thing|modelName }}{% endif %}:
+      {% if thing.collection and thing.collection.item_view.enabled %}
+      <a href="{{ thing.item_url }}" target="_blank">{{ thing }}</a>
+      {% else %}
+      {{ thing }}
+      {% endif %}</li>
+    {% endif %}
+    {% endfor %}
+  </ul>
+  {% if not hide_warning %}
+  <h1 class="text-danger">{{ warnings.1 }}</h1>
+  <h3 class="text-right">{{ warnings.2 }}</h3>
+</div>
+{% endif %}

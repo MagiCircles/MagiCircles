@@ -10,6 +10,7 @@ from django.db.models import Q
 from django.forms.models import model_to_dict, fields_for_model
 from django.conf import settings as django_settings
 from django.contrib.auth import authenticate, login as login_action
+from django.contrib.admin.utils import NestedObjects
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _, string_concat, get_language, activate as translation_activate
 from django.utils.safestring import mark_safe
@@ -1062,6 +1063,36 @@ class LanguagePreferencesForm(MagiForm):
 class ConfirmDelete(forms.Form):
     confirm = forms.BooleanField(required=True, initial=False, label=_('Confirm'))
     thing_to_delete = forms.IntegerField(widget=forms.HiddenInput, required=True)
+
+    def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop('request', None)
+        self.collection = kwargs.pop('collection', None)
+        self.instance = kwargs.pop('instance', None)
+        super(ConfirmDelete, self).__init__(*args, **kwargs)
+
+    def _get_total_deleted(self, instances, total=0):
+        for instance in instances:
+            if isinstance(instance, list):
+                total += self._get_total_deleted(instance, total=total)
+            else:
+                total += 1
+        return total
+
+    def clean(self):
+        if not self.request or not self.collection or not self.instance:
+            return
+        if self.request.user.is_superuser:
+            return
+        up_to = self.collection.edit_view.allow_cascade_delete_up_to(self.request)
+        if not up_to:
+            return
+        collector = NestedObjects(using=self.instance._state.db)
+        collector.collect([self.instance])
+        total = self._get_total_deleted(collector.nested())
+        if total >= up_to:
+            raise forms.ValidationError(mark_safe(u'You are not allowed to delete this. {}'.format(
+                'Ask an administrator.' if self.request.user.is_staff else '<a href="/help/Delete%20error/">Learn more</a>.',
+            )))
 
 class Confirm(forms.Form):
     confirm = forms.BooleanField(required=True, initial=False, label=_('Confirm'))

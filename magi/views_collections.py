@@ -426,10 +426,10 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
     if allowDelete:
         formDelete = ConfirmDelete(initial={
             'thing_to_delete': instance.pk,
-        })
+        }, request=request, instance=instance, collection=collection)
     form = formClass(instance=instance, request=request, ajax=ajax, collection=collection)
     if allowDelete and request.method == 'POST' and u'delete_{}'.format(collection.name) in request.POST:
-        formDelete = ConfirmDelete(request.POST)
+        formDelete = ConfirmDelete(request.POST, request=request, instance=instance, collection=collection)
         if formDelete.is_valid():
             collection.edit_view.before_delete(request, instance, ajax)
             redirectURL = collection.edit_view.redirect_after_delete(request, instance, ajax)

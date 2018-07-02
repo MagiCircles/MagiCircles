@@ -9,7 +9,7 @@ from django.core.urlresolvers import resolve
 from django.contrib.auth.views import login as login_view
 from django.contrib.auth.views import logout as logout_view
 from django.contrib.auth import authenticate, login as login_action
-from django.contrib.admin.utils import get_deleted_objects
+from django.contrib.admin.utils import get_deleted_objects, NestedObjects
 from django.utils.translation import ugettext_lazy as _, string_concat, get_language, activate as translation_activate
 from django.utils.safestring import mark_safe
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
@@ -424,6 +424,32 @@ def deletelink(request, pk):
     models.UserLink.objects.filter(owner=request.user, pk=pk).delete()
     return HttpResponse('')
 
+def _getInstanceFromThingId(thing, thing_id, collection=None):
+    if not collection:
+        collection = getMagiCollection(thing)
+    queryset = collection.queryset
+    return get_object_or_404(queryset, pk=thing_id)
+
+def _cascadeDeleteInstances(instance):
+    collector = NestedObjects(using=instance._state.db)
+    collector.collect([instance])
+    return collector.nested()
+
+def _deleteCascadeWarnings(thing, instance):
+    return (
+        _('If you delete this {thing} ({instance}), the following will automatically be deleted as well:').format(thing=thing, instance=instance),
+        _('Are you sure you want to delete this {thing} ({instance})?').format(thing=thing, instance=instance),
+        _('You can\'t cancel this action afterwards.'),
+    )
+
+def whatwillbedeleted(request, thing, thing_id):
+    context = ajaxContext(request)
+    collection = getMagiCollection(thing)
+    instance = _getInstanceFromThingId(thing, thing_id, collection=collection)
+    context['to_delete'] = _cascadeDeleteInstances(instance)
+    context['warnings'] = _deleteCascadeWarnings(thing=collection.title.lower(), instance=instance)
+    return render(request, 'ajax/whatwillbedeleted.html', context)
+
 def moderatereport(request, report, action):
     if not request.user.is_authenticated() or not hasPermission(request.user, 'moderate_reports') or request.method != 'POST':
         raise PermissionDenied()
@@ -541,16 +567,11 @@ def reportwhatwillbedeleted(request, report):
     # Get the report
     report = get_object_or_404(models.Report, pk=report, i_status=models.Report.get_i('status', 'Pending'))
     # Get the reported thing
-    queryset = report.reported_thing_collection.queryset
-    thing = get_object_or_404(queryset, pk=report.reported_thing_id)
+    instance = _getInstanceFromThingId(report.reported_thing, report.reported_thing_id)
 
-    from django.contrib.admin.util import NestedObjects
-
-    collector = NestedObjects(using='default') # or specific database
-    collector.collect([thing])
-    context['report'] = report
-    context['to_delete'] = collector.nested()
-    return render(request, 'ajax/reportwhatwillbedeleted.html', context)
+    context['to_delete'] = _cascadeDeleteInstances(instance)
+    context['warnings'] = _deleteCascadeWarnings(thing=report.reported_thing, instance=instance)
+    return render(request, 'ajax/whatwillbedeleted.html', context)
 
 def changelanguage(request):
     if not request.user.is_authenticated():
