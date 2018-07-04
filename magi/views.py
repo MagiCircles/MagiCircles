@@ -129,7 +129,7 @@ def aboutDefaultContext(request):
         ('Twitter', 'twitter', u'https://twitter.com/{}/'.format(TWITTER_HANDLE) if TWITTER_HANDLE else None),
         ('Reddit', 'reddit', u'https://www.reddit.com/user/{}/'.format(CONTACT_REDDIT) if CONTACT_REDDIT else None),
         ('Facebook', 'facebook', u'https://facebook.com/{}/'.format(CONTACT_FACEBOOK) if CONTACT_FACEBOOK else None),
-        (_('Email'), 'flaticon-contact', CONTACT_EMAIL if CONTACT_EMAIL else None),
+        (_('Email'), 'flaticon-contact', u'mailto:{}'.format(CONTACT_EMAIL if CONTACT_EMAIL else None)),
         ('GitHub', 'github', u'https://github.com/{}/{}/'.format(GITHUB_REPOSITORY[0], GITHUB_REPOSITORY[1]) if GITHUB_REPOSITORY else None),
         ('Bug tracker', 'flaticon-album', BUG_TRACKER_URL if BUG_TRACKER_URL and not FEEDBACK_FORM else None),
     ]
