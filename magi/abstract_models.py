@@ -170,8 +170,8 @@ class BaseAccount(CacheOwner):
         if self.id:
             return u'{}{}'.format(
                 self.nickname if self.nickname else self.cached_owner.username,
-                ' {}'.format(_(u'Level {level}').format(level=self.level)) if self.level else '')
-        return u'Level {}'.format(self.level) if self.level else ''
+                u' {}'.format(_(u'Level {level}').format(level=self.level)) if self.level else u'')
+        return u'Level {}'.format(self.level) if self.level else u''
 
     class Meta:
         abstract = True
