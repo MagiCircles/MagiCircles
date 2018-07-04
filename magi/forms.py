@@ -810,6 +810,7 @@ class SecurityPreferencesForm(MagiForm):
 class UserPreferencesForm(MagiForm):
     color = forms.ChoiceField(required=False, choices=[], label=_('Color'))
     default_tab = forms.ChoiceField(
+        label=_('Default tab'),
         required=False,
         choices=BLANK_CHOICE_DASH + [
             (tab_name, tab['name'])
