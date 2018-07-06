@@ -589,13 +589,16 @@ class MagiCollection(object):
                 value = mark_safe(u'<dl>{}</dl>'.format(u''.join([u'<dt>{verbose}</dt><dd>{value}</dd>'.format(**dt) for dt in value])))
                 if not value:
                     continue
-            if self.translated_fields and field_name in self.translated_fields:
-                value = getattr(item, u't_{}'.format(field_name), None)
+            if self.translated_fields and field.name in self.translated_fields:
+                value = getattr(item, u't_{}'.format(field.name), None)
                 if not value:
                     continue
-                choices = dict(getattr(item, u'{name}S_CHOICES'.format(name=field_name.upper()), [])).keys()
-                if get_language() in choices and not getattr(item, u'{}s'.format(field_name), {}).get(get_language(), None):
-                    value = mark_safe(u'<a href="https://translate.google.com/#en/{to}/{value}" target="_blank">{value} <i class="flaticon-link"></i></a>'.format(to=get_language(), value=value))
+                choices = dict(getattr(item, u'{name}S_CHOICES'.format(name=field.name.upper()), [])).keys()
+                if field.name.startswith('m_'):
+                    value = (False, value)
+                else:
+                    if get_language() in choices and not getattr(item, u'{}s'.format(field_name), {}).get(get_language(), None):
+                        value = mark_safe(u'<a href="https://translate.google.com/#en/{to}/{value}" target="_blank">{value} <i class="flaticon-link"></i></a>'.format(to=get_language(), value=value))
             is_foreign_key = (isinstance(field, models.models.ForeignKey)
                               or isinstance(field, models.models.OneToOneField))
             if not value and not is_foreign_key:

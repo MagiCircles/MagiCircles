@@ -413,7 +413,7 @@ class BaseMagiModel(models.Model):
 
     def __getattr__(self, name):
         # For choice fields with name "i_something", accessing "something" returns the string value
-        if not name.startswith('_') and not name.startswith('i_') and not name.startswith('c_') and not name.startswith('m_') and not name.startswith('d_') and not name.startswith('j_'):
+        if not name.startswith('_') and not name.startswith('i_') and not name.startswith('c_') and not name.startswith('d_') and not name.startswith('j_'):
             # When accessing "something" and "i_something exists, return the readable key for the choice
             if hasattr(self, u'i_{name}'.format(name=name)):
                 return type(self).get_reverse_i(name, getattr(self, u'i_{name}'.format(name=name)))

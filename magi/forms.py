@@ -176,6 +176,8 @@ class MagiForm(forms.ModelForm):
                                 if singular_field and isinstance(singular_field, TextField):
                                     widget = forms.Textarea
                                 default = getattr(self.instance, name[2:-1], None)
+                                if default and name[2:-1].startswith('m_'):
+                                    default = mark_safe(u'<pre>{}</pre>'.format(default))
                                 help_text = mark_safe(u'{original}<img src="{img}" height="20" /> {lang}{default}'.format(
                                     img=staticImageURL(key, folder='language', extension='png'),
                                     lang=choice[1] if isinstance(choice, tuple) else choice,
@@ -338,7 +340,6 @@ def to_translate_form_class(view):
                 self.beforefields = mark_safe(u'<a href="#translations_see_all" class="btn btn-main btn-sm pull-right" data-spoken-languages="{}" style="display: none">See all languages</a><br><br>'.format(
                     u','.join(spoken_languages)))
 
-            # TODO find a way to only show languages translators can speak
         class Meta(MagiForm.Meta):
             model = view.collection.queryset.model
             fields = [u'd_{}s'.format(_n) for _n in view.collection.translated_fields] if view.collection.translated_fields else []
