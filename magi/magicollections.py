@@ -776,7 +776,7 @@ class MagiCollection(object):
                         extra_attributes['quick-add-to-fk-as-owner'] = collectible_collection.queryset.model.fk_as_owner or 'owner'
             if collectible_collection.add_view.unique_per_owner and not quick_add_to_collection:
                 if collectible_collection.queryset.model.fk_as_owner == 'account' and buttons[name]['badge'] >= len(getAccountIdsFromSession(request)):
-                    edit_sentence = unicode(_('Edit {thing}')).format(
+                    edit_sentence = unicode(_('Edit your {thing}')).format(
                         thing=unicode(collectible_collection.title
                                       if len(getAccountIdsFromSession(request)) == 1
                                       else collectible_collection.plural_title).lower())
