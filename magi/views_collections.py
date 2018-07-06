@@ -9,7 +9,7 @@ from django.shortcuts import render, redirect
 from django.http import Http404
 from django.core.exceptions import PermissionDenied
 
-from magi.utils import getGlobalContext, cuteFormFieldsForContext, get_one_object_or_404
+from magi.utils import getGlobalContext, cuteFormFieldsForContext, get_one_object_or_404, jsv
 from magi.forms import ConfirmDelete, filter_ids
 
 ############################################################
@@ -468,6 +468,9 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
         formDelete.alert_message = _('You can\'t cancel this action afterwards.')
         formDelete.action_sentence = instance.delete_sentence
         formDelete.form_title = u'{}: {}'.format(instance.delete_sentence, unicode(instance))
+        if 'js_variables' not in context or not context['js_variables']:
+            context['js_variables'] = OrderedDict()
+        context['js_variables']['show_cascade_before_delete'] = jsv(collection.edit_view.show_cascade_before_delete)
         context['forms'][u'delete_{}'.format(collection.name)] = formDelete
 
     collection.edit_view.extra_context(context)

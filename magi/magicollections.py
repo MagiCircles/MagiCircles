@@ -466,6 +466,7 @@ class MagiCollection(object):
             class EditView(MagiCollection.EditView):
                 back_to_list_button = False
                 allow_delete = True
+                show_cascade_before_delete = False
 
                 def get_item(self, request, pk):
                     if pk == 'unique':
@@ -1239,6 +1240,7 @@ class MagiCollection(object):
         owner_only_or_one_of_permissions_required = []
         savem2m = False
         back_to_list_button = True
+        show_cascade_before_delete = True
 
         def allow_cascade_delete_up_to(self, request):
             return 10
