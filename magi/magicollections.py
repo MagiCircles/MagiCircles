@@ -960,7 +960,7 @@ class MagiCollection(object):
         show_add_button_superuser_only = False
         show_add_button_permission_only = False
         authentication_required = False
-        distinct = True
+        distinct = False
         add_button_subtitle = _('Become a contributor to help us fill the database')
         show_title = False
         full_width = False
