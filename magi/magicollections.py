@@ -145,13 +145,15 @@ class MagiCollection(object):
     def _collectibles_queryset(self, view, queryset, request):
         # Select related total collectible for authenticated user
         if request.user.is_authenticated() and self.collectible_collections:
-            if not view.show_collect_button:
+            if not view.show_collect_button or not view.show_collect_total:
                 return queryset
             account_ids = getAccountIdsFromSession(request)
             for name, collection in self.collectible_collections.items():
                 if (not collection.add_view.enabled
                     or (isinstance(view.show_collect_button, dict)
                         and not view.show_collect_button.get(name, True))
+                    or (isinstance(view.show_collect_total, dict)
+                        and not view.show_collect_total.get(name, True))
                     or not collection.add_view.has_permissions(request, {})):
                     continue
                 item_field_name = getattr(collection.queryset.model, 'selector_to_collected_item',
@@ -715,6 +717,7 @@ class MagiCollection(object):
     show_translate_button = True
     show_report_button = True
     show_collect_button = True # Can also be a dictionary when multiple collectibles
+    show_collect_total = True
 
     def buttons_per_item(self, view, request, context, item):
         """
@@ -951,6 +954,7 @@ class MagiCollection(object):
         show_translate_button = property(propertyFromCollection('show_translate_button'))
         show_report_button = property(propertyFromCollection('show_report_button'))
         show_collect_button = property(propertyFromCollection('show_collect_button'))
+        show_collect_total = property(propertyFromCollection('show_collect_total'))
 
         top_buttons_classes = ['btn', 'btn-lg', 'btn-block', 'btn-main']
         show_add_button_superuser_only = False
@@ -1116,6 +1120,7 @@ class MagiCollection(object):
         show_translate_button = property(propertyFromCollection('show_translate_button'))
         show_report_button = property(propertyFromCollection('show_report_button'))
         show_collect_button = property(propertyFromCollection('show_collect_button'))
+        show_collect_total = property(propertyFromCollection('show_collect_total'))
         # Note: if you use the 'default' template, the following 2 will be ignored:
         show_item_buttons_justified = property(propertyFromCollection('show_item_buttons_justified'))
         show_item_buttons_in_one_line = property(propertyFromCollection('show_item_buttons_in_one_line'))
