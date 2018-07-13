@@ -447,7 +447,7 @@ class MagiFiltersForm(AutoForm):
                 if collection.queryset.model.fk_as_owner and collection.add_view.enabled and collection.add_view.quick_add_to_collection(self.request):
                     setattr(self, u'add_to_{}_filter'.format(collection_name), MagiFilter(noop=True))
                     queryset = collection.queryset.model.owners_queryset(self.request.user)
-                    initial = getattr(self.request, u'add_to_{}'.format(collection_name))
+                    initial = getattr(self.request, u'add_to_{}'.format(collection_name), None)
                     # Check if only one option, hide picker
                     total_fk_owner_ids = getattr(self.request, u'total_fk_owner_ids_{}'.format(collection_name), None)
                     if total_fk_owner_ids is None:

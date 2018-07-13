@@ -145,15 +145,13 @@ class MagiCollection(object):
     def _collectibles_queryset(self, view, queryset, request):
         # Select related total collectible for authenticated user
         if request.user.is_authenticated() and self.collectible_collections:
-            if not view.show_collect_button or not view.show_collect_total:
+            if not view.show_collect_button:
                 return queryset
             account_ids = getAccountIdsFromSession(request)
             for name, collection in self.collectible_collections.items():
                 if (not collection.add_view.enabled
                     or (isinstance(view.show_collect_button, dict)
                         and not view.show_collect_button.get(name, True))
-                    or (isinstance(view.show_collect_total, dict)
-                        and not view.show_collect_total.get(name, True))
                     or not collection.add_view.has_permissions(request, {})):
                     continue
                 item_field_name = getattr(collection.queryset.model, 'selector_to_collected_item',
@@ -189,16 +187,23 @@ class MagiCollection(object):
                         else collection.queryset.model.owner_ids(request.user)))
                 if not fk_owner_ids:
                     continue
-                a = {
-                    u'total_{}'.format(collection.name):
-                    'SELECT COUNT(*) FROM {db_table} WHERE {item_field_name}_id = {item_db_table}.id AND {fk_owner}_id IN ({fk_owner_ids})'.format(
-                        db_table=collection.queryset.model._meta.db_table,
-                        item_field_name=item_field_name,
-                        item_db_table=self.queryset.model._meta.db_table,
-                        fk_owner=fk_owner, fk_owner_ids=fk_owner_ids,
-                    )
-                }
-                queryset = queryset.extra(select=a)
+                # Only join the total if show_collect_total is on OR quick add is on
+                if (not collection.add_view.quick_add_to_collection(request)
+                    and (not view.show_collect_total
+                         or (isinstance(view.show_collect_total, dict)
+                             and not view.show_collect_total.get(name, True)))):
+                    pass
+                else:
+                    a = {
+                        u'total_{}'.format(collection.name):
+                        'SELECT COUNT(*) FROM {db_table} WHERE {item_field_name}_id = {item_db_table}.id AND {fk_owner}_id IN ({fk_owner_ids})'.format(
+                            db_table=collection.queryset.model._meta.db_table,
+                            item_field_name=item_field_name,
+                            item_db_table=self.queryset.model._meta.db_table,
+                            fk_owner=fk_owner, fk_owner_ids=fk_owner_ids,
+                        )
+                    }
+                    queryset = queryset.extra(select=a)
         return queryset
 
     def to_form_class(self):
@@ -758,7 +763,9 @@ class MagiCollection(object):
                 )
             buttons[name]['show'] = view.show_collect_button[name] if isinstance(view.show_collect_button, dict) else view.show_collect_button
             buttons[name]['title'] = collectible_collection.add_sentence
-            show_total = view.show_collect_total[name] if isinstance(view.show_collect_total, dict) else view.show_collect_total
+            show_total = view.show_collect_total.get(name, True) if isinstance(view.show_collect_total, dict) else view.show_collect_total
+            if quick_add_to_collection:
+                show_total = True
             if show_total:
                 buttons[name]['badge'] = getattr(item, u'total_{}'.format(name), 0)
             buttons[name]['icon'] = 'add'
@@ -771,7 +778,7 @@ class MagiCollection(object):
                 extra_attributes['parent-item'] = self.name
                 extra_attributes['parent-item-id'] = item.id
                 if collectible_collection.queryset.model.fk_as_owner:
-                    add_to_id_from_request = getattr(request, u'add_to_{}'.format(collectible_collection.name))
+                    add_to_id_from_request = getattr(request, u'add_to_{}'.format(collectible_collection.name), None)
                     if not add_to_id_from_request:
                         quick_add_to_collection = False
                         del(extra_attributes['quick-add-to-collection'])
