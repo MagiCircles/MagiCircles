@@ -758,7 +758,9 @@ class MagiCollection(object):
                 )
             buttons[name]['show'] = view.show_collect_button[name] if isinstance(view.show_collect_button, dict) else view.show_collect_button
             buttons[name]['title'] = collectible_collection.add_sentence
-            buttons[name]['badge'] = getattr(item, u'total_{}'.format(name), 0)
+            show_total = view.show_collect_total[name] if isinstance(view.show_collect_total, dict) else view.show_collect_total
+            if show_total:
+                buttons[name]['badge'] = getattr(item, u'total_{}'.format(name), 0)
             buttons[name]['icon'] = 'add'
             buttons[name]['image'] = collectible_collection.image
             buttons[name]['ajax_title'] = u'{}: {}'.format(collectible_collection.add_sentence, unicode(item))
@@ -778,7 +780,7 @@ class MagiCollection(object):
                     else:
                         extra_attributes['quick-add-to-id'] = add_to_id_from_request
                         extra_attributes['quick-add-to-fk-as-owner'] = collectible_collection.queryset.model.fk_as_owner or 'owner'
-            if collectible_collection.add_view.unique_per_owner and not quick_add_to_collection:
+            if show_total and collectible_collection.add_view.unique_per_owner and not quick_add_to_collection:
                 if collectible_collection.queryset.model.fk_as_owner == 'account' and buttons[name]['badge'] >= len(getAccountIdsFromSession(request)):
                     edit_sentence = unicode(_('Edit your {thing}')).format(
                         thing=unicode(collectible_collection.title
@@ -789,7 +791,7 @@ class MagiCollection(object):
                         buttons[name]['title'] = edit_sentence
                     else:
                         extra_attributes['alt-message'] = edit_sentence
-            if collectible_collection.add_view.unique_per_owner and quick_add_to_collection:
+            if show_total and collectible_collection.add_view.unique_per_owner and quick_add_to_collection:
                 delete_sentence = unicode(_('Delete {thing}')).format(thing=unicode(collectible_collection.title).lower())
                 if buttons[name]['badge'] > 0:
                     extra_attributes['alt-message'] = buttons[name]['title']

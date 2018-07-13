@@ -189,11 +189,19 @@ class MagiForm(forms.ModelForm):
                                     original=u'{}<br>'.format(self.fields[name].help_text) if self.fields[name].help_text else '',
                                     key=choice[1] if isinstance(choice, tuple) else choice,
                                 ))
+                            if self.is_creating:
+                                initial = None
+                            elif name.startswith('d_m_'):
+                                initial = getattr(self.instance, name[4:]).get(key, None)
+                                if initial:
+                                    initial = initial[1]
+                            else:
+                                initial = getattr(self.instance, name[2:]).get(key, None)
                             self.fields[field_name] = forms.CharField(
                                 required=False,
                                 label=self.fields[name].label,
                                 help_text=help_text,
-                                initial=getattr(self.instance, name[2:]).get(key, None) if not self.is_creating else None,
+                                initial=initial,
                                 widget=widget,
                             )
                     del(self.fields[name])

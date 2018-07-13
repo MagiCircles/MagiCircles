@@ -48,7 +48,7 @@ class PermissionsTestCase(TestCase):
         self.assertEqual(utils.hasPermissions(self.user, ['edit_staff_status', 'manage_main_items']), False)
 
     def test_groupsForAllPermissions(self):
-        self.assertEqual({
+        self.assertDictEqual({
             k: { gn:  g['verbose_permissions'] for gn, g in v.items() }
             for k, v in utils.groupsForAllPermissions(self.user.preferences.GROUPS).items()
         }, {
@@ -61,10 +61,13 @@ class PermissionsTestCase(TestCase):
                      'See profile edit button',
                      'Edit staff configurations',
                      'Add badges',
+                     'Edit own staff profile',
                  ],
                 'entertainer':
                  [
-                     'Edit staff configurations', 'Add badges',
+                     'Edit staff configurations',
+                     'Add badges',
+                     'Edit own staff profile',
                  ],
             },
             'add_donation_badges': {
@@ -73,6 +76,7 @@ class PermissionsTestCase(TestCase):
                      'Add donation badges',
                      'Manage donation months',
                      'Edit donator status',
+                     'Edit own staff profile',
                  ],
             },
             'advanced_staff_configurations': {
@@ -95,18 +99,51 @@ class PermissionsTestCase(TestCase):
                      'See profile edit button',
                      'Edit staff configurations',
                      'Add badges',
+                     'Edit own staff profile',
                  ],
                 'finance':
                  [
                      'Add donation badges',
                      'Manage donation months',
                      'Edit donator status',
+                     'Edit own staff profile',
                  ],
             },
+            'edit_own_staff_profile': {
+                'a_moderator': ['Edit own staff profile'],
+                'cm': ['Edit staff configurations',
+                       'Edit own staff profile'],
+                'd_moderator': ['Moderate reports',
+                                'Edit reported things',
+                                'Edit own staff profile'],
+                'db': ['Manage main items',
+                       'Edit own staff profile'],
+                'entertainer': ['Edit staff configurations',
+                                'Add badges',
+                                'Edit own staff profile'],
+                'external_cm': ['Edit own staff profile'],
+                'finance': ['Add donation badges',
+                            'Manage donation months',
+                            'Edit donator status',
+                            'Edit own staff profile'],
+                'manager': ['Edit roles',
+                            'Edit staff status',
+                            'Edit donator status',
+                            'See profile edit button',
+                            'Edit staff configurations',
+                            'Add badges',
+                            'Edit own staff profile'],
+                'support': ['Edit own staff profile'],
+                'team': ['Edit staff status',
+                         'Edit roles',
+                         'See profile edit button',
+                         'Edit own staff profile'],
+                'twitter_cm': ['Edit own staff profile']},
             'edit_reported_things': {
                 'd_moderator':
                  [
                      'Moderate reports', 'Edit reported things',
+                     'Edit own staff profile',
                  ],
             },
             'edit_roles': {
@@ -118,12 +155,14 @@ class PermissionsTestCase(TestCase):
                      'See profile edit button',
                      'Edit staff configurations',
                      'Add badges',
+                     'Edit own staff profile',
                  ],
                 'team':
                  [
                      'Edit staff status',
                      'Edit roles',
                      'See profile edit button',
+                     'Edit own staff profile',
                  ],
             },
             'edit_staff_configurations': {
@@ -135,13 +174,16 @@ class PermissionsTestCase(TestCase):
                      'See profile edit button',
                      'Edit staff configurations',
                      'Add badges',
+                     'Edit own staff profile',
                  ],
                 'cm': [
                     'Edit staff configurations',
+                     'Edit own staff profile',
                 ],
                 'entertainer':
                  [
                      'Edit staff configurations', 'Add badges',
+                     'Edit own staff profile',
                  ],
             },
             'edit_staff_status': {
@@ -153,12 +195,14 @@ class PermissionsTestCase(TestCase):
                      'See profile edit button',
                      'Edit staff configurations',
                      'Add badges',
+                     'Edit own staff profile',
                  ],
                 'team':
                  [
                      'Edit staff status',
                      'Edit roles',
                      'See profile edit button',
+                     'Edit own staff profile',
                  ],
             },
             'manage_donation_months': {
@@ -167,11 +211,13 @@ class PermissionsTestCase(TestCase):
                      'Add donation badges',
                      'Manage donation months',
                      'Edit donator status',
+                     'Edit own staff profile',
                  ],
             },
             'manage_main_items': {
                 'db': [
                     'Manage main items',
+                     'Edit own staff profile',
                 ],
                 'sysadmin':
                  [
@@ -183,6 +229,7 @@ class PermissionsTestCase(TestCase):
                 'd_moderator':
                  [
                      'Moderate reports', 'Edit reported things',
+                     'Edit own staff profile',
                  ],
             },
             'see_profile_edit_button': {
@@ -194,12 +241,14 @@ class PermissionsTestCase(TestCase):
                      'See profile edit button',
                      'Edit staff configurations',
                      'Add badges',
+                     'Edit own staff profile',
                  ],
                 'team':
                  [
                      'Edit staff status',
                      'Edit roles',
                      'See profile edit button',
+                     'Edit own staff profile',
                  ],
             },
             'translate_items': {
@@ -218,7 +267,7 @@ class PermissionsTestCase(TestCase):
         })
 
     def test_allPermissions(self):
-        self.assertEqual(utils.allPermissions(self.user.preferences.GROUPS), [
+        self.assertItemsEqual(utils.allPermissions(self.user.preferences.GROUPS), [
             'advanced_staff_configurations',
             'edit_roles',
             'see_profile_edit_button',
@@ -233,6 +282,7 @@ class PermissionsTestCase(TestCase):
             'manage_donation_months',
             'edit_reported_things',
             'edit_staff_configurations',
+            'edit_own_staff_profile',
         ])
 
     def test_groupsPerPermission(self):

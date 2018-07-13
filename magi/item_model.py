@@ -251,6 +251,13 @@ class BaseMagiModel(models.Model):
         }
 
     @classmethod
+    def get_markdown_dict_values(self, field_name, values, translated):
+        return {
+            k: (False, v)
+            for k, v in self.get_dict_values(field_name, values, translated).items()
+        }
+
+    @classmethod
     def get_json_value(self, field_name, value):
         if not value: return None
         return json.loads(value)
@@ -411,95 +418,147 @@ class BaseMagiModel(models.Model):
     def get_2x(self, field_name):
         return getattr(self, u'_2x_{}'.format(field_name))
 
+    def _attr_error(self, name):
+        raise AttributeError("%r object has no attribute %r" % (self.__class__, name))
+
     def __getattr__(self, name):
-        # For choice fields with name "i_something", accessing "something" returns the string value
-        if not name.startswith('_') and not name.startswith('i_') and not name.startswith('c_') and not name.startswith('d_') and not name.startswith('j_'):
-            # When accessing "something" and "i_something exists, return the readable key for the choice
-            if hasattr(self, u'i_{name}'.format(name=name)):
-                return type(self).get_reverse_i(name, getattr(self, u'i_{name}'.format(name=name)))
-            # When accessing "t_something", return the verbose value
-            elif name.startswith('t_'):
-                name = name[2:]
-                # For a i_choice
-                if hasattr(self, 'i_{name}'.format(name=name)):
-                    return type(self).get_verbose_i(name, getattr(self, 'i_{name}'.format(name=name)))
-                # For a CSV value: return dict {value: translated value}
-                elif hasattr(self, 'c_{name}'.format(name=name)):
-                    return type(self).get_csv_values(name, getattr(self, name))
-                # For a dict: return dict {key: {'value': value, 'verbose': translation}}
-                elif hasattr(self, u'd_{name}'.format(name=name)):
-                    return type(self).get_dict_values(name, getattr(self, u'd_{name}'.format(name=name)), translated=True)
-                # For a dict, if no _s exists: return value for language
-                elif hasattr(self, u'd_{}s'.format(name)) and hasattr(self, name):
-                    return getattr(self, u't_{name}s'.format(name=name)).get(get_language(), { 'value': getattr(self, name) })['value']
-            # When accessing "something_thumbnail"
-            elif name.endswith('_thumbnail'):
-                field_name = name[:-10]
-                return self.get_thumbnail(field_name)
-            # When accessing "something_original"
-            elif name.endswith('_original'):
-                field_name = name[:-9]
-                return self.get_original(field_name)
-            # When accessing "something_2x"
-            elif name.endswith('_2x'):
-                field_name = name[:-3]
-                return self.get_2x(field_name)
-            # When accessing "something_url"
-            elif name.endswith('_url'):
-                field_name = name.replace('http_', '')[:-4]
-                try:
-                    field = self._meta.get_field(field_name)
-                except FieldDoesNotExist:
-                    field = None
-                if field:
-                    # For an image, return the url
-                    if isinstance(self._meta.get_field(field_name), models.ImageField):
-                        return (get_http_image_url(self, field_name)
-                                if name.startswith('http_')
-                                else get_image_url(self, field_name))
-                    # For a file, return the url
-                    elif isinstance(self._meta.get_field(field_name), models.FileField):
-                        return (get_http_file_url(self, field_name)
-                                if name.startswith('http_')
-                                else get_file_url(self, field_name))
-                else:
-                    # If it's a string, just turn it into a path
-                    value = getattr(self, field_name)
-                    if (isinstance(value, basestring)
-                        or isinstance(value, ImageFieldFile)):
-                        return (get_http_file_url_from_path(unicode(value))
-                                if name.startswith('http_')
-                                else get_file_url_from_path(unicode(value)))
-            # When accessing "something" and "c_something" exists, returns the list of CSV values
+        original_name = name
+
+        # Reserved names
+        if original_name in [
+                'top_image',
+                'top_image_list',
+                'top_image_item',
+                'blocked',
+                'blocked_by_owner',
+                'reverse_related',
+        ]:
+            return self._attr_error(original_name)
+
+        # PREFIXES
+        ############################################################
+        # When accessing "X_something" where X is a MagiCircles prefix
+
+        # When accessing "t_something", return the verbose value
+        if name.startswith('t_'):
+            name = name[2:]
+            # For a i_choice
+            if hasattr(self, 'i_{name}'.format(name=name)):
+                return type(self).get_verbose_i(name, getattr(self, 'i_{name}'.format(name=name)))
+            # For a CSV value: return dict {value: translated value}
             elif hasattr(self, 'c_{name}'.format(name=name)):
-                return type(self).get_csv_values(name, getattr(self, 'c_{name}'.format(name=name)), translated=False)
-            # When accessing "something" and "d_something" exists, returns the dict
-            elif hasattr(self, 'd_{name}'.format(name=name)):
-                return type(self).get_dict_values(name, getattr(self, u'd_{name}'.format(name=name)), translated=False)
-            # When accessing "something" and "m_something" exists, returns the html value if exists
-            elif hasattr(self, 'm_{name}'.format(name=name)):
-                return self._get_markdown_value(name)
-            # When accessing "something" and "j_something" exists, return the python variable (dict, list, ...)
-            elif hasattr(self, u'j_{}'.format(name)):
-                return type(self).get_json_value(name, getattr(self, u'j_{}'.format(name)))
+                return type(self).get_csv_values(name, getattr(self, name))
+            # For a dict: return dict {key: {'value': value, 'verbose': translation}}
+            elif hasattr(self, u'd_{name}'.format(name=name)):
+                return type(self).get_dict_values(name, getattr(self, u'd_{name}'.format(name=name)), translated=True)
+            # For a dict, if no _s exists: return value for language
+            elif hasattr(self, u'd_{}s'.format(name)) and hasattr(self, name):
+                return getattr(self, u't_{name}s'.format(name=name)).get(get_language(), { 'value': getattr(self, name) })['value']
+            return self._attr_error(original_name)
 
         # Return cache
-        if name.startswith('cached_'):
+        elif name.startswith('cached_'):
             field_name = name[7:]
+            cache = getattr(self, u'_internal_cache_{}'.format(field_name), -1)
+            if cache != -1:
+                return cache
             # Accessing cached_something when _cache_j_something exists
             if hasattr(self, '_cache_j_{}'.format(field_name)):
                 self._force_on_last_update_or_none(field_name, prefix='j_')
-                return type(self).get_cached_json(field_name, getattr(self, '_cache_j_{}'.format(field_name)))
+                cache = type(self).get_cached_json(field_name, getattr(self, '_cache_j_{}'.format(field_name)))
             # Accessing cached_something when _cache_c_something exists
             elif hasattr(self, '_cache_c_{}'.format(field_name)):
                 self._force_on_last_update_or_none(field_name, prefix='j_')
-                return type(self).get_cached_csv(field_name, getattr(self, '_cache_c_{}'.format(field_name)))
+                cache = type(self).get_cached_csv(field_name, getattr(self, '_cache_c_{}'.format(field_name)))
             # Accessing cached_something when _cache_something exists
             elif hasattr(self, '_cache_{}'.format(field_name)):
                 self._force_on_last_update_or_none(field_name)
-                return getattr(self, '_cache_{}'.format(field_name))
+                cache = getattr(self, '_cache_{}'.format(field_name))
+            if cache != -1:
+                setattr(self, u'_internal_cache_{}'.format(field_name), cache)
+                return cache
+            return self._attr_error(original_name)
 
-        raise AttributeError("%r object has no attribute %r" % (self.__class__, name))
+        # SUFFIXES
+        ############################################################
+        # When accessing "X_something" where X is a MagiCircles suffix
+
+        # When accessing "something_thumbnail"
+        if name.endswith('_thumbnail'):
+            field_name = name[:-10]
+            return self.get_thumbnail(field_name)
+
+        # When accessing "something_original"
+        elif name.endswith('_original'):
+            field_name = name[:-9]
+            return self.get_original(field_name)
+
+        # When accessing "something_2x"
+        elif name.endswith('_2x'):
+            field_name = name[:-3]
+            return self.get_2x(field_name)
+
+        # When accessing "something_url"
+        elif name.endswith('_url'):
+            field_name = name.replace('http_', '')[:-4]
+            try:
+                field = self._meta.get_field(field_name)
+            except FieldDoesNotExist:
+                field = None
+            if field:
+                # For an image, return the url
+                if isinstance(self._meta.get_field(field_name), models.ImageField):
+                    return (get_http_image_url(self, field_name)
+                            if name.startswith('http_')
+                            else get_image_url(self, field_name))
+                # For a file, return the url
+                elif isinstance(self._meta.get_field(field_name), models.FileField):
+                    return (get_http_file_url(self, field_name)
+                            if name.startswith('http_')
+                            else get_file_url(self, field_name))
+                return self._attr_error(original_name)
+            # If it's a string, just turn it into a path
+            value = getattr(self, field_name)
+            if (isinstance(value, basestring)
+                or isinstance(value, ImageFieldFile)):
+                return (get_http_file_url_from_path(unicode(value))
+                        if name.startswith('http_')
+                        else get_file_url_from_path(unicode(value)))
+            return self._attr_error(original_name)
+
+        # WITHOUT PREFIX
+        ############################################################
+        # When accessing "something" and "X_something" exists where X is a MagiCircles prefix
+
+        for prefix in ['_', 'i_', 'c_', 'd_', 'm_', 'j_']:
+            if name.startswith(prefix):
+                return self._attr_error(original_name)
+
+        # When accessing "something" and "i_something exists, return the readable key for the choice
+        if hasattr(self, u'i_{name}'.format(name=name)):
+            return type(self).get_reverse_i(name, getattr(self, u'i_{name}'.format(name=name)))
+
+        # When accessing "something" and "c_something" exists, returns the list of CSV values
+        elif hasattr(self, 'c_{name}'.format(name=name)):
+            return type(self).get_csv_values(name, getattr(self, 'c_{name}'.format(name=name)), translated=False)
+
+        # When accessing "something" and "d_m_something" exists, returns the dict
+        elif hasattr(self, 'd_m_{name}'.format(name=name)):
+            return type(self).get_markdown_dict_values(name, getattr(self, u'd_m_{name}'.format(name=name)), translated=False)
+
+        # When accessing "something" and "d_something" exists, returns the dict
+        elif hasattr(self, 'd_{name}'.format(name=name)):
+            return type(self).get_dict_values(name, getattr(self, u'd_{name}'.format(name=name)), translated=False)
+
+        # When accessing "something" and "m_something" exists, returns the html value if exists
+        elif hasattr(self, 'm_{name}'.format(name=name)):
+            return self._get_markdown_value(name)
+
+        # When accessing "something" and "j_something" exists, return the python variable (dict, list, ...)
+        elif hasattr(self, u'j_{}'.format(name)):
+            return type(self).get_json_value(name, getattr(self, u'j_{}'.format(name)))
+
+        return self._attr_error(original_name)
 
     class Meta:
         abstract = True
