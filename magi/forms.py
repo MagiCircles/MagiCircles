@@ -646,7 +646,7 @@ class AccountForm(AutoForm):
         self.previous_level = None
         if 'level' in self.fields and not self.is_creating:
             self.previous_level = self.instance.level
-        self.previous_screenshot = None
+        self.previous_screenshot = ''
         if 'screenshot' in self.fields and not self.is_creating:
             self.previous_screenshot = unicode(self.instance.screenshot) or ''
         if 'level_on_screenshot_upload' in self.fields:
@@ -659,7 +659,7 @@ class AccountForm(AutoForm):
         if not self.is_creating:
             previous_level = getattr(self.instance, 'level_on_screenshot_upload', self.previous_level) or 0
         if (new_level
-            and new_level != self.previous_level
+            and new_level != previous_level
             and has_field(self.Meta.model, 'screenshot')
             and new_level >= 200
             and (new_level - previous_level) >= 10
