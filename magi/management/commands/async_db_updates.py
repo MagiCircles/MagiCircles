@@ -10,15 +10,31 @@ from magi.models import uploadItem
 from magi.utils import modelHasField, shrinkImageFromData, imageThumbnailFromData
 from magi import models as magi_models
 
-def get_next_item(model, field, modified_field_name):
+def get_next_item(model, field, modified_field_name, boolean_on_change=None):
     try:
-        return model.objects.exclude(
-            Q(**{ u'{}__isnull'.format(field.name): True })
-            | Q(**{ field.name: '' })
-        ).filter(
-            Q(**{ u'{}__isnull'.format(modified_field_name): True })
-            | Q(**{ modified_field_name: '' })
-        )[0]
+        queryset = model.objects.all()
+
+        if boolean_on_change is not None:
+            # Field (boolean) = boolean_on_change
+            # Modified field = NOT NULL
+            queryset = queryset.filter(**{
+                field.name: boolean_on_change,
+            }).exclude(
+                Q(**{ u'{}__isnull'.format(modified_field_name): True })
+                | Q(**{ modified_field_name: '' })
+            )
+        else:
+            # Field = NOT NULL
+            # Modified field = NULL
+            queryset = queryset.exclude(
+                Q(**{ u'{}__isnull'.format(field.name): True })
+                | Q(**{ field.name: '' })
+            ).filter(
+                Q(**{ u'{}__isnull'.format(modified_field_name): True })
+                | Q(**{ modified_field_name: '' })
+            )
+
+        return queryset[0]
 
     except IndexError:
         return False
@@ -154,12 +170,28 @@ def update_markdown(model, field):
         return True
     return False
 
+def update_on_change(model, field):
+    if isinstance(field, models.BooleanField) and hasattr(model, u'{}_ON_CHANGE'.format(field.name[:8].upper())):
+        item = get_next_item(model, field, field.name[:8], boolean_on_change=True)
+        if not item:
+            return False
+        print u'[Info] Updating {} after change occured for {} #{}...'.format(field.name[:8], model.__name__, item.id)
+        callback = getattr(model, u'{}_ON_CHANGE'.format(field.name[:8].upper()))
+        if callback(item):
+            print '[Info] Done.'
+            return True
+    return False
+
 field_type_to_action = [
     (models.ImageField, update_image),
 ]
 
 field_prefix_to_action = [
     ('m_', update_markdown),
+]
+
+field_suffix_to_action = [
+    ('_changed', update_on_change),
 ]
 
 def model_async_update(model):
@@ -171,6 +203,10 @@ def model_async_update(model):
                         return True
             for prefix, callback in field_prefix_to_action:
                 if field.name.startswith(prefix):
+                    if callback(model, field):
+                        return True
+            for suffix, callback in field_suffix_to_action:
+                if field.name.endswith(suffix):
                     if callback(model, field):
                         return True
     return False

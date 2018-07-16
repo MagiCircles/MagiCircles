@@ -784,3 +784,28 @@ def toCountDown(date, sentence, classes=None):
     return u'<span class="countdown {classes}" data-date="{date}" data-format="{sentence}"></h4>'.format(
         date=torfc2822(date), sentence=sentence, classes=u' '.join(classes or []),
     )
+
+############################################################
+# Async update function
+
+def locationOnChange(user_preferences):
+    # This function is only called by the async script so to avoid loading Nominatim when the site is running,
+    # it's included within the function
+    from geopy.geocoders import Nominatim
+    geolocator = Nominatim()
+    try:
+        location = geolocator.geocode(user_preferences.location)
+        if location is not None:
+            user_preferences.latitude = location.latitude
+            user_preferences.longitude = location.longitude
+            user_preferences.location_changed = False
+            user_preferences.save()
+            print user_preferences.user, user_preferences.location, user_preferences.latitude, user_preferences.longitude
+        else:
+            user_preferences.location_changed = False
+            user_preferences.save()
+            print user_preferences.user, user_preferences.location, 'Invalid location'
+    except:
+        print u'{} {} Error, {}'.format(user_preferences.user, user_preferences.location, sys.exc_info()[0])
+        # Will not mark as not changed, so it will be retried at next iteration
+    return True
