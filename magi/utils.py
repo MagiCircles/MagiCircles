@@ -791,6 +791,7 @@ def toCountDown(date, sentence, classes=None):
 def locationOnChange(user_preferences):
     # This function is only called by the async script so to avoid loading Nominatim when the site is running,
     # it's included within the function
+    import sys
     from geopy.geocoders import Nominatim
     geolocator = Nominatim()
     try:
