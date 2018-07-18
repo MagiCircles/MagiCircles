@@ -1,5 +1,5 @@
 from __future__ import division
-import os, string, random, csv, tinify, cStringIO, pytz, simplejson, datetime, io
+import os, string, random, csv, tinify, cStringIO, pytz, simplejson, datetime, io, operator
 from PIL import Image
 from django.conf import settings as django_settings
 from django.core.files.temp import NamedTemporaryFile
@@ -472,6 +472,28 @@ def getMagiCollection(collection_name):
 
 def torfc2822(date):
     return date.strftime("%B %d, %Y %H:%M:%S %z")
+
+############################################################
+# Birthday within
+
+def birthdays_within(days_after, days_before=0, field_name='birthday'):
+    now = timezone.now()
+    after = now - datetime.timedelta(days=days_before)
+    before = now + datetime.timedelta(days=days_after)
+
+    monthdays = [(now.month, now.day)]
+    while after <= before:
+        monthdays.append((after.month, after.day))
+        after += datetime.timedelta(days=1)
+
+    # Tranform each into queryset keyword args.
+    monthdays = (dict(zip((
+        u'{}__month'.format(field_name),
+        u'{}__day'.format(field_name),
+    ), t)) for t in monthdays)
+
+    # Compose the djano.db.models.Q objects together for a single query.
+    return reduce(operator.or_, (Q(**d) for d in monthdays))
 
 ############################################################
 # Event status using start and end date
