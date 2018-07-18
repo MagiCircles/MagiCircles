@@ -67,7 +67,7 @@
 {% if user.is_authenticated and 'activity' in all_enabled %}
 <ul class="nav nav-tabs" id="hometabs">
   <li{% if not is_feed %} class="active"{% endif %}><a href="/" >{% trans 'All' %}</a></li>
-  <li{% if is_feed %} class="active"{% endif %}><a href="/?feed" >{% trans 'Following' %}</a></li>
+  <li{% if is_feed %} class="active"{% endif %}><a href="/?feed=on" >{% trans 'Following' %}</a></li>
   <li><a class="togglebutton" href="/activities/" ><i class="flaticon-search"></i><i class="flaticon-toggler hidder"></i></a></li>
 </ul>
 {% endif %}

@@ -24,7 +24,7 @@ from magi import models
 from magi.raw import donators_adjectives
 from magi.utils import getGlobalContext, ajaxContext, redirectToProfile, tourldash, toHumanReadable, redirectWhenNotAuthenticated, dumpModel, send_email, emailContext, getMagiCollection, getMagiCollections, cuteFormFieldsForContext, CuteFormType, FAVORITE_CHARACTERS_IMAGES, groupsForAllPermissions, hasPermission, setSubField, staticImageURL, getAccountIdsFromSession
 from magi.notifications import pushNotification
-from magi.settings import SITE_NAME, GAME_NAME, ENABLED_PAGES, FAVORITE_CHARACTERS, TWITTER_HANDLE, BUG_TRACKER_URL, GITHUB_REPOSITORY, CONTRIBUTE_URL, CONTACT_EMAIL, CONTACT_REDDIT, CONTACT_FACEBOOK, CONTACT_DISCORD, FEEDBACK_FORM, ABOUT_PHOTO, WIKI, HELP_WIKI, LATEST_NEWS, SITE_LONG_DESCRIPTION, CALL_TO_ACTION, TOTAL_DONATORS, GAME_DESCRIPTION, GAME_URL, ON_USER_EDITED, ON_PREFERENCES_EDITED, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, SITE_LOGO_PER_LANGUAGE, GLOBAL_OUTSIDE_PERMISSIONS
+from magi.settings import SITE_NAME, GAME_NAME, ENABLED_PAGES, FAVORITE_CHARACTERS, TWITTER_HANDLE, BUG_TRACKER_URL, GITHUB_REPOSITORY, CONTRIBUTE_URL, CONTACT_EMAIL, CONTACT_REDDIT, CONTACT_FACEBOOK, CONTACT_DISCORD, FEEDBACK_FORM, ABOUT_PHOTO, WIKI, HELP_WIKI, LATEST_NEWS, SITE_LONG_DESCRIPTION, CALL_TO_ACTION, TOTAL_DONATORS, GAME_DESCRIPTION, GAME_URL, ON_USER_EDITED, ON_PREFERENCES_EDITED, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES, SITE_LOGO_PER_LANGUAGE, GLOBAL_OUTSIDE_PERMISSIONS
 from magi.views_collections import item_view, list_view
 from raw import other_sites
 
@@ -53,7 +53,10 @@ def signup(request):
             preferences = models.UserPreferences.objects.create(
                 user=user,
                 i_language=request.LANGUAGE_CODE,
-                view_activities_language_only=ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT,
+                view_activities_language_only=(
+                    ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT
+                    if ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT
+                    else (get_language() in ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES)),
             )
             login_action(request, user)
             if context.get('launch_date', None):

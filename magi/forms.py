@@ -22,7 +22,7 @@ from magi.middleware.httpredirect import HttpRedirectException
 from magi.django_translated import t
 from magi import models
 from magi.default_settings import RAW_CONTEXT
-from magi.settings import FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTERS, USER_COLORS, GAME_NAME, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, ON_PREFERENCES_EDITED, PROFILE_TABS
+from magi.settings import FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTERS, USER_COLORS, GAME_NAME, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES, ON_PREFERENCES_EDITED, PROFILE_TABS
 from magi.utils import ordinalNumber, randomString, shrinkImageFromData, getMagiCollection, getAccountIdsFromSession, hasPermission, toHumanReadable, usersWithPermission, staticImageURL
 
 ############################################################
@@ -1270,19 +1270,37 @@ class FilterActivities(MagiFiltersForm):
 
     owner_id = forms.IntegerField(widget=forms.HiddenInput)
 
+    def _feed_to_queryset(self, queryset, request, value):
+        if request.user.is_authenticated() and value:
+            queryset = queryset.filter(
+                Q(owner__in=request.user.preferences.following.all())
+                | Q(owner_id=request.user.id)
+            )
+        return queryset
+
+    feed = forms.BooleanField(label=_('Following'))
+    feed_filter = MagiFilter(to_queryset=_feed_to_queryset)
+
     def __init__(self, *args, **kwargs):
         super(FilterActivities, self).__init__(*args, **kwargs)
         # Only allow users to filter by tags they are allowed to see
         if 'c_tags' in self.fields:
             self.fields['c_tags'].choices = models.getAllowedTags(self.request)
+        # Default selected language
+        if 'i_language' in self.fields:
+            self.default_to_current_language = False
+            if ((self.request.user.is_authenticated()
+                and self.request.user.preferences.view_activities_language_only)
+                or (not self.request.user.is_authenticated()
+                    and (ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT
+                         or self.request.LANGUAGE_CODE in ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES)
+                )):
+                self.default_to_current_language = True
+                self.fields['i_language'].initial = self.request.LANGUAGE_CODE
 
     def filter_queryset(self, queryset, parameters, request):
         queryset = super(FilterActivities, self).filter_queryset(queryset, parameters, request)
-        if 'feed' in parameters and request.user.is_authenticated():
-            queryset = queryset.filter(Q(owner__in=request.user.preferences.following.all()) | Q(owner_id=request.user.id))
-        elif request.user.is_authenticated() and request.user.preferences.view_activities_language_only:
-            queryset = queryset.filter(i_language=request.LANGUAGE_CODE)
-        elif ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT:
+        if self.default_to_current_language and 'i_language' not in parameters:
             queryset = queryset.filter(i_language=request.LANGUAGE_CODE)
         if 'ordering' in parameters and parameters['ordering'] == '_cache_total_likes,id':
             queryset = queryset.filter(creation__gte=timezone.now() - relativedelta(weeks=1))
@@ -1290,7 +1308,7 @@ class FilterActivities(MagiFiltersForm):
 
     class Meta(MagiFiltersForm.Meta):
         model = models.Activity
-        fields = ('search', 'c_tags', 'with_image', 'i_language')
+        fields = ('search',  'feed', 'c_tags', 'with_image', 'i_language')
 
 ############################################################
 # Notifications

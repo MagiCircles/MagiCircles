@@ -8,7 +8,6 @@ from magi.middleware.httpredirect import HttpRedirectException
 from django.shortcuts import render, redirect
 from django.http import Http404
 from django.core.exceptions import PermissionDenied
-
 from magi.utils import getGlobalContext, cuteFormFieldsForContext, get_one_object_or_404, jsv
 from magi.forms import ConfirmDelete, filter_ids
 
@@ -165,12 +164,12 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     if collection.list_view.filter_form:
         if len(request.GET) > 1 or (len(request.GET) == 1 and 'page' not in request.GET):
             context['filter_form'] = collection.list_view.filter_form(filters, request=request, ajax=ajax, collection=collection)
-            if hasattr(context['filter_form'], 'filter_queryset'):
-                queryset = context['filter_form'].filter_queryset(queryset, filters, request)
-            else:
-                queryset = filter_ids(queryset, request)
         else:
             context['filter_form'] = collection.list_view.filter_form(request=request, ajax=ajax, collection=collection)
+        if hasattr(context['filter_form'], 'filter_queryset'):
+            queryset = context['filter_form'].filter_queryset(queryset, filters, request)
+        else:
+            queryset = filter_ids(queryset, request)
     else:
         queryset = filter_ids(queryset, request)
 
