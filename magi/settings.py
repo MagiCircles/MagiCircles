@@ -1,5 +1,17 @@
 from django.conf import settings as django_settings
-from magi.default_settings import DEFAULT_ENABLED_NAVBAR_LISTS, DEFAULT_ENABLED_PAGES, RAW_CONTEXT, DEFAULT_JAVASCRIPT_TRANSLATED_TERMS, DEFAULT_PROFILE_TABS, DEFAULT_PRELAUNCH_ENABLED_PAGES, DEFAULT_NAVBAR_ORDERING, DEFAULT_GROUPS, DEFAULT_GLOBAL_OUTSIDE_PERMISSIONS, DEFAULT_CONTACT_DISCORD
+from magi.default_settings import (
+    DEFAULT_ENABLED_NAVBAR_LISTS,
+    DEFAULT_ENABLED_PAGES,
+    RAW_CONTEXT,
+    DEFAULT_JAVASCRIPT_TRANSLATED_TERMS,
+    DEFAULT_PROFILE_TABS,
+    DEFAULT_HOME_ACTIVITY_TABS,
+    DEFAULT_PRELAUNCH_ENABLED_PAGES,
+    DEFAULT_NAVBAR_ORDERING,
+    DEFAULT_GROUPS,
+    DEFAULT_GLOBAL_OUTSIDE_PERMISSIONS,
+    DEFAULT_CONTACT_DISCORD,
+)
 from magi.utils import globalContext, toHumanReadable
 from django.utils.translation import ugettext_lazy as _, string_concat
 
@@ -130,6 +142,11 @@ if hasattr(settings_module, 'TOTAL_DONATORS'):
 else:
     TOTAL_DONATORS = 2
 
+if hasattr(settings_module, 'MINIMUM_LIKES_POPULAR'):
+    MINIMUM_LIKES_POPULAR = getattr(settings_module, 'MINIMUM_LIKES_POPULAR')
+else:
+    MINIMUM_LIKES_POPULAR = 10
+
 if hasattr(settings_module, 'STAFF_CONFIGURATIONS'):
     STAFF_CONFIGURATIONS = getattr(settings_module, 'STAFF_CONFIGURATIONS')
 else:
@@ -169,6 +186,11 @@ if hasattr(settings_module, 'PROFILE_TABS'):
     PROFILE_TABS = getattr(settings_module, 'PROFILE_TABS')
 else:
     PROFILE_TABS = DEFAULT_PROFILE_TABS
+
+if hasattr(settings_module, 'HOME_ACTIVITY_TABS'):
+    HOME_ACTIVITY_TABS = getattr(settings_module, 'HOME_ACTIVITY_TABS')
+else:
+    HOME_ACTIVITY_TABS = DEFAULT_HOME_ACTIVITY_TABS
 
 if hasattr(settings_module, 'PRELAUNCH_ENABLED_PAGES'):
     PRELAUNCH_ENABLED_PAGES = getattr(settings_module, 'PRELAUNCH_ENABLED_PAGES')

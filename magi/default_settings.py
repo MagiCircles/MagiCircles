@@ -276,6 +276,30 @@ DEFAULT_ENABLED_NAVBAR_LISTS = OrderedDict([
     }),
 ])
 
+DEFAULT_HOME_ACTIVITY_TABS = OrderedDict([
+    ('popular', {
+        'url': '/',
+        'title': _('Popular'),
+        'icon': 'list',
+        'has_permissions': True,
+    }),
+    ('new', {
+        'url': '/?ordering=creation&feed=all&reverse_order=on',
+        'title': _('New'),
+        'icon': 'new',
+    }),
+    ('following', {
+        'url': '/?feed=following&reverse_order=on',
+        'title': _('Following'),
+        'icon': 'users',
+    }),
+    ('staffpicks', {
+        'url': '/?c_tags=staff&feed=all&reverse_order=on',
+        'title': _('Staff picks'),
+        'icon': 'heart',
+    }),
+])
+
 ############################################################
 # Enabled pages
 

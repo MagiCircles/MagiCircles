@@ -13,7 +13,7 @@ from magi.utils import AttrDict, ordinalNumber, justReturn, propertyFromCollecti
 from magi.raw import please_understand_template_sentence
 from magi.django_translated import t
 from magi.middleware.httpredirect import HttpRedirectException
-from magi.settings import ACCOUNT_MODEL, SHOW_TOTAL_ACCOUNTS, PROFILE_TABS, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTER_TO_URL, GET_GLOBAL_CONTEXT, DONATE_IMAGE, ON_USER_EDITED, ON_PREFERENCES_EDITED, ACCOUNT_TAB_ORDERING, FIRST_COLLECTION, GLOBAL_OUTSIDE_PERMISSIONS
+from magi.settings import ACCOUNT_MODEL, SHOW_TOTAL_ACCOUNTS, PROFILE_TABS, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTER_TO_URL, GET_GLOBAL_CONTEXT, DONATE_IMAGE, ON_USER_EDITED, ON_PREFERENCES_EDITED, ACCOUNT_TAB_ORDERING, FIRST_COLLECTION, GLOBAL_OUTSIDE_PERMISSIONS, HOME_ACTIVITY_TABS
 from magi import models, forms
 
 ############################################################
@@ -2021,6 +2021,9 @@ class ActivityCollection(MagiCollection):
         'with_image': {
             'type': CuteFormType.OnlyNone,
         },
+        'feed': {
+            'type': CuteFormType.HTML,
+        },
     }
 
     class ListView(MagiCollection.ListView):
@@ -2060,6 +2063,9 @@ class ActivityCollection(MagiCollection):
             if context.get('shortcut_url', None) == '': # Homepage of the site
                 indexExtraContext(context)
                 context['hide_sidebar'] = True
+            if context['request'].user.is_authenticated():
+                context['activity_tabs'] = HOME_ACTIVITY_TABS
+                context['active_activity_tab'] = context['filter_form'].active_tab
 
     class ItemView(MagiCollection.ItemView):
         template = custom_item_template

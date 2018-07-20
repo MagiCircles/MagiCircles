@@ -22,7 +22,7 @@ from magi.middleware.httpredirect import HttpRedirectException
 from magi.django_translated import t
 from magi import models
 from magi.default_settings import RAW_CONTEXT
-from magi.settings import FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTERS, USER_COLORS, GAME_NAME, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES, ON_PREFERENCES_EDITED, PROFILE_TABS
+from magi.settings import FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTERS, USER_COLORS, GAME_NAME, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES, ON_PREFERENCES_EDITED, PROFILE_TABS, MINIMUM_LIKES_POPULAR
 from magi.utils import ordinalNumber, randomString, shrinkImageFromData, getMagiCollection, getAccountIdsFromSession, hasPermission, toHumanReadable, usersWithPermission, staticImageURL
 
 ############################################################
@@ -1270,16 +1270,12 @@ class FilterActivities(MagiFiltersForm):
 
     owner_id = forms.IntegerField(widget=forms.HiddenInput)
 
-    def _feed_to_queryset(self, queryset, request, value):
-        if request.user.is_authenticated() and value:
-            queryset = queryset.filter(
-                Q(owner__in=request.user.preferences.following.all())
-                | Q(owner_id=request.user.id)
-            )
-        return queryset
-
-    feed = forms.BooleanField(label=_('Following'))
-    feed_filter = MagiFilter(to_queryset=_feed_to_queryset)
+    feed = forms.ChoiceField(label=_('Feed'), choices=[
+        ('all', _('All')),
+        ('popular', _('Popular')),
+        ('following', _('Following')),
+    ], initial='popular')
+    feed_filter = MagiFilter(noop=True)
 
     def __init__(self, *args, **kwargs):
         super(FilterActivities, self).__init__(*args, **kwargs)
@@ -1304,6 +1300,21 @@ class FilterActivities(MagiFiltersForm):
             queryset = queryset.filter(i_language=request.LANGUAGE_CODE)
         if 'ordering' in parameters and parameters['ordering'] == '_cache_total_likes,id':
             queryset = queryset.filter(creation__gte=timezone.now() - relativedelta(weeks=1))
+        # Feed filter
+        if self.request.user.is_authenticated():
+            self.active_tab =  'new'
+            if 'feed' not in request.GET or request.GET['feed'] == 'popular':
+                queryset = queryset.filter(_cache_total_likes__gte=MINIMUM_LIKES_POPULAR)
+                self.active_tab = 'popular'
+            elif request.GET.get('feed', None) == 'following':
+                queryset = queryset.filter(
+                    Q(owner__in=request.user.preferences.following.all())
+                    | Q(owner_id=request.user.id)
+                )
+                self.active_tab = 'following'
+            # Staff picks tab
+            if self.active_tab == 'new' and 'c_tags' in request.GET and request.GET['c_tags'] == 'staff':
+                self.active_tab = 'staffpicks'
         return queryset
 
     class Meta(MagiFiltersForm.Meta):
