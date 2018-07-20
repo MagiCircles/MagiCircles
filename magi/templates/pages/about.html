@@ -128,7 +128,7 @@
             {% if staff_member.staff_details.favorite_food %}
             <span class="mini">
               <span class="text-{{ staff_member.preferences.css_color }}">
-                <i class="flaticon-heart text-{{ staff_member.preferences.css_color }}"></i>
+                <i class="flaticon-food text-{{ staff_member.preferences.css_color }}"></i>
               </span>
               {{ staff_member.staff_details.t_favorite_food }}
             </span>
@@ -136,7 +136,7 @@
             {% if staff_member.staff_details.hobbies %}
             <span class="mini">
               <span class="text-{{ staff_member.preferences.css_color }}">
-                <i class="flaticon-star text-{{ staff_member.preferences.css_color }}"></i>
+                <i class="flaticon-hobbies text-{{ staff_member.preferences.css_color }}"></i>
               </span>
               {{ staff_member.staff_details.t_hobbies }}
             </span>
@@ -144,7 +144,7 @@
             {% if staff_member.staff_details.timezone or staff_member.preferences.location %}
             <span class="mini">
               <span class="text-{{ staff_member.preferences.css_color }}">
-                <i class="flaticon-world text-{{ staff_member.preferences.css_color }}"></i>
+                <i class="flaticon-pinpoint text-{{ staff_member.preferences.css_color }}"></i>
               </span>
               {% if staff_member.preferences.location %}
               <a href="{{ staff_member.location_url }}" target="_blank" class="a-nodifference">
@@ -169,7 +169,7 @@
             {% if staff_member.preferences.birthdate %}
             <span class="mini">
               <span class="text-{{ staff_member.preferences.css_color }}">
-                <i class="flaticon-event text-{{ staff_member.preferences.css_color }}"></i>
+                <i class="flaticon-birthday text-{{ staff_member.preferences.css_color }}"></i>
               </span>
               <a href="{{ staff_member.birthday_url }}" target="_blank" class="a-nodifference">
                 {{ staff_member.formatted_birthday }}
@@ -329,7 +329,7 @@
         {% if contributor.preferences.location %}
         <span class="mini">
           <span class="text-{{ contributor.preferences.css_color }}">
-            <i class="flaticon-world text-{{ contributor.preferences.css_color }}"></i>
+            <i class="flaticon-pinpoint text-{{ contributor.preferences.css_color }}"></i>
           </span>
           {% if contributor.preferences.location %}
           <a href="{{ contributor.location_url }}" target="_blank" class="a-nodifference">

@@ -406,7 +406,7 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
     collection.edit_view.check_owner_permissions(request, context, instance)
     if context['is_translate']:
         formClass = collection.edit_view.translate_form_class
-        context['icontitle'] = 'world'
+        context['icontitle'] = 'translate'
     elif collection.types:
         type = instance.type
         context['type'] = type

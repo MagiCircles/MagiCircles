@@ -9,7 +9,12 @@
       <div class="row">
         <div class="col-sm-2">
           {% include 'include/avatar.html' with av_user=profile_user av_size=60 av_image_size=200 %}
-          {% if profile_user.is_staff %}STAFF{% endif %}
+          {% if profile_user.is_staff %}
+          <span style="text-transform: uppercase;">
+            <i class="flaticon-staff"></i>
+            {% trans 'Staff' %}
+          </span>
+          {% endif %}
         </div>
         <div class="col-sm-10">
           <div class="info">

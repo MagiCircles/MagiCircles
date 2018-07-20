@@ -143,7 +143,7 @@ function loadStaffOnlyButtons() {
 
 function notificationsHandler() {
     var button = $('a[href="/notifications/"]');
-    var world = button.find('.flaticon-world');
+    var world = button.find('.flaticon-notification');
     var loader = button.find('.flaticon-loading');
     var badge = button.find('.badge');
     if (badge.length > 0 && $(document).width() > 992) {

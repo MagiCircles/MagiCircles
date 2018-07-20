@@ -265,7 +265,7 @@ DEFAULT_ENABLED_NAVBAR_LISTS = OrderedDict([
     }),
     ('staff', {
         'title': 'Staff',
-        'icon': 'promo',
+        'icon': 'staff',
         'url': '/settings/',
     }),
     ('more', {
@@ -351,7 +351,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
     ('map', {
         'title': _('Map'),
         'custom': False,
-        'icon': 'world',
+        'icon': 'map',
         'navbar_link_list': 'more',
     }),
     ('help', [
@@ -375,7 +375,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
             'enabled': False,
             'custom': False,
             'title': _('Wiki'),
-            'icon': 'about',
+            'icon': 'wiki',
         },
         {
             'enabled': False,
@@ -399,7 +399,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'title': 'Translations',
         'custom': False,
         'navbar_link_list': 'staff',
-        'icon': 'world',
+        'icon': 'translate',
         'permissions_required': ['translate_items'],
     }),
     ('collections', {
@@ -533,7 +533,7 @@ DEFAULT_PROFILE_TABS = OrderedDict([
     }),
     ('badge', {
         'name': _('Badges'),
-        'icon': 'achievement',
+        'icon': 'badge',
         'callback': 'loadBadges',
     }),
 ])

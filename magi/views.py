@@ -390,7 +390,7 @@ def block(request, pk, unblock=False):
     context['form'] = Confirm()
     context['alert_message'] = (_(u'Are you sure you want to block {username}? You will not be able to see any content created by {username}.') if block else _(u'Are you sure you want to unblock {username}?')).format(username=user.username)
     context['alert_type'] = 'danger'
-    context['alert_flaticon'] = 'fingers'
+    context['alert_flaticon'] = 'block'
     if request.method == 'POST':
         context['form'] = Confirm(request.POST)
         if context['form'].is_valid():

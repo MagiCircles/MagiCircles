@@ -870,7 +870,7 @@ class MagiCollection(object):
                         break
 
             buttons['translate']['title'] = unicode(_('Edit {thing}')).format(thing=unicode(_('Translations')).lower())
-            buttons['translate']['icon'] = 'world'
+            buttons['translate']['icon'] = 'translate'
             buttons['translate']['url'] = u'{}{}translate'.format(buttons['translate']['url'], '&' if '?' in buttons['translate']['url'] else '?')
             buttons['translate']['ajax_url'] = u'{}{}translate'.format(buttons['translate']['ajax_url'], '&' if '?' in buttons['translate']['ajax_url'] else '?')
             if 'ajax_url' in buttons['translate']['url']:
@@ -879,7 +879,7 @@ class MagiCollection(object):
         if self.reportable:
             buttons['report']['show'] = view.show_report_button
             buttons['report']['title'] = item.report_sentence
-            buttons['report']['icon'] = 'fingers'
+            buttons['report']['icon'] = 'warning'
             buttons['report']['has_permissions'] = (not request.user.is_authenticated()
                                                     or item.owner_id != request.user.id)
             buttons['report']['url'] = item.report_url
@@ -1336,7 +1336,7 @@ class AccountCollection(MagiCollection):
     title = _('Account')
     plural_title = _('Accounts')
     navbar_link_title = _('Leaderboard')
-    icon = 'users'
+    icon = 'leaderboard'
     queryset = ACCOUNT_MODEL.objects.all()
     report_allow_delete = False
     form_class = forms.AccountForm
@@ -1398,7 +1398,7 @@ class AccountCollection(MagiCollection):
             'start_date': 'date',
             'level': 'max-level',
             'friend_id': 'id',
-            'screenshot': 'id',
+            'screenshot': 'screenshot',
         })
         return super(AccountCollection, self).to_fields(view, item, *args, icons=icons, **kwargs)
 
@@ -1574,7 +1574,7 @@ class UserCollection(MagiCollection):
                     'classes': self.item_buttons_classes,
                     'show': True,
                     'url': u'/block/{}/'.format(user.id),
-                    'icon': 'fingers',
+                    'icon': 'block',
                     'title': _(u'Block {username}').format(username=user.username),
                     'has_permissions': True,
                 }
@@ -1729,7 +1729,7 @@ class UserCollection(MagiCollection):
                     'type': 'Location',
                     'value': user.preferences.location,
                     'translate_type': True,
-                    'flaticon': 'world',
+                    'flaticon': 'pinpoint',
                     'url': u'/map/?center={}&zoom=10'.format(latlong) if 'map' in context['all_enabled'] and latlong else u'https://www.google.com/maps?q={}'.format(user.preferences.location),
                 })
                 meta_links.append(link)
@@ -1749,7 +1749,7 @@ class UserCollection(MagiCollection):
                     'type': 'Birthdate',
                     'value': value,
                     'translate_type': True,
-                    'flaticon': 'event',
+                    'flaticon': 'birthday',
                     'url': 'https://www.timeanddate.com/countdown/birthday?iso={date}T00&msg={username}%27s+birthday'.format(date=dateformat.format(birthday, "Ymd"), username=user.username),
                 }))
             context['item'].all_links = meta_links + context['item'].all_links
@@ -2175,7 +2175,7 @@ class NotificationCollection(MagiCollection):
 
 class BadgeCollection(MagiCollection):
     enabled = False
-    icon = 'achievement'
+    icon = 'badge'
     title = _('Badge')
     plural_title = _('Badges')
     navbar_link_list = 'staff'
@@ -2307,7 +2307,7 @@ class BadgeCollection(MagiCollection):
 
 class ReportCollection(MagiCollection):
     navbar_link_list = 'staff'
-    icon = 'fingers'
+    icon = 'warning'
     queryset = models.Report.objects.all().select_related('owner', 'owner__preferences', 'staff', 'staff__preferences').prefetch_related(Prefetch('images', to_attr='all_images'))
     reportable = False
     blockable = False

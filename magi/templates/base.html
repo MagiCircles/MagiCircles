@@ -52,7 +52,7 @@
             {% if link_name == 'more' and user.is_authenticated and 'notification' in all_enabled and not launch_date %}
             <li data-link-name="notifications">
               <a href="/notifications/">
-                <i class="flaticon-world"></i>
+                <i class="flaticon-notification"></i>
                 <i class="flaticon-loading" style="display: none;"></i>
                 {% if user.preferences.unread_notifications %}
                 <span class="badge progress-bar-info">{{ user.preferences.unread_notifications }}</span>
