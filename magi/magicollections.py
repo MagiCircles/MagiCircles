@@ -2032,7 +2032,6 @@ class ActivityCollection(MagiCollection):
         distinct = False
         add_button_subtitle = _('Share your adventures!')
         ajax_pagination_callback = 'updateActivities'
-        no_result_template = 'include/activityFollowMessage'
         before_template = 'include/homePage'
         default_ordering = '-last_bump'
         filter_form = forms.FilterActivities
@@ -2058,6 +2057,21 @@ class ActivityCollection(MagiCollection):
                 queryset = queryset.exclude(_cache_hidden_by_default=True)
             return queryset
 
+        def top_buttons(self, request, context):
+            buttons = super(ActivityCollection.ListView, self).top_buttons(request, context)
+            if context['filter_form'].active_tab == 'new':
+                buttons['warn'] = {
+                    'show': True,
+                    'has_permissions': True,
+                    'classes': ['btn', 'btn-block', 'alert', 'alert-info'],
+                    'title': _('You might be the first person who sees these activities!'),
+                    'subtitle': _('If you see anything that doesn\'t follow our rules, please help us by reporting it.'),
+                    'url': '/help/Report/',
+                    'open_in_new_window': True,
+                    'icon': 'about',
+                }
+            return buttons
+
         def extra_context(self, context):
             super(ActivityCollection.ListView, self).extra_context(context)
             if context.get('shortcut_url', None) == '': # Homepage of the site
@@ -2066,6 +2080,9 @@ class ActivityCollection(MagiCollection):
             if context['request'].user.is_authenticated():
                 context['activity_tabs'] = HOME_ACTIVITY_TABS
                 context['active_activity_tab'] = context['filter_form'].active_tab
+                # Context based on tab
+                if context['filter_form'].active_tab == 'following':
+                    context['no_result_template'] = 'include/activityFollowMessage'
 
     class ItemView(MagiCollection.ItemView):
         template = custom_item_template

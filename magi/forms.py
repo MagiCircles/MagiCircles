@@ -1293,6 +1293,8 @@ class FilterActivities(MagiFiltersForm):
                 )):
                 self.default_to_current_language = True
                 self.fields['i_language'].initial = self.request.LANGUAGE_CODE
+        if not self.request.user.is_authenticated() and 'feed' in self.fields:
+            del(self.fields['feed'])
 
     def filter_queryset(self, queryset, parameters, request):
         queryset = super(FilterActivities, self).filter_queryset(queryset, parameters, request)
@@ -1304,17 +1306,20 @@ class FilterActivities(MagiFiltersForm):
         if self.request.user.is_authenticated():
             self.active_tab =  'new'
             if 'feed' not in request.GET or request.GET['feed'] == 'popular':
-                queryset = queryset.filter(_cache_total_likes__gte=MINIMUM_LIKES_POPULAR)
+                queryset = queryset.filter(
+                    Q(_cache_total_likes__gte=MINIMUM_LIKES_POPULAR)
+                    | Q(owner_id=request.user.id))
                 self.active_tab = 'popular'
             elif request.GET.get('feed', None) == 'following':
                 queryset = queryset.filter(
                     Q(owner__in=request.user.preferences.following.all())
-                    | Q(owner_id=request.user.id)
-                )
+                    | Q(owner_id=request.user.id))
                 self.active_tab = 'following'
             # Staff picks tab
             if self.active_tab == 'new' and 'c_tags' in request.GET and request.GET['c_tags'] == 'staff':
                 self.active_tab = 'staffpicks'
+        else:
+            queryset = queryset.filter(_cache_total_likes__gte=MINIMUM_LIKES_POPULAR)
         return queryset
 
     class Meta(MagiFiltersForm.Meta):
