@@ -765,8 +765,9 @@ def shrinkImageFromData(data, filename, settings={}):
 # Image URLs
 
 def staticImageURL(path, folder=None, extension=None, versionned=True):
-    if not path:
+    if not path and not folder and not extension:
         return None
+    path = unicode(path)
     if path.startswith('//') or path.startswith('http://') or path.startswith('https://'):
         return path
     return u'{static}img/{folder}{path}{extension}{version}'.format(
