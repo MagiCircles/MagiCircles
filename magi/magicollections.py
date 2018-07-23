@@ -1523,6 +1523,7 @@ class UserCollection(MagiCollection):
         ('Inappropriate image in profile description', 'An image on your profile description was inappropriate. ' + please_understand_template_sentence),
         ('Inappropriate link', 'A link on your profile description was inappropriate. ' + please_understand_template_sentence),
         ('Inappropriate profile description', 'Something you wrote on your profile was inappropriate. ' + please_understand_template_sentence),
+        ('Inappropriate username', 'Your username was inappropriate. ' + please_understand_template_sentence),
         ('Inappropriate location', 'Your location was inappropriate. ' + please_understand_template_sentence),
     ])
     report_delete_templates = {
