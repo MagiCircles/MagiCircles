@@ -38,7 +38,15 @@
             <h1 class="text-secondary" id="username" data-user-id="{{ profile_user.id }}">{{ profile_user.username }}</h1>
             {% if profile_user.preferences.i_status and profile_user.preferences.i_status != 'THANKS' %}<a href="/donate/"><h2 style="color: {{ profile_user.preferences.status_color }}">{{ profile_user.preferences.t_status }}</h2></a>{% endif %}
             <br>
-            <div class="description to-markdown">{% if profile_user.preferences.description %}{{ profile_user.preferences.description }}{% endif %}</div>
+            <div class="description">
+              {% if profile_user.preferences.m_description %}
+              {% if profile_user.preferences.description.0 %}
+              {{ profile_user.preferences.description.1|safe }}
+              {% else %}
+              <div class="to-markdown">{{ profile_user.preferences.description.1 }}</div>
+              {% endif %}
+              {% endif %}
+            </div>
             {% include 'include/below_item.html' with buttons_only=True show_item_buttons=True %}
             <div class="text-right badges">
               {% for badge in profile_user.latest_badges %}<a href="{{ badge.item_url }}" data-ajax-url="{{ badge.ajax_item_url }}" data-ajax-title="{{ badge }}" class="mini-badge badge-color{{ badge.rank|default_if_none:"" }}" data-toggle="popover" data-trigger="hover" data-placement="top" data-content="<span class='text-badge-color{{ badge.rank|default_if_none:"" }}'>{% if badge.rank %}<img src='{{ static_url }}img/badges/medal{{ badge.rank }}.png?{{ static_files_version }}'> {% endif %}{{ badge }}</span>" data-html="true" style="background-image: url('{{ badge.image_url }}');">

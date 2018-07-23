@@ -23,7 +23,7 @@ from magi.django_translated import t
 from magi import models
 from magi.default_settings import RAW_CONTEXT
 from magi.settings import FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTERS, USER_COLORS, GAME_NAME, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES, ON_PREFERENCES_EDITED, PROFILE_TABS, MINIMUM_LIKES_POPULAR
-from magi.utils import ordinalNumber, randomString, shrinkImageFromData, getMagiCollection, getAccountIdsFromSession, hasPermission, toHumanReadable, usersWithPermission, staticImageURL
+from magi.utils import ordinalNumber, randomString, shrinkImageFromData, getMagiCollection, getAccountIdsFromSession, hasPermission, toHumanReadable, usersWithPermission, staticImageURL, markdownHelpText
 
 ############################################################
 # Internal utils
@@ -839,19 +839,26 @@ class UserPreferencesForm(MagiForm):
                     choices=BLANK_CHOICE_DASH + [(name, localized) for (name, localized, image) in FAVORITE_CHARACTERS],
                     label=(_(FAVORITE_CHARACTER_NAME) if FAVORITE_CHARACTER_NAME
                            else _('{nth} Favorite Character')).format(nth=_(ordinalNumber(i))))
-        self.fields['location'].help_text = mark_safe(u'{} <a href="/map/" target="_blank">{}</a>'.format(
-            unicode(self.fields['location'].help_text),
-            unicode(_(u'Open {thing}')).format(thing=_('Map')))
-        )
-        if USER_COLORS:
-            self.fields['color'].choices = BLANK_CHOICE_DASH + [(name, localized_name) for (name, localized_name, css_color, hex_color) in USER_COLORS]
-            if self.instance:
-                self.fields['color'].initial = self.instance.color
-        else:
-            self.fields.pop('color')
+
+        # Location
+        if 'location' in self.fields:
+            self.fields['location'].help_text = mark_safe(
+                u'{} <a href="/map/" target="_blank">{} <i class="flaticon-link"></i></a>'.format(
+                    unicode(self.fields['location'].help_text),
+                    unicode(_(u'Open {thing}')).format(thing=unicode(_('Map')).lower()),
+                ))
+
+        # Color
+        if 'color' in self.fields:
+            if USER_COLORS:
+                self.fields['color'].choices = BLANK_CHOICE_DASH + [(name, localized_name) for (name, localized_name, css_color, hex_color) in USER_COLORS]
+                if self.instance:
+                    self.fields['color'].initial = self.instance.color
+            else:
+                self.fields.pop('color')
         self.old_location = self.instance.location if self.instance else None
-        if not getMagiCollection('activity'):
-            del(self.fields['view_activities_language_only'])
+        if 'm_description' in self.fields:
+            self.fields['m_description'].help_text = markdownHelpText()
 
     def clean_birthdate(self):
         if 'birthdate' in self.cleaned_data:
@@ -877,18 +884,22 @@ class UserPreferencesForm(MagiForm):
 
     class Meta(MagiForm.Meta):
         model = models.UserPreferences
-        fields = ('description', 'location', 'favorite_character1', 'favorite_character2', 'favorite_character3', 'color', 'birthdate', 'show_birthdate_year', 'i_language', 'view_activities_language_only', 'default_tab')
+        fields = ('m_description', 'location', 'favorite_character1', 'favorite_character2', 'favorite_character3', 'color', 'birthdate', 'show_birthdate_year', 'default_tab')
 
 class StaffEditUser(_UserCheckEmailUsernameForm):
     force_remove_avatar = forms.BooleanField(required=False)
 
     def __init__(self, *args, **kwargs):
         instance = kwargs.pop('instance', None)
-        preferences_fields = ('description', 'location', 'i_status', 'donation_link', 'donation_link_title', 'c_groups')
+        preferences_fields = ('m_description', 'location', 'i_status', 'donation_link', 'donation_link_title', 'c_groups')
         preferences_initial = model_to_dict(instance.preferences, preferences_fields) if instance is not None else {}
         super(StaffEditUser, self).__init__(initial=preferences_initial, instance=instance, *args, **kwargs)
         self.fields.update(fields_for_model(models.UserPreferences, preferences_fields))
         self.old_location = instance.preferences.location if instance else None
+
+        # m_description
+        if 'm_description' in self.fields:
+            self.fields['m_description'].help_text = markdownHelpText()
 
         # edit_roles permission
         self.old_c_groups = self.instance.preferences.c_groups
@@ -959,7 +970,7 @@ class StaffEditUser(_UserCheckEmailUsernameForm):
 
         # edit_reported_things
         if not hasPermission(self.request.user, 'edit_reported_things'):
-            for field_name in ['username', 'email', 'description', 'location', 'force_remove_avatar']:
+            for field_name in ['username', 'email', 'm_description', 'location', 'force_remove_avatar']:
                 if field_name in self.fields:
                     del(self.fields[field_name])
         else:
@@ -985,7 +996,7 @@ class StaffEditUser(_UserCheckEmailUsernameForm):
             instance.preferences.location_changed = True
             instance.preferences.latitude = None
             instance.preferences.longitude = None
-        for field_name in ['description', 'i_status', 'donation_link', 'donation_link_title']:
+        for field_name in ['m_description', 'i_status', 'donation_link', 'donation_link_title']:
             if field_name in self.fields and field_name in self.cleaned_data:
                 setattr(instance.preferences, field_name, self.cleaned_data[field_name])
         if 'c_groups' in self.fields and 'c_groups' in self.cleaned_data:
@@ -1132,10 +1143,7 @@ class StaffConfigurationForm(AutoForm):
             else:
                 self.fields['value'].widget = forms.Textarea()
         if not self.is_creating and self.instance.is_markdown and 'value' in self.fields:
-            if 'help' in RAW_CONTEXT['all_enabled']:
-                self.fields['value'].help_text = mark_safe(u'{} <a href="/help/Markdown" target="_blank">{}.</a>'.format(_(u'You may use Markdown formatting.'), _(u'Learn more')))
-            else:
-                self.fields['value'].help_text = _(u'You may use Markdown formatting.')
+            self.fields['value'].help_text = markdownHelpText()
 
     def save(self, commit=True):
         instance = super(StaffConfigurationForm, self).save(commit=False)
@@ -1231,10 +1239,7 @@ class ActivityForm(MagiForm):
         super(ActivityForm, self).__init__(*args, **kwargs)
         self.fields['i_language'].initial = self.request.user.preferences.language if self.request.user.is_authenticated() and self.request.user.preferences.language else django_settings.LANGUAGE_CODE
         if 'm_message' in self.fields:
-            if 'help' in RAW_CONTEXT['all_enabled']:
-                self.fields['m_message'].help_text = mark_safe(u'{} <a href="/help/Markdown" target="_blank">{}.</a>'.format(_(u'You may use Markdown formatting.'), _(u'Learn more')))
-            else:
-                self.fields['m_message'].help_text = _(u'You may use Markdown formatting.')
+            self.fields['m_message'].help_text = markdownHelpText()
         # Only allow users to add tags they are allowed to see
         if 'c_tags' in self.fields:
             self.fields['c_tags'].choices = models.getAllowedTags(self.request, is_creating=True)

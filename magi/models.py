@@ -85,7 +85,9 @@ class UserPreferences(BaseMagiModel):
     LANGUAGE_SOFT_CHOICES = django_settings.LANGUAGES
     i_language = models.CharField(_('Language'), max_length=10)
 
-    description = models.TextField(_('Description'), null=True, help_text=_('Write whatever you want. You can add formatting and links using Markdown.'), blank=True)
+    _cache_description = models.TextField(null=True)
+    m_description = models.TextField(_('Description'), null=True, blank=True)
+
     favorite_character1 = models.CharField(verbose_name=_('{nth} Favorite Character').format(nth=_('1st')), null=True, max_length=200)
     favorite_character2 = models.CharField(verbose_name=_('{nth} Favorite Character').format(nth=_('2nd')), null=True, max_length=200)
     favorite_character3 = models.CharField(verbose_name=_('{nth} Favorite Character').format(nth=_('3rd')), null=True, max_length=200)
