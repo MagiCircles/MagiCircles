@@ -24,12 +24,6 @@ other_sites = [
         'url': 'http://schoolido.lu/',
     },
     {
-        'name': 'Stardust Run',
-        'game_name': 'Pokémon Go',
-        'image': 'https://i.stardust.run/static/img/avatar.png',
-        'url': 'https://stardust.run/',
-    },
-    {
         'name': 'Cinderella Producers',
         'game_name': 'THE iDOLM@STER Cinderella Girls: Starlight Stage',
         'image': 'https://i.cinderella.pro/static/img/avatar.png',
@@ -40,5 +34,11 @@ other_sites = [
         'game_name': string_concat(_('BanG Dream!'), _('Girls Band Party')),
         'image': 'https://i.bandori.party/static/img/avatar.png',
         'url': 'https://bandori.party/',
+    },
+    {
+        'name': 'Stardust Run',
+        'game_name': 'Pokémon Go',
+        'image': 'https://i.stardust.run/static/img/avatar.png',
+        'url': 'https://stardust.run/',
     },
 ]
