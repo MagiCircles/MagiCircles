@@ -22,6 +22,7 @@ FORCE_ADD_TO_TRANSLATION = [
     _('Loading'), _('No result.'),
     _('Local time'),
     _('days'), _('hours'), _('minutes'), _('seconds'),
+    _('Copied'),
 ]
 
 DEFAULT_JAVASCRIPT_TRANSLATED_TERMS = [
@@ -29,7 +30,7 @@ DEFAULT_JAVASCRIPT_TRANSLATED_TERMS = [
     'Loading', 'No result.',
     'You can\'t cancel this action afterwards.', 'Confirm', 'Cancel',
     'days', 'hours', 'minutes', 'seconds',
-    'Local time',
+    'Local time', 'Copied',
 ]
 
 ############################################################

@@ -737,6 +737,7 @@ function loadCommons(onPageLoad /* optional = false */) {
     loadRanges();
     loadTimezones();
     loadMarkdown();
+    loadCopyToClipboard();
     reloadDisqus();
     itemsReloaders();
     directAddCollectible($('[data-quick-add-to-collection="true"]'));
@@ -1009,6 +1010,28 @@ function loadMarkdown() {
             _loadMarkdown();
         }
     }
+}
+
+function loadCopyToClipboard() {
+    $('[data-copy-to-clipboard]').unbind('click');
+    $('[data-copy-to-clipboard]').click(function(e) {
+        e.preventDefault();
+        let button = $(this);
+        let tmp = $('<input>');
+        $('body').append(tmp);
+        tmp.val(button.data('copy-to-clipboard')).select();
+        document.execCommand('copy');
+        tmp.remove();
+        button.tooltip({
+            'title': gettext('Copied'),
+            'placement': 'top',
+            'trigger': 'manual',
+        });
+        button.tooltip('show');
+        setTimeout(function(){
+            button.tooltip('hide');
+        }, 2000);
+    });
 }
 
 // *****************************************
