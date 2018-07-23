@@ -568,8 +568,8 @@ DEFAULT_PROFILE_TABS = OrderedDict([
 
 DEFAULT_NAVBAR_ORDERING = [
     'account_list',
-    'you',
     'staff',
+    'you',
     'more',
 ]
 
