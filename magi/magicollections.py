@@ -1766,11 +1766,13 @@ class UserCollection(MagiCollection):
 
             # Sentences
             activity_collection = getMagiCollection('activity')
-            if activity_collection and activity_collection.add_view.has_permissions(request, context):
-
-                context['js_variables']['show_add_activity_button'] = jsv(context['is_me'])
-                context['js_variables']['add_activity_sentence'] = jsv(activity_collection.add_sentence)
-                context['js_variables']['add_activity_subtitle'] = jsv(unicode(activity_collection.list_view.add_button_subtitle))
+            if activity_collection:
+                if activity_collection.add_view.has_permissions(request, context):
+                    context['js_variables']['show_add_activity_button'] = jsv(context['is_me'])
+                    context['js_variables']['add_activity_sentence'] = jsv(activity_collection.add_sentence)
+                    context['js_variables']['add_activity_subtitle'] = jsv(unicode(activity_collection.list_view.add_button_subtitle))
+                else:
+                    context['js_variables']['show_add_activity_button'] = jsv(False)
             if account_collection and account_collection.add_view.has_permissions(request, context):
                 context['can_add_account'] = True
                 context['add_account_sentence'] = account_collection.add_sentence
