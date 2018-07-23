@@ -753,6 +753,14 @@ function loadCommons(onPageLoad /* optional = false */) {
 
 function loadToolTips() {
     $('[data-toggle="tooltip"]').tooltip();
+    // Load tooltip on CuteForm
+    $('.cuteform img.cuteform-elt:not([data-cuteform-text="---------"])').each(function() {
+        $(this).tooltip({
+            'title': $(this).data('cuteform-text'),
+            'data-placement': 'top',
+            'trigger': 'hover',
+        });
+    });
 }
 
 function loadPopovers() {
