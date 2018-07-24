@@ -369,6 +369,7 @@ class MagiFilter(object):
     selectors: same as selector but works with multiple values.
     to_value: lambda that takes the value and transforms the value if needed.
     multiple: allow multiple values separated by commas. Set to False if your value may contain commas.
+              defaults to False when to_queryset is provided
     noop: when set to true, will not affect result
     """
     def __init__(self,
@@ -376,7 +377,7 @@ class MagiFilter(object):
                  selector=None,
                  selectors=None,
                  to_value=None,
-                 multiple=True,
+                 multiple=None,
                  operator_for_multiple=None,
                  allow_csv=True,
                  noop=False,
@@ -386,7 +387,12 @@ class MagiFilter(object):
         if not self.selectors and selector:
             self.selectors = [selector]
         self.to_value = to_value
-        self.multiple = multiple
+        if multiple is not None:
+            self.multiple = multiple
+        elif to_queryset:
+            self.multiple = False
+        else:
+            self.multiple = True
         self.operator_for_multiple = operator_for_multiple
         self.allow_csv = allow_csv
         self.noop = noop
@@ -526,78 +532,95 @@ class MagiFiltersForm(AutoForm):
             # ordering fields are Handled in views collection, used by pagination
             if field_name in ['ordering', 'page', 'reverse_order']:
                 continue
-            if field_name in parameters and parameters[field_name] != '':
-                filter = getattr(self, '{}_filter'.format(field_name), None)
-                if not filter:
-                    filter = MagiFilter()
-                if filter.noop:
-                    continue
-                # Filtering is provided by to_queryset
-                if filter.to_queryset:
-                    queryset = filter.to_queryset(self, queryset, request,
-                                                  value=self._value_as_string(filter, parameters, field_name))
-                else: # Automatic filtering
-                    operator_for_multiple = filter.operator_for_multiple or MagiFilterOperator.default_for_field(self.fields[field_name])
-                    selectors = filter.selectors if filter.selectors else [field_name]
-                    condition = Q()
-                    filters, exclude = {}, {}
-                    for selector in selectors:
-                        # NullBooleanField
-                        if isinstance(self.fields[field_name], forms.fields.NullBooleanField):
-                            value = self._value_as_nullbool(filter, parameters, field_name)
-                            if value is not None:
-                                filters[selector] = value
-                                # Special case for __isnull selectors
-                                if selector.endswith('__isnull') and not filter.to_value:
-                                    filters[selector] = value = not value
-                                    original_selector = selector[:(-1 * len('__isnull'))]
-                                    # Get what corresponds to an empty value
-                                    empty_value = None
-                                    try:
-                                        model_field = queryset.model._meta.get_field(original_selector)
-                                        if (isinstance(model_field, TextField)
-                                            or isinstance(model_field, CharField)
-                                            or isinstance(model_field, ImageField)
-                                        ):
-                                            empty_value = ''
-                                    except FieldDoesNotExist: pass
-                                    if empty_value is not None:
-                                        if value: # Also include empty values
-                                            condition = condition | Q(**{ original_selector: empty_value })
-                                        else: # Exclude empty values
-                                            # need to check if int then 0 else ''
-                                            exclude = { original_selector: empty_value }
-                        # MultipleChoiceField
-                        elif (isinstance(self.fields[field_name], forms.fields.MultipleChoiceField)
-                              or filter.multiple):
-                            values = self._value_as_list(filter, parameters, field_name, filter.allow_csv)
-                            if operator_for_multiple == MagiFilterOperator.OrContains:
-                                for value in values:
-                                    condition = condition | Q(**{ u'{}__icontains'.format(selector): value })
-                            elif operator_for_multiple == MagiFilterOperator.OrExact:
-                                filters = { u'{}__in'.format(selector): values }
-                            elif operator_for_multiple == MagiFilterOperator.And:
-                                for value in values:
-                                    condition = condition & Q(**{ u'{}__icontains'.format(selector): value })
-                            else:
-                                raise NotImplementedError('Unknown operator for multiple condition')
-                        # Generic
+            filter = getattr(self, '{}_filter'.format(field_name), None)
+            if not filter:
+                filter = MagiFilter()
+            if filter.noop:
+                continue
+            # Get value as list first
+            value = None
+            if field_name in parameters:
+                if parameters[field_name] != '':
+                    value = parameters[field_name]
+                    if ((isinstance(self.fields[field_name], forms.fields.MultipleChoiceField)
+                         or filter.multiple)
+                        and not isinstance(self.fields[field_name], forms.fields.NullBooleanField)):
+                        value = self._value_as_list(filter, parameters, field_name, filter.allow_csv)
+            # Use initial value if any
+            else:
+                value = self.fields[field_name].initial
+            if value is None or value == '':
+                continue
+            # Filtering is provided by to_queryset
+            if filter.to_queryset:
+                queryset = filter.to_queryset(self, queryset, request,
+                                              value=self._value_as_string(filter, value))
+            # Automatic filtering
+            else:
+                operator_for_multiple = filter.operator_for_multiple or MagiFilterOperator.default_for_field(self.fields[field_name])
+                selectors = filter.selectors if filter.selectors else [field_name]
+                condition = Q()
+                filters, exclude = {}, {}
+                for selector in selectors:
+                    # NullBooleanField
+                    if isinstance(self.fields[field_name], forms.fields.NullBooleanField):
+                        value = self._value_as_nullbool(filter, value)
+                        if value is not None:
+                            filters[selector] = value
+                            # Special case for __isnull selectors
+                            if selector.endswith('__isnull') and not filter.to_value:
+                                filters[selector] = value = not value
+                                original_selector = selector[:(-1 * len('__isnull'))]
+                                # Get what corresponds to an empty value
+                                empty_value = None
+                                try:
+                                    model_field = queryset.model._meta.get_field(original_selector)
+                                    if (isinstance(model_field, TextField)
+                                        or isinstance(model_field, CharField)
+                                        or isinstance(model_field, ImageField)
+                                    ):
+                                        empty_value = ''
+                                except FieldDoesNotExist: pass
+                                if empty_value is not None:
+                                    if value: # Also include empty values
+                                        condition = condition | Q(**{ original_selector: empty_value })
+                                    else: # Exclude empty values
+                                        # need to check if int then 0 else ''
+                                        exclude = { original_selector: empty_value }
+                    # MultipleChoiceField
+                    elif (isinstance(self.fields[field_name], forms.fields.MultipleChoiceField)
+                          or filter.multiple):
+                        values = value
+                        if operator_for_multiple == MagiFilterOperator.OrContains:
+                            for value in values:
+                                condition = condition | Q(**{ u'{}__icontains'.format(selector): value })
+                        elif operator_for_multiple == MagiFilterOperator.OrExact:
+                            filters = { u'{}__in'.format(selector): values }
+                        elif operator_for_multiple == MagiFilterOperator.And:
+                            for value in values:
+                                condition = condition & Q(**{ u'{}__icontains'.format(selector): value })
                         else:
-                            filters = { selector: self._value_as_string(filter, parameters, field_name) }
-                        condition = condition | Q(**filters)
-                    queryset = queryset.filter(condition).exclude(**exclude)
+                            raise NotImplementedError('Unknown operator for multiple condition')
+                    # Generic
+                    else:
+                        filters = { selector: self._value_as_string(filter, value) }
+                    condition = condition | Q(**filters)
+                queryset = queryset.filter(condition).exclude(**exclude)
         return queryset
 
-    def _value_as_string(self, filter, parameters, field_name):
-        return filter.to_value(parameters[field_name]) if filter.to_value else parameters[field_name]
-
-    def _value_as_nullbool(self, filter, parameters, field_name):
-        value = None
-        if parameters[field_name] == '2':
-            value = True
-        elif parameters[field_name] == '3':
-            value = False
+    def _value_as_string(self, filter, value):
         return filter.to_value(value) if filter.to_value else value
+
+    def to_nullbool(self, value):
+        if value == '2' or value == True:
+            return True
+        elif value == '3' or value == False:
+            return False
+        return None
+
+    def _value_as_nullbool(self, filter, value):
+        new_value = self.to_nullbool(value)
+        return filter.to_value(new_value) if filter.to_value else new_value
 
     def _value_as_list(self, filter, parameters, field_name, allow_csv=True):
         if isinstance(parameters, QueryDict):
