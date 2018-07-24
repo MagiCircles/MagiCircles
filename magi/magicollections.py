@@ -9,7 +9,7 @@ from django.utils.datastructures import MultiValueDictKeyError
 from django.http import Http404
 from django.db.models import Count, Q, Prefetch, FieldDoesNotExist
 from magi.views import indexExtraContext
-from magi.utils import AttrDict, ordinalNumber, justReturn, propertyFromCollection, getMagiCollections, getMagiCollection, CuteFormType, CuteFormTransform, redirectWhenNotAuthenticated, custom_item_template, getAccountIdsFromSession, setSubField, hasPermission, hasPermissions, hasOneOfPermissions, jsv
+from magi.utils import AttrDict, ordinalNumber, justReturn, propertyFromCollection, getMagiCollections, getMagiCollection, CuteFormType, CuteFormTransform, redirectWhenNotAuthenticated, custom_item_template, getAccountIdsFromSession, setSubField, hasPermission, hasPermissions, hasOneOfPermissions, jsv, staticImageURL
 from magi.raw import please_understand_template_sentence
 from magi.django_translated import t
 from magi.middleware.httpredirect import HttpRedirectException
@@ -1709,6 +1709,21 @@ class UserCollection(MagiCollection):
             # Links
             context['item'].all_links = list(context['item'].all_links)
             meta_links = []
+            already_linked = None
+            if user.preferences.donation_link:
+                for link in context['item'].all_links:
+                    if link.url == user.preferences.donation_link:
+                        already_linked = link
+                        meta_links.append(link)
+                        break
+                if not already_linked:
+                    meta_links.append(AttrDict({
+                        'type': 'Website',
+                        'value': user.preferences.donation_link_title,
+                        'translate_type': True,
+                        'flaticon': 'url',
+                        'url': user.preferences.donation_link,
+                    }))
             if FAVORITE_CHARACTERS:
                 for i in range(1, 4):
                     if getattr(user.preferences, 'favorite_character{}'.format(i)):
@@ -1734,6 +1749,13 @@ class UserCollection(MagiCollection):
                     'url': u'/map/?center={}&zoom=10'.format(latlong) if 'map' in context['all_enabled'] and latlong else u'https://www.google.com/maps?q={}'.format(user.preferences.location),
                 })
                 meta_links.append(link)
+            if context['is_me'] or user.preferences.language != request.LANGUAGE_CODE:
+                meta_links.append(AttrDict({
+                    'type': 'Language',
+                    'value': user.preferences.t_language,
+                    'translate_type': True,
+                    'image_url': staticImageURL(user.preferences.language, folder='language', extension='png'),
+                }))
             if user.preferences.birthdate:
                 today = datetime.date.today()
                 birthday = user.preferences.birthdate.replace(year=today.year)
@@ -1753,7 +1775,7 @@ class UserCollection(MagiCollection):
                     'flaticon': 'birthday',
                     'url': 'https://www.timeanddate.com/countdown/birthday?iso={date}T00&msg={username}%27s+birthday'.format(date=dateformat.format(birthday, "Ymd"), username=user.username),
                 }))
-            context['item'].all_links = meta_links + context['item'].all_links
+            context['item'].all_links = meta_links + [link for link in context['item'].all_links if link != already_linked]
             num_links = len(context['item'].all_links)
             best_links_on_last_line = 0
             for i in range(4, 7):
