@@ -875,6 +875,7 @@ class Report(MagiModel):
     reported_thing = models.CharField(max_length=300)
     reported_thing_title = models.CharField(max_length=300)
     reported_thing_id = models.PositiveIntegerField()
+    reported_thing_owner_id = models.PositiveIntegerField(null=True)
     reason = models.TextField(_('Reason'))
     message = models.TextField(_('Message'))
     images = models.ManyToManyField(UserImage, related_name="report", verbose_name=_('Images'))

@@ -504,6 +504,7 @@ def moderatereport(request, report, action):
             context['item_url'] = None
             context['item_open_sentence'] = None
         report.i_status = models.Report.get_i('status', 'Edited')
+        report.reported_thing_owner_id = thing.owner.id
         # Notify reporter
         if report.owner:
             translation_activate(report.owner.preferences.language if report.owner.preferences.language else 'en')
@@ -525,6 +526,7 @@ def moderatereport(request, report, action):
 
     elif action == 'Deleted':
         report.i_status = models.Report.get_i('status', 'Deleted')
+        report.reported_thing_owner_id = thing.real_owner.id
         report.saved_data = dumpModel(thing)
         # Notify all reporters
         all_reports = models.Report.objects.filter(
@@ -554,6 +556,7 @@ def moderatereport(request, report, action):
             staff_message=report.staff_message,
             saved_data=report.saved_data,
             i_status=models.Report.get_i('status', 'Deleted'),
+            reported_thing_owner_id=report.reported_thing_owner_id,
         )
         thing.delete()
 
