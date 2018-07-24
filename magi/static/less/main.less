@@ -496,7 +496,7 @@ table.text-center th {
     }
 }
 
-.shortcut- {
+.current-activity_list[class*="shortcut-"] {
     #page-content-wrapper {
 	padding: 0;
     }
@@ -1058,11 +1058,11 @@ nav {
 
 .current-settings {
     #id_type + .cuteform {
-	.cuteform-elt:not([data-cuteform-text="---------"]) {
-	    border-radius: 10px;
-	    padding: 3px;
-	    margin-bottom: 5px;
-	}
+	    .cuteform-elt:not([data-cuteform-text="---------"]) {
+	        border-radius: 10px;
+	        padding: 3px;
+	        margin-bottom: 5px;
+	    }
     }
 }
 
@@ -1194,7 +1194,7 @@ nav {
        background-color: @mainColor;
        border-color: @mainColor;
    }
-   .shortcut- {
+   .current-activity_list[class*="shortcut-"] {
        .btn-add-activity {
 	   .button-variant(@mainColor, @transparent, @transparent);
        }

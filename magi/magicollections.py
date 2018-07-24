@@ -2046,8 +2046,8 @@ class ActivityCollection(MagiCollection):
         'with_image': {
             'type': CuteFormType.OnlyNone,
         },
-        'feed': {
-            'type': CuteFormType.HTML,
+        'is_popular': {
+            'type': CuteFormType.OnlyNone,
         },
     }
 
@@ -2069,7 +2069,7 @@ class ActivityCollection(MagiCollection):
             return [cls for cls in super(ActivityCollection.ListView, self).item_buttons_classes if cls != 'btn-secondary'] + ['btn-link']
 
         show_edit_button_superuser_only = True
-        shortcut_urls = ['']
+        shortcut_urls = [''] + [u'activities/{}'.format(_tab) for _tab in HOME_ACTIVITY_TABS.keys()]
 
         def get_queryset(self, queryset, parameters, request):
             queryset = super(ActivityCollection.ListView, self).get_queryset(queryset, parameters, request)
@@ -2099,7 +2099,7 @@ class ActivityCollection(MagiCollection):
 
         def extra_context(self, context):
             super(ActivityCollection.ListView, self).extra_context(context)
-            if context.get('shortcut_url', None) == '': # Homepage of the site
+            if context.get('shortcut_url', None) is not None: # Homepage of the site
                 indexExtraContext(context)
                 context['hide_sidebar'] = True
             if context['request'].user.is_authenticated():

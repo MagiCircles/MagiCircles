@@ -1,7 +1,7 @@
 {% load i18n %}
 {% load tools %}
 {% load l10n %}
-{% if shortcut_url == '' %}
+{% if shortcut_url != None %}
 <div class="default-index {% if user.is_authenticated %}index-authenticated{% else %}index-not-authenticated{% endif %}">
   <header>
     <h1 class="home-site-logo"><img src="{{ site_logo }}" class="img-responsive" alt="{{ site_name }}"></h1>
@@ -67,7 +67,7 @@
 {% if user.is_authenticated and 'activity' in all_enabled %}
 <ul class="nav nav-tabs" id="hometabs">
   {% for tab_name, tab in activity_tabs.items %}
-  <li data-tab-name="{{ tab_name }}"{% if active_activity_tab == tab_name %} class="active"{% endif %}><a href="{{ tab.url }}" ><i class="flaticon-{{ tab.icon }} visible-xs"></i> <span class="{% if active_activity_tab != tab_name %}hidden-xs{% endif %}">{{ tab.title }}</span></a></li>
+  <li data-tab-name="{{ tab_name }}"{% if active_activity_tab == tab_name %} class="active"{% endif %}><a href="/activities/{{ tab_name }}/" ><i class="flaticon-{{ tab.icon }} visible-xs"></i> <span class="{% if active_activity_tab != tab_name %}hidden-xs{% endif %}">{{ tab.title }}</span></a></li>
   {% endfor %}
   <li><a class="togglebutton" href="/activities/" ><i class="flaticon-search"></i><i class="flaticon-toggler hidder"></i></a></li>
 </ul>

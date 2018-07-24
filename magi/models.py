@@ -11,7 +11,7 @@ from django.utils.dateparse import parse_date
 from django.forms.models import model_to_dict
 from django.conf import settings as django_settings
 from magi.utils import AttrDict, randomString, getMagiCollection, uploadToRandom, uploadItem, uploadTiny, linkToImageURL, hasGroup, hasPermission, hasOneOfPermissions, hasPermissions, toHumanReadable, LANGUAGES_DICT, locationOnChange
-from magi.settings import ACCOUNT_MODEL, GAME_NAME, COLOR, SITE_STATIC_URL, DONATORS_STATUS_CHOICES, USER_COLORS, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_TO_URL, SITE_URL, SITE_NAME, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, ACTIVITY_TAGS, GROUPS
+from magi.settings import ACCOUNT_MODEL, GAME_NAME, COLOR, SITE_STATIC_URL, DONATORS_STATUS_CHOICES, USER_COLORS, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_TO_URL, SITE_URL, SITE_NAME, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, ACTIVITY_TAGS, GROUPS, HOME_ACTIVITY_TABS
 from magi.item_model import MagiModel, BaseMagiModel, get_image_url, i_choices, addMagiModelProperties, getInfoFromChoices
 from magi.abstract_models import CacheOwner
 
@@ -103,6 +103,13 @@ class UserPreferences(BaseMagiModel):
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
     following = models.ManyToManyField(User, related_name='followers')
+
+    # Activities preferences
+
+    DEFAULT_ACTIVITIES_TAB_CHOICES = [(_k, _v['title']) for _k, _v in HOME_ACTIVITY_TABS.items()]
+    DEFAULT_ACTIVITIES_TAB_SOFT_CHOICES = True
+    i_default_activities_tab = models.PositiveIntegerField(_('Default tab'), default=0)
+    default_activities_tab_form_fields = property(getInfoFromChoices('default_activities_tab', HOME_ACTIVITY_TABS, 'form_fields'))
 
     STATUS_CHOICES = DONATORS_STATUS_CHOICES if DONATORS_STATUS_CHOICES else (
         ('THANKS', 'Thanks'),

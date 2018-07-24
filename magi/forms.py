@@ -1302,12 +1302,18 @@ class FilterActivities(MagiFiltersForm):
 
     owner_id = forms.IntegerField(widget=forms.HiddenInput)
 
-    feed = forms.ChoiceField(label=_('Feed'), choices=[
-        ('all', _('All')),
-        ('popular', _('Popular')),
-        ('following', _('Following')),
-    ], initial='popular')
-    feed_filter = MagiFilter(noop=True)
+    is_popular = forms.NullBooleanField(label=_('Popular'), initial=True)
+    is_popular_filter = MagiFilter(to_queryset=lambda form, queryset, request, value: queryset.filter(
+        Q(**{ '_cache_total_likes__{filter}'.format(filter='gte' if form.to_nullbool(value) else 'lt'):
+              MINIMUM_LIKES_POPULAR })
+        | Q(owner_id=request.user.id)
+    ) if form.to_nullbool(value) is not None else queryset)
+
+    is_following = forms.BooleanField(label=_('Following'), initial=False)
+    is_following_filter = MagiFilter(to_queryset=lambda form, queryset, request, value: queryset.filter(
+        Q(owner__in=request.user.preferences.following.all())
+        | Q(owner_id=request.user.id)
+    ) if value else queryset)
 
     def __init__(self, *args, **kwargs):
         super(FilterActivities, self).__init__(*args, **kwargs)
@@ -1325,8 +1331,24 @@ class FilterActivities(MagiFiltersForm):
                 )):
                 self.default_to_current_language = True
                 self.fields['i_language'].initial = self.request.LANGUAGE_CODE
-        if not self.request.user.is_authenticated() and 'feed' in self.fields:
-            del(self.fields['feed'])
+        if not self.request.user.is_authenticated() and 'is_following' in self.fields:
+            del(self.fields['is_following'])
+        self.active_tab = None
+        if self.request.user.is_authenticated():
+            # If a tab is selected in the request (URL)
+            request_tab = self.request.path.split('/')[2] if self.request.path.startswith('/activities/') else None
+            if request_tab and request_tab in HOME_ACTIVITY_TABS:
+                self.active_tab = request_tab
+            # If the user has a preference
+            elif self.request.user.preferences.i_default_activities_tab is not None:
+                self.active_tab = self.request.user.preferences.default_activities_tab
+            # Default to popular
+            else:
+                self.active_tab = 'popular'
+            # Set the initial to the value of the preferences
+            for field_name, value in HOME_ACTIVITY_TABS[self.active_tab]['form_fields'].items():
+                if field_name in self.fields:
+                    self.fields[field_name].initial = value
 
     def filter_queryset(self, queryset, parameters, request):
         queryset = super(FilterActivities, self).filter_queryset(queryset, parameters, request)
@@ -1334,29 +1356,11 @@ class FilterActivities(MagiFiltersForm):
             queryset = queryset.filter(i_language=request.LANGUAGE_CODE)
         if 'ordering' in parameters and parameters['ordering'] == '_cache_total_likes,id':
             queryset = queryset.filter(creation__gte=timezone.now() - relativedelta(weeks=1))
-        # Feed filter
-        if self.request.user.is_authenticated():
-            self.active_tab =  'new'
-            if 'feed' not in request.GET or request.GET['feed'] == 'popular':
-                queryset = queryset.filter(
-                    Q(_cache_total_likes__gte=MINIMUM_LIKES_POPULAR)
-                    | Q(owner_id=request.user.id))
-                self.active_tab = 'popular'
-            elif request.GET.get('feed', None) == 'following':
-                queryset = queryset.filter(
-                    Q(owner__in=request.user.preferences.following.all())
-                    | Q(owner_id=request.user.id))
-                self.active_tab = 'following'
-            # Staff picks tab
-            if self.active_tab == 'new' and 'c_tags' in request.GET and request.GET['c_tags'] == 'staff':
-                self.active_tab = 'staffpicks'
-        else:
-            queryset = queryset.filter(_cache_total_likes__gte=MINIMUM_LIKES_POPULAR)
         return queryset
 
     class Meta(MagiFiltersForm.Meta):
         model = models.Activity
-        fields = ('search',  'feed', 'c_tags', 'with_image', 'i_language')
+        fields = ('search', 'c_tags', 'is_popular', 'is_following', 'with_image', 'i_language')
 
 ############################################################
 # Notifications
