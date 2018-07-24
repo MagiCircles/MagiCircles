@@ -22,7 +22,7 @@ from magi.middleware.httpredirect import HttpRedirectException
 from magi.django_translated import t
 from magi import models
 from magi.default_settings import RAW_CONTEXT
-from magi.settings import FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTERS, USER_COLORS, GAME_NAME, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES, ON_PREFERENCES_EDITED, PROFILE_TABS, MINIMUM_LIKES_POPULAR
+from magi.settings import FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTERS, USER_COLORS, GAME_NAME, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES, ON_PREFERENCES_EDITED, PROFILE_TABS, MINIMUM_LIKES_POPULAR, HOME_ACTIVITY_TABS
 from magi.utils import ordinalNumber, randomString, shrinkImageFromData, getMagiCollection, getAccountIdsFromSession, hasPermission, toHumanReadable, usersWithPermission, staticImageURL, markdownHelpText
 
 ############################################################
@@ -208,10 +208,14 @@ class MagiForm(forms.ModelForm):
             # Make fields with soft choices use a ChoiceField
             elif getattr(self.Meta.model, u'{name}_SOFT_CHOICES'.format(name=name[2:].upper()), False):
                 choices = getattr(self.Meta.model, '{name}_CHOICES'.format(name=name[2:].upper()), None)
+                without_i = getattr(self.Meta.model, '{name}_WITHOUT_I_CHOICES'.format(name=name[2:].upper()), None)
                 if choices is not None:
                     self.fields[name] = forms.ChoiceField(
                         required=field.required,
-                        choices=[(c[0], c[1]) if isinstance(c, tuple) else (c, c) for c in choices],
+                        choices=[
+                            (c[0] if without_i else i, c[1]) if isinstance(c, tuple) else (c, c)
+                            for i, c in enumerate(choices)
+                        ],
                         label=field.label,
                     )
             # Save previous values of markdown fields
