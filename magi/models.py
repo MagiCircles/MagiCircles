@@ -111,6 +111,11 @@ class UserPreferences(BaseMagiModel):
     i_default_activities_tab = models.PositiveIntegerField(_('Default tab'), default=0)
     default_activities_tab_form_fields = property(getInfoFromChoices('default_activities_tab', HOME_ACTIVITY_TABS, 'form_fields'))
 
+    ACTIVITIES_LANGUAGE_CHOICES = LANGUAGE_CHOICES
+    ACTIVITIES_LANGUAGE_WITHOUT_I_CHOICES = True
+    ACTIVITIES_LANGUAGE_SOFT_CHOICES = LANGUAGE_CHOICES
+    i_activities_language = models.CharField(_('Post activities in {language}'), max_length=10)
+
     STATUS_CHOICES = DONATORS_STATUS_CHOICES if DONATORS_STATUS_CHOICES else (
         ('THANKS', 'Thanks'),
         ('SUPPORTER', _('Player')),

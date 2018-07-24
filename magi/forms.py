@@ -1264,7 +1264,11 @@ class StaffDetailsFilterForm(MagiFiltersForm):
 class ActivityForm(MagiForm):
     def __init__(self, *args, **kwargs):
         super(ActivityForm, self).__init__(*args, **kwargs)
-        self.fields['i_language'].initial = self.request.user.preferences.language if self.request.user.is_authenticated() and self.request.user.preferences.language else django_settings.LANGUAGE_CODE
+        self.fields['i_language'].initial = (
+            self.request.user.preferences.activities_language
+            if self.request.user.is_authenticated() and self.request.user.preferences.activities_language
+            else django_settings.LANGUAGE_CODE
+        )
         if 'm_message' in self.fields:
             self.fields['m_message'].help_text = markdownHelpText()
         # Only allow users to add tags they are allowed to see
