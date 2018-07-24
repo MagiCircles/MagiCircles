@@ -808,6 +808,15 @@ def toCountDown(date, sentence, classes=None):
         date=torfc2822(date), sentence=sentence, classes=u' '.join(classes or []),
     )
 
+def markdownHelpText():
+    if 'help' in RAW_CONTEXT['all_enabled']:
+        return mark_safe(u'{} <a href="/help/Markdown" target="_blank">{}.</a>'.format(
+            _(u'You may use Markdown formatting.'),
+            _(u'Learn more'),
+        ))
+    else:
+        return _(u'You may use Markdown formatting.')
+
 ############################################################
 # Async update function
 
