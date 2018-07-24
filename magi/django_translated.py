@@ -24,4 +24,5 @@ t = {
     'No': _('No'),
     'Select a valid choice. %(value)s is not one of the available choices.': _('Select a valid choice. %(value)s is not one of the available choices.'),
     'Download': _('Download'),
+    'This field is required.': _('This field is required.'),
 }

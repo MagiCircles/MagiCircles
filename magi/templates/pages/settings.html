@@ -3,25 +3,53 @@
 {% load tools %}
 {% load magi_tags %}
 
-{% block title %}
-{% if form_name == 'preferences' %}
-{% trans 'Customize' %}
-{% elif form_name == 'addLink' %}
-{{ add_link_sentence }}
-{% elif form_name == 'changePassword' %}
-{% trans 'Change your password' %}
-{% elif form_name == 'emails' %}
-{% trans 'Emails' %}
-{% elif form_name == 'security' %}
-{% trans 'Security' %}
-{% else %}
-{% trans 'Settings' %}
-{% endif %}
+{% block beforeforms %}
+<div class="container_form">
+  <h1 id="content" class="text-center padding50"><i class="flaticon-settings"></i> {% trans 'Settings' %}</h1>
+  <div class="list-group">
+    <div class="list-group-item active"><h4>{% trans 'Profile' %}</h4></div>
+    {% for form_name, form in forms.items %}
+    {% if form_name == 'form' %}
+    <div class="list-group-item active"><h4>{% trans 'Preferences' %}</h4></div>
+    {% elif form_name == 'addLink' %}
+    <a href="#avatar" class="list-group-item page-scroll"><i class="flaticon-portrait"></i> {% trans 'Avatar' %} <span class="glyphicon glyphicon-chevron-down pull-right"></span></a>
+    {% if links|length %}
+    <a href="#links" class="list-group-item page-scroll"><i class="flaticon-url"></i> {% trans 'Links' %} <span class="glyphicon glyphicon-chevron-down pull-right"></span></a>
+    {% endif %}
+    {% endif %}
+    <a href="#{{ form_name }}" class="list-group-item page-scroll"><i class="flaticon-{{ form.icon }}"></i> {{ form.form_title }} <span class="glyphicon glyphicon-chevron-down pull-right"></span></a>
+    {% if form_name == 'addLink' %}
+    {% if 'donationLink' not in forms %}
+    <a href="#customLink" class="list-group-item page-scroll"><i class="flaticon-add"></i> {{ add_custom_link_sentence }} <span class="glyphicon glyphicon-chevron-down pull-right"></span></a>
+    {% endif %}
+    {% endif %}
+    {% endfor %}
+    <div class="list-group-item active"><h4>{% trans 'More' %}</h4></div>
+    {% if blocked or reports %}
+    <a href="#blocked" class="list-group-item page-scroll"><i class="flaticon-warning"></i> {% trans 'Security' %} <span class="glyphicon glyphicon-chevron-down pull-right"></span></a>
+    {% endif %}
+    <a href="#accounts" class="list-group-item page-scroll"><i class="flaticon-album"></i> {% trans 'Accounts' %} <span class="glyphicon glyphicon-chevron-down pull-right"></span></a>
+    {% if user.preferences.groups %}
+    <a href="#groups" class="list-group-item page-scroll"><i class="flaticon-about"></i> Your groups <span class="glyphicon glyphicon-chevron-down pull-right"></span></a>
+    {% endif %}
+  </div>
+</div>
 {% endblock %}
 
 {% block beforeform %}
-{% if form_name == 'addLink' and links|length %}
-<h1 id="links" class="text-center padding50">{% trans 'Links' %}</h1>
+{% if form_name == 'addLink' %}
+<h1 id="avatar" class="text-center padding50"><i class="flaticon-portrait"></i> {% trans 'Avatar' %}</h1>
+<br>
+<form class="container_form" data-form-name="avatar">
+  <div class="alert alert-info">{% trans 'To change your avatar, use Gravatar with the same email address.' %}</div>
+  <div class="text-right">
+    <a href="#content" class="btn btn-lg btn-link page-scroll"><span class="glyphicon glyphicon-chevron-up"></span></a>
+    <a href="/help/Change%20your%20profile%20picture" target="_blank" class="btn btn-lg btn-link">{% trans 'F.A.Q.' %}</a>
+    <a class="btn btn-lg btn-main" href="https://{{ LANGUAGE_CODE }}.gravatar.com/" target="_blank">{% trans 'Change Avatar' %}</a>
+  </div>
+</form>
+{% if links|length %}
+<h1 id="links" class="text-center padding50"><i class="flaticon-url"></i> {% trans 'Links' %}</h1>
 <br>
 <form class="container_form" action="#addLink" data-form-name="addLink">
   <table class="table table-main table-padded table-rounded">
@@ -36,10 +64,38 @@
   </table>
 </form>
 {% endif %}
+{% endif %}
 {% endblock %}
 
 {% block beforefields %}
-{% if form_name == 'security' and blocked %}
+{% if form_name == 'donationLink' %}
+<p class="text-right text-secondary">{{ user.preferences.t_status }} - {% trans 'Premium feature' %} <i class="flaticon-promo"></i></p>
+{% endif %}
+{% endblock %}
+
+{% block belowform %}
+{% if form_name == 'addLink' %}
+{% if 'donationLink' not in forms %}
+<h1 id="customLink" class="text-center padding50"><i class="flaticon-add"></i> {{ add_custom_link_sentence }}</h1>
+<br>
+<form class="container_form" data-form-name="customlink">
+  <p class="text-secondary"><i class="flaticon-promo"></i> {% trans 'Premium feature' %}</p>
+  <p>{% trans 'If you like the website, please consider donating' %}. {% trans 'This will help us cover the costs of the servers and allow us to keep it running for free and without ads.' %}</p>
+  <div class="text-right">
+    <a href="#content" class="btn btn-lg btn-link page-scroll"><span class="glyphicon glyphicon-chevron-up"></span></a>
+    <a href="/donate/" target="_blank" class="btn btn-lg btn-link">{% trans 'Learn more' %}</a>
+    <a class="btn btn-lg btn-main" href="/donate/" target="_blank">{% trans 'Donate' %}</a>
+  </div>
+</form>
+{% endif %}
+{% endif %}
+{% endblock %}
+
+{% block belowforms %}
+{% if blocked or reports %}
+<h1 id="blocked" class="text-center padding50"><i class="flaticon-warning"></i> {% trans 'Security' %}</h1>
+<br>
+<form class="container_form" data-form-name="groups">
 <table class="table table-blocked table-padded table-rounded">
   {% for blocked_user in blocked %}
   <tr>
@@ -53,24 +109,41 @@
     </a></td>
   </tr>
   {% endfor %}
+  {% for report in reports %}
+  <div class="alert alert-{% if report.status == 'Edited' %}warning{% else %}danger{% endif %} progress-bar-striped">
+	<small class="timezone" data-timeago="true">
+	  <span class="datetime">{{ report.modification|torfc2822 }}</span>
+	  (<span class="current_timezone">UTC</span>)
+	</small><br>
+    <p class="padding20 padding-nohorizontal">{{ report.introduction_sentence }}</p>
+    <strong>{% trans 'Staff Message:' %}</strong><br>
+    <div class="panel panel-default"><div class="panel-body">
+        {% if user.preferences.i_language and user.preferences.language != 'en' %}
+        <img src="{{ static_url }}img/language/en.png?{{ static_files_version }}"
+             alt="{{ t_english }}" class="pull-right" width="25" />
+        {% endif %}
+        {{ report.staff_message }}
+    </div></div>
+    <p class="text-right"><small>
+        {% if user.preferences.i_language and user.preferences.language != 'en' %}
+        <a href="https://translate.google.com/#en/{{ user.preferences.language }}/{{ report.staff_message|urlencode }}"
+           target="_blank">
+          {% with from_language=t_english to_language=user.preferences.t_language %}
+          {% blocktrans %}Translate from {{ from_language }} to {{ to_language }}{% endblocktrans %}
+          {% endwith %}
+          <i class="flaticon-link"></i>
+        </a> -
+        {% endif %}
+        {% trans 'Moderated by:' %}
+        <a href="{{ site_name }}user/{{ report.staff.id }}/{{ report.staff }}/">{{ report.staff }}</a>
+    </small></p>
+  </div>
+  {% endfor %}
 </table>
 <br>
 {% endif %}
-{% endblock %}
 
-{% block belowform %}
-{% if form_name == 'addLink' %}
-<h1 id="avatar" class="text-center padding50">{% trans 'Avatar' %}</h1>
-<br>
-<form class="container_form" data-form-name="avatar">
-  <div class="alert alert-info">{% trans 'To change your avatar, use Gravatar with the same email address.' %}</div>
-  <div class="text-right">
-    <a href="https://github.com/SchoolIdolTomodachi/SchoolIdolAPI/wiki/How-to-change-your-avatar%3F" target="_blank" class="btn btn-lg btn-link">{% trans 'F.A.Q.' %}</a>
-    <a class="btn btn-lg btn-main" href="https://{{ LANGUAGE_CODE }}.gravatar.com/" target="_blank">{% trans 'Change Avatar' %}</a>
-  </div>
-</form>
-
-<h1 id="accounts" class="text-center padding50">{{ accounts_title_sentence }}</h1>
+<h1 id="accounts" class="text-center padding50"><i class="flaticon-album"></i> {{ accounts_title_sentence }}</h1>
 <br>
 <form class="container_form" data-form-name="accounts">
   <table class="table table-main table-padded table-rounded">
@@ -82,6 +155,7 @@
     {% endfor %}
   </table>
   <div class="text-right">
+    <a href="#content" class="btn btn-lg btn-link page-scroll"><span class="glyphicon glyphicon-chevron-up"></span></a>
     <a href="/user/{{ user.id }}/{{ user.username }}/" class="btn btn-lg btn-link">{% trans 'Back to my profile' %}</a>
     <a href="/accounts/add/" class="btn btn-lg btn-main"><i class="flaticon-add"></i> {{ add_account_sentence }}</a>
   </div>
@@ -167,14 +241,21 @@
     </div>
     {% endfor %}
   </div>
+  <div class="text-right">
+    <a href="#content" class="btn btn-lg btn-link page-scroll"><span class="glyphicon glyphicon-chevron-up"></span></a>
+  </div>
 </form>
-{% endif %}
 <br><br><br><br><br><br>
 {% endif %}
 {% endblock %}
 
 {% block otherbuttons %}
+<a href="#content" class="btn btn-lg btn-link page-scroll"><span class="glyphicon glyphicon-chevron-up"></span></a>
+{% if form_name == 'changePassword' %}
+<a href="/password_reset/" class="btn btn-lg btn-link">{% trans 'Forgot password?' %}</a>
+{% else %}
 <a href="/user/{{ user.id }}/{{ user.username }}/" class="btn btn-lg btn-link">{% trans 'Back to my profile' %}</a>
+{% endif %}
 {% endblock %}
 
 {% block submit %}

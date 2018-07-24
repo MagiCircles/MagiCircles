@@ -11,6 +11,7 @@ from django.contrib.auth.views import logout as logout_view
 from django.contrib.auth import authenticate, login as login_action
 from django.contrib.admin.utils import get_deleted_objects, NestedObjects
 from django.utils.translation import ugettext_lazy as _, string_concat, get_language, activate as translation_activate
+from django_translated import t
 from django.utils.safestring import mark_safe
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.utils.http import urlquote
@@ -19,7 +20,18 @@ from django.utils import timezone
 from django.db.models import Count, Prefetch, Q
 from django.views.decorators.csrf import csrf_exempt
 from magi.middleware.httpredirect import HttpRedirectException
-from magi.forms import CreateUserForm, UserForm, UserPreferencesForm, AddLinkForm, ChangePasswordForm, EmailsPreferencesForm, LanguagePreferencesForm, SecurityPreferencesForm, Confirm
+from magi.forms import (
+    CreateUserForm,
+    UserForm,
+    UserPreferencesForm,
+    AddLinkForm,
+    DonationLinkForm,
+    ChangePasswordForm,
+    EmailsPreferencesForm,
+    LanguagePreferencesForm,
+    ActivitiesPreferencesForm,
+    Confirm,
+)
 from magi import models
 from magi.raw import donators_adjectives
 from magi.utils import getGlobalContext, ajaxContext, redirectToProfile, tourldash, toHumanReadable, redirectWhenNotAuthenticated, dumpModel, send_email, emailContext, getMagiCollection, getMagiCollections, cuteFormFieldsForContext, CuteFormType, FAVORITE_CHARACTERS_IMAGES, groupsForAllPermissions, hasPermission, setSubField, staticImageURL, getAccountIdsFromSession
@@ -225,26 +237,41 @@ def about_game(request):
 ############################################################
 # Settings
 
+def _settingsOnSuccess(form, added=False):
+    if not hasattr(form, 'beforefields') or not form.beforefields:
+        form.beforefields = u''
+    form.beforefields += u'<p class="alert alert-info"><i class="flaticon-about"></i> {}</p>'.format(
+        _('Successfully edited!') if not added else _('Successfully added!'),
+    )
+    form.beforefields = mark_safe(form.beforefields)
+
 def settings(request):
     context = getGlobalContext(request)
     redirectWhenNotAuthenticated(request, context, next_title=_('Settings'))
     context['preferences'] = request.user.preferences
     context['accounts'] = request.user.accounts.all()
+    context['page_title'] = _('Settings')
 
     account_collection = getMagiCollection('account')
-    context['add_account_sentence'] = account_collection.add_sentence#_(u'Add {thing}').format(thing=_('Account'))
+    context['add_account_sentence'] = account_collection.add_sentence
     context['add_link_sentence'] = _(u'Add {thing}').format(thing=_('Link'))
     context['delete_link_sentence'] = _(u'Delete {thing}').format(thing=_('Link'))
     context['accounts_title_sentence'] = account_collection.plural_title
 
+    context['t_english'] = t['English']
     context['global_outside_permissions'] = GLOBAL_OUTSIDE_PERMISSIONS
     context['forms'] = OrderedDict([
         ('preferences', UserPreferencesForm(instance=context['preferences'], request=request)),
+        ('addLink', AddLinkForm(request=request)),
+    ])
+    if request.user.preferences.status and request.user.preferences.status != 'THANKS':
+        context['forms']['donationLink'] = DonationLinkForm(instance=context['preferences'], request=request)
+    context['forms'].update([
         ('form', UserForm(instance=request.user, request=request)),
+        ('language', LanguagePreferencesForm(instance=context['preferences'], request=request)),
         ('changePassword', ChangePasswordForm(request=request)),
         ('emails', EmailsPreferencesForm(request=request)),
-        ('security', SecurityPreferencesForm(instance=context['preferences'], request=request)),
-        ('addLink', AddLinkForm(request=request)),
+        ('activities', ActivitiesPreferencesForm(instance=context['preferences'], request=request)),
     ])
     if request.method == 'POST':
         for (form_name, form) in context['forms'].items():
@@ -256,7 +283,7 @@ def settings(request):
                         models.onUserEdited(request.user)
                         if ON_USER_EDITED:
                             ON_USER_EDITED(request.user)
-                        redirectToProfile(request)
+                        _settingsOnSuccess(form)
                 elif form_name == 'preferences':
                     form = UserPreferencesForm(request.POST, instance=context['preferences'], request=request)
                     if form.is_valid():
@@ -269,8 +296,14 @@ def settings(request):
                     form = AddLinkForm(request.POST, request=request)
                     if form.is_valid():
                         form.save()
+                        _settingsOnSuccess(form, added=True)
                 elif form_name == 'changePassword':
                     form = ChangePasswordForm(request.POST, request=request)
+                    if form.is_valid():
+                        form.save()
+                        _settingsOnSuccess(form)
+                elif form_name == 'language':
+                    form = LanguagePreferencesForm(request.POST, instance=context['preferences'], request=request)
                     if form.is_valid():
                         form.save()
                         redirectToProfile(request)
@@ -278,21 +311,62 @@ def settings(request):
                     form = EmailsPreferencesForm(request.POST, request=request)
                     if form.is_valid():
                         form.save()
-                        redirectToProfile(request)
-                elif form_name == 'security':
-                    form = SecurityPreferencesForm(request.POST, instance=context['preferences'], request=request)
+                        _settingsOnSuccess(form)
+                elif form_name == 'activities':
+                    form = ActivitiesPreferencesForm(request.POST, instance=context['preferences'], request=request)
                     if form.is_valid():
                         form.save()
                         models.onPreferencesEdited(request.user)
                         if ON_PREFERENCES_EDITED:
                             ON_PREFERENCES_EDITED(request.user)
-                        redirectToProfile(request)
+                        _settingsOnSuccess(form)
+                elif (request.user.preferences.status
+                      and request.user.preferences.status != 'THANKS'
+                      and form_name == 'donationLink'):
+                    form = DonationLinkForm(request.POST, instance=context['preferences'], request=request)
+                    if form.is_valid():
+                        form.save()
+                        models.onPreferencesEdited(request.user)
+                        if ON_PREFERENCES_EDITED:
+                            ON_PREFERENCES_EDITED(request.user)
+                        _settingsOnSuccess(form)
                 context['forms'][form_name] = form
+
+    context['add_custom_link_sentence'] = _(u'Add {thing}').format(thing=unicode(_('Custom link')).lower())
+    if 'donationLink' in context['forms']:
+        context['forms']['donationLink'].form_title = context['add_custom_link_sentence']
+
+    # Links
     context['links'] = list(request.user.links.all())
+
+    # Blocked users
     context['blocked'] = list(request.user.preferences.blocked.all())
     for blocked_user in context['blocked']:
         blocked_user.block_message = _(u'You blocked {username}.').format(username=blocked_user.username)
         blocked_user.unblock_message = _(u'Unblock {username}').format(username=blocked_user.username)
+
+    # Recent reports
+    now = timezone.now()
+    a_month_ago = now - datetime.timedelta(days=30)
+    context['reports'] = list(models.Report.objects.filter(
+        reported_thing_owner_id=request.user.id,
+        i_status__in=[1,2],
+        modification__gte=a_month_ago,
+    ).order_by('-modification'))
+    for report in context['reports']:
+        report.introduction_sentence = mark_safe(
+            _(u'Your {thing} has been reported, and a moderator confirmed it should be {verb}.').format(**{
+                'thing': u'<a href="/{thing}/{id}/">{title}</a>'.format(
+                    thing=report.reported_thing,
+                    id=report.reported_thing_id,
+                    title=unicode(report).lower(),
+                ),
+                'verb': _(u'edited'),
+            } if report.status == 'Edited' else {
+                'thing': unicode(report).lower(),
+                'verb': _(u'deleted'),
+            }))
+
     context['js_files'] = ['settings']
     filter_cuteform = {
         'i_language': {
@@ -313,13 +387,28 @@ def settings(request):
         }
     cuteFormFieldsForContext(filter_cuteform, context, context['forms']['preferences'])
     cuteFormFieldsForContext({
-        'type': {
+        'i_type': {
             'image_folder': 'links',
         },
         'relevance': {
             'type': CuteFormType.HTML,
         },
     }, context, context['forms']['addLink'])
+    cuteFormFieldsForContext({
+        'i_activities_language': {
+            'type': CuteFormType.Images,
+            'image_folder': 'language',
+        },
+        'i_default_activities_tab': {
+            'type': CuteFormType.HTML,
+        },
+    }, context, context['forms']['activities'])
+    cuteFormFieldsForContext({
+        'i_language': {
+            'type': CuteFormType.Images,
+            'image_folder': 'language',
+        },
+    }, context, context['forms']['language'])
     return render(request, 'pages/settings.html', context)
 
 ############################################################

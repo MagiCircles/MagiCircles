@@ -151,8 +151,10 @@ class UserPreferences(BaseMagiModel):
     def status_color_string(self):
         return self.STATUS_COLOR_STRINGS[self.i_status] if self.i_status else None
 
-    donation_link = models.CharField(max_length=200, null=True, blank=True)
-    donation_link_title = models.CharField(max_length=100, null=True, blank=True)
+    donation_link = models.CharField(_('Custom link'), max_length=200, null=True, blank=True, validators=[
+        validators.URLValidator(),
+    ])
+    donation_link_title = models.CharField(_('Title'), max_length=100, null=True, blank=True)
     view_activities_language_only = models.BooleanField(_('View activities in your language only?'), default=ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT)
     email_notifications_turned_off_string = models.CharField(max_length=15, null=True)
     unread_notifications = models.PositiveIntegerField(default=0)

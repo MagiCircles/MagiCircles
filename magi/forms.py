@@ -776,11 +776,17 @@ class CreateUserForm(_UserCheckEmailUsernameForm):
         fields = ('username', 'email', 'password')
 
 class UserForm(_UserCheckEmailUsernameForm):
+    form_title = string_concat(t['Username'], ' / ', t['Email'])
+    icon = 'profile'
+
     class Meta(_UserCheckEmailUsernameForm.Meta):
         model = models.User
         fields = ('username', 'email',)
 
 class EmailsPreferencesForm(MagiForm):
+    form_title = _('Emails')
+    icon = 'contact'
+
     def __init__(self, *args, **kwargs):
         super(EmailsPreferencesForm, self).__init__(*args, **kwargs)
         turned_off = self.request.user.preferences.email_notifications_turned_off
@@ -804,9 +810,12 @@ class EmailsPreferencesForm(MagiForm):
         model = models.UserPreferences
         fields = []
 
-class SecurityPreferencesForm(MagiForm):
+class ActivitiesPreferencesForm(MagiForm):
+    form_title = _('Activities')
+    icon = 'comments'
+
     def __init__(self, *args, **kwargs):
-        super(SecurityPreferencesForm, self).__init__(*args, **kwargs)
+        super(ActivitiesPreferencesForm, self).__init__(*args, **kwargs)
         new_d = self.instance.hidden_tags.copy()
         for default_hidden in models.ACTIVITIES_TAGS_HIDDEN_BY_DEFAULT:
             if default_hidden not in new_d:
@@ -821,6 +830,14 @@ class SecurityPreferencesForm(MagiForm):
                     required=False,
                     initial=self.instance.hidden_tags.get(field_name.replace('d_hidden_tags-', ''), False),
                 )
+        if 'view_activities_language_only' in self.fields:
+            self.fields['view_activities_language_only'].label = u'{} ({})'.format(
+                self.fields['view_activities_language_only'].label,
+                self.instance.t_language,
+            )
+        if 'i_activities_language' in self.fields:
+            self.fields['i_activities_language'].label = unicode(
+                self.fields['i_activities_language'].label).format(language='')
 
     def clean(self):
         # Check permission to show tags
@@ -838,12 +855,15 @@ class SecurityPreferencesForm(MagiForm):
 
     class Meta(MagiForm.Meta):
         model = models.UserPreferences
-        fields = ('d_hidden_tags',)
+        fields = ('view_activities_language_only', 'i_default_activities_tab', 'i_activities_language', 'd_hidden_tags', )
         d_save_falsy_values_for_keys = {
             'hidden_tags': models.ACTIVITIES_TAGS_HIDDEN_BY_DEFAULT,
         }
 
 class UserPreferencesForm(MagiForm):
+    form_title = _('Customize profile')
+    icon = 'id'
+
     color = forms.ChoiceField(required=False, choices=[], label=_('Color'))
     default_tab = forms.ChoiceField(
         label=_('Default tab'),
@@ -856,6 +876,8 @@ class UserPreferencesForm(MagiForm):
 
     def __init__(self, *args, **kwargs):
         super(UserPreferencesForm, self).__init__(*args, **kwargs)
+
+        # Favorite characters
         if not FAVORITE_CHARACTERS:
             for i in range(1, 4):
                 self.fields.pop('favorite_character{}'.format(i))
@@ -1053,6 +1075,9 @@ class StaffEditUser(_UserCheckEmailUsernameForm):
         fields = ('is_staff', 'username', 'email')
 
 class ChangePasswordForm(MagiForm):
+    form_title = _('Change your password')
+    icon = 'lock'
+
     old_password = forms.CharField(widget=forms.PasswordInput(), label=_('Old Password'))
     new_password = forms.CharField(widget=forms.PasswordInput(), label=_('New Password'), min_length=6)
     new_password2 = forms.CharField(widget=forms.PasswordInput(), label=_('New Password Again'))
@@ -1085,6 +1110,13 @@ class ChangePasswordForm(MagiForm):
 # User links
 
 class AddLinkForm(MagiForm):
+    action = '#links'
+
+    @property
+    def form_title(self):
+        return _(u'Add {thing}').format(thing=unicode(_('Link')).lower())
+    icon = 'add'
+
     def __init__(self, *args, **kwargs):
         super(AddLinkForm, self).__init__(*args, **kwargs)
         self.fields['i_relevance'].label = _('How often do you tweet/stream/post about {}?').format(GAME_NAME)
@@ -1105,10 +1137,26 @@ class AddLinkForm(MagiForm):
         fields = ('i_type', 'value', 'i_relevance')
         save_owner_on_creation = True
 
+class DonationLinkForm(MagiForm):
+    icon = 'promo'
+
+    def clean(self):
+        if self.cleaned_data.get('donation_link', None) and not self.cleaned_data.get('donation_link_title', None):
+            raise forms.ValidationError({ 'donation_link_title': [t['This field is required.']] })
+        elif not self.cleaned_data.get('donation_link', None) and self.cleaned_data.get('donation_link_title', None):
+            raise forms.ValidationError({ 'donation_link': [t['This field is required.']] })
+
+    class Meta(MagiForm.Meta):
+        model = models.UserPreferences
+        fields = ('donation_link', 'donation_link_title')
+
 ############################################################
 # Change language (on top bar)
 
 class LanguagePreferencesForm(MagiForm):
+    form_title = _('Language')
+    icon = 'translate'
+
     class Meta(MagiForm.Meta):
         model = models.UserPreferences
         fields = ('i_language',)

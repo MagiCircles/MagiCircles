@@ -444,11 +444,12 @@ table.text-center th {
 }
 
 #profile {
+    position: relative;
     .follows-you {
-	text-transform: uppercase;
-	opacity: 0.8;
-	font-size: 0.8em;
-	padding-right: 10px;
+	    text-transform: uppercase;
+	    opacity: 0.8;
+	    font-size: 0.8em;
+	    padding-right: 10px;
     }
 }
 
@@ -1077,8 +1078,8 @@ nav {
     }
 }
 
-[data-form-name="security"] {
-    .form-group {
+[data-form-name="activities"] {
+    .form-group:not(:nth-of-type(2)):not(:nth-of-type(3)) {
         display: inline-block;
         .col-sm-4 {
             display: none;
@@ -1086,8 +1087,10 @@ nav {
         .col-sm-8 {
             width: auto;
             margin: 0 10px;
-
         }
+    }
+    .form-group:nth-child(2) {
+        display: block;
     }
 }
 
@@ -1200,11 +1203,24 @@ nav {
        }
    }
 
+   .list-group-item.active, .list-group-item.active:focus, .list-group-item.active:hover {
+       background-color: @mainColor;
+       border-color: lighten(@mainColor, 10%);
+   }
+
    .current-settings {
-       #id_type + .cuteform {
-	   .cuteform-elt:not([data-cuteform-text="---------"]) {
-	       background-color: lighten(@mainColor, 10%);
-	   }
+       #id_i_type + .cuteform {
+	       .cuteform-elt:not([data-cuteform-text="---------"]) {
+               width: 20px;
+               height: 20px;
+	           background-color: @mainColor;
+               border-radius: 30%;
+               padding: 5px;
+               margin: 5px;
+               &.cuteform-selected {
+                   background-color: @secondaryColor;
+               }
+	       }
        }
    }
 }
