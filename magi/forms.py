@@ -590,7 +590,7 @@ class MagiFiltersForm(AutoForm):
                     # MultipleChoiceField
                     elif (isinstance(self.fields[field_name], forms.fields.MultipleChoiceField)
                           or filter.multiple):
-                        values = value
+                        values = value if isinstance(value, list) else [value]
                         if operator_for_multiple == MagiFilterOperator.OrContains:
                             for value in values:
                                 condition = condition | Q(**{ u'{}__icontains'.format(selector): value })
