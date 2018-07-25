@@ -182,7 +182,11 @@ for collection in collections.values():
         for shortcut_url in collection.list_view.shortcut_urls:
             shortcut_parameters = parameters.copy()
             shortcut_parameters['shortcut_url'] = shortcut_url
+            shortcut_ajax_parameters = ajax_parameters.copy()
+            shortcut_ajax_parameters['shortcut_url'] = shortcut_url
             urls.append(url(r'^{}[/]*$'.format(shortcut_url), views_collections.list_view, shortcut_parameters, name=url_name))
+            if collection.list_view.ajax:
+                urls.append(url(r'^ajax/{}/$'.format(shortcut_url), views_collections.list_view, shortcut_ajax_parameters, name='{}_ajax'.format(url_name)))
         if collection.navbar_link:
             link = {
                 'url_name': url_name,

@@ -1403,11 +1403,11 @@ class FilterActivities(MagiFiltersForm):
         self.active_tab = None
         if self.request.user.is_authenticated():
             # If a tab is selected in the request (URL)
-            self.request_tab = (
-                self.request.path.split('/')[2]
-                if self.request.path.startswith('/activities/')
-                else None
-            )
+            self.request_tab = None
+            if self.request.path.startswith('/activities/'):
+                self.request_tab = self.request.path.split('/')[2]
+            elif self.request.path.startswith('/ajax/activities/'):
+                self.request_tab = self.request.path.split('/')[3]
             if self.request_tab and self.request_tab in HOME_ACTIVITY_TABS:
                 self.active_tab = self.request_tab
             # If the filter side bar has been used, no tab open

@@ -31,7 +31,7 @@
   {% if ajax_pagination_callback %}
   {{ ajax_pagination_callback }}();
   {% endif %}
-  pagination('/ajax/{{ plural_name }}/', ''{% if ajax_pagination_callback %}, {{ ajax_pagination_callback }}{% endif %});
+  pagination('{{ next_page_url }}', ''{% if ajax_pagination_callback %}, {{ ajax_pagination_callback }}{% endif %});
 </script>
 {% endif %}
 <script>

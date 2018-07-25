@@ -221,6 +221,10 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['total_pages'] = int(math.ceil(context['total_results'] / page_size))
     context['items'] = queryset
     context['page'] = page + 1
+    if request.path and request.path != '/':
+        context['next_page_url'] = u'/ajax{}'.format(request.path)
+    else:
+        context['next_page_url'] = u'/ajax/{}/'.format(collection.plural_name)
     context['is_last_page'] = context['page'] == context['total_pages']
     context['page_size'] = page_size
     context['show_no_result'] = not ajax or context['ajax_modal_only']
