@@ -1354,12 +1354,27 @@ class FilterActivities(MagiFiltersForm):
 
     owner_id = forms.IntegerField(widget=forms.HiddenInput)
 
+    def _is_popular_to_queryset(self, queryset, request, value):
+        value = self.to_nullbool(value)
+        if value is None:
+            return queryset
+        filter_popular = {
+            '_cache_total_likes__{filter}'.format(filter='gte' if value else 'lt'):
+            MINIMUM_LIKES_POPULAR,
+        }
+        # If logged in and default tab is popular and current tab is popular,
+        # it's likely the user didn't change their settings and will expect to
+        # see the activities they just posted on the homepage, so also return
+        # own activities to avoid confusion
+        if (request.user.is_authenticated()
+            and self.active_tab == 'popular'
+            and request.user.preferences.default_activities_tab == 'popular'):
+            return queryset.filter(Q(**filter_popular) | Q(owner_id=request.user.id))
+        # Really only popular
+        return queryset.filter(**filter_popular)
+
     is_popular = forms.NullBooleanField(label=_('Popular'), initial=True)
-    is_popular_filter = MagiFilter(to_queryset=lambda form, queryset, request, value: queryset.filter(
-        Q(**{ '_cache_total_likes__{filter}'.format(filter='gte' if form.to_nullbool(value) else 'lt'):
-              MINIMUM_LIKES_POPULAR })
-        | Q(owner_id=request.user.id)
-    ) if form.to_nullbool(value) is not None else queryset)
+    is_popular_filter = MagiFilter(to_queryset=_is_popular_to_queryset)
 
     is_following = forms.BooleanField(label=_('Following'), initial=False)
     is_following_filter = MagiFilter(to_queryset=lambda form, queryset, request, value: queryset.filter(
@@ -1388,9 +1403,16 @@ class FilterActivities(MagiFiltersForm):
         self.active_tab = None
         if self.request.user.is_authenticated():
             # If a tab is selected in the request (URL)
-            request_tab = self.request.path.split('/')[2] if self.request.path.startswith('/activities/') else None
-            if request_tab and request_tab in HOME_ACTIVITY_TABS:
-                self.active_tab = request_tab
+            self.request_tab = (
+                self.request.path.split('/')[2]
+                if self.request.path.startswith('/activities/')
+                else None
+            )
+            if self.request_tab and self.request_tab in HOME_ACTIVITY_TABS:
+                self.active_tab = self.request_tab
+            # If the filter side bar has been used, no tab open
+            elif self.data:
+                self.active_tab = None
             # If the user has a preference
             elif self.request.user.preferences.i_default_activities_tab is not None:
                 self.active_tab = self.request.user.preferences.default_activities_tab
@@ -1398,17 +1420,22 @@ class FilterActivities(MagiFiltersForm):
             else:
                 self.active_tab = 'popular'
             # Set the initial to the value of the preferences
-            for field_name, value in HOME_ACTIVITY_TABS[self.active_tab]['form_fields'].items():
-                if field_name in self.fields:
-                    self.fields[field_name].initial = value
+            if self.active_tab:
+                for field_name, value in HOME_ACTIVITY_TABS[self.active_tab]['form_fields'].items():
+                    if field_name in self.fields:
+                        self.fields[field_name].initial = value
 
     def filter_queryset(self, queryset, parameters, request):
         queryset = super(FilterActivities, self).filter_queryset(queryset, parameters, request)
-        if self.default_to_current_language and 'i_language' not in parameters:
-            queryset = queryset.filter(i_language=request.LANGUAGE_CODE)
         if 'ordering' in parameters and parameters['ordering'] == '_cache_total_likes,id':
             queryset = queryset.filter(creation__gte=timezone.now() - relativedelta(weeks=1))
         return queryset
+
+    @property
+    def action(self):
+        if self.request_tab:
+            return '/'
+        return self.request.path
 
     class Meta(MagiFiltersForm.Meta):
         model = models.Activity

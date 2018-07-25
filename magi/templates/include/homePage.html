@@ -67,9 +67,19 @@
 {% if user.is_authenticated and 'activity' in all_enabled %}
 <ul class="nav nav-tabs" id="hometabs">
   {% for tab_name, tab in activity_tabs.items %}
-  <li data-tab-name="{{ tab_name }}"{% if active_activity_tab == tab_name %} class="active"{% endif %}><a href="/activities/{{ tab_name }}/" ><i class="flaticon-{{ tab.icon }} visible-xs"></i> <span class="{% if active_activity_tab != tab_name %}hidden-xs{% endif %}">{{ tab.title }}</span></a></li>
+  <li data-tab-name="{{ tab_name }}"{% if active_activity_tab == tab_name %} class="active"{% endif %}>
+    <a href="/activities/{{ tab_name }}/" >
+      <i class="flaticon-{{ tab.icon }} visible-xs"></i>
+      <span class="{% if active_activity_tab != tab_name %}hidden-xs{% endif %}">{{ tab.title }}</span>
+    </a>
+  </li>
   {% endfor %}
-  <li><a class="togglebutton" href="/activities/" ><i class="flaticon-search"></i><i class="flaticon-toggler hidder"></i></a></li>
+  <li data-tab-name="search"{% if active_activity_tab == None %} class="active"{% endif %}>
+    <a class="togglebutton" href="/activities/" >
+      <i class="flaticon-search"></i>
+      <i class="flaticon-toggler hidder"></i>
+    </a>
+  </li>
 </ul>
 {% endif %}
 {% endif %}
