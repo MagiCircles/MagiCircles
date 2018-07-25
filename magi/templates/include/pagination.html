@@ -19,8 +19,8 @@
   <nav>
     <ul class="pagination pagination-sm">
       <li class="{% if page == 1 %}disabled{% endif %}"><a href="{{ current_url|previouspage:page }}">&laquo;</a></li>
-      {% for i in total_pages|times %}
-      <li class="{% if page == i|add:1 %}active{% endif %}"><a href="{{ current_url|nextpage:i }}">{{ i|add:1 }}</a></li>
+      {% for i, classes in displayed_page_buttons %}
+      <li class="{{ classes|default_if_none:'' }}">{% if i < 0 %}<a href="#">...</a>{% else %}<a href="{{ current_url|nextpage:i }}">{{ i|add:1 }}</a>{% endif %}</li>
       {% endfor %}
       <li class="{% if page == total_pages %}disabled{% endif %}"><a href="{{ current_url|nextpage:page }}">&raquo;</a></li>
     </ul>

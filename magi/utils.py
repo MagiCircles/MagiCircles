@@ -1,6 +1,7 @@
 from __future__ import division
 import os, string, random, csv, tinify, cStringIO, pytz, simplejson, datetime, io, operator
 from PIL import Image
+from collections import OrderedDict
 from django.conf import settings as django_settings
 from django.core.files.temp import NamedTemporaryFile
 from django.core.exceptions import ValidationError
@@ -523,7 +524,7 @@ def send_email(subject, template_name, to=[], context={}, from_email=django_sett
     email.send()
 
 ############################################################
-# Various string/int tools
+# Various string/int/list tools
 
 def randomString(length, choice=(string.ascii_letters + string.digits)):
     return ''.join(random.SystemRandom().choice(choice) for _ in range(length))
@@ -554,6 +555,9 @@ def templateVariables(string):
 
 def snakeToCamelCase(string):
     return ''.join(x.capitalize() or '_' for x in string.split('_'))
+
+def listUnique(list):
+    return OrderedDict([(item, None) for item in list]).keys()
 
 ############################################################
 # Redirections

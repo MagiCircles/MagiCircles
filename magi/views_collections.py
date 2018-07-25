@@ -8,7 +8,7 @@ from magi.middleware.httpredirect import HttpRedirectException
 from django.shortcuts import render, redirect
 from django.http import Http404
 from django.core.exceptions import PermissionDenied
-from magi.utils import getGlobalContext, cuteFormFieldsForContext, get_one_object_or_404, jsv
+from magi.utils import getGlobalContext, cuteFormFieldsForContext, get_one_object_or_404, jsv, listUnique
 from magi.forms import ConfirmDelete, filter_ids
 
 ############################################################
@@ -221,6 +221,19 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['total_pages'] = int(math.ceil(context['total_results'] / page_size))
     context['items'] = queryset
     context['page'] = page + 1
+
+    page_buttons = [(0, 'active' if page == 0 else None)]
+    if page > 2:
+        page_buttons.append((-1, 'disabled'))
+    if (page - 1) > 0:
+        page_buttons.append((page - 1, None))
+    page_buttons.append((page, 'active'))
+    if (page + 1) < (context['total_pages'] - 1):
+        page_buttons.append((page + 1, None))
+    if page < (context['total_pages'] - 3):
+        page_buttons.append((-2, 'disabled'))
+    page_buttons.append((context['total_pages'] - 1, 'active' if page == (context['total_pages'] - 1) else None))
+    context['displayed_page_buttons'] = listUnique(page_buttons)
     if request.path and request.path != '/':
         context['next_page_url'] = u'/ajax{}'.format(request.path)
     else:
