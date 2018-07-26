@@ -20,9 +20,9 @@ _usernameRegexp = '[\w.@+-]+'
 FORCE_ADD_TO_TRANSLATION = [
     _('Liked this activity'),
     _('Loading'), _('No result.'),
-    _('Local time'),
     _('days'), _('hours'), _('minutes'), _('seconds'),
-    _('Copied'),
+    _('Local time'),
+    _('Copied'), _('Archived'), _('Unarchived'),
 ]
 
 DEFAULT_JAVASCRIPT_TRANSLATED_TERMS = [
@@ -30,7 +30,8 @@ DEFAULT_JAVASCRIPT_TRANSLATED_TERMS = [
     'Loading', 'No result.',
     'You can\'t cancel this action afterwards.', 'Confirm', 'Cancel',
     'days', 'hours', 'minutes', 'seconds',
-    'Local time', 'Copied',
+    'Local time',
+    'Copied', 'Archived', 'Unarchived',
 ]
 
 ############################################################
@@ -55,7 +56,7 @@ DEFAULT_GROUPS = [
             'edit_roles', 'edit_staff_status', 'edit_donator_status', 'see_profile_edit_button',
             'edit_staff_configurations', 'add_badges', 'see_collections_details', 'manage_main_items',
             'edit_staff_details', 'moderate_reports', 'edit_reported_things', 'post_community_event_activities',
-            'manage_prizes',
+            'manage_prizes', 'manipulate_activities',
         ],
         'outside_permissions': {
             'Tweetdeck': 'https://tweetdeck.twitter.com/',
@@ -156,6 +157,9 @@ DEFAULT_GROUPS = [
     ('a_moderator', {
         'translation': string_concat(_('Moderator'), ' (', _('Active'), ')'),
         'description': 'We want all of our users of all ages to have a pleasant a safe stay in our website. That\'s why our team of moderators use the website everyday and report anything that might be inappropriate or invalid!',
+        'permissions': [
+            'manipulate_activities',
+        ],
         'requires_staff': True,
         'stats': [
             {
@@ -168,7 +172,11 @@ DEFAULT_GROUPS = [
     ('d_moderator', {
         'translation': string_concat(_('Moderator'), ' (', _('Decisive'), ')'),
         'description': 'When something gets reported, our team of decisive moderators will make a decision on whether or not it should be edited or deleted. This 2-steps system ensures that our team makes fair decisions!',
-        'permissions': ['moderate_reports', 'edit_reported_things'],
+        'permissions': [
+            'moderate_reports',
+            'edit_reported_things',
+            'manipulate_activities',
+        ],
         'requires_staff': True,
         'outside_permissions': {
             'Disqus moderation': False, # Added in settings
@@ -186,7 +194,13 @@ DEFAULT_GROUPS = [
     ('entertainer', {
         'translation': _('Community entertainer'),
         'description': 'We keep the community active and happy by organizing fun stuff: contests, giveaways, games, etc. We\'re open to feedback and ideas!',
-        'permissions': ['edit_staff_configurations', 'add_badges', 'post_community_event_activities', 'add_prizes'],
+        'permissions': [
+            'edit_staff_configurations',
+            'add_badges',
+            'post_community_event_activities',
+            'add_prizes',
+            'manipulate_activities',
+        ],
         'requires_staff': True,
         'outside_permissions': {
             'Tweetdeck': 'https://tweetdeck.twitter.com/',
@@ -452,6 +466,34 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         ],
     }),
     ('likeactivity', {
+        'ajax': True,
+        'custom': False,
+        'url_variables': [
+            ('pk', '\d+'),
+        ],
+    }),
+    ('archiveactivity', {
+        'ajax': True,
+        'custom': False,
+        'url_variables': [
+            ('pk', '\d+'),
+        ],
+    }),
+    ('unarchiveactivity', {
+        'ajax': True,
+        'custom': False,
+        'url_variables': [
+            ('pk', '\d+'),
+        ],
+    }),
+    ('bumpactivity', {
+        'ajax': True,
+        'custom': False,
+        'url_variables': [
+            ('pk', '\d+'),
+        ],
+    }),
+    ('drownactivity', {
         'ajax': True,
         'custom': False,
         'url_variables': [

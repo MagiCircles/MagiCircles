@@ -264,7 +264,7 @@ def settings(request):
         ('preferences', UserPreferencesForm(instance=context['preferences'], request=request)),
         ('addLink', AddLinkForm(request=request)),
     ])
-    if request.user.preferences.status and request.user.preferences.status != 'THANKS':
+    if request.user.preferences.is_premium:
         context['forms']['donationLink'] = DonationLinkForm(instance=context['preferences'], request=request)
     context['forms'].update([
         ('form', UserForm(instance=request.user, request=request)),
@@ -320,8 +320,7 @@ def settings(request):
                         if ON_PREFERENCES_EDITED:
                             ON_PREFERENCES_EDITED(request.user)
                         _settingsOnSuccess(form)
-                elif (request.user.preferences.status
-                      and request.user.preferences.status != 'THANKS'
+                elif (request.user.preferences.is_premium
                       and form_name == 'donationLink'):
                     form = DonationLinkForm(request.POST, instance=context['preferences'], request=request)
                     if form.is_valid():
@@ -676,7 +675,44 @@ def changelanguage(request):
         form.save()
     return redirect(request.POST.get('next', '/'))
 
-@csrf_exempt
+def _shouldBumpActivity(activity, request):
+    # Archived activities can't be bumped
+    if activity.archived:
+        return False
+
+    now = timezone.now()
+    one_hour_ago = now - datetime.timedelta(hours=1)
+    one_day_ago = now - datetime.timedelta(days=1)
+    five_days_ago = now - relativedelta(days=5)
+
+    # Activities can only be bumped once per hour
+    if activity.last_bump and activity.last_bump >= one_hour_ago:
+        return False
+
+    # Only users with enough "reputation" can bump
+    # Reputation is calculated based on:
+    # - must have joined more than 5 days ago
+    # - must have at least 1 account added
+    if request.user.date_joined >= five_days_ago:
+        return False
+    if len(getAccountIdsFromSession(request)) < 1:
+        return False
+
+    # A given user can only bump up to 5 activities older than 1 day per hour
+    if activity.creation > one_day_ago:
+        return True
+    elif (not request.user.preferences.last_bump_date
+          or request.user.preferences.last_bump_date < one_hour_ago):
+        request.user.preferences.last_bump_date = now
+        request.user.preferences.last_bump_counter = 0
+        request.user.preferences.save()
+        return True
+    elif request.user.preferences.last_bump_counter < 5:
+        request.user.preferences.last_bump_counter += 1
+        request.user.preferences.save()
+        return True
+    return False
+
 def likeactivity(request, pk):
     context = ajaxContext(request)
     if not request.user.is_authenticated() or request.method != 'POST':
@@ -690,19 +726,13 @@ def likeactivity(request, pk):
     if activity.cached_owner.username == request.user.username:
         raise PermissionDenied()
     if 'like' in request.POST and not activity.liked:
-        # Only bump when user has enough "reputation"
-        # Reputation will be calculated based on more details, but for now
-        # users need to have joined more than 5 days ago and have at least
-        # one account added
-        # Activities can only be bumped once per hour
-        if (activity.last_bump < (timezone.now() - relativedelta(hours=1))
-            and request.user.date_joined < (timezone.now() - relativedelta(days=5))
-            and len(getAccountIdsFromSession(request)) >= 1):
+        if _shouldBumpActivity(activity, request):
             activity.last_bump = timezone.now()
+        else:
         activity.likes.add(request.user)
         activity.update_cache('total_likes')
         activity.save()
-        pushNotification(activity.owner, 'like', [unicode(request.user), unicode(activity)], url_values=[str(activity.id), tourldash(unicode(activity))], image=activity.image)
+        pushNotification(activity.owner, 'like-archive' if activity.archived_by_owner else 'like', [unicode(request.user), unicode(activity)], url_values=[str(activity.id), tourldash(unicode(activity))], image=activity.image)
         return JsonResponse({
             'total_likes': activity.total_likes + 2,
             'result': 'liked',
@@ -719,7 +749,88 @@ def likeactivity(request, pk):
         'total_likes': activity.total_likes + 1,
     })
 
-@csrf_exempt
+def archiveactivity(request, pk):
+    context = ajaxContext(request)
+    if not request.user.is_authenticated() or request.method != 'POST':
+        raise PermissionDenied()
+    activity = get_object_or_404(models.Activity.objects.select_related('archived_by_staff'), pk=pk)
+    if activity.is_owner(request.user):
+        if not activity.has_permissions_to_archive(request.user)[0]:
+            raise PermissionDenied()
+        activity.archived_by_owner = True
+    else:
+        if not activity.has_permissions_to_ghost_archive(request.user):
+            raise PermissionDenied()
+        activity.archived_by_staff = request.user
+    activity.save()
+    if request.user.is_staff:
+        return JsonResponse({
+            'result': {
+                'archived': activity.archived_by_owner,
+                'archived_by_staff': activity.archived_by_staff.username if activity.archived_by_staff else None,
+            },
+        })
+    # We don't want to reveal users if the activity is ghost archived if they check the request
+    return JsonResponse({
+        'result': {
+            'archived': activity.archived_by_owner,
+        },
+    })
+
+def unarchiveactivity(request, pk):
+    context = ajaxContext(request)
+    if not request.user.is_authenticated() or request.method != 'POST':
+        raise PermissionDenied()
+    activity = get_object_or_404(models.Activity.objects.select_related('archived_by_staf'), pk=pk)
+    if activity.is_owner(request.user):
+        if not activity.has_permissions_to_archive(request.user)[0]:
+            raise PermissionDenied()
+        activity.archived_by_owner = False
+    else:
+        if not activity.has_permissions_to_ghost_archive(request.user):
+            raise PermissionDenied()
+        activity.archived_by_staff = None
+    activity.save()
+    if request.user.is_staff:
+        return JsonResponse({
+            'result': {
+                'archived': activity.archived_by_owner,
+                'archived_by_staff': activity.archived_by_staff.username if activity.archived_by_staff else None,
+            },
+        })
+    # We don't want to reveal users if the activity is ghost archived if they check the request
+    return JsonResponse({
+        'result': {
+            'archived': activity.archived_by_owner,
+        },
+    })
+
+def bumpactivity(request, pk):
+    context = ajaxContext(request)
+    if (not request.user.is_authenticated() or request.method != 'POST'
+        or not request.user.hasPermission('manipulate_activities')):
+        raise PermissionDenied()
+    activity = get_object_or_404(models.Activity, pk=pk)
+    activity.last_bump = timezone.now()
+    activity.save()
+    return JsonResponse({
+        'result': 'bumped',
+    })
+
+def drownactivity(request, pk):
+    context = ajaxContext(request)
+    if (not request.user.is_authenticated() or request.method != 'POST'
+        or not request.user.hasPermission('manipulate_activities')):
+        raise PermissionDenied()
+    activity = get_object_or_404(models.Activity, pk=pk)
+    now = timezone.now()
+    a_month_ago = now - datetime.timedelta(days=30)
+    activity.last_bump = a_month_ago
+    activity.save()
+    return JsonResponse({
+        'result': 'drowned',
+    })
+
 def follow(request, username):
     context = ajaxContext(request)
     if not request.user.is_authenticated() or request.method != 'POST' or request.user.username == username:
@@ -785,7 +896,6 @@ def translations(request):
     only_languages = (request.user.preferences.settings_per_groups or {}).get('translator', {}).get('languages', {})
     if 'language' in request.GET:
         only_languages = request.GET['language'].split(u',')
-        print only_languages
     if 'staffconfiguration' in context['all_enabled']:
         context['total_staff_configurations_per_languages'] = {}
         for language, verbose_name in django_settings.LANGUAGES:

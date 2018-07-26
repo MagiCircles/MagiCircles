@@ -914,6 +914,7 @@ function genericAjaxError(xhr, ajaxOptions, thrownError) {
 // Handle actions on activities view
 
 function updateActivities() {
+    // Like count
     $('a[href=#likecount]').unbind('click');
     $('a[href=#likecount]').click(function(e) {
         e.preventDefault();
@@ -930,6 +931,8 @@ function updateActivities() {
         });
         return false;
     });
+
+    // Like activities
     $('.likeactivity').unbind('submit');
     $('.likeactivity').submit(function(e) {
         e.preventDefault();
@@ -960,6 +963,78 @@ function updateActivities() {
             error: genericAjaxError,
         });
         return false;
+    });
+
+    // Archive/Unarchive, Bump, Drown activity
+
+    let _onSuccessHandler = function(button, message) {
+        button.find('.message').text(message);
+        button.addClass('disabled');
+        button.blur();
+        let flaticon = button.find('[class^="flaticon"]');
+        flaticon.removeClass();
+        flaticon.addClass('flaticon-checked');
+    };
+    let _hideShowArchivedIcons = function(button, data) {
+        if (data['result']['archived']) {
+            button.closest('.activity').find('.activity-info-archived').show();
+        } else {
+            button.closest('.activity').find('.activity-info-archived').hide();
+        }
+        if (data['result']['archived_by_staff']) {
+            let icon = button.closest('.activity').find('.activity-info-ghost-archived');
+            icon.attr('data-original-title', 'Archived<br>by ' + data['result']['archived_by_staff']);
+            icon.tooltip('fixTitle');
+            icon.show();
+        } else {
+            button.closest('.activity').find('.activity-info-ghost-archived').hide();
+        }
+    };
+    let _onArchive = function(button, data) {
+        _onSuccessHandler(button, gettext('Archived') + '!');
+        _hideShowArchivedIcons(button, data);
+    };
+    let _onUnArchive = function(button, data) {
+        _onSuccessHandler(button, gettext('Unarchived') + '!');
+        _hideShowArchivedIcons(button, data);
+    };
+    let _onSuccessActivities = {
+        'archive': _onArchive,
+        'ghost-archive': _onArchive,
+        'unarchive': _onUnArchive,
+        'ghost-unarchive': _onUnArchive,
+        'bump': function(button, data) { _onSuccessHandler(button, 'Bumped!') },
+        'drown': function(button, data) { _onSuccessHandler(button, 'Drowned!') },
+    };
+
+    $.each(_onSuccessActivities, function(button_name, _) {
+        let buttons = $('.activity').find('[data-btn-name="' + button_name + '"]');
+        buttons.unbind('click');
+        buttons.click(function(e) {
+            e.preventDefault();
+            let button = $(this);
+            let csrf_token = button.data('csrf-token');
+            let loader = $(
+                '<a href="#" class="' + button.attr('class')
+                    + '" disabled="disabled" style="width: ' + button.outerWidth()
+                    + 'px;"><i class="flaticon-loading"></i></a>');
+            button.hide();
+            button.after(loader);
+            $.ajax({
+                type: 'POST',
+                url: button.prop('href'),
+                data: {
+                    'csrfmiddlewaretoken': csrf_token,
+                },
+                success: function(data) {
+                    _onSuccessActivities[button.data('btn-name')](button, data);
+                    loader.remove();
+                    button.show();
+                },
+                error: genericAjaxError,
+            });
+            return false;
+        });
     });
 }
 

@@ -8,13 +8,31 @@
     </div>
     <div class="col-xs-10">
       <div>
+    {% if activity.is_popular %}
+    <div class="activity-info" data-toggle="tooltip" data-trigger="hover" title="{% trans 'Popular' %}">
+      <i class="flaticon-fire text-main"></i>
+    </div>
+	{% endif %}
+    <div class="activity-info-archived activity-info"
+         {% if not activity.archived_by_owner %} style="display: none"{% endif %}
+         data-toggle="tooltip" data-trigger="hover"
+         title="{% trans 'Archived' %}">
+      <i class="flaticon-archive text-muted"></i>
+    </div>
+    {% if user.is_staff %}
+    <div class="activity-info-ghost-archived activity-info"
+         {% if not activity.archived_by_staff %} style="display: none"{% endif %}
+         data-toggle="tooltip" data-trigger="hover" data-html="true"
+         title="Archived<br>by {{ activity.archived_by_staff.username }}">
+      <i class="flaticon-ghost text-muted"></i>
+    </div>
+    {% endif %}
 	{% if activity.language != LANGUAGE_CODE %}
 	<a href="https://translate.google.com/translate?js=n&sl={{ activity.language }}&tl={{ LANGUAGE_CODE }}&u={{ activity.http_item_url }}" class="language" target="_blank">
 	  <small>{% with from_language=activity.t_language to_language=localized_language %}{% blocktrans %}Translate from {{ from_language }} to {{ to_language }}{% endblocktrans %}{% endwith %}</small>
 	  <img src="{{ static_url }}img/language/{{ activity.language }}.png?{{ static_files_version }}" alt="{{ activity.language }}">
 	</a>
 	{% elif activity.language != 'en' and user.is_authenticated and activity.cached_owner.username == user.username %}
-
 	<a href="{{ activity.edit_url }}" target="_blank" class="language"
        data-ajax-url="{{ activity.ajax_edit_url }}" data-ajax-title="{{ activity.edit_sentence }}" data-ajax-handle-form="true"
        data-trigger="hover" data-toggle="tooltip" data-html="true"

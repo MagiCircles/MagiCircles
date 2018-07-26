@@ -794,7 +794,7 @@ class EmailsPreferencesForm(MagiForm):
             value = True
             if type in turned_off:
                 value = False
-            self.fields['email{}'.format(type)] = forms.BooleanField(required=False, label=_(message['title']), initial=value)
+            self.fields['email{}'.format(type)] = forms.BooleanField(required=False, label=message['title'], initial=value)
 
     def save(self, commit=True):
         new_emails_settings = []
@@ -1003,7 +1003,7 @@ class StaffEditUser(_UserCheckEmailUsernameForm):
                 self.fields['i_status'].help_text = None
                 self.fields['i_status'] = forms.ChoiceField(
                     required=False,
-                    choices=(BLANK_CHOICE_DASH + [(c[0], c[1]) if isinstance(c, tuple) else (c, c) for c in instance.preferences.STATUS_SOFT_CHOICES]),
+                    choices=(BLANK_CHOICE_DASH + [(c[0], c[1]) if isinstance(c, tuple) else (c, c) for c in instance.preferences.STATUS_CHOICES]),
                     label=self.fields['i_status'].label,
                 )
             else:
@@ -1329,7 +1329,7 @@ class ActivityForm(MagiForm):
     def save(self, commit=False):
         instance = super(ActivityForm, self).save(commit=False)
         instance.update_cache('hidden_by_default')
-        if instance.m_message != self.previous_m_message:
+        if not self.is_creating and instance.m_message != self.previous_m_message:
             instance.last_bump = timezone.now()
         if commit:
             instance.save()
@@ -1376,7 +1376,12 @@ class FilterActivities(MagiFiltersForm):
     is_popular = forms.NullBooleanField(label=_('Popular'), initial=True)
     is_popular_filter = MagiFilter(to_queryset=_is_popular_to_queryset)
 
-    is_following = forms.BooleanField(label=_('Following'), initial=False)
+    hide_archived = forms.BooleanField(label=_('Hide archived activities'), initial=False)
+    hide_archived_filter = MagiFilter(to_queryset=lambda form, queryset, request, value: queryset.exclude(
+        archived_by_owner=True,
+    ) if value else queryset)
+
+    is_following = forms.BooleanField(label=string_concat(_('Following'), ' (', _('Only'), ')'), initial=False)
     is_following_filter = MagiFilter(to_queryset=lambda form, queryset, request, value: queryset.filter(
         Q(owner__in=request.user.preferences.following.all())
         | Q(owner_id=request.user.id)
@@ -1439,7 +1444,7 @@ class FilterActivities(MagiFiltersForm):
 
     class Meta(MagiFiltersForm.Meta):
         model = models.Activity
-        fields = ('search', 'c_tags', 'is_popular', 'is_following', 'with_image', 'i_language')
+        fields = ('search', 'c_tags', 'is_popular', 'hide_archived', 'is_following', 'with_image', 'i_language')
 
 ############################################################
 # Notifications

@@ -11,7 +11,7 @@ from django.utils.dateparse import parse_date
 from django.forms.models import model_to_dict
 from django.conf import settings as django_settings
 from magi.utils import AttrDict, randomString, getMagiCollection, uploadToRandom, uploadItem, uploadTiny, linkToImageURL, hasGroup, hasPermission, hasOneOfPermissions, hasPermissions, toHumanReadable, LANGUAGES_DICT, locationOnChange
-from magi.settings import ACCOUNT_MODEL, GAME_NAME, COLOR, SITE_STATIC_URL, DONATORS_STATUS_CHOICES, USER_COLORS, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_TO_URL, SITE_URL, SITE_NAME, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, ACTIVITY_TAGS, GROUPS, HOME_ACTIVITY_TABS
+from magi.settings import ACCOUNT_MODEL, GAME_NAME, COLOR, SITE_STATIC_URL, DONATORS_STATUS_CHOICES, USER_COLORS, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_TO_URL, SITE_URL, SITE_NAME, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, ACTIVITY_TAGS, GROUPS, HOME_ACTIVITY_TABS, MINIMUM_LIKES_POPULAR
 from magi.item_model import MagiModel, BaseMagiModel, get_image_url, i_choices, addMagiModelProperties, getInfoFromChoices
 from magi.abstract_models import CacheOwner
 
@@ -155,6 +155,11 @@ class UserPreferences(BaseMagiModel):
         validators.URLValidator(),
     ])
     donation_link_title = models.CharField(_('Title'), max_length=100, null=True, blank=True)
+
+    @property
+    def is_premium(self):
+        return self.status and self.status != 'THANKS'
+
     view_activities_language_only = models.BooleanField(_('View activities in your language only?'), default=ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT)
     email_notifications_turned_off_string = models.CharField(max_length=15, null=True)
     unread_notifications = models.PositiveIntegerField(default=0)
@@ -193,6 +198,9 @@ class UserPreferences(BaseMagiModel):
     d_hidden_tags = models.TextField(_('Hide tags'), null=True)
 
     blocked = models.ManyToManyField(User, related_name='blocked_by')
+
+    last_bump_counter = models.PositiveIntegerField(default=0)
+    last_bump_date = models.DateTimeField(null=True)
 
     d_extra = models.TextField(blank=True, null=True)
 
@@ -654,7 +662,7 @@ class Activity(MagiModel):
     collection_name = 'activity'
 
     creation = models.DateTimeField(auto_now_add=True)
-    last_bump = models.DateTimeField(db_index=True)
+    last_bump = models.DateTimeField(db_index=True, null=True)
     owner = models.ForeignKey(User, related_name='activities', db_index=True)
     m_message = models.TextField(_('Message'))
 
@@ -671,6 +679,36 @@ class Activity(MagiModel):
 
     _original_image = models.ImageField(null=True, upload_to=uploadTiny('activities/'))
     image = models.ImageField(_('Image'), upload_to=uploadToRandom('activities/'), null=True, blank=True, help_text=_('Only post official artworks, artworks you own, or fan artworks that are approved by the artist and credited.'))
+
+    archived_by_owner = models.BooleanField(default=False)
+    archived_by_staff = models.ForeignKey(User, related_name='archived_activities', null=True, on_delete=models.SET_NULL)
+
+    @property
+    def archived(self):
+        return self.archived_by_owner or self.archived_by_staff
+
+    def has_permissions_to_archive(self, user):
+        # If you're the owner and it's older than a month, you can archive
+        # If you're premium, the one month limit doesn't apply
+        # Returns: (has_permissions, because_premium)
+        a_month_ago = timezone.now() - datetime.timedelta(days=30)
+        if not user.is_authenticated() or not self.is_owner(user):
+            return (False, False)
+        if user.preferences.is_premium:
+            return (True, True)
+        elif self.creation < a_month_ago:
+            return (True, False)
+        return (False, False)
+
+    def has_permissions_to_ghost_archive(self, user):
+        # If you have the manipulate_activities permission
+        return (user.is_authenticated()
+                and not self.is_owner(user)
+                and user.hasPermission('manipulate_activities'))
+
+    @property
+    def is_popular(self):
+        return self.cached_total_likes >= MINIMUM_LIKES_POPULAR
 
     tinypng_settings = {
         'image': {
@@ -832,10 +870,18 @@ class Notification(MagiModel):
             'url': u'/user/{}/{}/',
             'icon': 'users',
         }),
+        ('like-archive', {
+            'format': _(u'{} liked your activity: {}.'),
+            'title': _(u'When someone likes an activity you archived.'),
+            'open_sentence': lambda n: _('Open {thing}').format(thing=_('Activity')),
+            'url': u'/activity/{}/{}/',
+            'icon': 'heart',
+        }),
     ]
     MESSAGES_DICT = dict(MESSAGES)
     MESSAGE_CHOICES = [(key, _message['title']) for key, _message in MESSAGES]
-    i_message = models.PositiveIntegerField('Notification type', choices=i_choices(MESSAGE_CHOICES))
+    MESSAGE_SOFT_CHOICES = True
+    i_message = models.PositiveIntegerField('Notification type')
 
     c_message_data = models.TextField(blank=True, null=True)
     c_url_data = models.TextField(blank=True, null=True)

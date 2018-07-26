@@ -6,6 +6,7 @@ from django.utils.safestring import mark_safe
 from django.utils.formats import dateformat
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.utils.datastructures import MultiValueDictKeyError
+from django.middleware import csrf
 from django.http import Http404
 from django.db.models import Count, Q, Prefetch, FieldDoesNotExist
 from magi.views import indexExtraContext
@@ -2051,6 +2052,72 @@ class ActivityCollection(MagiCollection):
         },
     }
 
+    def buttons_per_item(self, view, request, context, item):
+        buttons = super(ActivityCollection, self).buttons_per_item(view, request, context, item)
+        js_buttons = []
+        if request.user.is_authenticated():
+
+            # Archive buttons
+            for prefix, is_archived, (has_permissions, because_premium), icon, staff_only in [
+                ('', item.archived_by_owner,
+                 item.has_permissions_to_archive(request.user), 'archive', False),
+                ('ghost-', item.archived_by_staff,
+                 (item.has_permissions_to_ghost_archive(request.user), False), 'ghost', True),
+            ]:
+                if is_archived:
+                    # Unarchive
+                    js_buttons.append((u'{}unarchive'.format(prefix), {
+                        'has_permissions': has_permissions,
+                        'title': _('Unarchive'),
+                        'url': u'/ajax/unarchiveactivity/{}/'.format(item.id),
+                        'icon': icon,
+                        'classes': view.item_buttons_classes + (['staff-only'] if staff_only else []),
+                    }))
+                else:
+                    # Archive
+                    js_buttons.append((u'{}archive'.format(prefix), {
+                        'has_permissions': has_permissions,
+                        'alt_title': _('Archive'),
+                        'title': mark_safe(u'{}{}'.format(
+                            _('Archive'),
+                            '' if not because_premium else
+                            u' <i class="flaticon-promo text-gold" data-toggle="tooltip" data-title="{}" data-placement="top" data-trigger="hover"></i>'.format(
+                                _('Premium feature'),
+                            ),
+                        )),
+                        'url': u'/ajax/archiveactivity/{}/'.format(item.id),
+                        'icon': icon,
+                        'classes': view.item_buttons_classes + (['staff-only'] if staff_only else []),
+                    }))
+
+            if request.user.hasPermission('manipulate_activities'):
+                # Bump
+                js_buttons.append(('bump', {
+                    'has_permissions': True,
+                    'title': 'Bump',
+                    'url': u'/ajax/bumpactivity/{}/'.format(item.id),
+                    'icon': 'sort-up',
+                    'classes': view.item_buttons_classes + ['staff-only'],
+                }))
+                # Drown
+                js_buttons.append(('drown', {
+                    'has_permissions': True,
+                    'title': 'Drown',
+                    'url': u'/ajax/drownactivity/{}/'.format(item.id),
+                    'icon': 'sort-down',
+                    'classes': view.item_buttons_classes + ['staff-only'],
+                }))
+        # Add show, csrf token to Js buttons
+        for button_name, button in js_buttons:
+            button['show'] = True
+            if button['has_permissions']:
+                button['extra_attributes'] = {
+                    'csrf-token': csrf.get_token(request),
+                }
+        # Add Js buttons to buttons
+        buttons.update(js_buttons)
+        return buttons
+
     class ListView(MagiCollection.ListView):
         item_template = custom_item_template
         per_line = 1
@@ -2080,6 +2147,9 @@ class ActivityCollection(MagiCollection):
                     queryset = queryset.exclude(c_tags__contains=u'"{}"'.format(tag))
             else:
                 queryset = queryset.exclude(_cache_hidden_by_default=True)
+            # Get who archived if staff
+            if request.user.is_authenticated() and request.user.is_staff:
+                queryset = queryset.select_related('archived_by_staff')
             return queryset
 
         def top_buttons(self, request, context):
