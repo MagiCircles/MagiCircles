@@ -198,7 +198,7 @@ class BaseMagiModel(models.Model):
                 if index == i
             )
         except StopIteration:
-            if i is None:
+            if i is None or i == '':
                 return None
             raise KeyError(i)
 
