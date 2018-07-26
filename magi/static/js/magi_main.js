@@ -956,6 +956,8 @@ function updateActivities() {
                 }
                 loader.hide();
                 button.show();
+                button.addClass('disabled');
+                button.click(function(e) { e.preventDefault(); return false; });
                 if (typeof data['total_likes'] != 'undefined') {
                     $(this).find('a[href="#likecount"]').text(data['total_likes']);
                 }
