@@ -5,7 +5,7 @@
   {% if button.show and button.has_permissions %}
   <a href="{{ button.url }}" data-btn-name="{{ name }}"
      class="{% for class in button.classes %}{{ class }} {% endfor %}"
-     title="{{ button.title }}"
+     title="{% if button.alt_title %}{{ button.alt_title }}{% else %}{{ button.title }}{% endif %}"
      {% for attr, value in button.extra_attributes.items %}data-{{ attr }}="{{ value }}"
      {% endfor %}
      {% if button.open_in_new_window %} target="_blank"{% endif %}
@@ -16,7 +16,7 @@
      {% endif %}
      {% if button.ajax_url %}
      data-ajax-url="{{ button.ajax_url }}"
-     data-ajax-title="{% if button.ajax_title %}{{ button.ajax_title }}{% else %}{{ button.title }}{% endif %}"
+     data-ajax-title="{% if button.ajax_title %}{{ button.ajax_title }}{% else %}{% if button.alt_title %}{{ button.alt_title }}{% else %}{{ button.title }}{% endif %}{% endif %}"
      data-ajax-handle-form="true"
      {% endif %}>
     {% if button.icon %}<i class="flaticon-{{ button.icon }}"></i>

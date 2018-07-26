@@ -728,7 +728,6 @@ def likeactivity(request, pk):
     if 'like' in request.POST and not activity.liked:
         if _shouldBumpActivity(activity, request):
             activity.last_bump = timezone.now()
-        else:
         activity.likes.add(request.user)
         activity.update_cache('total_likes')
         activity.save()
