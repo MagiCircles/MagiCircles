@@ -82,7 +82,7 @@ class UserPreferences(BaseMagiModel):
 
     LANGUAGE_CHOICES = django_settings.LANGUAGES
     LANGUAGE_WITHOUT_I_CHOICES = True
-    LANGUAGE_SOFT_CHOICES = django_settings.LANGUAGES
+    LANGUAGE_SOFT_CHOICES = True
     i_language = models.CharField(_('Language'), max_length=10)
 
     _cache_description = models.TextField(null=True)
@@ -113,7 +113,7 @@ class UserPreferences(BaseMagiModel):
 
     ACTIVITIES_LANGUAGE_CHOICES = LANGUAGE_CHOICES
     ACTIVITIES_LANGUAGE_WITHOUT_I_CHOICES = True
-    ACTIVITIES_LANGUAGE_SOFT_CHOICES = LANGUAGE_CHOICES
+    ACTIVITIES_LANGUAGE_SOFT_CHOICES = True
     i_activities_language = models.CharField(_('Post activities in {language}'), max_length=10)
 
     STATUS_CHOICES = DONATORS_STATUS_CHOICES if DONATORS_STATUS_CHOICES else (
@@ -142,7 +142,7 @@ class UserPreferences(BaseMagiModel):
     }
 
     STATUS_WITHOUT_I_CHOICES = True
-    STATUS_SOFT_CHOICES = STATUS_CHOICES
+    STATUS_SOFT_CHOICES = True
     i_status = models.CharField('Status', max_length=12, null=True)
     @property
     def status_color(self):
@@ -433,7 +433,7 @@ class StaffConfiguration(MagiModel):
 
     LANGUAGE_CHOICES = django_settings.LANGUAGES
     LANGUAGE_WITHOUT_I_CHOICES = True
-    LANGUAGE_SOFT_CHOICES = LANGUAGE_CHOICES
+    LANGUAGE_SOFT_CHOICES = True
     i_language = models.CharField(_('Language'), max_length=10, null=True)
 
     is_long = models.BooleanField(default=False)
@@ -662,7 +662,7 @@ class Activity(MagiModel):
 
     LANGUAGE_CHOICES = django_settings.LANGUAGES
     LANGUAGE_WITHOUT_I_CHOICES = True
-    LANGUAGE_SOFT_CHOICES = LANGUAGE_CHOICES
+    LANGUAGE_SOFT_CHOICES = True
     i_language = models.CharField(_('Language'), max_length=10)
 
     TAGS = ACTIVITY_TAGS
