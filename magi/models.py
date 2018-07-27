@@ -363,7 +363,7 @@ class UserLink(BaseMagiModel):
         ('tumblr', 'Tumblr'),
         ('twitch', 'Twitch'),
         ('steam', 'Steam'),
-        ('osu', 'Osu'),
+        ('osu', 'osu!'),
         ('pixiv', 'Pixiv'),
         ('deviantart', 'DeviantArt'),
         ('crunchyroll', 'Crunchyroll'),
