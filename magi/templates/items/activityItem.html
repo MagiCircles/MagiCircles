@@ -8,7 +8,7 @@
     </div>
     <div class="col-xs-10">
       <div>
-    {% if activity.is_popular %}
+    {% if activity.is_popular and user.is_authenticated %}
     <div class="activity-info" data-toggle="tooltip" data-trigger="hover" title="{% trans 'Popular' %}">
       <i class="flaticon-fire text-main"></i>
     </div>
