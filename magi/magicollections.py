@@ -2180,7 +2180,7 @@ class ActivityCollection(MagiCollection):
 
         def top_buttons(self, request, context):
             buttons = super(ActivityCollection.ListView, self).top_buttons(request, context)
-            if request.user.is_authenticated() and context['filter_form'].active_tab == 'new':
+            if request.user.is_authenticated() and context['filter_form'].active_tab in ['new', 'hot']:
                 buttons['warn'] = {
                     'show': True,
                     'has_permissions': True,
