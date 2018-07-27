@@ -179,7 +179,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
             if 'reverse_order' in context['filter_form'].fields:
                 reverse = context['filter_form'].fields['reverse_order'].initial
             ordering = [u'{}{}'.format(
-                '-' if 'reverse' else '',
+                '-' if reverse else '',
                 context['filter_form'].fields['ordering'].initial,
             )]
         else:
