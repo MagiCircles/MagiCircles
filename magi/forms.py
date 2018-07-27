@@ -838,6 +838,11 @@ class ActivitiesPreferencesForm(MagiForm):
         if 'i_activities_language' in self.fields:
             self.fields['i_activities_language'].label = unicode(
                 self.fields['i_activities_language'].label).format(language='')
+        if 'i_default_activities_tab' in self.fields:
+            self.fields['i_default_activities_tab'].help_text = mark_safe(
+                u'<a href="/help/Activities%20tabs" target="_blank">{}</a>'.format(
+                    _('Learn more'),
+                ))
 
     def clean(self):
         # Check permission to show tags
