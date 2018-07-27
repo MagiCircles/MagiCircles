@@ -1819,9 +1819,17 @@ class UserCollection(MagiCollection):
             'edit_roles',
             'edit_reported_things',
             'edit_donator_status',
+            'mark_email_addresses_invalid',
+            'edit_activities_post_language',
         ]
         form_class = forms.StaffEditUser
         ajax_callback = 'updateStaffEditUserForm'
+
+        filter_cuteform = {
+            'i_activities_language': {
+                'image_folder': 'language',
+            },
+        }
 
         def check_owner_permissions(self, request, context, item):
             super(UserCollection.EditView, self).check_permissions(request, context)

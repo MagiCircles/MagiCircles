@@ -57,6 +57,7 @@ DEFAULT_GROUPS = [
             'edit_staff_configurations', 'add_badges', 'see_collections_details', 'manage_main_items',
             'edit_staff_details', 'moderate_reports', 'edit_reported_things', 'post_community_event_activities',
             'manage_prizes', 'manipulate_activities', 'mark_activities_as_staff_pick',
+            'edit_activities_post_language',
         ],
         'outside_permissions': {
             'Tweetdeck': 'https://tweetdeck.twitter.com/',
@@ -158,6 +159,8 @@ DEFAULT_GROUPS = [
         'translation': string_concat(_('Moderator'), ' (', _('Active'), ')'),
         'description': 'We want all of our users of all ages to have a pleasant a safe stay in our website. That\'s why our team of moderators use the website everyday and report anything that might be inappropriate or invalid!',
         'permissions': [
+            'see_profile_edit_button',
+            'edit_activities_post_language',
             'manipulate_activities',
         ],
         'requires_staff': True,
@@ -263,7 +266,12 @@ DEFAULT_GROUPS = [
     ('sysadmin', {
         'translation': _('System administrator'),
         'description': 'Our system administrators take care of the infrasturcture of our websites, including maintaining the servers, deploying new versions, ensuring that we scale according to traffic and under budget, and overall instrastructure monitoring.',
-        'permissions': ['advanced_staff_configurations', 'see_collections_details'],
+        'permissions': [
+            'advanced_staff_configurations',
+            'see_profile_edit_button',
+            'mark_email_addresses_invalid',
+            'see_collections_details',
+        ],
         'requires_staff': False,
         'guide': '/help/System%30administrator%20guide',
     }),

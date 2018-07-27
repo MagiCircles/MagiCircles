@@ -945,7 +945,7 @@ class StaffEditUser(_UserCheckEmailUsernameForm):
 
     def __init__(self, *args, **kwargs):
         instance = kwargs.pop('instance', None)
-        preferences_fields = ('m_description', 'location', 'i_status', 'donation_link', 'donation_link_title', 'c_groups')
+        preferences_fields = ('invalid_email', 'm_description', 'location', 'i_activities_language', 'i_status', 'donation_link', 'donation_link_title', 'c_groups')
         preferences_initial = model_to_dict(instance.preferences, preferences_fields) if instance is not None else {}
         super(StaffEditUser, self).__init__(initial=preferences_initial, instance=instance, *args, **kwargs)
         self.fields.update(fields_for_model(models.UserPreferences, preferences_fields))
@@ -954,6 +954,25 @@ class StaffEditUser(_UserCheckEmailUsernameForm):
         # m_description
         if 'm_description' in self.fields:
             self.fields['m_description'].help_text = markdownHelpText()
+
+        # invalid email
+        if 'invalid_email' in self.fields:
+            if not self.request.user.hasPermission('mark_email_addresses_invalid'):
+                del(self.fields['invalid_email'])
+            else:
+                self.fields['invalid_email'].help_text = 'Mark as invalid if we keep receiving bounce emails from that email address. No email will ever be sent to that user again.'
+
+        # i_activities_language
+        if 'i_activities_language' in self.fields:
+            if not self.request.user.hasPermission('edit_activities_post_language'):
+                del(self.fields['i_activities_language'])
+            else:
+                self.fields['i_activities_language'] = forms.ChoiceField(
+                    choices=models.Activity.LANGUAGE_CHOICES,
+                    initial=self.fields['i_activities_language'].initial,
+                    label=unicode(self.fields['i_activities_language'].label).format(language=''),
+                    help_text='If you see that this user regularly posts with the wrong language, you can change the default language in which they post to avoid future mistakes.'
+                )
 
         # edit_roles permission
         self.old_c_groups = self.instance.preferences.c_groups
@@ -1050,7 +1069,7 @@ class StaffEditUser(_UserCheckEmailUsernameForm):
             instance.preferences.location_changed = True
             instance.preferences.latitude = None
             instance.preferences.longitude = None
-        for field_name in ['m_description', 'i_status', 'donation_link', 'donation_link_title']:
+        for field_name in ['m_description', 'i_status', 'donation_link', 'donation_link_title', 'invalid_email', 'i_activities_language']:
             if field_name in self.fields and field_name in self.cleaned_data:
                 setattr(instance.preferences, field_name, self.cleaned_data[field_name])
         if 'c_groups' in self.fields and 'c_groups' in self.cleaned_data:
