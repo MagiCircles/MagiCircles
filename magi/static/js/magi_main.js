@@ -1000,6 +1000,14 @@ function updateActivities() {
         _onSuccessHandler(button, gettext('Unarchived') + '!');
         _hideShowArchivedIcons(button, data);
     };
+    let _onMarkStaffPick = function(button, data, action) {
+        _onSuccessHandler(button, gettext(action));
+        let tags = button.closest('.activity').find('.tags');
+        tags.empty();
+        $.each(data['result']['tags'], function (key, value) {
+            tags.append('<a href="/activities/?c_tags=' + key + '" target="_blank" class="text-muted">#' + value + '</a> ');
+        });
+    };
     let _onSuccessActivities = {
         'archive': _onArchive,
         'ghost-archive': _onArchive,
@@ -1007,6 +1015,8 @@ function updateActivities() {
         'ghost-unarchive': _onUnArchive,
         'bump': function(button, data) { _onSuccessHandler(button, 'Bumped!') },
         'drown': function(button, data) { _onSuccessHandler(button, 'Drowned!') },
+        'mark-staff-pick': function(button, data) { _onMarkStaffPick(button, data, 'Marked as staff pick!'); },
+        'remove-from-staff-pick': function(button, data) { _onMarkStaffPick(button, data, 'Removed from staff picks!'); },
     };
 
     $.each(_onSuccessActivities, function(button_name, _) {

@@ -830,6 +830,42 @@ def drownactivity(request, pk):
         'result': 'drowned',
     })
 
+def markactivitystaffpick(request, pk):
+    context = ajaxContext(request)
+    if (not request.user.is_authenticated() or request.method != 'POST'
+        or 'staff' not in models.ACTIVITY_TAGS_DICT.keys()
+        or not request.user.hasPermission('mark_activities_as_staff_pick')):
+        raise PermissionDenied()
+    activity = get_object_or_404(models.Activity, pk=pk)
+    activity.add_c('tags', ['staff'])
+    activity.save()
+    return JsonResponse({
+        'result': {
+            'tags': {
+                k: unicode(v)
+                for k, v in activity.t_tags.items()
+            },
+        },
+    })
+
+def removeactivitystaffpick(request, pk):
+    context = ajaxContext(request)
+    if (not request.user.is_authenticated() or request.method != 'POST'
+        or 'staff' not in models.ACTIVITY_TAGS_DICT.keys()
+        or not request.user.hasPermission('mark_activities_as_staff_pick')):
+        raise PermissionDenied()
+    activity = get_object_or_404(models.Activity, pk=pk)
+    activity.remove_c('tags', ['staff'])
+    activity.save()
+    return JsonResponse({
+        'result': {
+            'tags': {
+                k: unicode(v)
+                for k, v in activity.t_tags.items()
+            },
+        },
+    })
+
 def follow(request, username):
     context = ajaxContext(request)
     if not request.user.is_authenticated() or request.method != 'POST' or request.user.username == username:

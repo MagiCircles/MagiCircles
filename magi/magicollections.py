@@ -2107,6 +2107,24 @@ class ActivityCollection(MagiCollection):
                     'icon': 'sort-down',
                     'classes': view.item_buttons_classes + ['staff-only'],
                 }))
+            if ('staff' in models.ACTIVITY_TAGS_DICT.keys()
+                and request.user.hasPermission('mark_activities_as_staff_pick')):
+                if 'staff' in item.tags:
+                    # Remove from staff picks
+                    js_buttons.append(('remove-from-staff-pick', {
+                        'has_permissions': True, 'title': 'Remove from staff picks',
+                        'url': u'/ajax/removeactivitystaffpick/{}/'.format(item.id),
+                        'icon': 'staff',
+                        'classes': view.item_buttons_classes + ['staff-only'],
+                    }))
+                else:
+                    # Mark as staff pick
+                    js_buttons.append(('mark-staff-pick', {
+                        'has_permissions': True, 'title': 'Mark as staff pick',
+                        'url': u'/ajax/markactivitystaffpick/{}/'.format(item.id),
+                        'icon': 'staff',
+                        'classes': view.item_buttons_classes + ['staff-only'],
+                    }))
         # Add show, csrf token to Js buttons
         for button_name, button in js_buttons:
             button['show'] = True

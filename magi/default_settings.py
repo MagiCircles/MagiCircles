@@ -56,7 +56,7 @@ DEFAULT_GROUPS = [
             'edit_roles', 'edit_staff_status', 'edit_donator_status', 'see_profile_edit_button',
             'edit_staff_configurations', 'add_badges', 'see_collections_details', 'manage_main_items',
             'edit_staff_details', 'moderate_reports', 'edit_reported_things', 'post_community_event_activities',
-            'manage_prizes', 'manipulate_activities',
+            'manage_prizes', 'manipulate_activities', 'mark_activities_as_staff_pick',
         ],
         'outside_permissions': {
             'Tweetdeck': 'https://tweetdeck.twitter.com/',
@@ -200,6 +200,7 @@ DEFAULT_GROUPS = [
             'post_community_event_activities',
             'add_prizes',
             'manipulate_activities',
+            'mark_activities_as_staff_pick',
         ],
         'requires_staff': True,
         'outside_permissions': {
@@ -494,6 +495,20 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         ],
     }),
     ('drownactivity', {
+        'ajax': True,
+        'custom': False,
+        'url_variables': [
+            ('pk', '\d+'),
+        ],
+    }),
+    ('markactivitystaffpick', {
+        'ajax': True,
+        'custom': False,
+        'url_variables': [
+            ('pk', '\d+'),
+        ],
+    }),
+    ('removeactivitystaffpick', {
         'ajax': True,
         'custom': False,
         'url_variables': [
