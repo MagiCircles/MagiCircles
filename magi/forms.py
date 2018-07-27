@@ -1361,7 +1361,7 @@ class FilterActivities(MagiFiltersForm):
 
     def _is_popular_to_queryset(self, queryset, request, value):
         # Skil the filter if owner_id is selected
-        if 'owner_id' in self.data:
+        if 'owner_id' in self.data and self.data['owner_id']:
             return queryset
         value = self.to_nullbool(value)
         if value is None:
