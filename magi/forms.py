@@ -1360,6 +1360,9 @@ class FilterActivities(MagiFiltersForm):
     owner_id = forms.IntegerField(widget=forms.HiddenInput)
 
     def _is_popular_to_queryset(self, queryset, request, value):
+        # Skil the filter if owner_id is selected
+        if 'owner_id' in self.data:
+            return queryset
         value = self.to_nullbool(value)
         if value is None:
             return queryset
