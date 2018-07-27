@@ -149,6 +149,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     filters = _get_filters(request.GET, extra_filters)
     queryset = collection.list_view.get_queryset(collection.queryset, filters, request)
 
+    ordering = None
     if 'ordering' in request.GET and request.GET['ordering']:
         reverse = ('reverse_order' in request.GET and request.GET['reverse_order']) or not request.GET or len(request.GET) == 1
         prefix = '-' if reverse else ''
@@ -157,9 +158,6 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
             and request.GET['ordering'] != ','.join(collection.list_view.plain_default_ordering_list)):
             context['show_relevant_fields_on_ordering'] = True
             context['plain_ordering'] = [o[1:] if o.startswith('-') else o for o in ordering]
-    else:
-        ordering = collection.list_view.default_ordering.split(',')
-    queryset = queryset.order_by(*ordering)
 
     if collection.list_view.filter_form:
         if len(request.GET) > 1 or (len(request.GET) == 1 and 'page' not in request.GET):
@@ -172,6 +170,21 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
             queryset = filter_ids(queryset, request)
     else:
         queryset = filter_ids(queryset, request)
+
+    if not ordering:
+        if ('filter_form' in context
+            and 'ordering' in context['filter_form'].fields
+            and context['filter_form'].fields['ordering'].initial):
+            reverse = True
+            if 'reverse_order' in context['filter_form'].fields:
+                reverse = context['filter_form'].fields['reverse_order'].initial
+            ordering = [u'{}{}'.format(
+                '-' if 'reverse' else '',
+                context['filter_form'].fields['ordering'].initial,
+            )]
+        else:
+            ordering = collection.list_view.default_ordering.split(',')
+    queryset = queryset.order_by(*ordering)
 
     if collection.list_view.distinct:
         queryset = queryset.distinct()
