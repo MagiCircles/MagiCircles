@@ -295,9 +295,15 @@ DEFAULT_ENABLED_NAVBAR_LISTS = OrderedDict([
 DEFAULT_HOME_ACTIVITY_TABS = OrderedDict([
     ('popular', {
         'title': _('Popular'),
-        'icon': 'list',
-        'has_permissions': True,
+        'icon': 'statistics',
         'form_fields': {
+        },
+    }),
+    ('hot', {
+        'title': _('Hot'),
+        'icon': 'fire',
+        'form_fields': {
+            'is_popular': None,
         },
     }),
     ('new', {
