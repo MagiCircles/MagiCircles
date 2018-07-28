@@ -258,6 +258,7 @@ def getPageShowLinkLambda(page):
     def _showLink(context):
         permissions_required = page.get('permissions_required', [])
         one_of_permissions_required = page.get('one_of_permissions_required', [])
+        check_permissions = page.get('check_permissions', None)
         return not (
             (page.get('authentication_required', False) and not context['request'].user.is_authenticated())
             or (page.get('logout_required', False) and context['request'].user.is_authenticated())
@@ -270,6 +271,8 @@ def getPageShowLinkLambda(page):
                 not context['request'].user.is_authenticated()
                 or not hasOneOfPermissions(context['request'].user, one_of_permissions_required)
             ))
+            or (check_permissions
+                and not check_permissions(context))
         )
     return _showLink
 

@@ -11,6 +11,7 @@ from magi.default_settings import (
     DEFAULT_GROUPS,
     DEFAULT_GLOBAL_OUTSIDE_PERMISSIONS,
     DEFAULT_CONTACT_DISCORD,
+    DEFAULT_LANGUAGES_CANT_SPEAK_ENGLISH,
 )
 from magi.utils import globalContext, toHumanReadable
 from django.utils.translation import ugettext_lazy as _, string_concat
@@ -170,7 +171,7 @@ else:
 if hasattr(settings_module, 'ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES'):
     ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES = getattr(settings_module, 'ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES')
 else:
-    ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES = ['ja', 'zh-hans', 'kr']
+    ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES = DEFAULT_LANGUAGES_CANT_SPEAK_ENGLISH
 
 if hasattr(settings_module, 'GOOGLE_ANALYTICS'):
     GOOGLE_ANALYTICS = getattr(settings_module, 'GOOGLE_ANALYTICS')

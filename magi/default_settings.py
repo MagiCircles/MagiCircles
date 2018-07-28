@@ -39,6 +39,8 @@ DEFAULT_JAVASCRIPT_TRANSLATED_TERMS = [
 DEFAULT_CONTACT_DISCORD = 'https://discord.gg/mehDTsv'
 DEFAULT_POEDITOR_URL = 'https://poeditor.com/join/project/h6kGEpdnmM'
 
+DEFAULT_LANGUAGES_CANT_SPEAK_ENGLISH = ['ja', 'zh-hans', 'kr']
+
 ############################################################
 # Groups
 
@@ -440,6 +442,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
             'custom': False,
             'title': _('Wiki'),
             'icon': 'wiki',
+            'check_permissions': lambda c: c['request'].LANGUAGE_CODE not in DEFAULT_LANGUAGES_CANT_SPEAK_ENGLISH,
         },
         {
             'enabled': False,
@@ -450,6 +453,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
                 ('wiki_url', '[^/]+'),
             ],
             'navbar_link': False,
+            'check_permissions': lambda c: c['request'].LANGUAGE_CODE not in DEFAULT_LANGUAGES_CANT_SPEAK_ENGLISH,
         },
     ]),
     ('block', {
