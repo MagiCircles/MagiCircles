@@ -1426,6 +1426,11 @@ class FilterActivities(MagiFiltersForm):
         | Q(owner_id=request.user.id)
     ) if value else queryset)
 
+    liked = forms.BooleanField(label=string_concat(_('Liked'), ' (', _('Only'), ')'), initial=False)
+    liked_filter = MagiFilter(to_queryset=lambda form, queryset, request, value: queryset.filter(
+        Q(likes=request.user) | Q(owner=request.user),
+    ) if value else queryset)
+
     def __init__(self, *args, **kwargs):
         super(FilterActivities, self).__init__(*args, **kwargs)
         # Only allow users to filter by tags they are allowed to see
@@ -1483,7 +1488,7 @@ class FilterActivities(MagiFiltersForm):
 
     class Meta(MagiFiltersForm.Meta):
         model = models.Activity
-        fields = ('search', 'c_tags', 'is_popular', 'hide_archived', 'is_following', 'with_image', 'i_language')
+        fields = ('search', 'c_tags', 'is_popular', 'is_following', 'liked', 'hide_archived', 'with_image', 'i_language')
 
 ############################################################
 # Notifications
