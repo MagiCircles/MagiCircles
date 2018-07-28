@@ -1543,11 +1543,11 @@ class UserCollection(MagiCollection):
         def get_queryset(self, queryset, parameters, request):
             queryset = super(UserCollection.ListView, self).get_queryset(queryset, parameters, request)
             if 'followers_of' in parameters:
-                queryset = queryset.filter(preferences__following__username=parameters['followers_of'])
+                queryset = queryset.filter(preferences__following__username=parameters['followers_of']).distinct()
             if 'followed_by' in parameters:
-                queryset = queryset.filter(followers__user__username=parameters['followed_by'])
+                queryset = queryset.filter(followers__user__username=parameters['followed_by']).distinct()
             if 'liked_activity' in parameters:
-                queryset = queryset.filter(Q(pk__in=(models.Activity.objects.get(pk=parameters['liked_activity']).likes.all())) | Q(activities__id=parameters['liked_activity']))
+                queryset = queryset.filter(Q(pk__in=(models.Activity.objects.get(pk=parameters['liked_activity']).likes.all())) | Q(activities__id=parameters['liked_activity'])).distinct()
             return queryset
 
         def extra_context(self, context):

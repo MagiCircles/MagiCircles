@@ -368,6 +368,8 @@ class MagiFilter(object):
     selector: will be the name of the field by default. example: owner__username.
     selectors: same as selector but works with multiple values.
     to_value: lambda that takes the value and transforms the value if needed.
+    distinct: if your selector uses a many to many nested lookup, it's recommended to set
+              distinct to true to avoid duplicates
     multiple: allow multiple values separated by commas. Set to False if your value may contain commas.
               defaults to False when to_queryset is provided
     noop: when set to true, will not affect result
@@ -377,6 +379,7 @@ class MagiFilter(object):
                  selector=None,
                  selectors=None,
                  to_value=None,
+                 distinct=False,
                  multiple=None,
                  operator_for_multiple=None,
                  allow_csv=True,
@@ -387,6 +390,7 @@ class MagiFilter(object):
         if not self.selectors and selector:
             self.selectors = [selector]
         self.to_value = to_value
+        self.distinct = distinct
         if multiple is not None:
             self.multiple = multiple
         elif to_queryset:
@@ -606,6 +610,8 @@ class MagiFiltersForm(AutoForm):
                         filters = { selector: self._value_as_string(filter, value) }
                     condition = condition | Q(**filters)
                 queryset = queryset.filter(condition).exclude(**exclude)
+                if filter.distinct:
+                    queryset = queryset.distinct()
         return queryset
 
     def _value_as_string(self, filter, value):
