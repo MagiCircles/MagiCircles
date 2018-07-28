@@ -2503,9 +2503,10 @@ class ReportCollection(MagiCollection):
         multipart = True
 
         def extra_context(self, context):
-            context['alert_message'] = mark_safe(u'{message}<ul>{list}</ul>'.format(
+            context['alert_message'] = mark_safe(u'{message}<ul>{list}</ul><div class="text-right"><a href="/help/Report" target="_blank" class="btn btn-warning">{learn}</a></div>'.format(
                 message=_(u'Only submit a report if there is a problem with this specific {thing}. If it\'s about something else, your report will be ignored. For example, don\'t report an account or a profile if there is a problem with an activity. Look for "Report" buttons on the following to report individually:').format(thing=self.collection.types[context['type']]['title'].lower()),
                 list=''.join([u'<li>{}</li>'.format(unicode(type['plural_title'])) for name, type in self.collection.types.items() if name != context['type']]),
+                learn=_('Learn more'),
             ))
             return context
 
