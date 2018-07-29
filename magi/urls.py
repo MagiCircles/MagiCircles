@@ -48,6 +48,7 @@ from magi.settings import (
 )
 from magi.models import UserPreferences
 from magi.utils import redirectWhenNotAuthenticated, hasPermissions, hasOneOfPermissions, tourldash, groupsWithPermissions, groupsWithOneOfPermissions, staticImageURL
+from raw import other_sites
 
 ############################################################
 # Load dynamic module based on SITE
@@ -535,6 +536,7 @@ RAW_CONTEXT['full_empty_image'] = staticImageURL(RAW_CONTEXT['empty_image'])
 RAW_CONTEXT['google_analytics'] = GOOGLE_ANALYTICS
 RAW_CONTEXT['preferences_model'] = UserPreferences
 RAW_CONTEXT['languages_cant_speak_english'] = LANGUAGES_CANT_SPEAK_ENGLISH
+RAW_CONTEXT['other_sites'] = [s for s in other_sites if s['name'] != SITE_NAME]
 
 if not launched:
     RAW_CONTEXT['launch_date'] = LAUNCH_DATE

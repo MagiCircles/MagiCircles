@@ -106,6 +106,18 @@
                 {% endfor %}
                 {% if link.is_list and link_name == 'more' %}
                 <li class="divider"></li>
+                <li class="dropdown-header">{% trans 'Check out our other websites' %}</li>
+                <li class="dropdown-header">
+                  {% for site in other_sites %}
+                  <a href="{{ site.url }}" target="_blank" class="other-site">
+	                <img src="{{ site.image }}" alt="{{ site.name }}"
+                         data-toggle="tooltip" data-trigger="hover" data-html="true"
+                         title="<strong>{{ site.name }}</strong><br>{{ site.game_name }}">
+                  </a>
+                  {% endfor %}
+                </li>
+                <li class="divider"></li>
+                <li class="dropdown-header">{% trans 'Language' %}</li>
                 <li>
                   <form action="{% if user.is_authenticated %}/ajax/changelanguage/{% else %}/i18n/setlang/{% endif %}" method="post" style="padding: 3px 20px;">
                     {% csrf_token %}

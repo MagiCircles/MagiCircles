@@ -20,7 +20,7 @@ other_sites = [
     {
         'name': 'School Idol Tomodachi',
         'game_name': 'LoveLive! School Idol Festival',
-        'image': 'https://i.schoolido.lu/android/icon.png',
+        'image': 'https://i.schoolido.lu/static/sukutomo.png',
         'url': 'http://schoolido.lu/',
     },
     {
@@ -34,6 +34,12 @@ other_sites = [
         'game_name': string_concat(_('BanG Dream!'), _('Girls Band Party')),
         'image': 'https://i.bandori.party/static/img/avatar.png',
         'url': 'https://bandori.party/',
+    },
+    {
+        'name': 'Maji Love',
+        'game_name': string_concat(_(u'Utano☆Princesama'), ' ', _(u'Shining Live')),
+        'image': 'http://i.maji.love/static/img/avatar.png',
+        'url': 'https://maji.love/',
     },
     {
         'name': 'Stardust Run',

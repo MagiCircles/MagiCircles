@@ -38,7 +38,6 @@ from magi.utils import getGlobalContext, ajaxContext, redirectToProfile, tourlda
 from magi.notifications import pushNotification
 from magi.settings import SITE_NAME, GAME_NAME, ENABLED_PAGES, FAVORITE_CHARACTERS, TWITTER_HANDLE, BUG_TRACKER_URL, GITHUB_REPOSITORY, CONTRIBUTE_URL, CONTACT_EMAIL, CONTACT_REDDIT, CONTACT_FACEBOOK, CONTACT_DISCORD, FEEDBACK_FORM, ABOUT_PHOTO, WIKI, HELP_WIKI, LATEST_NEWS, SITE_LONG_DESCRIPTION, CALL_TO_ACTION, TOTAL_DONATORS, GAME_DESCRIPTION, GAME_URL, ON_USER_EDITED, ON_PREFERENCES_EDITED, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES, SITE_LOGO_PER_LANGUAGE, GLOBAL_OUTSIDE_PERMISSIONS
 from magi.views_collections import item_view, list_view
-from raw import other_sites
 
 ############################################################
 # Login / Logout / Sign up
@@ -220,7 +219,6 @@ def aboutDefaultContext(request):
     context['now'] = timezone.now()
     context['api_enabled'] = False
     context['contribute_url'] = CONTRIBUTE_URL
-    context['other_sites'] = [s for s in other_sites if s['name'] != SITE_NAME]
     context['other_sites_colsize'] = int(math.ceil(12 / (len(context['other_sites']))))
     context['ajax'] = context['current_url'].startswith('/ajax/')
     context['extends'] = 'base.html' if not context['ajax'] else 'ajax.html'
