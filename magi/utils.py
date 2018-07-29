@@ -509,6 +509,25 @@ def getEventStatus(start_date, end_date):
         return 'current'
     return 'future'
 
+def filterEventsByStatus(queryset, status, prefix=''):
+    if status == 'all':
+        return queryset
+    now = timezone.now()
+    if status == 'ended':
+        return queryset.filter(**{
+            u'{}end_date__lt'.format(prefix): now,
+        })
+    elif status == 'current':
+        return queryset.filter(**{
+            u'{}start_date__lte'.format(prefix): now,
+            u'{}end_date__gte'.format(prefix): now,
+        })
+    elif status == 'future':
+        return queryset.filter(**{
+            u'{}start_date__gt'.format(prefix): now,
+        })
+    return queryset
+
 ############################################################
 # Send email
 
