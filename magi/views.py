@@ -139,6 +139,7 @@ def aboutDefaultContext(request):
     context['about_photo'] = ABOUT_PHOTO
     context['site_long_description'] = SITE_LONG_DESCRIPTION
     context['feedback_form'] = FEEDBACK_FORM
+    context['contact_email'] = CONTACT_EMAIL
     context['contact_methods'] = [
         ('Discord', 'discord', CONTACT_DISCORD),
         ('Twitter', 'twitter', u'https://twitter.com/{}/'.format(TWITTER_HANDLE) if TWITTER_HANDLE else None),

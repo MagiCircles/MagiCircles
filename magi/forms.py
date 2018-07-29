@@ -22,7 +22,19 @@ from magi.middleware.httpredirect import HttpRedirectException
 from magi.django_translated import t
 from magi import models
 from magi.default_settings import RAW_CONTEXT
-from magi.settings import FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTERS, USER_COLORS, GAME_NAME, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES, ON_PREFERENCES_EDITED, PROFILE_TABS, MINIMUM_LIKES_POPULAR, HOME_ACTIVITY_TABS
+from magi.settings import (
+    FAVORITE_CHARACTER_NAME,
+    FAVORITE_CHARACTERS,
+    USER_COLORS,
+    GAME_NAME,
+    ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT,
+    ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES,
+    ON_PREFERENCES_EDITED,
+    PROFILE_TABS,
+    MINIMUM_LIKES_POPULAR,
+    HOME_ACTIVITY_TABS,
+    LANGUAGES_CANT_SPEAK_ENGLISH,
+)
 from magi.utils import ordinalNumber, randomString, shrinkImageFromData, getMagiCollection, getAccountIdsFromSession, hasPermission, toHumanReadable, usersWithPermission, staticImageURL, markdownHelpText
 
 ############################################################
@@ -844,9 +856,10 @@ class ActivitiesPreferencesForm(MagiForm):
         if 'i_activities_language' in self.fields:
             self.fields['i_activities_language'].label = unicode(
                 self.fields['i_activities_language'].label).format(language='')
-        if 'i_default_activities_tab' in self.fields:
+        if ('i_default_activities_tab' in self.fields
+            and self.request.LANGUAGE_CODE not in LANGUAGES_CANT_SPEAK_ENGLISH):
             self.fields['i_default_activities_tab'].help_text = mark_safe(
-                u'<a href="/help/Activities%20tabs" target="_blank">{}</a>'.format(
+                u'<a href="/help/Activities%20tabs" class="pull-right btn btn-main btn-sm" target="_blank">{}</a>'.format(
                     _('Learn more'),
                 ))
 
@@ -918,7 +931,7 @@ class UserPreferencesForm(MagiForm):
                 self.fields.pop('color')
         self.old_location = self.instance.location if self.instance else None
         if 'm_description' in self.fields:
-            self.fields['m_description'].help_text = markdownHelpText()
+            self.fields['m_description'].help_text = markdownHelpText(self.request)
 
     def clean_birthdate(self):
         if 'birthdate' in self.cleaned_data:
@@ -959,7 +972,7 @@ class StaffEditUser(_UserCheckEmailUsernameForm):
 
         # m_description
         if 'm_description' in self.fields:
-            self.fields['m_description'].help_text = markdownHelpText()
+            self.fields['m_description'].help_text = markdownHelpText(self.request)
 
         # invalid email
         if 'invalid_email' in self.fields:
@@ -1248,7 +1261,7 @@ class StaffConfigurationForm(AutoForm):
             else:
                 self.fields['value'].widget = forms.Textarea()
         if not self.is_creating and self.instance.is_markdown and 'value' in self.fields:
-            self.fields['value'].help_text = markdownHelpText()
+            self.fields['value'].help_text = markdownHelpText(self.request)
 
     def save(self, commit=True):
         instance = super(StaffConfigurationForm, self).save(commit=False)
@@ -1354,7 +1367,7 @@ class ActivityForm(MagiForm):
                 self.fields['i_language'].widget = self.fields['i_language'].hidden_widget()
 
         if 'm_message' in self.fields:
-            self.fields['m_message'].help_text = markdownHelpText()
+            self.fields['m_message'].help_text = markdownHelpText(self.request)
         # Only allow users to add tags they are allowed to see
         if 'c_tags' in self.fields:
             self.fields['c_tags'].choices = models.getAllowedTags(self.request, is_creating=True)

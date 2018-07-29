@@ -44,6 +44,7 @@ from magi.settings import (
     GLOBAL_OUTSIDE_PERMISSIONS,
     GROUPS,
     JAVASCRIPT_COMMONS,
+    LANGUAGES_CANT_SPEAK_ENGLISH,
 )
 from magi.models import UserPreferences
 from magi.utils import redirectWhenNotAuthenticated, hasPermissions, hasOneOfPermissions, tourldash, groupsWithPermissions, groupsWithOneOfPermissions, staticImageURL
@@ -533,6 +534,7 @@ RAW_CONTEXT['twitter_handle'] = TWITTER_HANDLE
 RAW_CONTEXT['full_empty_image'] = staticImageURL(RAW_CONTEXT['empty_image'])
 RAW_CONTEXT['google_analytics'] = GOOGLE_ANALYTICS
 RAW_CONTEXT['preferences_model'] = UserPreferences
+RAW_CONTEXT['languages_cant_speak_english'] = LANGUAGES_CANT_SPEAK_ENGLISH
 
 if not launched:
     RAW_CONTEXT['launch_date'] = LAUNCH_DATE

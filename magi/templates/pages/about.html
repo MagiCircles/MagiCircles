@@ -374,6 +374,7 @@
     {% if contact_template %}
     {% include contact_template|add:'.html' %}
     {% else %}
+    {% if LANGUAGE_CODE not in languages_cant_speak_english %}
     <div class="row">
       <div class="col-md-4 text-center">
         <h3><i class="flaticon-help"></i> {% trans 'Need help?' %}</h3>
@@ -402,6 +403,11 @@
         {% endif %}{% endfor %}
       </div>
     </div>
+    {% else %}
+    <div class="text-center big-text">
+      <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>
+    </div>
+    {% endif %}
     {% endif %}
 
     <br><br>

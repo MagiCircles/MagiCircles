@@ -14,7 +14,23 @@ from magi.utils import AttrDict, ordinalNumber, justReturn, propertyFromCollecti
 from magi.raw import please_understand_template_sentence
 from magi.django_translated import t
 from magi.middleware.httpredirect import HttpRedirectException
-from magi.settings import ACCOUNT_MODEL, SHOW_TOTAL_ACCOUNTS, PROFILE_TABS, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_NAME, FAVORITE_CHARACTER_TO_URL, GET_GLOBAL_CONTEXT, DONATE_IMAGE, ON_USER_EDITED, ON_PREFERENCES_EDITED, ACCOUNT_TAB_ORDERING, FIRST_COLLECTION, GLOBAL_OUTSIDE_PERMISSIONS, HOME_ACTIVITY_TABS
+from magi.settings import (
+    ACCOUNT_MODEL,
+    SHOW_TOTAL_ACCOUNTS,
+    PROFILE_TABS,
+    FAVORITE_CHARACTERS,
+    FAVORITE_CHARACTER_NAME,
+    FAVORITE_CHARACTER_TO_URL,
+    GET_GLOBAL_CONTEXT,
+    DONATE_IMAGE,
+    ON_USER_EDITED,
+    ON_PREFERENCES_EDITED,
+    ACCOUNT_TAB_ORDERING,
+    FIRST_COLLECTION,
+    GLOBAL_OUTSIDE_PERMISSIONS,
+    HOME_ACTIVITY_TABS,
+    LANGUAGES_CANT_SPEAK_ENGLISH,
+)
 from magi import models, forms
 
 ############################################################
@@ -606,8 +622,12 @@ class MagiCollection(object):
                 if field.name.startswith('m_'):
                     value = (False, value)
                 else:
-                    if get_language() in choices and not getattr(item, u'{}s'.format(field_name), {}).get(get_language(), None):
-                        value = mark_safe(u'<a href="https://translate.google.com/#en/{to}/{value}" target="_blank">{value} <i class="flaticon-link"></i></a>'.format(to=get_language(), value=value))
+                    if (get_language() in choices
+                        and not getattr(item, u'{}s'.format(field_name), {}).get(get_language(), None)):
+                        if get_language() in LANGUAGES_CANT_SPEAK_ENGLISH:
+                            continue
+                        else:
+                            value = mark_safe(u'<a href="https://translate.google.com/#en/{to}/{value}" target="_blank">{value} <i class="flaticon-link"></i></a>'.format(to=get_language(), value=value))
             is_foreign_key = (isinstance(field, models.models.ForeignKey)
                               or isinstance(field, models.models.OneToOneField))
             if not value and not is_foreign_key:
@@ -2503,10 +2523,12 @@ class ReportCollection(MagiCollection):
         multipart = True
 
         def extra_context(self, context):
-            context['alert_message'] = mark_safe(u'{message}<ul>{list}</ul><div class="text-right"><a href="/help/Report" target="_blank" class="btn btn-warning">{learn}</a></div>'.format(
+            context['alert_message'] = mark_safe(u'{message}<ul>{list}</ul>{learn_more}'.format(
                 message=_(u'Only submit a report if there is a problem with this specific {thing}. If it\'s about something else, your report will be ignored. For example, don\'t report an account or a profile if there is a problem with an activity. Look for "Report" buttons on the following to report individually:').format(thing=self.collection.types[context['type']]['title'].lower()),
                 list=''.join([u'<li>{}</li>'.format(unicode(type['plural_title'])) for name, type in self.collection.types.items() if name != context['type']]),
-                learn=_('Learn more'),
+                learn_more=(
+                    '' if context['request'].LANGUAGE_CODE in LANGUAGES_CANT_SPEAK_ENGLISH else
+                    u'<div class="text-right"><a href="/help/Report" target="_blank" class="btn btn-warning">{}</a></div>'.format(_('Learn more'))),
             ))
             return context
 
