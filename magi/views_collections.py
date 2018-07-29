@@ -50,6 +50,13 @@ def _modification_views_page_titles(action_sentence, context, after_title):
 
 def _type(a): return type(a)
 
+def _get_col_size(total):
+    if total == 5:
+        return 'special-5'
+    elif total == 7:
+        return 'special-7'
+    return int(math.ceil(12 / total))
+
 ############################################################
 # Item view
 
@@ -292,7 +299,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['per_line'] = int(request.GET['max_per_line']) if 'max_per_line' in request.GET and int(request.GET['max_per_line']) < collection.list_view.per_line else collection.list_view.per_line
     if context['alt_view'] and 'per_line' in context['alt_view']:
         context['per_line'] = context['alt_view']['per_line']
-    context['col_size'] = int(math.ceil(12 / context['per_line']))
+    context['col_size'] = _get_col_size(context['per_line'])
     context['ajax_item_popover'] = collection.list_view.ajax_item_popover
     context['item_view_enabled'] = collection.item_view.enabled
     context['ajax_item_view_enabled'] = context['item_view_enabled'] and collection.item_view.ajax and not context['ajax_item_popover']
@@ -307,7 +314,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
         context['top_buttons'] = collection.list_view.top_buttons(request, context)
         context['top_buttons_total'] = len([True for b in context['top_buttons'].values() if b['show'] and b['has_permissions']])
         if context['top_buttons_total']:
-            context['top_buttons_col_size'] = int(math.ceil(12 / context['top_buttons_total']))
+            context['top_buttons_col_size'] = _get_col_size(context['top_buttons_total'])
 
     context['show_item_buttons'] = collection.list_view.show_item_buttons
     for i, item in enumerate(queryset):
