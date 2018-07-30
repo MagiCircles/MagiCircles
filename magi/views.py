@@ -109,28 +109,40 @@ def signup(request):
     if request.method == "POST":
         form = CreateUserForm(request.POST, request=request)
         if form.is_valid():
-            new_user = models.User.objects.create_user(**form.cleaned_data)
+            new_user = models.User.objects.create_user(**{
+                k: v for k, v in form.cleaned_data.items()
+                if k in form.Meta.fields
+            })
             user = authenticate(username=form.cleaned_data['username'], password=form.cleaned_data['password'])
-            preferences = models.UserPreferences.objects.create(
+            preferences = models.UserPreferences(
                 user=user,
                 i_language=request.LANGUAGE_CODE,
-                view_activities_language_only=(
+                view_activities_language_only= (
                     ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT
                     if ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT
                     else (get_language() in ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES)),
             )
+            for field_name in form.preferences_fields:
+                if field_name in form.fields and field_name in form.cleaned_data:
+                    setattr(preferences, field_name, form.cleaned_data[field_name])
+            if preferences.age > 18:
+                if 'hot' in models.UserPreferences.DEFAULT_ACTIVITIES_TABS:
+                    preferences.i_default_activities_tab = models.UserPreferences.get_i(
+                        'default_activities_tab', 'hot')
+            preferences.save()
             login_action(request, user)
             if context.get('launch_date', None):
                 return redirect('/prelaunch/')
-            url = '/accounts/add/{}{}'.format(
-                ('?next={}'.format(urlquote(request.GET['next'])) if 'next' in request.GET else ''),
-                ('&next_title={}'.format(request.GET['next_title']) if 'next' in request.GET and 'next_title' in request.GET else ''))
+            url = u'/accounts/add/{}{}'.format(
+                (u'?next={}'.format(urlquote(request.GET['next'])) if 'next' in request.GET else ''),
+                (u'&next_title={}'.format(request.GET['next_title']) if 'next' in request.GET and 'next_title' in request.GET else ''))
             return redirect(url)
     else:
         form = CreateUserForm(request=request)
     context['form'] = form
     context['next'] = request.GET.get('next', None)
     context['next_title'] = request.GET.get('next_title', None)
+    context['js_files'] = ['signup']
     return render(request, 'pages/signup.html', context)
 
 ############################################################

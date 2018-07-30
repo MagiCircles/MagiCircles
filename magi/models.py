@@ -123,6 +123,7 @@ class UserPreferences(BaseMagiModel):
 
     # Activities preferences
 
+    DEFAULT_ACTIVITIES_TABS = HOME_ACTIVITY_TABS
     DEFAULT_ACTIVITIES_TAB_CHOICES = [(_k, _v['title']) for _k, _v in HOME_ACTIVITY_TABS.items()]
     DEFAULT_ACTIVITIES_TAB_SOFT_CHOICES = True
     i_default_activities_tab = models.PositiveIntegerField(_('Default tab'), default=0)
@@ -308,6 +309,7 @@ class UserPreferences(BaseMagiModel):
             birthdate = parse_date(birthdate)
         today = datetime.date.today()
         return today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
+
     @property
     def age(self):
         return type(self).get_age(self.birthdate)

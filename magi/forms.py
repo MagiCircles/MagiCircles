@@ -787,7 +787,18 @@ class _UserCheckEmailUsernameForm(MagiForm):
         return instance
 
 class CreateUserForm(_UserCheckEmailUsernameForm):
+    preferences_fields = ('birthdate', 'show_birthdate_year')
     password = forms.CharField(widget=forms.PasswordInput(), min_length=6, label=t['Password'])
+
+    def __init__(self, *args, **kwargs):
+        instance = kwargs.pop('instance', None)
+        preferences_initial = (
+            model_to_dict(instance.preferences, self.preferences_fields)
+            if instance is not None else {}
+        )
+        super(CreateUserForm, self).__init__(initial=preferences_initial, instance=instance, *args, **kwargs)
+        self.fields.update(fields_for_model(models.UserPreferences, self.preferences_fields))
+        self.fields['birthdate'], value = date_input(self.fields['birthdate'])
 
     class Meta(_UserCheckEmailUsernameForm.Meta):
         model = models.User
