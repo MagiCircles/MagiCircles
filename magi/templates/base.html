@@ -6,7 +6,7 @@
 <html lang="{{ LANGUAGE_CODE }}" class="html-current-{% if current %}{{ current }}{% else %}error{% endif %}{% if shortcut_url != None %} html-shortcut-{{ shortcut_url }}{% endif %}">
   <head>
     <meta charset="UTF-8">
-    <title>{% block title %}{% if page_title %}{{ page_title }}{% else %}{{ game_name }}{% endif %}{% endblock %} | {{ site_name }}{% if page_title %} - {{ game_name }}{% endif %}</title>
+    <title>{% block title %}{% if page_title %}{{ page_title }}{% else %}{{ game_name }}{% endif %}{% endblock %} | {{ t_site_name }}{% if page_title %} - {{ game_name }}{% endif %}</title>
 
     <link rel="shortcut icon" type="image/x-icon" href="{{ static_url }}favicon.ico" />
     <link rel="stylesheet" href="{{ static_url }}bower/bootstrap/dist/css/bootstrap.min.css">
@@ -21,8 +21,8 @@
     <meta property="og:image" content="{% block shareimage %}{% if share_image %}{{ share_image }}{% else %}{{ full_site_image }}{% endif %}{% endblock %}"/>
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <meta name="description" content="{% trans site_description %}">
-    <meta name="keywords" content="{{ game_name }}, {{ site_name }}, Android game, iPhone game, rhythm game, cards, card, tracker, share collection{% for hashtag in hashtags %},{{ hashtag }}{% endfor %}">
-    <meta name="twitter:card" content="{{ site_name }} - {% trans site_description %}">
+    <meta name="keywords" content="{{ game_name }}, {{ t_site_name }}, Android game, iPhone game, rhythm game, cards, card, tracker, share collection{% for hashtag in hashtags %},{{ hashtag }}{% endfor %}">
+    <meta name="twitter:card" content="{{ t_site_name }} - {% trans site_description %}">
     <meta name="twitter:image" content="{% block shareimagetwitter %}{% if share_image %}{{ share_image }}{% else %}{{ full_site_image }}{% endif %}{% endblock %}">
     <meta name="twitter:creator" content="@db0company">
     <!--[if lt IE 9]>
@@ -42,7 +42,7 @@
             <span class="icon-bar"></span>
           </button>
           <a class="navbar-brand" href="/">
-            {% if site_nav_logo %}<img src="{{ static_url }}img/{{ site_nav_logo }}?{{ static_files_version }}" class="logo hidden-xs hidden-sm"><span class="visible-xs visible-sm site-name">{{ site_name }}</span>{% else %}{{ site_name }}{% endif %}
+            {% if site_nav_logo %}<img src="{{ static_url }}img/{{ site_nav_logo }}?{{ static_files_version }}" class="logo hidden-xs hidden-sm"><span class="visible-xs visible-sm site-name">{{ t_site_name }}</span>{% else %}{{ t_site_name }}{% endif %}
           </a>
         </div>
         {% if current %}

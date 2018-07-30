@@ -212,6 +212,7 @@ def globalContext(request):
     context = RAW_CONTEXT.copy()
     context['current'] = resolve(request.path_info).url_name
     context['current_url'] = request.get_full_path() + ('?' if request.get_full_path()[-1] == '/' else '&')
+    context['t_site_name'] = context['site_name_per_language'].get(request.LANGUAGE_CODE, context['site_name'])
     context['hidenavbar'] = 'hidenavbar' in request.GET
     context['request'] = request
     context['javascript_translated_terms_json'] = simplejson.dumps({ term: unicode(_(term)) for term in context['javascript_translated_terms']})

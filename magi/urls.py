@@ -14,6 +14,7 @@ from magi.settings import (
     ENABLED_PAGES,
     ENABLED_NAVBAR_LISTS,
     SITE_NAME,
+    SITE_NAME_PER_LANGUAGE,
     EMAIL_IMAGE,
     GAME_NAME,
     SITE_DESCRIPTION,
@@ -507,6 +508,7 @@ RAW_CONTEXT['magicollections'] = collections
 RAW_CONTEXT['collectible_collections'] = collectible_collections
 RAW_CONTEXT['account_model'] = ACCOUNT_MODEL
 RAW_CONTEXT['site_name'] = SITE_NAME
+RAW_CONTEXT['site_name_per_language'] = SITE_NAME_PER_LANGUAGE
 RAW_CONTEXT['site_url'] = SITE_URL
 RAW_CONTEXT['github_repository'] = GITHUB_REPOSITORY
 RAW_CONTEXT['site_description'] = SITE_DESCRIPTION

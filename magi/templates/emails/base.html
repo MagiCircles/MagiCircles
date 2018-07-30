@@ -7,7 +7,7 @@
     <!-- NAME: 1 COLUMN -->
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block subject %}{{ site_name }}{% endblock %}</title>
+    <title>{% block subject %}{{ t_site_name }}{% endblock %}</title>
 
     <style type="text/css">
       body,#bodyTable,#bodyCell{
@@ -414,7 +414,7 @@
 
 				      <td valign="top" class="mcnTextContent" style="padding-top: 9px;padding-left: 18px;padding-bottom: 9px;padding-right: 0;mso-table-lspace: 0pt;mso-table-rspace: 0pt;-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%;color: #606060;font-family: Helvetica;font-size: 11px;line-height: 125%;text-align: left;">
 
-					{% block headersubject %}{{ site_name }}{% endblock %}</title>
+					{% block headersubject %}{{ t_site_name }}{% endblock %}</title>
 				      </td>
 				    </tr>
 				</tbody></table>
@@ -510,7 +510,7 @@
 				    <tr>
 				      <td align="center" valign="middle" class="mcnButtonContent" style="font-family: Arial;font-size: 16px;padding: 16px;mso-table-lspace: 0pt;mso-table-rspace: 0pt;-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%;">
 					{% block actionbutton %}
-					<a class="mcnButton " title="{% block actionbuttonalt %}{{ site_name }}{% endblock %}" href="{% block actionlink %}{{ site_url }}{% endblock %}" target="_blank" style="font-weight: bold;letter-spacing: normal;line-height: 100%;text-align: center;text-decoration: none;color: #FFFFFF;word-wrap: break-word;-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%;">{% block actionbuttontitle %}{{ site_name }}{% endblock %}</a>
+					<a class="mcnButton " title="{% block actionbuttonalt %}{{ t_site_name }}{% endblock %}" href="{% block actionlink %}{{ site_url }}{% endblock %}" target="_blank" style="font-weight: bold;letter-spacing: normal;line-height: 100%;text-align: center;text-decoration: none;color: #FFFFFF;word-wrap: break-word;-ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100%;">{% block actionbuttontitle %}{{ t_site_name }}{% endblock %}</a>
 					{% endblock %}
 				      </td>
 				    </tr>

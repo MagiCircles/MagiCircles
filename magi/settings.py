@@ -14,7 +14,7 @@ from magi.default_settings import (
     DEFAULT_LANGUAGES_CANT_SPEAK_ENGLISH,
 )
 from magi.utils import globalContext, toHumanReadable
-from django.utils.translation import ugettext_lazy as _, string_concat
+from django.utils.translation import ugettext_lazy as _, string_concat, get_language
 
 settings_module = __import__(django_settings.SITE + '.settings', globals(), locals(), ['*'])
 
@@ -106,7 +106,7 @@ else:
 if hasattr(settings_module, 'SITE_LONG_DESCRIPTION'):
     SITE_LONG_DESCRIPTION = getattr(settings_module, 'SITE_LONG_DESCRIPTION')
 else:
-    SITE_LONG_DESCRIPTION = lambda: _(u'{site} provides an extended database of information about the game {game} and allows you to keep track of your progress in the game. You can create and customize your very own profile to share your progress and your collection to all your friends. You can also meet other players like you with the social network: read what the others are doing and share your adventures with the community. Comment, like and follow the other players to grow your network. Find players near you with the global map of all the players. And much more!').format(site=SITE_NAME, game=GAME_NAME)
+    SITE_LONG_DESCRIPTION = lambda: _(u'{site} provides an extended database of information about the game {game} and allows you to keep track of your progress in the game. You can create and customize your very own profile to share your progress and your collection to all your friends. You can also meet other players like you with the social network: read what the others are doing and share your adventures with the community. Comment, like and follow the other players to grow your network. Find players near you with the global map of all the players. And much more!').format(site=SITE_NAME_PER_LANGUAGE.get(get_language(), SITE_NAME), game=GAME_NAME)
 
 if hasattr(settings_module, 'ENABLED_NAVBAR_LISTS'):
     ENABLED_NAVBAR_LISTS = getattr(settings_module, 'ENABLED_NAVBAR_LISTS')
@@ -225,6 +225,11 @@ if hasattr(settings_module, 'SITE_LOGO_PER_LANGUAGE'):
     SITE_LOGO_PER_LANGUAGE = getattr(settings_module, 'SITE_LOGO_PER_LANGUAGE')
 else:
     SITE_LOGO_PER_LANGUAGE = None
+
+if hasattr(settings_module, 'SITE_NAME_PER_LANGUAGE'):
+    SITE_NAME_PER_LANGUAGE = getattr(settings_module, 'SITE_NAME_PER_LANGUAGE')
+else:
+    SITE_NAME_PER_LANGUAGE = {}
 
 if hasattr(settings_module, 'FAVORITE_CHARACTERS'):
     FAVORITE_CHARACTERS = getattr(settings_module, 'FAVORITE_CHARACTERS')

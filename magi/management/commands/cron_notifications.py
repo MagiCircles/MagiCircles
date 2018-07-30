@@ -2,7 +2,7 @@
 from django.core.management.base import BaseCommand, CommandError
 from django.utils.translation import ugettext_lazy as _, string_concat, activate as translation_activate
 from magi import models
-from magi.settings import SITE_NAME
+from magi.settings import SITE_NAME, SITE_NAME_PER_LANGUAGE
 from magi.utils import send_email, emailContext
 from magi.urls import * # unused, just to make sure raw_context is updated
 from pprint import pprint
@@ -21,13 +21,14 @@ class Command(BaseCommand):
                 if notification_sent in sent:
                     print u' Duplicate not sent to {}: {}'.format(notification.owner.username, notification.english_message)
                 else:
-                    translation_activate(preferences.language if preferences.i_language else 'en')
+                    language = preferences.language if preferences.i_language else 'en'
+                    translation_activate(language)
                     context = emailContext()
                     context['notification'] = notification
                     context['user'] = notification.owner
                     try:
                         send_email(
-                            subject=u'{} {}: {}'.format(SITE_NAME, unicode(_('Notification')), notification.localized_message),
+                            subject=u'{} {}: {}'.format(SITE_NAME_PER_LANGUAGE.get(language, SITE_NAME), unicode(_('Notification')), notification.localized_message),
                             template_name='notification',
                             to=[notification.owner.email],
                             context=context,

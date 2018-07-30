@@ -4,7 +4,7 @@
 {% if shortcut_url != None %}
 <div class="default-index {% if user.is_authenticated %}index-authenticated{% else %}index-not-authenticated{% endif %}">
   <header>
-    <h1 class="home-site-logo"><img src="{{ site_logo }}" class="img-responsive" alt="{{ site_name }}"></h1>
+    <h1 class="home-site-logo"><img src="{{ site_logo }}" class="img-responsive" alt="{{ t_site_name }}"></h1>
     <h2 class="home-site-description">{{ site_description|orcallable }}</h2>
     {% if user.is_authenticated and 'donate' in all_enabled %}
     <p class="fontx1-5 home-site-donate-message">
@@ -25,7 +25,7 @@
       {% with site_name=game_name %}{% blocktrans %}About {{ site_name }}{% endblocktrans %}{% endwith %}
     </a>
     <a href="/about/" data-ajax-url="/ajax/about/" class="btn btn-link btn-lg home-about-site-button">
-      {% blocktrans %}About {{ site_name }}{% endblocktrans %}
+      {% with site_name=t_site_name %}{% blocktrans %}About {{ site_name }}{% endblocktrans %}{% endwith %}
     </a>
     <br><br><br>
     <a href="/signup/" class="btn btn-xl btn-secondary home-call-to-action">

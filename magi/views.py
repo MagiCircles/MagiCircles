@@ -34,9 +34,59 @@ from magi.forms import (
 )
 from magi import models
 from magi.raw import donators_adjectives
-from magi.utils import getGlobalContext, ajaxContext, redirectToProfile, tourldash, toHumanReadable, redirectWhenNotAuthenticated, dumpModel, send_email, emailContext, getMagiCollection, getMagiCollections, cuteFormFieldsForContext, CuteFormType, FAVORITE_CHARACTERS_IMAGES, groupsForAllPermissions, hasPermission, setSubField, staticImageURL, getAccountIdsFromSession
+from magi.utils import (
+    getGlobalContext,
+    ajaxContext,
+    redirectToProfile,
+    tourldash,
+    toHumanReadable,
+    redirectWhenNotAuthenticated,
+    dumpModel,
+    send_email,
+    emailContext,
+    getMagiCollection,
+    getMagiCollections,
+    cuteFormFieldsForContext,
+    CuteFormType,
+    FAVORITE_CHARACTERS_IMAGES,
+    groupsForAllPermissions,
+    hasPermission,
+    setSubField,
+    staticImageURL,
+    getAccountIdsFromSession,
+)
 from magi.notifications import pushNotification
-from magi.settings import SITE_NAME, GAME_NAME, ENABLED_PAGES, FAVORITE_CHARACTERS, TWITTER_HANDLE, BUG_TRACKER_URL, GITHUB_REPOSITORY, CONTRIBUTE_URL, CONTACT_EMAIL, CONTACT_REDDIT, CONTACT_FACEBOOK, CONTACT_DISCORD, FEEDBACK_FORM, ABOUT_PHOTO, WIKI, HELP_WIKI, LATEST_NEWS, SITE_LONG_DESCRIPTION, CALL_TO_ACTION, TOTAL_DONATORS, GAME_DESCRIPTION, GAME_URL, ON_USER_EDITED, ON_PREFERENCES_EDITED, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES, SITE_LOGO_PER_LANGUAGE, GLOBAL_OUTSIDE_PERMISSIONS
+from magi.settings import (
+    SITE_NAME,
+    SITE_NAME_PER_LANGUAGE,
+    GAME_NAME,
+    ENABLED_PAGES,
+    FAVORITE_CHARACTERS,
+    TWITTER_HANDLE,
+    BUG_TRACKER_URL,
+    GITHUB_REPOSITORY,
+    CONTRIBUTE_URL,
+    CONTACT_EMAIL,
+    CONTACT_REDDIT,
+    CONTACT_FACEBOOK,
+    CONTACT_DISCORD,
+    FEEDBACK_FORM,
+    ABOUT_PHOTO,
+    WIKI,
+    HELP_WIKI,
+    LATEST_NEWS,
+    SITE_LONG_DESCRIPTION,
+    CALL_TO_ACTION,
+    TOTAL_DONATORS,
+    GAME_DESCRIPTION,
+    GAME_URL,
+    ON_USER_EDITED,
+    ON_PREFERENCES_EDITED,
+    ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT,
+    ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES,
+    SITE_LOGO_PER_LANGUAGE,
+    GLOBAL_OUTSIDE_PERMISSIONS,
+)
 from magi.views_collections import item_view, list_view
 
 ############################################################
@@ -148,7 +198,9 @@ def aboutDefaultContext(request):
         ('GitHub', 'github', u'https://github.com/{}/{}/'.format(GITHUB_REPOSITORY[0], GITHUB_REPOSITORY[1]) if GITHUB_REPOSITORY else None),
         ('Bug tracker', 'flaticon-album', BUG_TRACKER_URL if BUG_TRACKER_URL and not FEEDBACK_FORM else None),
     ]
-    context['franchise'] = _('{site} is not a representative and is not associated with {game}. Its logos and images are Trademarks of {company}.').format(site=_(SITE_NAME), game=_(GAME_NAME), company=_('the company that owns {game}').format(game=GAME_NAME))
+    context['franchise'] = _('{site} is not a representative and is not associated with {game}. Its logos and images are Trademarks of {company}.').format(
+        site=SITE_NAME_PER_LANGUAGE.get(get_language(), SITE_NAME),
+        game=GAME_NAME, company=_('the company that owns {game}').format(game=GAME_NAME))
     context['staff'] = list(models.User.objects.filter(is_staff=True).select_related('preferences', 'staff_details').prefetch_related(
         Prefetch('links', queryset=models.UserLink.objects.order_by('-i_relevance'), to_attr='all_links'),
     ).extra(select={
@@ -598,7 +650,10 @@ def moderatereport(request, report, action):
             context['sentence'] = _(u'This {thing} you reported has been reviewed by a moderator and {verb}. Thank you so much for your help!').format(thing=_(report.reported_thing_title), verb=_(u'edited'))
             context['user'] = report.owner
             context['show_donation'] = True
-            context['subject'] = u'{} {}'.format(SITE_NAME, unicode(_(u'Thank you for reporting this {thing}').format(thing=_(report.reported_thing_title))))
+            context['subject'] = u'{} {}'.format(
+                SITE_NAME_PER_LANGUAGE.get(get_language(), SITE_NAME),
+                unicode(_(u'Thank you for reporting this {thing}').format(thing=_(report.reported_thing_title))),
+            )
             send_email(context['subject'], template_name='report', to=[context['user'].email], context=context)
         # Notify owner
         if thing.owner:
@@ -606,7 +661,10 @@ def moderatereport(request, report, action):
             context['sentence'] = _(u'Your {thing} has been reported, and a moderator confirmed it should be {verb}.').format(thing=_(report.reported_thing_title), verb=_(u'edited'))
             context['user'] = thing.real_owner
             context['show_donation'] = False
-            context['subject'] = u'{} {}'.format(SITE_NAME, unicode(_(u'Your {thing} has been {verb}').format(thing=_(report.reported_thing_title), verb=_(u'edited'))))
+            context['subject'] = u'{} {}'.format(
+                SITE_NAME_PER_LANGUAGE.get(get_language(), SITE_NAME),
+                unicode(_(u'Your {thing} has been {verb}').format(thing=_(report.reported_thing_title), verb=_(u'edited'))),
+            )
             send_email(context['subject'], template_name='report', to=[context['user'].email], context=context)
         report.save()
         moderated_reports = [report.pk]
@@ -627,7 +685,10 @@ def moderatereport(request, report, action):
                 context['sentence'] = _(u'This {thing} you reported has been reviewed by a moderator and {verb}. Thank you so much for your help!').format(thing=_(report.reported_thing_title), verb=_(u'deleted'))
                 context['user'] = a_report.owner
                 context['show_donation'] = True
-                context['subject'] = u'{} {}'.format(SITE_NAME, unicode(_(u'Thank you for reporting this {thing}').format(thing=_(report.reported_thing_title))))
+                context['subject'] = u'{} {}'.format(
+                    SITE_NAME_PER_LANGUAGE.get(get_language(), SITE_NAME),
+                    unicode(_(u'Thank you for reporting this {thing}').format(thing=_(report.reported_thing_title))),
+                )
                 send_email(context['subject'], template_name='report', to=[context['user'].email], context=context)
         # Notify owner
         if thing.owner:
@@ -635,7 +696,10 @@ def moderatereport(request, report, action):
             context['sentence'] = _(u'Your {thing} has been reported, and a moderator confirmed it should be {verb}.').format(thing=_(report.reported_thing_title), verb=_(u'edited'))
             context['user'] = thing.real_owner
             context['show_donation'] = False
-            context['subject'] = u'{} {}'.format(SITE_NAME, unicode(_(u'Your {thing} has been {verb}').format(thing=_(report.reported_thing_title), verb=_(u'deleted'))))
+            context['subject'] = u'{} {}'.format(
+                SITE_NAME_PER_LANGUAGE.get(get_language(), SITE_NAME),
+                unicode(_(u'Your {thing} has been {verb}').format(thing=_(report.reported_thing_title), verb=_(u'deleted'))),
+            )
             send_email(context['subject'], template_name='report', to=[context['user'].email], context=context)
         moderated_reports = [a_report.pk for a_report in all_reports]
         all_reports.update(

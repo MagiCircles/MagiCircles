@@ -33,6 +33,6 @@
 {% block footersentence %}
 <div style="text-align: right">
   {% if show_donation %}{% include 'emails/donation_footer.html' %}{% endif %}
-  {% trans 'Moderated by:' %} <a href="{{ site_name }}user/{{ report.staff.id }}/{{ report.staff }}/">{{ report.staff }}</a>
+  {% trans 'Moderated by:' %} <a href="{{ report.staff.http_item_url }}">{{ report.staff }}</a>
 </div>
 {% endblock %}

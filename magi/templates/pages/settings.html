@@ -135,7 +135,7 @@
         </a> -
         {% endif %}
         {% trans 'Moderated by:' %}
-        <a href="{{ site_name }}user/{{ report.staff.id }}/{{ report.staff }}/">{{ report.staff }}</a>
+        <a href="{{ report.staff.item_url }}">{{ report.staff }}</a>
     </small></p>
   </div>
   {% endfor %}

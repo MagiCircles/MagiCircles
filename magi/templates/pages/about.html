@@ -12,7 +12,9 @@
 
   <div class="padding50">
 
-    <h1 class="text-main">{% trans 'About' %} {{ site_name }}</h1>
+    <h1 class="text-main">
+      {% with site_name=t_site_name %}{% blocktrans %}About {{ site_name }}{% endblocktrans %}{% endwith %}
+    </h1>
     <div class="row">
       <div class="col-md-8">
 	<p class="padding50">

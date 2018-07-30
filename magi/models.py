@@ -4,14 +4,31 @@ from collections import OrderedDict
 from django.db import models
 from django.contrib.auth.models import User
 from django.core import validators
-from django.utils.translation import ugettext_lazy as _, string_concat
+from django.utils.translation import ugettext_lazy as _, string_concat, get_language
 from django.utils import timezone
 from django.utils.formats import dateformat
 from django.utils.dateparse import parse_date
 from django.forms.models import model_to_dict
 from django.conf import settings as django_settings
 from magi.utils import AttrDict, randomString, getMagiCollection, uploadToRandom, uploadItem, uploadTiny, linkToImageURL, hasGroup, hasPermission, hasOneOfPermissions, hasPermissions, toHumanReadable, LANGUAGES_DICT, locationOnChange
-from magi.settings import ACCOUNT_MODEL, GAME_NAME, COLOR, SITE_STATIC_URL, DONATORS_STATUS_CHOICES, USER_COLORS, FAVORITE_CHARACTERS, FAVORITE_CHARACTER_TO_URL, SITE_URL, SITE_NAME, ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT, ACTIVITY_TAGS, GROUPS, HOME_ACTIVITY_TABS, MINIMUM_LIKES_POPULAR
+from magi.settings import (
+    ACCOUNT_MODEL,
+    GAME_NAME,
+    COLOR,
+    SITE_STATIC_URL,
+    DONATORS_STATUS_CHOICES,
+    USER_COLORS,
+    FAVORITE_CHARACTERS,
+    FAVORITE_CHARACTER_TO_URL,
+    SITE_URL,
+    SITE_NAME,
+    SITE_NAME_PER_LANGUAGE,
+    ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT,
+    ACTIVITY_TAGS,
+    GROUPS,
+    HOME_ACTIVITY_TABS,
+    MINIMUM_LIKES_POPULAR,
+)
 from magi.item_model import MagiModel, BaseMagiModel, get_image_url, i_choices, addMagiModelProperties, getInfoFromChoices
 from magi.abstract_models import CacheOwner
 
@@ -779,7 +796,7 @@ class Activity(MagiModel):
     def shareSentence(self):
         return _(u'Check out {username}\'s activity on {site}: {activity}').format(
             username=self.cached_owner.username,
-            site=SITE_NAME,
+            site=SITE_NAME_PER_LANGUAGE.get(get_language(), SITE_NAME),
             activity=self.summarize(40),
         )
 
@@ -1084,7 +1101,7 @@ class Badge(MagiModel):
         if self.donation_month_id:
             return _('{donation_platform} supporter of {site_name} who donated to help cover the server costs').format(
                 donation_platform=self.donation_source,
-                site_name=SITE_NAME,
+                site_name=SITE_NAME_PER_LANGUAGE.get(get_language(), SITE_NAME),
             )
         return self.description
 
