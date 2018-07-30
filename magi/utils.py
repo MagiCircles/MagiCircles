@@ -213,6 +213,10 @@ def globalContext(request):
     context['current'] = resolve(request.path_info).url_name
     context['current_url'] = request.get_full_path() + ('?' if request.get_full_path()[-1] == '/' else '&')
     context['t_site_name'] = context['site_name_per_language'].get(request.LANGUAGE_CODE, context['site_name'])
+    context['t_site_image'] = context['site_image_per_language'].get(request.LANGUAGE_CODE, context['site_image'])
+    context['t_full_site_image'] = context['full_site_image_per_language'].get(request.LANGUAGE_CODE, context['full_site_image'])
+    context['t_email_image'] = context['email_image_per_language'].get(request.LANGUAGE_CODE, context['email_image'])
+    context['t_full_email_image'] = context['full_email_image_per_language'].get(request.LANGUAGE_CODE, context['full_email_image'])
     context['hidenavbar'] = 'hidenavbar' in request.GET
     context['request'] = request
     context['javascript_translated_terms_json'] = simplejson.dumps({ term: unicode(_(term)) for term in context['javascript_translated_terms']})
@@ -242,6 +246,7 @@ def ajaxContext(request):
 
 def emailContext():
     context = RAW_CONTEXT.copy()
+    context['t_site_name'] = context['site_name_per_language'].get(request.LANGUAGE_CODE, context['site_name'])
     if context['site_url'].startswith('//'):
         context['site_url'] = 'http:' + context['site_url']
     return context

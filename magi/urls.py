@@ -16,6 +16,7 @@ from magi.settings import (
     SITE_NAME,
     SITE_NAME_PER_LANGUAGE,
     EMAIL_IMAGE,
+    EMAIL_IMAGE_PER_LANGUAGE,
     GAME_NAME,
     SITE_DESCRIPTION,
     SITE_STATIC_URL,
@@ -27,6 +28,7 @@ from magi.settings import (
     STATIC_UPLOADED_FILES_PREFIX,
     COLOR,
     SITE_IMAGE,
+    SITE_IMAGE_PER_LANGUAGE,
     TRANSLATION_HELP_URL,
     DISQUS_SHORTNAME,
     HASHTAGS,
@@ -528,9 +530,13 @@ RAW_CONTEXT['javascript_translated_terms'] = JAVASCRIPT_TRANSLATED_TERMS
 RAW_CONTEXT['javascript_commons'] = JAVASCRIPT_COMMONS
 RAW_CONTEXT['site_color'] = COLOR
 RAW_CONTEXT['site_image'] = staticImageURL(SITE_IMAGE)
+RAW_CONTEXT['site_image_per_language'] = { _l: staticImageURL(_url) for _l, _url in SITE_IMAGE_PER_LANGUAGE.items() }
 RAW_CONTEXT['full_site_image'] = u'http:{}'.format(RAW_CONTEXT['site_image']) if 'http' not in RAW_CONTEXT['site_image'] else RAW_CONTEXT['site_image']
-RAW_CONTEXT['email_image'] = staticImageURL(EMAIL_IMAGE)
+RAW_CONTEXT['full_site_image_per_language'] = { _l: (u'http:{}'.format(_url) if 'http' not in _url else _url) for _l, _url in RAW_CONTEXT['site_image_per_language'].items() }
+RAW_CONTEXT['email_image'] = staticImageURL(EMAIL_IMAGE if EMAIL_IMAGE else SITE_IMAGE)
+RAW_CONTEXT['email_image_per_language'] = { _l: staticImageURL(_url) for _l, _url in EMAIL_IMAGE_PER_LANGUAGE.items() }
 RAW_CONTEXT['full_email_image'] = u'http:{}'.format(RAW_CONTEXT['email_image']) if 'http' not in RAW_CONTEXT['email_image'] else RAW_CONTEXT['email_image']
+RAW_CONTEXT['full_email_image_per_language'] = { _l: (u'http:{}'.format(_url) if 'http' not in _url else _url) for _l, _url in RAW_CONTEXT['email_image_per_language'].items() }
 RAW_CONTEXT['translation_help_url'] = TRANSLATION_HELP_URL
 RAW_CONTEXT['hashtags'] = HASHTAGS
 RAW_CONTEXT['twitter_handle'] = TWITTER_HANDLE

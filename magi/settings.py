@@ -226,6 +226,16 @@ if hasattr(settings_module, 'SITE_LOGO_PER_LANGUAGE'):
 else:
     SITE_LOGO_PER_LANGUAGE = None
 
+if hasattr(settings_module, 'SITE_IMAGE_PER_LANGUAGE'):
+    SITE_IMAGE_PER_LANGUAGE = getattr(settings_module, 'SITE_IMAGE_PER_LANGUAGE')
+else:
+    SITE_IMAGE_PER_LANGUAGE = {}
+
+if hasattr(settings_module, 'EMAIL_IMAGE_PER_LANGUAGE'):
+    EMAIL_IMAGE_PER_LANGUAGE = getattr(settings_module, 'EMAIL_IMAGE_PER_LANGUAGE')
+else:
+    EMAIL_IMAGE_PER_LANGUAGE = {}
+
 if hasattr(settings_module, 'SITE_NAME_PER_LANGUAGE'):
     SITE_NAME_PER_LANGUAGE = getattr(settings_module, 'SITE_NAME_PER_LANGUAGE')
 else:

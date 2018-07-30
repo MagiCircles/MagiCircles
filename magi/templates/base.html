@@ -18,12 +18,12 @@
     {% endif %}
     {% block extracss %}{% endblock %}{% if extracss %}<style>{{ extracss|safe }}</style>{% endif %}
 
-    <meta property="og:image" content="{% block shareimage %}{% if share_image %}{{ share_image }}{% else %}{{ full_site_image }}{% endif %}{% endblock %}"/>
+    <meta property="og:image" content="{% block shareimage %}{% if share_image %}{{ share_image }}{% else %}{{ t_full_site_image }}{% endif %}{% endblock %}"/>
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <meta name="description" content="{% trans site_description %}">
     <meta name="keywords" content="{{ game_name }}, {{ t_site_name }}, Android game, iPhone game, rhythm game, cards, card, tracker, share collection{% for hashtag in hashtags %},{{ hashtag }}{% endfor %}">
     <meta name="twitter:card" content="{{ t_site_name }} - {% trans site_description %}">
-    <meta name="twitter:image" content="{% block shareimagetwitter %}{% if share_image %}{{ share_image }}{% else %}{{ full_site_image }}{% endif %}{% endblock %}">
+    <meta name="twitter:image" content="{% block shareimagetwitter %}{% if share_image %}{{ share_image }}{% else %}{{ t_full_site_image }}{% endif %}{% endblock %}">
     <meta name="twitter:creator" content="@db0company">
     <!--[if lt IE 9]>
         <script src="http://html5shim.googlecode.com/svn/trunk/html5.js">
