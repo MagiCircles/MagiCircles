@@ -74,7 +74,18 @@
 {% endblock %}
 
 {% block belowform %}
-{% if form_name == 'addLink' %}
+{% if form_name == 'preferences' %}
+{% if user.is_staff %}
+<div class="container_form text-center">
+  <br><br><br>
+  Looking for your staff profile details?
+  <br><br>
+  <div class="text-right">
+    <a href="/staffdetailss/" class="btn btn-main btn-lg">Edit staff details</a>
+  </div>
+</div>
+{% endif %}
+{% elif form_name == 'addLink' %}
 {% if 'donationLink' not in forms %}
 <h1 id="customLink" class="text-center padding50"><i class="flaticon-add"></i> {{ add_custom_link_sentence }}</h1>
 <br>
