@@ -8,9 +8,16 @@
     </div>
     <div class="col-xs-10">
       <div>
-    {% if activity.is_popular and user.is_authenticated %}
-    <div class="activity-info" data-toggle="tooltip" data-trigger="hover" title="{% trans 'Popular' %}">
+    {% if user.is_authenticated %}
+    <div class="activity-info activity-info-popular"
+         {% if not activity.is_popular %} style="display: none;"{% endif %}
+         data-toggle="tooltip" data-trigger="hover" title="{% trans 'Popular' %}">
       <i class="flaticon-fire text-main"></i>
+    </div>
+    <div class="activity-info activity-info-staff-picks"
+         {% if not activity.is_staff_picks %} style="display: none;"{% endif %}
+         data-toggle="tooltip" data-trigger="hover" title="{% trans 'Staff picks' %}">
+      <i class="flaticon-heart text-main"></i>
     </div>
 	{% endif %}
     <div class="activity-info-archived activity-info"

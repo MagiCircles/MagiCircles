@@ -729,6 +729,10 @@ class Activity(MagiModel):
     def is_popular(self):
         return self.cached_total_likes >= MINIMUM_LIKES_POPULAR
 
+    @property
+    def is_staff_picks(self):
+        return 'staff' in self.tags
+
     tinypng_settings = {
         'image': {
             'resize': 'fit',

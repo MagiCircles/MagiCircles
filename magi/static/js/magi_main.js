@@ -992,6 +992,13 @@ function updateActivities() {
             button.closest('.activity').find('.activity-info-ghost-archived').hide();
         }
     };
+    let _hideShowIcons = function(button, data, icon) {
+        if (data['result'][icon]) {
+            button.closest('.activity').find('.activity-info-' + icon).show();
+        } else {
+            button.closest('.activity').find('.activity-info-' + icon).hide();
+        }
+    };
     let _onArchive = function(button, data) {
         _onSuccessHandler(button, gettext('Archived') + '!');
         _hideShowArchivedIcons(button, data);
@@ -1002,6 +1009,7 @@ function updateActivities() {
     };
     let _onMarkStaffPick = function(button, data, action) {
         _onSuccessHandler(button, gettext(action));
+        _hideShowIcons(button, data, 'staff-picks');
         let tags = button.closest('.activity').find('.tags');
         tags.empty();
         $.each(data['result']['tags'], function (key, value) {

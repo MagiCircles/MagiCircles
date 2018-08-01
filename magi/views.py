@@ -918,6 +918,7 @@ def markactivitystaffpick(request, pk):
     activity.save()
     return JsonResponse({
         'result': {
+            'staff-picks': True,
             'tags': {
                 k: unicode(v)
                 for k, v in activity.t_tags.items()
@@ -936,6 +937,7 @@ def removeactivitystaffpick(request, pk):
     activity.save()
     return JsonResponse({
         'result': {
+            'staff-picks': False,
             'tags': {
                 k: unicode(v)
                 for k, v in activity.t_tags.items()
