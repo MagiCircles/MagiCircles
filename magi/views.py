@@ -129,6 +129,8 @@ def signup(request):
                 if 'hot' in models.UserPreferences.DEFAULT_ACTIVITIES_TABS:
                     preferences.i_default_activities_tab = models.UserPreferences.get_i(
                         'default_activities_tab', 'hot')
+            else:
+                preferences.d_hidden_tags = '{"swearing": true, "nsfw": true}'
             preferences.save()
             login_action(request, user)
             if context.get('launch_date', None):
