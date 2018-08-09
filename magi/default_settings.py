@@ -286,7 +286,7 @@ DEFAULT_ENABLED_NAVBAR_LISTS = OrderedDict([
     ('you', {
         'title': lambda context: context['request'].user.username if context['request'].user.is_authenticated() else _('You'),
         'icon': 'profile',
-        'order': ['user', 'settings', 'logout', 'login', 'signup'],
+        'order': ['user', 'privatemessage_list', 'settings', 'logout', 'login', 'signup'],
         'url': '/me/',
     }),
     ('staff', {

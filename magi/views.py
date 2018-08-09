@@ -30,6 +30,7 @@ from magi.forms import (
     EmailsPreferencesForm,
     LanguagePreferencesForm,
     ActivitiesPreferencesForm,
+    SecurityPreferencesForm,
     Confirm,
 )
 from magi import models
@@ -337,6 +338,7 @@ def settings(request):
         ('changePassword', ChangePasswordForm(request=request)),
         ('emails', EmailsPreferencesForm(request=request)),
         ('activities', ActivitiesPreferencesForm(instance=context['preferences'], request=request)),
+        ('security', SecurityPreferencesForm(instance=context['preferences'], request=request)),
     ])
     if request.method == 'POST':
         for (form_name, form) in context['forms'].items():
@@ -379,6 +381,14 @@ def settings(request):
                         _settingsOnSuccess(form)
                 elif form_name == 'activities':
                     form = ActivitiesPreferencesForm(request.POST, instance=context['preferences'], request=request)
+                    if form.is_valid():
+                        form.save()
+                        models.onPreferencesEdited(request.user)
+                        if ON_PREFERENCES_EDITED:
+                            ON_PREFERENCES_EDITED(request.user)
+                        _settingsOnSuccess(form)
+                elif form_name == 'security':
+                    form = SecurityPreferencesForm(request.POST, instance=context['preferences'], request=request)
                     if form.is_valid():
                         form.save()
                         models.onPreferencesEdited(request.user)
@@ -473,6 +483,11 @@ def settings(request):
             'image_folder': 'language',
         },
     }, context, context['forms']['language'])
+    cuteFormFieldsForContext({
+        'i_private_message_settings': {
+            'type': CuteFormType.HTML,
+        },
+    }, context, context['forms']['security'])
     return render(request, 'pages/settings.html', context)
 
 ############################################################

@@ -220,6 +220,13 @@ class UserPreferences(BaseMagiModel):
     last_bump_counter = models.PositiveIntegerField(default=0)
     last_bump_date = models.DateTimeField(null=True)
 
+    PRIVATE_MESSAGE_SETTINGS_CHOICES = (
+        ('anyone', _('Anyone')),
+        ('follow', _('Only people I follow')),
+        ('nobody', _('Nobody')),
+    )
+    i_private_message_settings = models.PositiveIntegerField(_('Who is allowed to send you private messages?'), default=0, choices=i_choices(PRIVATE_MESSAGE_SETTINGS_CHOICES))
+
     d_extra = models.TextField(blank=True, null=True)
 
     @property
@@ -1145,6 +1152,21 @@ class Prize(MagiModel):
 
     def __unicode__(self):
         return self.name
+
+############################################################
+# Private message
+
+class PrivateMessage(MagiModel):
+    collection_name = 'privatemessage'
+
+    owner = models.ForeignKey(User, related_name='sent_messages', on_delete=models.SET_NULL, null=True)
+    to_user = models.ForeignKey(User, related_name='received_messages', on_delete=models.SET_NULL, null=True)
+    creation = models.DateTimeField(auto_now_add=True)
+    message = models.TextField(_('Message'))
+    seen = models.BooleanField(default=True)
+
+    def __unicode__(self):
+        return self.message
 
 ############################################################
 # Callbacks to call on UserPreferences or User edited

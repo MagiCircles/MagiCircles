@@ -1189,6 +1189,7 @@ class MagiCollection(object):
         max_per_user = None
         max_per_user_per_day = None
         max_per_user_per_hour = None
+        max_per_user_per_minute = None
 
         def before_save(self, request, instance, type=None):
             return instance
@@ -2644,3 +2645,61 @@ class PrizeCollection(MagiCollection):
         owner_only_or_permissions_required = ['manage_prizes']
         multipart = True
         allow_delete = True
+
+############################################################
+# Private Message Collection
+
+class PrivateMessageCollection(MagiCollection):
+    title = _('Private message')
+    plural_title = _('Private messages')
+    queryset = models.PrivateMessage.objects.all()
+    icon = 'contact'
+    form_class = forms.PrivateMessageForm
+    navbar_link_list = 'you'
+    navbar_link_title = _('Inbox')
+
+    class ListView(MagiCollection.ListView):
+        filter_form = forms.PrivateMessageFilterForm
+        per_line = 1
+        authentication_required = True
+
+        def get_queryset(self, queryset, parameters, request):
+            queryset = super(PrivateMessageCollection.ListView, self).get_queryset(queryset, parameters, request)
+            # Reading one user's messages
+            if 'to_user' in request.GET:
+                pass # todo
+            # Inbox
+            else:
+                queryset = queryset.filter(
+                    Q(to_user=request.user)
+                    | Q(owner=request.user)
+                ).extra(select={
+                    'thread_with': 'CASE WHEN to_user_id = {id} THEN owner_id ELSE to_user_id END'.format(
+                        id=request.user.id,
+                    ),
+                }).values('thread_with').distinct()
+                print queryset
+            return queryset
+
+
+    class ItemView(MagiCollection.ItemView):
+        enabled = False
+
+    class AddView(MagiCollection.AddView):
+        alert_duplicate = False
+        max_per_user_per_day = 100
+        max_per_user_per_hour = 30
+        #max_per_user_per_minute = 2
+
+        def check_permissions(self, request, context):
+            super(PrivateMessageCollection.AddView, self).check_permissions(request, context)
+            if 'to_user' not in request.GET:
+                raise PermissionDenied()
+
+        def redirect_after_add(self, request, instance, ajax=False):
+            if ajax:
+                return '/ajax/successadd/'
+            return u'{}?to_user={}'.format(self.collection.get_list_url(), instance.to_user.id)
+
+    class EditView(MagiCollection.EditView):
+        enabled = False
