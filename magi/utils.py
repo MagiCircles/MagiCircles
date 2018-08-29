@@ -246,7 +246,7 @@ def ajaxContext(request):
 
 def emailContext():
     context = RAW_CONTEXT.copy()
-    context['t_site_name'] = context['site_name_per_language'].get(request.LANGUAGE_CODE, context['site_name'])
+    context['t_site_name'] = context['site_name_per_language'].get(get_language(), context['site_name'])
     if context['site_url'].startswith('//'):
         context['site_url'] = 'http:' + context['site_url']
     return context
