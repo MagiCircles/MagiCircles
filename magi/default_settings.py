@@ -470,6 +470,31 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'icon': 'translate',
         'permissions_required': ['translate_items'],
     }),
+    ('translations_duplicator', [
+        {
+            'title': 'Translations duplicator',
+            'custom': False,
+            'navbar_link_list': 'staff',
+            'icon': 'translate',
+            'permissions_required': ['translate_items'],
+            'url_variables': [
+                ('collection_name', '[a-z]+'),
+                ('field_name', '[a-z_]+'),
+                ('language', '[a-z]+'),
+            ],
+        },
+        {
+            'title': 'Translations duplicator',
+            'custom': False,
+            'navbar_link_list': 'staff',
+            'icon': 'translate',
+            'permissions_required': ['translate_items'],
+            'url_variables': [
+                ('collection_name', '[a-z]+'),
+                ('field_name', '[a-z_]+'),
+            ],
+        },
+    ]),
     ('collections', {
         'title': 'Collections',
         'custom': False,

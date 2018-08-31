@@ -872,3 +872,85 @@ def locationOnChange(user_preferences):
         print u'{} {} Error, {}'.format(user_preferences.user, user_preferences.location, sys.exc_info()[0])
         # Will not mark as not changed, so it will be retried at next iteration
     return True
+
+############################################################
+# Translations
+
+def duplicate_translation(model, field, term, only_for_language=None, print_log=True, html_log=False):
+    logs = []
+    items = list(model.objects.filter(**{ field: term }))
+    known_translations = []
+    for item in items:
+        for language, translation in getattr(item, u'{}s'.format(field[2:] if field.startswith('m_') else field)).items():
+            if only_for_language and language != only_for_language:
+                continue
+            if language not in known_translations:
+                for s_item in items:
+                    existing = getattr(s_item, u'{}s'.format(field[2:] if field.startswith('m_') else field))
+                    if language not in existing:
+                        s_item.add_d(u'{}s'.format(field), language, translation[1] if field.startswith('m_') else translation)
+                        log = u'Add {language} translations to {open_a}#{id} {item}{close_a}'.format(
+                            language=language,
+                            open_a=u'<a href="{}" target="_blank">'.format(s_item.http_item_url) if html_log else '',
+                            id=s_item.id,
+                            item=s_item,
+                            close_a='</a>' if html_log else '',
+                        )
+                        if print_log:
+                            print log
+                        logs.append(log)
+                    s_item.save()
+                known_translations.append(language)
+    return logs
+
+def translations_count_has(model, field, term, language):
+    return model.objects.filter(**{
+        field: term,
+        u'd_{}s__icontains'.format(field): '"{}"'.format(language),
+    }).count()
+
+def translations_count_to_apply_to(model, field, term, language):
+    return model.objects.filter(**{
+        field: term,
+    }).exclude(**{
+        u'd_{}s__icontains'.format(field): '"{}"'.format(language),
+    }).count()
+
+def find_all_translations(model, field, only_for_language=None, with_count_has=True, with_count_to_apply_to=True):
+    """
+    Returns a dict of:
+    base term in English
+    -> (Dict of:
+       Language
+       -> (List of translations,
+           Count other item with term present in that language,
+           Count how many items could get their translation duplicated automatically),
+       total can be duplicated to,
+       display term (for markdown))
+    """
+    translations = {}
+    for item in model.objects.filter(**{ u'{}__isnull'.format(field): False}).exclude(**{ field: '' }):
+        term = getattr(item, field)
+        if term not in translations:
+            translations[term] = {}
+        for language, translation in getattr(item, u'{}s'.format(field[2:] if field.startswith('m_') else field)).items():
+            if only_for_language and language != only_for_language:
+                continue
+            if language not in translations[term]:
+                translations[term][language] = (
+                    [],
+                    translations_count_has(model, field, term, language) if with_count_has else 0,
+                    translations_count_to_apply_to(model, field, term, language) if with_count_to_apply_to else 0,
+                )
+            if translation not in translations[term][language][0]:
+                translations[term][language][0].append(
+                    mark_safe(u'<p class="to-markdown">{}</p>'.format(translation[1]))
+                    if field.startswith('m_') else translation)
+    for term in translations.keys():
+        translations[term] = (
+            translations[term],
+            reduce(lambda a, b: a + b, [_t[2] for _t in translations[term].values()], 0),
+            mark_safe(u'<p class="to-markdown">{}</p>'.format(term)) if field.startswith('m_') else term,
+        )
+
+    return translations
