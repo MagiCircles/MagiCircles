@@ -1163,7 +1163,7 @@ class PrivateMessage(MagiModel):
     to_user = models.ForeignKey(User, related_name='received_messages', on_delete=models.SET_NULL, null=True)
     creation = models.DateTimeField(auto_now_add=True)
     message = models.TextField(_('Message'))
-    seen = models.BooleanField(default=True)
+    seen = models.BooleanField(default=False)
 
     def __unicode__(self):
         return self.message

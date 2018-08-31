@@ -1553,16 +1553,67 @@ class UserCollection(MagiCollection):
         'Spam': 'We detected spam activities from your user profile. Your profile, accounts, activities and everything else you owned on our website has been permanently deleted, and we kindly ask you not to re-iterate your actions.',
     }
 
+    def _buttons_per_item(self, buttons, request, context, item, classes):
+        user = item
+        if request.user.is_authenticated() and user.id != request.user.id:
+            buttons['block'] = {
+                'classes': classes,
+                'show': True,
+                'url': u'/block/{}/'.format(user.id),
+                'icon': 'block',
+                'title': _(u'Block {username}').format(username=user.username),
+                'has_permissions': True,
+            }
+        return buttons
+
     class ListView(MagiCollection.ListView):
         item_template = custom_item_template
         default_ordering = 'username'
         show_item_buttons = False
+        show_item_buttons_as_icons = True
+        show_item_buttons_in_one_line = True
+        show_item_buttons_justified = False
+        item_buttons_classes = ['btn', 'btn-link-secondary', 'btn-lg']
         show_edit_button_permissions_only = ['see_profile_edit_button']
-        per_line = 6
         page_size = 30
+        per_line = 1
+
+        def buttons_per_item(self, request, context, item):
+            buttons = super(UserCollection.ListView, self).buttons_per_item(request, context, item)
+            buttons = self.collection._buttons_per_item(buttons, request, context, item, self.item_buttons_classes)
+            if item.id == request.user.id:
+                buttons['settings'] = {
+                    'classes': self.item_buttons_classes,
+                    'show': True,
+                    'url': '/settings/',
+                    'icon': 'settings',
+                    'title': _('Settings'),
+                    'has_permissions': True,
+                }
+            elif self.collection.item_view.follow_enabled:
+                followed = False if not request.user.is_authenticated() else item.followed
+                buttons = OrderedDict([
+                    ('follow', {
+                        'classes': self.item_buttons_classes,
+                        'show': True,
+                        'url': item.item_url,
+                        'open_in_new_window': True,
+                        'icon': 'checked' if followed else 'add',
+                        'title': _('Unfollow') if followed else _('Follow'),
+                        'has_permissions': True,
+                    }),
+                ] + buttons.items())
+            return buttons
 
         def get_queryset(self, queryset, parameters, request):
             queryset = super(UserCollection.ListView, self).get_queryset(queryset, parameters, request)
+            if request.user.is_authenticated():
+                queryset = queryset.extra(select={
+                    'followed': 'SELECT COUNT(*) FROM {table}_following WHERE userpreferences_id = {id} AND user_id = auth_user.id'.format(
+                        table=models.UserPreferences._meta.db_table,
+                        id=request.user.preferences.id,
+                    ),
+                })
             if 'followers_of' in parameters:
                 queryset = queryset.filter(preferences__following__username=parameters['followers_of']).distinct()
             if 'followed_by' in parameters:
@@ -1591,16 +1642,7 @@ class UserCollection(MagiCollection):
 
         def buttons_per_item(self, request, context, item):
             buttons = super(UserCollection.ItemView, self).buttons_per_item(request, context, item)
-            user = context['item']
-            if request.user.is_authenticated() and user.id != request.user.id:
-                buttons['block'] = {
-                    'classes': self.item_buttons_classes,
-                    'show': True,
-                    'url': u'/block/{}/'.format(user.id),
-                    'icon': 'block',
-                    'title': _(u'Block {username}').format(username=user.username),
-                    'has_permissions': True,
-                }
+            buttons = self.collection._buttons_per_item(buttons, request, context, item, self.item_buttons_classes)
             return buttons
 
         def get_item(self, request, pk):
@@ -2657,11 +2699,15 @@ class PrivateMessageCollection(MagiCollection):
     form_class = forms.PrivateMessageForm
     navbar_link_list = 'you'
     navbar_link_title = _('Inbox')
+    reportable = False
 
     class ListView(MagiCollection.ListView):
         filter_form = forms.PrivateMessageFilterForm
         per_line = 1
         authentication_required = True
+        item_template = custom_item_template
+
+        # todo add block button
 
         def get_queryset(self, queryset, parameters, request):
             queryset = super(PrivateMessageCollection.ListView, self).get_queryset(queryset, parameters, request)
@@ -2670,17 +2716,33 @@ class PrivateMessageCollection(MagiCollection):
                 pass # todo
             # Inbox
             else:
-                queryset = queryset.filter(
-                    Q(to_user=request.user)
-                    | Q(owner=request.user)
-                ).extra(select={
-                    'thread_with': 'CASE WHEN to_user_id = {id} THEN owner_id ELSE to_user_id END'.format(
-                        id=request.user.id,
-                    ),
-                }).values('thread_with').distinct()
-                print queryset
+                queryset = queryset.extra(
+                    where=['{db_table}.id IN (SELECT id \
+                    FROM {db_table} \
+                    WHERE to_user_id = {user_id} OR owner_id = {user_id} \
+                    GROUP BY (CASE WHEN to_user_id = {user_id} THEN owner_id ELSE to_user_id END) \
+                    ORDER BY creation DESC \
+                    )'.format(
+                        db_table=queryset.model._meta.db_table,
+                        user_id=request.user.id,
+                    )],
+                ).select_related('to_user', 'owner')
             return queryset
 
+        def foreach_items(self, index, item, context):
+            _super = super(PrivateMessageCollection.ListView, self).foreach_items
+            if _super: _super(index, item, context)
+
+            item.thread_with = item.owner if item.to_user == context['request'].user else item.to_user
+
+        def extra_context(self, context):
+            # Reading one user's messages
+            if 'to_user' in context['request'].GET:
+                pass
+            # Inbox
+            else:
+                context['filter_form'] = None
+                context['include_below_item'] = False
 
     class ItemView(MagiCollection.ItemView):
         enabled = False
