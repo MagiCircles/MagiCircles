@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+  <h1 class="padding20 text-center">
+    {% if language %}
+    <img src="{{ static_url }}img/language/{{ language }}.png?{{ static_files_version }}" height="40" />
+    {% endif %}
+    Translations duplicator
+  </h1>
+
+  <h2 class="text-muted text-center">
+    {% if collection.icon %}
+    <i class="flaticon-{{ collection.icon }}"></i>
+    {% elif collection.image %}
+    <img src="{{ static_url }}img/{{ collection.image }}.png?{{ static_files_version }}" height="30" />
+    {% endif %}
+    {{ collection.plural_title }}
+    :
+    {{ verbose_field_name }}
+  </h2>
+  <br>
+  <div class="text-center">
+    {% if language %}
+    <a href="/translations_duplicator/{{ collection.name }}/{{ field_name }}/"
+       class="btn btn-main btn-sm">See all languages</a>
+    {% endif %}
+    {% if see_all %}
+    <a href="." class="btn btn-main btn-sm">See only terms that can be duplicated</a>
+    {% else %}
+    <a href="?see_all" class="btn btn-main btn-sm">See all terms</a>
+    {% endif %}
+    <br>
+    <a href="/translations/" class="btn btn-link btn-sm">Back to translations</a>
+  </div>
+  <br>
+
+  <div style="max-width: 750px; margin: auto;">
+    {% if logs %}
+    <div class="well">
+      {% for log in logs %}
+      {{ log|safe }}<br>
+      {% endfor %}
+      <h4><strong>Done</strong></h4>
+    </div>
+    {% endif %}
+
+    <ul class="list-group">
+      {% for term, languages_details in terms.items %}
+      {% with languages=languages_details.0 total_duplicate=languages_details.1 display_term=languages_details.2 %}
+      {% if total_duplicate or see_all %}
+      <li class="list-group-item">
+        <h3>
+          {{ display_term }}
+          <form class="pull-right text-right" method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="term" value="{{ term }}">
+            <button type="submit" class="btn btn-main btn-xs" style="margin-left: 20px;">
+              <i class="flaticon-deck"></i> Duplicate to all languages ({{ total_duplicate }})</button>
+            <small class="text-muted fontx0-5" style="display: block; margin-top: 2px; margin-bottom: 16px;">(will use 1st match)</small>
+          </form>
+        </h3>
+        <table class="table">
+          {% for language_, translations_details in languages.items %}
+          {% with translations=translations_details.0 count_has=translations_details.1 count_apply=translations_details.2 %}
+          {% if count_apply or see_all %}
+          <tr>
+            <td rowspan="{{ translations|length }}">
+              <img src="{{ static_url }}img/language/{{ language_ }}.png?{{ static_files_version }}" height="40" />
+            </td>
+            <td rowspan="{{ translations|length }}">
+              <span data-toggle="tooltip" title='{{ count_has }} {{ collection.plural_name }} contain a {{ language_ }} translation for the term "{{ term }}"'>{{ count_has }}
+            </td>
+            <td>
+              {% for translation in translations %}
+              {% if forloop.counter0 != 0 %}<tr><td>{% endif %}
+                  {{ translation }}
+                </td>
+                <td>
+                  {% if count_apply %}
+                  <form class="text-right" method="POST"
+                        action="/translations_duplicator/{{ collection.name }}/{{ field_name }}/{{ language_ }}/">
+                    {% csrf_token %}
+                    <input type="hidden" name="term" value="{{ term }}">
+                    <button type="submit" class="btn btn-main btn-xs" style="margin-left: 20px;"
+                            data-toggle="tooltip" title='{{ count_apply }} {{ collection.plural_name }} will be edited to contain the {{ language_ }} translation "{{ translation }}" for the term "{{ term }}"'>
+                      <i class="flaticon-deck"></i> Duplicate ({{ count_apply }})
+                    </button>
+                  </form>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+              {% endif %}
+              {% endwith %}
+              {% endfor %}
+        </table>
+      </li>
+      {% endif %}
+      {% endwith %}
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}
