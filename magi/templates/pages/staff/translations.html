@@ -9,14 +9,16 @@
     {% else %}
     <a href="?see_all" class="pull-right btn btn-main btn-lg">See all languages</a>
     {% endif %}
-    {{ total_translated }}/{{ total }} completed.<br>
+    {{ percent_translated }}% completed ({{ total_translated }}/{{ total }}).<br>
     {{ total_need_translations }} missing translations.
   </h2>
   {% for language, details in total_per_languages.items %}
   <div style="display: inline-block" class="padding20">
     <img src="{{ details.image }}" height="30" />
     <a href="?language={{ language }}">{{ details.verbose_name }}</a>
-    <span href="#" class="badge">To do {{ details.total_need_translations }} ({{ details.total_translated }}/{{ details.total }})</span>
+    <span href="#" class="badge" data-toggle="tooltip" data-html="true"
+          title="{{ details.total_translated }}/{{ details.total }}<br> {{ details.total_need_translations }} missing translations">
+      {{ details.percent_translated }}%</span>
   </div>
   {% endfor %}
 

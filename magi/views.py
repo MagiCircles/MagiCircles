@@ -1097,8 +1097,10 @@ def translations(request):
             context['total_per_languages'][staff_configuration.language]['total'] += 1
 
     context['total_translated'] = context['total'] - context['total_need_translations']
+    context['percent_translated'] = int(context['total_translated'] / context['total'] * 100)
     for language, details in context['total_per_languages'].items():
         details['total_translated'] = details['total'] - details['total_need_translations']
+        details['percent_translated'] = int(details['total_translated'] / details['total'] * 100)
     return render(request, 'pages/staff/translations.html', context)
 
 def translations_duplicator(request, collection_name, field_name, language=None):
