@@ -1008,6 +1008,7 @@ def translations(request):
     context['poeditor'] = models.UserPreferences.GROUPS.get('translator', {}).get('outside_permissions', {}).get('POEditor', None)
     context['total_per_languages'] = {}
     context['total'] = 0
+    context['total_need_translations'] = 0
     context['see_all'] = 'see_all' in request.GET
     only_languages = (request.user.preferences.settings_per_groups or {}).get('translator', {}).get('languages', {})
     if context['see_all']:
@@ -1030,7 +1031,6 @@ def translations(request):
                     u'{name}S_CHOICES'.format(name=field.upper()),
                     django_settings.LANGUAGES,
                 )
-                print collection.name, field, dict(languages).keys()
 
                 for language, verbose_name in languages:
                     if only_languages and language not in only_languages:
@@ -1041,54 +1041,64 @@ def translations(request):
                             'fields': [],
                             'image': staticImageURL(language, folder='language', extension='png')
                         }
-                    count = collection.queryset.exclude(**{
+                    items_with_something_to_translate = collection.queryset.exclude(**{
                         u'{}__isnull'.format(field): True,
                     }).exclude(**{
                         field: '',
-                    }).exclude(**{
+                    })
+                    count_total = items_with_something_to_translate.count()
+                    count_need_translations = items_with_something_to_translate.exclude(**{
                         u'd_{}s__contains'.format(field): u'"{}"'.format(language),
                     }).count()
-                    if not count:
+                    if not count_total:
                         continue
                     c['translated_fields_per_languages'][language]['fields'].append({
                         'name': field,
-                        'verbose_name': toHumanReadable(field),
-                        'total': count,
+                        'verbose_name': collection.queryset.model._meta.get_field_by_name(field)[0].verbose_name or toHumanReadable(field),
+                        'total': count_total,
+                        'total_need_translations': count_need_translations,
+                        'total_translated': count_total - count_need_translations,
                     })
-                    context['total'] += count
+                    context['total'] += count_total
+                    context['total_need_translations'] += count_need_translations
                     if language not in context['total_per_languages']:
                         context['total_per_languages'][language] = {
                             'verbose_name': verbose_name,
+                            'total_need_translations': 0,
                             'total': 0,
                             'image': staticImageURL(language, folder='language', extension='png')
                         }
-                    context['total_per_languages'][language]['total'] += count
+                    context['total_per_languages'][language]['total'] += count_total
+                    context['total_per_languages'][language]['total_need_translations'] += count_need_translations
             context['collections'].append(c)
+
     if 'staffconfiguration' in context['all_enabled']:
         context['staff_configurations_per_languages'] = {}
         keys_of_staff_configurations_with_english = models.StaffConfiguration.objects.filter(
             i_language='en', value__isnull=False).exclude(value='').values_list('key', flat=True)
-        staff_configurations_need_translations = models.StaffConfiguration.objects.filter(
-            key__in=keys_of_staff_configurations_with_english).exclude(
-                i_language='en').filter(Q(value__isnull=True) | Q(value=''))
+        staff_configurations = models.StaffConfiguration.objects.filter(
+            key__in=keys_of_staff_configurations_with_english).exclude(i_language='en')
         if only_languages:
-            staff_configurations_need_translations = staff_configurations_need_translations.filter(
-                i_language__in=only_languages,
-            )
-        context['staff_configurations_per_languages'] = {
-            language: {
-                'verbose_name': verbose_name,
-                'image': staticImageURL(language, folder='language', extension='png'),
-                'total': 0,
-                'fields': [],
-            } for language, verbose_name in django_settings.LANGUAGES
-            if (language in only_languages if only_languages else True)
-        }
-        for staff_configuration in staff_configurations_need_translations:
-            context['staff_configurations_per_languages'][staff_configuration.language]['total'] += 1
+            staff_configurations = staff_configurations.filter(i_language__in=only_languages)
+        context['staff_configurations_per_languages'] = {}
+        for staff_configuration in staff_configurations:
+            if staff_configuration.language not in context['staff_configurations_per_languages']:
+                context['staff_configurations_per_languages'][staff_configuration.language] = {
+                    'verbose_name': staff_configuration.t_language,
+                    'image': staff_configuration.language_image_url,
+                    'fields': [],
+                }
+            staff_configuration.need_translation = not staff_configuration.value
             context['staff_configurations_per_languages'][staff_configuration.language]['fields'].append(staff_configuration)
+            if staff_configuration.need_translation:
+                context['total_need_translations'] += 1
+                context['total_per_languages'][staff_configuration.language]['total_need_translations'] += 1
             context['total'] += 1
             context['total_per_languages'][staff_configuration.language]['total'] += 1
+
+    context['total_translated'] = context['total'] - context['total_need_translations']
+    for language, details in context['total_per_languages'].items():
+        details['total_translated'] = details['total'] - details['total_need_translations']
     return render(request, 'pages/staff/translations.html', context)
 
 def translations_duplicator(request, collection_name, field_name, language=None):

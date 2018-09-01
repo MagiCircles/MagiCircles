@@ -10,7 +10,23 @@ from django.utils.formats import dateformat
 from django.utils.dateparse import parse_date
 from django.forms.models import model_to_dict
 from django.conf import settings as django_settings
-from magi.utils import AttrDict, randomString, getMagiCollection, uploadToRandom, uploadItem, uploadTiny, linkToImageURL, hasGroup, hasPermission, hasOneOfPermissions, hasPermissions, toHumanReadable, LANGUAGES_DICT, locationOnChange
+from magi.utils import (
+    AttrDict,
+    randomString,
+    getMagiCollection,
+    uploadToRandom,
+    uploadItem,
+    uploadTiny,
+    linkToImageURL,
+    hasGroup,
+    hasPermission,
+    hasOneOfPermissions,
+    hasPermissions,
+    toHumanReadable,
+    LANGUAGES_DICT,
+    locationOnChange,
+    staticImageURL,
+)
 from magi.settings import (
     ACCOUNT_MODEL,
     GAME_NAME,
@@ -462,6 +478,7 @@ class StaffConfiguration(MagiModel):
     LANGUAGE_WITHOUT_I_CHOICES = True
     LANGUAGE_SOFT_CHOICES = True
     i_language = models.CharField(_('Language'), max_length=10, null=True)
+    language_image_url = property(lambda _s: staticImageURL(_s.language, folder=u'language', extension='png'))
 
     is_long = models.BooleanField(default=False)
     is_markdown = models.BooleanField(default=False)

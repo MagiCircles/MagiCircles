@@ -9,13 +9,14 @@
     {% else %}
     <a href="?see_all" class="pull-right btn btn-main btn-lg">See all languages</a>
     {% endif %}
-    Total translations missing: {{ total }}
+    {{ total_translated }}/{{ total }} completed.<br>
+    {{ total_need_translations }} missing translations.
   </h2>
   {% for language, details in total_per_languages.items %}
   <div style="display: inline-block" class="padding20">
     <img src="{{ details.image }}" height="30" />
     <a href="?language={{ language }}">{{ details.verbose_name }}</a>
-    <span href="#" class="badge">{{ details.total }}</span>
+    <span href="#" class="badge">To do {{ details.total_need_translations }} ({{ details.total_translated }}/{{ details.total }})</span>
   </div>
   {% endfor %}
 
@@ -27,6 +28,7 @@
   </p>
 
   {% for collection in collections %}
+  {% if collection.translated_fields_per_languages %}
   <h2>
     {% if collection.icon %}
     <i class="flaticon-{{ collection.icon }}"></i>
@@ -41,26 +43,34 @@
       {{ details.verbose_name }}
       {% for field in details.fields %}
       <div class="btn-group">
-        <a href="{{ collection.list_url }}?missing_{{ field.name }}_translations={{ language }}"
-           class="btn btn-secondary btn-sm" target="_blank">
-          {{ field.verbose_name }} ({{ field.total }})
-        </a>
+        <{% if field.total_need_translations == 0 %}span style="cursor: not-allowed;"{% else %}a href="{{ collection.list_url }}?missing_{{ field.name }}_translations={{ language }}"{% endif %}
+           class="btn btn-{% if field.total_need_translations == 0 %}success{% else %}secondary{% endif %} btn-sm" target="_blank">
+          {{ field.verbose_name }} ({{ field.total_translated }}/{{ field.total }})
+          {% if field.total_need_translations == 0 %}
+          <i class="flaticon-checked"></i>
+          {% endif %}
+        </{% if field.total_need_translations == 0 %}span{% else %}a{% endif %}>
+        {% if field.total_need_translations != 0 %}
         <a href="#" class="btn btn-secondary btn-sm dropdown-toggle"
            data-toggle="dropdown">
           <span class="caret"></span>
         </a>
         <ul class="dropdown-menu">
           <li><a href="{{ collection.list_url }}?missing_{{ field.name }}_translations={{ language }}" target="_blank">
-              <i class="flaticon-translate"></i> Translate missing terms <span class="badge">{{ field.total }}</span></a>
+              <i class="flaticon-translate"></i> Translate missing terms <span class="badge">{{ field.total_need_translations }}</span></a>
           </li>
+          {% if field.total_translated %}
           <li><a href="/translations_duplicator/{{ collection.name }}/{{ field.name }}/{{ language }}/" target="_blank">
-              <i class="flaticon-deck"></i> Automatically duplicate similar translations
+              <i class="flaticon-deck"></i> Automatically duplicate identical translations
           </a></li>
+          {% endif %}
         </ul>
+        {% endif %}
       </div>
       {% endfor %}
     </div>
     {% endfor %}
+    {% endif %}
   {% endfor %}
 
   {% if staff_configurations_per_languages %}
@@ -74,8 +84,14 @@
     {{ details.verbose_name }}
     {% for staff_configuration in details.fields %}
     <a href="/staffconfigurations/?key={{ staff_configuration.key }}&i_language={{ language }}"
-       class="btn btn-secondary btn-sm" target="_blank">
-      {{ staff_configuration.verbose_key }} ({{ details.total }})</span>
+       class="btn btn-{% if staff_configuration.need_translation %}secondary{% else %}success{% endif %} btn-sm"
+       target="_blank">
+      {{ staff_configuration.verbose_key }}
+      {% if staff_configuration.need_translation %}
+      (0/1)
+      {% else %}
+      <i class="flaticon-checked"></i>
+      {% endif %}
     </a>
     {% endfor %}
   </div>
