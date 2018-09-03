@@ -1,28 +1,56 @@
 {% load i18n %}
-<div class="padding50">
+<div class="padding50 text-center">
   <div class="row">
     {% if donate_image %}
     <div class="col-md-4">
-      <img src="{{ static_url }}img/{{ donate_images_folder }}{{ donate_image }}?{{ static_files_version }}" class="img-responsive donate-image">
+      <img src="{% if '//' in donate_image %}{{ donate_image }}{% else %}{{ static_url }}img/{{ donate_images_folder }}{{ donate_image }}?{{ static_files_version }}{% endif %}" class="img-responsive donate-image">
     </div>
     {% endif %}
-    <div class="col-md-{% if donate_image %}8{% else %}12{% endif %} text-center ">
-      <p class="big-text donate-text"><br>{% trans 'If you like the website, please consider donating' %}. {% trans 'This will help us cover the costs of the servers and allow us to keep it running for free and without ads.' %}</p>
+    <div class="col-md-{% if donate_image %}8{% else %}12{% endif %} ">
+      <p class="big-text donate-text{% if donate_image %} text-left %}{% endif %}"><br>{% trans 'If you like the website, please consider donating' %}. {% trans 'This will help us cover the costs of the servers and allow us to keep it running for free and without ads.' %}</p>
     </div>
   </div>
   <br><br>
   {% if show_paypal %}
-  <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top" class="text-center">
+  <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
     <input type="hidden" name="cmd" value="_s-xclick">
     <input type="hidden" name="hosted_button_id" value="VJPSFRC2ZQSKS">
     <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">
     <img alt="" border="0" src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif" width="1" height="1">
   </form>
   {% else %}
-  <a href="https://www.patreon.com/db0company" target="_blank">
+  <a href="https://www.patreon.com/db0company" class="btn btn-main btn-xl" target="_blank">
     <img src="{{ static_url }}img/patreon.png?{{ static_files_version }}" alt="Patreon" class="img-responsive">
   </a>
+  <div class="padding20">
+    <a href="#alternative-donations" class="btn btn-link-muted" data-toggle="collapse">
+      {% blocktrans %}Can't use Patreon?{% endblocktrans %}
+    </a>
+  </div>
+  <div class="collapse padding50" id="alternative-donations">
+    <div class="row">
+      <div class="col-sm-4">
+        <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
+          <input type="hidden" name="cmd" value="_s-xclick">
+          <input type="hidden" name="hosted_button_id" value="VJPSFRC2ZQSKS">
+          <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!">
+          <img alt="" border="0" src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif" width="1" height="1">
+        </form>
+      </div>
+      <div class="col-sm-4">
+        <script type="text/javascript" src="https://ko-fi.com/widgets/widget_2.js"></script>
+        <script type="text/javascript">
+          kofiwidget2.init("Support Me on Ko-fi", "{{ site_color }}", "D1D590OS");
+          kofiwidget2.draw();
+        </script>
+      </div>
+      <div class="col-sm-4">
+        <p>{% trans 'Alternatively...' %}</p>
+	    <a class="btn btn-secondary" href="/about/#contact">{% trans 'Contact us' %}</a>
+      </div>
+    </div>
+  </div>
   {% endif %}
-  <br><br><br><br><br><br><br><br><br><br><br><br>
-  <h1 class="padding50 text-center">{% trans 'Donators' %}</h1>
+  <br><br><br><br><br>
+  <h1 class="padding50">{% trans 'Donators' %}</h1>
 </div>

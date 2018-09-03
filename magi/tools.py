@@ -32,12 +32,14 @@ def latestDonationMonth(failsafe=False):
             'percent_int': 0,
             'date': this_month,
             'donations': 0,
+            'reached_100_percent': False,
         }
     return {
         'percent': donation_month.percent,
         'percent_int': donation_month.percent_int,
         'date': donation_month.date,
         'donations': donation_month.donations,
+        'reached_100_percent': donation_month.reached_100_percent,
     }
 
 ############################################################

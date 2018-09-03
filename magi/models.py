@@ -44,6 +44,7 @@ from magi.settings import (
     GROUPS,
     HOME_ACTIVITY_TABS,
     MINIMUM_LIKES_POPULAR,
+    DONATORS_GOAL,
 )
 from magi.item_model import MagiModel, BaseMagiModel, get_image_url, i_choices, addMagiModelProperties, getInfoFromChoices
 from magi.abstract_models import CacheOwner
@@ -1052,6 +1053,7 @@ class DonationMonth(MagiModel):
     owner = models.ForeignKey(User, related_name='donation_month_created')
     date = models.DateField(default=datetime.datetime.now)
     cost = models.FloatField(default=250)
+    goal = DONATORS_GOAL
     donations = models.FloatField(default=0)
     image = models.ImageField(_('Image'), upload_to=uploadItem('badges/'))
 
@@ -1060,15 +1062,31 @@ class DonationMonth(MagiModel):
     }
 
     @property
-    def percent(self):
+    def percent_to_goal(self):
+        if not DONATORS_GOAL: return 0
+        percent = (self.donations / DONATORS_GOAL) * 100
+        if percent > 100:
+            return 100
+        return percent
+
+    @property
+    def percent_to_cost(self):
         percent = (self.donations / self.cost) * 100
         if percent > 100:
             return 100
         return percent
 
     @property
+    def percent(self):
+        return self.percent_to_goal if DONATORS_GOAL else self.percent_to_cost
+
+    @property
     def percent_int(self):
         return int(self.percent)
+
+    @property
+    def reached_100_percent(self):
+        return self.percent_int >= 100
 
     def __unicode__(self):
         return unicode(self.date)

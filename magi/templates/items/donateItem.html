@@ -9,14 +9,19 @@
     </div>
     <div class="col-md-7">
       <div class="progress">
-	<div class="progress-bar progress-bar-{% if month.percent == 100 %}success{% else %}danger{% endif %} progress-bar-striped active" style="width: {% localize off %}{{ month.percent }}{% endlocalize %}%;">
+	<div class="progress-bar progress-bar-{% if not ajax and month.percent_to_goal %}{% if month.percent_to_goal == 100 %}success{% else %}danger{% endif %}{% else %}{% if month.percent_to_cost == 100 %}success{% else %}danger{% endif %}{% endif %} progress-bar-striped {% if not ajax %}active{% endif %}" style="width: {% localize off %}{% if not ajax and month.percent_to_goal %}{{ month.percent_to_goal }}{% else %}{{ month.percent_to_cost }}{% endif %}{% endlocalize %}%;">
 	  {% if month.donations %}${{ month.donations }}{% endif %}
 	</div>
 	{% if not month.donations %}<span class="text-muted no-donation">{% trans 'No donation yet' %} :(</span>{% endif %}
       </div>
-      <small class="text-muted">{% trans 'Server cost' %}: ${{ month.cost }}<br>
-	<span class="fontx0-8">
-	  <a href="https://www.patreon.com/db0company">{% trans 'Learn more' %}</a>
+      <small class="text-muted">
+        {% if not ajax and month.goal  %}
+        {% trans 'Goal' %}: ${{ month.goal }}<br>
+        {% else %}
+        {% trans 'Total spent' %}: ${{ month.cost }}<br>
+        {% endif %}
+	    <span class="fontx0-8">
+	      <a href="https://www.patreon.com/db0company">{% trans 'Learn more' %}</a>
       </span></small>
     </div>
   </div>
