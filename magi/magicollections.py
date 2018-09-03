@@ -2587,7 +2587,7 @@ class DonateCollection(MagiCollection):
                          ).extra(select=extra_select).order_by(*[
                              '-show_on_profile',
                              '-has_rank',
-                             'rank',
+                             '-rank',
                              '-user_has_status',
                          ] + order + [
                              '-user__preferences__donation_link',

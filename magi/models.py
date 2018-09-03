@@ -1121,7 +1121,7 @@ class Badge(MagiModel):
 
     @property
     def rank_image_url(self):
-        return staticImageURL(u'medal{}'.format(4 - self.rank), folder='badges', extension='png')
+        return staticImageURL(u'medal{}'.format(self.rank), folder='badges', extension='png')
 
     tinypng_settings = {
         'image': BADGE_IMAGE_TINYPNG_SETTINGS,
