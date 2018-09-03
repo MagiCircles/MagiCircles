@@ -502,6 +502,16 @@ def birthdays_within(days_after, days_before=0, field_name='birthday'):
     # Compose the djano.db.models.Q objects together for a single query.
     return reduce(operator.or_, (Q(**d) for d in monthdays))
 
+def birthdayURL(user):
+    today = datetime.date.today()
+    birthday = user.preferences.birthdate.replace(year=today.year)
+    if birthday < today:
+        birthday = birthday.replace(year=today.year + 1)
+    return 'https://www.timeanddate.com/countdown/birthday?iso={date}T00&msg={username}%27s+birthday'.format(
+        date=dateformat.format(birthday, "Ymd"),
+        username=user.username,
+    )
+
 ############################################################
 # Event status using start and end date
 

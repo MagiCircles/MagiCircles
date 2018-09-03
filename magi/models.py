@@ -26,6 +26,7 @@ from magi.utils import (
     LANGUAGES_DICT,
     locationOnChange,
     staticImageURL,
+    birthdayURL,
 )
 from magi.settings import (
     ACCOUNT_MODEL,
@@ -79,6 +80,8 @@ User.hasGroup = lambda u, group: hasGroup(u, group)
 User.hasPermission = lambda u, permission: hasPermission(u, permission)
 User.hasOneOfPermissions = lambda u, permissions: hasOneOfPermissions(u, permissions)
 User.hasPermissions = lambda u, permissions: hasPermissions(u, permissions)
+
+User.birthday_url = property(lambda u: birthdayURL(u))
 
 ############################################################
 
@@ -168,23 +171,12 @@ class UserPreferences(BaseMagiModel):
         'DEVOTEE': '#c98910',
     }
 
-    STATUS_COLOR_STRINGS = {
-        'SUPPORTER': _('blue'),
-        'LOVER':  _('pink'),
-        'AMBASSADOR':  _('shiny Silver'),
-        'PRODUCER':  _('shiny Gold'),
-        'DEVOTEE':  _('shiny Gold'),
-    }
-
     STATUS_WITHOUT_I_CHOICES = True
     STATUS_SOFT_CHOICES = True
     i_status = models.CharField('Status', max_length=12, null=True)
     @property
     def status_color(self):
         return self.STATUS_COLORS[self.i_status] if self.i_status else None
-    @property
-    def status_color_string(self):
-        return self.STATUS_COLOR_STRINGS[self.i_status] if self.i_status else None
 
     donation_link = models.CharField(_('Custom link'), max_length=200, null=True, blank=True, validators=[
         validators.URLValidator(),
@@ -330,6 +322,11 @@ class UserPreferences(BaseMagiModel):
     @property
     def age(self):
         return type(self).get_age(self.birthdate)
+
+    @property
+    def formatted_birthday(self):
+        if not self.birthdate: return ''
+        return dateformat.format(self.birthdate, "F d")
 
     @property
     def email_notifications_turned_off(self):
@@ -1114,8 +1111,17 @@ class Badge(MagiModel):
         (RANK_SILVER, _('Silver')),
         (RANK_GOLD, _('Gold')),
     )
+    RANK_CHOICES_DICT = dict(RANK_CHOICES)
 
     rank = models.PositiveIntegerField(null=True, blank=True, choices=RANK_CHOICES, help_text='Top 3 of this specific badge.')
+
+    @property
+    def t_rank(self):
+        return self.RANK_CHOICES_DICT[self.rank]
+
+    @property
+    def rank_image_url(self):
+        return staticImageURL(u'medal{}'.format(4 - self.rank), folder='badges', extension='png')
 
     tinypng_settings = {
         'image': BADGE_IMAGE_TINYPNG_SETTINGS,

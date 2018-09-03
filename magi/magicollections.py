@@ -2550,7 +2550,7 @@ class DonateCollection(MagiCollection):
     plural_name = 'donate'
     icon = 'heart'
     navbar_link_list = 'more'
-    queryset =  models.DonationMonth.objects.all().prefetch_related(Prefetch('badges', queryset=models.Badge.objects.select_related('user', 'user__preferences').order_by('-show_on_profile'), to_attr='all_badges'))
+    queryset =  models.DonationMonth.objects.all()
     reportable = False
     blockable = False
     form_class = forms.DonateForm
@@ -2568,7 +2568,34 @@ class DonateCollection(MagiCollection):
 
         def get_queryset(self, queryset, parameters, request):
             queryset = super(DonateCollection.ListView, self).get_queryset(queryset, parameters, request)
-            return queryset.filter(date__lte=timezone.now())
+            extra_select = {
+                u'user_is_{}'.format(status): 'CASE WHEN i_status = \'{}\' THEN 1 ELSE 0 END'.format(status)
+                for status, verbose in models.UserPreferences.STATUS_CHOICES
+            }
+            extra_select['has_rank'] = 'CASE WHEN rank IS NULL THEN 0 ELSE 1 END'
+            extra_select['user_has_status'] = 'CASE WHEN i_status IS NULL THEN 0 WHEN i_status = \'\' THEN 0 ELSE 1 END'
+            order = [
+                u'-user_is_{}'.format(status)
+                for status, verbose in reversed(models.UserPreferences.STATUS_CHOICES)
+            ]
+            queryset = queryset.prefetch_related(
+                Prefetch('badges',
+                         queryset=models.Badge.objects.select_related(
+                             'user', 'user__preferences',
+                         ).prefetch_related(
+                             Prefetch('user__links', to_attr='all_links'),
+                         ).extra(select=extra_select).order_by(*[
+                             '-show_on_profile',
+                             '-has_rank',
+                             '-rank',
+                             '-user_has_status',
+                         ] + order + [
+                             '-user__preferences__donation_link',
+                         ]),
+                         to_attr='all_badges'),
+            )
+            queryset = queryset.filter(date__lte=timezone.now())
+            return queryset
 
         def extra_context(self, context):
             request = context['request']
