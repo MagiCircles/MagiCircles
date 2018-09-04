@@ -149,7 +149,7 @@
                 <i class="flaticon-pinpoint text-{{ staff_member.preferences.css_color }}"></i>
               </span>
               {% if staff_member.preferences.location %}
-              <a href="{{ staff_member.location_url }}" target="_blank" class="a-nodifference">
+              <a href="{{ staff_member.preferences.location_url }}" target="_blank" class="a-nodifference">
                 {{ staff_member.preferences.location }}
               </a>
               {% else %}
@@ -174,7 +174,7 @@
                 <i class="flaticon-birthday text-{{ staff_member.preferences.css_color }}"></i>
               </span>
               <a href="{{ staff_member.birthday_url }}" target="_blank" class="a-nodifference">
-                {{ staff_member.formatted_birthday }}
+                {{ staff_member.preferences.formatted_birthday }}
               </a>
             </span>
             {% endif %}
@@ -334,7 +334,7 @@
             <i class="flaticon-pinpoint text-{{ contributor.preferences.css_color }}"></i>
           </span>
           {% if contributor.preferences.location %}
-          <a href="{{ contributor.location_url }}" target="_blank" class="a-nodifference">
+          <a href="{{ contributor.preferences.location_url }}" target="_blank" class="a-nodifference">
             {{ contributor.preferences.location }}
           </a>
           {% endif %}
@@ -346,7 +346,7 @@
             <i class="flaticon-event text-{{ contributor.preferences.css_color }}"></i>
           </span>
           <a href="{{ contributor.birthday_url }}" target="_blank" class="a-nodifference">
-            {{ contributor.formatted_birthday }}
+            {{ contributor.preferences.formatted_birthday }}
           </a>
         </span>
         {% endif %}

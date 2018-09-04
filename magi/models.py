@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.core import validators
 from django.utils.translation import ugettext_lazy as _, string_concat, get_language
 from django.utils import timezone
-from django.utils.formats import dateformat
+from django.utils.formats import date_format
 from django.utils.dateparse import parse_date
 from django.forms.models import model_to_dict
 from django.conf import settings as django_settings
@@ -139,6 +139,12 @@ class UserPreferences(BaseMagiModel):
     location_changed = models.BooleanField(default=False)
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
+
+    @property
+    def location_url(self):
+        latlong = '{},{}'.format(self.latitude, self.longitude) if self.latitude else None
+        return u'/map/?center={}&zoom=10'.format(latlong) if latlong else u'https://www.google.com/maps?q={}'.format(self.location)
+
     following = models.ManyToManyField(User, related_name='followers')
 
     # Activities preferences
@@ -326,7 +332,12 @@ class UserPreferences(BaseMagiModel):
     @property
     def formatted_birthday(self):
         if not self.birthdate: return ''
-        return dateformat.format(self.birthdate, "F d")
+        if self.show_birthdate_year:
+            return u'{} ({})'.format(
+                date_format(self.birthdate, format='DATE_FORMAT', use_l10n=True),
+                _(u'{age} years old').format(age=self.age),
+            )
+        return date_format(self.birthdate, format='MONTH_DAY_FORMAT', use_l10n=True)
 
     @property
     def email_notifications_turned_off(self):
@@ -1140,7 +1151,7 @@ class Badge(MagiModel):
     @property
     def translated_name(self):
         if self.donation_month_id:
-            return _(u'{month} Donator').format(month=dateformat.format(self.date, "F Y"))
+            return _(u'{month} Donator').format(month=date_format(self.date, format='YEAR_MONTH_FORMAT', use_l10n=True))
         return self.name
 
     @property

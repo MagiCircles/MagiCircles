@@ -3,7 +3,6 @@ from collections import OrderedDict
 from django.utils.translation import ugettext_lazy as _, string_concat, get_language
 from django.utils import timezone
 from django.utils.safestring import mark_safe
-from django.utils.formats import dateformat
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.utils.datastructures import MultiValueDictKeyError
 from django.middleware import csrf
@@ -1767,7 +1766,7 @@ class UserCollection(MagiCollection):
                     'value': user.preferences.location,
                     'translate_type': True,
                     'flaticon': 'pinpoint',
-                    'url': u'/map/?center={}&zoom=10'.format(latlong) if 'map' in context['all_enabled'] and latlong else u'https://www.google.com/maps?q={}'.format(user.preferences.location),
+                    'url': user.preferences.location_url,
                 })
                 meta_links.append(link)
             if context['is_me'] or user.preferences.language != request.LANGUAGE_CODE:
@@ -1778,23 +1777,12 @@ class UserCollection(MagiCollection):
                     'image_url': staticImageURL(user.preferences.language, folder='language', extension='png'),
                 }))
             if user.preferences.birthdate:
-                today = datetime.date.today()
-                birthday = user.preferences.birthdate.replace(year=today.year)
-                if birthday < today:
-                    birthday = birthday.replace(year=today.year + 1)
-                if user.preferences.show_birthdate_year:
-                    value = u'{} ({})'.format(
-                        user.preferences.birthdate,
-                        _(u'{age} years old').format(age=user.preferences.age),
-                    )
-                else:
-                    value = dateformat.format(user.preferences.birthdate, "F d")
                 meta_links.append(AttrDict({
                     'type': 'Birthdate',
-                    'value': value,
+                    'value': user.preferences.formatted_birthday,
                     'translate_type': True,
                     'flaticon': 'birthday',
-                    'url': 'https://www.timeanddate.com/countdown/birthday?iso={date}T00&msg={username}%27s+birthday'.format(date=dateformat.format(birthday, "Ymd"), username=user.username),
+                    'url': user.birthday_url,
                 }))
             context['item'].all_links = meta_links + [link for link in context['item'].all_links if link != already_linked]
             num_links = len(context['item'].all_links)

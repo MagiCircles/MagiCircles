@@ -15,7 +15,6 @@ from django_translated import t
 from django.utils.safestring import mark_safe
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.utils.http import urlquote
-from django.utils.formats import dateformat
 from django.utils import timezone
 from django.db.models import Count, Prefetch, Q
 from django.views.decorators.csrf import csrf_exempt
@@ -235,19 +234,6 @@ def aboutDefaultContext(request):
     except ObjectDoesNotExist:
         my_timezone = None
     for staff_member in context['staff'] + context['contributors']:
-        # Add staff member location URL
-        if staff_member.preferences.location:
-            latlong = '{},{}'.format(staff_member.preferences.latitude, staff_member.preferences.longitude) if staff_member.preferences.latitude else None
-            staff_member.location_url = u'/map/?center={}&zoom=10'.format(latlong) if 'map' in context['all_enabled'] and latlong else u'https://www.google.com/maps?q={}'.format(staff_member.preferences.location)
-
-        # Add staff member birthday URL and formatting
-        if staff_member.preferences.birthdate:
-            staff_member.formatted_birthday = dateformat.format(staff_member.preferences.birthdate, "F d")
-            today = datetime.date.today()
-            birthday = staff_member.preferences.birthdate.replace(year=today.year)
-            if birthday < today:
-                birthday = birthday.replace(year=today.year + 1)
-            staff_member.birthday_url = 'https://www.timeanddate.com/countdown/birthday?iso={date}T00&msg={username}%27s+birthday'.format(date=dateformat.format(birthday, "Ymd"), username=staff_member.username)
 
         # Stats & Details
         staff_member.stats = {}
