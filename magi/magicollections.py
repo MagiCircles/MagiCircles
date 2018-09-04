@@ -9,7 +9,26 @@ from django.middleware import csrf
 from django.http import Http404
 from django.db.models import Count, Q, Prefetch, FieldDoesNotExist
 from magi.views import indexExtraContext
-from magi.utils import AttrDict, ordinalNumber, justReturn, propertyFromCollection, getMagiCollections, getMagiCollection, CuteFormType, CuteFormTransform, redirectWhenNotAuthenticated, custom_item_template, getAccountIdsFromSession, setSubField, hasPermission, hasPermissions, hasOneOfPermissions, jsv, staticImageURL
+from magi.utils import (
+    AttrDict,
+    ordinalNumber,
+    justReturn,
+    propertyFromCollection,
+    getMagiCollections,
+    getMagiCollection,
+    CuteFormType,
+    CuteFormTransform,
+    redirectWhenNotAuthenticated,
+    custom_item_template,
+    getAccountIdsFromSession,
+    setSubField,
+    hasPermission,
+    hasPermissions,
+    hasOneOfPermissions,
+    jsv,
+    staticImageURL,
+    ColorField,
+)
 from magi.raw import please_understand_template_sentence
 from magi.django_translated import t
 from magi.middleware.httpredirect import HttpRedirectException
@@ -691,6 +710,8 @@ class MagiCollection(object):
                     continue
             elif field_name == 'itunes_id':
                 d['type'] = 'itunes'
+            elif isinstance(field, ColorField):
+                d['type'] = 'color'
             else:
                 d['type'] = 'text'
             if d['type'] == 'text_with_link':

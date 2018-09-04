@@ -1,12 +1,12 @@
 from __future__ import division
-import os, string, random, csv, tinify, cStringIO, pytz, simplejson, datetime, io, operator
+import os, string, random, csv, tinify, cStringIO, pytz, simplejson, datetime, io, operator, re
 from PIL import Image
 from collections import OrderedDict
 from django.conf import settings as django_settings
 from django.core.files.temp import NamedTemporaryFile
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import resolve
-from django.core.validators import BaseValidator
+from django.core.validators import BaseValidator, RegexValidator
 from django.http import Http404
 from django.utils.deconstruct import deconstructible
 from django.utils.translation import ugettext_lazy as _, get_language
@@ -19,7 +19,7 @@ from django.db import models
 from django.db.models.fields import BLANK_CHOICE_DASH, FieldDoesNotExist
 from django.db.models import Q
 from django.forms.models import model_to_dict
-from django.forms import NullBooleanField
+from django.forms import NullBooleanField, TextInput, CharField as forms_CharField
 from django.core.mail import EmailMultiAlternatives
 from django.core.files.images import ImageFile
 from magi.middleware.httpredirect import HttpRedirectException
@@ -641,6 +641,41 @@ def modelHasField(model, field_name):
         return True
     except FieldDoesNotExist:
         return False
+
+class ColorInput(TextInput):
+    input_type = 'color'
+
+    def render(self, name, value, attrs=None):
+        rendered = super(ColorInput, self).render(name, value, attrs=attrs)
+        if not self.is_required:
+            return mark_safe(u'{input} <input type="checkbox" name="unset-{name}"{checked}> {none}'.format(
+                input=rendered,
+                name=name,
+                none=_('None'),
+                checked='' if value else ' checked',
+            ))
+        return rendered
+
+class ColorFormField(forms_CharField):
+    pass
+
+class ColorField(models.CharField):
+    default_validators = [
+        RegexValidator(
+            re.compile('^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$'),
+            u'Enter a valid hex color.',
+            'invalid',
+        ),
+    ]
+
+    def __init__(self, *args, **kwargs):
+        kwargs['max_length'] = 10
+        super(ColorField, self).__init__(*args, **kwargs)
+
+    def formfield(self, **kwargs):
+        kwargs['form_class'] = ColorFormField
+        kwargs['widget'] = ColorInput
+        return super(ColorField, self).formfield(**kwargs)
 
 ############################################################
 # Set a field in a sub dictionary

@@ -93,6 +93,9 @@
           <div class="to-markdown">{{ field.value.1 }}</div>
           {% endif %}
         </div>
+	{% elif field.type == 'color' %}
+        <span class="text-muted">{{ field.value }}</span>
+        <div class="color-viewer" style="background-color: {{ field.value }};"></div>
 	{% else %}
 	{{ field.value }}
 	{% endif %}
