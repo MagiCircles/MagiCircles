@@ -73,6 +73,19 @@ function deleteFormConfirm() {
 }
 
 // *****************************************
+// Color picker
+
+function colorPicker() {
+    $('input[type="color"]').unbind('change');
+    $('input[type="color"]').change(function(e) {
+        let checkbox = $('input[type="checkbox"][name="unset-' + $(this).prop('id').slice(3) + '"]');
+        if (checkbox.length > 0) {
+            checkbox.prop('checked', false);
+        }
+    });
+}
+
+// *****************************************
 // Smooth page scroll
 
 function loadPageScroll() {
@@ -559,41 +572,62 @@ function directAddCollectible(buttons, uniquePerOwner) {
 // Translations see all buttons
 
 function translationsSeeAll() {
-    let button = $('a[href="#translations_see_all"]:not(.toggled)');
-    if (button.length > 0) {
-        let spoken_languages = button.data('spoken-languages').split(',');
-        function _toggle() {
-            let toggled = button.hasClass('toggled');
-            $('[id^="id_d_"]').each(function() {
-                let field = $(this);
-                if (toggled) {
-                    field.closest('.form-group').show();
-                } else {
-                    field.closest('.form-group').hide();
-                }
-                if (!toggled) {
-                    $.each(spoken_languages, function(i, language) {
-                        if (field.is('[id$=-' + language + ']')) {
-                            field.closest('.form-group').show();
-                            return;
-                        }
-                    });
-                }
-            });
+    let buttons_wrapper = $('.languages-buttons');
+    if (buttons_wrapper.length > 0) {
+        let form = buttons_wrapper.closest('form');
+        let spoken_languages = buttons_wrapper.data('spoken-languages').split(',');
+        let buttons = buttons_wrapper.find('a');
+        let all_button = buttons_wrapper.find('a[href="#translations_see_all"]');
+        function _showLanguage(language) {
+            let fields_to_show = (
+                language == 'en' ?
+                    form.find('[id^="id_"]:not([id^="id_d_"])')
+                    : form.find('[id^="id_d_"][id$="-' + language + '"]')
+            );
+            fields_to_show.closest('.form-group').show();
         }
-        _toggle();
-        button.show();
-        button.unbind('click');
-        button.click(function(e) {
-            e.preventDefault();
-            if ($(this).hasClass('toggled')) {
-                $(this).removeClass('toggled');
-                $(this).text('See all languages');
+        function _toggleAll() {
+            let toggled = all_button.hasClass('toggled');
+            if (toggled) {
+                form.find('.form-group').show();
+                buttons.show();
             } else {
-                $(this).addClass('toggled');
-                $(this).text('See only the languages you speak');
+                buttons.hide();
+                all_button.show();
+                $.each(spoken_languages, function(i, language) {
+                    _showLanguage(language);
+                });
             }
-            _toggle();
+        }
+        buttons_wrapper.show();
+        buttons.hide();
+        all_button.show();
+        form.find('.form-group').hide();
+        _toggleAll();
+        buttons.unbind('click');
+        buttons.click(function(e) {
+            e.preventDefault();
+            let button = $(this);
+            // Hide all
+            form.find('.form-group').hide();
+            // On click button all languages / only spoken languages
+            if (button.attr('href') == '#translations_see_all') {
+                if (button.hasClass('toggled')) {
+                    button.removeClass('toggled');
+                    button.text('See all languages');
+                } else {
+                    button.addClass('toggled');
+                    button.html(
+                        'See only the languages you speak ' +
+                            spoken_languages.map(function(language) {
+                                return '<img src="' + static_url + 'img/language/' + language + '.png" width="20">';
+                            }).join('')
+                    );
+                }
+                _toggleAll();
+            } else if (button.attr('href') == '#translations_see_language') {
+                _showLanguage(button.data('language'));
+            }
             return false;
         });
     }
@@ -743,6 +777,7 @@ function loadCommons(onPageLoad /* optional = false */) {
     directAddCollectible($('[data-quick-add-to-collection="true"]'));
     translationsSeeAll();
     deleteFormConfirm();
+    colorPicker();
     if (typeof customLoadCommons != 'undefined') {
         customLoadCommons();
     }

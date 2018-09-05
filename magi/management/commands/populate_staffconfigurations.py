@@ -94,6 +94,14 @@ class Command(BaseCommand):
             'key': 'below_about_image',
             'verbose_key': 'Image under the custom section under "About us" in about page',
         })
+        create({
+            'key': 'donators_goal',
+            'verbose_key': 'Donations: Goal we\'re trying to reach (should match Patreon)',
+        })
+        create({
+            'key': 'donate_image',
+            'verbose_key': 'Donations: Illustration next to button on donation page',
+        })
         # create({
         #     'key': '',
         #     'verbose_key': '',

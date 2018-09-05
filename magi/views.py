@@ -3,7 +3,7 @@ import math, datetime, random
 from collections import OrderedDict
 from dateutil.relativedelta import relativedelta
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, Http404
 from django.conf import settings as django_settings
 from django.core.urlresolvers import resolve
 from django.contrib.auth.views import login as login_view
@@ -15,7 +15,6 @@ from django_translated import t
 from django.utils.safestring import mark_safe
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.utils.http import urlquote
-from django.utils.formats import dateformat
 from django.utils import timezone
 from django.db.models import Count, Prefetch, Q
 from django.views.decorators.csrf import csrf_exempt
@@ -55,6 +54,8 @@ from magi.utils import (
     setSubField,
     staticImageURL,
     getAccountIdsFromSession,
+    find_all_translations,
+    duplicate_translation,
 )
 from magi.notifications import pushNotification
 from magi.settings import (
@@ -234,19 +235,6 @@ def aboutDefaultContext(request):
     except ObjectDoesNotExist:
         my_timezone = None
     for staff_member in context['staff'] + context['contributors']:
-        # Add staff member location URL
-        if staff_member.preferences.location:
-            latlong = '{},{}'.format(staff_member.preferences.latitude, staff_member.preferences.longitude) if staff_member.preferences.latitude else None
-            staff_member.location_url = u'/map/?center={}&zoom=10'.format(latlong) if 'map' in context['all_enabled'] and latlong else u'https://www.google.com/maps?q={}'.format(staff_member.preferences.location)
-
-        # Add staff member birthday URL and formatting
-        if staff_member.preferences.birthdate:
-            staff_member.formatted_birthday = dateformat.format(staff_member.preferences.birthdate, "F d")
-            today = datetime.date.today()
-            birthday = staff_member.preferences.birthdate.replace(year=today.year)
-            if birthday < today:
-                birthday = birthday.replace(year=today.year + 1)
-            staff_member.birthday_url = 'https://www.timeanddate.com/countdown/birthday?iso={date}T00&msg={username}%27s+birthday'.format(date=dateformat.format(birthday, "Ymd"), username=staff_member.username)
 
         # Stats & Details
         staff_member.stats = {}
@@ -1021,35 +1009,17 @@ def translations(request):
     context['poeditor'] = models.UserPreferences.GROUPS.get('translator', {}).get('outside_permissions', {}).get('POEditor', None)
     context['total_per_languages'] = {}
     context['total'] = 0
+    context['total_need_translations'] = 0
     context['see_all'] = 'see_all' in request.GET
     only_languages = (request.user.preferences.settings_per_groups or {}).get('translator', {}).get('languages', {})
+    if context['see_all']:
+        only_languages = {}
     if 'language' in request.GET:
         only_languages = request.GET['language'].split(u',')
-    if 'staffconfiguration' in context['all_enabled']:
-        context['total_staff_configurations_per_languages'] = {}
-        for language, verbose_name in django_settings.LANGUAGES:
-            if (only_languages
-                and language not in only_languages
-                and not context['see_all']):
-                continue
-            context['staffconfiguration_fields'] = [
-                (f.key, f.verbose_key) for f in models.StaffConfiguration.objects.extra(where=[
-                    '(SELECT COUNT(*) FROM {table} AS a WHERE a.key = `key` AND i_language = \'en\') >= 1'.format(
-                        table=models.StaffConfiguration._meta.db_table,
-                    ),
-                ]).filter(i_language=language).filter(Q(value__isnull=True) | Q(value=''))]
-            total = len(context['staffconfiguration_fields'])
-            if not total:
-                continue
-            if language not in context['total_staff_configurations_per_languages']:
-                context['total_staff_configurations_per_languages'][language] = {
-                    'verbose_name': verbose_name,
-                    'image': staticImageURL(language, folder='language', extension='png')
-                }
-            context['total'] += total
     for collection in getMagiCollections().values():
         if collection.translated_fields:
             c = {
+                'name': collection.name,
                 'title': collection.title,
                 'icon': collection.icon,
                 'image': collection.image,
@@ -1059,13 +1029,12 @@ def translations(request):
             for field in collection.translated_fields:
                 languages = getattr(
                     collection.queryset.model,
-                    u'{name}_CHOICES'.format(name=field.upper()),
+                    u'{name}S_CHOICES'.format(name=field.upper()),
                     django_settings.LANGUAGES,
                 )
+
                 for language, verbose_name in languages:
-                    if (only_languages
-                        and language not in only_languages
-                        and not context['see_all']):
+                    if only_languages and language not in only_languages:
                         continue
                     if language not in c['translated_fields_per_languages']:
                         c['translated_fields_per_languages'][language] = {
@@ -1073,30 +1042,93 @@ def translations(request):
                             'fields': [],
                             'image': staticImageURL(language, folder='language', extension='png')
                         }
-                    count = collection.queryset.exclude(**{
+                    items_with_something_to_translate = collection.queryset.exclude(**{
                         u'{}__isnull'.format(field): True,
                     }).exclude(**{
                         field: '',
-                    }).exclude(**{
+                    })
+                    count_total = items_with_something_to_translate.count()
+                    count_need_translations = items_with_something_to_translate.exclude(**{
                         u'd_{}s__contains'.format(field): u'"{}"'.format(language),
                     }).count()
-                    if not count:
+                    if not count_total:
                         continue
                     c['translated_fields_per_languages'][language]['fields'].append({
                         'name': field,
-                        'verbose_name': toHumanReadable(field),
-                        'total': count,
+                        'verbose_name': collection.queryset.model._meta.get_field_by_name(field)[0].verbose_name or toHumanReadable(field),
+                        'total': count_total,
+                        'total_need_translations': count_need_translations,
+                        'total_translated': count_total - count_need_translations,
                     })
-                    context['total'] += count
+                    context['total'] += count_total
+                    context['total_need_translations'] += count_need_translations
                     if language not in context['total_per_languages']:
                         context['total_per_languages'][language] = {
                             'verbose_name': verbose_name,
+                            'total_need_translations': 0,
                             'total': 0,
                             'image': staticImageURL(language, folder='language', extension='png')
                         }
-                    context['total_per_languages'][language]['total'] += count
+                    context['total_per_languages'][language]['total'] += count_total
+                    context['total_per_languages'][language]['total_need_translations'] += count_need_translations
             context['collections'].append(c)
+
+    if 'staffconfiguration' in context['all_enabled']:
+        context['staff_configurations_per_languages'] = {}
+        keys_of_staff_configurations_with_english = models.StaffConfiguration.objects.filter(
+            i_language='en', value__isnull=False).exclude(value='').values_list('key', flat=True)
+        staff_configurations = models.StaffConfiguration.objects.filter(
+            key__in=keys_of_staff_configurations_with_english).exclude(i_language='en')
+        if only_languages:
+            staff_configurations = staff_configurations.filter(i_language__in=only_languages)
+        context['staff_configurations_per_languages'] = {}
+        for staff_configuration in staff_configurations:
+            if staff_configuration.language not in context['staff_configurations_per_languages']:
+                context['staff_configurations_per_languages'][staff_configuration.language] = {
+                    'verbose_name': staff_configuration.t_language,
+                    'image': staff_configuration.language_image_url,
+                    'fields': [],
+                }
+            staff_configuration.need_translation = not staff_configuration.value
+            context['staff_configurations_per_languages'][staff_configuration.language]['fields'].append(staff_configuration)
+            if staff_configuration.need_translation:
+                context['total_need_translations'] += 1
+                context['total_per_languages'][staff_configuration.language]['total_need_translations'] += 1
+            context['total'] += 1
+            context['total_per_languages'][staff_configuration.language]['total'] += 1
+
+    context['total_translated'] = context['total'] - context['total_need_translations']
+    context['percent_translated'] = int(context['total_translated'] / context['total'] * 100)
+    for language, details in context['total_per_languages'].items():
+        details['total_translated'] = details['total'] - details['total_need_translations']
+        details['percent_translated'] = int(details['total_translated'] / details['total'] * 100)
     return render(request, 'pages/staff/translations.html', context)
+
+def translations_duplicator(request, collection_name, field_name, language=None):
+    context = getGlobalContext(request)
+    redirectWhenNotAuthenticated(request, context, next_title='Translations duplicator')
+    if not hasPermission(request.user, 'translate_items'):
+        raise PermissionDenied()
+    collection = getMagiCollection(collection_name)
+    if not collection or not collection.translated_fields or field_name not in collection.translated_fields:
+        raise Http404
+    context['collection'] = collection
+    context['field_name'] = field_name
+    context['language'] = language
+    context['verbose_field_name'] = collection.queryset.model._meta.get_field_by_name(field_name)[0].verbose_name
+    context['see_all'] = 'see_all' in request.GET
+    context['page_title'] = u'Translations duplicator: {} {}'.format(
+        collection.plural_title,
+        context['verbose_field_name'],
+    )
+    if request.method == 'POST' and 'term' in request.POST:
+        context['logs'] = duplicate_translation(
+            collection.queryset.model, field_name, request.POST['term'],
+            only_for_language=language, print_log=False, html_log=True,
+        )
+
+    context['terms'] = find_all_translations(collection.queryset.model, field_name, only_for_language=language)
+    return render(request, 'pages/staff/translations_duplicator.html', context)
 
 def collections(request):
     context = getGlobalContext(request)

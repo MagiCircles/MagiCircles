@@ -221,6 +221,14 @@
             color: @brand-success;
         }
     }
+    .color-viewer {
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        margin-left: 10px;
+        display: inline-block;
+        vertical-align: middle;
+    }
     .long-text-title {
         display: block;
         padding: 8px 0 16px 0;
@@ -1046,7 +1054,7 @@ nav {
     }
 }
 
-.staff-profile, .contributor-profile {
+.staff-profile, .contributor-profile, .donator-profile {
     margin-bottom: 50px;
     .popover img {
         box-sizing: content-box;
@@ -1107,10 +1115,79 @@ nav {
     }
 }
 
+.donator-profile {
+    width: 33.33%;
+    display: inline-block;
+    vertical-align: top;
+    .donator-link {
+        text-align: center;
+        padding: 20px 0;
+    }
+    .staff-photo {
+        width: 160px;
+    }
+    .staff-photo-wrapper {
+        display: inline-block;
+        position: relative;
+    }
+    .rank {
+        position: absolute;
+        top: -9px;
+        left: -29px;
+        img {
+            transform: rotate(-28deg);
+        }
+    }
+    &.donator-profile-small {
+        width: 16.66%;
+        .staff-photo {
+            width: 60px;
+        }
+        .rank {
+            img {
+                width: 53px;
+            }
+        }
+        .donator-link {
+            padding: 0;
+        }
+        h3 {
+            margin: 16px 0 5px 0;
+            font-size: 1.1em;
+        }
+        .groups h4 {
+            margin: 0;
+            padding: 0;
+            font-size: 1em;
+        }
+    }
+    .flaticon-heart {
+        vertical-align: middle;
+        font-size: 1.22em;
+        padding: 0 10px;
+    }
+}
+
+.donators-list {
+    text-align: center;
+}
+
+.donator-heart(@color) {
+    background: linear-gradient(60deg, @color, @color, @color, lighten(@color, 15%), @color, darken(@color, 20%));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.donator-heart-SUPPORTER { .donator-heart(#4a86e8); }
+.donator-heart-LOVER { .donator-heart(#ff53a6); }
+.donator-heart-AMBASSADOR { .donator-heart(#a8a8a8); }
+.donator-heart-PRODUCER { .donator-heart(#c98910); }
+.donator-heart-DEVOTEE { .donator-heart(#c98910); }
+
 #profiletabs {
     margin-top: 10px;
     li {
-	font-size: 2em;
+	    font-size: 2em;
     }
 }
 
@@ -1250,6 +1327,7 @@ nav {
 	   color: darken(@mainColor, 15%);
        }
    }
+   .btn-link-muted { .button-variant(#777, @transparent, @transparent); }
 
    .well-main {
        .well-variant(@mainColor, white);
@@ -1596,12 +1674,6 @@ nav {
 	display: block;
 	text-align: center;
     }
-}
-
-.btn-extradonation {
-    height: 30px;
-    line-height: 30px;
-    box-sizing: content-box;
 }
 
 .default-account {

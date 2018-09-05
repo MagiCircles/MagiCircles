@@ -1,12 +1,12 @@
 from __future__ import division
-import os, string, random, csv, tinify, cStringIO, pytz, simplejson, datetime, io, operator
+import os, string, random, csv, tinify, cStringIO, pytz, simplejson, datetime, io, operator, re
 from PIL import Image
 from collections import OrderedDict
 from django.conf import settings as django_settings
 from django.core.files.temp import NamedTemporaryFile
 from django.core.exceptions import ValidationError
 from django.core.urlresolvers import resolve
-from django.core.validators import BaseValidator
+from django.core.validators import BaseValidator, RegexValidator
 from django.http import Http404
 from django.utils.deconstruct import deconstructible
 from django.utils.translation import ugettext_lazy as _, get_language
@@ -19,9 +19,10 @@ from django.db import models
 from django.db.models.fields import BLANK_CHOICE_DASH, FieldDoesNotExist
 from django.db.models import Q
 from django.forms.models import model_to_dict
-from django.forms import NullBooleanField
+from django.forms import NullBooleanField, TextInput, CharField as forms_CharField, CheckboxInput
 from django.core.mail import EmailMultiAlternatives
 from django.core.files.images import ImageFile
+from django_translated import t
 from magi.middleware.httpredirect import HttpRedirectException
 from magi.default_settings import RAW_CONTEXT
 
@@ -246,7 +247,7 @@ def ajaxContext(request):
 
 def emailContext():
     context = RAW_CONTEXT.copy()
-    context['t_site_name'] = context['site_name_per_language'].get(request.LANGUAGE_CODE, context['site_name'])
+    context['t_site_name'] = context['site_name_per_language'].get(get_language(), context['site_name'])
     if context['site_url'].startswith('//'):
         context['site_url'] = 'http:' + context['site_url']
     return context
@@ -502,6 +503,24 @@ def birthdays_within(days_after, days_before=0, field_name='birthday'):
     # Compose the djano.db.models.Q objects together for a single query.
     return reduce(operator.or_, (Q(**d) for d in monthdays))
 
+def birthdayURL(user):
+    today = datetime.date.today()
+    try:
+        birthday = user.preferences.birthdate.replace(year=today.year)
+    except ValueError:
+        # Can happen when birthday is February 29th
+        birthday = user.preferences.birthdate.replace(
+            year=today.year,
+            month=user.preferences.birthdate.month + 1,
+            day=1,
+        )
+    if birthday < today:
+        birthday = birthday.replace(year=today.year + 1)
+    return 'https://www.timeanddate.com/countdown/birthday?iso={date}T00&msg={username}%27s+birthday'.format(
+        date=dateformat.format(birthday, "Ymd"),
+        username=user.username,
+    )
+
 ############################################################
 # Event status using start and end date
 
@@ -631,6 +650,48 @@ def modelHasField(model, field_name):
         return True
     except FieldDoesNotExist:
         return False
+
+class ColorInput(TextInput):
+    input_type = 'color'
+
+    def render(self, name, value, attrs=None):
+        rendered = super(ColorInput, self).render(name, value, attrs=attrs)
+        if not self.is_required:
+            return mark_safe(u'{input} <input type="checkbox" name="unset-{name}"{checked}> {none}'.format(
+                input=rendered,
+                name=name,
+                none=t['Clear'],
+                checked='' if value else ' checked',
+            ))
+        return rendered
+
+    def value_from_datadict(self, data, files, name):
+        value = super(ColorInput, self).value_from_datadict(data, files, name)
+        if not self.is_required and CheckboxInput().value_from_datadict(
+                data, files, u'unset-{}'.format(name)):
+            return None
+        return value
+
+class ColorFormField(forms_CharField):
+    pass
+
+class ColorField(models.CharField):
+    default_validators = [
+        RegexValidator(
+            re.compile('^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$'),
+            u'Enter a valid hex color.',
+            'invalid',
+        ),
+    ]
+
+    def __init__(self, *args, **kwargs):
+        kwargs['max_length'] = 10
+        super(ColorField, self).__init__(*args, **kwargs)
+
+    def formfield(self, **kwargs):
+        kwargs['form_class'] = ColorFormField
+        kwargs['widget'] = ColorInput
+        return super(ColorField, self).formfield(**kwargs)
 
 ############################################################
 # Set a field in a sub dictionary
@@ -872,3 +933,85 @@ def locationOnChange(user_preferences):
         print u'{} {} Error, {}'.format(user_preferences.user, user_preferences.location, sys.exc_info()[0])
         # Will not mark as not changed, so it will be retried at next iteration
     return True
+
+############################################################
+# Translations
+
+def duplicate_translation(model, field, term, only_for_language=None, print_log=True, html_log=False):
+    logs = []
+    items = list(model.objects.filter(**{ field: term }))
+    known_translations = []
+    for item in items:
+        for language, translation in getattr(item, u'{}s'.format(field[2:] if field.startswith('m_') else field)).items():
+            if only_for_language and language != only_for_language:
+                continue
+            if language not in known_translations:
+                for s_item in items:
+                    existing = getattr(s_item, u'{}s'.format(field[2:] if field.startswith('m_') else field))
+                    if language not in existing:
+                        s_item.add_d(u'{}s'.format(field), language, translation[1] if field.startswith('m_') else translation)
+                        log = u'Add {language} translations to {open_a}#{id} {item}{close_a}'.format(
+                            language=language,
+                            open_a=u'<a href="{}" target="_blank">'.format(s_item.http_item_url) if html_log else '',
+                            id=s_item.id,
+                            item=s_item,
+                            close_a='</a>' if html_log else '',
+                        )
+                        if print_log:
+                            print log
+                        logs.append(log)
+                    s_item.save()
+                known_translations.append(language)
+    return logs
+
+def translations_count_has(model, field, term, language):
+    return model.objects.filter(**{
+        field: term,
+        u'd_{}s__icontains'.format(field): '"{}"'.format(language),
+    }).count()
+
+def translations_count_to_apply_to(model, field, term, language):
+    return model.objects.filter(**{
+        field: term,
+    }).exclude(**{
+        u'd_{}s__icontains'.format(field): '"{}"'.format(language),
+    }).count()
+
+def find_all_translations(model, field, only_for_language=None, with_count_has=True, with_count_to_apply_to=True):
+    """
+    Returns a dict of:
+    base term in English
+    -> (Dict of:
+       Language
+       -> (List of translations,
+           Count other item with term present in that language,
+           Count how many items could get their translation duplicated automatically),
+       total can be duplicated to,
+       display term (for markdown))
+    """
+    translations = {}
+    for item in model.objects.filter(**{ u'{}__isnull'.format(field): False}).exclude(**{ field: '' }):
+        term = getattr(item, field)
+        if term not in translations:
+            translations[term] = {}
+        for language, translation in getattr(item, u'{}s'.format(field[2:] if field.startswith('m_') else field)).items():
+            if only_for_language and language != only_for_language:
+                continue
+            if language not in translations[term]:
+                translations[term][language] = (
+                    [],
+                    translations_count_has(model, field, term, language) if with_count_has else 0,
+                    translations_count_to_apply_to(model, field, term, language) if with_count_to_apply_to else 0,
+                )
+            if translation not in translations[term][language][0]:
+                translations[term][language][0].append(
+                    mark_safe(u'<p class="to-markdown">{}</p>'.format(translation[1]))
+                    if field.startswith('m_') else translation)
+    for term in translations.keys():
+        translations[term] = (
+            translations[term],
+            reduce(lambda a, b: a + b, [_t[2] for _t in translations[term].values()], 0),
+            mark_safe(u'<p class="to-markdown">{}</p>'.format(term)) if field.startswith('m_') else term,
+        )
+
+    return translations

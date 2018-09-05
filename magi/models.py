@@ -6,11 +6,28 @@ from django.contrib.auth.models import User
 from django.core import validators
 from django.utils.translation import ugettext_lazy as _, string_concat, get_language
 from django.utils import timezone
-from django.utils.formats import dateformat
+from django.utils.formats import date_format
 from django.utils.dateparse import parse_date
 from django.forms.models import model_to_dict
 from django.conf import settings as django_settings
-from magi.utils import AttrDict, randomString, getMagiCollection, uploadToRandom, uploadItem, uploadTiny, linkToImageURL, hasGroup, hasPermission, hasOneOfPermissions, hasPermissions, toHumanReadable, LANGUAGES_DICT, locationOnChange
+from magi.utils import (
+    AttrDict,
+    randomString,
+    getMagiCollection,
+    uploadToRandom,
+    uploadItem,
+    uploadTiny,
+    linkToImageURL,
+    hasGroup,
+    hasPermission,
+    hasOneOfPermissions,
+    hasPermissions,
+    toHumanReadable,
+    LANGUAGES_DICT,
+    locationOnChange,
+    staticImageURL,
+    birthdayURL,
+)
 from magi.settings import (
     ACCOUNT_MODEL,
     GAME_NAME,
@@ -28,6 +45,7 @@ from magi.settings import (
     GROUPS,
     HOME_ACTIVITY_TABS,
     MINIMUM_LIKES_POPULAR,
+    DONATORS_GOAL,
 )
 from magi.item_model import MagiModel, BaseMagiModel, get_image_url, i_choices, addMagiModelProperties, getInfoFromChoices
 from magi.abstract_models import CacheOwner
@@ -62,6 +80,8 @@ User.hasGroup = lambda u, group: hasGroup(u, group)
 User.hasPermission = lambda u, permission: hasPermission(u, permission)
 User.hasOneOfPermissions = lambda u, permissions: hasOneOfPermissions(u, permissions)
 User.hasPermissions = lambda u, permissions: hasPermissions(u, permissions)
+
+User.birthday_url = property(lambda u: birthdayURL(u))
 
 ############################################################
 
@@ -119,6 +139,12 @@ class UserPreferences(BaseMagiModel):
     location_changed = models.BooleanField(default=False)
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
+
+    @property
+    def location_url(self):
+        latlong = '{},{}'.format(self.latitude, self.longitude) if self.latitude else None
+        return u'/map/?center={}&zoom=10'.format(latlong) if latlong else u'https://www.google.com/maps?q={}'.format(self.location)
+
     following = models.ManyToManyField(User, related_name='followers')
 
     # Activities preferences
@@ -151,23 +177,12 @@ class UserPreferences(BaseMagiModel):
         'DEVOTEE': '#c98910',
     }
 
-    STATUS_COLOR_STRINGS = {
-        'SUPPORTER': _('blue'),
-        'LOVER':  _('pink'),
-        'AMBASSADOR':  _('shiny Silver'),
-        'PRODUCER':  _('shiny Gold'),
-        'DEVOTEE':  _('shiny Gold'),
-    }
-
     STATUS_WITHOUT_I_CHOICES = True
     STATUS_SOFT_CHOICES = True
     i_status = models.CharField('Status', max_length=12, null=True)
     @property
     def status_color(self):
         return self.STATUS_COLORS[self.i_status] if self.i_status else None
-    @property
-    def status_color_string(self):
-        return self.STATUS_COLOR_STRINGS[self.i_status] if self.i_status else None
 
     donation_link = models.CharField(_('Custom link'), max_length=200, null=True, blank=True, validators=[
         validators.URLValidator(),
@@ -322,6 +337,16 @@ class UserPreferences(BaseMagiModel):
         return type(self).get_age(self.birthdate)
 
     @property
+    def formatted_birthday(self):
+        if not self.birthdate: return ''
+        if self.show_birthdate_year:
+            return u'{} ({})'.format(
+                date_format(self.birthdate, format='DATE_FORMAT', use_l10n=True),
+                _(u'{age} years old').format(age=self.age),
+            )
+        return date_format(self.birthdate, format='MONTH_DAY_FORMAT', use_l10n=True)
+
+    @property
     def email_notifications_turned_off(self):
         if not self.email_notifications_turned_off_string:
             return []
@@ -469,6 +494,7 @@ class StaffConfiguration(MagiModel):
     LANGUAGE_WITHOUT_I_CHOICES = True
     LANGUAGE_SOFT_CHOICES = True
     i_language = models.CharField(_('Language'), max_length=10, null=True)
+    language_image_url = property(lambda _s: staticImageURL(_s.language, folder=u'language', extension='png'))
 
     is_long = models.BooleanField(default=False)
     is_markdown = models.BooleanField(default=False)
@@ -1042,6 +1068,7 @@ class DonationMonth(MagiModel):
     owner = models.ForeignKey(User, related_name='donation_month_created')
     date = models.DateField(default=datetime.datetime.now)
     cost = models.FloatField(default=250)
+    goal = DONATORS_GOAL
     donations = models.FloatField(default=0)
     image = models.ImageField(_('Image'), upload_to=uploadItem('badges/'))
 
@@ -1050,15 +1077,31 @@ class DonationMonth(MagiModel):
     }
 
     @property
-    def percent(self):
+    def percent_to_goal(self):
+        if not DONATORS_GOAL: return 0
+        percent = (self.donations / DONATORS_GOAL) * 100
+        if percent > 100:
+            return 100
+        return percent
+
+    @property
+    def percent_to_cost(self):
         percent = (self.donations / self.cost) * 100
         if percent > 100:
             return 100
         return percent
 
     @property
+    def percent(self):
+        return self.percent_to_goal if DONATORS_GOAL else self.percent_to_cost
+
+    @property
     def percent_int(self):
         return int(self.percent)
+
+    @property
+    def reached_100_percent(self):
+        return self.percent_int >= 100
 
     def __unicode__(self):
         return unicode(self.date)
@@ -1086,8 +1129,17 @@ class Badge(MagiModel):
         (RANK_SILVER, _('Silver')),
         (RANK_GOLD, _('Gold')),
     )
+    RANK_CHOICES_DICT = dict(RANK_CHOICES)
 
     rank = models.PositiveIntegerField(null=True, blank=True, choices=RANK_CHOICES, help_text='Top 3 of this specific badge.')
+
+    @property
+    def t_rank(self):
+        return self.RANK_CHOICES_DICT[self.rank]
+
+    @property
+    def rank_image_url(self):
+        return staticImageURL(u'medal{}'.format(self.rank), folder='badges', extension='png')
 
     tinypng_settings = {
         'image': BADGE_IMAGE_TINYPNG_SETTINGS,
@@ -1106,7 +1158,7 @@ class Badge(MagiModel):
     @property
     def translated_name(self):
         if self.donation_month_id:
-            return _(u'{month} Donator').format(month=dateformat.format(self.date, "F Y"))
+            return _(u'{month} Donator').format(month=date_format(self.date, format='YEAR_MONTH_FORMAT', use_l10n=True))
         return self.name
 
     @property

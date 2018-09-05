@@ -361,12 +361,12 @@ class BaseMagiModel(models.Model):
         setattr(self, 'c_{name}'.format(name=field_name), join_data(*c))
 
     def add_d(self, field_name, key, value):
-        current_d = getattr(self, field_name)
+        current_d = getattr(self, field_name[2:] if field_name.startswith('m_') else field_name)
         current_d[key] = value
         setattr(self, u'd_{name}'.format(name=field_name), json.dumps(current_d))
 
     def remove_d(self, field_name, key):
-        current_d = getattr(self, field_name)
+        current_d = getattr(self, field_name[2:] if field_name.startswith('m_') else field_name)
         del(current_d[key])
         setattr(self, u'd_{name}'.format(name=field_name), json.dumps(current_d) if current_d else None)
 

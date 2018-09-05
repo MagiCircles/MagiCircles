@@ -8,6 +8,18 @@ from magi.settings import SITE_URL
 ############################################################
 # Get total donators (for generated settings)
 
+def totalDonatorsThisMonth():
+    now = timezone.now()
+    this_month = datetime.datetime(year=now.year, month=now.month, day=1)
+    try:
+        donation_month = models.DonationMonth.objects.get(date=this_month)
+    except ObjectDoesNotExist:
+        try:
+            donation_month = models.DonationMonth.objects.order_by('-date')[0]
+        except IndexError:
+            return 0
+    return models.Badge.objects.filter(donation_month=donation_month).values('user').distinct().count()
+
 def totalDonators():
     return models.UserPreferences.objects.filter(i_status__isnull=False).exclude(i_status__exact='').count()
 
@@ -32,12 +44,14 @@ def latestDonationMonth(failsafe=False):
             'percent_int': 0,
             'date': this_month,
             'donations': 0,
+            'reached_100_percent': False,
         }
     return {
         'percent': donation_month.percent,
         'percent_int': donation_month.percent_int,
         'date': donation_month.date,
         'donations': donation_month.donations,
+        'reached_100_percent': donation_month.reached_100_percent,
     }
 
 ############################################################

@@ -256,7 +256,9 @@ else:
     FAVORITE_CHARACTER_TO_URL = lambda _: '#'
     FAVORITE_CHARACTER_NAME = None
 
-if hasattr(settings_module, 'DONATE_IMAGE'):
+if hasattr(django_settings, 'STAFF_CONFIGURATIONS') and 'donate_image' in django_settings.STAFF_CONFIGURATIONS:
+    DONATE_IMAGE = django_settings.STAFF_CONFIGURATIONS['donate_image']
+elif hasattr(settings_module, 'DONATE_IMAGE'):
     DONATE_IMAGE = getattr(settings_module, 'DONATE_IMAGE')
 else:
     DONATE_IMAGE = None
@@ -280,6 +282,16 @@ if hasattr(settings_module, 'DONATORS_STATUS_CHOICES'):
     DONATORS_STATUS_CHOICES = getattr(settings_module, 'DONATORS_STATUS_CHOICES')
 else:
     DONATORS_STATUS_CHOICES = None
+
+if hasattr(django_settings, 'STAFF_CONFIGURATIONS') and 'donators_goal' in django_settings.STAFF_CONFIGURATIONS:
+    try:
+        DONATORS_GOAL = int(django_settings.STAFF_CONFIGURATIONS['donators_goal'])
+    except ValueError:
+        DONATORS_GOAL = None
+elif hasattr(settings_module, 'DONATORS_GOAL'):
+    DONATORS_GOAL = getattr(settings_module, 'DONATORS_GOAL')
+else:
+    DONATORS_GOAL = None
 
 if hasattr(settings_module, 'ACTIVITY_TAGS'):
     ACTIVITY_TAGS = getattr(settings_module, 'ACTIVITY_TAGS')

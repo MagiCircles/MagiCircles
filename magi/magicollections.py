@@ -3,14 +3,32 @@ from collections import OrderedDict
 from django.utils.translation import ugettext_lazy as _, string_concat, get_language
 from django.utils import timezone
 from django.utils.safestring import mark_safe
-from django.utils.formats import dateformat
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.utils.datastructures import MultiValueDictKeyError
 from django.middleware import csrf
 from django.http import Http404
 from django.db.models import Count, Q, Prefetch, FieldDoesNotExist
 from magi.views import indexExtraContext
-from magi.utils import AttrDict, ordinalNumber, justReturn, propertyFromCollection, getMagiCollections, getMagiCollection, CuteFormType, CuteFormTransform, redirectWhenNotAuthenticated, custom_item_template, getAccountIdsFromSession, setSubField, hasPermission, hasPermissions, hasOneOfPermissions, jsv, staticImageURL
+from magi.utils import (
+    AttrDict,
+    ordinalNumber,
+    justReturn,
+    propertyFromCollection,
+    getMagiCollections,
+    getMagiCollection,
+    CuteFormType,
+    CuteFormTransform,
+    redirectWhenNotAuthenticated,
+    custom_item_template,
+    getAccountIdsFromSession,
+    setSubField,
+    hasPermission,
+    hasPermissions,
+    hasOneOfPermissions,
+    jsv,
+    staticImageURL,
+    ColorField,
+)
 from magi.raw import please_understand_template_sentence
 from magi.django_translated import t
 from magi.middleware.httpredirect import HttpRedirectException
@@ -692,6 +710,8 @@ class MagiCollection(object):
                     continue
             elif field_name == 'itunes_id':
                 d['type'] = 'itunes'
+            elif isinstance(field, ColorField):
+                d['type'] = 'color'
             else:
                 d['type'] = 'text'
             if d['type'] == 'text_with_link':
@@ -1810,7 +1830,7 @@ class UserCollection(MagiCollection):
                     'value': user.preferences.location,
                     'translate_type': True,
                     'flaticon': 'pinpoint',
-                    'url': u'/map/?center={}&zoom=10'.format(latlong) if 'map' in context['all_enabled'] and latlong else u'https://www.google.com/maps?q={}'.format(user.preferences.location),
+                    'url': user.preferences.location_url,
                 })
                 meta_links.append(link)
             if context['is_me'] or user.preferences.language != request.LANGUAGE_CODE:
@@ -1821,23 +1841,12 @@ class UserCollection(MagiCollection):
                     'image_url': staticImageURL(user.preferences.language, folder='language', extension='png'),
                 }))
             if user.preferences.birthdate:
-                today = datetime.date.today()
-                birthday = user.preferences.birthdate.replace(year=today.year)
-                if birthday < today:
-                    birthday = birthday.replace(year=today.year + 1)
-                if user.preferences.show_birthdate_year:
-                    value = u'{} ({})'.format(
-                        user.preferences.birthdate,
-                        _(u'{age} years old').format(age=user.preferences.age),
-                    )
-                else:
-                    value = dateformat.format(user.preferences.birthdate, "F d")
                 meta_links.append(AttrDict({
                     'type': 'Birthdate',
-                    'value': value,
+                    'value': user.preferences.formatted_birthday,
                     'translate_type': True,
                     'flaticon': 'birthday',
-                    'url': 'https://www.timeanddate.com/countdown/birthday?iso={date}T00&msg={username}%27s+birthday'.format(date=dateformat.format(birthday, "Ymd"), username=user.username),
+                    'url': user.birthday_url,
                 }))
             context['item'].all_links = meta_links + [link for link in context['item'].all_links if link != already_linked]
             num_links = len(context['item'].all_links)
@@ -2593,7 +2602,7 @@ class DonateCollection(MagiCollection):
     plural_name = 'donate'
     icon = 'heart'
     navbar_link_list = 'more'
-    queryset =  models.DonationMonth.objects.all().prefetch_related(Prefetch('badges', queryset=models.Badge.objects.select_related('user', 'user__preferences').order_by('-show_on_profile'), to_attr='all_badges'))
+    queryset =  models.DonationMonth.objects.all()
     reportable = False
     blockable = False
     form_class = forms.DonateForm
@@ -2611,7 +2620,34 @@ class DonateCollection(MagiCollection):
 
         def get_queryset(self, queryset, parameters, request):
             queryset = super(DonateCollection.ListView, self).get_queryset(queryset, parameters, request)
-            return queryset.filter(date__lte=timezone.now())
+            extra_select = {
+                u'user_is_{}'.format(status): 'CASE WHEN i_status = \'{}\' THEN 1 ELSE 0 END'.format(status)
+                for status, verbose in models.UserPreferences.STATUS_CHOICES
+            }
+            extra_select['has_rank'] = 'CASE WHEN rank IS NULL THEN 0 ELSE 1 END'
+            extra_select['user_has_status'] = 'CASE WHEN i_status IS NULL THEN 0 WHEN i_status = \'\' THEN 0 ELSE 1 END'
+            order = [
+                u'-user_is_{}'.format(status)
+                for status, verbose in reversed(models.UserPreferences.STATUS_CHOICES)
+            ]
+            queryset = queryset.prefetch_related(
+                Prefetch('badges',
+                         queryset=models.Badge.objects.select_related(
+                             'user', 'user__preferences',
+                         ).prefetch_related(
+                             Prefetch('user__links', to_attr='all_links'),
+                         ).extra(select=extra_select).order_by(*[
+                             '-show_on_profile',
+                             '-has_rank',
+                             '-rank',
+                             '-user_has_status',
+                         ] + order + [
+                             '-user__preferences__donation_link',
+                         ]),
+                         to_attr='all_badges'),
+            )
+            queryset = queryset.filter(date__lte=timezone.now())
+            return queryset
 
         def extra_context(self, context):
             request = context['request']
