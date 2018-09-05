@@ -73,6 +73,19 @@ function deleteFormConfirm() {
 }
 
 // *****************************************
+// Color picker
+
+function colorPicker() {
+    $('input[type="color"]').unbind('change');
+    $('input[type="color"]').change(function(e) {
+        let checkbox = $('input[type="checkbox"][name="unset-' + $(this).prop('id').slice(3) + '"]');
+        if (checkbox.length > 0) {
+            checkbox.prop('checked', false);
+        }
+    });
+}
+
+// *****************************************
 // Smooth page scroll
 
 function loadPageScroll() {
@@ -764,6 +777,7 @@ function loadCommons(onPageLoad /* optional = false */) {
     directAddCollectible($('[data-quick-add-to-collection="true"]'));
     translationsSeeAll();
     deleteFormConfirm();
+    colorPicker();
     if (typeof customLoadCommons != 'undefined') {
         customLoadCommons();
     }

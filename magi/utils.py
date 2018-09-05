@@ -19,9 +19,10 @@ from django.db import models
 from django.db.models.fields import BLANK_CHOICE_DASH, FieldDoesNotExist
 from django.db.models import Q
 from django.forms.models import model_to_dict
-from django.forms import NullBooleanField, TextInput, CharField as forms_CharField
+from django.forms import NullBooleanField, TextInput, CharField as forms_CharField, CheckboxInput
 from django.core.mail import EmailMultiAlternatives
 from django.core.files.images import ImageFile
+from django_translated import t
 from magi.middleware.httpredirect import HttpRedirectException
 from magi.default_settings import RAW_CONTEXT
 
@@ -651,10 +652,17 @@ class ColorInput(TextInput):
             return mark_safe(u'{input} <input type="checkbox" name="unset-{name}"{checked}> {none}'.format(
                 input=rendered,
                 name=name,
-                none=_('None'),
+                none=t['Clear'],
                 checked='' if value else ' checked',
             ))
         return rendered
+
+    def value_from_datadict(self, data, files, name):
+        value = super(ColorInput, self).value_from_datadict(data, files, name)
+        if not self.is_required and CheckboxInput().value_from_datadict(
+                data, files, u'unset-{}'.format(name)):
+            return None
+        return value
 
 class ColorFormField(forms_CharField):
     pass

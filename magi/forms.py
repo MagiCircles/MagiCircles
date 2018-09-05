@@ -133,7 +133,6 @@ class MagiForm(forms.ModelForm):
         self.c_choices = []
         self.d_choices = {}
         self.m_previous_values = {}
-        self.color_fields = []
         self.hidden_foreign_keys_querysets = {}
         # If is creating and item is unique per owner, redirect to edit unique
         if self.is_creating and self.collection and not isinstance(self, MagiFiltersForm) and not self.Meta.model.fk_as_owner and self.collection.add_view.unique_per_owner:
@@ -246,9 +245,6 @@ class MagiForm(forms.ModelForm):
             # Save previous values of markdown fields
             elif name.startswith('m_') and not isinstance(self, MagiFiltersForm) and not self.is_creating:
                 self.m_previous_values[name] = getattr(self.instance, name)
-            # Color fields
-            elif isinstance(field, ColorFormField):
-                self.color_fields.append(name)
         # Fix force required fields
         if hasattr(self.Meta, 'required_fields'):
             for field in self.Meta.required_fields:
@@ -289,11 +285,6 @@ class MagiForm(forms.ModelForm):
                         max=self.collection.add_view.max_per_user,
                         things=unicode(self.collection.plural_title).lower(),
                     ))
-        # Set color to None when checkbox checked
-        for field_name in self.color_fields:
-            if field_name in self.cleaned_data:
-                if self.data.get(u'unset-{}'.format(field_name), False):
-                    self.cleaned_data[field_name] = None
         return self.cleaned_data
 
     def save(self, commit=True):
