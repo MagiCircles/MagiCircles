@@ -505,17 +505,24 @@ def birthdays_within(days_after, days_before=0, field_name='birthday'):
 
 def birthdayURL(user):
     today = datetime.date.today()
-    try:
-        birthday = user.preferences.birthdate.replace(year=today.year)
-    except ValueError:
-        # Can happen when birthday is February 29th
-        birthday = user.preferences.birthdate.replace(
-            year=today.year,
+    birthday = user.preferences.birthdate
+
+    is_feb29 = False
+    if birthday.month == 2 and birthday.day == 29:
+        is_feb29 = True
+        birthday = birthday.replace(
             month=user.preferences.birthdate.month + 1,
             day=1,
         )
+
+    birthday = birthday.replace(year=today.year)
     if birthday < today:
         birthday = birthday.replace(year=today.year + 1)
+
+    if is_feb29:
+        try: birthday = birthday.replace(month=2, day=29)
+        except ValueError: pass
+
     return 'https://www.timeanddate.com/countdown/birthday?iso={date}T00&msg={username}%27s+birthday'.format(
         date=dateformat.format(birthday, "Ymd"),
         username=user.username,
