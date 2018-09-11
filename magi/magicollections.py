@@ -1428,7 +1428,8 @@ class AccountCollection(MagiCollection):
                 if name.startswith('i_'):
                     name = name[2:]
                 name = name.replace('_', ' ').title()
-                if isinstance(field, models.models.fields.CharField):
+                if (isinstance(field, models.models.fields.CharField)
+                    or isinstance(field, models.models.ImageField)):
                     templates[u'Inappropriate {}'.format(name)] = u'Your account\'s {} was inappropriate. {}'.format(name.lower(), please_understand_template_sentence)
         return templates
 
