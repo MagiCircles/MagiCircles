@@ -413,11 +413,13 @@ class MagiFilter(object):
                  selector and to_value are ignored when specified.
     selector: will be the name of the field by default. example: owner__username.
     selectors: same as selector but works with multiple values.
+    operator_for_multiple_selectors: how to filter when multiple selectors are provided.
     to_value: lambda that takes the value and transforms the value if needed.
     distinct: if your selector uses a many to many nested lookup, it's recommended to set
               distinct to true to avoid duplicates
     multiple: allow multiple values separated by commas. Set to False if your value may contain commas.
               defaults to False when to_queryset is provided
+    operator_for_multiple: how to filter when multiple values are given separated with commas.
     noop: when set to true, will not affect result
     """
     def __init__(self,
@@ -428,6 +430,7 @@ class MagiFilter(object):
                  distinct=False,
                  multiple=None,
                  operator_for_multiple=None,
+                 operator_for_multiple_selectors=None,
                  allow_csv=True,
                  noop=False,
     ):
@@ -444,6 +447,7 @@ class MagiFilter(object):
         else:
             self.multiple = True
         self.operator_for_multiple = operator_for_multiple
+        self.operator_for_multiple_selectors = operator_for_multiple_selectors
         self.allow_csv = allow_csv
         self.noop = noop
 
@@ -458,6 +462,10 @@ class MagiFilterOperator:
     @staticmethod
     def default_for_field(field):
         return MagiFilterOperator._default_per_field_type.get(type(field), MagiFilterOperator._default)
+
+class MagiFilterOperatorSelector:
+    Or, And = range(2)
+    default = Or
 
 def filter_ids(queryset, request):
     if 'ids' in request.GET and request.GET['ids'] and request.GET['ids'].replace(',', '').isdigit():
@@ -613,6 +621,7 @@ class MagiFiltersForm(AutoForm):
             # Automatic filtering
             else:
                 operator_for_multiple = filter.operator_for_multiple or MagiFilterOperator.default_for_field(self.fields[field_name])
+                operator_for_multiple_selectors = filter.operator_for_multiple_selectors or MagiFilterOperatorSelector.default
                 selectors = filter.selectors if filter.selectors else [field_name]
                 condition = Q()
                 filters, exclude = {}, {}
@@ -659,7 +668,11 @@ class MagiFiltersForm(AutoForm):
                     # Generic
                     else:
                         filters = { selector: self._value_as_string(filter, value) }
-                    condition = condition | Q(**filters)
+                    # Add filters to condition based on operator for selectors
+                    if operator_for_multiple_selectors == MagiFilterOperatorSelector.Or:
+                        condition = condition | Q(**filters)
+                    else:
+                        condition = condition & Q(**filters)
                 queryset = queryset.filter(condition).exclude(**exclude)
                 if filter.distinct:
                     queryset = queryset.distinct()
