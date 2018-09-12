@@ -1480,6 +1480,10 @@ class AccountCollection(MagiCollection):
             except FieldDoesNotExist:
                 return MagiCollection.ListView.default_ordering.__get__(self)
 
+        def extra_context(self, context):
+            super(AccountCollection.ListView, self).extra_context(context)
+            context['h1_page_title'] = _('Leaderboard')
+
     class ItemView(MagiCollection.ItemView):
         template = 'defaultAccountItem'
         comments_enabled = False
