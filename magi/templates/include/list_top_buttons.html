@@ -1,0 +1,26 @@
+{# Required: top_buttons, top_buttons_col_size #}
+      <div class="top_buttons">
+        <div class="row">
+          {% for name, button in top_buttons.items %}
+          {% if button.show and button.has_permissions %}
+          <div class="col-md-{{ top_buttons_col_size }}">
+            <a href="{{ button.url }}"
+               data-top-btn-name="{{ name }}"
+               class="{% for class in button.classes %}{{ class }} {% endfor %}"
+               title="{{ button.title }}"
+               {% if button.open_in_new_window %} target="_blank"{% endif %}
+               {% if button.ajax_url %}
+               data-ajax-url="{{ button.ajax_url }}"
+               data-ajax-title="{% if button.ajax_title %}{{ button.ajax_title }}{% else %}{{ button.title }}{% endif %}"
+               data-ajax-handle-form="true"
+               {% endif %}>
+              {% if button.icon %}<i class="flaticon-{{ button.icon }}"></i>
+              {% elif button.image %}<img src="{{ static_url }}img/{{ button.image }}.png?{{ static_files_version }}" height="39" />{% endif %}
+              {{ button.title }}
+              {% if button.subtitle %}<br /><small>{{ button.subtitle }}</small>{% endif %}
+            </a>
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>

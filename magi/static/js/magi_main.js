@@ -152,6 +152,43 @@ function loadStaffOnlyButtons() {
 }
 
 // *****************************************
+// Corner popup
+
+function loadCornerPopup() {
+    let popup = $('.corner-popup');
+    if (popup.length) {
+        let last_reminder = localStorage['popovers_' + popup.data('name') + '_last_reminder'] || null;
+        let remind_in_days = $('a[href="#close_remind"]').data('reminder-in-days');
+        let always_close = localStorage['popovers_' + popup.data('name') + '_always_close'] || false;
+        if (always_close
+           || (last_reminder && remind_in_days &&
+               last_reminder > (new Date().getTime() - (remind_in_days * 24 * 60 * 60 * 1000)))) {
+            popup.remove();
+        } else {
+            popup.show();
+            $.each(['close', 'close_remind', 'close_forever'], function(i, cls) {
+                let button = $('a[href="#' + cls + '"]');
+                if (button.length) {
+                    button.unbind('click');
+                    button.click(function(e) {
+                        e.preventDefault();
+                        if (cls == 'close_remind') {
+                            localStorage['popovers_' + popup.data('name') + '_last_reminder'] = new Date().getTime();
+                        } else if (cls == 'close_forever') {
+                            localStorage['popovers_' + popup.data('name') + '_always_close'] = true;
+                        }
+                        popup.hide('fast', function() {
+                            popup.remove();
+                        });
+                        return false;
+                    });
+                }
+            });
+        }
+    }
+}
+
+// *****************************************
 // Notifications
 
 function notificationsHandler() {
@@ -765,6 +802,7 @@ function loadCommons(onPageLoad /* optional = false */) {
     formloaders();
     dateInputSupport();
     loadStaffOnlyButtons();
+    loadCornerPopup();
     ajaxModals();
     ajaxPopovers();
     loadCountdowns();
@@ -821,6 +859,8 @@ function gettext(term) {
 function freeModal(title, body, buttons /* optional */, modal_size /* optional */, modal /* optional */) {
     keep_size = modal_size === true;
     modal = modal ? modal : $('#freeModal');
+    hidePopovers();
+    hideTooltips();
     if (!keep_size) {
         modal.find('.modal-dialog').removeClass('modal-lg');
         modal.find('.modal-dialog').removeClass('modal-md');
@@ -932,10 +972,18 @@ function reloadDisqus() {
 // Hide all the popovers
 
 function hidePopovers() {
-    $('[data-manual-popover=true]').popover('hide');
+    $('[data-manual-popover="true"]').popover('hide');
     $('[data-ajax-popover]').popover('hide');
-    $('[data-toggle=popover]').popover('hide');
+    $('[data-toggle="popover"]').popover('hide');
     $('a[href="/notifications/"]').popover('destroy');
+}
+
+// *****************************************
+// Hide all the tooltips
+
+function hideTooltips() {
+    $('[data-manual-tooltip="true"]').tooltip('hide');
+    $('[data-toggle="tooltip"]').tooltip('hide');
 }
 
 // *****************************************
@@ -946,27 +994,26 @@ function genericAjaxError(xhr, ajaxOptions, thrownError) {
 }
 
 // *****************************************
+// Objects
+
+function set(object, keys, value) {
+    if (keys.length == 0) {
+        return;
+    } else if (keys.length == 1) {
+        object[keys[0]] = value;
+        return;
+    } else {
+        if (typeof(object[keys[0]]) == 'undefined') {
+            object[keys[0]] = {}
+            return set(object[keys[0]], keys.slice(1), value);
+        }
+    }
+}
+
+// *****************************************
 // Handle actions on activities view
 
 function updateActivities() {
-    // Like count
-    $('a[href=#likecount]').unbind('click');
-    $('a[href=#likecount]').click(function(e) {
-        e.preventDefault();
-        var button = $(this);
-        var socialbar = button.closest('.socialbar');
-        var loader = socialbar.find('.hidden-loader');
-        var activity_id = socialbar.closest('.activity').data('id');
-        button.hide();
-        loader.show();
-        $.get('/ajax/users/?ajax_modal_only&liked_activity=' + activity_id, function(data) {
-            loader.hide();
-            button.show();
-            freeModal(gettext('Liked this activity'), data);
-        });
-        return false;
-    });
-
     // Like activities
     $('.likeactivity').unbind('submit');
     $('.likeactivity').submit(function(e) {

@@ -104,7 +104,9 @@ class CacheOwner(MagiModel):
             'preferences': AttrDict({
                 'i_status': self._cache_owner_preferences_i_status,
                 'status': self._cache_owner_preferences_i_status,
+                'status_color': dict(preferences_model.STATUS_COLORS).get(self._cache_owner_preferences_i_status, None) if preferences_model and self._cache_owner_preferences_i_status else None,
                 't_status': dict(preferences_model.STATUS_CHOICES)[self._cache_owner_preferences_i_status] if preferences_model and self._cache_owner_preferences_i_status else None,
+                'is_premium': self._cache_owner_preferences_i_status and self._cache_owner_preferences_i_status != 'THANKS',
                 'twitter': self._cache_owner_preferences_twitter,
                 'color': self._cache_owner_color,
                 'localized_color': preferences_model.get_localized_color(self._cache_owner_color) if preferences_model else None,

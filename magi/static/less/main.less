@@ -5,7 +5,6 @@
 @import "mixins/panel.less";
 @import "mixins/buttons.less";
 @import "mixins/well.less";
-@import url(https://fonts.googleapis.com/css?family=Roboto);
 
 @transparent: rgba(0, 0, 0, 0);
 
@@ -318,6 +317,42 @@ table.text-center th {
     }
     > img {
 	margin: -4px;
+    }
+}
+
+.title-separator {
+    display: block;
+    text-align: center;
+    overflow: hidden;
+    white-space: nowrap;
+    color: #ccc;
+    padding: 20px 0;
+    &>span {
+        position: relative;
+        display: inline-block;
+        &:before,
+        &:after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            width: 9999px;
+            height: 1.5px;
+            background: #eaeaea;
+        }
+        &:before {
+            right: 100%;
+        }
+        &:after {
+            left: 100%;
+        }
+        &:not(:empty) {
+            &:before {
+                margin-right: 15px;
+            }
+            &:after {
+                margin-left: 15px;
+            }
+        }
     }
 }
 
@@ -710,11 +745,12 @@ body.current-map, html.html-current-map {
 	color: #ccc;
     }
     .message {
-	padding: 10px 0;
+	    padding: 10px 0;
         overflow: auto;
-	img {
-	    max-width: 100%;
-	}
+        clear: both;
+	    img {
+	        max-width: 100%;
+	    }
     }
     .language {
 	float: right;
@@ -775,7 +811,7 @@ body.current-map, html.html-current-map {
 }
 
 @media(max-width:768px) {
-    .activity {
+    .activity, .private-message {
         .avatar_wrapper .flaticon-heart {
 	    display: none;
         }
@@ -914,9 +950,17 @@ form .form-group ul[id^=id_c_] {
     overflow: hidden;
 }
 .avatar_wrapper {
+    display: block;
+    .avatar_inner_wrapper {
+        display: inline-block;
+        position: relative;
+    }
     .flaticon-heart {
-	display: block;
-	.simple-shadow(white);
+	    display: block;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+	    .simple-shadow(white);
     }
 }
 a.avatar_wrapper {
@@ -980,6 +1024,44 @@ a[href="#hideStaffButtons"] {
 	text-decoration: none;
 	color: white;
 	opacity: 1;
+    }
+}
+
+.corner-popup {
+    position: fixed;
+    z-index: 3000;
+    bottom: 20px;
+    left: 20px;
+    max-width: 100%;
+    width: 400px;
+    background-color: fade(white, 95%);
+    border-radius: 10px;
+    padding: 20px 30px;
+    border: 2px solid white;
+    box-shadow: 0px 0px 30px 2px rgba(0, 0, 0, 0.2);
+    &>img {
+        float: right;
+        width: 120px;
+        margin-left: 10px;
+        &.overflow {
+            width: 180px;
+            margin: -40px -60px;
+            margin-left: 0;
+        }
+    }
+    h3 {
+        margin: 0;
+        padding-bottom: 6px;
+    }
+    small {
+        display: block;
+        padding-top: 10px;
+        .a-variant(#aaa);
+        a {
+            font-size: 0.8em;
+            display: inline-block;
+            padding-right: 10px;
+        }
     }
 }
 
@@ -1262,14 +1344,88 @@ nav {
     }
 }
 
-.private-message {
-    .has-unseen-messages {
+.current-privatemessage_list {
+    .top_buttons .col-md-12:not(:first-child) {
         display: inline-block;
-        width: 16px;
-        height: 16px;
+        width: 50%;
+    }
+}
+
+.private-message {
+    display: block;
+    .inner-message {
+        display: inline-block;
+    }
+    &+hr {
+        margin: 0;
+    }
+    h2 {
+        margin: 0;
+        padding: 0 0 10px 0;
+    }
+    .has-unseen-messages,
+    .is-new-message,
+    .recipient-didnt-see-yet,
+    {
+        display: inline-block;
+        vertical-align: middle;
+        width: 12px;
+        height: 12px;
         border-radius: 50%;
         margin: 0 10px;
+    }
+    .recipient-didnt-see-yet {
+        background: #eee;
+    }
+    .has-unseen-messages {
+        display: none;
 	    animation: blinker 2s linear infinite;
+    }
+    .recipient-saw {
+        display: inline-block;
+        vertical-align: middle;
+        color: #eee;
+        margin: 0 10px;
+    }
+    &.has-unseen-messages {
+        font-weight: 800;
+        .has-unseen-messages {
+            display: inline-block;
+        }
+    }
+    .message-preview {
+        white-space: nowrap;
+        max-width: 100%;
+        overflow: hidden;
+        vertical-align: bottom;
+    }
+    .message-content {
+        border-radius: 10px;
+        white-space: pre-line;
+        a {
+            color: inherit;
+            text-decoration: underline;
+            &:hover {
+                color: inherit;
+            }
+        }
+        &.unseen {
+            font-weight: bold;
+        }
+    }
+    .thread-sent, .thread-sender {
+        padding: 0 12px;
+    }
+    .thread-sent {
+        color: #aaa;
+    }
+    &.left {
+        .message-content {
+            background: #eee;
+        }
+    }
+    .thread-avatar {
+        padding-top: 10px;
     }
 }
 
@@ -1317,6 +1473,18 @@ nav {
 
    .text-main { color: @mainColor; }
    .text-secondary { color: @secondaryColor; }
+
+   .btn-link-primary { .button-variant(@brand-primary, @transparent, @transparent); }
+   .btn-link-success { .button-variant(@brand-success, @transparent, @transparent); }
+   .btn-link-info { .button-variant(@brand-info, @transparent, @transparent); }
+   .btn-link-warning { .button-variant(@brand-warning, @transparent, @transparent); }
+   .btn-link-danger { .button-variant(@brand-danger, @transparent, @transparent); }
+
+   .btn-link-light-primary { .button-variant(lighten(@brand-primary, 10%), @transparent, @transparent); }
+   .btn-link-light-success { .button-variant(lighten(@brand-success, 10%), @transparent, @transparent); }
+   .btn-link-light-info { .button-variant(lighten(@brand-info, 10%), @transparent, @transparent); }
+   .btn-link-light-warning { .button-variant(lighten(@brand-warning, 10%), @transparent, @transparent); }
+   .btn-link-light-danger { .button-variant(lighten(@brand-danger, 10%), @transparent, @transparent); }
 
    .btn-main { .button-variant(white, @mainColor, darken(@mainColor, 5%)); }
    .btn-white { .button-variant(@mainColor, white, lighten(@mainColor, 50%)) }
@@ -1403,8 +1571,12 @@ nav {
        }
    }
    .private-message {
-       .has-unseen-messages {
+       .has-unseen-messages, .is-new-message {
            background-color: @mainColor;
+       }
+       &.right .message-content {
+           background: @mainColor;
+           color: white;
        }
    }
 }
@@ -1477,8 +1649,14 @@ nav {
 }
 
 .user-item {
+    display: block;
     padding: 20px 0;
     border-bottom: 1px #eee solid;
+    .a-nodifference();
+    .flaticon-toggler {
+        vertical-align: middle;
+        padding: 30px;
+    }
     .avatar-section, .details-section, .buttons-section {
         display: inline-block;
         vertical-align: middle;

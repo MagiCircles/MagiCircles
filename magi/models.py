@@ -27,6 +27,7 @@ from magi.utils import (
     locationOnChange,
     staticImageURL,
     birthdayURL,
+    hasPermissionToMessage,
 )
 from magi.settings import (
     ACCOUNT_MODEL,
@@ -76,12 +77,15 @@ User.image_url = property(avatar)
 User.http_image_url = property(avatar)
 User.owner_id = property(lambda u: u.id)
 User.owner = property(lambda u: u)
+User.report_sentence = property(lambda u: _('Report {thing}').format(thing=u.username))
 User.hasGroup = lambda u, group: hasGroup(u, group)
 User.hasPermission = lambda u, permission: hasPermission(u, permission)
 User.hasOneOfPermissions = lambda u, permissions: hasOneOfPermissions(u, permissions)
 User.hasPermissions = lambda u, permissions: hasPermissions(u, permissions)
 
 User.birthday_url = property(lambda u: birthdayURL(u))
+User.hasPermissionToMessage = hasPermissionToMessage
+User.hasPermissionToBeMessagedBy = lambda u, from_user: hasPermissionToMessage(from_user, u)
 
 ############################################################
 
@@ -716,7 +720,7 @@ class Activity(MagiModel):
     creation = models.DateTimeField(auto_now_add=True)
     last_bump = models.DateTimeField(db_index=True, null=True)
     owner = models.ForeignKey(User, related_name='activities', db_index=True)
-    m_message = models.TextField(_('Message'))
+    m_message = models.TextField(_('Message'), max_length=15000)
 
     likes = models.ManyToManyField(User, related_name="liked_activities")
 
@@ -825,7 +829,11 @@ class Activity(MagiModel):
             'ajax_item_url': '/ajax/user/{}/'.format(self.owner_id),
             'preferences': AttrDict({
                 'i_status': self._cache_owner_preferences_i_status,
-                'status': dict(UserPreferences.STATUS_CHOICES)[self._cache_owner_preferences_i_status] if self._cache_owner_preferences_i_status else None,
+                'status': dict(UserPreferences.STATUS_CHOICES).get(self._cache_owner_preferences_i_status, None),
+                'status': self._cache_owner_preferences_i_status,
+                'status_color': dict(UserPreferences.STATUS_COLORS).get(self._cache_owner_preferences_i_status, None),
+                't_status': dict(UserPreferences.STATUS_CHOICES).get(self._cache_owner_preferences_i_status, None),
+                'is_premium': self._cache_owner_preferences_i_status and self._cache_owner_preferences_i_status != 'THANKS',
                 'twitter': self._cache_owner_preferences_twitter,
             }),
         })
@@ -932,6 +940,13 @@ class Notification(MagiModel):
             'open_sentence': lambda n: _('Open {thing}').format(thing=_('Activity')),
             'url': u'/activity/{}/{}/',
             'icon': 'heart',
+        }),
+        ('private-message', {
+            'format': _(u'You have a new private message from {}.'),
+            'title': _(u'When someone sends you a private message.'),
+            'open_sentence': lambda n: _('Open {thing}').format(thing=_('Private message')),
+            'url': '/privatemessages/?to_user={}',
+            'icon': 'contact',
         }),
     ]
     MESSAGES_DICT = dict(MESSAGES)
@@ -1211,11 +1226,23 @@ class Prize(MagiModel):
 class PrivateMessage(MagiModel):
     collection_name = 'privatemessage'
 
-    owner = models.ForeignKey(User, related_name='sent_messages', on_delete=models.SET_NULL, null=True)
-    to_user = models.ForeignKey(User, related_name='received_messages', on_delete=models.SET_NULL, null=True)
+    owner = models.ForeignKey(User, related_name='sent_messages', on_delete=models.CASCADE)
+    to_user = models.ForeignKey(User, related_name='received_messages', on_delete=models.CASCADE)
     creation = models.DateTimeField(auto_now_add=True)
-    message = models.TextField(_('Message'))
+    message = models.TextField(_('Message'), max_length=1500)
     seen = models.BooleanField(default=False)
+
+    PREVIEW_MAX_LENGTH = 100
+
+    @property
+    def message_preview(self):
+        lines = self.message.split('\n')
+        message = lines[0]
+        if len(message) > self.PREVIEW_MAX_LENGTH:
+            message = u' '.join(message[:self.PREVIEW_MAX_LENGTH+1].split(' ')[0:-1]) + u'...'
+        elif len(lines) > 1:
+            message += u'...'
+        return message
 
     def __unicode__(self):
         return self.message

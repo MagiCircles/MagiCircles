@@ -8,6 +8,7 @@ from django.utils.datastructures import MultiValueDictKeyError
 from django.middleware import csrf
 from django.http import Http404
 from django.db.models import Count, Q, Prefetch, FieldDoesNotExist
+from django.shortcuts import get_object_or_404
 from magi.views import indexExtraContext
 from magi.utils import (
     AttrDict,
@@ -28,9 +29,12 @@ from magi.utils import (
     jsv,
     staticImageURL,
     ColorField,
+    hasGoodReputation,
+    isInboxClosed,
 )
 from magi.raw import please_understand_template_sentence
 from magi.django_translated import t
+from magi.notifications import pushNotification
 from magi.middleware.httpredirect import HttpRedirectException
 from magi.settings import (
     ACCOUNT_MODEL,
@@ -430,6 +434,7 @@ class MagiCollection(object):
 
                 alt_views = MagiCollection.ListView.alt_views + [
                     ('quick_edit', {
+                        'hide_in_filter': True,
                         'verbose_name': _('Quick edit'),
                         'template': 'default_item_table_view',
                         'display_style': 'table',
@@ -930,8 +935,16 @@ class MagiCollection(object):
     #######################
     # Tools - not meant to be overriden
 
-    def get_list_url(self, ajax=False):
-        return u'{}/{}/'.format('' if not ajax else '/ajax', self.plural_name)
+    def get_list_url(self, ajax=False, modal_only=False, parameters=None):
+        return u'{}/{}/{}{}'.format(
+            '' if not ajax else '/ajax',
+            self.plural_name,
+            '' if not modal_only else '?ajax_modal_only',
+            '' if not parameters else u'{}{}'.format(
+                '?' if not modal_only else '&',
+                '&'.join([u'{}={}'.format(k, v) for k, v in parameters.items() if v is not None]),
+            ),
+        )
 
     def get_add_url(self, ajax=False, type=None):
         if self.types and not type:
@@ -1009,6 +1022,7 @@ class MagiCollection(object):
         top_buttons_classes = ['btn', 'btn-lg', 'btn-block', 'btn-main']
         show_add_button_superuser_only = False
         show_add_button_permission_only = False
+        show_search_results = True
         authentication_required = False
         distinct = False
         add_button_subtitle = _('Become a contributor to help us fill the database')
@@ -1249,7 +1263,7 @@ class MagiCollection(object):
         def redirect_after_add(self, request, item, ajax):
             if self.collection.item_view.enabled:
                 return item.item_url if not ajax else item.ajax_item_url
-            return self.collection.get_list_url(ajax)
+            return self.collection.get_list_url(ajax, modal_only=ajax)
 
         def check_type_permissions(self, request, context, type=None):
             pass
@@ -1323,13 +1337,13 @@ class MagiCollection(object):
         def redirect_after_edit(self, request, item, ajax):
             if self.collection.item_view.enabled:
                 return item.item_url if not ajax else item.ajax_item_url
-            return self.collection.get_list_url(ajax)
+            return self.collection.get_list_url(ajax, modal_only=ajax)
 
         def before_delete(self, request, item, ajax):
             pass
 
         def redirect_after_delete(self, request, item, ajax):
-            return self.collection.get_list_url(ajax)
+            return self.collection.get_list_url(ajax, modal_only=ajax)
 
         def get_item(self, request, pk):
             if pk == 'unique':
@@ -1518,12 +1532,17 @@ class AccountCollection(MagiCollection):
                     context['otherbuttons'][form_name] = mark_safe(u'<a href="?advanced" class="btn btn-link">{}</a>'.format(_('Advanced')))
 
         def redirect_after_add(self, request, instance, ajax=False):
-            if ajax: # Ajax is not allowed for profile url
-                return '/ajax/successadd/'
             if FIRST_COLLECTION:
                 collection = getMagiCollection(FIRST_COLLECTION)
                 if collection:
-                    return u'{}?get_started&add_to_{}={}'.format(collection.parent_collection.get_list_url(), collection.name, instance.id)
+                    return collection.parent_collection.get_list_url(
+                        ajax=ajax, modal_only=ajax, parameters={
+                            'get_started': '',
+                            'add_to_{}'.format(collection.name): instance.id,
+                        },
+                    )
+            if ajax: # Ajax is not allowed for profile url
+                return '/ajax/successadd/'
             return '{}#{}'.format(request.user.item_url, instance.id)
 
         def before_save(self, request, instance, type=None):
@@ -1567,17 +1586,63 @@ class UserCollection(MagiCollection):
         ('Inappropriate profile description', 'Something you wrote on your profile was inappropriate. ' + please_understand_template_sentence),
         ('Inappropriate username', 'Your username was inappropriate. ' + please_understand_template_sentence),
         ('Inappropriate location', 'Your location was inappropriate. ' + please_understand_template_sentence),
+        ('Received an inappropriate private message from this user', 'You sent private message(s) to user(s) and they found the content inappropriate. ' + please_understand_template_sentence + ' We kindly ask you to not re-iterate your actions. If it happens again, we will delete your profile, accounts, activities and everything else you own on our website permanently.'),
     ])
     report_delete_templates = {
         'Inappropriate behavior towards other user(s)': 'We noticed that you\'ve been acting in an inappropriate manner towards other user(s), which doesn\'t correspond to what we expect from our community members. Your profile, accounts, activities and everything else you owned on our website has been permanently deleted, and we kindly ask you not to re-iterate your actions.',
         'Spam': 'We detected spam activities from your user profile. Your profile, accounts, activities and everything else you owned on our website has been permanently deleted, and we kindly ask you not to re-iterate your actions.',
     }
 
-    def _buttons_per_item(self, buttons, request, context, item, classes):
+    def get_queryset(self, queryset, parameters, request):
+        queryset = super(UserCollection, self).get_queryset(queryset, parameters, request)
+        if request.user.is_authenticated():
+            queryset = queryset.extra(select={
+                # List view: Used by "follow" button + "private message" button + ordering field
+                # Item view: Used by "follow" button + "private message" button
+                'followed': 'SELECT COUNT(*) FROM {table}_following WHERE userpreferences_id = {id} AND user_id = auth_user.id'.format(
+                    table=models.UserPreferences._meta.db_table,
+                    id=request.user.preferences.id,
+                ),
+                # List view: Used by "private message" button
+                # Item view: Used by "private message" button + "follows you" message
+                'is_followed_by': 'SELECT COUNT(*) FROM {table}_following WHERE userpreferences_id = (SELECT id FROM {table} WHERE user_id = auth_user.id) AND user_id = {id}'.format(
+                    table=models.UserPreferences._meta.db_table,
+                    id=request.user.id,
+                ),
+            })
+        return queryset
+
+    def _buttons_per_item(self, view, buttons, request, context, item):
         user = item
+        # Private message button
+        if 'privatemessage' in context['all_enabled']:
+            buttons = OrderedDict([
+                ('privatemessage', {
+                    'classes': (
+                        ['btn', u'btn-{}'.format(user.preferences.css_color)]
+                        if view.view == 'item_view'
+                        else view.item_buttons_classes
+                    ),
+                    'show': True,
+                    'url': '/privatemessages/?to_user={id}'.format(id=user.id),
+                    'ajax_url': '/ajax/privatemessages/?to_user={id}&ajax_modal_only&ajax_show_top_buttons'.format(
+                        id=user.id,
+                    ),
+                    'icon': 'contact',
+                    'title': _('Private messages'),
+                    'has_permissions': (
+                        (not request.user.is_authenticated()
+                         and user.preferences.private_message_settings == 'anyone')
+                        or (request.user.is_authenticated()
+                            and request.user.hasPermissionToMessage(user)
+                            and hasGoodReputation(request))
+                    ),
+                }),
+            ] + buttons.items())
+        # Block button
         if request.user.is_authenticated() and user.id != request.user.id:
             buttons['block'] = {
-                'classes': classes,
+                'classes': view.item_buttons_classes,
                 'show': True,
                 'url': u'/block/{}/'.format(user.id),
                 'icon': 'block',
@@ -1588,6 +1653,7 @@ class UserCollection(MagiCollection):
 
     class ListView(MagiCollection.ListView):
         item_template = custom_item_template
+        filter_form = forms.UserFilterForm
         default_ordering = 'username'
         show_item_buttons = False
         show_item_buttons_as_icons = True
@@ -1598,14 +1664,25 @@ class UserCollection(MagiCollection):
         page_size = 30
         per_line = 1
 
+        alt_views = MagiCollection.ListView.alt_views + [
+            ('send_private_message', {
+                'hide_in_filter': True,
+                'verbose_name': _('Send a message'),
+                'template': 'userSendMessageItem',
+            }),
+        ]
+
         def buttons_per_item(self, request, context, item):
             buttons = super(UserCollection.ListView, self).buttons_per_item(request, context, item)
-            buttons = self.collection._buttons_per_item(buttons, request, context, item, self.item_buttons_classes)
+            buttons = self.collection._buttons_per_item(self, buttons, request, context, item)
+            if 'block' in buttons:
+                buttons['block']['open_in_new_window'] = True
             if item.id == request.user.id:
                 buttons['settings'] = {
                     'classes': self.item_buttons_classes,
                     'show': True,
                     'url': '/settings/',
+                    'open_in_new_window': True,
                     'icon': 'settings',
                     'title': _('Settings'),
                     'has_permissions': True,
@@ -1623,27 +1700,19 @@ class UserCollection(MagiCollection):
                         'has_permissions': True,
                     }),
                 ] + buttons.items())
+            if not request.GET.get('view', None):
+                buttons = OrderedDict([
+                    ('profile', {
+                        'classes': self.item_buttons_classes,
+                        'show': True,
+                        'url': item.item_url,
+                        'open_in_new_window': True,
+                        'icon': 'profile',
+                        'title': _('Profile'),
+                        'has_permissions': True,
+                    })
+                ] + buttons.items())
             return buttons
-
-        def get_queryset(self, queryset, parameters, request):
-            queryset = super(UserCollection.ListView, self).get_queryset(queryset, parameters, request)
-            if request.user.is_authenticated():
-                queryset = queryset.extra(select={
-                    'followed': 'SELECT COUNT(*) FROM {table}_following WHERE userpreferences_id = {id} AND user_id = auth_user.id'.format(
-                        table=models.UserPreferences._meta.db_table,
-                        id=request.user.preferences.id,
-                    ),
-                })
-            if 'followers_of' in parameters:
-                queryset = queryset.filter(preferences__following__username=parameters['followers_of']).distinct()
-            if 'followed_by' in parameters:
-                queryset = queryset.filter(followers__user__username=parameters['followed_by']).distinct()
-            if 'liked_activity' in parameters:
-                queryset = queryset.filter(Q(pk__in=(models.Activity.objects.get(pk=parameters['liked_activity']).likes.all())) | Q(activities__id=parameters['liked_activity'])).distinct()
-            return queryset
-
-        def extra_context(self, context):
-            return context
 
     class ItemView(MagiCollection.ItemView):
         template = 'profile'
@@ -1662,7 +1731,7 @@ class UserCollection(MagiCollection):
 
         def buttons_per_item(self, request, context, item):
             buttons = super(UserCollection.ItemView, self).buttons_per_item(request, context, item)
-            buttons = self.collection._buttons_per_item(buttons, request, context, item, self.item_buttons_classes)
+            buttons = self.collection._buttons_per_item(self, buttons, request, context, item)
             return buttons
 
         def get_item(self, request, pk):
@@ -1680,19 +1749,6 @@ class UserCollection(MagiCollection):
 
         def get_queryset(self, queryset, parameters, request):
             queryset = super(UserCollection.ItemView, self).get_queryset(queryset, parameters, request)
-            if request.user.is_authenticated():
-                queryset = queryset.extra(select={
-                    'followed': 'SELECT COUNT(*) FROM {table}_following WHERE userpreferences_id = {id} AND user_id = auth_user.id'.format(
-                        table=models.UserPreferences._meta.db_table,
-                        id=request.user.preferences.id,
-                    ),
-                })
-                queryset = queryset.extra(select={
-                    'is_followed_by': 'SELECT COUNT(*) FROM {table}_following WHERE userpreferences_id = (SELECT id FROM {table} WHERE user_id = auth_user.id) AND user_id = {id}'.format(
-                        table=models.UserPreferences._meta.db_table,
-                        id=request.user.id,
-                    ),
-                })
             queryset = queryset.extra(select={
                 'total_following': 'SELECT COUNT(*) FROM {table}_following WHERE userpreferences_id = (SELECT id FROM {table} WHERE user_id = auth_user.id)'.format(
                     table=models.UserPreferences._meta.db_table,
@@ -1701,7 +1757,6 @@ class UserCollection(MagiCollection):
                     table=models.UserPreferences._meta.db_table,
                 ),
             })
-            queryset = queryset.select_related('preferences', 'favorite_character1', 'favorite_character2', 'favorite_character3')
             try:
                 models.Account._meta.get_field('level')
                 has_level = True
@@ -1920,7 +1975,7 @@ class UserCollection(MagiCollection):
                     ) for p, u in GLOBAL_OUTSIDE_PERMISSIONS.items()]),
                 ))
 
-        def after_save(self, request, instance):
+        def after_save(self, request, instance, type=None):
             models.onUserEdited(instance)
             if ON_USER_EDITED:
                 ON_USER_EDITED(instance)
@@ -2356,7 +2411,7 @@ class NotificationCollection(MagiCollection):
         show_title = True
         per_line = 1
         page_size = 5
-        default_ordering = 'seen,-creation,-id'
+        default_ordering = '-creation,-id'
         authentication_required = True
 
         def get_queryset(self, queryset, parameters, request):
@@ -2730,55 +2785,228 @@ class PrizeCollection(MagiCollection):
 class PrivateMessageCollection(MagiCollection):
     title = _('Private message')
     plural_title = _('Private messages')
-    queryset = models.PrivateMessage.objects.all()
+    queryset = models.PrivateMessage.objects.select_related(
+        'owner', 'owner__preferences',
+        'to_user', 'to_user__preferences',
+    )
     icon = 'contact'
     form_class = forms.PrivateMessageForm
     navbar_link_list = 'you'
     navbar_link_title = _('Inbox')
     reportable = False
 
+    add_sentence = _('Send a message')
+
+    def get_queryset(self, queryset, parameters, request):
+        queryset = super(PrivateMessageCollection, self).get_queryset(queryset, parameters, request)
+        # Only return messages sent from or to me
+        queryset = queryset.filter(Q(to_user=request.user) | Q(owner=request.user))
+        return queryset
+
     class ListView(MagiCollection.ListView):
+        show_title = True
         filter_form = forms.PrivateMessageFilterForm
         per_line = 1
         authentication_required = True
         item_template = custom_item_template
+        add_button_subtitle = None
+        show_search_results = False
+        hide_sidebar = True
+        js_files = ['privatemessages']
+        ajax_pagination_callback = 'loadPrivateMessages'
+        item_blocked_template = 'default_blocked_template_in_list'
 
-        # todo add block button
+        def check_permissions(self, request, context):
+            super(PrivateMessageCollection.ListView, self).check_permissions(request, context)
+            # Only show in navbar when has good reputation + not nobody
+            if (not context['current'].startswith('privatemessage_list')
+                and isInboxClosed(request)):
+                raise PermissionDenied()
 
         def get_queryset(self, queryset, parameters, request):
             queryset = super(PrivateMessageCollection.ListView, self).get_queryset(queryset, parameters, request)
-            # Reading one user's messages
-            if 'to_user' in request.GET:
-                pass # todo
-            # Inbox
+            # Thread view (including search)
+            if request.GET.get('to_user', None):
+                # Get user thread with
+                request.thread_with = get_object_or_404(models.User.objects.select_related('preferences').extra(select={
+                    'is_followed_by': 'SELECT COUNT(*) FROM {table}_following WHERE userpreferences_id = (SELECT id FROM {table} WHERE user_id = auth_user.id) AND user_id = {id}'.format(
+                        table=models.UserPreferences._meta.db_table,
+                        id=request.user.id,
+                    ),
+                    'followed': 'SELECT COUNT(*) FROM {table}_following WHERE userpreferences_id = {id} AND user_id = auth_user.id'.format(
+                        table=models.UserPreferences._meta.db_table,
+                        id=request.user.preferences.id,
+                    ),
+                }), pk=request.GET['to_user'])
+            # Inbox view
             else:
-                queryset = queryset.extra(
-                    where=['{db_table}.id IN (SELECT id \
-                    FROM {db_table} \
-                    WHERE to_user_id = {user_id} OR owner_id = {user_id} \
-                    GROUP BY (CASE WHEN to_user_id = {user_id} THEN owner_id ELSE to_user_id END) \
-                    ORDER BY creation DESC \
-                    )'.format(
-                        db_table=queryset.model._meta.db_table,
-                        user_id=request.user.id,
-                    )],
-                ).select_related('to_user', 'owner')
+                if not request.GET.get('search', None):
+                    queryset = queryset.extra(
+                        where=['{db_table}.id IN (SELECT threads.id \
+                        FROM (SELECT id, \
+                        (CASE WHEN to_user_id = {user_id} THEN owner_id ELSE to_user_id END) AS thread_id \
+                        FROM {db_table} \
+                        WHERE to_user_id = {user_id} OR owner_id = {user_id} \
+                        ORDER BY creation DESC \
+                        ) threads \
+                        GROUP BY thread_id \
+                        )'.format(
+                            db_table=queryset.model._meta.db_table,
+                            user_id=request.user.id,
+                        )],
+                    ).select_related('to_user', 'owner')
             return queryset
+
+        def top_buttons(self, request, context):
+            buttons = super(PrivateMessageCollection.ListView, self).top_buttons(request, context)
+            if 'add' in buttons:
+                # Thread view
+                if request.GET.get('to_user', None):
+
+                    # Send message button
+                    # Check permissions
+                    buttons['add']['has_permissions'] = request.thread_with.hasPermissionToBeMessagedBy(
+                        request.user) and hasGoodReputation(request)
+                    # Form to send a message to to_user
+                    buttons['add']['url'] = u'{}?to_user={}'.format(
+                        buttons['add']['url'],
+                        request.GET['to_user'],
+                    )
+                    if context['ajax']:
+                        buttons['add']['ajax_url'] = u'/ajax{}'.format(
+                            buttons['add']['url'],
+                        )
+
+                    if not context['ajax'] and buttons['add']['has_permissions']:
+                        # Report button
+                        buttons['report'] = {
+                            'classes': ['btn', 'btn-block', 'btn-link-secondary', 'btn-lg'],
+                            'show': True,
+                            'title': request.thread_with.report_sentence,
+                            'icon': 'warning',
+                            'has_permissions': True,
+                            'url': request.thread_with.report_url,
+                        }
+
+                        # Block button
+                        buttons['block'] = {
+                            'classes': ['btn', 'btn-block', 'btn-link-secondary', 'btn-lg'],
+                            'show': True,
+                            'url': u'/block/{}/'.format(request.thread_with.id),
+                            'icon': 'block',
+                            'title': _(u'Block {username}').format(username=request.thread_with.username),
+                            'has_permissions': True,
+                        }
+
+                # Inbox view
+                else:
+                    if request.GET.get('search', None):
+                        # No add button
+                        del(buttons['add'])
+                    else:
+                        if isInboxClosed(request):
+                            # No add button
+                            del(buttons['add'])
+                        else:
+                            # Add button lists users that could be messaged
+                            buttons['add']['url'] = u'/users/?ordering=followed,id&reverse_order=on&view=send_private_message'
+                            buttons['add']['ajax_url'] = u'/ajax{}&ajax_modal_only'.format(buttons['add']['url'])
+                            buttons['add']['has_permissions'] = True
+            return buttons
 
         def foreach_items(self, index, item, context):
             _super = super(PrivateMessageCollection.ListView, self).foreach_items
             if _super: _super(index, item, context)
 
+            item.sent_by_me = item.owner == context['request'].user
+            item.is_new_message = not item.sent_by_me and not item.seen
             item.thread_with = item.owner if item.to_user == context['request'].user else item.to_user
 
-        def extra_context(self, context):
-            # Reading one user's messages
-            if 'to_user' in context['request'].GET:
-                pass
-            # Inbox
+            # Thread view (including search)
+            if context['request'].GET.get('to_user', None):
+                # Mark messages received as seen
+                if not item.sent_by_me and not item.seen:
+                    item.seen = True
+                    item.save()
+            # Inbox view
             else:
-                context['filter_form'] = None
-                context['include_below_item'] = False
+                # Check for blocked threads for owner as well
+                if item.to_user_id in context['request'].user.preferences.cached_blocked_ids:
+                    item.blocked = True
+                    item.blocked_message = _(u'You blocked {username}.').format(username=item.to_user.username)
+                    item.unblock_button = _(u'Unblock {username}').format(username=item.to_user.username)
+
+        def extra_context(self, context):
+            super(PrivateMessageCollection.ListView, self).extra_context(context)
+
+            back_to_inbox_url = self.collection.get_list_url(
+                ajax=context['ajax'],
+                modal_only=context['ajax'],
+                parameters={
+                    'ajax_show_top_buttons': True,
+                } if context['ajax'] else {},
+            )
+            back_to_inbox_sentence = _('Back to {page_name}').format(page_name=_('Inbox').lower())
+
+            # Thread view
+            if context['request'].GET.get('to_user', None):
+                context['thread_with'] = context['request'].thread_with
+                context['pm_view'] = 'thread'
+                context['page_title'] = u'{} - {}'.format(
+                    context['thread_with'].username,
+                    context['page_title'],
+                )
+                context['h1_page_title'] = mark_safe(u'{title}: <a href="{profile_url}">{username}</a> \
+                <br><small>{belowlink}</small>'.format(
+                    profile_url=context['thread_with'].item_url,
+                    title=self.collection.plural_title,
+                    username=context['thread_with'].username,
+                    belowlink=u'<a href="{back_to_url}" class="a-nodifference text-muted"> \
+                    {back_to_sentence}</a>'.format(
+                        back_to_url=back_to_inbox_url,
+                        back_to_sentence=back_to_inbox_sentence,
+                    ) if not context['request'].GET.get('search', None)
+                    else u'{search}: {terms}<br><a href="{url}" class="btn btn-default">{clear}</a>'.format(
+                            search=_('Search'),
+                            terms=context['request'].GET['search'],
+                            url=self.collection.get_list_url(
+                                ajax=context['ajax'],
+                                modal_only=context['ajax'],
+                                parameters={
+                                    'ajax_show_top_buttons': True if context['ajax'] else None,
+                                    'to_user': context['request'].GET['to_user'],
+                                },
+                            ),
+                            clear=t['Clear'],
+                    ),
+                ))
+                context['show_search_results'] = 'search' in context['request'].GET
+                context['hide_sidebar'] = not bool(context['request'].GET.get('search', None))
+                context['top_buttons_col_size'] = 12
+            # Inbox view
+            else:
+                context['pm_view'] = 'inbox'
+                if context['request'].GET.get('search', None):
+                    context['hide_sidebar'] = False
+                    context['search_terms'] = context['request'].GET['search']
+                    context['show_search_results'] = True
+                    context['h1_page_title'] = mark_safe(u'{search}: {terms}<br>\
+                    <small><a href="{back_to_url}" class="a-nodifference text-muted"> \
+                    {back_to_sentence}</a></small>'.format(
+                        search=_('Search'),
+                        terms=context['request'].GET['search'],
+                        back_to_url=back_to_inbox_url,
+                        back_to_sentence=back_to_inbox_sentence,
+                    ))
+                else:
+                    context['page_title'] = _('Inbox')
+                    context['h1_page_title'] = _('Inbox')
+                    if isInboxClosed(context['request']):
+                        context['alert_title'] = _('You are not allowed to send private messages.')
+                        context['alert_message'] = _('Take some time to play around {site_name} to unlock this feature!').format(site_name=context['t_site_name'])
+                        context['alert_flaticon'] = 'about'
+                        context['alert_type'] = 'info'
+                        context['no_result_template'] = 'include/alert'
 
     class ItemView(MagiCollection.ItemView):
         enabled = False
@@ -2787,17 +3015,38 @@ class PrivateMessageCollection(MagiCollection):
         alert_duplicate = False
         max_per_user_per_day = 100
         max_per_user_per_hour = 30
-        #max_per_user_per_minute = 2
+        max_per_user_per_minute = 2
 
         def check_permissions(self, request, context):
             super(PrivateMessageCollection.AddView, self).check_permissions(request, context)
-            if 'to_user' not in request.GET:
+            # Permissions are not checked here but when message is being sent to avoid extra query
+            if not request.GET.get('to_user', None):
                 raise PermissionDenied()
 
         def redirect_after_add(self, request, instance, ajax=False):
-            if ajax:
-                return '/ajax/successadd/'
-            return u'{}?to_user={}'.format(self.collection.get_list_url(), instance.to_user.id)
+            return self.collection.get_list_url(ajax=ajax, modal_only=ajax, parameters={
+                'to_user': instance.to_user.id,
+                'ajax_show_top_buttons': True if ajax else None,
+            })
+
+        def after_save(self, request, instance, type=None):
+            super(PrivateMessageCollection.AddView, self).after_save(request, instance)
+            pushNotification(
+                instance.to_user,
+                'private-message',
+                [request.user.username],
+                url_values=[request.user.id],
+                image=request.user.image_url,
+            )
+            return instance
+
+        def extra_context(self, context):
+            super(PrivateMessageCollection.AddView, self).extra_context(context)
+            context['back_to_list_url'] = self.collection.get_list_url(
+                ajax=context['ajax'], modal_only=context['ajax'], parameters={
+                    'to_user': context['request'].GET['to_user'],
+                    'ajax_show_top_buttons': True if context['ajax'] else None,
+                })
 
     class EditView(MagiCollection.EditView):
         enabled = False

@@ -18,20 +18,20 @@ _usernameRegexp = '[\w.@+-]+'
 # Javascript translated terms
 
 FORCE_ADD_TO_TRANSLATION = [
-    _('Liked this activity'),
     _('Loading'), _('No result.'),
     _('days'), _('hours'), _('minutes'), _('seconds'),
     _('Local time'),
     _('Copied'), _('Archived'), _('Unarchived'),
+    _('End of new messages'),
 ]
 
 DEFAULT_JAVASCRIPT_TRANSLATED_TERMS = [
-    'Liked this activity',
     'Loading', 'No result.',
     'You can\'t cancel this action afterwards.', 'Confirm', 'Cancel',
     'days', 'hours', 'minutes', 'seconds',
     'Local time',
     'Copied', 'Archived', 'Unarchived',
+    'End of new messages',
 ]
 
 ############################################################

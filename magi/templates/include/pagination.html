@@ -9,7 +9,7 @@
 {% if total_results > page_size %}
 {% if ajax_modal_only %}
 <div class="text-center open_remaining">
-  <a href="/{{ plural_name }}/?{{ filters_string }}#{{ collection.name }}-end-of-page-{{ page }}" class="text-muted" target="_blank"><span class="remaining_total">+ <span class="remaining">{{ remaining }}</span> {% trans plural_title %}</span> {% trans 'View all' %}</a>
+  <a href="/{{ plural_name }}/?{{ filters_string }}#{{ collection.name }}-end-of-page-{{ page }}" class="text-muted" target="_blank"><span class="remaining_total">+ <span class="remaining">{{ remaining }}</span> {{ lowercase_plural_title }}</span> {% trans 'View all' %}</a>
 </div>
 {% else %}
 <div id="load_more" class="padding20 text-center pagination-pages" data-next-page="{{ page|add:1 }}">

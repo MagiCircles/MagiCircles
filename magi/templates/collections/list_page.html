@@ -3,6 +3,9 @@
 
 {% load i18n %}
 {% load tools %}
+{% if ajax_show_top_buttons and top_buttons and top_buttons_total %}
+{% include 'include/list_top_buttons.html' %}
+{% endif %}
 {% if items|length == 0 %}
 {% if show_no_result %}
 <div class="padding50 no-result-wrapper">
@@ -45,7 +48,6 @@
     {% include 'items/'|add:item_template|add:'.html' %}
     {% if display_style != 'table' and include_below_item %}{% include 'include/below_item.html' %}{% endif %}
     {% endif %}
-
   </{% if display_style == 'table' %}tr{% else %}div{% endif %}>
 {% endfor %}
 {% if display_style == 'rows' %}</div><div id="{{ collection.name }}-end-of-page-{{ page }}"></div>{% endif %}

@@ -36,7 +36,7 @@ from magi.settings import (
     LANGUAGES_CANT_SPEAK_ENGLISH,
 )
 from magi.utils import (
-ordinalNumber,
+    ordinalNumber,
     randomString,
     shrinkImageFromData,
     getMagiCollection,
@@ -47,6 +47,7 @@ ordinalNumber,
     staticImageURL,
     markdownHelpText,
     ColorFormField,
+    hasGoodReputation,
 )
 
 ############################################################
@@ -134,7 +135,6 @@ class MagiForm(forms.ModelForm):
         self.c_choices = []
         self.d_choices = {}
         self.m_previous_values = {}
-        self.hidden_foreign_keys_querysets = {}
         # If is creating and item is unique per owner, redirect to edit unique
         if self.is_creating and self.collection and not isinstance(self, MagiFiltersForm) and not self.Meta.model.fk_as_owner and self.collection.add_view.unique_per_owner:
             existing = self.collection.edit_view.get_queryset(self.collection.queryset, {}, self.request).filter(**self.collection.edit_view.get_item(self.request, 'unique'))
@@ -552,12 +552,17 @@ class MagiFiltersForm(AutoForm):
                 self.fields['ordering'].initial = self.collection.list_view.plain_default_ordering
                 self.fields['reverse_order'].initial = self.collection.list_view.default_ordering.startswith('-')
         # Set view selector
-        if 'view' in self.fields and self.collection and self.collection.list_view.alt_views:
+        if ('view' in self.fields
+            and self.collection
+            and self.collection.list_view.alt_views):
             if not self.collection.list_view._alt_view_choices:
                 self.collection.list_view._alt_view_choices = [('', self.collection.plural_title)] + [
                     (view_name, view.get('verbose_name', view_name))
                     for view_name, view in self.collection.list_view.alt_views
                 ]
+            if not [_v for _v in self.collection.list_view.alt_views or []
+                 if not _v[1].get('hide_in_filter', False)]: # None visible
+                self.fields['view'].widget = self.fields['view'].hidden_widget()
             self.fields['view'].choices = self.collection.list_view._alt_view_choices
         else:
             del(self.fields['view'])
@@ -1208,6 +1213,56 @@ class ChangePasswordForm(MagiForm):
         model = models.User
         fields = []
 
+class UserFilterForm(MagiFiltersForm):
+    search_fields = ('username', )
+    ordering_fields = (
+        ('username', t['Username']),
+        ('date_joined', _('Join Date')),
+        ('followed,id', _('Followed')),
+    )
+
+    followers_of = HiddenModelChoiceField(queryset=models.User.objects.all())
+    followers_of_filter = MagiFilter(selector='preferences__following')
+
+    followed_by = HiddenModelChoiceField(queryset=models.User.objects.all())
+    followed_by_filter = MagiFilter(selector='followers__user')
+
+    liked_activity = HiddenModelChoiceField(queryset=models.Activity.objects.all())
+    liked_activity_filter = MagiFilter(
+        selectors=['activities', 'liked_activities'],
+        distinct=True,
+    )
+
+    def filter_queryset(self, queryset, parameters, request):
+        queryset = super(UserFilterForm, self).filter_queryset(queryset, parameters, request)
+
+        # Filter by who the user can private messages to
+        if (request.GET.get('view', None) == 'send_private_message'
+            and request.user.is_authenticated()):
+            # If setting is nobody, don't return any result
+            if request.user.preferences.private_message_settings == 'nobody':
+                return queryset.filter(id=-1)
+            # If follow, restrict to followers
+            if request.user.preferences.private_message_settings == 'follow':
+                queryset = queryset.filter(followers__user=request.user)
+            # Filter out users who allow nobody to message them
+            queryset = queryset.exclude(
+                preferences__i_private_message_settings=models.UserPreferences.get_i(
+                    'private_message_settings', 'nobody'),
+            )
+            # Filter out users who allow only followers and don't follow user
+            queryset = queryset.exclude(
+                Q(preferences__i_private_message_settings=models.UserPreferences.get_i(
+                    'private_message_settings', 'follow'))
+                & ~Q(preferences__following=request.user),
+            )
+
+        return queryset
+
+    class Meta(MagiFiltersForm.Meta):
+        model = models.User
+        fields = ('search', 'ordering', 'reverse_order')
+
 ############################################################
 # User links
 
@@ -1811,31 +1866,25 @@ class PrivateMessageForm(MagiForm):
     def __init__(self, *args, **kwargs):
         super(PrivateMessageForm, self).__init__(*args, **kwargs)
         self.fields['to_user'].initial = self.request.GET.get('to_user', None)
+
+        # For permissions checking
         self.fields['to_user'].queryset = self.fields['to_user'].queryset.select_related(
             'preferences').extra(select={
                 'is_followed_by': 'SELECT COUNT(*) FROM {table}_following WHERE userpreferences_id = (SELECT id FROM {table} WHERE user_id = auth_user.id) AND user_id = {id}'.format(
                     table=models.UserPreferences._meta.db_table,
                     id=self.request.user.id,
                 ),
+                'followed': 'SELECT COUNT(*) FROM {table}_following WHERE userpreferences_id = {id} AND user_id = auth_user.id'.format(
+                    table=models.UserPreferences._meta.db_table,
+                    id=self.request.user.preferences.id,
+                ),
             })
         self.fields['message'].validators.append(MinLengthValidator(2))
 
     def clean(self):
         super(PrivateMessageForm, self).clean()
-        to_user = self.cleaned_data['to_user']
-        # Can't send message to self
-        if to_user == self.request.user:
-            raise forms.ValidationError('Permission denied')
-        # Do not allow if blocked
-        if (to_user.id in self.request.user.preferences.cached_blocked_ids
-            or to_user.id in self.request.user.preferences.cached_blocked_by_ids):
-            raise forms.ValidationError('Permission denied')
-        # If messages are closed
-        if to_user.preferences.private_message_settings == 'nobody':
-            raise forms.ValidationError('Permission denied')
-        # If messages are only open to followed and not followed
-        if (to_user.preferences.private_message_settings == 'follow'
-            and not to_user.is_followed_by):
+        if (not self.request.user.hasPermissionToMessage(self.cleaned_data['to_user'])
+            or not hasGoodReputation(self.request)):
             raise forms.ValidationError('Permission denied')
 
     def save(self, commit=True):
@@ -1851,7 +1900,14 @@ class PrivateMessageForm(MagiForm):
         save_owner_on_creation = True
 
 class PrivateMessageFilterForm(MagiFiltersForm):
-    search_fields = ('message', )
+    search_fields = ('message', 'to_user__username', 'owner__username')
+
+    to_user_filter = MagiFilter(to_queryset=(
+        lambda form, queryset, request, value: queryset.filter(
+            Q(owner_id=request.user.id, to_user_id=value)
+            | Q(owner_id=value, to_user_id=request.user.id)
+        )
+    ))
 
     class Meta(MagiForm.Meta):
         model = models.PrivateMessage

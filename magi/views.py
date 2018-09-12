@@ -56,6 +56,7 @@ from magi.utils import (
     getAccountIdsFromSession,
     find_all_translations,
     duplicate_translation,
+    hasGoodReputation,
 )
 from magi.notifications import pushNotification
 from magi.settings import (
@@ -133,6 +134,7 @@ def signup(request):
                         'default_activities_tab', 'hot')
             else:
                 preferences.d_hidden_tags = '{"swearing": true, "nsfw": true}'
+                preferences.i_private_message_settings = models.UserPreferences.get_i('private_message_settings', 'follow')
             preferences.save()
             login_action(request, user)
             if context.get('launch_date', None):
@@ -490,6 +492,9 @@ def custom_wiki(wiki, wiki_name, request, wiki_url):
     context['wiki'] = wiki
     context['full_wiki_url'] = 'https://github.com/{}/{}/wiki/'.format(wiki[0], wiki[1])
     context['js_files'] = ['bower/marked/lib/marked', 'bower/github-wiki/js/githubwiki', 'wiki']
+    context['back_to_home_sentence'] = _('Back to {page_name}').format(
+        page_name=_('Wiki home').lower(),
+    )
     return render(request, 'pages/wiki.html', context)
 
 def help(request, wiki_url='_Sidebar'):
@@ -763,19 +768,13 @@ def _shouldBumpActivity(activity, request):
     now = timezone.now()
     one_hour_ago = now - datetime.timedelta(hours=1)
     one_day_ago = now - datetime.timedelta(days=1)
-    five_days_ago = now - relativedelta(days=5)
 
     # Activities can only be bumped once per hour
     if activity.last_bump and activity.last_bump >= one_hour_ago:
         return False
 
     # Only users with enough "reputation" can bump
-    # Reputation is calculated based on:
-    # - must have joined more than 5 days ago
-    # - must have at least 1 account added
-    if request.user.date_joined >= five_days_ago:
-        return False
-    if len(getAccountIdsFromSession(request)) < 1:
+    if not hasGoodReputation(request):
         return False
 
     # A given user can only bump up to 5 activities older than 1 day per hour
@@ -961,7 +960,13 @@ def follow(request, username):
     if 'follow' in request.POST and not user.followed:
         request.user.preferences.following.add(user)
         request.user.preferences.save()
-        pushNotification(user, 'follow', [unicode(request.user)], url_values=[str(request.user.id), unicode(request.user)], image=models.avatar(request.user, size=100))
+        pushNotification(
+            user,
+            'follow',
+            [unicode(request.user)],
+            url_values=[str(request.user.id), unicode(request.user)],
+            image=request.user.image_url,
+        )
         return JsonResponse({
             'total_followers': user.total_followers + 1,
             'result': 'followed',

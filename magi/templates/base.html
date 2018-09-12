@@ -220,6 +220,43 @@
     {% if user.is_staff %}
     <a href="#hideStaffButtons" style="display: none;" data-toggle="tooltip" data-placement="top" data-trigger="hover" data-html="true"  title="Hide/Show<br>Staff Only Buttons"><i class="flaticon-promo"></i></a>
     {% endif %}
+    {% if corner_popup %}
+    <div class="corner-popup" data-name="{{ corner_popup.name }}" style="display: none;">
+      {% if corner_popup.image %}
+      <img src="{% if '//' in corner_popup.image %}{{ corner_popup.image }}{% else %}{{ static_url }}img/{{ corner_popup.image }}?{{ static_files_version }}{% endif %}"{% if corner_popup.image_overflow %} class="overflow"{% endif %}>
+      {% endif %}
+      <h3>{{ corner_popup.title }}</h3>
+      {% if corner_popup.content %}
+      <p>{{ corner_popup.content }}</p>
+      {% endif %}
+      {% for button_name, button in corner_popup.buttons.items %}
+      <a href="{{ button.url }}" target="_blank" data-btn-name="{{ button_name }}"
+         class="{% if button.classes %}{% for class in button.classes %}{{ class }} {% endfor %}{% else %}btn btn-main btn-lg{% endif %}"
+         {% if button.ajax_url %}
+         data-ajax-url="{{ button.ajax_url }}"
+         data-ajax-handle-form="true"
+         {% if button.ajax_title %}
+         data-ajax-title="{{ button.ajax_title }}"
+         {% endif %}
+         {% endif %}>
+        {{ button.title }}
+      </a>
+      {% endfor %}
+      <small>
+        {% if corner_popup.allow_close_once %}
+        <a href="#close">{% trans 'Close' %}</a>
+        {% endif %}
+        {% if corner_popup.allow_close_remind %}
+        <a href="#close_remind" data-reminder-in-days="{{ corner_popup.allow_close_remind }}">
+          {% trans 'Remind me later' %}
+        </a>
+        {% endif %}
+        {% if corner_popup.allow_close_forever %}
+        <a href="#close_forever">{% blocktrans %}Don't show this again{% endblocktrans %}</a>
+        {% endif %}
+      </small>
+    </div>
+    {% endif %}
 
     <script>
       var disqus_config = function () {
