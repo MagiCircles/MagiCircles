@@ -8,7 +8,7 @@
     <div class="topprofile">
       <div class="row">
         <div class="col-sm-2">
-          {% include 'include/avatar.html' with av_user=profile_user av_size=60 av_image_size=200 %}
+          {% include 'include/avatar.html' with av_user=profile_user av_size=40 av_image_size=200 %}
           {% if profile_user.is_staff %}
           <span style="text-transform: uppercase;">
             <i class="flaticon-staff"></i>
@@ -19,7 +19,7 @@
         <div class="col-sm-10">
           <div class="info">
             <div class="pull-right text-right">
-              {% if collection.item_view.follow_enabled and user.is_authenticated and not profile_user.preferences.private and not is_me %}
+              {% if collection.item_view.follow_enabled and user.is_authenticated and not is_me %}
               <form method="POST" class="noform" id="follow" action="/ajax/follow/{{ profile_user.username }}/">
                 {% csrf_token %}
                 <input type="hidden" name="{% if profile_user.followed %}unfollow{% else %}follow{% endif %}">
@@ -32,8 +32,18 @@
               {% elif is_me %}
               <a href="/settings/" class="btn btn-lg btn-{{ profile_user.preferences.css_color }}"><i class="flaticon-edit"></i> {% trans 'Settings' %}</a><br>
               {% endif %}
-              <br><a href="#followers"{% if not profile_user.total_followers %} style="display: none"{% endif %}><strong>{{ profile_user.total_followers }}</strong> {% trans 'Followers' %}</a>
-              <br><a href="#following"{% if not profile_user.total_following %} style="display: none"{% endif %}><strong>{{ profile_user.total_following }}</strong> {% trans 'Following' %}</a>
+              <br><a href="/users/followers_of={{ user.id }}"
+                     data-ajax-url="/ajax/users/?ajax_modal_only&followers_of={{ user.id }}"
+                     data-ajax-title="{% trans 'Followers' %}"
+                     {% if not profile_user.total_followers %} style="display: none"{% endif %}>
+                <strong>{{ profile_user.total_followers }}</strong> {% trans 'Followers' %}
+              </a>
+              <br><a href="/users/followed_by={{ user.id }}"
+                     data-ajax-url="/ajax/users/?ajax_modal_only&followed_by={{ user.id }}"
+                     data-ajax-title="{% trans 'Following' %}"
+                     {% if not profile_user.total_followers %} style="display: none"{% endif %}>
+                <strong>{{ profile_user.total_following }}</strong> {% trans 'Following' %}
+              </a>
             </div>
             <h1 class="text-secondary" id="username" data-user-id="{{ profile_user.id }}">{{ profile_user.username }}</h1>
             {% if profile_user.preferences.i_status and profile_user.preferences.i_status != 'THANKS' %}<a href="/donate/"><h2 style="color: {{ profile_user.preferences.status_color }}">{{ profile_user.preferences.t_status }}</h2></a>{% endif %}

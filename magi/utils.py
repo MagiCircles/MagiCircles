@@ -2,6 +2,7 @@ from __future__ import division
 import os, string, random, csv, tinify, cStringIO, pytz, simplejson, datetime, io, operator, re
 from PIL import Image
 from collections import OrderedDict
+from dateutil.relativedelta import relativedelta
 from django.conf import settings as django_settings
 from django.core.files.temp import NamedTemporaryFile
 from django.core.exceptions import ValidationError
@@ -189,6 +190,53 @@ def usersWithOneOfPermissions(queryset, groups, permissions):
     groups = groupsWithOneOfPermissions(groups, permissions)
     return usersWithOneOfGroups(queryset, groups) if groups else []
 
+def hasPermissionToMessage(from_user, to_user):
+    """
+    Requires is_followed_by and followed to be added in queryset of to_user
+    """
+    # Can't send message to self
+    if from_user == to_user:
+        return False
+    # Do not allow if blocked
+    if (to_user.id in from_user.preferences.cached_blocked_ids
+        or to_user.id in from_user.preferences.cached_blocked_by_ids):
+        return False
+    # If messages are closed
+    if (from_user.preferences.private_message_settings == 'nobody'
+        or to_user.preferences.private_message_settings == 'nobody'):
+        return False
+    # If messages are only open to followed and not followed
+    if ((from_user.preferences.private_message_settings == 'follow'
+         and not to_user.followed)
+        or ((to_user.preferences.private_message_settings == 'follow'
+             and not to_user.is_followed_by))):
+        return False
+    return True
+
+def hasGoodReputation(request):
+    """
+    Reputation is calculated based on:
+    - must be logged in
+    - must not have an invalid email address
+    - must have joined more than 5 days ago
+    - must have at least 1 account added
+    """
+    if not request.user.is_authenticated():
+        return False
+    if request.user.preferences.invalid_email:
+        return False
+    now = timezone.now()
+    five_days_ago = now - relativedelta(days=5)
+    if request.user.date_joined >= five_days_ago:
+        return False
+    if len(getAccountIdsFromSession(request)) < 1:
+        return False
+    return True
+
+def isInboxClosed(request):
+    return (not hasGoodReputation(request)
+            or request.user.preferences.private_message_settings == 'nobody')
+
 ############################################################
 # Helpers for MagiCollections
 
@@ -221,8 +269,9 @@ def globalContext(request):
     context['hidenavbar'] = 'hidenavbar' in request.GET
     context['request'] = request
     context['javascript_translated_terms_json'] = simplejson.dumps({ term: unicode(_(term)) for term in context['javascript_translated_terms']})
-    context['localized_language'] = LANGUAGES_DICT.get(get_language(), '')
+    context['localized_language'] = LANGUAGES_DICT.get(request.LANGUAGE_CODE, '')
     context['current_language'] = get_language()
+    # Not Ajax
     if '/ajax/' not in context['current_url']:
         context['ajax'] = False
         cuteFormFieldsForContext({
@@ -231,8 +280,32 @@ def globalContext(request):
                 'choices': django_settings.LANGUAGES,
             },
         }, context)
+    # Ajax
     else:
         context['ajax'] = True
+
+    # Authenticated
+    if request.user.is_authenticated():
+        if not context['ajax'] and request.user.preferences.invalid_email and context['current'] != 'settings':
+            context['corner_popup'] = {
+                'name': 'invalid_email',
+                'title': _('Your email address is invalid.'),
+                'content': _('Some features might not work properly.'),
+                'buttons': {
+                    'settings': {
+                        'title': _('Open {thing}').format(thing=_('Settings').lower()),
+                        'url': '/settings/#form',
+                    },
+                },
+                'image': 'https://i.imgur.com/D0Cozvw.png',
+                'image_overflow': True,
+                'allow_close_once': True,
+            }
+
+    # Not authenticated
+    else:
+        pass
+
     return context
 
 def getGlobalContext(request):

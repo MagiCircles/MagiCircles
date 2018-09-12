@@ -1,6 +1,4 @@
 {% extends "sidebar.html" %}
-{% load i18n %}
-{% get_current_language as LANGUAGE_CODE %}
 
 {% block js %}
 <script>
@@ -28,7 +26,7 @@
       <h1 class="text-center padding50">
         <span id="wiki-title" data-url="{{ wiki_url }}">{{ page_title }}</span>
         {% if wiki_url != 'Home' and wiki_url != '_Sidebar' %}
-        <br><a href="/{{ current }}/"><small>{% trans 'Back to wiki home' %}</small></a>
+        <br><a href="/{{ current }}/"><small>{{ back_to_home_sentence }}</small></a>
         {% endif %}
       </h1>
       <div id="wiki-content"></div>

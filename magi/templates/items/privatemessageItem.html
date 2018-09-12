@@ -1,0 +1,68 @@
+{% load magi_tags %}
+{% with message=item %}
+{% if pm_view == 'inbox' %}
+
+<a href="/privatemessages/?to_user={{ message.thread_with.id }}{% if search_terms %}&search={{ search_terms }}{% endif %}"
+   class="private-message padding20 padding-horizontal
+          {% if not message.sent_by_me and not message.seen %}has-unseen-messages{% endif %}">
+  <div class="row">
+    <div class="col-xs-2">
+      {% include 'include/avatar.html' with av_user=message.thread_with av_size=18 av_image_size=70 av_fixed=True av_align='center' %}
+    </div>
+    <div class="col-xs-10">
+      <div>
+        <h2>
+          {{ message.thread_with.username }}
+        </h2>
+        <p class="text-muted message-preview"><span class="has-unseen-messages"></span>{% if message.sent_by_me %}{% if message.seen %}<i class="flaticon-checked recipient-saw"></i>{% else %}<span class="recipient-didnt-see-yet"></span>{% endif %}{% endif %} <span class="timezone" data-timeago="true"><span class="datetime">{{ message.creation|torfc2822 }}</span><span>(<span class="current_timezone">UTC</span>)</span></span> - {{ message.owner }}: {{ message.message_preview }}</p>
+      </div>
+    </div>
+  </div>
+</a>
+<hr>
+
+{% else %}
+<div class="private-message {% if message.sent_by_me %}right{% else %}left{% endif %}">
+  <div class="row">
+    <div class="col-xs-2 thread-avatar">
+      {% if not message.sent_by_me %}
+      {% include 'include/avatar.html' with av_user=message.owner av_size=30 av_image_size=100 av_fixed=True av_align='right' av_link=True %}
+      {% endif %}
+    </div>
+    <div class="col-xs-10 col-sm-8 text-{% if message.sent_by_me %}right{% else %}left{% endif %}">
+      <div class="inner-message">
+        <h4 class="thread-sender">
+          <a href="{{ message.owner.item_url }}" class="a-nodifference">{{ message.owner }}</a>
+          {% if message.is_new_message %}
+          <span class="is-new-message"></span>
+          {% endif %}
+        </h4>
+
+        <div class="message-content padding20 text-left
+                    {% if not message.sent_by_me and not message.seen %}unseen{% endif %}">{{ message.message }}</div>
+        <div class="thread-sent">
+          {% if message.sent_by_me and message.seen %}
+          <i class="flaticon-checked recipient-saw"></i>
+          {% endif %}
+          {% if message.sent_by_me and not message.seen %}
+          <span class="recipient-didnt-see-yet"></span>
+          {% endif %}
+          <small>
+            <span class="timezone" data-timeago="true">
+              <span class="datetime">{{ message.creation|torfc2822 }}</span>
+              <span>(<span class="current_timezone">UTC</span>)</span>
+            </span>
+          </small>
+        </div>
+      </div>
+    </div>
+    <div class="col-xs-2 thread-avatar">
+      {% if message.sent_by_me %}
+      {% include 'include/avatar.html' with av_user=message.owner av_size=30 av_image_size=100 av_fixed=True av_align='left' av_link=True %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+<br>
+{% endif %}
+{% endwith %}

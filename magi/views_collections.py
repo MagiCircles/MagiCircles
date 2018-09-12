@@ -28,7 +28,7 @@ def _get_share_image(context, collection_view, item=None):
             share_image = u'http:{}'.format(share_image)
     return share_image
 
-def _modification_view(context, name, view):
+def _modification_view(context, name, view, ajax):
     context['list_url'] = '/{}/'.format(view.collection.plural_name)
     context['title'] = view.collection.title
     context['name'] = name
@@ -39,6 +39,12 @@ def _modification_view(context, name, view):
     context['js_files'] = view.js_files
     context['otherbuttons_template'] = view.otherbuttons_template
     context['back_to_list_button'] = view.back_to_list_button
+    context['back_to_list_url'] = view.collection.get_list_url()
+    if ajax:
+        context['back_to_list_ajax_url'] = view.collection.get_list_url(ajax=True, modal_only=True)
+    context['back_to_list_title'] = _('Back to {page_name}').format(
+        page_name=view.collection.plural_title.lower(),
+    )
     context['after_template'] = view.after_template
     return context
 
@@ -196,7 +202,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     if collection.list_view.distinct:
         queryset = queryset.distinct()
     context['total_results'] = queryset.count()
-    context['total_results_sentence'] = _('1 {object} matches your search:').format(object=collection.title) if context['total_results'] == 1 else _('{total} {objects} match your search:').format(total=context['total_results'], objects=collection.plural_title)
+    context['total_results_sentence'] = _('1 {object} matches your search:').format(object=collection.title.lower()) if context['total_results'] == 1 else _('{total} {objects} match your search:').format(total=context['total_results'], objects=collection.plural_title.lower())
 
     if 'page' in request.GET and request.GET['page']:
         page = int(request.GET['page']) - 1
@@ -212,12 +218,15 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
             ajax=ajax,
         )
 
+    # Will display a link to see the other results instead of the pagination button
     context['ajax_modal_only'] = False
     if 'ajax_modal_only' in request.GET:
-        # Will display a link to see the other results instead of the pagination button
         context['ajax_modal_only'] = True
         context['filters_string'] = '&'.join(['{}={}'.format(k, v) for k, v in filters.items() if k != 'ajax_modal_only'])
         context['remaining'] = context['total_results'] - page_size
+
+    # Will still show top buttons at the top, first page only
+    context['ajax_show_top_buttons'] = ajax and 'ajax_show_top_buttons' in request.GET and page == 0
 
     if shortcut_url is not None:
         context['shortcut_url'] = shortcut_url
@@ -238,6 +247,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
         context['alt_view'] = alt_views[context['view']]
     context['ordering'] = ordering
     context['page_title'] = _(u'{things} list').format(things=collection.plural_title)
+    context['h1_page_title'] = collection.plural_title
     context['total_pages'] = int(math.ceil(context['total_results'] / page_size))
     context['items'] = queryset
     context['page'] = page + 1
@@ -261,7 +271,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['is_last_page'] = context['page'] == context['total_pages']
     context['page_size'] = page_size
     context['show_no_result'] = not ajax or context['ajax_modal_only']
-    context['show_search_results'] = bool(request.GET)
+    context['show_search_results'] = collection.list_view.show_search_results and bool(request.GET)
     context['show_owner'] = 'show_owner' in request.GET
     context['get_started'] = 'get_started' in request.GET
     context['name'] = name
@@ -279,6 +289,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['item_padding'] = collection.list_view.item_padding
     context['show_title'] = collection.list_view.show_title
     context['plural_title'] = collection.plural_title
+    context['lowercase_plural_title'] = collection.plural_title.lower()
     context['ajax_pagination'] = collection.list_view.ajax
     context['ajax_pagination_callback'] = collection.list_view.ajax_pagination_callback
     context['ajax_callback'] = collection.list_view.ajax_callback
@@ -310,7 +321,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
         context['table_fields_headers'] = collection.list_view.table_fields_headers(context['display_style_table_fields'], view=context['view'])
         context['table_fields_headers_sections'] = collection.list_view.table_fields_headers_sections(view=context['view'])
 
-    if not ajax:
+    if not ajax or context['ajax_show_top_buttons']:
         context['top_buttons'] = collection.list_view.top_buttons(request, context)
         context['top_buttons_total'] = len([True for b in context['top_buttons'].values() if b['show'] and b['has_permissions']])
         if context['top_buttons_total']:
@@ -347,7 +358,10 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     collection.list_view.extra_context(context)
 
     if ajax:
-        return render(request, 'collections/list_page.html', context)
+        context['include_template'] = 'collections/list_page'
+        if context['ajax_modal_only'] and context['ajax_pagination_callback']:
+            context['ajax_callback'] = context['ajax_pagination_callback']
+        return render(request, 'ajax.html', context)
     return render(request, 'collections/list_view.html', context)
 
 ############################################################
@@ -356,7 +370,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
 def add_view(request, name, collection, type=None, ajax=False, shortcut_url=None, **kwargs):
     context = collection.add_view.get_global_context(request)
     collection.add_view.check_permissions(request, context)
-    context = _modification_view(context, name, collection.add_view)
+    context = _modification_view(context, name, collection.add_view, ajax)
     with_types = False
     if shortcut_url is not None:
         context['shortcut_url'] = shortcut_url
@@ -436,7 +450,7 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
         collection.edit_view.check_translate_permissions(request, context)
     else:
         collection.edit_view.check_permissions(request, context)
-    context = _modification_view(context, name, collection.edit_view)
+    context = _modification_view(context, name, collection.edit_view, ajax)
     queryset = collection.edit_view.get_queryset(collection.queryset, _get_filters(request.GET, extra_filters), request)
     instance = get_one_object_or_404(queryset, **collection.edit_view.get_item(request, pk))
     context['type'] = None

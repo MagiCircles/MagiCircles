@@ -16,7 +16,7 @@ from django.utils.translation import ugettext_lazy as _, string_concat, get_lang
 from django.utils.safestring import mark_safe
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.core.files.uploadedfile import InMemoryUploadedFile, TemporaryUploadedFile
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, MinLengthValidator
 from django.shortcuts import get_object_or_404
 from magi.middleware.httpredirect import HttpRedirectException
 from magi.django_translated import t
@@ -36,7 +36,7 @@ from magi.settings import (
     LANGUAGES_CANT_SPEAK_ENGLISH,
 )
 from magi.utils import (
-ordinalNumber,
+    ordinalNumber,
     randomString,
     shrinkImageFromData,
     getMagiCollection,
@@ -47,6 +47,7 @@ ordinalNumber,
     staticImageURL,
     markdownHelpText,
     ColorFormField,
+    hasGoodReputation,
 )
 
 ############################################################
@@ -123,6 +124,7 @@ class HiddenModelChoiceField(forms.IntegerField):
 
 class MagiForm(forms.ModelForm):
     error_css_class = ''
+
     def __init__(self, *args, **kwargs):
         self.request = kwargs.pop('request', None)
         self.collection = kwargs.pop('collection', None)
@@ -133,7 +135,6 @@ class MagiForm(forms.ModelForm):
         self.c_choices = []
         self.d_choices = {}
         self.m_previous_values = {}
-        self.hidden_foreign_keys_querysets = {}
         # If is creating and item is unique per owner, redirect to edit unique
         if self.is_creating and self.collection and not isinstance(self, MagiFiltersForm) and not self.Meta.model.fk_as_owner and self.collection.add_view.unique_per_owner:
             existing = self.collection.edit_view.get_queryset(self.collection.queryset, {}, self.request).filter(**self.collection.edit_view.get_item(self.request, 'unique'))
@@ -257,6 +258,15 @@ class MagiForm(forms.ModelForm):
         if (self.is_creating and self.collection
             and not isinstance(self, MagiFiltersForm)
             and self.request and owner.is_authenticated()):
+            if self.collection.add_view.max_per_user_per_minute:
+                already_added = self.Meta.model.objects.filter(**{
+                    self.Meta.model.selector_to_owner(): owner,
+                    'creation__gte': timezone.now() - relativedelta(minutes=1),
+                }).count()
+                if already_added >= self.collection.add_view.max_per_user_per_minute:
+                    raise forms.ValidationError(
+                        unicode(_('You\'ve added a lot of {things}, lately. Try to wait a little bit before adding more.'))
+                        .format(things=unicode(self.collection.plural_title).lower()))
             if self.collection.add_view.max_per_user_per_hour:
                 already_added = self.Meta.model.objects.filter(**{
                     self.Meta.model.selector_to_owner(): owner,
@@ -542,12 +552,17 @@ class MagiFiltersForm(AutoForm):
                 self.fields['ordering'].initial = self.collection.list_view.plain_default_ordering
                 self.fields['reverse_order'].initial = self.collection.list_view.default_ordering.startswith('-')
         # Set view selector
-        if 'view' in self.fields and self.collection and self.collection.list_view.alt_views:
+        if ('view' in self.fields
+            and self.collection
+            and self.collection.list_view.alt_views):
             if not self.collection.list_view._alt_view_choices:
                 self.collection.list_view._alt_view_choices = [('', self.collection.plural_title)] + [
                     (view_name, view.get('verbose_name', view_name))
                     for view_name, view in self.collection.list_view.alt_views
                 ]
+            if not [_v for _v in self.collection.list_view.alt_views or []
+                 if not _v[1].get('hide_in_filter', False)]: # None visible
+                self.fields['view'].widget = self.fields['view'].hidden_widget()
             self.fields['view'].choices = self.collection.list_view._alt_view_choices
         else:
             del(self.fields['view'])
@@ -899,6 +914,7 @@ class ActivitiesPreferencesForm(MagiForm):
                 ))
 
     def clean(self):
+        super(ActivitiesPreferencesForm, self).clean()
         # Check permission to show tags
         for field_name in self.fields.keys():
             if field_name.startswith('d_hidden_tags'):
@@ -918,6 +934,17 @@ class ActivitiesPreferencesForm(MagiForm):
         d_save_falsy_values_for_keys = {
             'hidden_tags': models.ACTIVITIES_TAGS_HIDDEN_BY_DEFAULT,
         }
+
+class SecurityPreferencesForm(MagiForm):
+    form_title = _('Security')
+    icon = 'warning'
+
+    def __init__(self, *args, **kwargs):
+        super(SecurityPreferencesForm, self).__init__(*args, **kwargs)
+
+    class Meta(MagiForm.Meta):
+        model = models.UserPreferences
+        fields = ('i_private_message_settings', )
 
 class UserPreferencesForm(MagiForm):
     form_title = _('Customize profile')
@@ -975,6 +1002,7 @@ class UserPreferencesForm(MagiForm):
         return self.cleaned_data['birthdate']
 
     def clean(self):
+        super(UserPreferencesForm, self).clean()
         favs = [v for (k, v) in self.cleaned_data.items() if k.startswith('favorite_character') and v]
         if favs and len(favs) != len(set(favs)):
             raise forms.ValidationError(_('All your favorites must be unique'))
@@ -1168,6 +1196,7 @@ class ChangePasswordForm(MagiForm):
         return old_password
 
     def clean(self):
+        super(ChangePasswordForm, self).clean()
         new_password = self.cleaned_data.get('new_password', None)
         new_password2 = self.cleaned_data.get('new_password2', None)
         if new_password and new_password2 and new_password != new_password2:
@@ -1183,6 +1212,56 @@ class ChangePasswordForm(MagiForm):
     class Meta(MagiForm.Meta):
         model = models.User
         fields = []
+
+class UserFilterForm(MagiFiltersForm):
+    search_fields = ('username', )
+    ordering_fields = (
+        ('username', t['Username']),
+        ('date_joined', _('Join Date')),
+        ('followed,id', _('Followed')),
+    )
+
+    followers_of = HiddenModelChoiceField(queryset=models.User.objects.all())
+    followers_of_filter = MagiFilter(selector='preferences__following')
+
+    followed_by = HiddenModelChoiceField(queryset=models.User.objects.all())
+    followed_by_filter = MagiFilter(selector='followers__user')
+
+    liked_activity = HiddenModelChoiceField(queryset=models.Activity.objects.all())
+    liked_activity_filter = MagiFilter(
+        selectors=['activities', 'liked_activities'],
+        distinct=True,
+    )
+
+    def filter_queryset(self, queryset, parameters, request):
+        queryset = super(UserFilterForm, self).filter_queryset(queryset, parameters, request)
+
+        # Filter by who the user can private messages to
+        if (request.GET.get('view', None) == 'send_private_message'
+            and request.user.is_authenticated()):
+            # If setting is nobody, don't return any result
+            if request.user.preferences.private_message_settings == 'nobody':
+                return queryset.filter(id=-1)
+            # If follow, restrict to followers
+            if request.user.preferences.private_message_settings == 'follow':
+                queryset = queryset.filter(followers__user=request.user)
+            # Filter out users who allow nobody to message them
+            queryset = queryset.exclude(
+                preferences__i_private_message_settings=models.UserPreferences.get_i(
+                    'private_message_settings', 'nobody'),
+            )
+            # Filter out users who allow only followers and don't follow user
+            queryset = queryset.exclude(
+                Q(preferences__i_private_message_settings=models.UserPreferences.get_i(
+                    'private_message_settings', 'follow'))
+                & ~Q(preferences__following=request.user),
+            )
+
+        return queryset
+
+    class Meta(MagiFiltersForm.Meta):
+        model = models.User
+        fields = ('search', 'ordering', 'reverse_order')
 
 ############################################################
 # User links
@@ -1219,6 +1298,7 @@ class DonationLinkForm(MagiForm):
     icon = 'promo'
 
     def clean(self):
+        super(DonationLinkForm, self).clean()
         if self.cleaned_data.get('donation_link', None) and not self.cleaned_data.get('donation_link_title', None):
             raise forms.ValidationError({ 'donation_link_title': [t['This field is required.']] })
         elif not self.cleaned_data.get('donation_link', None) and self.cleaned_data.get('donation_link_title', None):
@@ -1778,3 +1858,58 @@ class PrizeFilterForm(MagiFiltersForm):
     class Meta:
         model = models.Prize
         fields = ('search', 'has_giveaway', 'i_character', 'ordering', 'reverse_order')
+
+############################################################
+# Private Message form
+
+class PrivateMessageForm(MagiForm):
+    def __init__(self, *args, **kwargs):
+        super(PrivateMessageForm, self).__init__(*args, **kwargs)
+        self.fields['to_user'].initial = self.request.GET.get('to_user', None)
+
+        # For permissions checking
+        self.fields['to_user'].queryset = self.fields['to_user'].queryset.select_related(
+            'preferences').extra(select={
+                'is_followed_by': 'SELECT COUNT(*) FROM {table}_following WHERE userpreferences_id = (SELECT id FROM {table} WHERE user_id = auth_user.id) AND user_id = {id}'.format(
+                    table=models.UserPreferences._meta.db_table,
+                    id=self.request.user.id,
+                ),
+                'followed': 'SELECT COUNT(*) FROM {table}_following WHERE userpreferences_id = {id} AND user_id = auth_user.id'.format(
+                    table=models.UserPreferences._meta.db_table,
+                    id=self.request.user.preferences.id,
+                ),
+            })
+        self.fields['message'].validators.append(MinLengthValidator(2))
+
+    def clean(self):
+        super(PrivateMessageForm, self).clean()
+        if (not self.request.user.hasPermissionToMessage(self.cleaned_data['to_user'])
+            or not hasGoodReputation(self.request)):
+            raise forms.ValidationError('Permission denied')
+
+    def save(self, commit=True):
+        instance = super(PrivateMessageForm, self).save(commit=False)
+        if commit:
+            instance.save()
+        return instance
+
+    class Meta(MagiForm.Meta):
+        model = models.PrivateMessage
+        fields = ('to_user', 'message', )
+        hidden_foreign_keys = ('to_user', )
+        save_owner_on_creation = True
+
+class PrivateMessageFilterForm(MagiFiltersForm):
+    search_fields = ('message', 'to_user__username', 'owner__username')
+
+    to_user_filter = MagiFilter(to_queryset=(
+        lambda form, queryset, request, value: queryset.filter(
+            Q(owner_id=request.user.id, to_user_id=value)
+            | Q(owner_id=value, to_user_id=request.user.id)
+        )
+    ))
+
+    class Meta(MagiForm.Meta):
+        model = models.PrivateMessage
+        fields = ('to_user', )
+        hidden_foreign_keys = ('to_user', )

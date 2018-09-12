@@ -33,23 +33,6 @@ function handlefollow() {
 	    error: genericAjaxError,
 	});
     });
-
-    $('a[href="#followers"]').click(function(e) {
-	e.preventDefault();
-	var username = $('#username').text();
-	var text = $(this).text();
-	$.get('/ajax/users/?ajax_modal_only&followers_of=' + username, function(data) {
-	    freeModal(username + ': ' + text, data, 0);
-	});
-    });
-    $('a[href="#following"]').click(function(e) {
-	e.preventDefault();
-	var username = $('#username').text();
-	var text = $(this).text();
-	$.get('/ajax/users/?ajax_modal_only&followed_by=' +  username, function(data) {
-	    freeModal(username + ': ' + text, data, 0);
-	});
-    });
 }
 
 function profileLoadActivities(tab_name, user_id, onDone) {

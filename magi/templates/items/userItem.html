@@ -1,5 +1,13 @@
-{% with class="btn btn-block btn-xl btn-"|add:item.preferences.css_color %}
+{% with user=item %}
 <div class="user-item">
-  {% include 'include/avatar.html' with av_user=item av_size=60 av_image_size=200 av_class="btn btn-main btn-block btn-xl" av_username=True av_link=True av_external=True av_button=True %}
+  <div class="avatar-section">
+    {% include 'include/avatar.html' with av_user=user av_size=18 av_image_size=42 av_fixed=True av_link=True av_external=True %}
+  </div>
+  <div class="details-section">
+    {{ user.username }}
+  </div>
+  <div class="buttons-section pull-right">
+    {% include 'include/below_item.html' with buttons_only=True show_item_buttons=True %}
+  </div>
 </div>
 {% endwith %}

@@ -1,5 +1,4 @@
 {% extends "form.html" %}
-{% load i18n %}
 
 {% block imagetitle %}
 {% if icontitle %}
@@ -26,7 +25,14 @@
 {% endblock %}
 
 {% block otherbuttons %}
-{% if back_to_list_button %}<a href="/{{ plural_name }}/" class="btn btn-link">{% trans 'Back to' %} {% trans plural_title %}</a>{% endif %}
+{% if back_to_list_button %}
+<a href="{{ back_to_list_url }}" class="btn btn-link"
+   {% if back_to_list_ajax_url %}
+   data-ajax-url="{{ back_to_list_url }}"
+   data-ajax-title="{{ plural_title }}"
+   {% endif %}>
+  {{ back_to_list_title }}
+</a>{% endif %}
 {% if form_name|first != 'd' and otherbuttons_template %}{% include otherbuttons_template|add:'.html' %}{% endif %}
 {% endblock %}
 

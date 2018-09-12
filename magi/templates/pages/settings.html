@@ -11,6 +11,8 @@
     {% for form_name, form in forms.items %}
     {% if form_name == 'form' %}
     <div class="list-group-item active"><h4>{% trans 'Preferences' %}</h4></div>
+    {% elif form_name == 'security' %}
+    <div class="list-group-item active"><h4>{% trans 'More' %}</h4></div>
     {% elif form_name == 'addLink' %}
     <a href="#avatar" class="list-group-item page-scroll"><i class="flaticon-portrait"></i> {% trans 'Avatar' %} <span class="glyphicon glyphicon-chevron-down pull-right"></span></a>
     {% if links|length %}
@@ -24,10 +26,6 @@
     {% endif %}
     {% endif %}
     {% endfor %}
-    <div class="list-group-item active"><h4>{% trans 'More' %}</h4></div>
-    {% if blocked or reports %}
-    <a href="#blocked" class="list-group-item page-scroll"><i class="flaticon-warning"></i> {% trans 'Security' %} <span class="glyphicon glyphicon-chevron-down pull-right"></span></a>
-    {% endif %}
     <a href="#accounts" class="list-group-item page-scroll"><i class="flaticon-album"></i> {% trans 'Accounts' %} <span class="glyphicon glyphicon-chevron-down pull-right"></span></a>
     {% if user.preferences.groups %}
     <a href="#groups" class="list-group-item page-scroll"><i class="flaticon-about"></i> Your groups <span class="glyphicon glyphicon-chevron-down pull-right"></span></a>
@@ -70,43 +68,8 @@
 {% block beforefields %}
 {% if form_name == 'donationLink' %}
 <p class="text-right text-secondary">{{ user.preferences.t_status }} - {% trans 'Premium feature' %} <i class="flaticon-promo"></i></p>
-{% endif %}
-{% endblock %}
-
-{% block belowform %}
-{% if form_name == 'preferences' %}
-{% if user.is_staff %}
-<div class="container_form text-center">
-  <br><br><br>
-  Looking for your staff profile details?
-  <br><br>
-  <div class="text-right">
-    <a href="/staffdetailss/" class="btn btn-main btn-lg">Edit staff details</a>
-  </div>
-</div>
-{% endif %}
-{% elif form_name == 'addLink' %}
-{% if 'donationLink' not in forms %}
-<h1 id="customLink" class="text-center padding50"><i class="flaticon-add"></i> {{ add_custom_link_sentence }}</h1>
-<br>
-<form class="container_form" data-form-name="customlink">
-  <p class="text-secondary"><i class="flaticon-promo"></i> {% trans 'Premium feature' %}</p>
-  <p>{% trans 'If you like the website, please consider donating' %}. {% trans 'This will help us cover the costs of the servers and allow us to keep it running for free and without ads.' %}</p>
-  <div class="text-right">
-    <a href="#content" class="btn btn-lg btn-link page-scroll"><span class="glyphicon glyphicon-chevron-up"></span></a>
-    <a href="/donate/" target="_blank" class="btn btn-lg btn-link">{% trans 'Learn more' %}</a>
-    <a class="btn btn-lg btn-main" href="/donate/" target="_blank">{% trans 'Donate' %}</a>
-  </div>
-</form>
-{% endif %}
-{% endif %}
-{% endblock %}
-
-{% block belowforms %}
-{% if blocked or reports %}
-<h1 id="blocked" class="text-center padding50"><i class="flaticon-warning"></i> {% trans 'Security' %}</h1>
-<br>
-<form class="container_form" data-form-name="groups">
+{% elif form_name == 'security' %}
+{% if blocked %}
 <table class="table table-blocked table-padded table-rounded">
   {% for blocked_user in blocked %}
   <tr>
@@ -120,6 +83,7 @@
     </a></td>
   </tr>
   {% endfor %}
+  {% endif %}
   {% for report in reports %}
   <div class="alert alert-{% if report.status == 'Edited' %}warning{% else %}danger{% endif %} progress-bar-striped">
 	<small class="timezone" data-timeago="true">
@@ -153,7 +117,38 @@
 </table>
 <br>
 {% endif %}
+{% endblock %}
 
+{% block belowform %}
+{% if form_name == 'preferences' %}
+{% if user.is_staff %}
+<div class="container_form text-center">
+  <br><br><br>
+  Looking for your staff profile details?
+  <br><br>
+  <div class="text-right">
+    <a href="/staffdetailss/" class="btn btn-main btn-lg">Edit staff details</a>
+  </div>
+</div>
+{% endif %}
+{% elif form_name == 'addLink' %}
+{% if 'donationLink' not in forms %}
+<h1 id="customLink" class="text-center padding50"><i class="flaticon-add"></i> {{ add_custom_link_sentence }}</h1>
+<br>
+<form class="container_form" data-form-name="customlink">
+  <p class="text-secondary"><i class="flaticon-promo"></i> {% trans 'Premium feature' %}</p>
+  <p>{% trans 'If you like the website, please consider donating' %}. {% trans 'This will help us cover the costs of the servers and allow us to keep it running for free and without ads.' %}</p>
+  <div class="text-right">
+    <a href="#content" class="btn btn-lg btn-link page-scroll"><span class="glyphicon glyphicon-chevron-up"></span></a>
+    <a href="/donate/" target="_blank" class="btn btn-lg btn-link">{% trans 'Learn more' %}</a>
+    <a class="btn btn-lg btn-main" href="/donate/" target="_blank">{% trans 'Donate' %}</a>
+  </div>
+</form>
+{% endif %}
+{% endif %}
+{% endblock %}
+
+{% block belowforms %}
 <h1 id="accounts" class="text-center padding50"><i class="flaticon-album"></i> {{ accounts_title_sentence }}</h1>
 <br>
 <form class="container_form" data-form-name="accounts">
