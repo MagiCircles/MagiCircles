@@ -74,7 +74,7 @@
   {% endif %}
   {% if user.is_staff %}
   <br><br>
-  {% if user.id != report.owner.id %}
+  {% if user.id != report.owner.id or user.is_superuser %}
   {% if report.status == 'Pending' %}
   <div class="panel-group staff-buttons" id="staff-buttons-{{ report.id }}">
     <div class="panel panel-info inline-block" style="width: 33%; vertical-align: top; margin-top: 0;">
