@@ -48,12 +48,15 @@
            alt="{{ activity.language }}">
     </a>
 	{% endif %}
-	<small class="date">
-	  <span class="timezone" data-timeago="true">
-	    <span class="datetime">{{ activity.creation|torfc2822 }}</span>
-	    <span class>(<span class="current_timezone">UTC</span>)
-	  </span><br>
-	</small><br>
+	<a href="{{ activity.item_url }}" target="_blank" class="a-nodifference">
+      <small class="date">
+	    <span class="timezone" data-timeago="true">
+	      <span class="datetime">{{ activity.creation|torfc2822 }}</span>
+	      <span class>(<span class="current_timezone">UTC</span>)
+	      </span><br>
+	  </small>
+    </a>
+    <br>
 	<strong class="owner">{{ activity.cached_owner.username }}</strong>
 	<br>
         {% if activity.hidden_reasons %}
@@ -99,7 +102,7 @@
 	      <button type="submit" class="btn btn-link" data-reverse="{% if activity.liked %}<i class='flaticon-heart-empty'></i> {% trans 'Like' %}{% else %}<i class='flaticon-heart'></i> {% trans 'Liked' %}{% endif %}">{% if activity.liked %}<i class='flaticon-heart'></i> {% trans 'Liked' %}{% else %}<i class='flaticon-heart-empty'></i> {% trans 'Like' %}{% endif %}</button>
 	      {% endif %}
 	      {% else %}
-	      <a href="/signup/?next={{ current_url }}" class="btn btn-link"><i class="flaticon-heart"></i> {% trans 'Like' %}</a>
+	      <a href="/signup/?next={{ current_url }}" class="btn btn-link"><i class="flaticon-heart-empty"></i> {% trans 'Like' %}</a>
 	      {% endif %}
 	      <div class="btn btn-link hidden-loader" style="display: none;"><i class="flaticon-loading"></i></div>
 	      <a href="/users/?liked_activity={{ activity.id }}"
