@@ -133,6 +133,11 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
     context['item'].show_item_buttons_as_icons = collection.item_view.show_item_buttons_as_icons
     context['item'].show_item_buttons_in_one_line = collection.item_view.show_item_buttons_in_one_line
     context['item'].buttons_to_show = collection.item_view.buttons_per_item(request, context, context['item'])
+    if 'only_show_buttons' in request.GET:
+        only_show_buttons = request.GET['only_show_buttons'].split(',')
+        for button_name, button in context['item'].buttons_to_show.items():
+            if button_name not in only_show_buttons:
+                button['show'] = False
     if collection.item_view.show_item_buttons and [True for b in context['item'].buttons_to_show.values() if b['show'] and b['has_permissions']]:
         context['include_below_item'] = True
 
@@ -338,6 +343,11 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
         if context['display_style'] == 'table':
             item.table_fields = collection.list_view.table_fields(item, only_fields=context['display_style_table_fields'], force_all_fields=True, request=request)
         item.buttons_to_show = collection.list_view.buttons_per_item(request, context, item)
+        if 'only_show_buttons' in request.GET:
+            only_show_buttons = request.GET['only_show_buttons'].split(',')
+            for button_name, button in item.buttons_to_show.items():
+                if button_name not in only_show_buttons:
+                    button['show'] = False
         item.show_item_buttons_justified = collection.list_view.show_item_buttons_justified
         item.show_item_buttons_as_icons = collection.list_view.show_item_buttons_as_icons
         item.show_item_buttons_in_one_line = collection.list_view.show_item_buttons_in_one_line
