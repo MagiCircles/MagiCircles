@@ -313,6 +313,7 @@ def settings(request):
     context['add_link_sentence'] = _(u'Add {thing}').format(thing=_('Link'))
     context['delete_link_sentence'] = _(u'Delete {thing}').format(thing=_('Link'))
     context['accounts_title_sentence'] = account_collection.plural_title
+    context['back_to_profile_sentence'] = _('Back to {page_name}').format(page_name=_('Profile').lower())
 
     context['t_english'] = t['English']
     context['global_outside_permissions'] = GLOBAL_OUTSIDE_PERMISSIONS

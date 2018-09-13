@@ -162,7 +162,7 @@
   </table>
   <div class="text-right">
     <a href="#content" class="btn btn-lg btn-link page-scroll"><span class="glyphicon glyphicon-chevron-up"></span></a>
-    <a href="/user/{{ user.id }}/{{ user.username }}/" class="btn btn-lg btn-link">{% trans 'Back to my profile' %}</a>
+    <a href="/user/{{ user.id }}/{{ user.username }}/" class="btn btn-lg btn-link">{{ back_to_profile_sentence }}</a>
     <a href="/accounts/add/" class="btn btn-lg btn-main"><i class="flaticon-add"></i> {{ add_account_sentence }}</a>
   </div>
 </form>
@@ -260,7 +260,7 @@
 {% if form_name == 'changePassword' %}
 <a href="/password_reset/" class="btn btn-lg btn-link">{% trans 'Forgot password?' %}</a>
 {% else %}
-<a href="/user/{{ user.id }}/{{ user.username }}/" class="btn btn-lg btn-link">{% trans 'Back to my profile' %}</a>
+<a href="/user/{{ user.id }}/{{ user.username }}/" class="btn btn-lg btn-link">{{ back_to_profile_sentence }}</a>
 {% endif %}
 {% endblock %}
 
