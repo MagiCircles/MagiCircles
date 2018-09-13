@@ -215,7 +215,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
             page = 0
     queryset = queryset[(page * page_size):((page * page_size) + page_size)]
 
-    if 'filter_form' in context:
+    if 'filter_form' in context and not ajax:
         cuteFormFieldsForContext(
             collection.list_view.filter_cuteform,
             context, form=context['filter_form'],
@@ -297,7 +297,9 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['lowercase_plural_title'] = collection.plural_title.lower()
     context['ajax_pagination'] = collection.list_view.ajax
     context['ajax_pagination_callback'] = collection.list_view.ajax_pagination_callback
-    context['ajax_callback'] = collection.list_view.ajax_callback
+    if not ajax or context['ajax_modal_only']:
+        # Should only be called once
+        context['ajax_callback'] = collection.list_view.ajax_callback
     context['ajax'] = ajax
     context['js_files'] = collection.list_view.js_files
     context['share_image'] = _get_share_image(context, collection.list_view)
