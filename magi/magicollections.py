@@ -2817,7 +2817,6 @@ class PrivateMessageCollection(MagiCollection):
         add_button_subtitle = None
         show_search_results = False
         hide_sidebar = True
-        js_files = ['privatemessages']
         ajax_pagination_callback = 'loadPrivateMessages'
         item_blocked_template = 'default_blocked_template_in_list'
 
