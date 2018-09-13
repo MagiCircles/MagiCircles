@@ -958,7 +958,7 @@ class Notification(MagiModel):
     c_url_data = models.TextField(blank=True, null=True)
     email_sent = models.BooleanField(default=False)
     seen = models.BooleanField(default=False)
-    image = models.ImageField(upload_to=uploadItem('notifications/'), null=True, blank=True)
+    image = models.ImageField(upload_to=uploadItem('notifications/'), null=True, blank=True, max_length=1200)
 
     def message_value(self, key):
         """
