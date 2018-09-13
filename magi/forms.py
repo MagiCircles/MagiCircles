@@ -1231,7 +1231,7 @@ class UserFilterForm(MagiFiltersForm):
     ordering_fields = (
         ('username', t['Username']),
         ('date_joined', _('Join Date')),
-        ('followed,id', _('Followed')),
+        ('followed,id', _('Follow')),
     )
 
     followers_of = HiddenModelChoiceField(queryset=models.User.objects.all())

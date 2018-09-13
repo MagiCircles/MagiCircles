@@ -2971,7 +2971,7 @@ class PrivateMessageCollection(MagiCollection):
                         back_to_sentence=back_to_inbox_sentence,
                     ) if not context['request'].GET.get('search', None)
                     else u'{search}: {terms}<br><a href="{url}" class="btn btn-default">{clear}</a>'.format(
-                            search=_('Search'),
+                            search=t['Search'],
                             terms=context['request'].GET['search'],
                             url=self.collection.get_list_url(
                                 ajax=context['ajax'],
@@ -2997,7 +2997,7 @@ class PrivateMessageCollection(MagiCollection):
                     context['h1_page_title'] = mark_safe(u'{search}: {terms}<br>\
                     <small><a href="{back_to_url}" class="a-nodifference text-muted"> \
                     {back_to_sentence}</a></small>'.format(
-                        search=_('Search'),
+                        search=t['Search'],
                         terms=context['request'].GET['search'],
                         back_to_url=back_to_inbox_url,
                         back_to_sentence=back_to_inbox_sentence,
