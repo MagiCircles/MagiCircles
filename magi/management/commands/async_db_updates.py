@@ -86,7 +86,7 @@ def tinypng_compress(model, field):
         save_item(model, item, { original_field_name: unicode(value) })
         print '[Warning] Empty file, discarded.'
         return True
-    image = shrinkImageFromData(content, filename, settings=getattr(model, 'tinypng_settings', {}).get(field.name, {}))
+    image = shrinkImageFromData(content, filename, settings=getattr(item, 'tinypng_settings', {}).get(field.name, {}))
     prefix = field.upload_to.prefix + ('tiny' if field.upload_to.prefix.endswith('/') else '/tiny')
     image.name = uploadItem(prefix)(item, filename)
     save_item(model, item, {
@@ -113,7 +113,7 @@ def tinypng_thumbnail(model, field):
         save_item(model, item, { thumbnail_field_name: unicode(value) })
         print '[Warning] Empty file, discarded.'
         return True
-    tinypng_settings = getattr(model, 'tinypng_settings', {}).get(thumbnail_field_name, {}).copy()
+    tinypng_settings = getattr(item, 'tinypng_settings', {}).get(thumbnail_field_name, {}).copy()
     for k, v in [
             ('resize', 'thumb'),
             ('width', 200),
