@@ -569,13 +569,14 @@ class MagiCollection(object):
     def share_image(self, context, item):
         return self.image
 
-    def to_fields(self, view, item, to_dict=True, only_fields=None, icons=None, images=None, force_all_fields=False, order=None, extra_fields=None, exclude_fields=None, request=None):
+    def to_fields(self, view, item, to_dict=True, only_fields=None, icons=None, images=None, force_all_fields=False, order=None, extra_fields=None, exclude_fields=None, request=None, preselected=None):
         if extra_fields is None: extra_fields = []
         if exclude_fields is None: exclude_fields = []
         if only_fields is None: only_fields = []
         if order is None: order = []
         if icons is None: icons = {}
         if images is None: images = {}
+        if preselected is None: preselected = []
         name_fields = []
         many_fields = []
         collectible_fields = []
@@ -667,17 +668,20 @@ class MagiCollection(object):
                 'image': images.get(field_name, None),
             }
             if is_foreign_key:
-                cache = getattr(item, 'cached_' + field_name, None)
+                if field_name in preselected:
+                    cache = getattr(item, field_name, None)
+                else:
+                    cache = getattr(item, 'cached_' + field_name, None)
                 if not cache:
                     continue
                 link = getattr(cache, 'item_url')
                 if link:
                     d['type'] = 'text_with_link'
-                    d['value'] = getattr(cache, 'unicode', field_name)
+                    d['value'] = getattr(cache, 'unicode', unicode(cache))
                     d['link'] = link
                     d['ajax_link'] = getattr(cache, 'ajax_item_url')
-                    d['link_text'] = unicode(_(u'Open {thing}')).format(thing=d['verbose_name'])
-                    d['image'] = getattr(cache, 'image_url', None)
+                    d['link_text'] = unicode(_(u'Open {thing}')).format(thing=d['verbose_name'].lower())
+                    d['image_for_link'] = getattr(cache, 'image_url', None)
                 else:
                     d['type'] = 'text'
                     d['value'] = getattr(cache, 'unicode', field_name)

@@ -19,7 +19,7 @@
 	    {{ field.link_text }}
 	    <i class="flaticon-link fontx0-8"></i>
 	</a></span>
-	{% if field.image %}<img src="{{ field.image }}" alt="{{ field.link_text }}" class="text_with_link_image">{% endif %}
+	{% if field.image or field.image_for_link %}<img src="{% if field.image_for_link %}{{ field.image_for_link }}{% else %}{{ field.image }}{% endif %}" alt="{{ field.link_text }}" class="text_with_link_image">{% endif %}
 	{% elif field.type == 'title_text' %}
 	<strong>{{ field.title }}</strong><br>
 	<p>{{ field.value }}</p>
