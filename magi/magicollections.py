@@ -2852,7 +2852,7 @@ class PrivateMessageCollection(MagiCollection):
             else:
                 if not request.GET.get('search', None):
                     queryset = queryset.extra(
-                        where=['{db_table}.id IN (SELECT threads.id \
+                        where=['{db_table}.id IN (SELECT MAX(threads.id) \
                         FROM (SELECT id, \
                         (CASE WHEN to_user_id = {user_id} THEN owner_id ELSE to_user_id END) AS thread_id \
                         FROM {db_table} \
