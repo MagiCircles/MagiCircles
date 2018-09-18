@@ -7,6 +7,12 @@
     {% else %}
     {{ item }}
     {% endif %}
+    {% if show_items_names and item.t_name %}
+    <h3 class="{{ item.collection_name }}-name">{{ item.t_name }}</h3>
+    {% endif %}
+    {% if show_items_titles %}
+    <h3 class="{{ item.collection_name }}-name">{{ item }}</h3>
+    {% endif %}
     {% if item_view_enabled %}
   </a>
   {% endif %}

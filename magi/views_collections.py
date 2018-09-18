@@ -294,6 +294,8 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['item_padding'] = collection.list_view.item_padding
     context['show_title'] = collection.list_view.show_title
     context['plural_title'] = collection.plural_title
+    context['show_items_names'] = collection.list_view.show_items_names
+    context['show_items_titles'] = collection.list_view.show_items_titles
     context['lowercase_plural_title'] = collection.plural_title.lower()
     context['ajax_pagination'] = collection.list_view.ajax
     context['ajax_pagination_callback'] = collection.list_view.ajax_pagination_callback
