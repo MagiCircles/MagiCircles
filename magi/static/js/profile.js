@@ -52,7 +52,8 @@ function profileLoadActivities(tab_name, user_id, onDone) {
 function loadCollectionForOwner(load_url, callback) {
     return function(tab_name, user_id, onDone) {
         $.get(load_url + '?owner=' + user_id, function(data) {
-            onDone($(data).find('.items').length == 0 ? '<div class="padding20"><div class="alert alert-warning">' + gettext('No result.') + '</div></div>' : data, function() {
+            console.log(data);
+            onDone($(data).find('.items').length == 0 && !$(data).hasClass('items') ? '<div class="padding20"><div class="alert alert-warning">' + gettext('No result.') + '</div></div>' : data, function() {
                 if (callback) {
                     callback();
                 }
