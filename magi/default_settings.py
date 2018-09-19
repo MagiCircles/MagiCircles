@@ -39,7 +39,7 @@ DEFAULT_JAVASCRIPT_TRANSLATED_TERMS = [
 DEFAULT_CONTACT_DISCORD = 'https://discord.gg/mehDTsv'
 DEFAULT_POEDITOR_URL = 'https://poeditor.com/join/project/h6kGEpdnmM'
 
-DEFAULT_LANGUAGES_CANT_SPEAK_ENGLISH = ['ja', 'zh-hans', 'kr']
+DEFAULT_LANGUAGES_CANT_SPEAK_ENGLISH = ['ja', 'zh-hans', 'zh-hant', 'kr']
 
 ############################################################
 # Groups
