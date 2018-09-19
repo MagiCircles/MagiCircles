@@ -48,6 +48,7 @@ from magi.utils import (
     markdownHelpText,
     ColorFormField,
     hasGoodReputation,
+    LANGUAGES_DICT,
 )
 
 ############################################################
@@ -206,7 +207,7 @@ class MagiForm(forms.ModelForm):
                                 help_text = mark_safe(u'{original}<img src="{img}" height="20" /> {lang}{default}'.format(
                                     img=staticImageURL(key, folder='language', extension='png'),
                                     lang=choice[1] if isinstance(choice, tuple) else choice,
-                                    default=u' <code>EN: {}</code>'.format(default or 'no value'),
+                                    default=u' <code>{}: {}</code>'.format(t['English'], default or 'no value'),
                                     original=u'{}<br>'.format(self.fields[name].help_text) if self.fields[name].help_text else '',
                                 ))
                             else:
@@ -246,6 +247,17 @@ class MagiForm(forms.ModelForm):
             # Save previous values of markdown fields
             elif name.startswith('m_') and not isinstance(self, MagiFiltersForm) and not self.is_creating:
                 self.m_previous_values[name] = getattr(self.instance, name)
+            # Show label "English" or "Japanese" to non-d fields kept in translation form
+            elif getattr(self, 'is_translate_form', False):
+                self.fields[name].help_text = mark_safe(u'{original}<img src="{img}" height="20" /> {lang}'.format(
+                    original=u'{}<br>'.format(self.fields[name].help_text) if self.fields[name].help_text else '',
+                    img=staticImageURL(
+                        'ja' if name.startswith('japanese_') else 'en',
+                        folder='language', extension='png',
+                    ),
+                    lang=t['Japanese'] if name.startswith('japanese_') else t['English'],
+                ))
+
         # Fix force required fields
         if hasattr(self.Meta, 'required_fields'):
             for field in self.Meta.required_fields:
@@ -377,12 +389,49 @@ class AutoForm(MagiForm):
 def to_translate_form_class(view):
     if not view.collection.translated_fields:
         return None
+
     class _TranslateForm(MagiForm):
+
+        def _addHelpTextReverseTranslation(self, field_name, reverse_value, language):
+            self.fields[field_name].help_text = mark_safe(
+                u'{original} <code>{language}: {value}</code>'.format(
+                    original=self.fields[field_name].help_text,
+                    language=LANGUAGES_DICT.get(language, language.upper()),
+                    value=reverse_value or 'no value',
+                ))
+
+        def _needsVisibleEnglishFields(self, spoken_languages):
+            """
+            Check if English should be added to languages because value exists in field but not in English
+            -> ie needs reverse translation
+            """
+            needs_english = False
+            for language in spoken_languages:
+                for field in view.collection.translated_fields:
+                    if (field in self.fields
+                        and not getattr(self.instance, field, None)):
+                        if u'd_{}s-{}'.format(field, language) in self.fields:
+                            reverse_value = getattr(
+                                self.instance, u'{}s'.format(field, language), {}).get(language, None)
+                            if reverse_value:
+                                needs_english = True
+                                self._addHelpTextReverseTranslation(
+                                    field, reverse_value, language)
+                        if language == 'ja' and u'japanese_{}'.format(field) in self.fields:
+                            reverse_value = getattr(self.instance, u'japanese_{}'.format(field), None)
+                            if reverse_value:
+                                needs_english = True
+                                self._addHelpTextReverseTranslation(
+                                    field, reverse_value, language)
+            return needs_english
+
         def __init__(self, *args, **kwargs):
             self.is_translate_form = True
             super(_TranslateForm, self).__init__(*args, **kwargs)
-            spoken_languages = (self.request.user.preferences.settings_per_groups or {}).get('translator', {}).get('languages', {})
+            spoken_languages = (self.request.user.preferences.settings_per_groups or {}).get('translator', {}).get('languages', [])
             if spoken_languages:
+                if self._needsVisibleEnglishFields(spoken_languages):
+                    spoken_languages.append('en')
                 self.beforefields = mark_safe(u'<div class="text-right languages-buttons" data-spoken-languages="{spoken_languages}" style="display: none"><a href="#translations_see_all" class="btn btn-main btn-sm">See all languages</a><br>{languages}</div><br>'.format(
                     spoken_languages=u','.join(spoken_languages),
                     languages=u' '.join([
@@ -393,6 +442,7 @@ def to_translate_form_class(view):
                         ) for language, verbose_language in django_settings.LANGUAGES
                     ]),
                 ))
+
 
         class Meta(MagiForm.Meta):
             model = view.collection.queryset.model
