@@ -101,7 +101,7 @@
     </div></div>
     <p class="text-right"><small>
         {% if user.preferences.i_language and user.preferences.language != 'en' %}
-        <a href="https://translate.google.com/#en/{{ user.preferences.language }}/{{ report.staff_message|urlencode }}"
+        <a href="{% translationURL value=report.staff_message %}"
            target="_blank">
           {% with from_language=t_english to_language=user.preferences.t_language %}
           {% blocktrans %}Translate from {{ from_language }} to {{ to_language }}{% endblocktrans %}

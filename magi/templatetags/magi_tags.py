@@ -4,7 +4,7 @@ from django import template
 from django.conf import settings
 from magi import models
 from magi.settings import SITE_STATIC_URL, FAVORITE_CHARACTER_TO_URL, RAW_CONTEXT
-from magi.utils import AttrDict, getMagiCollection, torfc2822
+from magi.utils import AttrDict, getMagiCollection, torfc2822, translationURL as _translationURL
 
 register = template.Library()
 
@@ -51,3 +51,9 @@ def navbarTitle(context, link):
     if title:
         return _(title)
     return title
+
+@register.simple_tag()
+def translationURL(*args, **kwargs):
+    if 'with_wrapper' not in kwargs:
+        kwargs['with_wrapper'] = False
+    return _translationURL(*args, **kwargs)

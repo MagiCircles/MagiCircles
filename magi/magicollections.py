@@ -31,6 +31,7 @@ from magi.utils import (
     ColorField,
     hasGoodReputation,
     isInboxClosed,
+    translationURL,
 )
 from magi.raw import please_understand_template_sentence
 from magi.django_translated import t
@@ -651,7 +652,7 @@ class MagiCollection(object):
                         if get_language() in LANGUAGES_CANT_SPEAK_ENGLISH:
                             continue
                         else:
-                            value = mark_safe(u'<a href="https://translate.google.com/#en/{to}/{value}" target="_blank">{value} <i class="flaticon-link"></i></a>'.format(to=get_language(), value=value))
+                            value = mark_safe(translationURL(value))
             is_foreign_key = (isinstance(field, models.models.ForeignKey)
                               or isinstance(field, models.models.OneToOneField))
             if not value and not is_foreign_key:

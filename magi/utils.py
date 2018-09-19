@@ -9,6 +9,7 @@ from django.core.exceptions import ValidationError
 from django.core.urlresolvers import resolve
 from django.core.validators import BaseValidator, RegexValidator
 from django.http import Http404
+from django.utils.http import urlquote
 from django.utils.deconstruct import deconstructible
 from django.utils.translation import ugettext_lazy as _, get_language
 from django.utils.formats import dateformat
@@ -1095,3 +1096,16 @@ def find_all_translations(model, field, only_for_language=None, with_count_has=T
         )
 
     return translations
+
+def translationURL(value, from_language='en', to_language=None, with_wrapper=True):
+    url = 'https://translate.google.com/#{from_language}/{to_language}/{value}'.format(
+        to_language=to_language if to_language else get_language(),
+        from_language=from_language,
+        value=urlquote(value),
+    )
+    if with_wrapper:
+        return u'<a href="{url}" target="_blank"> {value} <i class="flaticon-link"></i></a>'.format(
+            url=url,
+            value=value,
+        )
+    return url
