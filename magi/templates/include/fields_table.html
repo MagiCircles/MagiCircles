@@ -28,7 +28,7 @@
 	<small class="text-muted">{{ field.annotation }}</small>
 	{% elif field.type == 'image' %}
 	<a href="{{ field.value }}" target="_blank"{% if field.ajax_link %} data-ajax-url="{{ field.ajax_link }}" data-ajax-title="{{ field.value }}"{% endif %}>
-	  <img src="{{ field.value }}" alt="{{ field.verbose_name }}">
+	  <img src="{{ field.value }}" alt="{% if field.image_text %}{{ field.image_text }}{% else %}{{ field.verbose_name }}{% endif %}">
 	</a>
 	{% elif field.type == 'images' %}
         {% for image in field.images %}
@@ -38,7 +38,7 @@
         {% endfor %}
 	{% elif field.type == 'image_link'  %}
         <a href="{{ field.link }}" target="_blank"{% if field.ajax_link %} data-ajax-url="{{ field.ajax_link }}" data-ajax-title="{{ field.link_text }}"{% endif %}>
-	  <img src="{{ field.value }}" alt="{{ field.link_text }}">
+	  <img src="{{ field.value }}" alt="{% if field.image_text %}{{ field.image_text }}{% else %}{{ field.link_text }}{% endif %}">
         </a>
 	{% elif field.type == 'images_links'  %}
         {% for image in field.images %}
