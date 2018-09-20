@@ -8,7 +8,14 @@ from magi.middleware.httpredirect import HttpRedirectException
 from django.shortcuts import render, redirect
 from django.http import Http404
 from django.core.exceptions import PermissionDenied
-from magi.utils import getGlobalContext, cuteFormFieldsForContext, get_one_object_or_404, jsv, listUnique
+from magi.utils import (
+    getGlobalContext,
+    cuteFormFieldsForContext,
+    get_one_object_or_404,
+    jsv,
+    listUnique,
+    staticImageURL,
+)
 from magi.forms import ConfirmDelete, filter_ids
 
 ############################################################
@@ -20,13 +27,7 @@ def _get_filters(request_get, extra_filters={}):
     return filters
 
 def _get_share_image(context, collection_view, item=None):
-    share_image = collection_view.share_image(context, item)
-    if share_image is not None:
-        if '//' not in share_image:
-            share_image = u'{}img/{}'.format(context['full_static_url'], share_image)
-        if 'http' not in share_image:
-            share_image = u'http:{}'.format(share_image)
-    return share_image
+    return staticImageURL(collection_view.share_image(context, item), full=True)
 
 def _modification_view(context, name, view, ajax):
     context['list_url'] = '/{}/'.format(view.collection.plural_name)
