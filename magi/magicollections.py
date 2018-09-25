@@ -32,6 +32,7 @@ from magi.utils import (
     hasGoodReputation,
     isInboxClosed,
     translationURL,
+    modelHasField,
 )
 from magi.raw import please_understand_template_sentence
 from magi.django_translated import t
@@ -1443,6 +1444,7 @@ class AccountCollection(MagiCollection):
     def report_edit_templates(self):
         templates = OrderedDict([
             ('Unrealistic Level', 'Your level is unrealistic, so we edited it. If this was a mistake, please upload a screenshot of your game to the details of your account to prove your level and change it back. Thank you for your understanding.'),
+            ('Unrealistic Level (recidivist)', 'After multiple warnings, you have failed to provide a valid screenshot proving your level, so you have been removed from the leaderboard completely. You may still use this account normally and it is still accessible from your profile, with a visual indication that it cannot be trusted. If this was a mistake, you may contact us with a valid screenshot and we will change it back. Thank you for your understanding.'),
         ])
         for field in self.queryset.model._meta.fields:
             if not field.name.startswith('_') and field.name not in ['id', 'owner', 'creation', 'level', 'default_tab']:
@@ -1463,6 +1465,7 @@ class AccountCollection(MagiCollection):
             'level': 'max-level',
             'friend_id': 'id',
             'screenshot': 'screenshot',
+            'is_playground': 'hobbies',
         })
         return super(AccountCollection, self).to_fields(view, item, *args, icons=icons, **kwargs)
 
@@ -1478,6 +1481,14 @@ class AccountCollection(MagiCollection):
 
         def show_add_button(self, request):
             return not getAccountIdsFromSession(request)
+
+        def get_queryset(self, queryset, parameters, request):
+            queryset = super(AccountCollection.ListView, self).get_queryset(queryset, parameters, request)
+            if modelHasField(models.Account, 'is_hidden_from_leaderboard'):
+                queryset = queryset.exclude(is_hidden_from_leaderboard=True)
+            if modelHasField(models.Account, 'is_playground'):
+                queryset = queryset.exclude(is_playground=True)
+            return queryset
 
         @property
         def default_ordering(self):
@@ -1498,7 +1509,7 @@ class AccountCollection(MagiCollection):
 
         def to_fields(self, item, exclude_fields=None, *args, **kwargs):
             if not exclude_fields: exclude_fields = []
-            exclude_fields += ['owner', 'level_on_screenshot_upload']
+            exclude_fields += ['owner', 'level_on_screenshot_upload', 'is_hidden_from_leaderboard']
             fields = super(AccountCollection.ItemView, self).to_fields(item, *args, exclude_fields=exclude_fields, **kwargs)
             if hasattr(item, 'cached_leaderboard') and item.cached_leaderboard:
                 fields['leaderboard'] = {
@@ -1517,6 +1528,8 @@ class AccountCollection(MagiCollection):
                 del(fields['nickname'])
             if 'default_tab' in fields:
                 del(fields['default_tab'])
+            if 'is_playground' in fields and not item.is_playground:
+                del(fields['is_playground'])
             return fields
 
     class AddView(MagiCollection.AddView):

@@ -188,6 +188,16 @@ if hasattr(settings_module, 'STATIC_FILES_VERSION'):
 else:
     STATIC_FILES_VERSION = '1'
 
+if hasattr(settings_module, 'MAX_LEVEL_BEFORE_SCREENSHOT_REQUIRED'):
+    MAX_LEVEL_BEFORE_SCREENSHOT_REQUIRED = getattr(settings_module, 'MAX_LEVEL_BEFORE_SCREENSHOT_REQUIRED')
+else:
+    MAX_LEVEL_BEFORE_SCREENSHOT_REQUIRED = 200
+
+if hasattr(settings_module, 'MAX_LEVEL_UP_STEP_BEFORE_SCREENSHOT_REQUIRED'):
+    MAX_LEVEL_UP_STEP_BEFORE_SCREENSHOT_REQUIRED = getattr(settings_module, 'MAX_LEVEL_UP_STEP_BEFORE_SCREENSHOT_REQUIRED')
+else:
+    MAX_LEVEL_UP_STEP_BEFORE_SCREENSHOT_REQUIRED = 10
+
 if hasattr(settings_module, 'PROFILE_TABS'):
     PROFILE_TABS = getattr(settings_module, 'PROFILE_TABS')
 else:

@@ -34,6 +34,8 @@ from magi.settings import (
     MINIMUM_LIKES_POPULAR,
     HOME_ACTIVITY_TABS,
     LANGUAGES_CANT_SPEAK_ENGLISH,
+    MAX_LEVEL_BEFORE_SCREENSHOT_REQUIRED,
+    MAX_LEVEL_UP_STEP_BEFORE_SCREENSHOT_REQUIRED,
 )
 from magi.utils import (
     ordinalNumber,
@@ -780,6 +782,13 @@ class MagiFiltersForm(AutoForm):
 class AccountForm(AutoForm):
     def __init__(self, *args, **kwargs):
         super(AccountForm, self).__init__(*args, **kwargs)
+        if self.is_reported:
+            for field in ['start_date', 'default_tab', 'center', 'is_playground']:
+                if field in self.fields:
+                    del(self.fields[field])
+        else:
+            if 'is_hidden_from_leaderboard' in self.fields:
+                del(self.fields['is_hidden_from_leaderboard'])
         if 'center' in self.fields:
             if self.is_creating:
                 del(self.fields['center'])
@@ -815,11 +824,15 @@ class AccountForm(AutoForm):
         previous_level = 0
         if not self.is_creating:
             previous_level = getattr(self.instance, 'level_on_screenshot_upload', self.previous_level) or 0
+        is_playground = self.instance.is_playground if not self.is_creating else False
+        if self.cleaned_data.get('is_playground'):
+            is_playground = True
         if (new_level
+            and not is_playground
             and new_level != previous_level
             and has_field(self.Meta.model, 'screenshot')
-            and new_level >= 200
-            and (new_level - previous_level) >= 10
+            and new_level >= MAX_LEVEL_BEFORE_SCREENSHOT_REQUIRED
+            and (new_level - previous_level) >= MAX_LEVEL_UP_STEP_BEFORE_SCREENSHOT_REQUIRED
             and unicode(screenshot_image) == unicode(self.previous_screenshot)):
             raise forms.ValidationError(
                 message=_('Please provide an updated screenshot of your in-game profile to prove your level.'),
