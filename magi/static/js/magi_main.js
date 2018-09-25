@@ -1262,8 +1262,8 @@ function afterLoadBadges(user_id) {
 
 function loadBadges(tab_name, user_id, onDone) {
     $.get('/ajax/badges/?of_user=' + user_id, function(data) {
-        if (data.trim() == "") {
-            onDone('<div class="padding20"><div class="alert alert-warning">' + gettext('No result.') + '</div></div>', loadBadges);
+        if ($(data).find('.items').length == 0 && !$(data).hasClass('items')) {
+            onDone('<div class="padding20"><div class="alert alert-warning">' + gettext('No result.') + '</div></div>');
         } else {
             onDone(data, afterLoadBadges);
         }

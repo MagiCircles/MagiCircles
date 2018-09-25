@@ -131,12 +131,4 @@ $(document).ready(function() {
 	    onProfileAccountTabOpened(account_elt);
         });
     });
-    $('[href="#openBadges"]').click(function(e) {
-	e.preventDefault();
-	$('.nav-tabs [href="#profilebadge"]').tab('show');
-	$('html, body').stop().animate({
-	    scrollTop: $('#profilebadge').offset().top
-	}, 1500, 'easeInOutExpo');
-	return false;
-    });
 });
