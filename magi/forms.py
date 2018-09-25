@@ -264,6 +264,16 @@ class MagiForm(forms.ModelForm):
                 if field in self.fields:
                     self.fields[field].required = True
 
+        # Has the form been opened in the context of a report?
+        self.is_reported = (
+            not self.is_creating
+            and not isinstance(self, MagiFiltersForm)
+            and self.request
+            and 'is_reported' in self.request.GET
+            and self.request.user.is_authenticated()
+            and self.instance.owner != self.request.user
+        )
+
     def clean(self):
         # Check max_per_user
         owner = getattr(self, 'to_owner', self.request.user)

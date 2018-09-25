@@ -465,6 +465,7 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
         collection.edit_view.check_translate_permissions(request, context)
     else:
         collection.edit_view.check_permissions(request, context)
+    context['is_reported'] = 'is_reported' in request.GET
     context = _modification_view(context, name, collection.edit_view, ajax)
     queryset = collection.edit_view.get_queryset(collection.queryset, _get_filters(request.GET, extra_filters), request)
     instance = get_one_object_or_404(queryset, **collection.edit_view.get_item(request, pk))

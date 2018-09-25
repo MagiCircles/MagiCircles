@@ -7,7 +7,7 @@ from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.utils.datastructures import MultiValueDictKeyError
 from django.middleware import csrf
 from django.http import Http404
-from django.db.models import Count, Q, Prefetch, FieldDoesNotExist
+from django.db.models import Q, Prefetch, FieldDoesNotExist
 from django.shortcuts import get_object_or_404
 from magi.views import indexExtraContext
 from magi.utils import (
