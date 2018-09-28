@@ -462,75 +462,84 @@ def cuteFormFieldsForContext(cuteform_fields, context, form=None, prefix=None, a
 ############################################################
 # Database upload to
 
-@deconstructible
-class uploadToKeepName(object):
-    def __init__(self, prefix, length=6):
+class _uploadToBase(object):
+    def __init__(self, prefix, length=6, limit=100):
         self.prefix = prefix
         self.length = length
+        self.limit = limit
 
     def __call__(self, instance, filename):
         name, extension = os.path.splitext(filename)
-        name = (
-            RAW_CONTEXT['static_uploaded_files_prefix']
-            + self.prefix
-            + name
-            + randomString(self.length)
-            + extension
-        )
-        return name
-
-@deconstructible
-class uploadToRandom(object):
-    def __init__(self, prefix, length=30):
-        self.prefix = prefix
-        self.length = length
-
-    def __call__(self, instance, filename):
-        name, extension = os.path.splitext(filename)
-        return RAW_CONTEXT['static_uploaded_files_prefix'] + self.prefix + randomString(self.length) + extension
-
-@deconstructible
-class uploadItem(object):
-    def __init__(self, prefix, length=6):
-        self.prefix = prefix
-        self.length = length
-
-    def __call__(self, instance, filename):
-        _, extension = os.path.splitext(filename)
         if not extension:
             extension = '.png'
-        return u'{static_uploaded_files_prefix}{prefix}/{id}{string}-{random}{extension}'.format(
-            static_uploaded_files_prefix=RAW_CONTEXT['static_uploaded_files_prefix'],
-            prefix=self.prefix,
-            id=instance.id if instance.id else randomString(6),
-            string=tourldash(unicode(instance)),
+        prefix = u''.join([
+            RAW_CONTEXT['static_uploaded_files_prefix'],
+            self.prefix,
+        ]) + u'/'
+        suffix = extension
+        name = self.get_name(
+            instance, filename,
+            getattr(self, 'limit', 100) - len(prefix) - len(suffix) - 1,
+        )
+        return u'{}{}{}'.format(prefix, name, suffix)
+
+@deconstructible
+class uploadToKeepName(_uploadToBase):
+    def get_name(self, instance, filename, limit_to):
+        return u'{}{}'.format(
+            filename[:(limit_to - self.length)],
+            randomString(self.length),
+        )
+
+@deconstructible
+class uploadToRandom(_uploadToBase):
+    def __init__(self, prefix, length=30, *args, **kwargs):
+        super(uploadToRandom, self).__init__(prefix, length=length, *args, **kwargs)
+
+    def get_name(self, instance, filename, limit_to):
+        return randomString(self.length)[:limit_to]
+
+@deconstructible
+class uploadItem(_uploadToBase):
+    def get_name(self, instance, filename, limit_to):
+        id = unicode(instance.id if instance.id else randomString(6))
+        return u'{id}{string}-{random}'.format(
+            id=id,
+            string=tourldash(unicode(instance))[:(limit_to - len(id) - self.length)],
             random=randomString(self.length),
-            extension=extension,
         )
 
 @deconstructible
 class uploadThumb(uploadItem):
-    def __init__(self, prefix, length=6):
-        self.prefix = prefix + ('thumb' if prefix.endswith('/') else '/thumb')
-        self.length = length
+    def __init__(self, prefix, *args, **kwargs):
+        super(uploadThumb, self).__init__(
+            prefix + ('thumb' if prefix.endswith('/') else '/thumb'),
+            *args, **kwargs
+        )
 
 @deconstructible
 class uploadTthumb(uploadItem):
-    def __init__(self, prefix, length=6):
-        self.prefix = prefix + ('tthumb' if prefix.endswith('/') else '/tthumb')
-        self.length = length
+    def __init__(self, prefix, *args, **kwargs):
+        super(uploadTthumb, self).__init__(
+            prefix + ('tthumb' if prefix.endswith('/') else '/tthumb'),
+            *args, **kwargs
+        )
 
 @deconstructible
 class uploadTiny(uploadItem):
-    def __init__(self, prefix, length=6):
-        self.prefix = prefix + ('tiny' if prefix.endswith('/') else '/tiny')
-        self.length = length
+    def __init__(self, prefix, *args, **kwargs):
+        super(uploadTiny, self).__init__(
+            prefix + ('tiny' if prefix.endswith('/') else '/tiny'),
+            *args, **kwargs
+        )
 
 @deconstructible
 class upload2x(uploadItem):
-    def __init__(self, prefix, length=6):
-        self.prefix = prefix + ('2x' if prefix.endswith('/') else '/2x')
-        self.length = length
+    def __init__(self, prefix, *args, **kwargs):
+        super(upload2x, self).__init__(
+            prefix + ('2x' if prefix.endswith('/') else '/2x'),
+            *args, **kwargs
+        )
 
 ############################################################
 # Get MagiCollection(s)
