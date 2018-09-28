@@ -101,7 +101,7 @@ DEFAULT_GROUPS = [
     ('db', {
         'translation': _('Database maintainer'),
         'description': 'We gather all the game data in one convenient place for you! Our database maintainers manually update the details as soon as they are available.',
-        'permissions': ['manage_main_items'],
+        'permissions': ['manage_main_items', 'translate_items'],
         'requires_staff': True,
         'guide': '/help/Database%20maintainers%20guide',
     }),
