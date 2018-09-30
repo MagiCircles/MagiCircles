@@ -1205,7 +1205,8 @@ class Prize(MagiModel):
     CHARACTERS = OrderedDict([(unicode(_c[0]), _c) for _c in FAVORITE_CHARACTERS or []])
     CHARACTER_CHOICES = [(_id, _details[1]) for _id, _details in CHARACTERS.items()]
     CHARACTER_WITHOUT_I_CHOICES = True
-    i_character = models.CharField('Character', null=True, max_length=200, choices=CHARACTER_CHOICES)
+    CHARACTER_SOFT_CHOICES = True
+    i_character = models.CharField('Character', null=True, max_length=200)
     character_image = property(getInfoFromChoices('character', CHARACTERS, 2))
     character_url = property(lambda _s: FAVORITE_CHARACTER_TO_URL(AttrDict({
         'value': _s.t_character,
