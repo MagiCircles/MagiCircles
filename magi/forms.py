@@ -845,7 +845,8 @@ class AccountForm(AutoForm):
         if not self.is_creating and 'level' in self.fields and instance.level != self.previous_level and has_field(instance, '_cache_leaderboards_last_update'):
             instance._cache_leaderboards_last_update = None
         # When level screenshot gets updated, update level_on_screenshot_upload
-        if unicode(self.previous_screenshot) != unicode(instance.screenshot):
+        if (has_field(self.Meta.model, 'screenshot')
+            and unicode(getattr(self, 'previous_screenshot', '')) != unicode(instance.screenshot)):
             instance.level_on_screenshot_upload = instance.level
         if commit:
             instance.save()

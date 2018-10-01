@@ -11,6 +11,7 @@ t = {
     'Clear': _('Clear'),
     'Download': _('Download'),
     'Email': _('Email'),
+    'English': _('English'),
     'Go': _('Go'),
     'Home': _('Home'),
     'No': _('No'),
