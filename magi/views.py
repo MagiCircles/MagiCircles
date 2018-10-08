@@ -31,6 +31,7 @@ from magi.forms import (
     ActivitiesPreferencesForm,
     SecurityPreferencesForm,
     Confirm,
+    TranslationCheckForm,
 )
 from magi import models
 from magi.raw import donators_adjectives
@@ -1145,6 +1146,24 @@ def collections(request):
     context['collections'] = getMagiCollections()
     context['groups_per_permissions'] = groupsForAllPermissions(request.user.preferences.GROUPS)
     return render(request, 'pages/staff/collections.html', context)
+
+def translations_check(request):
+    context = getGlobalContext(request)
+    if request.method == 'POST':
+        form = TranslationCheckForm(request.POST)
+        if form.is_valid():
+            context['terms'] = []
+            old_lang = get_language()
+            for lang, verbose in django_settings.LANGUAGES:
+                translation_activate(lang)
+                context['terms'].append((lang, verbose, unicode(_(form.cleaned_data['term']))))
+                translation_activate(old_lang)
+    else:
+        form = TranslationCheckForm()
+    context['form'] = form
+    context['page_title'] = 'POEditor translations term checker'
+    return render(request, 'pages/staff/translations_check.html', context)
+
 
 ############################################################
 # Errors

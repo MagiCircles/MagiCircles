@@ -465,6 +465,12 @@ def to_translate_form_class(view):
             ]
     return _TranslateForm
 
+class TranslationCheckForm(forms.Form):
+    form_title = 'POEditor translations term checker'
+    submit_title = 'Check translations'
+
+    term = forms.CharField(required=True)
+
 ############################################################
 # MagiFiltersForm
 

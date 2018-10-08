@@ -502,6 +502,13 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'icon': 'developer',
         'permissions_required': ['see_collections_details'],
     }),
+    ('translations_check', {
+        'title': 'POEditor translations term checker',
+        'custom': False,
+        'navbar_link_list': 'staff',
+        'icon': 'developer',
+        'permissions_required': ['translate_items'],
+    }),
     ('deletelink', {
         'ajax': True,
         'custom': False,
