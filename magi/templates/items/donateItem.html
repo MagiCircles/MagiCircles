@@ -2,10 +2,31 @@
 {% load l10n %}
 {% load tools %}
 {% with month=item %}
-<h1 class="padding50 donate-month">
+<h1 class="padding50 padding-novertical donate-month">
   <div class="row">
-    <div class="col-md-5 fontx1-5">
-      {{ month.date|date:"F Y" }}
+    <div class="col-md-5">
+      <span class="fontx1-5">
+        {{ month.date|date:"F Y" }}
+      </span><br>
+      {% if ajax %}
+      <small style="text-align: left;"><a href="#badge{{ month.id }}" data-toggle="collapse">
+        <i class="flaticon-achievement"></i>
+        {{ month.open_badge_sentence }}
+      </a></small>
+      <div class="collapse" id="badge{{ month.id }}">
+        <div class="user-badge badge-color"
+             style="background-image: url('{{ month.image_url }}');">
+          <img src="{{ static_url }}img/badges/badge.png?{{ static_files_version }}">
+        </div>
+        <div class="caption-wrapper">
+          <div class="caption">
+            <h1 class="ribbon">
+	          <strong class="ribbon-content">{{ month.badge_name }}</strong>
+            </h1>
+          </div>
+        </div>
+      </div>
+      {% endif %}
     </div>
     <div class="col-md-7">
       <div class="progress">
@@ -26,6 +47,30 @@
     </div>
   </div>
 </h1>
+
+{% if not ajax %}
+<div class="row">
+  <div class="col-md-offset-1 col-md-5">
+    <div class="user-badge badge-color"
+         style="background-image: url('{{ month.image_url }}');">
+      <img src="{{ static_url }}img/badges/badge.png?{{ static_files_version }}">
+    </div>
+    <div class="caption-wrapper">
+      <div class="caption">
+        <h1 class="ribbon">
+	      <strong class="ribbon-content">{{ month.badge_name }}</strong>
+        </h1>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-5">
+    <p class="big-text text-ceer">
+      <br>
+      {{ month.badge_sentence }}
+    </p>
+  </div>
+</div><br><br>
+{% endif %}
 
 <div class="donators-list">{% for badge in month.all_badges %}{% with donator=badge.user %}{% ifchanged badge.show_on_profile %}<br>{% endifchanged %}<div class="donator-profile {% if not badge.show_on_profile %} donator-profile-small{% endif %} a-{{ donator.preferences.css_color }}">
     <div class="text-center">

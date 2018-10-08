@@ -1118,6 +1118,22 @@ class DonationMonth(MagiModel):
     def reached_100_percent(self):
         return self.percent_int >= 100
 
+    @property
+    def badge_name(self):
+        return _(u'{month} Donator').format(
+            month=date_format(self.date, format='YEAR_MONTH_FORMAT', use_l10n=True),
+        )
+
+    @property
+    def open_badge_sentence(self):
+        return _('Open {thing}').format(thing=unicode(_('Badge')).lower())
+
+    @property
+    def badge_sentence(self):
+        return _(u'This is {month}\'s badge. It\'s limited to this month only, and only our donators can get it. It\'s not too late! If you donate now, it will appear on your profile.').format(
+            month=_(self.date.strftime('%B')),
+        )
+
     def __unicode__(self):
         return unicode(self.date)
 
