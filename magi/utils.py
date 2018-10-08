@@ -322,6 +322,10 @@ def ajaxContext(request):
 def emailContext():
     context = RAW_CONTEXT.copy()
     context['t_site_name'] = context['site_name_per_language'].get(get_language(), context['site_name'])
+    context['t_site_image'] = context['site_image_per_language'].get(get_language(), context['site_image'])
+    context['t_full_site_image'] = context['full_site_image_per_language'].get(get_language(), context['full_site_image'])
+    context['t_email_image'] = context['email_image_per_language'].get(get_language(), context['email_image'])
+    context['t_full_email_image'] = context['full_email_image_per_language'].get(get_language(), context['full_email_image'])
     if context['site_url'].startswith('//'):
         context['site_url'] = 'http:' + context['site_url']
     return context
@@ -646,10 +650,12 @@ def filterEventsByStatus(queryset, status, prefix=''):
 ############################################################
 # Send email
 
-def send_email(subject, template_name, to=[], context={}, from_email=django_settings.AWS_SES_RETURN_PATH):
+def send_email(subject, template_name, to=[], context=None, from_email=django_settings.AWS_SES_RETURN_PATH):
     if 'template_name' != 'notification':
         to.append(django_settings.LOG_EMAIL)
-    subject = subject.replace('\n', '')
+    subject = subject.replace('\n', '').replace('\r', '')
+    if not context:
+        context = emailContext()
     context = Context(context)
     plaintext = get_template('emails/' + template_name + '.txt').render(context)
     htmly = get_template('emails/' + template_name + '.html').render(context)
@@ -839,7 +845,7 @@ def join_data(*args):
     """
     Takes a list of unicode strings and return a CSV string.
     """
-    data = u'\"' + u'","'.join([unicode(value).replace('"','\"') for value in args]) + u'\"'
+    data = u'\"' + u'","'.join([unicode(value).replace('\n', ' ').replace('\r', ' ').replace('"','\"') for value in args]) + u'\"'
     return data if data != '""' else None
 
 ############################################################

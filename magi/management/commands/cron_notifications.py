@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 from django.core.management.base import BaseCommand, CommandError
 from django.utils.translation import ugettext_lazy as _, string_concat, activate as translation_activate
+from magi.urls import * # unused, just to make sure raw_context is updated
 from magi import models
 from magi.settings import SITE_NAME, SITE_NAME_PER_LANGUAGE
 from magi.utils import send_email, emailContext
-from magi.urls import * # unused, just to make sure raw_context is updated
 from pprint import pprint
 
 class Command(BaseCommand):
@@ -13,11 +13,15 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
 
         sent = []
-        notifications = models.Notification.objects.filter(email_sent=False).select_related('owner', 'owner__preferences')
+        notifications = models.Notification.objects.filter(email_sent=False, seen=False).select_related('owner', 'owner__preferences')
         for notification in notifications:
             preferences = notification.owner.preferences
             if preferences.is_notification_email_allowed(notification.message):
-                notification_sent = notification.owner.email + notification.english_message + notification.website_url
+                try:
+                    notification_sent = notification.owner.email + notification.english_message + notification.website_url
+                except Exception, e:
+                    print u'!! Error when parsing notification', notification.id, e
+                    continue
                 if notification_sent in sent:
                     print u' Duplicate not sent to {}: {}'.format(notification.owner.username, notification.english_message)
                 else:
