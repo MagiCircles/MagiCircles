@@ -298,7 +298,7 @@ def globalContext(request):
                         'url': '/settings/#form',
                     },
                 },
-                'image': 'https://i.imgur.com/D0Cozvw.png',
+                'image': context['corner_popup_image'],
                 'image_overflow': True,
                 'allow_close_once': True,
             }

@@ -358,6 +358,11 @@ if hasattr(settings_module, 'ON_PREFERENCES_EDITED'):
 else:
     ON_PREFERENCES_EDITED = None
 
+if hasattr(settings_module, 'CORNER_POPUP_IMAGE'):
+    CORNER_POPUP_IMAGE = getattr(settings_module, 'CORNER_POPUP_IMAGE')
+else:
+    CORNER_POPUP_IMAGE = None
+
 if hasattr(settings_module, 'JAVASCRIPT_COMMONS'):
     JAVASCRIPT_COMMONS = getattr(settings_module, 'JAVASCRIPT_COMMONS')
 else:
