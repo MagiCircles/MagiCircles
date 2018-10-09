@@ -36,6 +36,7 @@ from magi.settings import (
     LANGUAGES_CANT_SPEAK_ENGLISH,
     MAX_LEVEL_BEFORE_SCREENSHOT_REQUIRED,
     MAX_LEVEL_UP_STEP_BEFORE_SCREENSHOT_REQUIRED,
+    FIRST_COLLECTION,
 )
 from magi.utils import (
     ordinalNumber,
@@ -804,17 +805,24 @@ class AccountForm(AutoForm):
             if len(getAccountIdsFromSession(self.request)) == 0:
                 self.fields['nickname'].widget = self.fields['nickname'].hidden_widget()
         if 'default_tab' in self.fields:
-            if self.is_creating or not self.collection or not hasattr(self.collection, 'get_profile_account_tabs'):
+            if not self.collection or not hasattr(self.collection, 'get_profile_account_tabs'):
                 del(self.fields['default_tab'])
             else:
                 self.fields['default_tab'] = forms.ChoiceField(
                     required=False,
+                    initial=FIRST_COLLECTION,
                     choices=BLANK_CHOICE_DASH + [
                         (tab_name, tab['name'])
                         for tab_name, tab in
-                        self.collection.get_profile_account_tabs(self.request, RAW_CONTEXT, self.instance).items()
+                        self.collection.get_profile_account_tabs(
+                            self.request,
+                            RAW_CONTEXT,
+                            self.instance if not self.is_creating else None,
+                        ).items()
                     ],
                 )
+                if len(self.fields['default_tab'].choices) <= 2:
+                    self.fields['default_tab'].widget = self.fields['default_tab'].hidden_widget()
         self.previous_level = None
         if 'level' in self.fields and not self.is_creating:
             self.previous_level = self.instance.level
@@ -862,6 +870,32 @@ class AccountForm(AutoForm):
         model = models.Account
         fields = '__all__'
         save_owner_on_creation = True
+
+def get_account_simple_form(account_form_class=None, simple_fields=['nickname', 'level', 'friend_id']):
+
+    if not account_form_class:
+        account_form_class = AccountForm
+
+    class _AccountSimpleForm(account_form_class):
+        def __init__(self, *args, **kwargs):
+            super(_AccountSimpleForm, self).__init__(*args, **kwargs)
+            if not self.data.get('screenshot') and 'screenshot' in self.fields and int(self.data.get('level', 0) or 0) < 200:
+                self.fields['screenshot'].widget = forms.HiddenInput()
+            if 'start_date' in self.fields:
+                del(self.fields['start_date'])
+            if 'default_tab' in self.fields:
+                self.fields['default_tab'].widget = self.fields['default_tab'].hidden_widget()
+
+        class Meta(AccountForm.Meta):
+            fields = [
+                field for field in simple_fields
+                if has_field(account_form_class.Meta.model, field)
+            ] + (['screenshot'] if (
+                'level' in simple_fields
+                and has_field(account_form_class.Meta.model, 'screenshot')
+            ) else []) + ['default_tab']
+
+    return _AccountSimpleForm
 
 ############################################################
 # Users forms

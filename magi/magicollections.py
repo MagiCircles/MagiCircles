@@ -1408,11 +1408,12 @@ class AccountCollection(MagiCollection):
     show_item_buttons = False
     show_item_buttons_justified = False
 
-    def get_profile_account_tabs(self, request, context, account):
+    def get_profile_account_tabs(self, request, context, account=None):
         """
         Ordered dict that:
         - MUST contain name, callback (except for about)
         - May contain icon, image, callback
+        When account is not provided, callback will always be 'undefined'
         """
         tabs = {}
         if context['collectible_collections'] and 'account' in context['collectible_collections']:
@@ -1425,7 +1426,7 @@ class AccountCollection(MagiCollection):
                         load_url=collection.get_list_url_for_authenticated_owner(
                             request, ajax=True, item=None, fk_as_owner=account.id),
                         callback=collection.list_view.ajax_pagination_callback or 'undefined',
-                    )),
+                    )) if account else 'undefined',
                 }
         tabs['about'] = {
             'name': _('About'),
