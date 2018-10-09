@@ -273,6 +273,7 @@ def globalContext(request):
     context['javascript_translated_terms_json'] = simplejson.dumps({ term: unicode(_(term)) for term in context['javascript_translated_terms']})
     context['localized_language'] = LANGUAGES_DICT.get(request.LANGUAGE_CODE, '')
     context['current_language'] = get_language()
+    context['ajax'] = True
     # Not Ajax
     if '/ajax/' not in context['current_url']:
         context['ajax'] = False
