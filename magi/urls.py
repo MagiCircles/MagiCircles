@@ -48,6 +48,7 @@ from magi.settings import (
     GROUPS,
     JAVASCRIPT_COMMONS,
     LANGUAGES_CANT_SPEAK_ENGLISH,
+    CORNER_POPUP_IMAGE,
 )
 from magi.models import UserPreferences
 from magi.utils import redirectWhenNotAuthenticated, hasPermissions, hasOneOfPermissions, tourldash, groupsWithPermissions, groupsWithOneOfPermissions, staticImageURL

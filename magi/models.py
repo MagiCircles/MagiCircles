@@ -341,14 +341,21 @@ class UserPreferences(BaseMagiModel):
         return type(self).get_age(self.birthdate)
 
     @property
+    def formatted_age(self):
+        return _(u'{age} years old').format(age=self.age) if self.birthdate else ''
+
+    @property
+    def formatted_birthday_date(self):
+        return date_format(self.birthdate, format='MONTH_DAY_FORMAT', use_l10n=True) if self.birthdate else ''
+    @property
     def formatted_birthday(self):
         if not self.birthdate: return ''
         if self.show_birthdate_year:
             return u'{} ({})'.format(
                 date_format(self.birthdate, format='DATE_FORMAT', use_l10n=True),
-                _(u'{age} years old').format(age=self.age),
+                self.formatted_age,
             )
-        return date_format(self.birthdate, format='MONTH_DAY_FORMAT', use_l10n=True)
+        return self.formatted_birthday_date
 
     @property
     def email_notifications_turned_off(self):

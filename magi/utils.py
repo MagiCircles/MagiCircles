@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import division
 import os, string, random, csv, tinify, cStringIO, pytz, simplejson, datetime, io, operator, re
 from PIL import Image
@@ -281,15 +282,24 @@ def globalContext(request):
                 'choices': django_settings.LANGUAGES,
             },
         }, context)
-    # Ajax
-    else:
-        context['ajax'] = True
 
     # Authenticated
+    context['corner_popups'] = OrderedDict()
     if request.user.is_authenticated():
+        if isBirthdayToday(request.user.preferences.birthdate):
+            context['corner_popups']['happy_birthday'] = {
+                'title': mark_safe(u'<span class="fontx1-5">{} 🎉</span>'.format(_('Happy Birthday'))),
+                'content': mark_safe(u'<p class="fontx1-5">🗓 {}<br>🎂 {}</p>'.format(
+                    request.user.preferences.formatted_birthday_date,
+                    request.user.preferences.formatted_age,
+                )),
+                'image': context['corner_popup_image'],
+                'image_overflow': False,
+                'allow_close_once': True,
+                'allow_close_forever': True,
+            }
         if not context['ajax'] and request.user.preferences.invalid_email and context['current'] != 'settings':
-            context['corner_popup'] = {
-                'name': 'invalid_email',
+            context['corner_popups']['invalid_email'] = {
                 'title': _('Your email address is invalid.'),
                 'content': _('Some features might not work properly.'),
                 'buttons': {
@@ -299,8 +309,9 @@ def globalContext(request):
                     },
                 },
                 'image': context['corner_popup_image'],
-                'image_overflow': True,
+                'image_overflow': False,
                 'allow_close_once': True,
+                'allow_close_remind': 2,
             }
 
     # Not authenticated
@@ -590,15 +601,24 @@ def birthdays_within(days_after, days_before=0, field_name='birthday'):
     # Compose the djano.db.models.Q objects together for a single query.
     return reduce(operator.or_, (Q(**d) for d in monthdays))
 
-def birthdayURL(user):
+def isBirthdayToday(date):
+    if not date:
+        return False
     today = datetime.date.today()
-    birthday = user.preferences.birthdate
+    return (
+        today.day == date.day
+        and today.month == date.month
+    )
+
+def getNextBirthday(date):
+    today = datetime.date.today()
+    birthday = date
 
     is_feb29 = False
     if birthday.month == 2 and birthday.day == 29:
         is_feb29 = True
         birthday = birthday.replace(
-            month=user.preferences.birthdate.month + 1,
+            month=date.month + 1,
             day=1,
         )
 
@@ -609,9 +629,13 @@ def birthdayURL(user):
     if is_feb29:
         try: birthday = birthday.replace(month=2, day=29)
         except ValueError: pass
+    return birthday
 
+def birthdayURL(user):
+    if not user.preferences.birthdate:
+        return None
     return 'https://www.timeanddate.com/countdown/birthday?iso={date}T00&msg={username}%27s+birthday'.format(
-        date=dateformat.format(birthday, "Ymd"),
+        date=dateformat.format(getNextBirthday(user.preferences.birthdate), "Ymd"),
         username=user.username,
     )
 

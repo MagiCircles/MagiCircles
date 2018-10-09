@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import string, datetime, random
 from collections import OrderedDict
 from django.utils.translation import ugettext_lazy as _, string_concat, get_language
@@ -33,6 +34,7 @@ from magi.utils import (
     isInboxClosed,
     translationURL,
     modelHasField,
+    isBirthdayToday,
 )
 from magi.raw import please_understand_template_sentence
 from magi.django_translated import t
@@ -1957,6 +1959,32 @@ class UserCollection(MagiCollection):
             context['share_url'] = context['item'].http_item_url
 
             context['single_account_sentence'] = account_collection.title
+
+            # Show birthday popup
+            if not context['is_me'] and isBirthdayToday(user.preferences.birthdate):
+                context['corner_popups']['profile_birthday'] = {
+                    'title': u'{}, {} 🎉'.format(
+                        _('Happy Birthday'),
+                        user.username,
+                    ),
+                    'content': mark_safe(u'<p>🗓 {}{}</p>'.format(
+                        user.preferences.formatted_birthday_date,
+                        u'<br>🎂 {}'.format(user.preferences.formatted_age)
+                        if user.preferences.show_birthdate_year else '',
+                    )),
+                    'buttons': {
+                        'privatemessages': {
+                            'title': _('Send a message'),
+                            'url': '/privatemessages/?to_user={id}'.format(id=user.id),
+                            'ajax_url': '/ajax/privatemessages/?to_user={id}&ajax_modal_only&ajax_show_top_buttons'.format(
+                                id=user.id,
+                            ),
+                        },
+                    } if 'privatemessage' in context['all_enabled'] else None,
+                    'image': context['corner_popup_image'],
+                    'image_overflow': False,
+                    'allow_close_once': True,
+                }
 
             # Afterjs
             afterjs += u'</script>'

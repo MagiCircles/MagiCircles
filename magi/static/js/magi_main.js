@@ -152,11 +152,11 @@ function loadStaffOnlyButtons() {
 }
 
 // *****************************************
-// Corner popup
+// Corner popups
 
-function loadCornerPopup() {
-    let popup = $('.corner-popup');
-    if (popup.length) {
+function loadCornerPopups() {
+    $('.corner-popup').each(function() {
+        let popup = $(this);
         let last_reminder = localStorage['popovers_' + popup.data('name') + '_last_reminder'] || null;
         let remind_in_days = $('a[href="#close_remind"]').data('reminder-in-days');
         let always_close = localStorage['popovers_' + popup.data('name') + '_always_close'] || false;
@@ -165,9 +165,8 @@ function loadCornerPopup() {
                last_reminder > (new Date().getTime() - (remind_in_days * 24 * 60 * 60 * 1000)))) {
             popup.remove();
         } else {
-            popup.show();
             $.each(['close', 'close_remind', 'close_forever'], function(i, cls) {
-                let button = $('a[href="#' + cls + '"]');
+                let button = popup.find('a[href="#' + cls + '"]');
                 if (button.length) {
                     button.unbind('click');
                     button.click(function(e) {
@@ -179,13 +178,16 @@ function loadCornerPopup() {
                         }
                         popup.hide('fast', function() {
                             popup.remove();
+                            // Show next popup if any
+                            $('.corner-popup').first().show('fast');
                         });
                         return false;
                     });
                 }
             });
         }
-    }
+    });
+    $('.corner-popup').first().show();
 }
 
 // *****************************************
@@ -805,7 +807,7 @@ function loadCommons(onPageLoad /* optional = false */) {
     formloaders();
     dateInputSupport();
     loadStaffOnlyButtons();
-    loadCornerPopup();
+    loadCornerPopups();
     ajaxModals();
     ajaxPopovers();
     loadCountdowns();
@@ -1167,6 +1169,9 @@ function loadPrivateMessages() {
         }));
         $(this).addClass('linked');
     });
+
+    // Close birthday popup if opened
+    $('.corner-popup[data-name="profile_birthday"]').remove();
 }
 
 // *****************************************
