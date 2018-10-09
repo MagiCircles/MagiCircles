@@ -1702,8 +1702,11 @@ class FilterActivities(MagiFiltersForm):
                 )):
                 self.default_to_current_language = True
                 self.fields['i_language'].initial = self.request.LANGUAGE_CODE
-        if not self.request.user.is_authenticated() and 'is_following' in self.fields:
-            del(self.fields['is_following'])
+        if not self.request.user.is_authenticated():
+            if 'is_following' in self.fields:
+                del(self.fields['is_following'])
+            if 'liked' in self.fields:
+                del(self.fields['liked'])
         self.active_tab = None
         if self.request.user.is_authenticated():
             # If a tab is selected in the request (URL)
