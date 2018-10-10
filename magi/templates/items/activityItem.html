@@ -8,57 +8,57 @@
     </div>
     <div class="col-xs-10">
       <div>
-    {% if user.is_authenticated %}
-    <div class="activity-info activity-info-popular"
-         {% if not activity.is_popular %} style="display: none;"{% endif %}
-         data-toggle="tooltip" data-trigger="hover" title="{% trans 'Popular' %}">
-      <i class="flaticon-fire text-main"></i>
-    </div>
-    <div class="activity-info activity-info-staff-picks"
-         {% if not activity.is_staff_picks %} style="display: none;"{% endif %}
-         data-toggle="tooltip" data-trigger="hover" title="{% trans 'Staff picks' %}">
-      <i class="flaticon-heart text-main"></i>
-    </div>
-	{% endif %}
-    <div class="activity-info-archived activity-info"
-         {% if not activity.archived_by_owner %} style="display: none"{% endif %}
-         data-toggle="tooltip" data-trigger="hover"
-         title="{% trans 'Archived' %}">
-      <i class="flaticon-archive text-muted"></i>
-    </div>
-    {% if user.is_staff %}
-    <div class="activity-info-ghost-archived activity-info"
-         {% if not activity.archived_by_staff %} style="display: none"{% endif %}
-         data-toggle="tooltip" data-trigger="hover" data-html="true"
-         title="Archived<br>by {{ activity.archived_by_staff.username }}">
-      <i class="flaticon-ghost text-muted"></i>
-    </div>
-    {% endif %}
-	{% if activity.language != LANGUAGE_CODE %}
-	<a href="https://translate.google.com/translate?js=n&sl={{ activity.language }}&tl={{ LANGUAGE_CODE }}&u={{ activity.http_item_url }}" class="language" target="_blank">
-	  <small>{% with from_language=activity.t_language to_language=localized_language %}{% blocktrans %}Translate from {{ from_language }} to {{ to_language }}{% endblocktrans %}{% endwith %}</small>
-	  <img src="{{ static_url }}img/language/{{ activity.language }}.png?{{ static_files_version }}" alt="{{ activity.language }}">
-	</a>
-	{% elif activity.language != 'en' and user.is_authenticated and activity.cached_owner.username == user.username %}
-	<a href="{{ activity.edit_url }}" target="_blank" class="language"
-       data-ajax-url="{{ activity.ajax_edit_url }}" data-ajax-title="{{ activity.edit_sentence }}" data-ajax-handle-form="true"
-       data-trigger="hover" data-toggle="tooltip" data-html="true"
-       title="{% trans 'Language' %}: {{ activity.t_language }}<br>{{ activity.edit_sentence }}">
-      <img src="{{ static_url }}img/language/{{ activity.language }}.png?{{ static_files_version }}"
-           alt="{{ activity.language }}">
-    </a>
-	{% endif %}
-	<a href="{{ activity.item_url }}" target="_blank" class="a-nodifference">
-      <small class="date">
-	    <span class="timezone" data-timeago="true">
-	      <span class="datetime">{{ activity.creation|torfc2822 }}</span>
-	      <span class>(<span class="current_timezone">UTC</span>)
-	      </span><br>
-	  </small>
-    </a>
-    <br>
-	<strong class="owner">{{ activity.cached_owner.username }}</strong>
-	<br>
+        {% if user.is_authenticated %}
+        <div class="activity-info activity-info-popular"
+             {% if not activity.is_popular %} style="display: none;"{% endif %}
+             data-toggle="tooltip" data-trigger="hover" title="{% trans 'Popular' %}">
+          <i class="flaticon-fire text-main"></i>
+        </div>
+        <div class="activity-info activity-info-staff-picks"
+             {% if not activity.is_staff_picks %} style="display: none;"{% endif %}
+             data-toggle="tooltip" data-trigger="hover" title="{% trans 'Staff picks' %}">
+          <i class="flaticon-heart text-main"></i>
+        </div>
+        {% endif %}
+        <div class="activity-info-archived activity-info"
+             {% if not activity.archived_by_owner %} style="display: none"{% endif %}
+             data-toggle="tooltip" data-trigger="hover"
+             title="{% trans 'Archived' %}">
+          <i class="flaticon-archive text-muted"></i>
+        </div>
+        {% if user.is_staff %}
+        <div class="activity-info-ghost-archived activity-info"
+             {% if not activity.archived_by_staff %} style="display: none"{% endif %}
+             data-toggle="tooltip" data-trigger="hover" data-html="true"
+             title="Archived<br>by {{ activity.archived_by_staff.username }}">
+          <i class="flaticon-ghost text-muted"></i>
+        </div>
+        {% endif %}
+        {% if activity.language != LANGUAGE_CODE %}
+        <a href="https://translate.google.com/translate?js=n&sl={{ activity.language }}&tl={{ LANGUAGE_CODE }}&u={{ activity.http_item_url }}" class="language" target="_blank">
+          <small>{% with from_language=activity.t_language to_language=localized_language %}{% blocktrans %}Translate from {{ from_language }} to {{ to_language }}{% endblocktrans %}{% endwith %}</small>
+          <img src="{{ static_url }}img/language/{{ activity.language }}.png?{{ static_files_version }}" alt="{{ activity.language }}">
+        </a>
+        {% elif activity.language != 'en' and user.is_authenticated and activity.cached_owner.username == user.username %}
+        <a href="{{ activity.edit_url }}" target="_blank" class="language"
+           data-ajax-url="{{ activity.ajax_edit_url }}" data-ajax-title="{{ activity.edit_sentence }}" data-ajax-handle-form="true"
+           data-trigger="hover" data-toggle="tooltip" data-html="true"
+           title="{% trans 'Language' %}: {{ activity.t_language }}<br>{{ activity.edit_sentence }}">
+          <img src="{{ static_url }}img/language/{{ activity.language }}.png?{{ static_files_version }}"
+               alt="{{ activity.language }}">
+        </a>
+        {% endif %}
+        <a href="{{ activity.item_url }}" target="_blank" class="a-nodifference">
+          <small class="date">
+            <span class="timezone" data-timeago="true">
+              <span class="datetime">{{ activity.creation|torfc2822 }}</span>
+              <span class>(<span class="current_timezone">UTC</span>)
+              </span><br>
+          </small>
+        </a>
+        <br>
+        <strong class="owner">{{ activity.cached_owner.username }}</strong>
+        <br>
         {% if activity.hidden_reasons %}
         <br>
         {% for reason in activity.hidden_reasons %}
@@ -74,10 +74,12 @@
         </div>
         {% endfor %}
         {% else %}
-	{% if activity.image %}
-	<a href="{{ activity.image_original_url }}" target="_blank" class="a-nodifference activity-image" style="background-image: url('{{ activity.image_url }}');"><i class="flaticon-link"></i></a>
-	{% endif %}
-	<div class="message">
+        {% if activity.image %}
+        <a href="{{ activity.image_original_url }}" target="_blank" class="a-nodifference activity-image">
+          <img src="{{ activity.image_url }}" alt="{{ activity }}"><i class="flaticon-link"></i>
+        </a>
+        {% endif %}
+        <div class="message">
           {% with message_details=activity.message %}
           {% if message_details.0 %}
           {{ message_details.1|safe }}
@@ -86,40 +88,40 @@
           {% endif %}
           {% endwith %}
         </div>
-	<div class="tags text-muted fontx0-8">{% for tag, t_tag in activity.t_tags.items %}<a href="/activities/?c_tags={{ tag }}" target="_blank" class="text-muted">#{{ t_tag }}</a> {% endfor %}</div>
-	<div class="socialbar">
-	  <div class="btn-group share">
-	    {% include 'include/share.html' with share_url=activity.http_item_url share_sentence=activity.shareSentence share_btn_class="main" %}
-	  </div>
-	  <form method="POST" class="form-inline likeactivity" action="/ajax/likeactivity/{{ activity.id }}/">
-	    {% csrf_token %}
-	    <input type="hidden" name="{% if activity.liked %}unlike{% else %}like{% endif %}">
-	    <div class="btn-group">
-	      {% if user.is_authenticated %}
-	      {% if activity.cached_owner.username == user.username %}
-	      <button class="btn btn-link" disabled><i class="flaticon-heart"></i> {% trans 'Liked' %}</button>
-	      {% else %}
-	      <button type="submit" class="btn btn-link" data-reverse="{% if activity.liked %}<i class='flaticon-heart-empty'></i> {% trans 'Like' %}{% else %}<i class='flaticon-heart'></i> {% trans 'Liked' %}{% endif %}">{% if activity.liked %}<i class='flaticon-heart'></i> {% trans 'Liked' %}{% else %}<i class='flaticon-heart-empty'></i> {% trans 'Like' %}{% endif %}</button>
-	      {% endif %}
-	      {% else %}
-	      <a href="/signup/?next={{ current_url }}" class="btn btn-link"><i class="flaticon-heart-empty"></i> {% trans 'Like' %}</a>
-	      {% endif %}
-	      <div class="btn btn-link hidden-loader" style="display: none;"><i class="flaticon-loading"></i></div>
-	      <a href="/users/?liked_activity={{ activity.id }}"
-             class="btn btn-link"
-             data-ajax-url="/ajax/users/?ajax_modal_only&liked_activity={{ activity.id }}"
-             data-ajax-title="{% trans 'Liked this activity' %}"
-             >{{ activity.cached_total_likes|add:1 }}</a>
-	    </div>
-	    {% if current != 'activity_item' %}
-	    <div class="btn-group writecomments">
-	      <a href="{{ activity.item_url }}" target="_blank" class="btn btn-link"><i class="flaticon-comments"></i> {% trans 'Write Comment' %}</a>
-	      <a href="{{ activity.item_url }}/#disqus_thread" target="_blank" class="btn btn-link disqus-comment-count" data-disqus-identifier="activity-{{ activity.id }}">{% trans 'Comments' %}</a>
-	    </div>
-	    {% endif %}
+        <div class="tags text-muted fontx0-8">{% for tag, t_tag in activity.t_tags.items %}<a href="/activities/?c_tags={{ tag }}" target="_blank" class="text-muted">#{{ t_tag }}</a> {% endfor %}</div>
+        <div class="socialbar">
+          <div class="btn-group share">
+            {% include 'include/share.html' with share_url=activity.http_item_url share_sentence=activity.shareSentence share_btn_class="main" %}
+          </div>
+          <form method="POST" class="form-inline likeactivity" action="/ajax/likeactivity/{{ activity.id }}/">
+            {% csrf_token %}
+            <input type="hidden" name="{% if activity.liked %}unlike{% else %}like{% endif %}">
+            <div class="btn-group">
+              {% if user.is_authenticated %}
+              {% if activity.cached_owner.username == user.username %}
+              <button class="btn btn-link" disabled><i class="flaticon-heart"></i> {% trans 'Liked' %}</button>
+              {% else %}
+              <button type="submit" class="btn btn-link" data-reverse="{% if activity.liked %}<i class='flaticon-heart-empty'></i> {% trans 'Like' %}{% else %}<i class='flaticon-heart'></i> {% trans 'Liked' %}{% endif %}">{% if activity.liked %}<i class='flaticon-heart'></i> {% trans 'Liked' %}{% else %}<i class='flaticon-heart-empty'></i> {% trans 'Like' %}{% endif %}</button>
+              {% endif %}
+              {% else %}
+              <a href="/signup/?next={{ current_url }}" class="btn btn-link"><i class="flaticon-heart-empty"></i> {% trans 'Like' %}</a>
+              {% endif %}
+              <div class="btn btn-link hidden-loader" style="display: none;"><i class="flaticon-loading"></i></div>
+              <a href="/users/?liked_activity={{ activity.id }}"
+                 class="btn btn-link"
+                 data-ajax-url="/ajax/users/?ajax_modal_only&liked_activity={{ activity.id }}"
+                 data-ajax-title="{% trans 'Liked this activity' %}"
+                 >{{ activity.cached_total_likes|add:1 }}</a>
+            </div>
+            {% if current != 'activity_item' %}
+            <div class="btn-group writecomments">
+              <a href="{{ activity.item_url }}" target="_blank" class="btn btn-link"><i class="flaticon-comments"></i> {% trans 'Write Comment' %}</a>
+              <a href="{{ activity.item_url }}/#disqus_thread" target="_blank" class="btn btn-link disqus-comment-count" data-disqus-identifier="activity-{{ activity.id }}">{% trans 'Comments' %}</a>
+            </div>
+            {% endif %}
             {% include 'include/below_item.html' with buttons_only=True show_item_buttons=True %}
-	  </form>
-	</div>
+          </form>
+        </div>
         {% endif %}
       </div>
     </div>
