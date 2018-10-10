@@ -161,8 +161,8 @@ function loadCornerPopups() {
         let remind_in_days = $('a[href="#close_remind"]').data('reminder-in-days');
         let always_close = localStorage['popovers_' + popup.data('name') + '_always_close'] || false;
         if (always_close
-           || (last_reminder && remind_in_days &&
-               last_reminder > (new Date().getTime() - (remind_in_days * 24 * 60 * 60 * 1000)))) {
+            || (last_reminder && remind_in_days &&
+                last_reminder > (new Date().getTime() - (remind_in_days * 24 * 60 * 60 * 1000)))) {
             popup.remove();
         } else {
             $.each(['close', 'close_remind', 'close_forever'], function(i, cls) {
@@ -250,7 +250,6 @@ function ajaxModals() {
         if (button.data('ajax-show-button') == true) {
             modalButtons = undefined;
         }
-        var button_content = button.html();
         button.unbind('click');
         button.click(function(e) {
             var button_display = button.css('display');
@@ -259,6 +258,7 @@ function ajaxModals() {
             }
             var button_height = button.height();
             var button_width = button.width();
+            var button_content = button.html();
             button.html('<div class="text-center"><i class="flaticon-loading"></i></div>');
             var loader_wrapper = button.find('div');
             loader_wrapper.height(button_height);
@@ -707,25 +707,25 @@ function modalItemsReloaders() {
             ids_to_reload = $.unique(ids_to_reload);
             if (ids_to_reload.length > 0) {
                 $.get(ajax_reload_url + reloaderLocation + (reloaderLocation == '' ? '?' : '&') + 'ids=' + ids_to_reload.join(',')
-                    + '&page_size=' + ids_to_reload.length, function(data) {
-                        var html = $(data);
-                        $.each(ids_to_reload, function(index, id) {
-                            var previous_item = $('[data-item="' + reload_data_item + '"][data-item-id="' + id + '"]');
-                            var new_item = html.find('[data-item="' + reload_data_item + '"][data-item-id="' + id + '"]');
-                            if (new_item.length == 0) {
-                                // If not returned, remove it
-                                previous_item.remove();
-                            } else {
-                                // Replace element
-                                previous_item.replaceWith(new_item);
-                            }
-                        });
-                        ids_to_reload = [];
-                        if (ajax_pagination_callback) {
-                            ajax_pagination_callback();
-                        }
-                        loadCommons();
-                    });
+                      + '&page_size=' + ids_to_reload.length, function(data) {
+                          var html = $(data);
+                          $.each(ids_to_reload, function(index, id) {
+                              var previous_item = $('[data-item="' + reload_data_item + '"][data-item-id="' + id + '"]');
+                              var new_item = html.find('[data-item="' + reload_data_item + '"][data-item-id="' + id + '"]');
+                              if (new_item.length == 0) {
+                                  // If not returned, remove it
+                                  previous_item.remove();
+                              } else {
+                                  // Replace element
+                                  previous_item.replaceWith(new_item);
+                              }
+                          });
+                          ids_to_reload = [];
+                          if (ajax_pagination_callback) {
+                              ajax_pagination_callback();
+                          }
+                          loadCommons();
+                      });
             }
         });
     }
