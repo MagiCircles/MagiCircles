@@ -32,16 +32,16 @@
               {% elif is_me %}
               <a href="/settings/" class="btn btn-lg btn-{{ profile_user.preferences.css_color }}"><i class="flaticon-edit"></i> {% trans 'Settings' %}</a><br>
               {% endif %}
-              <br><a href="/users/followers_of={{ user.id }}"
-                     data-ajax-url="/ajax/users/?ajax_modal_only&followers_of={{ user.id }}"
+              <br><a href="/users/?followers_of={{ profile_user.id }}"
+                     data-ajax-url="/ajax/users/?ajax_modal_only&followers_of={{ profile_user.id }}"
                      data-ajax-title="{% trans 'Followers' %}"
                      {% if not profile_user.total_followers %} style="display: none"{% endif %}>
                 <strong>{{ profile_user.total_followers }}</strong> {% trans 'Followers' %}
               </a>
-              <br><a href="/users/followed_by={{ user.id }}"
-                     data-ajax-url="/ajax/users/?ajax_modal_only&followed_by={{ user.id }}"
+              <br><a href="/users/?followed_by={{ profile_user.id }}"
+                     data-ajax-url="/ajax/users/?ajax_modal_only&followed_by={{ profile_user.id }}"
                      data-ajax-title="{% trans 'Following' %}"
-                     {% if not profile_user.total_followers %} style="display: none"{% endif %}>
+                     {% if not profile_user.total_following %} style="display: none"{% endif %}>
                 <strong>{{ profile_user.total_following }}</strong> {% trans 'Following' %}
               </a>
             </div>
