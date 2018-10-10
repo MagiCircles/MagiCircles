@@ -2632,6 +2632,7 @@ class BadgeCollection(MagiCollection):
 
 class ReportCollection(MagiCollection):
     navbar_link_list = 'staff'
+    title = _('Report')
     icon = 'warning'
     queryset = models.Report.objects.all().select_related('owner', 'owner__preferences', 'staff', 'staff__preferences').prefetch_related(Prefetch('images', to_attr='all_images'))
     reportable = False
@@ -2654,6 +2655,10 @@ class ReportCollection(MagiCollection):
             }
         return self._cached_types
     _cached_types = None
+
+    @property
+    def add_sentence(self):
+        return _('Report')
 
     class ListView(MagiCollection.ListView):
         item_template = custom_item_template
