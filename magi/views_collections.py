@@ -1,15 +1,12 @@
 from __future__ import division
 import math
-import string
 from collections import OrderedDict
-from django.utils.translation import ugettext_lazy as _, string_concat
-from django.shortcuts import render
+from django.utils.translation import ugettext_lazy as _
 from magi.middleware.httpredirect import HttpRedirectException
-from django.shortcuts import render, redirect
+from django.shortcuts import render
 from django.http import Http404
 from django.core.exceptions import PermissionDenied
 from magi.utils import (
-    getGlobalContext,
     cuteFormFieldsForContext,
     get_one_object_or_404,
     jsv,

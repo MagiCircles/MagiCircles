@@ -1,10 +1,8 @@
-import time
-from django.utils.translation import ugettext_lazy as _, string_concat
+from django.utils.translation import ugettext_lazy as _
 from django import template
-from django.conf import settings
 from magi import models
-from magi.settings import SITE_STATIC_URL, FAVORITE_CHARACTER_TO_URL, RAW_CONTEXT
-from magi.utils import AttrDict, getMagiCollection, torfc2822, translationURL as _translationURL
+from magi.settings import RAW_CONTEXT
+from magi.utils import AttrDict, torfc2822, translationURL as _translationURL
 
 register = template.Library()
 

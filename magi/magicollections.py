@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
-import string, datetime, random
+import string
 from collections import OrderedDict
 from django.utils.translation import ugettext_lazy as _, string_concat, get_language
 from django.utils import timezone
 from django.utils.safestring import mark_safe
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
-from django.utils.datastructures import MultiValueDictKeyError
 from django.middleware import csrf
 from django.http import Http404
 from django.db.models import Q, Prefetch, FieldDoesNotExist

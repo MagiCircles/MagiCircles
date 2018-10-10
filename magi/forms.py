@@ -49,7 +49,6 @@ from magi.utils import (
     usersWithPermission,
     staticImageURL,
     markdownHelpText,
-    ColorFormField,
     hasGoodReputation,
     LANGUAGES_DICT,
 )
