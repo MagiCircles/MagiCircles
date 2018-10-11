@@ -1119,7 +1119,7 @@ class UserPreferencesForm(MagiForm):
                     required=False,
                     label=self.fields['d_extra-background'].label,
                     initial=self.fields['d_extra-background'].initial,
-                    choices=[(k, v()) for k, v in BACKGROUNDS_NAMES.items()],
+                    choices=BLANK_CHOICE_DASH + [(k, v()) for k, v in BACKGROUNDS_NAMES.items()],
                 )
 
         # Location
