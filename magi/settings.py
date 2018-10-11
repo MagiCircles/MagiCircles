@@ -1,5 +1,6 @@
 from django.conf import settings as django_settings
 from magi.default_settings import (
+    RAW_CONTEXT,
     DEFAULT_ENABLED_NAVBAR_LISTS,
     DEFAULT_ENABLED_PAGES,
     DEFAULT_JAVASCRIPT_TRANSLATED_TERMS,
