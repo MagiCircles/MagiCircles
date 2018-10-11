@@ -6,7 +6,7 @@
 }
 
 .panel-simple-variant(@color) {
-     .panel-variant(lighten(@color, 20%), #fff, @color, lighten(@color, 20%));
+    .panel-variant(lighten(@color, 20%), #fff, @color, lighten(@color, 20%));
 }
 
 .progress-bar-variant(@color) {
@@ -18,14 +18,23 @@
     color: white;
     .a-variant(lighten(@color, 30%));
     h1, h2, h3, h4, h5, h6 {
-	color: @color;
-	color: white;
+        color: @color;
+        color: white;
     }
     &+div:not(.empty) table td {
-	background-color: @color;
-	&:hover, &:focus {
-	    background-color: darken(@color, 10%);
-	}
+        background-color: @color;
+        &:hover, &:focus {
+            background-color: darken(@color, 10%);
+        }
+    }
+    &.with-background {
+	    #username, .description, .follow-buttons, .status-title, .staff-status, .follows-you,
+        .below-item-buttons .btn-link {
+            .simple-shadow(fade(darken(@color, 30%), 20%));
+        }
+        &:before {
+            background-image: linear-gradient(to bottom right, darken(@color, 20%), darken(@color, 10%));
+        }
     }
 }
 

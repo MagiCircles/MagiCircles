@@ -52,6 +52,7 @@ from magi.utils import (
     ColorFormField,
     hasGoodReputation,
     LANGUAGES_DICT,
+    BACKGROUNDS_NAMES,
 )
 
 ############################################################
@@ -194,11 +195,14 @@ class MagiForm(forms.ModelForm):
                 if choices is not None:
                     if not self.collection or not self.collection.translated_fields or name[2:-1] not in self.collection.translated_fields or getattr(self, 'is_translate_form', False):
                         self.d_choices[name[2:]] = []
-                        for choice in choices:
+                        for choice in (choices.items() if isinstance(choices, dict) else choices):
                             key = choice[0] if isinstance(choice, tuple) else choice
+                            verbose_name = choice[1] if isinstance(choice, tuple) else choice
+                            verbose_name = verbose_name() if callable(verbose_name) else verbose_name
                             field_name = u'{}-{}'.format(name, key)
                             self.d_choices[name[2:]].append((field_name, key))
                             widget = forms.TextInput
+                            label = self.fields[name].label
                             if getattr(self, 'is_translate_form', False):
                                 try: singular_field = self.Meta.model._meta.get_field(name[2:-1])
                                 except FieldDoesNotExist: singular_field = None
@@ -209,15 +213,19 @@ class MagiForm(forms.ModelForm):
                                     default = mark_safe(u'<pre>{}</pre>'.format(default))
                                 help_text = mark_safe(u'{original}<img src="{img}" height="20" /> {lang}{default}'.format(
                                     img=staticImageURL(key, folder='language', extension='png'),
-                                    lang=choice[1] if isinstance(choice, tuple) else choice,
+                                    lang=verbose_name,
                                     default=u' <code>{}: {}</code>'.format(t['English'], default or 'no value'),
                                     original=u'{}<br>'.format(self.fields[name].help_text) if self.fields[name].help_text else '',
                                 ))
                             else:
-                                help_text = mark_safe(u'{original}{key}'.format(
-                                    original=u'{}<br>'.format(self.fields[name].help_text) if self.fields[name].help_text else '',
-                                    key=choice[1] if isinstance(choice, tuple) else choice,
-                                ))
+                                if getattr(self.Meta.model, u'{}_CHOICES_KEYS_AS_LABELS'.format(name[2:].upper()), False):
+                                    help_text = self.fields[name].help_text
+                                    label = verbose_name
+                                else:
+                                    help_text = mark_safe(u'{original}{key}'.format(
+                                        original=u'{}<br>'.format(self.fields[name].help_text) if self.fields[name].help_text else '',
+                                        key=verbose_name,
+                                    ))
                             if self.is_creating:
                                 initial = None
                             elif name.startswith('d_m_'):
@@ -228,7 +236,7 @@ class MagiForm(forms.ModelForm):
                                 initial = getattr(self.instance, name[2:]).get(key, None)
                             self.fields[field_name] = forms.CharField(
                                 required=False,
-                                label=self.fields[name].label,
+                                label=label,
                                 help_text=help_text,
                                 initial=initial,
                                 widget=widget,
@@ -1102,6 +1110,18 @@ class UserPreferencesForm(MagiForm):
                     label=(_(FAVORITE_CHARACTER_NAME) if FAVORITE_CHARACTER_NAME
                            else _('{nth} Favorite Character')).format(nth=_(ordinalNumber(i))))
 
+        # Backgrounds
+        if 'd_extra-background' in self.fields:
+            if not BACKGROUNDS_NAMES:
+                del(self.fields['d_extra-background'])
+            else:
+                self.fields['d_extra-background'] = forms.ChoiceField(
+                    required=False,
+                    label=self.fields['d_extra-background'].label,
+                    initial=self.fields['d_extra-background'].initial,
+                    choices=[(k, v()) for k, v in BACKGROUNDS_NAMES.items()],
+                )
+
         # Location
         if 'location' in self.fields:
             self.fields['location'].help_text = mark_safe(
@@ -1147,7 +1167,7 @@ class UserPreferencesForm(MagiForm):
 
     class Meta(MagiForm.Meta):
         model = models.UserPreferences
-        fields = ('m_description', 'location', 'favorite_character1', 'favorite_character2', 'favorite_character3', 'color', 'birthdate', 'show_birthdate_year', 'default_tab')
+        fields = ('m_description', 'location', 'favorite_character1', 'favorite_character2', 'favorite_character3', 'color', 'birthdate', 'show_birthdate_year', 'default_tab', 'd_extra')
 
 class StaffEditUser(_UserCheckEmailUsernameForm):
     force_remove_avatar = forms.BooleanField(required=False)
