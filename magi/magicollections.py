@@ -1841,7 +1841,7 @@ class UserCollection(MagiCollection):
                     'url': user.preferences.location_url,
                 })
                 meta_links.append(link)
-            if context['is_me'] or user.preferences.language != request.LANGUAGE_CODE:
+            if context['is_me'] or user.preferences.language != context['request'].LANGUAGE_CODE:
                 meta_links.append(AttrDict({
                     'type': 'Language',
                     'value': user.preferences.t_language,
