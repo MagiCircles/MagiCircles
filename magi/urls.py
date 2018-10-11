@@ -3,12 +3,11 @@ from collections import OrderedDict
 from django.conf.urls import include, patterns, url
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
-from django.utils.translation import ugettext_lazy as _, string_concat
+from django.utils.translation import ugettext_lazy as _
 from django.utils import timezone
 #from magi import bouncy # unused, only to force load the feedback process
 from magi import views_collections, magicollections
 from magi import views as magi_views
-from magi import forms
 from magi.settings import (
     RAW_CONTEXT,
     ENABLED_PAGES,

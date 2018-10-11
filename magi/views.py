@@ -1,23 +1,20 @@
 from __future__ import division
 import math, datetime, random
 from collections import OrderedDict
-from dateutil.relativedelta import relativedelta
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, JsonResponse, Http404
 from django.conf import settings as django_settings
-from django.core.urlresolvers import resolve
 from django.contrib.auth.views import login as login_view
 from django.contrib.auth.views import logout as logout_view
 from django.contrib.auth import authenticate, login as login_action
-from django.contrib.admin.utils import get_deleted_objects, NestedObjects
-from django.utils.translation import ugettext_lazy as _, string_concat, get_language, activate as translation_activate
+from django.contrib.admin.utils import NestedObjects
+from django.utils.translation import ugettext_lazy as _, get_language, activate as translation_activate
 from django_translated import t
 from django.utils.safestring import mark_safe
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.utils.http import urlquote
 from django.utils import timezone
-from django.db.models import Count, Prefetch, Q
-from django.views.decorators.csrf import csrf_exempt
+from django.db.models import Count, Prefetch
 from magi.middleware.httpredirect import HttpRedirectException
 from magi.forms import (
     CreateUserForm,
@@ -53,9 +50,7 @@ from magi.utils import (
     BACKGROUNDS_THUMBNAILS,
     groupsForAllPermissions,
     hasPermission,
-    setSubField,
     staticImageURL,
-    getAccountIdsFromSession,
     find_all_translations,
     duplicate_translation,
     hasGoodReputation,
@@ -65,7 +60,6 @@ from magi.settings import (
     SITE_NAME,
     SITE_NAME_PER_LANGUAGE,
     GAME_NAME,
-    ENABLED_PAGES,
     FAVORITE_CHARACTERS,
     BACKGROUNDS,
     TWITTER_HANDLE,
@@ -94,7 +88,7 @@ from magi.settings import (
     GLOBAL_OUTSIDE_PERMISSIONS,
     CUSTOM_PREFERENCES_FORM,
 )
-from magi.views_collections import item_view, list_view
+from magi.views_collections import item_view
 
 if CUSTOM_PREFERENCES_FORM:
     forms_module = __import__(django_settings.SITE + '.forms', fromlist=[''])

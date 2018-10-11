@@ -1,5 +1,4 @@
-import hashlib, urllib, datetime, os, pytz
-from dateutil.relativedelta import relativedelta
+import hashlib, urllib, datetime, pytz
 from collections import OrderedDict
 from django.db import models
 from django.contrib.auth.models import User
@@ -12,7 +11,6 @@ from django.forms.models import model_to_dict
 from django.conf import settings as django_settings
 from magi.utils import (
     AttrDict,
-    randomString,
     getMagiCollection,
     uploadToRandom,
     uploadItem,
@@ -32,7 +30,6 @@ from magi.utils import (
 )
 from magi.settings import (
     ACCOUNT_MODEL,
-    GAME_NAME,
     COLOR,
     SITE_STATIC_URL,
     DONATORS_STATUS_CHOICES,

@@ -2,9 +2,7 @@ import datetime, time
 from django.utils import timezone
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings as django_settings
-from magi.utils import tourldash
 from magi import models
-from magi.settings import SITE_URL
 
 ############################################################
 # Get total donators (for generated settings)

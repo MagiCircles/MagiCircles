@@ -2,7 +2,6 @@ from django.conf import settings as django_settings
 from magi.default_settings import (
     DEFAULT_ENABLED_NAVBAR_LISTS,
     DEFAULT_ENABLED_PAGES,
-    RAW_CONTEXT,
     DEFAULT_JAVASCRIPT_TRANSLATED_TERMS,
     DEFAULT_PROFILE_TABS,
     DEFAULT_HOME_ACTIVITY_TABS,
@@ -15,7 +14,7 @@ from magi.default_settings import (
     DEFAULT_EXTRA_PREFERENCES,
 )
 from magi.utils import globalContext, toHumanReadable
-from django.utils.translation import ugettext_lazy as _, string_concat, get_language
+from django.utils.translation import ugettext_lazy as _, get_language
 
 settings_module = __import__(django_settings.SITE + '.settings', globals(), locals(), ['*'])
 
