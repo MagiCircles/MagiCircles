@@ -22,6 +22,7 @@ from magi.utils import (
     hasPermissions,
     toHumanReadable,
     LANGUAGES_DICT,
+    BACKGROUNDS_IMAGES,
     locationOnChange,
     staticImageURL,
     birthdayURL,
@@ -44,6 +45,7 @@ from magi.settings import (
     HOME_ACTIVITY_TABS,
     MINIMUM_LIKES_POPULAR,
     DONATORS_GOAL,
+    EXTRA_PREFERENCES,
 )
 from magi.item_model import MagiModel, BaseMagiModel, get_image_url, i_choices, addMagiModelProperties, getInfoFromChoices
 from magi.abstract_models import CacheOwner
@@ -243,6 +245,9 @@ class UserPreferences(BaseMagiModel):
     )
     i_private_message_settings = models.PositiveIntegerField(_('Who is allowed to send you private messages?'), default=0, choices=i_choices(PRIVATE_MESSAGE_SETTINGS_CHOICES))
 
+    EXTRA_CHOICES = EXTRA_PREFERENCES
+    EXTRA_SOFT_CHOICES = True
+    EXTRA_CHOICES_KEYS_AS_LABELS = True
     d_extra = models.TextField(blank=True, null=True)
 
     @property
@@ -283,6 +288,14 @@ class UserPreferences(BaseMagiModel):
     def favorite_character2_image(self): return self.favorite_character_image(2)
     @property
     def favorite_character3_image(self): return self.favorite_character_image(3)
+
+    @property
+    def background_id(self): return int(self.extra.get('background', '0')) or None
+
+    @property
+    def background_image_url(self):
+        print self.background_id
+        return BACKGROUNDS_IMAGES.get(self.background_id, None)
 
     @classmethod
     def get_localized_color(self, color):
@@ -777,7 +790,7 @@ class Activity(MagiModel):
     tinypng_settings = {
         'image': {
             'resize': 'scale',
-            'width': 1200,
+            'width': 890,
         }
     }
 

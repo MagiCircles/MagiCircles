@@ -70,6 +70,9 @@
 
 .simple-shadow(@color) {
     text-shadow: 0 0 0.2em @color, 0 0 0.2em @color, 0 0 0.2em @color, 0 0 0.2em @color, 0 0 0.2em @color, 0 0 0.2em @color, 0 0 0.2em @color;
+    code {
+        text-shadow: none;
+    }
 }
 
 .navbar-main img.logo {
@@ -553,6 +556,21 @@ table.text-center th {
     margin-bottom: 0;
     border-bottom-right-radius: 0;
     border-bottom-left-radius: 0;
+    &.with-background {
+        background-size: cover;
+        background-position: center center;
+        &:before {
+            content: '';
+            position: absolute;
+            border-top-right-radius: 6px;
+            border-top-left-radius: 6px;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            opacity: 0.5;
+        }
+    }
 }
 
 #profile {
@@ -1309,6 +1327,12 @@ nav {
             border-radius: 10px;
             padding: 3px;
             margin-bottom: 5px;
+        }
+    }
+    #cuteform-modal  [data-cuteform-name="id_d_extra-background"] {
+        .cuteform-elt:not([data-cuteform-text="---------"]) {
+            border-radius: 10px;
+            height: 112px;
         }
     }
 }

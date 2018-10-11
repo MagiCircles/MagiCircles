@@ -705,3 +705,10 @@ DEFAULT_PRELAUNCH_ENABLED_PAGES = [
     'changelanguage',
     'help',
 ]
+
+############################################################
+# Default extra preferences
+
+DEFAULT_EXTRA_PREFERENCES = [
+    ('background', _('Background')),
+]

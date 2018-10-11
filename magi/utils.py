@@ -30,10 +30,33 @@ from magi.middleware.httpredirect import HttpRedirectException
 from magi.default_settings import RAW_CONTEXT
 
 ############################################################
-# Favorite characters
+# Favorite characters / Backgrounds
 
-FAVORITE_CHARACTERS_IMAGES = { id: image for (id, name, image) in getattr(django_settings, 'FAVORITE_CHARACTERS', []) }
-FAVORITE_CHARACTERS_NAMES = { id: name for (id, name, image) in getattr(django_settings, 'FAVORITE_CHARACTERS', []) }
+FAVORITE_CHARACTERS_IMAGES = OrderedDict([
+    (id, image)
+    for (id, name, image) in getattr(django_settings, 'FAVORITE_CHARACTERS', [])
+])
+FAVORITE_CHARACTERS_NAMES = OrderedDict([
+    (id, name)
+    for (id, name, image) in getattr(django_settings, 'FAVORITE_CHARACTERS', [])
+])
+
+BACKGROUNDS_IMAGES = OrderedDict([
+    (_b['id'], _b['image'])
+    for _b in getattr(django_settings, 'BACKGROUNDS', [])
+])
+BACKGROUNDS_THUMBNAILS = OrderedDict([
+    (_b['id'], _b.get('thumbnail', _b['image']))
+    for _b in getattr(django_settings, 'BACKGROUNDS', [])
+])
+
+def _to_background_name_lambda(_b):
+    return lambda: _b.get('d_names', {}).get(get_language(), _b['name'])
+
+BACKGROUNDS_NAMES = OrderedDict([
+    (_b['id'], _to_background_name_lambda(_b))
+    for _b in getattr(django_settings, 'BACKGROUNDS', [])
+])
 
 ############################################################
 # Languages

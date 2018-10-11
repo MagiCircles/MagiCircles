@@ -47,6 +47,7 @@ from magi.utils import (
     cuteFormFieldsForContext,
     CuteFormType,
     FAVORITE_CHARACTERS_IMAGES,
+    BACKGROUNDS_THUMBNAILS,
     groupsForAllPermissions,
     hasPermission,
     staticImageURL,
@@ -59,6 +60,8 @@ from magi.settings import (
     SITE_NAME,
     SITE_NAME_PER_LANGUAGE,
     GAME_NAME,
+    FAVORITE_CHARACTERS,
+    BACKGROUNDS,
     TWITTER_HANDLE,
     BUG_TRACKER_URL,
     GITHUB_REPOSITORY,
@@ -83,8 +86,12 @@ from magi.settings import (
     ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES,
     SITE_LOGO_PER_LANGUAGE,
     GLOBAL_OUTSIDE_PERMISSIONS,
+    CUSTOM_PREFERENCES_FORM,
 )
 from magi.views_collections import item_view
+
+if CUSTOM_PREFERENCES_FORM:
+    forms_module = __import__(django_settings.SITE + '.forms', fromlist=[''])
 
 ############################################################
 # Login / Logout / Sign up
@@ -295,12 +302,18 @@ def _settingsOnSuccess(form, added=False):
     )
     form.beforefields = mark_safe(form.beforefields)
 
-def settings(request):
+def settingsContext(request):
     context = getGlobalContext(request)
     redirectWhenNotAuthenticated(request, context, next_title=_('Settings'))
     context['preferences'] = request.user.preferences
     context['accounts'] = request.user.accounts.all()
     context['page_title'] = _('Settings')
+
+    preferences_form_class = (
+        forms_module.UserPreferencesForm
+        if CUSTOM_PREFERENCES_FORM
+        else UserPreferencesForm
+    )
 
     account_collection = getMagiCollection('account')
     context['add_account_sentence'] = account_collection.add_sentence
@@ -312,7 +325,7 @@ def settings(request):
     context['t_english'] = t['English']
     context['global_outside_permissions'] = GLOBAL_OUTSIDE_PERMISSIONS
     context['forms'] = OrderedDict([
-        ('preferences', UserPreferencesForm(instance=context['preferences'], request=request)),
+        ('preferences', preferences_form_class(instance=context['preferences'], request=request)),
         ('addLink', AddLinkForm(request=request)),
     ])
     if request.user.preferences.is_premium:
@@ -435,15 +448,24 @@ def settings(request):
         'color': {
             'type': CuteFormType.Images,
         },
-    }
-    for i in range(1, 4):
-        filter_cuteform['favorite_character{}'.format(i)] = {
-            'to_cuteform': lambda k, v: FAVORITE_CHARACTERS_IMAGES[k],
+        'd_extra-background': {
+            'to_cuteform': lambda k, v: BACKGROUNDS_THUMBNAILS[k],
+            'title': _('Background'),
             'extra_settings': {
-	        'modal': 'true',
+                'modal': 'true',
 	        'modal-text': 'true',
             },
-        }
+        },
+    }
+    if FAVORITE_CHARACTERS:
+        for i in range(1, 4):
+            filter_cuteform['favorite_character{}'.format(i)] = {
+                'to_cuteform': lambda k, v: FAVORITE_CHARACTERS_IMAGES[k],
+                'extra_settings': {
+	            'modal': 'true',
+	            'modal-text': 'true',
+                },
+            }
     cuteFormFieldsForContext(filter_cuteform, context, context['forms']['preferences'])
     cuteFormFieldsForContext({
         'i_type': {
@@ -473,6 +495,10 @@ def settings(request):
             'type': CuteFormType.HTML,
         },
     }, context, context['forms']['security'])
+    return context
+
+def settings(request):
+    context = settingsContext(request)
     return render(request, 'pages/settings.html', context)
 
 ############################################################

@@ -11,6 +11,7 @@ from magi.default_settings import (
     DEFAULT_GLOBAL_OUTSIDE_PERMISSIONS,
     DEFAULT_CONTACT_DISCORD,
     DEFAULT_LANGUAGES_CANT_SPEAK_ENGLISH,
+    DEFAULT_EXTRA_PREFERENCES,
 )
 from magi.utils import globalContext, toHumanReadable
 from django.utils.translation import ugettext_lazy as _, get_language
@@ -222,6 +223,16 @@ if hasattr(settings_module, 'GLOBAL_OUTSIDE_PERMISSIONS'):
 else:
     GLOBAL_OUTSIDE_PERMISSIONS = DEFAULT_GLOBAL_OUTSIDE_PERMISSIONS
 
+if hasattr(settings_module, 'CUSTOM_PREFERENCES_FORM'):
+    CUSTOM_PREFERENCES_FORM = getattr(settings_module, 'CUSTOM_PREFERENCES_FORM')
+else:
+    CUSTOM_PREFERENCES_FORM = False
+
+if hasattr(settings_module, 'EXTRA_PREFERENCES'):
+    EXTRA_PREFERENCES = getattr(settings_module, 'EXTRA_PREFERENCES')
+else:
+    EXTRA_PREFERENCES = DEFAULT_EXTRA_PREFERENCES
+
 ############################################################
 # Optional settings without default values (= None)
 
@@ -264,6 +275,11 @@ else:
     FAVORITE_CHARACTERS = None
     FAVORITE_CHARACTER_TO_URL = lambda _: '#'
     FAVORITE_CHARACTER_NAME = None
+
+if hasattr(settings_module, 'BACKGROUNDS'):
+    BACKGROUNDS = getattr(settings_module, 'BACKGROUNDS')
+else:
+    BACKGROUNDS = None
 
 if hasattr(django_settings, 'STAFF_CONFIGURATIONS') and 'donate_image' in django_settings.STAFF_CONFIGURATIONS:
     DONATE_IMAGE = django_settings.STAFF_CONFIGURATIONS['donate_image']

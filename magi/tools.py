@@ -1,6 +1,7 @@
-import datetime
+import datetime, time
 from django.utils import timezone
 from django.core.exceptions import ObjectDoesNotExist
+from django.conf import settings as django_settings
 from magi import models
 
 ############################################################
@@ -73,3 +74,23 @@ def getStaffConfigurations():
     return staff_configurations, [
         latest_news[i] for i in range(1, 5)
         if latest_news[i] and latest_news[i].get('image') and latest_news[i].get('title') and latest_news[i].get('url') ]
+
+
+############################################################
+# Generate settings (for generated settings)
+
+def generateSettings(values, imports=[]):
+    s = u'\
+# -*- coding: utf-8 -*-\n\
+import datetime\n\
+' + u'\n'.join(imports) + '\n\
+' + u'\n'.join([
+    u'{key} = {value}'.format(key=key, value=unicode(value))
+    for key, value in values.items()
+]) + '\n\
+GENERATED_DATE = datetime.datetime.fromtimestamp(' + unicode(time.time()) + u')\n\
+'
+    print s
+    with open(django_settings.BASE_DIR + '/' + django_settings.SITE + '_project/generated_settings.py', 'w') as f:
+        f.write(s.encode('utf8'))
+        f.close()
