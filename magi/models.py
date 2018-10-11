@@ -780,7 +780,7 @@ class Activity(MagiModel):
     tinypng_settings = {
         'image': {
             'resize': 'scale',
-            'width': 1200,
+            'width': 890,
         }
     }
 
