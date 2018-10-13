@@ -23,7 +23,6 @@ from magi.django_translated import t
 from magi import models
 from magi.default_settings import RAW_CONTEXT
 from magi.settings import (
-    FAVORITE_CHARACTER_NAME,
     FAVORITE_CHARACTERS,
     USER_COLORS,
     GAME_NAME,
@@ -39,7 +38,6 @@ from magi.settings import (
     FIRST_COLLECTION,
 )
 from magi.utils import (
-    ordinalNumber,
     randomString,
     shrinkImageFromData,
     getMagiCollection,
@@ -1105,9 +1103,12 @@ class UserPreferencesForm(MagiForm):
             for i in range(1, 4):
                 self.fields['favorite_character{}'.format(i)] = forms.ChoiceField(
                     required=False,
-                    choices=BLANK_CHOICE_DASH + [(name, localized) for (name, localized, image) in FAVORITE_CHARACTERS],
-                    label=(_(FAVORITE_CHARACTER_NAME) if FAVORITE_CHARACTER_NAME
-                           else _('{nth} Favorite Character')).format(nth=_(ordinalNumber(i))))
+                    choices=BLANK_CHOICE_DASH + [
+                        (name, localized)
+                        for (name, localized, image) in FAVORITE_CHARACTERS
+                    ],
+                    label=models.UserPreferences.favorite_character_label(i),
+                )
 
         # Backgrounds
         if 'd_extra-background' in self.fields:

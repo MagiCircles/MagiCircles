@@ -12,7 +12,6 @@ from django.shortcuts import get_object_or_404
 from magi.views import indexExtraContext
 from magi.utils import (
     AttrDict,
-    ordinalNumber,
     justReturn,
     propertyFromCollection,
     getMagiCollections,
@@ -44,7 +43,6 @@ from magi.settings import (
     SHOW_TOTAL_ACCOUNTS,
     PROFILE_TABS,
     FAVORITE_CHARACTERS,
-    FAVORITE_CHARACTER_NAME,
     FAVORITE_CHARACTER_TO_URL,
     GET_GLOBAL_CONTEXT,
     DONATE_IMAGE,
@@ -1818,7 +1816,7 @@ class UserCollection(MagiCollection):
             if FAVORITE_CHARACTERS:
                 for i in range(1, 4):
                     if getattr(user.preferences, 'favorite_character{}'.format(i)):
-                        name = (_(FAVORITE_CHARACTER_NAME) if FAVORITE_CHARACTER_NAME else _('{nth} Favorite Character')).format(nth=_(ordinalNumber(i)))
+                        name = models.UserPreferences.favorite_character_label(i)
                         link = AttrDict({
                             'type': name,
                             't_type': name,

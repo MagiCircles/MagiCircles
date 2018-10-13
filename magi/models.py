@@ -27,6 +27,7 @@ from magi.utils import (
     staticImageURL,
     birthdayURL,
     hasPermissionToMessage,
+    ordinalNumber,
 )
 from magi.settings import (
     ACCOUNT_MODEL,
@@ -36,6 +37,7 @@ from magi.settings import (
     USER_COLORS,
     FAVORITE_CHARACTERS,
     FAVORITE_CHARACTER_TO_URL,
+    FAVORITE_CHARACTER_NAME,
     SITE_URL,
     SITE_NAME,
     SITE_NAME_PER_LANGUAGE,
@@ -288,6 +290,23 @@ class UserPreferences(BaseMagiModel):
     def favorite_character2_image(self): return self.favorite_character_image(2)
     @property
     def favorite_character3_image(self): return self.favorite_character_image(3)
+
+    @classmethod
+    def favorite_character_label(self, nth):
+        name_template = (
+            FAVORITE_CHARACTER_NAME
+            if FAVORITE_CHARACTER_NAME
+            else _('{nth} Favorite Character')
+        )
+        if callable(name_template):
+            name_template = name_template()
+        if 'nth' not in name_template:
+            name_template = _('{nth} Favorite {thing}').format(
+                nth='{nth}',
+                thing=name_template,
+            )
+        return name_template.format(nth=_(ordinalNumber(nth)))
+
 
     @property
     def background_id(self): return int(self.extra.get('background', '0')) or None
