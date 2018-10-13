@@ -130,9 +130,9 @@ class UserPreferences(BaseMagiModel):
     _cache_description = models.TextField(null=True)
     m_description = models.TextField(_('Description'), null=True, blank=True)
 
-    favorite_character1 = models.CharField(verbose_name=_('{nth} Favorite Character').format(nth=_('1st')), null=True, max_length=200)
-    favorite_character2 = models.CharField(verbose_name=_('{nth} Favorite Character').format(nth=_('2nd')), null=True, max_length=200)
-    favorite_character3 = models.CharField(verbose_name=_('{nth} Favorite Character').format(nth=_('3rd')), null=True, max_length=200)
+    favorite_character1 = models.CharField(null=True, max_length=200)
+    favorite_character2 = models.CharField(null=True, max_length=200)
+    favorite_character3 = models.CharField(null=True, max_length=200)
     color = models.CharField(_('Color'), max_length=100, null=True, blank=True)
     birthdate = models.DateField(_('Birthdate'), blank=True, null=True)
     show_birthdate_year = models.BooleanField(_('Display your birthdate year'), default=True)
@@ -296,7 +296,7 @@ class UserPreferences(BaseMagiModel):
         name_template = (
             FAVORITE_CHARACTER_NAME
             if FAVORITE_CHARACTER_NAME
-            else _('{nth} Favorite Character')
+            else _('{nth} Favorite {thing}').format(thing=_('Character'))
         )
         if callable(name_template):
             name_template = name_template()
@@ -599,7 +599,7 @@ class StaffDetails(MagiModel):
 
     favorite_food = models.CharField(max_length=100, null=True)
     FAVORITE_FOODS_CHOICES = [ l for l in django_settings.LANGUAGES if l[0] != 'en' ]
-    d_favorite_foods = models.TextField(_('Favorite food'), null=True)
+    d_favorite_foods = models.TextField(_('Liked food'), null=True)
 
     hobbies = models.CharField(max_length=100, null=True)
     HOBBIESS_CHOICES = [ l for l in django_settings.LANGUAGES if l[0] != 'en' ]
