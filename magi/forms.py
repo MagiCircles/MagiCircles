@@ -252,9 +252,12 @@ class MagiForm(forms.ModelForm):
                         ],
                         label=field.label,
                     )
-            # Save previous values of markdown fields
-            elif name.startswith('m_') and not isinstance(self, MagiFiltersForm) and not self.is_creating:
-                self.m_previous_values[name] = getattr(self.instance, name)
+            # Save previous values of markdown fields and set label
+            elif name.startswith('m_') and not isinstance(self, MagiFiltersForm):
+                if not self.is_creating:
+                    self.m_previous_values[name] = getattr(self.instance, name)
+                if not self.fields[name].help_text:
+                    self.fields[name].help_text = markdownHelpText(request=self.request)
             # Show label "English" or "Japanese" to non-d fields kept in translation form
             elif getattr(self, 'is_translate_form', False):
                 self.fields[name].help_text = mark_safe(u'{original}<img src="{img}" height="20" /> {lang}'.format(
