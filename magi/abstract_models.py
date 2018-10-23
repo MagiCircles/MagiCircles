@@ -123,34 +123,6 @@ class CacheOwner(MagiModel):
 # BaseAccount
 
 class BaseAccount(CacheOwner):
-    """
-    Some fields can be added on your own model that inherits from BaseAccount
-    and automatically get the desired behavior.
-
-    friend_id = models.PositiveIntegerField(_('Friend ID'), null=True)
-    If you're willing to add a unique code allowing users to find the real account in the game
-
-    center = models.ForeignKey(
-        'CollectibleCard', verbose_name=_('Center'),
-        related_name='center_of_account', null=True, on_delete=models.SET_NULL)
-    Will be select_related when listing accounts under profile and if it contains "art",
-    that image will be used as a cover if you keep the default profile displayer.
-
-    is_playground = models.BooleanField(_('Playground'), default=False, db_index=True)
-    Allows users to create test accounts that will be hidden from the leaderboard.
-
-    _thumbnail_screenshot = models.ImageField(null=True, upload_to=uploadThumb('account_screenshot'))
-    screenshot = models.ImageField(
-        _('Screenshot'), help_text=_('In-game profile screenshot'),
-        upload_to=uploadItem('account_screenshot'), null=True)
-    level_on_screenshot_upload = models.PositiveIntegerField(null=True)
-    is_hidden_from_leaderboard = models.BooleanField('Hide from leaderboard', default=False, db_index=True)
-    Will turn on self-verification system which will prevent users from setting their level above
-    MAX_LEVEL_BEFORE_SCREENSHOT_REQUIRED if they don't provide a screenshot.
-    It will also ask them to re-upload a screenshot every MAX_LEVEL_UP_STEP_BEFORE_SCREENSHOT_REQUIRED.
-    hidden_from_leaderboard can be set by staff manually via reports if a user keeps changing their level
-    without providing a valid screenshot.
-    """
     collection_name = 'account'
 
     owner = models.ForeignKey(User, related_name='accounts')
