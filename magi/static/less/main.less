@@ -627,7 +627,7 @@ table.text-center th {
     }
 }
 
-.current-activity_list[class*="shortcut-"] {
+.current-activity_list[class*="shortcut-"], .current-index {
     #page-content-wrapper {
         padding: 0;
     }
@@ -651,6 +651,216 @@ table.text-center th {
     }
     .index-not-authenticated + .top_buttons {
         display: none;
+    }
+
+    /* Nav bar of activities */
+
+    .active-tab-title {
+        [class^="flaticon-"]:not(.flaticon-about) {
+            font-weight: normal;
+        }
+        .text-muted {
+            color: #ccc;
+            font-size: 0.7em;
+            margin-left: 6px;
+        }
+    }
+    .nav-wrapper {
+        display: table;
+        border-collapse: collapse;
+        width: 100%;
+    }
+    .nav-tabs {
+        display: table-row;
+        &>li {
+            display: table-cell;
+            float: none;
+            &>a {
+                margin: 0 4px;
+                margin-bottom: -1px;
+                text-align: center;
+                border-radius: 16px 16px 0 0;
+                [class^="flaticon-"]:not(.flaticon-search):not(.flaticon-toggler):not(.flaticon-about) {
+                    font-weight: normal;
+                }
+                .a-nodifference();
+
+            }
+            &:first-child {
+                &>a {
+                    margin-left: 0;
+                }
+            }
+            &:last-child {
+                &>a {
+                    margin-right: 0;
+                }
+            }
+        }
+        [data-tab-name="search"], [data-tab-name="about"] {
+            width: 60px;
+        }
+    }
+
+    /* Art */
+
+    .home-wrapper {
+        position: relative;
+        &.with-background {
+            box-shadow: 0px 0px 30px 2px rgba(0, 0, 0, 0.2);
+        }
+        .nav-tabs {
+            font-weight: bold;
+        }
+    }
+    .collection-page-wrapper:not(.as-container) {
+        margin: 0;
+    }
+    .home-wrapper {
+        .home {
+            background-image: linear-gradient(100deg, transparent, transparent, transparent, transparent, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8), transparent);
+            .home-inner {
+                width: 40%;
+                margin-left: 50%;
+                margin-right: 10%;
+            }
+        }
+    }
+    .about-art {
+        font-size: 2em;
+        width: 40px;
+        height: 40px;
+        line-height: 40px;
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        .a-nodifference();
+        opacity: 0.5;
+        color: white;
+        .simple-shadow(#555);
+        transition: opacity @transition;
+        &:hover, &:focus {
+            opacity: 0.7;
+            color: white;
+        }
+    }
+    &.current-index main {
+        margin-bottom: 0;
+    }
+
+    /* Activities */
+
+    .activities-container, .home-transition {
+        padding: 0;
+        position: relative;
+        z-index: 2;
+    }
+
+    .activities-container {
+        .top_buttons {
+            margin: 0 20px;
+            .btn {
+                border-radius: 16px;
+            }
+        }
+    }
+
+    .default-index.index-not-authenticated {
+        margin-top: -10px;
+        padding-top: 30px;
+        padding-bottom: 50px;
+    }
+    .home-transition {
+        margin-top: -98px;
+        svg {
+            margin-bottom: -6px;
+            path {
+                fill: white;
+                stroke: white;
+            }
+        }
+    }
+    #togglebutton {
+        z-index: 3;
+    }
+
+    /* Background OR Art */
+
+    .tabs-container.with-background, .home-inner + .tabs-container {
+        padding: 0;
+    }
+
+    /* Background */
+
+    .activities-container.with-background {
+        background: white;
+        box-shadow: 0px 0px 30px 2px rgba(0, 0, 0, 0.1);
+        border-radius: 16px;
+        border: 1px #ddd solid;
+        .activity {
+            background: transparent;
+        }
+    }
+    .home-transition, .tabs-container, .home-wrapper {
+        &+.activities-container.with-background {
+            box-shadow: 0px 18px 30px 2px rgba(0, 0, 0, 0.1);
+            border-radius: 0;
+            border-bottom-right-radius: 16px;
+            border-bottom-left-radius: 16px;
+            border-top: 0;
+        }
+    }
+}
+
+.homepage_navbar_colors(@background, @text, @icon, @activeBackground, @activeText, @activeIcon) {
+    .nav-tabs {
+        &>li {
+            &>a {
+                background-color: @background;
+                color: @text;
+                [class^="flaticon-"]:not(.flaticon-search):not(.flaticon-toggler):not(.flaticon-about) {
+                    color: @icon;
+                }
+            }
+            /* &:not(.active):not(:focus):not(:hover)>a */
+            &.active, &:focus, &:hover {
+                &>a {
+                    background-color: @activeBackground;
+                    color: @activeText;
+                    [class^="flaticon-"]:not(.flaticon-search):not(.flaticon-toggler):not(.flaticon-about) {
+                        color: @activeIcon;
+                    }
+                }
+            }
+        }
+    }
+}
+
+@media(max-width: 991px) {
+    .current-activity_list[class*="shortcut-"], .current-index {
+        .home-wrapper, .home-wrapper.with-background {
+            background-size: 100%;
+            background-position: center -10%;
+            background-repeat: no-repeat;
+            padding-top: 30%;
+            box-shadow: none;
+            .home {
+                .home-inner {
+                    width: 100%;
+                    padding: 0 8%;
+                    margin: 0;
+
+                }
+            }
+            .tabs-container {
+                padding: 0 15px;
+            }
+        }
+        .activities-container {
+            .row {
+                margin: 0;
+            }
+        }
     }
 }
 
@@ -1165,15 +1375,6 @@ nav {
     }
 }
 
-#hometabs {
-    li {
-        text-align: center;
-        &:last-child {
-            width: 10%;
-        }
-    }
-}
-
 .contributor-profile {
     display: inline-block;
     vertical-align: top;
@@ -1575,6 +1776,12 @@ nav {
         .navbar-variant(@mainColor, white);
     }
 
+    .navbar .navbar-nav > li > a {
+        [class^="flaticon-"]:not(.flaticon-more) {
+            color: @secondaryColor;
+        }
+    }
+
     .cuteform-elt {
         border-color: @transparent;
         &.cuteform-selected {
@@ -1598,9 +1805,10 @@ nav {
         background-color: @mainColor;
         border-color: @mainColor;
     }
-    .current-activity_list[class*="shortcut-"] {
-        .btn-add-activity {
-            .button-variant(@mainColor, @transparent, @transparent);
+
+    .current-activity_list[class*="shortcut-"], .current-index {
+        .home-wrapper {
+            .homepage_navbar_colors(@mainColor, white, @secondaryColor, white, inherit, @mainColor);
         }
     }
 

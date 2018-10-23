@@ -713,3 +713,13 @@ DEFAULT_PRELAUNCH_ENABLED_PAGES = [
 DEFAULT_EXTRA_PREFERENCES = [
     ('background', _('Background')),
 ]
+
+############################################################
+# Default homepage art position
+
+DEFAULT_HOMEPAGE_ART_POSITION = {
+    'position': 'center center',
+    'size': 150,
+    'y': 'center',
+    'x': 'center',
+}

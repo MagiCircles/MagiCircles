@@ -2340,6 +2340,7 @@ class ActivityCollection(MagiCollection):
         show_relevant_fields_on_ordering = False
         show_item_buttons = False
         show_item_buttons_justified = False
+        ajax_callback = 'loadIndex'
 
         @property
         def item_buttons_classes(self):
@@ -2384,7 +2385,14 @@ class ActivityCollection(MagiCollection):
                 context['hide_sidebar'] = True
             if context['request'].user.is_authenticated():
                 context['activity_tabs'] = HOME_ACTIVITY_TABS
-                context['active_activity_tab'] = context['filter_form'].active_tab
+                context['active_activity_tab_name'] = context['filter_form'].active_tab
+                if context['active_activity_tab_name']:
+                    context['active_activity_tab'] = context['activity_tabs'][
+                        context['active_activity_tab_name']]
+                context['show_about_button'] = (
+                    'help' in context['all_enabled']
+                    and context['request'].LANGUAGE_CODE not in LANGUAGES_CANT_SPEAK_ENGLISH
+                )
                 # Context based on tab
                 if context['filter_form'].active_tab == 'following':
                     context['no_result_template'] = 'include/activityFollowMessage'

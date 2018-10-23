@@ -87,6 +87,11 @@ from magi.settings import (
     SITE_LOGO_PER_LANGUAGE,
     GLOBAL_OUTSIDE_PERMISSIONS,
     CUSTOM_PREFERENCES_FORM,
+    HOMEPAGE_BACKGROUND,
+    HOMEPAGE_ARTS,
+    RANDOM_ART_FOR_CHARACTER,
+    HOMEPAGE_ART_POSITION,
+    LANGUAGES_CANT_SPEAK_ENGLISH,
 )
 from magi.views_collections import item_view
 
@@ -159,7 +164,7 @@ def indexExtraContext(context):
     context['latest_news'] = LATEST_NEWS
     context['call_to_action'] = CALL_TO_ACTION
     context['total_donators'] = TOTAL_DONATORS
-    context['is_feed'] = 'feed' in context['request'].GET
+    context['homepage_background'] = HOMEPAGE_BACKGROUND
     context['adjective'] = random.choice(donators_adjectives)
     now = timezone.now()
     if 'donate' in context['all_enabled']:
@@ -175,11 +180,35 @@ def indexExtraContext(context):
         if logo_per_language:
             context['site_logo'] = staticImageURL(logo_per_language)
 
+    # Homepage arts
+    if HOMEPAGE_ARTS:
+        context['full_width'] = True
+
+        # Staff can preview art
+        if (context['request'].user.is_authenticated()
+            and context['request'].user.hasPermission('manage_main_items')
+            and 'preview' in context['request'].GET):
+            context['art'] = {
+                'url': context['request'].GET['preview'],
+            }
+        # 1 chance out of 5 to get a random art of 1 of your favorite characters
+        elif (RANDOM_ART_FOR_CHARACTER
+              and context['request'].user.is_authenticated()
+              and context['request'].user.preferences.favorite_characters
+              and random.randint(0, 5) == 5):
+            character_id = random.choice(context['request'].user.preferences.favorite_characters)
+            context['art'] = RANDOM_ART_FOR_CHARACTER(character_id)
+        else:
+            context['art'] = random.choice(HOMEPAGE_ARTS)
+
+        context['art_position'] = HOMEPAGE_ART_POSITION
+
 def index(request):
     context = getGlobalContext(request)
     if context.get('launch_date', None) and not request.user.is_staff:
         return redirect('/prelaunch/')
     indexExtraContext(context)
+    context['ajax_callback'] = 'loadIndex'
     return render(request, 'pages/index.html', context)
 
 ############################################################

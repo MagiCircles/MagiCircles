@@ -1757,7 +1757,9 @@ class FilterActivities(MagiFiltersForm):
 
     def filter_queryset(self, queryset, parameters, request):
         queryset = super(FilterActivities, self).filter_queryset(queryset, parameters, request)
-        if 'ordering' in parameters and parameters['ordering'] == '_cache_total_likes,id':
+        if (parameters.get('ordering', None) == '_cache_total_likes,id'
+            or (self.fields['ordering'].initial == '_cache_total_likes,id'
+                and 'ordering' not in parameters)):
             queryset = queryset.filter(creation__gte=timezone.now() - relativedelta(weeks=1))
         return queryset
 

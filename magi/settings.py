@@ -13,6 +13,7 @@ from magi.default_settings import (
     DEFAULT_CONTACT_DISCORD,
     DEFAULT_LANGUAGES_CANT_SPEAK_ENGLISH,
     DEFAULT_EXTRA_PREFERENCES,
+    DEFAULT_HOMEPAGE_ART_POSITION,
 )
 from magi.utils import globalContext, toHumanReadable
 from django.utils.translation import ugettext_lazy as _, get_language
@@ -234,6 +235,11 @@ if hasattr(settings_module, 'EXTRA_PREFERENCES'):
 else:
     EXTRA_PREFERENCES = DEFAULT_EXTRA_PREFERENCES
 
+if hasattr(settings_module, 'HOMEPAGE_ART_POSITION'):
+    HOMEPAGE_ART_POSITION = getattr(settings_module, 'HOMEPAGE_ART_POSITION')
+else:
+    HOMEPAGE_ART_POSITION = DEFAULT_HOMEPAGE_ART_POSITION
+
 ############################################################
 # Optional settings without default values (= None)
 
@@ -379,6 +385,21 @@ if hasattr(settings_module, 'CORNER_POPUP_IMAGE'):
 else:
     CORNER_POPUP_IMAGE = None
 
+if hasattr(settings_module, 'HOMEPAGE_BACKGROUND'):
+    HOMEPAGE_BACKGROUND = getattr(settings_module, 'HOMEPAGE_BACKGROUND')
+else:
+    HOMEPAGE_BACKGROUND = None
+
+if hasattr(settings_module, 'HOMEPAGE_ARTS'):
+    HOMEPAGE_ARTS = getattr(settings_module, 'HOMEPAGE_ARTS')
+else:
+    HOMEPAGE_ARTS = None
+
+if hasattr(settings_module, 'RANDOM_ART_FOR_CHARACTER'):
+    RANDOM_ART_FOR_CHARACTER = getattr(settings_module, 'RANDOM_ART_FOR_CHARACTER')
+else:
+    RANDOM_ART_FOR_CHARACTER = None
+
 if hasattr(settings_module, 'JAVASCRIPT_COMMONS'):
     JAVASCRIPT_COMMONS = getattr(settings_module, 'JAVASCRIPT_COMMONS')
 else:
@@ -398,6 +419,14 @@ django_settings.GET_GLOBAL_CONTEXT = GET_GLOBAL_CONTEXT
 
 ############################################################
 # Post processing of settings
+
+# Art position defaults
+
+for _k, _v in DEFAULT_HOMEPAGE_ART_POSITION.items():
+    if _k not in HOMEPAGE_ART_POSITION:
+        HOMEPAGE_ART_POSITION[_k] = _v
+
+# Permissions
 
 def _set_permission_link_on_unset(d, permission, url):
     if url and permission in d and not d[permission]:

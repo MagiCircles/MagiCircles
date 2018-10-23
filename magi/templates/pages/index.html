@@ -2,7 +2,11 @@
 {% load i18n %}
 
 {% block content %}
+{% if not art %}
 <div class="container">
+  {% endif %}
   {% include 'include/homePage.html' with shortcut_url='' %}
+  {% if not art %}
 </div>
+{% endif %}
 {% endblock %}

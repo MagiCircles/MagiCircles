@@ -194,10 +194,12 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
             reverse = True
             if 'reverse_order' in context['filter_form'].fields:
                 reverse = context['filter_form'].fields['reverse_order'].initial
-            ordering = [u'{}{}'.format(
-                '-' if reverse else '',
-                context['filter_form'].fields['ordering'].initial,
-            )]
+            ordering = [
+                u'{}{}'.format(
+                    '-' if reverse else '',
+                    ordering_field,
+                ) for ordering_field in context['filter_form'].fields['ordering'].initial.split(',')
+            ]
         else:
             ordering = collection.list_view.default_ordering.split(',')
     queryset = queryset.order_by(*ordering)
