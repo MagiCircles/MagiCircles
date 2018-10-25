@@ -240,6 +240,11 @@ if hasattr(settings_module, 'HOMEPAGE_ART_POSITION'):
 else:
     HOMEPAGE_ART_POSITION = DEFAULT_HOMEPAGE_ART_POSITION
 
+if hasattr(settings_module, 'HOMEPAGE_ART_SIDE'):
+    HOMEPAGE_ART_SIDE = getattr(settings_module, 'HOMEPAGE_ART_SIDE')
+else:
+    HOMEPAGE_ART_SIDE = 'left'
+
 ############################################################
 # Optional settings without default values (= None)
 

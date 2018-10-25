@@ -161,6 +161,7 @@ def signup(request):
 # Index
 
 def indexExtraContext(context):
+    context['page_title'] = None
     context['latest_news'] = LATEST_NEWS
     context['call_to_action'] = CALL_TO_ACTION
     context['total_donators'] = TOTAL_DONATORS
