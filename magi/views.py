@@ -668,7 +668,10 @@ def whatwillbedeleted(request, thing, thing_id):
 def moderatereport(request, report, action):
     if not request.user.is_authenticated() or not hasPermission(request.user, 'moderate_reports') or request.method != 'POST':
         raise PermissionDenied()
-    report = get_object_or_404(models.Report.objects.exclude(owner=request.user).select_related('owner', 'owner__preferences'), pk=report, i_status=models.Report.get_i('status', 'Pending'))
+    queryset = models.Report.objects.select_related('owner', 'owner__preferences')
+    if not request.user.is_superuser:
+        queryset = queryset.exclude(owner=request.user)
+    report = get_object_or_404(queryset, pk=report, i_status=models.Report.get_i('status', 'Pending'))
 
     if (not request.user.is_superuser
         and ((action == 'Edited' and not report.allow_edit)
