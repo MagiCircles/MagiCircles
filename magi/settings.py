@@ -243,7 +243,17 @@ else:
 if hasattr(settings_module, 'HOMEPAGE_ART_SIDE'):
     HOMEPAGE_ART_SIDE = getattr(settings_module, 'HOMEPAGE_ART_SIDE')
 else:
-    HOMEPAGE_ART_SIDE = 'left'
+    HOMEPAGE_ART_SIDE = 'across'
+
+if hasattr(settings_module, 'HOMEPAGE_ART_GRADIENT'):
+    HOMEPAGE_ART_GRADIENT = getattr(settings_module, 'HOMEPAGE_ART_GRADIENT')
+else:
+    HOMEPAGE_ART_GRADIENT = False
+
+if hasattr(settings_module, 'HOMEPAGE_RIBBON'):
+    HOMEPAGE_RIBBON = getattr(settings_module, 'HOMEPAGE_RIBBON')
+else:
+    HOMEPAGE_RIBBON = False
 
 ############################################################
 # Optional settings without default values (= None)

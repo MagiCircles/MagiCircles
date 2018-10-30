@@ -5,6 +5,7 @@
 @import "mixins/panel.less";
 @import "mixins/buttons.less";
 @import "mixins/well.less";
+@import "mixins/ribbon.less";
 
 @transparent: rgba(0, 0, 0, 0);
 
@@ -590,7 +591,7 @@ table.text-center th {
 .default-index {
     text-align: center;
     header {
-        padding: 30px 0;
+        padding: 30px 0 200px 0;
         a[href="/donate/"] {
             margin-left: 20px;
         }
@@ -704,25 +705,96 @@ table.text-center th {
 
     /* Art */
 
-    .home-wrapper {
-        position: relative;
-        &.with-background {
-            box-shadow: 0px 0px 30px 2px rgba(0, 0, 0, 0.2);
-        }
-        .nav-tabs {
-            font-weight: bold;
-        }
-    }
     .collection-page-wrapper:not(.as-container) {
         margin: 0;
     }
     .home-wrapper {
+        position: relative;
+        overflow: hidden;
+        &.with-background {
+            box-shadow: 0px 0px 30px 2px rgba(0, 0, 0, 0.2);
+        }
+        &.with-gradient {
+            @gradientColor: white;
+            .home {
+                background-image: linear-gradient(100deg, transparent, transparent, transparent, fade(@gradientColor, 90%), fade(@gradientColor, 80%), fade(@gradientColor, 80%), fade(@gradientColor, 90%), transparent, transparent, transparent);
+            }
+            &.left .home {
+                background-image: linear-gradient(100deg, transparent, transparent, transparent, transparent, fade(@gradientColor, 90%), fade(@gradientColor, 80%), fade(@gradientColor, 80%), transparent);
+            }
+            &.right .home {
+                background-image: linear-gradient(100deg, transparent, fade(@gradientColor, 80%), fade(@gradientColor, 80%), fade(@gradientColor, 90%), transparent, transparent, transparent, transparent);
+            }
+        }
+        .home-foreground {
+            img {
+                position: absolute;
+                width: 90%;
+                top: 50%;
+                z-index: 0;
+                transform: translateY(-42%);
+            }
+        }
+        .nav-tabs {
+            font-weight: bold;
+        }
         .home {
-            background-image: linear-gradient(100deg, transparent, transparent, transparent, transparent, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8), transparent);
+            position: relative;
+            z-index: 2;
+            .home-site-description, .btn-xl {
+                font-size: 25px;
+            }
+            .btn {
+                border-radius: 16px;
+            }
+            .btn-group>.btn:first-child:not(:last-child):not(.dropdown-toggle) {
+                border-top-right-radius: 0;
+                border-bottom-right-radius: 0;
+            }
+            .btn-group>.btn:last-child:not(:first-child), .btn-group>.dropdown-toggle:not(:first-child) {
+                border-top-left-radius: 0;
+                border-bottom-left-radius: 0;
+            }
+            .home-about-game-button, .home-about-site-button {
+                margin-bottom: 5px;
+            }
             .home-inner {
                 width: 40%;
-                margin-left: 50%;
-                margin-right: 10%;
+                margin-left: 30%;
+                margin-right: 30%;
+                .home-call-to-action {
+                    margin-top: 5px;
+                }
+            }
+        }
+        &.left {
+            &.with-ribbon header {
+                transform: rotate(-4deg);
+                padding-bottom: 65px;
+            }
+            .home-foreground img {
+                left: -18%;
+            }
+            .home {
+                .home-inner {
+                    margin-left: 50%;
+                    margin-right: 10%;
+                }
+            }
+        }
+        &.right {
+            &.with-ribbon header {
+                transform: rotate(4deg);
+                padding-bottom: 65px;
+            }
+            .home-foreground img {
+                left: 28%;
+            }
+            .home {
+                .home-inner {
+                    margin-right: 50%;
+                    margin-left: 10%;
+                }
             }
         }
     }
@@ -747,6 +819,28 @@ table.text-center th {
     &.current-index main {
         margin-bottom: 0;
     }
+
+    /* Ribbon */
+
+    .home-text-ribbon {
+        .ribbon();
+        .ribbon_color(@mainColor);
+        max-width: 800px;
+        margin: auto;
+        &.home-text-ribbon-logged-out {
+            font-size: 30px;
+            .home-site-description {
+                margin: 0;
+            }
+            .btn {
+                padding-bottom: 0;
+            }
+        }
+        &.home-text-ribbon-logged-in {
+            font-size: 16px;
+        }
+    }
+
 
     /* Activities */
 
@@ -822,7 +916,6 @@ table.text-center th {
                     color: @icon;
                 }
             }
-            /* &:not(.active):not(:focus):not(:hover)>a */
             &.active, &:focus, &:hover {
                 &>a {
                     background-color: @activeBackground;
@@ -838,12 +931,19 @@ table.text-center th {
 
 @media(max-width: 991px) {
     .current-activity_list[class*="shortcut-"], .current-index {
-        .home-wrapper, .home-wrapper.with-background {
+        .home-wrapper, .home-wrapper.with-background, .home-wrapper.right, .home-wrapper.left {
             background-size: 100%;
             background-position: center -10%;
             background-repeat: no-repeat;
             padding-top: 30%;
             box-shadow: none;
+            .home-foreground {
+                img {
+                    width: 110%;
+                    left: -5%;
+                    top: 12%;
+                }
+            }
             .home {
                 .home-inner {
                     width: 100%;
@@ -1696,7 +1796,7 @@ nav {
     }
 }
 
-.magicircles(@mainColor, @secondaryColor) {
+.magicircles(@mainColor, @secondaryColor, @accentColor: @secondaryColor) {
     .table-main { .table-color(@mainColor, #fff); }
     .table-dark { .table-color(darken(@mainColor, 15%), #fff); }
 
@@ -1716,15 +1816,16 @@ nav {
     .jumbotron-main { .jumbotron_per_color(@mainColor); }
     .well-main { .well_per_color(@mainColor); }
 
-    .table-secondary { .table-color(@secondaryColor, #fff); }
-    .panel-secondary { .panel-simple-variant(@secondaryColor); }
+    .table-secondary { .table-color(@accentColor, #fff); }
+    .panel-secondary { .panel-simple-variant(@accentColor); }
     .alert-secondary { .alert-simple-variant(@secondaryColor); }
     .btn-secondary { .button-variant(white, @secondaryColor, darken(@secondaryColor, 2%)); }
     .btn-link-secondary { .button-variant(@secondaryColor, @transparent, @transparent); }
     .a-secondary { .a-variant(@secondaryColor); }
     .progress-bar-secondary { .progress-bar-variant(@secondaryColor); }
-    .jumbotron-secondary { .jumbotron_per_color(@secondaryColor); }
-    .well-secondary { .well_per_color(@secondaryColor); }
+    .progress-bar-accent { .progress-bar-variant(@accentColor); }
+    .jumbotron-secondary { .jumbotron_per_color(@accentColor); }
+    .well-secondary { .well_per_color(@accentColor); }
 
     .text-main { color: @mainColor; }
     .text-secondary { color: @secondaryColor; }
@@ -1751,13 +1852,14 @@ nav {
         }
     }
     .btn-link-muted { .button-variant(#777, @transparent, @transparent); }
+    .btn-link-white { .button-variant(white, @transparent, @transparent); }
 
     .well-main {
         .well-variant(@mainColor, white);
     }
 
     .well-secondary {
-        .well-variant(@secondaryColor, white);
+        .well-variant(@accentColor, white);
     }
 
     a[href="#hideStaffButtons"] {
@@ -1778,7 +1880,7 @@ nav {
 
     .navbar .navbar-nav > li > a {
         [class^="flaticon-"]:not(.flaticon-more) {
-            color: @secondaryColor;
+            color: @accentColor;
         }
     }
 
@@ -1792,7 +1894,7 @@ nav {
         .cuteform-elt {
             border-color: @mainColor;
             &.cuteform-selected {
-                border-color: @secondaryColor;
+                border-color: @accentColor;
             }
         }
     }
@@ -1808,7 +1910,7 @@ nav {
 
     .current-activity_list[class*="shortcut-"], .current-index {
         .home-wrapper {
-            .homepage_navbar_colors(@mainColor, white, @secondaryColor, white, inherit, @mainColor);
+            .homepage_navbar_colors(@mainColor, white, @accentColor, white, inherit, @mainColor);
         }
     }
 
@@ -1827,7 +1929,7 @@ nav {
                 padding: 5px;
                 margin: 5px;
                 &.cuteform-selected {
-                    background-color: @secondaryColor;
+                    background-color: @accentColor;
                 }
             }
         }
@@ -1850,7 +1952,7 @@ nav {
     }
     .default-index {
         header {
-            padding: 200px 0;
+            padding: 30px 0 80px 0;
         }
         &.index-authenticated {
             header {
@@ -1961,73 +2063,22 @@ nav {
             font-size: 14px !important;
             width: 50%;
             max-width: 200px;
-            position: relative;
-            color: white;
-            text-align: center;
-            padding: 1em 2em;
             margin: 2em auto 3em; /* Based on 24px vertical rhythm. 48px bottom margin - normally 24 but the ribbon 'graphics' take up 24px themselves so we double it. */
-            strong {
-                font-weight: normal;
-            }
-            &:before, &:after {
-                content: "";
-                position: absolute;
-                display: block;
-                bottom: -1em;
-                z-index: -1;
-            }
-            &:before {
-                left: -2em;
-                border-right-width: 1.5em;
-                border-left-color: transparent!important;
-            }
-            &:after {
-                right: -2em;
-                border-left-width: 1.5em;
-                border-right-color: transparent!important;
-            }
-            .ribbon-content {
-                &:before, &:after {
-                    content: "";
-                    position: absolute;
-                    display: block;
-                    border-style: solid;
-                    bottom: -1em;
-                }
-                &:before {
-                    left: 0;
-                    border-width: 1em 0 0 1em;
-                }
-                &:after {
-                    right: 0;
-                    border-width: 1em 1em 0 0;
-                }
-            }
+            .ribbon();
         }
     }
     .per_color(@color) {
-        @lightColor: lighten(@color, 15%);
-        background-color: @lightColor;
-        & + .caption-wrapper {
-            .ribbon {
-                background: @lightColor;
-                &:before, &:after {
-                    border: 1.5em solid lighten(@color, 5%);
-                }
-                .ribbon-content {
-                    &:before, &:after {
-                        border-color: darken(@color, 5%) transparent transparent transparent;
-                    }
-                }
-            }
+        background-color: lighten(@color, 15%);
+        &+.caption-wrapper .ribbon {
+            .ribbon_color(lighten(@color, 15%));
         }
     }
-    &.badge-color3 { .per_color(@GoldColor); }
+    &.badge-color3  { .per_color(@GoldColor); }
     &.badge-color2 { .per_color(@SilverColor); }
     &.badge-color1 { .per_color(@BronzeColor); }
     &.badge-color {
         .per_color(darken(lavender, 20%));
-        & + .caption-wrapper .ribbon {
+        &+.caption-wrapper .ribbon {
             color: darken(lavender, 25%);
         }
     }

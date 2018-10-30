@@ -4,168 +4,201 @@
 {% if shortcut_url != None %}
 
 <style>
-{% if art %}
-.home-wrapper {
-    background-position: {{ art_position.position }};
-    background-size: {{ art_position.size }}%;
-    background-position-y: {{ art_position.y }};
-    background-position-x: {{ art_position.x }};
-}
-{% endif %}
-{% if homepage_background %}
+  {% if art %}
+  .home-wrapper {
+      background-position: {{ art_position.position }};
+      background-size: {{ art_position.size }};
+      background-position-y: {{ art_position.y }};
+      background-position-x: {{ art_position.x }};
+  }
+  {% endif %}
+  {% if homepage_background %}
   body {
-    background: url('{% if '//' in homepage_background %}{{ homepage_background }}{% else %}{{ static_url }}img/{{ homepage_background }}?{{ static_files_version }}{% endif %}');
-  }
-  @media(max-width: 991px) {
-    .current-activity_list[class*="shortcut-"] .home-wrapper .home, .current-index .home-wrapper .home {
       background: url('{% if '//' in homepage_background %}{{ homepage_background }}{% else %}{{ static_url }}img/{{ homepage_background }}?{{ static_files_version }}{% endif %}');
-    }
   }
-{% elif art %}
   @media(max-width: 991px) {
-    .current-activity_list[class*="shortcut-"] .home-wrapper .home, .current-index .home-wrapper .home {
-      background: white;
-    }
+      .current-activity_list[class*="shortcut-"] .home-wrapper .home, .current-index .home-wrapper .home {
+          background: url('{% if '//' in homepage_background %}{{ homepage_background }}{% else %}{{ static_url }}img/{{ homepage_background }}?{{ static_files_version }}{% endif %}')!important;
+      }
   }
-{% endif %}
+  {% elif art %}
+  @media(max-width: 991px) {
+      .current-activity_list[class*="shortcut-"] .home-wrapper .home, .current-index .home-wrapper .home {
+          background: white!important;
+      }
+  }
+  {% endif %}
 </style>
 
 {% if art %}
-<div class="home-wrapper{% if homepage_background %} with-background{% endif %}"
+<div class="home-wrapper{% if homepage_background %} with-background{% endif %}{% if homepage_art_gradient %} with-gradient{% endif %}{% if homepage_ribbon %} with-ribbon{% endif %} {{ homepage_art_side }}"
      style="background-image: url('{% if '//' in art.url %}{{ art.url }}{% else %}{{ static_url }}img/{{ art.url }}?{{ static_fles_version }}{% endif %}');"
      {% if art.hd_url %} data-hd-art="{% if '//' in art.hd_url %}{{ art.hd_url }}{% else %}{{ static_url }}img/{{ art.hd_url }}?{{ static_fles_version }}{% endif %}"{% endif %}>
+  {% if art and art.foreground_url %}
+  <div class="home-foreground">
+    <img src="{% if '//' in art.foreground_url %}{{ art.foreground_url }}{% else %}{{ static_url }}img/{{ art.foreground_url }}?{{ static_fles_version }}{% endif %}">
+  </div>
+  {% endif %}{# foreground_url #}
   <div class="home">
     <div class="home-inner">
       {% if art.about_url %}
       <a href="{{ art.about_url }}" target="_blank" class="about-art hidden-xs hidden-sm">
         <i class="flaticon-about"></i>
       </a>
-      {% endif %}
-{% endif %}
+      {% endif %}{# if art.about_url #}
 
-<div class="default-index {% if user.is_authenticated %}index-authenticated{% else %}index-not-authenticated{% endif %}">
-  <header>
-    <h1 class="home-site-logo"><img src="{{ site_logo }}" class="img-responsive" alt="{{ t_site_name }}"></h1>
-    <h2 class="home-site-description">{{ site_description|orcallable }}</h2>
-    {% if user.is_authenticated and 'donate' in all_enabled %}
-    <p class="fontx1-5 home-site-donate-message">
-      {% blocktrans %}is crowdfunded by {{ total_donators }} {{ adjective }} donators{% endblocktrans %}
-      <a href="/donate/" class="btn btn-secondary">{% trans 'Donate' %}</a>
-    </p>
-    {% if donation_month and not donation_month.reached_100_percent %}
-    <div class="progress">
-      <div class="progress-bar progress-bar-{% if donation_month.percent == 100 %}success{% else %}main{% endif %} progress-bar-striped active" style="width: {% localize off %}{{ donation_month.percent }}{% endlocalize %}%;">
-	{% if donation_month.percent > 40 %}{{ donation_month.date|date:"F" }}: {% with percent=donation_month.percent_int %}{% blocktrans %}{{ percent }}% funded{% endblocktrans %}{% endwith %}{% endif %}
-      </div>
-      {% if donation_month.percent <= 40 %}<span class="text-muted no-donation">{{ donation_month.date|date:"F" }}: {% if donation_month.donations %}{% with percent=donation_month.percent_int %}{% blocktrans %}{{ percent }}% funded{% endblocktrans %}{% endwith %}{% else %}{% with percent=0 %}{% blocktrans %}{{ percent }}% funded{% endblocktrans %}{% endwith %}{% endif %}</span>{% endif %}
-    </div>
-    {% endif %}
-    {% endif %}
-    {% if not user.is_authenticated %}
-    <a href="/about_game/" data-ajax-url="/ajax/about_game/" class="btn btn-link btn-lg home-about-game-button">
-      {% with site_name=game_name %}{% blocktrans %}About {{ site_name }}{% endblocktrans %}{% endwith %}
-    </a>
-    <a href="/about/" data-ajax-url="/ajax/about/" class="btn btn-link btn-lg home-about-site-button">
-      {% with site_name=t_site_name %}{% blocktrans %}About {{ site_name }}{% endblocktrans %}{% endwith %}
-    </a>
-    <br><br><br>
-    <a href="/signup/" class="btn btn-xl btn-secondary home-call-to-action">
-      {% trans call_to_action %}
-    </a>
-    {% endif %}
-  </header>
-  {% if latest_news %}
-  <div id="carousel-latest-news" class="carousel slide" data-ride="carousel">
-    <ol class="carousel-indicators">
-      {% for news in latest_news %}
-      <li data-target="#carousel-latest-news" data-slide-to="{{ forloop.counter0 }}"{% if forloop.counter0 == 0 %} class="active"{% endif %}></li>
-      {% endfor %}
-    </ol>
-    <div class="carousel-inner" role="listbox">
-      {% for news in latest_news %}
-      <a href="{{ news.url }}" class="item{% if forloop.counter0 == 0 %} active{% endif %}{% if news.css_classes %} {{ news.css_classes }}{% endif %}"
-         {% if news.ajax %} data-ajax-url="{{ news.ajax }}" data-ajax-title="{% if news.t_titles and news.t_titles|getattribute:LANGUAGE_CODE %}{{ news.t_titles|getattribute:LANGUAGE_CODE }}{% else %}{{ news.title }}{% endif %}"{% endif %}
-         {% if news.background %} style="background-image: url('{{ news.background }}'); height: 200px"{% endif %}
-         >
-	    {% if news.image %}<img src="{% if '//' in news.image %}{{ news.image }}{% else %}{{ static_url }}img/{{ news.image }}?{{ static_files_version }}{% endif %}" alt="{% if news.t_titles and news.t_titles|getattribute:LANGUAGE_CODE %}{{ news.t_titles|getattribute:LANGUAGE_CODE }}{% else %}{{ news.title }}{% endif %}">{% endif %}
-	    <div class="carousel-caption">
-	      {% if not news.hide_title %}<h2>{% if news.t_titles and news.t_titles|getattribute:LANGUAGE_CODE %}{{ news.t_titles|getattribute:LANGUAGE_CODE }}{% else %}{{ news.title }}{% endif %}</h2>{% endif %}
-	    </div>
-      </a>
-      {% endfor %}
-    </div>
-    <a class="left carousel-control" data-target="#carousel-latest-news" data-slide="prev">
-      <span class="glyphicon glyphicon-chevron-left"></span>
-    </a>
-    <a class="right carousel-control" data-target="#carousel-latest-news" data-slide="next">
-      <span class="glyphicon glyphicon-chevron-right"></span>
-    </a>
-  </div>
-  {% endif %}
-  <div class="after-news"></div>
-  {% if staff_configurations.below_homepage_banners and staff_configurations.below_homepage_banners|getattribute:LANGUAGE_CODE %}<div class="below-banners to-markdown">{{ staff_configurations.below_homepage_banners|getattribute:LANGUAGE_CODE }}</div>{% endif %}
-</div>
+      {% endif %}{# if art #}
 
-{% if art %}
+      <div class="default-index {% if user.is_authenticated %}index-authenticated{% else %}index-not-authenticated{% endif %}">
+        <header>
+          <h1 class="home-site-logo"><img src="{{ site_logo }}" class="img-responsive" alt="{{ t_site_name }}"></h1>
+
+          {% if user.is_authenticated %}
+
+          {% if 'donate' in all_enabled %}
+          {% if homepage_ribbon %}<div class="home-text-ribbon home-text-ribbon-logged-in">{% endif %}
+            <p class="home-site-donate-message">
+              {% blocktrans %}is crowdfunded by {{ total_donators }} {{ adjective }} donators{% endblocktrans %}
+              <a href="/donate/" class="btn btn-secondary">{% trans 'Donate' %}</a>
+            </p>
+            {% if donation_month and not donation_month.reached_100_percent %}
+            <div class="progress">
+              <div class="progress-bar progress-bar-{% if donation_month.percent == 100 %}success{% else %}secondary{% endif %} progress-bar-striped active" style="width: {% localize off %}{{ donation_month.percent }}{% endlocalize %}%;">
+	            {% if donation_month.percent > 40 %}{{ donation_month.date|date:"F" }}: {% with percent=donation_month.percent_int %}{% blocktrans %}{{ percent }}% funded{% endblocktrans %}{% endwith %}{% endif %}
+              </div>
+              {% if donation_month.percent <= 40 %}<span class="text-muted no-donation">{{ donation_month.date|date:"F" }}: {% if donation_month.donations %}{% with percent=donation_month.percent_int %}{% blocktrans %}{{ percent }}% funded{% endblocktrans %}{% endwith %}{% else %}{% with percent=0 %}{% blocktrans %}{{ percent }}% funded{% endblocktrans %}{% endwith %}{% endif %}</span>{% endif %}
+            </div>{# progress #}
+            {% endif %}{# if donation_month #}
+            {% if homepage_ribbon %}
+          </div> {# home-text-ribbon-logged-in #}
+          {% endif %}
+          {% endif %}{# donate #}
+
+          {% else %}{# logged out #}
+
+          {% if homepage_ribbon %}<div class="home-text-ribbon home-text-ribbon-logged-out">{% endif %}
+            <h2 class="home-site-description">
+              {{ site_description|orcallable }}
+            </h2>
+            <a href="/about_game/" data-ajax-url="/ajax/about_game/" class="btn btn-link-{% if homepage_ribbon %}white{% else %}main{% endif %} btn-lg btn-lines home-about-game-button">
+              {% with site_name=game_name %}{% blocktrans %}About {{ site_name }}{% endblocktrans %}{% endwith %}
+            </a>
+            <a href="/about/" data-ajax-url="/ajax/about/" class="btn btn-link-{% if homepage_ribbon %}white{% else %}main{% endif %} btn-lg btn-lines home-about-site-button">
+              {% with site_name=t_site_name %}{% blocktrans %}About {{ site_name }}{% endblocktrans %}{% endwith %}
+            </a>
+            {% if homepage_ribbon %}
+          </div>{# home-text-ribbon-logged-out #}
+          {% endif %}
+
+          <br>
+          <a href="/signup/" class="btn btn-xl btn-secondary home-call-to-action">
+            {% trans call_to_action %}
+          </a>
+
+          {% endif %}{# logged in/out #}
+
+        </header>
+
+        {% if latest_news %}
+        <div id="carousel-latest-news" class="carousel slide" data-ride="carousel">
+          <ol class="carousel-indicators">
+            {% for news in latest_news %}
+            <li data-target="#carousel-latest-news" data-slide-to="{{ forloop.counter0 }}"{% if forloop.counter0 == 0 %} class="active"{% endif %}></li>
+            {% endfor %}
+          </ol>
+          <div class="carousel-inner" role="listbox">
+            {% for news in latest_news %}
+            <a href="{{ news.url }}" class="item{% if forloop.counter0 == 0 %} active{% endif %}{% if news.css_classes %} {{ news.css_classes }}{% endif %}"
+               {% if news.ajax %} data-ajax-url="{{ news.ajax }}" data-ajax-title="{% if news.t_titles and news.t_titles|getattribute:LANGUAGE_CODE %}{{ news.t_titles|getattribute:LANGUAGE_CODE }}{% else %}{{ news.title }}{% endif %}"{% endif %}
+               {% if news.background %} style="background-image: url('{{ news.background }}'); height: 200px"{% endif %}
+               >
+	          {% if news.image %}<img src="{% if '//' in news.image %}{{ news.image }}{% else %}{{ static_url }}img/{{ news.image }}?{{ static_files_version }}{% endif %}" alt="{% if news.t_titles and news.t_titles|getattribute:LANGUAGE_CODE %}{{ news.t_titles|getattribute:LANGUAGE_CODE }}{% else %}{{ news.title }}{% endif %}">{% endif %}
+	          <div class="carousel-caption">
+	            {% if not news.hide_title %}<h2>{% if news.t_titles and news.t_titles|getattribute:LANGUAGE_CODE %}{{ news.t_titles|getattribute:LANGUAGE_CODE }}{% else %}{{ news.title }}{% endif %}</h2>{% endif %}
+	          </div>
+            </a>
+            {% endfor %}
+          </div>
+          <a class="left carousel-control" data-target="#carousel-latest-news" data-slide="prev">
+            <span class="glyphicon glyphicon-chevron-left"></span>
+          </a>
+          <a class="right carousel-control" data-target="#carousel-latest-news" data-slide="next">
+            <span class="glyphicon glyphicon-chevron-right"></span>
+          </a>
+        </div>{# carousel-latest-news #}
+        {% endif %}{# latest-news #}
+
+        {% if staff_configurations.below_homepage_banners and staff_configurations.below_homepage_banners|getattribute:LANGUAGE_CODE %}
+        <div class="below-banners to-markdown">
+          {{ staff_configurations.below_homepage_banners|getattribute:LANGUAGE_CODE }}
+        </div>
+        {% endif %}
+
+      </div>{# default-index #}
+
+      {% if art %}
     </div>{# home-inner #}
-{% endif %}
+    {% endif %}
+
     <div class="container
                 {% if user.is_authenticated and 'activity' in all_enabled %} tabs-container{% endif %}
                 {% if homepage_background %} with-background{% endif %}">
 
-{% if user.is_authenticated and 'activity' in all_enabled %}
-<h3 class="visible-xs active-tab-title">
-  <i class="flaticon-{{ active_activity_tab.icon }}"></i>
-  {{ active_activity_tab.title }}
-  {% if show_about_button %}
-  <a href="/help/Activities%20tabs" target="_blank" class="a-nodifference text-muted">
-    <i class="flaticon-about"></i>
-  </a>
-  {% endif %}
-</h3>
-<div class="nav-wrapper">
-  <ul class="nav nav-tabs" id="hometabs">
-    {% for tab_name, tab in activity_tabs.items %}
-    <li data-tab-name="{{ tab_name }}"{% if active_activity_tab_name == tab_name %} class="active"{% endif %}>
-      <a href="/activities/{{ tab_name }}/" >
-        <i class="flaticon-{{ tab.icon }}"></i>
-        <span class="hidden-xs">{{ tab.title }}</span>
-      </a>
-    </li>
-    {% endfor %}
-    {% if show_about_button %}
-    <li data-tab-name="about" class="hidden-xs">
-      <a href="/help/Activities%20tabs" target="_blank">
-        <i class="flaticon-about"></i>
-      </a>
-    </li>
-    {% endif %}
-    <li data-tab-name="search"{% if active_activity_tab_name == None %} class="active"{% endif %}>
-      <a class="togglebutton" href="/activities/" >
-        <i class="flaticon-search"></i>
-        <i class="flaticon-toggler hidder"></i>
-      </a>
-    </li>
-  </ul>
-</div>
-{% endif %}
+      {% if user.is_authenticated and 'activity' in all_enabled %}
+      <h3 class="visible-xs active-tab-title">
+        <i class="flaticon-{{ active_activity_tab.icon }}"></i>
+        {{ active_activity_tab.title }}
+        {% if show_about_button %}
+        <a href="/help/Activities%20tabs" target="_blank" class="a-nodifference text-muted">
+          <i class="flaticon-about"></i>
+        </a>
+        {% endif %}
+      </h3>
+      <div class="nav-wrapper">
+        <ul class="nav nav-tabs" id="hometabs">
+          {% for tab_name, tab in activity_tabs.items %}
+          <li data-tab-name="{{ tab_name }}"{% if active_activity_tab_name == tab_name %} class="active"{% endif %}>
+            <a href="/activities/{{ tab_name }}/" >
+              <i class="flaticon-{{ tab.icon }}"></i>
+              <span class="hidden-xs">{{ tab.title }}</span>
+            </a>
+          </li>
+          {% endfor %}
+          {% if show_about_button %}
+          <li data-tab-name="about" class="hidden-xs">
+            <a href="/help/Activities%20tabs" target="_blank">
+              <i class="flaticon-about"></i>
+            </a>
+          </li>
+          {% endif %}
+          <li data-tab-name="search"{% if active_activity_tab_name == None %} class="active"{% endif %}>
+            <a class="togglebutton" href="/activities/" >
+              <i class="flaticon-search"></i>
+              <i class="flaticon-toggler hidder"></i>
+            </a>
+          </li>
+        </ul>
+      </div>
+      {% endif %}
 
     </div>{# container tabs-container #}
-{% if art %}
+
+    {% if art %}
   </div>{# home #}
 </div>{# home-wrapper #}
+
 {% if not user.is_authenticated and 'activity' in all_enabled %}
 <div class="container home-transition hidden-xs">
-  <svg id="bigHalfCircle" xmlns="http://www.w3.org/2000/svg"
-       version="1.1" width="100%" height="100" viewBox="0 0 100 100" preserveAspectRatio="none">
-    <path d="M0 100 C40 0 60 0 100 100 Z" />
-  </svg>
-</div>
-{% endif %}
-{% endif %}
+    <svg id="bigHalfCircle" xmlns="http://www.w3.org/2000/svg"
+         version="1.1" width="100%" height="100" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <path d="M0 100 C40 0 60 0 100 100 Z" />
+    </svg>
+  </div>
+{% endif %}{# show separator logged out #}
+{% endif %}{# if art #}
 
 {% if 'activity' in all_enabled %}
 <div class="container activities-container{% if homepage_background %} with-background{% endif %}">
-{% endif %}
+  {% endif %}
 
-{% endif %}
+  {% endif %}{# if shortcut_url != None #}

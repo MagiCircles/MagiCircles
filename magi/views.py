@@ -91,6 +91,9 @@ from magi.settings import (
     HOMEPAGE_ARTS,
     RANDOM_ART_FOR_CHARACTER,
     HOMEPAGE_ART_POSITION,
+    HOMEPAGE_ART_SIDE,
+    HOMEPAGE_ART_GRADIENT,
+    HOMEPAGE_RIBBON,
     LANGUAGES_CANT_SPEAK_ENGLISH,
 )
 from magi.views_collections import item_view
@@ -185,24 +188,59 @@ def indexExtraContext(context):
     if HOMEPAGE_ARTS:
         context['full_width'] = True
 
-        # Staff can preview art
+        # Staff can preview art and/or foreground
         if (context['request'].user.is_authenticated()
             and context['request'].user.hasPermission('manage_main_items')
-            and 'preview' in context['request'].GET):
+            and (context['request'].GET.get('preview', None)
+                 or context['request'].GET.get('foreground_preview', None))):
             context['art'] = {
-                'url': context['request'].GET['preview'],
+                k: v for k, v in (
+                    ('url', context['request'].GET.get('preview', None)),
+                    ('foreground_url', context['request'].GET.get('foreground_preview', None)),
+                ) if v
             }
+        # Staff can preview foreground
+        elif (context['request'].user.is_authenticated()
+            and context['request'].user.hasPermission('manage_main_items')
+            and 'foreground_preview' in context['request'].GET):
+            context['art']['foreground_url'] = context['request'].GET['foreground_preview']
         # 1 chance out of 5 to get a random art of 1 of your favorite characters
         elif (RANDOM_ART_FOR_CHARACTER
               and context['request'].user.is_authenticated()
               and context['request'].user.preferences.favorite_characters
-              and random.randint(0, 5) == 5):
+              and True):#random.randint(0, 5) == 5):
             character_id = random.choice(context['request'].user.preferences.favorite_characters)
             context['art'] = RANDOM_ART_FOR_CHARACTER(character_id)
         else:
-            context['art'] = random.choice(HOMEPAGE_ARTS)
+            context['art'] = random.choice(HOMEPAGE_ARTS).copy()
 
-        context['art_position'] = HOMEPAGE_ART_POSITION
+        # Position of art with CSS
+        context['art_position'] = context['art'].get('position', None)
+        if not context['art_position']:
+            context['art_position'] = HOMEPAGE_ART_POSITION
+        else:
+            for key, value in HOMEPAGE_ART_POSITION.items():
+                if key not in context['art_position']:
+                    context['art_position'][key] = value
+
+        # When a foreground is provided but no background, use a random background in BACKGROUNDS
+        if context['art'].has_key('foreground_url') and not context['art'].has_key('url') and BACKGROUNDS:
+            background = random.choice(BACKGROUNDS)
+            if background.has_key('thumbnail'):
+                context['art']['url'] = background['thumbnail']
+                context['art']['hd_url'] = background['image']
+            else:
+                context['art']['url'] = background['image']
+
+        # Side of art
+        context['homepage_art_side'] = context['art'].get('side', HOMEPAGE_ART_SIDE)
+        if isinstance(context['homepage_art_side'], list):
+            context['homepage_art_side'] = random.choice(context['homepage_art_side'])
+
+        # With gradient
+        context['homepage_art_gradient'] = context['art'].get('gradient', HOMEPAGE_ART_GRADIENT)
+
+    context['homepage_ribbon'] = HOMEPAGE_RIBBON
 
 def index(request):
     context = getGlobalContext(request)

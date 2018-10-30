@@ -719,7 +719,7 @@ DEFAULT_EXTRA_PREFERENCES = [
 
 DEFAULT_HOMEPAGE_ART_POSITION = {
     'position': 'center center',
-    'size': 150,
+    'size': 'cover',
     'y': 'center',
     'x': 'center',
 }
