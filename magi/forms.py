@@ -1117,6 +1117,10 @@ class UserPreferencesForm(MagiForm):
         if 'd_extra-background' in self.fields:
             if not BACKGROUNDS_NAMES:
                 del(self.fields['d_extra-background'])
+                self.d_choices['extra'] = [
+                    (k, v) for k, v in self.d_choices['extra']
+                    if k != 'd_extra-background'
+                ]
             else:
                 self.fields['d_extra-background'] = forms.ChoiceField(
                     required=False,
