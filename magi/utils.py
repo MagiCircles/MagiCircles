@@ -387,6 +387,13 @@ class CuteFormTransform:
     No, ImagePath, Flaticon, FlaticonWithText = range(4)
     default_field_type = [CuteFormType.Images, CuteFormType.Images, CuteFormType.HTML, CuteFormType.HTML]
 
+def _callToCuteForm(to_cuteform, key, value):
+    if to_cuteform == 'key':
+        return key
+    elif to_cuteform == 'value':
+        return value
+    return to_cuteform(key, value)
+
 def cuteFormFieldsForContext(cuteform_fields, context, form=None, prefix=None, ajax=False):
     """
     Adds the necesary context to call cuteform in javascript.
@@ -467,12 +474,7 @@ def cuteFormFieldsForContext(cuteform_fields, context, form=None, prefix=None, a
                 cuteform = empty if field_type == CuteFormType.Images else empty_image
             else:
                 # Get the cuteform value with to_cuteform
-                if field['to_cuteform'] == 'key':
-                    cuteform_value = key
-                elif field['to_cuteform'] == 'value':
-                    cuteform_value = value
-                else:
-                    cuteform_value = field['to_cuteform'](key, value)
+                cuteform_value = _callToCuteForm(field['to_cuteform'], key, value)
                 # Transform to image path
                 if (field_type == CuteFormType.Images
                     and (field['to_cuteform'] in ['key', 'value']
@@ -497,6 +499,26 @@ def cuteFormFieldsForContext(cuteform_fields, context, form=None, prefix=None, a
 
         # Store a JSON version to be displayed in Javascript
         context['cuteform_fields_json'][selector] = simplejson.dumps(context['cuteform_fields'][selector])
+
+def mergedFieldCuteForm(cuteform, settings, merged_fields, merged_field_name=None):
+    if not merged_fields:
+        return
+    if not isinstance(merged_fields, dict):
+        merged_fields = OrderedDict([(field_name, None) for field_name in merged_fields])
+    if not merged_field_name:
+        merged_field_name = '_'.join(merged_fields.keys())
+    default_to_cuteform = settings.get('to_cuteform', CuteFormType.default_to_cuteform[
+        settings.get('type', CuteFormTransform.default_field_type[
+            settings.get('transform', CuteFormTransform.No)
+        ])
+    ])
+    def _to_cuteform(k, v):
+        for field_name, to_cuteform in merged_fields.items():
+            if k.startswith(field_name):
+                k = k[len(field_name) + 1:]
+                return _callToCuteForm(to_cuteform or default_to_cuteform, k, v)
+    cuteform[merged_field_name] = settings
+    cuteform[merged_field_name]['to_cuteform'] = _to_cuteform
 
 ############################################################
 # Database upload to
@@ -773,7 +795,7 @@ def get_one_object_or_404(queryset, *args, **kwargs):
         raise Http404('No %s matches the given query.' % queryset.model._meta.object_name)
 
 ############################################################
-# Dump model
+# Model utils
 
 def dumpModel(instance):
     """
@@ -815,6 +837,9 @@ class ColorInput(TextInput):
                 data, files, u'unset-{}'.format(name)):
             return None
         return value
+
+############################################################
+# Form utils
 
 class ColorFormField(forms_CharField):
     pass

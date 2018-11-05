@@ -679,7 +679,7 @@ class MagiFiltersForm(AutoForm):
                         if value.startswith(field_name):
                             return self._filter_queryset_for_field(
                                 field_name, queryset, request,
-                                value=[value[len(field_name):]],
+                                value=[value[len(field_name) + 1:]],
                                 filter=field_details.get(
                                     'filter', getattr(self, u'{}_filter'.format(field_name), None)),
                             )
