@@ -586,6 +586,9 @@ class MagiFiltersForm(AutoForm):
     def __init__(self, *args, **kwargs):
         super(MagiFiltersForm, self).__init__(*args, **kwargs)
         self.empty_permitted = True
+
+        # Add/delete fields
+
         # Add add_to_{} to fields that are collectible and have a quick add option
         if self.collection and self.request.user.is_authenticated():
             for collection_name, collection in self.collection.collectible_collections.items():
@@ -627,6 +630,60 @@ class MagiFiltersForm(AutoForm):
         if not hasattr(self, 'ordering_fields'):
             del(self.fields['ordering'])
             del(self.fields['reverse_order'])
+
+
+        # Modify fields
+
+        # Merge filters
+        if getattr(self, 'merge_fields', None):
+            for new_field_name, fields in (
+                    self.merge_fields.items()
+                    if isinstance(self.merge_fields, dict)
+                    else [('_'.join(fields.keys() if isinstance(fields, dict) else fields), fields)
+                          for fields in self.merge_fields]
+            ):
+                choices = BLANK_CHOICE_DASH[:]
+                label_parts = []
+                for field_name, field_details in (
+                        fields.items()
+                        if isinstance(fields, dict)
+                        else [(field, {}) for field in fields]
+                ):
+                    if field_name in self.fields:
+                        self.fields[field_name].widget = self.fields[field_name].hidden_widget()
+                    choices += [
+                        (u'{}-{}'.format(field_name, _k), _v)
+                        for _k, _v in (
+                                field_details.get('choices', None)
+                                or getattr(self.fields.get(field_name, None), 'choices', None)
+                                or self.Meta.model.get_choices(field_name)
+                        )
+                    ]
+                    field_label = field_details.get('label', None)
+                    if not field_label:
+                        try:
+                            field_label = self.Meta.model._meta.get_field(field_name).verbose_name
+                        except FieldDoesNotExist:
+                            field_label = toHumanReadable(field_name)
+                    label_parts.append(unicode(field_label))
+                self.fields[new_field_name] = forms.ChoiceField(
+                    choices=choices,
+                    label=u' / '.join(label_parts)
+                )
+                def _merged_field_to_queryset(form, queryset, request, value):
+                    for field_name, field_details in (
+                            fields.items()
+                            if isinstance(fields, dict)
+                            else [(field, {}) for field in fields]
+                    ):
+                        if value.startswith(field_name):
+                            return self._filter_queryset_for_field(
+                                field_name, queryset, request,
+                                value=[value[len(field_name):]],
+                                filter=field_details.get(
+                                    'filter', getattr(self, u'{}_filter'.format(field_name), None)),
+                            )
+                setattr(self, u'{}_filter'.format(new_field_name), MagiFilter(to_queryset=_merged_field_to_queryset))
         # Set default ordering initial value
         if 'ordering' in self.fields:
             self.fields['ordering'].choices = [
@@ -664,47 +721,31 @@ class MagiFiltersForm(AutoForm):
                 # Marks all fields as not required
                 field.required = False
 
-    def filter_queryset(self, queryset, parameters, request):
-        # Generic filter for ids
-        queryset = filter_ids(queryset, request)
-        # Go through form fields
-        for field_name in self.fields.keys():
-            # ordering fields are Handled in views collection, used by pagination
-            if field_name in ['ordering', 'page', 'reverse_order']:
-                continue
-            filter = getattr(self, '{}_filter'.format(field_name), None)
+    def _filter_queryset_for_field(self, field_name, queryset, request, value=None, filter=None):
+        if True:
+            if value is None or value == '':
+                return queryset
+
             if not filter:
                 filter = MagiFilter()
             if filter.noop:
-                continue
-            # Get value as list first
-            value = None
-            if field_name in parameters:
-                if parameters[field_name] != '':
-                    value = parameters[field_name]
-                    if ((isinstance(self.fields[field_name], forms.fields.MultipleChoiceField)
-                         or filter.multiple)
-                        and not isinstance(self.fields[field_name], forms.fields.NullBooleanField)):
-                        value = self._value_as_list(filter, parameters, field_name, filter.allow_csv)
-            # Use initial value if any
-            else:
-                value = self.fields[field_name].initial
-            if value is None or value == '':
-                continue
+                return queryset
+
             # Filtering is provided by to_queryset
             if filter.to_queryset:
                 queryset = filter.to_queryset(self, queryset, request,
                                               value=self._value_as_string(filter, value))
             # Automatic filtering
             else:
-                operator_for_multiple = filter.operator_for_multiple or MagiFilterOperator.default_for_field(self.fields[field_name])
+                field = self.fields.get(field_name, forms.CharField())
+                operator_for_multiple = filter.operator_for_multiple or MagiFilterOperator.default_for_field(field)
                 operator_for_multiple_selectors = filter.operator_for_multiple_selectors or MagiFilterOperatorSelector.default
                 selectors = filter.selectors if filter.selectors else [field_name]
                 condition = Q()
                 filters, exclude = {}, {}
                 for selector in selectors:
                     # NullBooleanField
-                    if isinstance(self.fields[field_name], forms.fields.NullBooleanField):
+                    if isinstance(field, forms.fields.NullBooleanField):
                         value = self._value_as_nullbool(filter, value)
                         if value is not None:
                             filters[selector] = value
@@ -729,7 +770,7 @@ class MagiFiltersForm(AutoForm):
                                         # need to check if int then 0 else ''
                                         exclude = { original_selector: empty_value }
                     # MultipleChoiceField
-                    elif (isinstance(self.fields[field_name], forms.fields.MultipleChoiceField)
+                    elif (isinstance(field, forms.fields.MultipleChoiceField)
                           or filter.multiple):
                         values = value if isinstance(value, list) else [value]
                         if operator_for_multiple == MagiFilterOperator.OrContains:
@@ -753,6 +794,32 @@ class MagiFiltersForm(AutoForm):
                 queryset = queryset.filter(condition).exclude(**exclude)
                 if filter.distinct:
                     queryset = queryset.distinct()
+        return queryset
+
+    def filter_queryset(self, queryset, parameters, request):
+        # Generic filter for ids
+        queryset = filter_ids(queryset, request)
+        # Go through form fields
+        for field_name in self.fields.keys():
+            # ordering fields are Handled in views collection, used by pagination
+            if field_name in ['ordering', 'page', 'reverse_order']:
+                continue
+            filter = getattr(self, '{}_filter'.format(field_name), None)
+            if not filter:
+                filter = MagiFilter()
+            # Get value as list first
+            value = None
+            if field_name in parameters:
+                if parameters[field_name] != '':
+                    value = parameters[field_name]
+                    if ((isinstance(self.fields[field_name], forms.fields.MultipleChoiceField)
+                         or filter.multiple)
+                        and not isinstance(self.fields[field_name], forms.fields.NullBooleanField)):
+                        value = self._value_as_list(filter, parameters, field_name, filter.allow_csv)
+            # Use initial value if any
+            else:
+                value = self.fields[field_name].initial
+            queryset = self._filter_queryset_for_field(field_name, queryset, request, value=value, filter=filter)
         return queryset
 
     def _value_as_string(self, filter, value):

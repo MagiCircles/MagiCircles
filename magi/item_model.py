@@ -160,6 +160,7 @@ class BaseMagiModel(models.Model):
            (int, (string, translated string))
         or (int, string)
         """
+        field_name = field_name[2:] if field_name.startswith('i_') else field_name
         try:
             choices = getattr(self, '{name}_CHOICES'.format(name=field_name.upper()))
             if getattr(self, u'{name}_WITHOUT_I_CHOICES'.format(name=field_name.upper()), False):
@@ -174,6 +175,7 @@ class BaseMagiModel(models.Model):
         Takes a string value of a choice and return its internal value
         field_name = without i_
         """
+        field_name = field_name[2:] if field_name.startswith('i_') else field_name
         try:
             return next(
                 index
@@ -191,6 +193,7 @@ class BaseMagiModel(models.Model):
         Takes an int value of a choice and return its string value
         field_name = without i_
         """
+        field_name = field_name[2:] if field_name.startswith('i_') else field_name
         try:
             return next(
                 (c[0] if isinstance(c, tuple) else c)
@@ -208,6 +211,7 @@ class BaseMagiModel(models.Model):
         Takes an int value of a choice and return its verbose value
         field_name = without i_
         """
+        field_name = field_name[2:] if field_name.startswith('i_') else field_name
         try:
             return next(
                 (c[1] if isinstance(c, tuple) else c)
