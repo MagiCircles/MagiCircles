@@ -387,6 +387,19 @@ class MagiForm(forms.ModelForm):
             instance.save()
         return instance
 
+    def reorder_fields(self, order):
+        """Reorder form fields by order, removing items not in order.
+
+        >>> reorder_fields(
+        ...     OrderedDict([('a', 1), ('b', 2), ('c', 3)]),
+        ...     ['b', 'c', 'a'])
+        OrderedDict([('b', 2), ('c', 3), ('a', 1)])
+        """
+        self.fields = OrderedDict(sorted(
+            self.fields.items(),
+            key=lambda k: order.index(k[0]) if k[0] in order else 9999999,
+        ))
+
     class Meta:
         pass
 
