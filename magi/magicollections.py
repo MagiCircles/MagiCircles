@@ -365,7 +365,33 @@ class MagiCollection(object):
                 save_owner_on_creation = not model_class.fk_as_owner
                 hidden_foreign_keys = [item_field_name]
 
+        def _get_field_verbose_name(field_name):
+            if field_name in getattr(parent_collection.list_view.filter_form, 'search_fields_labels', {}):
+                return parent_collection.list_view.filter_form.search_fields_labels[field_name]
+            if (parent_collection.translated_fields
+                and ((field_name.startswith('d_') and field_name.endswith('s')
+                      and field_name[2:-1] in parent_collection.translated_fields)
+                     or (field_name.startswith('japanese_')
+                         and field_name[9:] in parent_collection.translated_fields))):
+                return ''
+            try: return parent_collection.queryset.model._meta.get_field(field_name)._verbose_name
+            except FieldDoesNotExist: return None
+
         class _CollectibleFilterForm(forms.MagiFiltersForm):
+            if parent_collection.list_view.filter_form:
+                search_fields = [
+                    u'{}__{}'.format(item_field_name, _f)
+                    for _f in getattr(parent_collection.list_view.filter_form, 'search_fields', [])
+                ]
+                search_fields_labels = { k: v for k, v in [
+                    (u'{}__{}'.format(item_field_name, _f), _get_field_verbose_name(_f))
+                    for _f in getattr(parent_collection.list_view.filter_form, 'search_fields', [])
+                ] if v is not None }
+                ordering_fields = [
+                    (u'{}__{}'.format(item_field_name, _o), _t)
+                    for _o, _t in getattr(parent_collection.list_view.filter_form, 'ordering_fields', [])
+                ]
+
             def __init__(self, *args, **kwargs):
                 super(_CollectibleFilterForm, self).__init__(*args, **kwargs)
                 self.fields['owner'] = forms.forms.IntegerField(required=False, widget=forms.forms.HiddenInput)
@@ -379,7 +405,7 @@ class MagiCollection(object):
                 # Collected item field
                 self.fields[item_field_name] = forms.forms.IntegerField(required=False, widget=forms.forms.HiddenInput)
 
-            class Meta:
+            class Meta(forms.MagiFiltersForm.Meta):
                 model = model_class
                 fields = []
 
@@ -1679,7 +1705,7 @@ class UserCollection(MagiCollection):
     class ListView(MagiCollection.ListView):
         item_template = custom_item_template
         filter_form = forms.UserFilterForm
-        default_ordering = 'username'
+        default_ordering = '-date_joined'
         show_item_buttons = False
         show_item_buttons_as_icons = True
         show_item_buttons_in_one_line = True

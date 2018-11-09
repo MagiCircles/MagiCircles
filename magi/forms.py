@@ -636,14 +636,54 @@ class MagiFiltersForm(AutoForm):
                 self.fields[filter_field_name] = forms.CharField(
                     widget=forms.HiddenInput
                 )
-        # Remove search from field if search_fields is not specified
-        if not hasattr(self, 'search_fields') and not hasattr(self, 'search_fields_exact'):
-            del(self.fields['search'])
-        # Remove ordering form field if ordering_fields is not specified
-        if not hasattr(self, 'ordering_fields'):
-            del(self.fields['ordering'])
-            del(self.fields['reverse_order'])
+        if 'search' in self.fields:
+            # Remove search from field if search_fields is not specified
+            if not getattr(self, 'search_fields', None) and not getattr(self, 'search_fields_exact', None):
+                del(self.fields['search'])
+            else:
+                self.fields['search'].widget.attrs['autocomplete'] = 'off'
+                # Add search help text
+                if not self.fields['search'].help_text:
+                    if not hasattr(self, 'search_fields_labels'):
+                        self.search_fields_labels = {}
+                    field_labels = []
+                    and_more = False
+                    first = True
+                    for field_name in (
+                            list(getattr(self, 'search_fields', []))
+                            + list(getattr(self, 'search_fields_exact', []))):
+                        label = None
+                        if field_name in self.search_fields_labels:
+                            label = self.search_fields_labels[field_name]
+                        else:
+                            if (self.collection and self.collection.translated_fields
+                                and ((field_name.startswith('d_') and field_name.endswith('s')
+                                     and field_name[2:-1] in self.collection.translated_fields)
+                                     or (field_name.startswith('japanese_')
+                                         and field_name[9:] in self.collection.translated_fields))):
+                                label = ''
+                            else:
+                                try: label = self.Meta.model._meta.get_field(field_name)._verbose_name
+                                except FieldDoesNotExist: pass
+                            self.search_fields_labels[field_name] = label
+                        if label is None:
+                            and_more = True
+                        elif label:
+                            label = unicode(label)
+                            field_labels.append(label if first else label.lower())
+                            first = False
+                    if field_labels:
+                        self.fields['search'].help_text = u'{}{}'.format(
+                            u', '.join(field_labels),
+                            ', ...' if and_more else '',
+                        )
 
+        # Remove ordering form field if ordering_fields is not specified
+        if not getattr(self, 'ordering_fields', None):
+            if 'ordering' in self.fields:
+                del(self.fields['ordering'])
+            if 'reverse_order' in self.fields:
+                del(self.fields['reverse_order'])
 
         # Modify fields
 
@@ -1448,10 +1488,14 @@ class ChangePasswordForm(MagiForm):
         fields = []
 
 class UserFilterForm(MagiFiltersForm):
-    search_fields = ('username', )
+    search_fields = ('username', 'links__value')
+    search_fields_exact = ('email', )
+    search_fields_labels = {
+        'links__value': _('Links'),
+    }
     ordering_fields = (
-        ('username', t['Username']),
         ('date_joined', _('Join Date')),
+        ('username', t['Username']),
         ('followed,id', _('Follow')),
     )
 
@@ -1693,6 +1737,9 @@ class StaffDetailsForm(AutoForm):
 
 class StaffDetailsFilterForm(MagiFiltersForm):
     search_fields = ['owner__username', 'discord_username', 'preferred_name', 'description', 'nickname']
+    search_fields_labels = {
+        'owner__username': _('Username'),
+    }
 
     class Meta:
         model = models.StaffDetails
@@ -1862,6 +1909,10 @@ class FilterActivities(MagiFiltersForm):
 
 class FilterNotification(MagiFiltersForm):
     search_fields = ['c_message_data', 'c_url_data']
+    search_fields_labels = {
+        'c_message_data': _('Message'),
+        'c_url_data': t['URL'],
+    }
 
     class Meta(MagiFiltersForm.Meta):
         model = models.Notification
@@ -1913,6 +1964,10 @@ class ReportForm(MagiForm):
 
 class FilterReports(MagiFiltersForm):
     search_fields = ['owner__username', 'message', 'staff_message', 'reason', 'reported_thing_title']
+    search_fields_labels = {
+        'owner__username': _('Username'),
+        'reported_thing_title': 'Name of the item',
+    }
     ordering_fields = [
         ('i_status', 'Status'),
         ('creation', 'Creation'),
@@ -2061,6 +2116,9 @@ class DonatorBadgeForm(_BadgeForm):
 
 class FilterBadges(MagiFiltersForm):
     search_fields = ['user__username', 'name', 'description']
+    search_fields_labels = {
+        'user__username': t['Username'],
+    }
     ordering_fields = [
         ('date', 'Date'),
         ('rank', 'Rank'),
@@ -2140,6 +2198,10 @@ class PrivateMessageForm(MagiForm):
 
 class PrivateMessageFilterForm(MagiFiltersForm):
     search_fields = ('message', 'to_user__username', 'owner__username')
+    search_fields_labels = {
+        'to_user__username': _('Username'),
+        'owner__username': '',
+    }
 
     to_user_filter = MagiFilter(to_queryset=(
         lambda form, queryset, request, value: queryset.filter(

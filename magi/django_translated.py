@@ -22,7 +22,7 @@ t = {
     'Thanks for using our site!': _('Thanks for using our site!'),
     'The two password fields didn\'t match.': _('The two password fields didn\'t match.'),
     'This field is required.': _('This field is required.'),
-    'User': _('User'),
+    'URL': _('URL'),
     'User': _('User'),
     'Username': _('Username'),
     'Yes': _('Yes'),

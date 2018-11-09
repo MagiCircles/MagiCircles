@@ -1047,7 +1047,7 @@ class Report(MagiModel):
     message = models.TextField(_('Message'))
     images = models.ManyToManyField(UserImage, related_name="report", verbose_name=_('Images'))
     staff = models.ForeignKey(User, related_name='staff_reports', null=True, on_delete=models.SET_NULL)
-    staff_message = models.TextField(null=True)
+    staff_message = models.TextField('Staff message', null=True)
 
     STATUS_CHOICES = [
         'Pending', # No staff took care of it
@@ -1180,8 +1180,8 @@ class Badge(MagiModel):
     owner = models.ForeignKey(User, related_name='badges_created')
     user = models.ForeignKey(User, related_name='badges', db_index=True)
     donation_month = models.ForeignKey(DonationMonth, related_name='badges', null=True)
-    name = models.CharField(max_length=50, null=True)
-    description = models.CharField(max_length=300)
+    name = models.CharField(_('Title'), max_length=50, null=True)
+    description = models.CharField(_('Description'), max_length=300)
     image = models.ImageField(_('Image'), upload_to=uploadItem('badges/'))
     url = models.CharField(max_length=200, null=True)
     show_on_top_profile = models.BooleanField(default=False)

@@ -505,6 +505,21 @@ function sideBarToggleButton() {
 }
 
 // *****************************************
+// Side bar search help text
+
+function sideBarSearchHelpText() {
+    let search_input = $('#sidebar-wrapper input#id_search');
+    let help_text = search_input.closest('.form-group').find('.help-block');
+    help_text.hide();
+    search_input.focus(function(e) {
+        help_text.show('fast');
+    });
+    search_input.blur(function(e) {
+        help_text.hide('fast');
+    });
+}
+
+// *****************************************
 // Switch language
 
 function switchLanguage() {
@@ -782,6 +797,7 @@ $(document).ready(function() {
     modalItemsReloaders();
     notificationsHandler();
     sideBarToggleButton();
+    sideBarSearchHelpText();
     onBackButtonCloseModal();
     loadCommonsOnModalShown();
     hideCommonsOnModalShown();
