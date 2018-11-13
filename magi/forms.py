@@ -49,7 +49,10 @@ from magi.utils import (
     markdownHelpText,
     hasGoodReputation,
     LANGUAGES_DICT,
+    LANGUAGES_NAMES,
+    LANGUAGES_NAMES_TO_CODES,
     BACKGROUNDS_NAMES,
+    getSearchFieldHelpText,
 )
 
 ############################################################
@@ -211,7 +214,7 @@ class MagiForm(forms.ModelForm):
                                 help_text = mark_safe(u'{original}<img src="{img}" height="20" /> {lang}{default}'.format(
                                     img=staticImageURL(key, folder='language', extension='png'),
                                     lang=verbose_name,
-                                    default=u' <code>{}: {}</code>'.format(t['English'], default or 'no value'),
+                                    default=u' <code>English: {}</code>'.format(default or 'no value'),
                                     original=u'{}<br>'.format(self.fields[name].help_text) if self.fields[name].help_text else '',
                                 ))
                             else:
@@ -258,16 +261,36 @@ class MagiForm(forms.ModelForm):
                     self.m_previous_values[name] = getattr(self.instance, name)
                 if not self.fields[name].help_text:
                     self.fields[name].help_text = markdownHelpText(request=self.request)
-            # Show label "English" or "Japanese" to non-d fields kept in translation form
+            # Help text: "English" + translation fields stored separately
             elif getattr(self, 'is_translate_form', False):
-                self.fields[name].help_text = mark_safe(u'{original}<img src="{img}" height="20" /> {lang}'.format(
-                    original=u'{}<br>'.format(self.fields[name].help_text) if self.fields[name].help_text else '',
-                    img=staticImageURL(
-                        'ja' if name.startswith('japanese_') else 'en',
-                        folder='language', extension='png',
-                    ),
-                    lang=t['Japanese'] if name.startswith('japanese_') else t['English'],
-                ))
+                language = None
+                suffix = None
+                if name in self.collection.translated_fields:
+                    # English field
+                    language = 'en'
+                else:
+                    # Other languages
+                    for _f in self.collection.translated_fields:
+                        if name.endswith(_f):
+                            language_name = name[:-(len(_f) + 1)]
+                            if language_name in LANGUAGES_NAMES_TO_CODES:
+                                language = LANGUAGES_NAMES_TO_CODES[language_name]
+                            if language_name in LANGUAGES_NAMES:
+                                language = language_name
+                            if language:
+                                suffix=u' <code>English: {}</code>'.format(
+                                    getattr(self.instance, _f, None) or 'no value')
+                                break
+                if language:
+                    self.fields[name].help_text = mark_safe(
+                        u'{original}<img src="{img}" height="20" /> {lang}{suffix}'.format(
+                            original=u'{}<br>'.format(
+                                self.fields[name].help_text) if self.fields[name].help_text else '',
+                            img=staticImageURL(language, folder='language', extension='png'),
+                            lang=LANGUAGES_NAMES[language].replace('_', ' ').title(),
+                            suffix=suffix or '',
+                        ))
+                    self.fields[name].widget.attrs['data-language'] = language
 
         # Fix force required fields
         if hasattr(self.Meta, 'required_fields'):
@@ -430,20 +453,22 @@ def to_translate_form_class(view):
             self.fields[field_name].help_text = mark_safe(
                 u'{original} <code>{language}: {value}</code>'.format(
                     original=self.fields[field_name].help_text,
-                    language=LANGUAGES_DICT.get(language, language.upper()),
+                    language=LANGUAGES_NAMES.get(language, language).replace('_', ' ').title(),
                     value=reverse_value or 'no value',
                 ))
 
         def _needsVisibleEnglishFields(self, spoken_languages):
             """
-            Check if English should be added to languages because value exists in field but not in English
-            -> ie needs reverse translation
+            Check if English should be added to visible languages because value exists
+            in a language you speak but not in English (= reverse translation).
+            Will also add help text in English field if translations are available in a language you speak.
             """
             needs_english = False
             for language in spoken_languages:
                 for field in view.collection.translated_fields:
                     if (field in self.fields
                         and not getattr(self.instance, field, None)):
+                        # Regular translations stored in dict
                         if u'd_{}s-{}'.format(field, language) in self.fields:
                             reverse_value = getattr(
                                 self.instance, u'{}s'.format(field, language), {}).get(language, None)
@@ -451,12 +476,18 @@ def to_translate_form_class(view):
                                 needs_english = True
                                 self._addHelpTextReverseTranslation(
                                     field, reverse_value, language)
-                        if language == 'ja' and u'japanese_{}'.format(field) in self.fields:
-                            reverse_value = getattr(self.instance, u'japanese_{}'.format(field), None)
-                            if reverse_value:
-                                needs_english = True
-                                self._addHelpTextReverseTranslation(
-                                    field, reverse_value, language)
+                        reverse_value = None
+                        # Translation fields stored separately
+                        for field_name in [
+                                u'{}_{}'.format(LANGUAGES_NAMES[language], field),
+                                u'{}_{}'.format(language, field),
+                        ]:
+                            if field_name in self.fields:
+                                reverse_value = getattr(self.instance, field_name, None)
+                                if reverse_value:
+                                    needs_english = True
+                                    self._addHelpTextReverseTranslation(
+                                        field, reverse_value, language)
             return needs_english
 
         def __init__(self, *args, **kwargs):
@@ -480,11 +511,19 @@ def to_translate_form_class(view):
 
         class Meta(MagiForm.Meta):
             model = view.collection.queryset.model
-            fields = [
-                f(field)
-                for field in (view.collection.translated_fields or [])
-                for f in (lambda field: field, lambda field: u'd_{}s'.format(field))
-            ]
+            fields = []
+            for translated_field in (view.collection.translated_fields or []):
+                fields.append(translated_field)
+                field_name = u'd_{}s'.format(translated_field)
+                if has_field(model, field_name):
+                    fields.append(field_name)
+                    for language, language_name in LANGUAGES_NAMES.items():
+                        for field_name in [
+                                u'{}_{}'.format(language_name, translated_field),
+                                u'{}_{}'.format(language, translated_field),
+                        ]:
+                            if has_field(model, field_name):
+                                fields.append(field_name)
     return _TranslateForm
 
 class TranslationCheckForm(forms.Form):
@@ -644,39 +683,20 @@ class MagiFiltersForm(AutoForm):
                 self.fields['search'].widget.attrs['autocomplete'] = 'off'
                 # Add search help text
                 if not self.fields['search'].help_text:
-                    if not hasattr(self, 'search_fields_labels'):
-                        self.search_fields_labels = {}
-                    field_labels = []
-                    and_more = False
-                    first = True
-                    for field_name in (
-                            list(getattr(self, 'search_fields', []))
-                            + list(getattr(self, 'search_fields_exact', []))):
-                        label = None
-                        if field_name in self.search_fields_labels:
-                            label = self.search_fields_labels[field_name]
-                        else:
-                            if (self.collection and self.collection.translated_fields
-                                and ((field_name.startswith('d_') and field_name.endswith('s')
-                                     and field_name[2:-1] in self.collection.translated_fields)
-                                     or (field_name.startswith('japanese_')
-                                         and field_name[9:] in self.collection.translated_fields))):
-                                label = ''
-                            else:
-                                try: label = self.Meta.model._meta.get_field(field_name)._verbose_name
-                                except FieldDoesNotExist: pass
-                            self.search_fields_labels[field_name] = label
-                        if label is None:
-                            and_more = True
-                        elif label:
-                            label = unicode(label)
-                            field_labels.append(label if first else label.lower())
-                            first = False
-                    if field_labels:
-                        self.fields['search'].help_text = u'{}{}'.format(
-                            u', '.join(field_labels),
-                            ', ...' if and_more else '',
+                    if not hasattr(type(self), 'search_field_help_text'):
+                        type(self).search_field_help_text = {}
+                    if self.request.LANGUAGE_CODE not in type(self).search_field_help_text:
+                        type(self).search_field_help_text[self.request.LANGUAGE_CODE] = getSearchFieldHelpText(
+                            search_fields=(
+                                list(getattr(self, 'search_fields', []))
+                                + list(getattr(self, 'search_fields_exact', []))
+                            ),
+                            model_class=self.Meta.model,
+                            labels=getattr(self, 'search_fields_labels', {}),
+                            translated_fields=(self.collection.translated_fields if self.collection else []) or [],
                         )
+                    if type(self).search_field_help_text[self.request.LANGUAGE_CODE]:
+                        self.fields['search'].help_text = type(self).search_field_help_text[self.request.LANGUAGE_CODE]
 
         # Remove ordering form field if ordering_fields is not specified
         if not getattr(self, 'ordering_fields', None):

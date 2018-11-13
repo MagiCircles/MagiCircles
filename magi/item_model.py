@@ -7,7 +7,15 @@ from django.db.models.fields.files import ImageFieldFile
 from django.conf import settings as django_settings
 from django.utils.translation import ugettext_lazy as _, get_language
 from django.utils import timezone
-from magi.utils import tourldash, getMagiCollection, join_data, split_data, AttrDict, getSubField
+from magi.utils import (
+    tourldash,
+    getMagiCollection,
+    join_data,
+    split_data,
+    AttrDict,
+    getSubField,
+    LANGUAGES_NAMES,
+)
 
 ############################################################
 # Utils for images / files
@@ -224,16 +232,20 @@ class BaseMagiModel(models.Model):
             raise KeyError(i)
 
     @classmethod
+    def _dict_choices(self, field_name):
+        return {
+            (choice[0] if isinstance(choice, tuple) else choice):
+            (choice[1] if isinstance(choice, tuple) else _(choice))
+            for choice in getattr(self, u'{name}_CHOICES'.format(name=field_name.upper()), [])
+        }
+
+    @classmethod
     def get_csv_values(self, field_name, values, translated=True):
         if not isinstance(values, list):
             values = split_data(values)
         if not translated:
             return values
-        choices = {
-            (choice[0] if isinstance(choice, tuple) else choice):
-            (choice[1] if isinstance(choice, tuple) else _(choice))
-            for choice in getattr(self, '{name}_CHOICES'.format(name=field_name.upper()), [])
-        }
+        choices = self._dict_choices(field_name)
         return OrderedDict([(c, choices.get(c, c)) for c in values])
 
     @classmethod
@@ -242,11 +254,7 @@ class BaseMagiModel(models.Model):
         d = json.loads(values)
         if not translated:
             return d
-        choices = {
-            (choice[0] if isinstance(choice, tuple) else choice):
-            (choice[1] if isinstance(choice, tuple) else _(choice))
-            for choice in getattr(self, u'{name}_CHOICES'.format(name=field_name.upper()), [])
-        }
+        choices = self._dict_choices(field_name)
         return {
             key: {
                 'value': value,
@@ -422,6 +430,16 @@ class BaseMagiModel(models.Model):
     def get_2x(self, field_name):
         return getattr(self, u'_2x_{}'.format(field_name))
 
+    def get_translation_from_dict(self, field_name):
+        language = get_language()
+        if language != 'en':
+            value = getattr(self, u'{}_{}'.format(LANGUAGES_NAMES.get(language, None), field_name),
+                            getattr(self, u'{}_{}'.format(language, field_name), None))
+            if value:
+                return value
+        d = getattr(self, u't_{name}s'.format(name=field_name))
+        return d.get(language, { 'value': getattr(self, field_name) })['value']
+
     def _attr_error(self, name):
         raise AttributeError("%r object has no attribute %r" % (self.__class__, name))
 
@@ -457,7 +475,7 @@ class BaseMagiModel(models.Model):
                 return type(self).get_dict_values(name, getattr(self, u'd_{name}'.format(name=name)), translated=True)
             # For a dict, if no _s exists: return value for language
             elif hasattr(self, u'd_{}s'.format(name)) and hasattr(self, name):
-                return getattr(self, u't_{name}s'.format(name=name)).get(get_language(), { 'value': getattr(self, name) })['value']
+                return self.get_translation_from_dict(name)
             return self._attr_error(original_name)
 
         # Return cache

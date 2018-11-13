@@ -33,6 +33,8 @@ from magi.utils import (
     translationURL,
     modelHasField,
     isBirthdayToday,
+    getSearchSingleFieldLabel,
+    isTranslationField,
 )
 from magi.raw import please_understand_template_sentence
 from magi.django_translated import t
@@ -365,18 +367,6 @@ class MagiCollection(object):
                 save_owner_on_creation = not model_class.fk_as_owner
                 hidden_foreign_keys = [item_field_name]
 
-        def _get_field_verbose_name(field_name):
-            if field_name in getattr(parent_collection.list_view.filter_form, 'search_fields_labels', {}):
-                return parent_collection.list_view.filter_form.search_fields_labels[field_name]
-            if (parent_collection.translated_fields
-                and ((field_name.startswith('d_') and field_name.endswith('s')
-                      and field_name[2:-1] in parent_collection.translated_fields)
-                     or (field_name.startswith('japanese_')
-                         and field_name[9:] in parent_collection.translated_fields))):
-                return ''
-            try: return parent_collection.queryset.model._meta.get_field(field_name)._verbose_name
-            except FieldDoesNotExist: return None
-
         class _CollectibleFilterForm(forms.MagiFiltersForm):
             if parent_collection.list_view.filter_form:
                 search_fields = [
@@ -384,7 +374,11 @@ class MagiCollection(object):
                     for _f in getattr(parent_collection.list_view.filter_form, 'search_fields', [])
                 ]
                 search_fields_labels = { k: v for k, v in [
-                    (u'{}__{}'.format(item_field_name, _f), _get_field_verbose_name(_f))
+                    (u'{}__{}'.format(item_field_name, _f), getSearchSingleFieldLabel(
+                        field_name=_f, model_class=parent_collection.queryset.model,
+                        labels=getattr(parent_collection.list_view.filter_form, 'search_fields_labels', {}) or {},
+                        translated_fields=parent_collection.translated_fields or [],
+                    ))
                     for _f in getattr(parent_collection.list_view.filter_form, 'search_fields', [])
                 ] if v is not None }
                 ordering_fields = [
@@ -644,6 +638,9 @@ class MagiCollection(object):
                 continue
             if only_fields and field_name not in only_fields:
                 continue
+            # Skip translated strings
+            if isTranslationField(field_name, self.translated_fields or []):
+                continue
             value = None
             if field_name.startswith('i_'):
                 field_name = field_name[2:]
@@ -657,9 +654,6 @@ class MagiCollection(object):
                     continue
             if field_name.startswith('d_'):
                 field_name = field_name[2:]
-                # Skip translated strings
-                if self.translated_fields and field_name.endswith('s') and field_name[:-1] in self.translated_fields:
-                    continue
                 # Show dictionary
                 value = getattr(item, u't_{}'.format(field_name)).values()
                 value = mark_safe(u'<dl>{}</dl>'.format(u''.join([u'<dt>{verbose}</dt><dd>{value}</dd>'.format(**dt) for dt in value])))
@@ -752,7 +746,7 @@ class MagiCollection(object):
                 d['type'] = 'text'
             if d['type'] == 'text_with_link':
                 many_fields.append((field_name, d))
-            elif field_name in ['name', 'japanese_name', 'romaji_name', 'english_name', 'translated_name']:
+            elif field_name.endswith('name'):
                 name_fields.append((field_name, d))
             else:
                 model_fields.append((field_name, d))

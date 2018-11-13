@@ -633,15 +633,11 @@ function translationsSeeAll() {
         let buttons = buttons_wrapper.find('a');
         let all_button = buttons_wrapper.find('a[href="#translations_see_all"]');
         function _showLanguage(language) {
-            var fields_to_show;
-            if (language == 'en') {
-                fields_to_show = form.find('[id^="id_"]:not([id^="id_d_"]):not([id^="id_japanese_"])');
-            } else if (language == 'ja') {
-                fields_to_show = form.find('[id^="id_d_"][id$="-' + language + '"], [id^="id_japanese_"]');
-            } else {
-                fields_to_show = form.find('[id^="id_d_"][id$="-' + language + '"]');
-            }
-            fields_to_show.closest('.form-group').show();
+            form.find(
+                '[id^="id_d_"][id$="-'
+                    + language + '"], [id^="id_"][data-language="'
+                    + language + '"]'
+            ).closest('.form-group').show();
         }
         function _toggleAll() {
             let toggled = all_button.hasClass('toggled');

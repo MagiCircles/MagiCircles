@@ -63,6 +63,12 @@ BACKGROUNDS_NAMES = OrderedDict([
 
 LANGUAGES_DICT = dict(django_settings.LANGUAGES)
 
+LANGUAGES_NAMES = {
+    _language: unicode(_verbose_name).replace(' ', '_').lower()
+    for _language, _verbose_name in django_settings.LANGUAGES
+}
+LANGUAGES_NAMES_TO_CODES = { _v: _k for _k, _v in LANGUAGES_NAMES.items() }
+
 ############################################################
 # Use a dict as a class
 
@@ -1067,6 +1073,9 @@ def toCountDown(date, sentence, classes=None):
         date=torfc2822(date), sentence=sentence, classes=u' '.join(classes or []),
     )
 
+############################################################
+# Form labels and help texts
+
 def markdownHelpText(request=None):
     if ('help' in RAW_CONTEXT['all_enabled']
         and (not request or request.LANGUAGE_CODE not in RAW_CONTEXT['languages_cant_speak_english'])):
@@ -1076,6 +1085,34 @@ def markdownHelpText(request=None):
         ))
     else:
         return _(u'You may use Markdown formatting.')
+
+def getSearchSingleFieldLabel(field_name, model_class, labels={}, translated_fields=[]):
+    if field_name in labels:
+        return labels[field_name]
+    if isTranslationField(field_name, translated_fields):
+        return ''
+    try: return model_class._meta.get_field(field_name)._verbose_name
+    except FieldDoesNotExist: return None
+
+def getSearchFieldHelpText(search_fields, model_class, labels, translated_fields):
+    field_labels = []
+    and_more = False
+    first = True
+    for field_name in search_fields:
+        label = getSearchSingleFieldLabel(field_name, model_class, labels, translated_fields)
+        # If a label is equal to '' it means it can safely be ignored without adding '...'
+        if label is None:
+            and_more = True
+        elif label:
+            label = unicode(label)
+            field_labels.append(label if first else label.lower())
+            first = False
+    if field_labels:
+        return u'{}{}'.format(
+            u', '.join(field_labels),
+            ', ...' if and_more else '',
+        )
+    return None
 
 ############################################################
 # Async update function
@@ -1197,3 +1234,15 @@ def translationURL(value, from_language='en', to_language=None, with_wrapper=Tru
             value=value,
         )
     return url
+
+def isTranslationField(field_name, translated_fields):
+    if (field_name.startswith('d_') and field_name.endswith('s')
+        and field_name[2:-1] in translated_fields):
+        return True
+    for translated_field in translated_fields:
+        if field_name.endswith(translated_field):
+            for language, verbose_language in LANGUAGES_NAMES.items():
+                if (field_name == u'{}_{}'.format(verbose_language, translated_field)
+                    or field_name == u'{}_{}'.format(language, translated_field)):
+                    return True
+    return False
