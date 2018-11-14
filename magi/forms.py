@@ -1758,7 +1758,7 @@ class StaffDetailsForm(AutoForm):
 class StaffDetailsFilterForm(MagiFiltersForm):
     search_fields = ['owner__username', 'discord_username', 'preferred_name', 'description', 'nickname']
     search_fields_labels = {
-        'owner__username': _('Username'),
+        'owner__username': t['Username'],
     }
 
     class Meta:
@@ -1985,7 +1985,7 @@ class ReportForm(MagiForm):
 class FilterReports(MagiFiltersForm):
     search_fields = ['owner__username', 'message', 'staff_message', 'reason', 'reported_thing_title']
     search_fields_labels = {
-        'owner__username': _('Username'),
+        'owner__username': t['Username'],
         'reported_thing_title': 'Name of the item',
     }
     ordering_fields = [
@@ -2219,7 +2219,7 @@ class PrivateMessageForm(MagiForm):
 class PrivateMessageFilterForm(MagiFiltersForm):
     search_fields = ('message', 'to_user__username', 'owner__username')
     search_fields_labels = {
-        'to_user__username': _('Username'),
+        'to_user__username': t['Username'],
         'owner__username': '',
     }
 
