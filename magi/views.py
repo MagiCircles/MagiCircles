@@ -208,7 +208,7 @@ def indexExtraContext(context):
         elif (RANDOM_ART_FOR_CHARACTER
               and context['request'].user.is_authenticated()
               and context['request'].user.preferences.favorite_characters
-              and True):#random.randint(0, 5) == 5):
+              and random.randint(0, 5) == 5):
             character_id = random.choice(context['request'].user.preferences.favorite_characters)
             context['art'] = RANDOM_ART_FOR_CHARACTER(character_id)
         else:
