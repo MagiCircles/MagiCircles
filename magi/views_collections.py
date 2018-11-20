@@ -59,6 +59,8 @@ def _get_col_size(total):
         return 'special-5'
     elif total == 7:
         return 'special-7'
+    elif total == 9:
+        return 'special-9'
     return int(math.ceil(12 / total))
 
 ############################################################
