@@ -488,7 +488,10 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
         context['icontitle'] = collection.icon
     if str(_type(formClass)) == '<type \'instancemethod\'>':
         formClass = formClass(request, context)
-    allowDelete = not context['is_translate'] and collection.edit_view.allow_delete and 'disable_delete' not in request.GET
+    allowDelete = collection.edit_view.allow_delete
+    if str(_type(allowDelete)) == '<type \'instancemethod\'>':
+        allowDelete = allowDelete(instance, request, context)
+    allowDelete = not context['is_translate'] and allowDelete and 'disable_delete' not in request.GET
     form = formClass(instance=instance, request=request, ajax=ajax, collection=collection)
     if allowDelete:
         formDelete = ConfirmDelete(initial={

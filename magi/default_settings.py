@@ -183,6 +183,7 @@ DEFAULT_GROUPS = [
             'moderate_reports',
             'edit_reported_things',
             'manipulate_activities',
+            'edit_activities_post_language',
         ],
         'requires_staff': True,
         'outside_permissions': {
@@ -464,6 +465,15 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'url_variables': [
             ('pk', '\d+'),
         ],
+    }),
+    ('check_activities_in_wrong_language', {
+        'title': 'Check activities in wrong language',
+        'redirect': u'/activities/?is_popular=1&i_language={}&ordering=creation&reverse_order=on&fix_language'.format(
+            u','.join([str(l) for l in dict(django_settings.LANGUAGES).keys() if l != 'en']),
+        ),
+        'navbar_link_list': 'staff',
+        'icon': 'checked',
+        'permissions_required': ['edit_activities_post_language'],
     }),
     ('translations', {
         'title': 'Translations',

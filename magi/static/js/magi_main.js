@@ -1158,6 +1158,33 @@ function updateActivities() {
 }
 
 // *****************************************
+// Handle activities form
+
+function updateActivityForm() {
+    let form = $('[data-form-name="edit_activity"], [data-form-name="add_activity"]');
+    let save_checkbox = form.find('#id_save_activities_language');
+    function changeActivityPreferencesLabel(action) {
+        save_checkbox.closest('.form-group').find('.selected_language').text(
+            form.find('#id_i_language option:selected').text(),
+        );
+        let auto_check = (
+            save_checkbox.data('activities-language')
+                == form.find('#id_i_language').val()
+        );
+        save_checkbox.prop('checked', auto_check);
+        if (auto_check) {
+            save_checkbox.closest('.form-group').hide(action);
+        } else {
+            save_checkbox.closest('.form-group').show(action);
+        }
+    }
+    changeActivityPreferencesLabel();
+    form.find('#id_i_language').change(function() {
+        changeActivityPreferencesLabel('fast');
+    });
+}
+
+// *****************************************
 // Handle private messages
 
 function loadPrivateMessages() {

@@ -37,7 +37,7 @@
         {% if activity.language != LANGUAGE_CODE %}
         <a href="https://translate.google.com/translate?js=n&sl={{ activity.language }}&tl={{ LANGUAGE_CODE }}&u={{ activity.http_item_url }}" class="language" target="_blank">
           <small>{% with from_language=activity.t_language to_language=localized_language %}{% blocktrans %}Translate from {{ from_language }} to {{ to_language }}{% endblocktrans %}{% endwith %}</small>
-          <img src="{{ static_url }}img/language/{{ activity.language }}.png?{{ static_files_version }}" alt="{{ activity.language }}">
+          <img src="{{ activity.language_image_url }}" alt="{{ activity.language }}">
         </a>
         {% elif activity.language != 'en' and user.is_authenticated and activity.cached_owner.username == user.username %}
         <a href="{{ activity.edit_url }}" target="_blank" class="language"

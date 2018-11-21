@@ -2302,6 +2302,19 @@ class ActivityCollection(MagiCollection):
                         'classes': view.item_buttons_classes + (['staff-only'] if staff_only else []),
                     }))
 
+            if request.user.hasPermission('edit_activities_post_language'):
+                # Fix activity's language
+                js_buttons.append(('fix_language', {
+                    'has_permissions': True,
+                    'title': u'Not in {}? → Fix'.format(item.t_language),
+                    'url': u'{}?fix_language'.format(item.edit_url),
+                    'ajax_url': u'{}?fix_language'.format(item.ajax_edit_url),
+                    'image': item.language_image_url,
+                    'classes': view.item_buttons_classes + (
+                        ['staff-only'] if 'fix_language' not in request.GET else []
+                    ),
+                }))
+
             if request.user.hasPermission('manipulate_activities'):
                 # Bump
                 js_buttons.append(('bump', {
@@ -2465,11 +2478,27 @@ class ActivityCollection(MagiCollection):
         alert_duplicate = False
         form_class = forms.ActivityForm
         max_per_user_per_hour = 3
+        ajax_callback = 'updateActivityForm'
 
     class EditView(MagiCollection.EditView):
         multipart = True
-        allow_delete = True
         form_class = forms.ActivityForm
+        ajax_callback = 'updateActivityForm'
+        owner_only_or_permissions_required = []
+        owner_only_or_one_of_permissions_required = [
+            'edit_reported_things',
+            'edit_activities_post_language',
+        ]
+
+        def allow_delete(self, item, request, context):
+            return (
+                'fix_language' not in request.GET
+                and (
+                    request.user.is_superuser
+                    or item.owner_id == request.user.id
+                    or request.user.hasPermission('edit_reported_things')
+                )
+            )
 
         def allow_cascade_delete_up_to(self, request):
             return 25

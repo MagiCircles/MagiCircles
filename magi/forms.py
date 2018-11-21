@@ -378,9 +378,6 @@ class MagiForm(forms.ModelForm):
                 and (isinstance(getattr(instance, field), unicode) or isinstance(getattr(instance, field), str))
                 and getattr(instance, field) == ''):
                 setattr(instance, field, None)
-            # Save CSV values
-            if field.startswith('c_') and field in self.c_choices:
-                instance.save_c(field[2:], self.cleaned_data[field])
             # Remove cached HTML for markdown fields
             if (field.startswith('m_') and field in self.m_previous_values
                 and has_field(instance, field)
@@ -406,6 +403,9 @@ class MagiForm(forms.ModelForm):
                         setattr(instance, u'_thumbnail_{}'.format(field), None)
                         setattr(instance, u'_original_{}'.format(field), None)
                         setattr(instance, u'_2x_{}'.format(field), None)
+        # Save CSV values
+        for field in self.c_choices:
+            instance.save_c(field[2:], self.cleaned_data.get(field, getattr(instance, field)))
         if commit:
             instance.save()
         return instance
@@ -1769,8 +1769,17 @@ class StaffDetailsFilterForm(MagiFiltersForm):
 # Activity form
 
 class ActivityForm(MagiForm):
+    save_activities_language = forms.BooleanField(required=False)
+
     def __init__(self, *args, **kwargs):
         super(ActivityForm, self).__init__(*args, **kwargs)
+        if ('fix_language' in self.request.GET
+            or (not self.is_creating
+                and self.instance.owner_id != self.request.user.id
+                and not self.request.user.hasPermission('edit_reported_things'))):
+            for field_name in self.fields.keys():
+                if field_name not in ['i_language', 'save_activities_language']:
+                    del(self.fields[field_name])
         if 'i_language' in self.fields:
             self.fields['i_language'].initial = (
                 self.request.user.preferences.activities_language
@@ -1781,6 +1790,27 @@ class ActivityForm(MagiForm):
                 and self.request.user.preferences.i_activities_language
                 == self.request.user.preferences.i_language):
                 self.fields['i_language'].widget = self.fields['i_language'].hidden_widget()
+            # Option to change preferences to always post activities in selected language
+            if 'save_activities_language' in self.fields:
+                self.fields['save_activities_language'].label = mark_safe(
+                    _('Always post activities in {language}').format(
+                        language=u'<span class="selected_language">{}</span>'.format(
+                            unicode(t['Language']).lower(),
+                        ),
+                    ),
+                )
+                if self.is_creating or self.instance.owner_id == self.request.user.id:
+                    owner = self.request.user
+                else:
+                    owner = self.instance.owner
+                self.previous_activities_language = owner.preferences.i_activities_language
+                self.fields['save_activities_language'].widget.attrs[
+                    'data-activities-language'] = self.previous_activities_language
+                self.fields['save_activities_language'].initial = (self.previous_activities_language == (
+                    self.fields['i_language'].initial if self.is_creating else self.instance.i_language
+                ))
+        elif 'save_activities_language' in self.fields:
+            del(self.fields['save_activities_language'])
 
         if 'm_message' in self.fields:
             self.fields['m_message'].help_text = markdownHelpText(self.request)
@@ -1796,13 +1826,19 @@ class ActivityForm(MagiForm):
         instance.update_cache('hidden_by_default')
         if not self.is_creating and instance.m_message != self.previous_m_message:
             instance.last_bump = timezone.now()
+        if (hasattr(self, 'previous_activities_language')
+            and self.cleaned_data['save_activities_language']
+            and self.previous_activities_language != instance.i_language):
+            models.UserPreferences.objects.filter(user_id=instance.owner_id).update(
+                i_activities_language=instance.i_language,
+            )
         if commit:
             instance.save()
         return instance
 
     class Meta(MagiForm.Meta):
         model = models.Activity
-        fields = ('m_message', 'c_tags', 'i_language', 'image')
+        fields = ('m_message', 'image', 'c_tags', 'i_language', 'save_activities_language')
         save_owner_on_creation = True
 
 class FilterActivities(MagiFiltersForm):

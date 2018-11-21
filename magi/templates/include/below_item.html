@@ -20,7 +20,7 @@
      data-ajax-handle-form="true"
      {% endif %}>
     {% if button.icon %}<i class="flaticon-{{ button.icon }}"></i>
-    {% elif button.image %}<img src="{{ static_url }}img/{{ button.image }}.png?{{ static_files_version }}" height="39" />{% endif %}
+    {% elif button.image %}<img src="{% if '//' in button.image %}{{ button.image }}{% else %}{{ static_url }}img/{{ button.image }}.png?{{ static_files_version }}{% endif %}" style="height: 1.3em;" />{% endif %}
     {% if not item.show_item_buttons_as_icons %}<span class="message">{{ button.title }}</span>{% endif %}
     {% if button.badge != None %}<span class="badge progress-bar-main"{% if not button.badge %} style="display: none;"{% endif %}>{{ button.badge }}</span>{% endif %}
   </a>

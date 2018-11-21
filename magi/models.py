@@ -163,7 +163,7 @@ class UserPreferences(BaseMagiModel):
     ACTIVITIES_LANGUAGE_CHOICES = LANGUAGE_CHOICES
     ACTIVITIES_LANGUAGE_WITHOUT_I_CHOICES = True
     ACTIVITIES_LANGUAGE_SOFT_CHOICES = True
-    i_activities_language = models.CharField(_('Post activities in {language}'), max_length=10)
+    i_activities_language = models.CharField(_('Always post activities in {language}'), max_length=10)
 
     STATUS_CHOICES = DONATORS_STATUS_CHOICES if DONATORS_STATUS_CHOICES else (
         ('THANKS', 'Thanks'),
@@ -764,6 +764,7 @@ class Activity(MagiModel):
     LANGUAGE_WITHOUT_I_CHOICES = True
     LANGUAGE_SOFT_CHOICES = True
     i_language = models.CharField(_('Language'), max_length=10)
+    language_image_url = property(lambda _s: staticImageURL(_s.language, folder=u'language', extension='png'))
 
     TAGS = ACTIVITY_TAGS
     TAGS_CHOICES = ACTIVITY_TAGS_CHOICES
