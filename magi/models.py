@@ -923,7 +923,7 @@ def getHiddenTags(request):
             if request.user.is_authenticated() and request.user.preferences.hidden_tags
             else ACTIVITIES_TAGS_HIDDEN_BY_DEFAULT)
 
-def getAllowedTags(request, is_creating=False):
+def getAllowedTags(request, is_creating=False, force_allow=None):
     hidden = getHiddenTags(request)
     can_add = getTagsWithPermissionToAdd(request) if is_creating else None
     return [
@@ -932,7 +932,8 @@ def getAllowedTags(request, is_creating=False):
          if isinstance(_details, dict)
          else _details)
         for (_tag, _details) in ACTIVITY_TAGS
-        if _tag not in hidden and (not is_creating or _tag in can_add)
+        if (_tag in (force_allow or [])
+            or (_tag not in hidden and (not is_creating or _tag in can_add)))
     ]
 
 def saveActivityCacheOwnerWithoutChangingModification(activity):

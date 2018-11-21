@@ -1814,9 +1814,12 @@ class ActivityForm(MagiForm):
 
         if 'm_message' in self.fields:
             self.fields['m_message'].help_text = markdownHelpText(self.request)
-        # Only allow users to add tags they are allowed to see
+        # Only allow users to add tags they are allowed to add or already had before
         if 'c_tags' in self.fields:
-            self.fields['c_tags'].choices = models.getAllowedTags(self.request, is_creating=True)
+            self.fields['c_tags'].choices = models.getAllowedTags(
+                self.request, is_creating=True,
+                force_allow=self.instance.c_tags if not self.is_creating else None,
+            )
         self.previous_m_message = None
         if 'm_message' in self.fields and not self.is_creating:
             self.previous_m_message = self.instance.m_message
