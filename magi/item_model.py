@@ -370,7 +370,7 @@ class BaseMagiModel(models.Model):
         """
         Completely replace any existing CSV formatted list into c_something
         """
-        setattr(self, 'c_{name}'.format(name=field_name), join_data(*c))
+        setattr(self, 'c_{name}'.format(name=field_name), join_data(*c) if c is not None else None)
 
     def add_d(self, field_name, key, value):
         current_d = getattr(self, field_name[2:] if field_name.startswith('m_') else field_name)
