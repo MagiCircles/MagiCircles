@@ -1731,6 +1731,7 @@ nav {
     display: block;
     .inner-message {
         display: inline-block;
+        max-width: 100%;
     }
     &+hr {
         margin: 0;
@@ -1778,6 +1779,8 @@ nav {
     .message-content {
         border-radius: 10px;
         white-space: pre-line;
+        max-width: 100%;
+        overflow: hidden;
         a {
             color: inherit;
             text-decoration: underline;
