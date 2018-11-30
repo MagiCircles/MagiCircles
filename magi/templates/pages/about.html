@@ -72,9 +72,11 @@
 	<img src="{{ staff_configurations.below_about_image }}" class="img-responsive">
       </div>
       {% endif %}
-    </div>
+    </div>    
     {% endif %}
-
+    
+    {% if staff %}
+    
     <div id="staff"></div>
     <hr>
 
@@ -291,7 +293,10 @@
       </div>
       {% endfor %}
     </div>
-
+    
+    {% endif %}
+    {% if contributors %}
+    
     <div id="contributors"></div>
     <hr>
 
@@ -366,7 +371,7 @@
       </div>
       {% endfor %}
     </div>
-
+    {% endif %}
     <div id="contact"></div>
     <hr>
 
