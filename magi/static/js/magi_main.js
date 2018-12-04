@@ -1459,3 +1459,90 @@ function playSongButtons() {
         return false;
     });
 }
+
+// *****************************************
+// CuteForm
+
+function modalCuteFormSeparators(settings) {
+    let with_hr = typeof(settings['hr']) == 'undefined' ? false : settings['hr'];
+    let with_margin = typeof(settings['margin']) == 'undefined' ? false : settings['margin'];
+
+    $('#cuteform-modal').on('show.bs.modal', function() {
+        if ($(document).width() >= 1016) {
+            var i = 1;
+            $.each([
+                {
+                    'by': 'by_name_prefix_nth',
+                    'selector': function(name, nth) {
+                        return '[data-cuteform-name^="' + name + '"] .cuteform-elt'
+                            + (typeof(nth) == 'undefined' ? '' : ':eq(' + nth + ')');
+                    },
+                },
+                {
+                    'by': 'by_name_prefix_value',
+                    'selector': function(name, nth) {
+                        return '[data-cuteform-name^="' + name + '"] .cuteform-elt'
+                            + (typeof(nth) == 'undefined' ? '' : '[data-cuteform-val="' + nth + '"]');
+                    },
+                },
+                {
+                    'by': 'by_name',
+                    'selector': function(name, nth) {
+                        return '[data-cuteform-name="' + name + '"] .cuteform-elt'
+                            + (typeof(nth) == 'undefined' ? '' : ':nth-child(' + nth + ')');
+                    },
+                },
+                {
+                    'by': 'by_value_prefixes',
+                    'selector': function(name, nth) {
+                        return typeof(nth) == 'undefined' ?
+                            '[data-cuteform-val^="' + name + '"]'
+                            : '[data-cuteform-val="' + name + '-' + nth + '"]';
+                    },
+                },
+            ], function(_i, by) {
+
+                $.each(settings[by['by']] || {}, function(i, field) {
+                    let name = field[0];
+                    let nths = field[1];
+                    let elts = $('#cuteform-modal ' + by['selector'](name));
+
+                    if (elts.length > 0) {
+
+                        if (i == 1) { // First match
+                            if (settings['callback_before']) {
+                                settings['callback_before'](elts);
+                            }
+
+                            let empty_selector = $('#cuteform-modal [data-cuteform-val=""]');
+                            empty_selector.css('height', elts.first().height());
+                            empty_selector.css('margin', '0 20px 0 40px');
+                            empty_selector.css('float', 'left');
+                        }
+
+                        let empty_width = $('#cuteform-modal [data-cuteform-val=""]').width() + 30 + 60;
+
+                        let separator = with_margin ? (
+                            '<' + (with_hr ? 'hr' : 'div') + ' style="margin: 5px; margin-left: '
+                                + empty_width + 'px;">' + (with_hr ? '' : '</div>')
+                                + '<div style="display: inline-block; width: '
+                                + empty_width + 'px;"></div>'
+                        ) : (with_hr ? '<hr>' : '<br style="display: block;">');
+
+                        elts.last().after(
+                            Object.keys(settings[by['by']]).length == i ? // Last only
+                                '<br style="display: block;">'
+                                : separator,
+                        );
+
+                        $.each(nths, function(index, nth) {
+                            $('#cuteform-modal ' + by['selector'](name, nth)).after(separator);
+                        });
+
+                        i++;
+                    }
+                });
+            });
+        }
+    });
+}
