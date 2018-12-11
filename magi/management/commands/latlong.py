@@ -12,8 +12,9 @@ def latlong():
 
     for u in map:
         try:
-            mapcache += u'{open}"username": "{username}","avatar": "{avatar}","location": "{location}","icon": "{icon}","latlong": new google.maps.LatLng({latitude},{longitude}){close},'.format(
+            mapcache += u'{open}"userid": "{userid}","username": "{username}","avatar": "{avatar}","location": "{location}","icon": "{icon}","latlong": new google.maps.LatLng({latitude},{longitude}){close},'.format(
                 open=u'{',
+                userid=u.user.id,
                 username=escape(u.user.username),
                 avatar=escape(models.avatar(u.user)),
                 location=escape(u.location),
