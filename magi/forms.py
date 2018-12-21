@@ -1229,14 +1229,21 @@ class UserPreferencesForm(MagiForm):
     default_tab = forms.ChoiceField(
         label=_('Default tab'),
         required=False,
-        choices=BLANK_CHOICE_DASH + [
-            (tab_name, tab['name'])
-            for tab_name, tab in PROFILE_TABS.items()
-        ],
     )
 
     def __init__(self, *args, **kwargs):
         super(UserPreferencesForm, self).__init__(*args, **kwargs)
+
+        # Default tab
+        if 'default_tab' in self.fields:
+            self.fields['default_tab'].choices = BLANK_CHOICE_DASH + [
+                (tab_name, tab['name'])
+                for tab_name, tab in PROFILE_TABS.items()
+            ] + [
+                (collection_name, collection.collectible_tab_name)
+                for collection_name, collection
+                in RAW_CONTEXT.get('collectible_collections', {}).get('owner', {}).items()
+            ]
 
         # Favorite characters
         if not FAVORITE_CHARACTERS:
