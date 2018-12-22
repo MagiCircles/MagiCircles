@@ -2742,7 +2742,7 @@ class ReportCollection(MagiCollection):
         ajax_callback = 'updateReport'
 
     class AddView(MagiCollection.AddView):
-        authentication_required = False
+        authentication_required = True
         alert_duplicate = False
         back_to_list_button = False
         form_class = forms.ReportForm
