@@ -82,6 +82,8 @@ class Command(BaseCommand):
                 'is_boolean': True,
                 'value': 'True',
             })
+
+        # About Page
         create({
             'key': 'about_image',
             'verbose_key': 'Image under "About" section in about page (first section)',
@@ -94,6 +96,8 @@ class Command(BaseCommand):
             'key': 'below_about_image',
             'verbose_key': 'Image under the custom section under "About us" in about page',
         })
+
+        # Donations
         create({
             'key': 'donators_goal',
             'verbose_key': 'Donations: Goal we\'re trying to reach (should match Patreon)',
@@ -102,10 +106,18 @@ class Command(BaseCommand):
             'key': 'donate_image',
             'verbose_key': 'Donations: Illustration next to button on donation page',
         })
+
+        create({
+            'key': 'report_login',
+            'verbose_key': 'Reports: Login required to file',
+            'value': 'True',
+            'is_boolean': True,
+        })
         # create({
         #     'key': '',
         #     'verbose_key': '',
         #     'value': '',
         #     'is_markdown': True,
         #     'is_long': True,
+        #     'is_boolean': True,
         # })

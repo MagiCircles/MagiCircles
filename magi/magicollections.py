@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import string
 from collections import OrderedDict
+from django.conf import settings as django_settings
 from django.utils.translation import ugettext_lazy as _, string_concat, get_language
 from django.utils import timezone
 from django.utils.safestring import mark_safe
@@ -2742,7 +2743,7 @@ class ReportCollection(MagiCollection):
         ajax_callback = 'updateReport'
 
     class AddView(MagiCollection.AddView):
-        authentication_required = False
+        authentication_required = django_settings.STAFF_CONFIGURATIONS.get('report_login') == 'True'
         alert_duplicate = False
         back_to_list_button = False
         form_class = forms.ReportForm
