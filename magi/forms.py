@@ -1904,7 +1904,7 @@ class FilterActivities(MagiFiltersForm):
     liked = forms.BooleanField(label=string_concat(_('Liked'), ' (', _('Only'), ')'), initial=False)
     liked_filter = MagiFilter(to_queryset=lambda form, queryset, request, value: queryset.filter(
         Q(likes__id=request.user.id) | Q(owner_id=request.user.id),
-    ) if value else queryset)
+    ).distinct() if value else queryset)
 
     def __init__(self, *args, **kwargs):
         super(FilterActivities, self).__init__(*args, **kwargs)
