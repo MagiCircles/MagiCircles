@@ -4,7 +4,7 @@
 {% with profile_user=item %}
 <div>
   <br><br>
-  <div class="jumbotron jumbotron-{{ profile_user.preferences.css_color }}{% if profile_user.preferences.extra.background %} with-background{% endif %}"{% if profile_user.preferences.extra.background %} style="background-image: url('{{ profile_user.preferences.background_image_url }}');"{% endif %} id="profile">
+  <div class="jumbotron jumbotron-{{ profile_user.preferences.css_color }}{% if profile_user.preferences.extra.background_image_url %} with-background{% endif %}"{% if profile_user.preferences.extra.background_image_url %} style="background-image: url('{{ profile_user.preferences.background_image_url }}');"{% endif %} id="profile">
     <div class="topprofile">
       <div class="row">
         <div class="col-sm-2">
