@@ -97,6 +97,7 @@ DEFAULT_GROUPS = [
             'Patreon manager': 'https://www.patreon.com/manageRewards',
             'Donators forms responses': 'https://docs.google.com/spreadsheets/d/18yFRsk3JpM-lIwT-Gp7teXVpliPgzBP7Lq2T7F6LJjk/edit',
             'Monthly prizes': 'https://docs.google.com/spreadsheets/d/1Ocv1uDoqlC_4ffg1SUQKLv1Xjd9H84Qg-YYhzh4WH7Q/edit',
+            'Budget sheet': 'https://docs.google.com/spreadsheets/d/18dwZyE37SKFRXDG3hWd7O7JpQv41CSINg_904S96T1M/edit',
         },
         'guide': '/help/Finance%20managers%20guide',
     }),
