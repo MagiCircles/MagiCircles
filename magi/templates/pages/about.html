@@ -108,8 +108,8 @@
               data-trigger="hover"
               data-html="true"
               >
+              <img src="{{ static_url }}img/groups/{{ group }}.png?{{ static_files_version }}" alt="{{ details.translation }}" width="40">
               {{ details.translation }}
-              <i class="flaticon-about"></i>
             </h4>
             {% endwith %}
             {% endfor %}
