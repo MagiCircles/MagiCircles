@@ -152,6 +152,7 @@ class Idol(MagiModel):
     owner = models.ForeignKey(User, related_name='added_idols')
     name = models.CharField(max_length=100, unique=True)
     japanese_name = models.CharField(max_length=100, null=True)
+    d_names = models.TextField(null=True)
     image = models.ImageField(upload_to=uploadItem('idols'))
 
 class Card(MagiModel):
@@ -176,6 +177,7 @@ class Card(MagiModel):
         return {
             'id': self.idol.id,
             'name': self.idol.name,
+            'names': self.idol.names,
             'japanese_name': self.idol.japanese_name,
             'image': unicode(self.idol.image),
         }

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy as _, activate as translation_activate
 from django.test import TestCase
 from test import models
 
@@ -18,6 +18,8 @@ class ItemModelCacheTestCase(TestCase):
             japanese_name=u'デビ',
             image=u'idols/deby.png',
         )
+        self.idol.add_d('names', 'ru', u'Деби')
+        self.idol.save()
         self.card = models.Card.objects.create(
             owner=self.user,
             idol=self.idol,
@@ -57,7 +59,7 @@ class ItemModelCacheTestCase(TestCase):
         self.assertEqual(self.card.cached_total_gachas, 2)
 
     def test_get_cached_one(self):
-        self.assertEqual(self.card.cached_idol, {
+        expected = {
             'ajax_item_url': u'/ajax/idol/1/',
             'full_item_url': u'http://test.com/idol/1/Deby/',
             'http_item_url': u'http://test.com/idol/1/Deby/',
@@ -68,9 +70,16 @@ class ItemModelCacheTestCase(TestCase):
             'item_url': u'/idol/1/Deby/',
             u'japanese_name': u'デビ',
             u'name': u'Deby',
+            'names': {'ru': u'Деби'},
+            't_name': u'Deby',
             'pk': 1,
             'unicode': u'Deby',
-        })
+        }
+        self.assertEqual(self.card.cached_idol, expected)
+        translation_activate('ru')
+        expected['t_name'] = u'Деби'
+        self.assertEqual(self.card.cached_idol, expected)
+        translation_activate('en')
 
     def test_get_cached_list(self):
         self.assertEqual(self.card.cached_gachas, [
