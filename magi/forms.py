@@ -297,6 +297,11 @@ class MagiForm(forms.ModelForm):
             for field in self.Meta.required_fields:
                 if field in self.fields:
                     self.fields[field].required = True
+        # Hidden fields
+        if hasattr(self.Meta, 'hidden_fields'):
+            for field in self.Meta.hidden_fields:
+                if field in self.fields:
+                    self.fields[field].widget = self.fields[field].hidden_widget()
 
         # Has the form been opened in the context of a report?
         self.is_reported = (
