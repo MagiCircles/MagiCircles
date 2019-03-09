@@ -320,6 +320,16 @@ class BaseMagiModel(models.Model):
                     d[k[2:]] = original_cls.get_reverse_i(k[2:], d[k])
                     d['t_{}'.format(k[2:])] = original_cls.get_verbose_i(k[2:], d[k])
 
+        # Translated fields
+        language = get_language()
+        for k, v in d.items():
+            if isinstance(d.get(u'{}s'.format(k), None), dict):
+                print 'language', language
+                if language == 'en':
+                    d['t_{}'.format(k)] = v
+                else:
+                    d['t_{}'.format(k)] = d[u'{}s'.format(k)].get(language, v)
+
         # Call extra if provided
         if hasattr(self, u'cached_{}_extra'.format(field_name)):
             getattr(self, u'cached_{}_extra'.format(field_name))(d)
