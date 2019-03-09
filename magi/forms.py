@@ -1710,7 +1710,7 @@ class StaffConfigurationSimpleEditForm(StaffConfigurationForm):
         fields = ('verbose_key', 'value')
 
 class StaffConfigurationFilters(MagiFiltersForm):
-    search_fields = ['verbose_key', 'value']
+    search_fields = ['key', 'verbose_key', 'value']
 
     has_value = forms.NullBooleanField()
     has_value_filter = MagiFilter(selector='value__isnull')
