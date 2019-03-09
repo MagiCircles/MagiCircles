@@ -736,8 +736,12 @@ class MagiFiltersForm(AutoForm):
                                 or getattr(self.fields.get(field_name, None), 'choices', None)
                                 or self.Meta.model.get_choices(field_name)
                         )
+                        if _v != BLANK_CHOICE_DASH[0][1]
                     ]
-                    field_label = field_details.get('label', None)
+                    field_label = (
+                        field_details.get('label', None)
+                        or getattr(self.fields.get(field_name, None), 'label', None)
+                    )
                     if not field_label:
                         try:
                             field_label = self.Meta.model._meta.get_field(field_name).verbose_name
