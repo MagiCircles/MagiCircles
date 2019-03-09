@@ -313,6 +313,8 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['display_style'] = collection.list_view.display_style
     if context['alt_view'] and 'display_style' in context['alt_view']:
         context['display_style'] = context['alt_view']['display_style']
+    if context['display_style'] == 'table' and context['item_template'] == 'default_item_in_list':
+        context['item_template'] = 'default_item_table_view'
     context['display_style_table_classes'] = collection.list_view.display_style_table_classes
     context['display_style_table_fields'] = collection.list_view.display_style_table_fields
     if context['alt_view'] and 'display_style_table_fields' in context['alt_view']:
