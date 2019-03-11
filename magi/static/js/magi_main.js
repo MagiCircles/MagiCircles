@@ -980,8 +980,9 @@ function paginationOnClick(buttonId, nextPageUrl, newPageParameters, newPageCall
 
 function reloadDisqus() {
     if ($('[href$="#disqus_thread"], .disqus-comment-count').length > 0) {
-        window.DISQUSWIDGETS = undefined;
-        $.getScript('https://' + disqus_shortname + '.disqus.com/count.js');
+        if (typeof(DISQUSWIDGETS) != 'undefined') {
+            DISQUSWIDGETS.getCount({reset: true});
+        }
     }
 }
 
