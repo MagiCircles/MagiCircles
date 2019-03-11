@@ -313,7 +313,6 @@ class UserPreferences(BaseMagiModel):
 
     @property
     def background_image_url(self):
-        print self.background_id
         return BACKGROUNDS_IMAGES.get(self.background_id, None)
 
     @classmethod

@@ -324,7 +324,6 @@ class BaseMagiModel(models.Model):
         language = get_language()
         for k, v in d.items():
             if isinstance(d.get(u'{}s'.format(k), None), dict):
-                print 'language', language
                 if language == 'en':
                     d['t_{}'.format(k)] = v
                 else:
