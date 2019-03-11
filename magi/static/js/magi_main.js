@@ -979,6 +979,8 @@ function paginationOnClick(buttonId, nextPageUrl, newPageParameters, newPageCall
 // Reload disqus count
 
 function reloadDisqus() {
+    // Temporary disable of Disqus comments count
+    return;
     if ($('[href$="#disqus_thread"], .disqus-comment-count').length > 0) {
         if (typeof(DISQUSWIDGETS) != 'undefined') {
             DISQUSWIDGETS.getCount({reset: true});
