@@ -1,7 +1,12 @@
+# -*- coding: utf-8 -*-
 import datetime, time
 from django.utils import timezone
+from django.utils.translation import activate as translation_activate, ugettext_lazy as _, get_language
+from django.utils.formats import date_format
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings as django_settings
+from django.db.models import Count
+from magi.utils import birthdays_within
 from magi import models
 
 ############################################################
@@ -75,6 +80,92 @@ def getStaffConfigurations():
         latest_news[i] for i in range(1, 5)
         if latest_news[i] and latest_news[i].get('image') and latest_news[i].get('title') and latest_news[i].get('url') ]
 
+############################################################
+# Get characters birthdays (for generated settings)
+
+def getCharactersBirthdays(queryset, get_name_image_url_from_character,
+                           latest_news=None, days_after=12, days_before=1, field_name='birthday'):
+    if not latest_news:
+        latest_news = []
+    now = timezone.now()
+    characters = list(queryset.filter(
+        birthdays_within(days_after=days_after, days_before=days_before, field_name=field_name)
+    ).order_by('name'))
+    characters.sort(key=lambda c: getattr(c, field_name).replace(year=2000))
+    for character in characters:
+        name, image, url = get_name_image_url_from_character(character)
+        t_titles = {}
+        old_lang = get_language()
+        for lang, _verbose in django_settings.LANGUAGES:
+            translation_activate(lang)
+            t_titles[lang] = u'{}, {}! {}'.format(
+                _('Happy Birthday'),
+                name,
+                date_format(getattr(character, field_name), format='MONTH_DAY_FORMAT', use_l10n=True),
+            )
+        translation_activate(old_lang)
+        latest_news.append({
+            't_titles': t_titles,
+            'background': image,
+            'url': url,
+            'hide_title': False,
+            'ajax': False,
+            'css_classes': 'birthday',
+        })
+    return latest_news
+
+############################################################
+# Get users birthdays (for generated settings)
+
+def getUsersBirthdaysToday(image, latest_news=None, max_usernames=4):
+    if not latest_news:
+        latest_news = []
+    now = timezone.now()
+    users = list(models.User.objects.filter(
+        preferences__birthdate__day=now.day,
+        preferences__birthdate__month=now.month,
+    ).extra(select={
+        'total_followers': '(SELECT COUNT(*) FROM {table}_following WHERE user_id = auth_user.id)'.format(
+            table=models.UserPreferences._meta.db_table,
+        ),
+        'total_following': '(SELECT COUNT(*) FROM {table}_following WHERE userpreferences_id = (SELECT id FROM {table} WHERE user_id = auth_user.id))'.format(
+            table=models.UserPreferences._meta.db_table,
+        ),
+    }).annotate(
+        total_activities=Count('activities'),
+        total_accounts=Count('accounts'),
+    ).order_by(
+        '-total_followers',
+        '-total_following',
+        '-total_activities',
+        '-total_accounts',
+    ))
+    if users:
+        usernames = u'{}{}'.format(
+            u', '.join([user.username for user in users[:max_usernames]]),
+            u' + {}'.format(len(users[max_usernames:])) if users[max_usernames:] else '',
+        )
+        t_titles = {}
+        old_lang = get_language()
+        for lang, _verbose in django_settings.LANGUAGES:
+            translation_activate(lang)
+            t_titles[lang] = u'{} 🎂🎉 {}'.format(
+                _('Happy Birthday'),
+                usernames,
+            )
+        translation_activate(old_lang)
+        latest_news.append({
+            't_titles': t_titles,
+            'image': image,
+            'url': (
+                users[0].item_url
+                if len(users) == 1
+                else u'/users/?ids={}'.format(u','.join([unicode(user.id) for user in users]))
+            ),
+            'hide_title': False,
+            'css_classes': 'birthday font0-5',
+        })
+    return latest_news
 
 ############################################################
 # Generate settings (for generated settings)
