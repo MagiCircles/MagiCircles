@@ -1530,7 +1530,7 @@ class UserFilterForm(MagiFiltersForm):
         'links__value': _('Links'),
     }
     ordering_fields = (
-        ('date_joined', _('Join Date')),
+        ('id', _('Join Date')),
         ('username', t['Username']),
         ('followed,id', _('Follow')),
     )

@@ -1699,7 +1699,7 @@ class UserCollection(MagiCollection):
     class ListView(MagiCollection.ListView):
         item_template = custom_item_template
         filter_form = forms.UserFilterForm
-        default_ordering = '-date_joined'
+        default_ordering = '-id'
         show_item_buttons = False
         show_item_buttons_as_icons = True
         show_item_buttons_in_one_line = True
