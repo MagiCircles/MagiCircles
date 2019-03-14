@@ -124,22 +124,7 @@ def getUsersBirthdaysToday(image, latest_news=None, max_usernames=4):
     users = list(models.User.objects.filter(
         preferences__birthdate__day=now.day,
         preferences__birthdate__month=now.month,
-    ).extra(select={
-        'total_followers': '(SELECT COUNT(*) FROM {table}_following WHERE user_id = auth_user.id)'.format(
-            table=models.UserPreferences._meta.db_table,
-        ),
-        'total_following': '(SELECT COUNT(*) FROM {table}_following WHERE userpreferences_id = (SELECT id FROM {table} WHERE user_id = auth_user.id))'.format(
-            table=models.UserPreferences._meta.db_table,
-        ),
-    }).annotate(
-        total_activities=Count('activities'),
-        total_accounts=Count('accounts'),
-    ).order_by(
-        '-total_followers',
-        '-total_following',
-        '-total_activities',
-        '-total_accounts',
-    ))
+    ).order_by('-preferences___cache_reputation'))
     if users:
         usernames = u'{}{}'.format(
             u', '.join([user.username for user in users[:max_usernames]]),
