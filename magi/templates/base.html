@@ -54,7 +54,7 @@
               <a href="/notifications/">
                 <i class="flaticon-notification"></i>
                 <i class="flaticon-loading" style="display: none;"></i>
-                {% if user.preferences.cached_unread_notifications %}
+                {% if user.preferences.cached_unread_notifications and current != 'notification_list' %}
                 <span class="badge progress-bar-info">{{ user.preferences.cached_unread_notifications }}</span>
                 {% endif %}
               </a>
