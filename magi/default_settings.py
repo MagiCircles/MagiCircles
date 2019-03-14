@@ -590,10 +590,14 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'navbar_link': False,
         'url_variables': [
             ('twitter', '[^/]+'),
-        ]
+        ],
     }),
     ('changelanguage', {
         'ajax': True,
+        'custom': False,
+        'navbar_link': False,
+    }),
+    ('markallnotificationsread', {
         'custom': False,
         'navbar_link': False,
     }),

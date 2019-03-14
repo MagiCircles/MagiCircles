@@ -852,6 +852,13 @@ def changelanguage(request):
         form.save()
     return redirect(request.POST.get('next', '/'))
 
+def markallnotificationsread(request):
+    if not request.user.is_authenticated():
+        raise PermissionDenied()
+    read = request.user.notifications.filter(seen=False).update(seen=True)
+    request.user.preferences.force_update_cache('unread_notifications')
+    return redirect(u'/notifications/?marked_read={}'.format(read))
+
 def _shouldBumpActivity(activity, request):
     # Archived activities can't be bumped
     if activity.archived:

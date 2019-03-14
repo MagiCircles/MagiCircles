@@ -1355,10 +1355,16 @@ a.avatar_wrapper {
     }
 }
 
-.notification {
+.notification,
+.current-notification_list .top_buttons,
+.current-notification_list .total-search-results,
+.current-notification_list .alert {
     display: block;
     margin: auto;
     max-width: 400px;
+}
+
+.notification {
     padding: 10px;
     border-bottom: 1px #ccc solid;
     transition: opacity @transition;

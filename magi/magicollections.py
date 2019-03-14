@@ -2534,16 +2534,38 @@ class NotificationCollection(MagiCollection):
                 queryset = queryset.filter(seen=False)
             return queryset.filter(owner=request.user)
 
+        def top_buttons(self, request, context):
+            buttons = super(NotificationCollection.ListView, self).top_buttons(request, context)
+            buttons['mark_all_read'] = {
+                'show': bool(request.user.preferences.cached_unread_notifications),
+                'has_permissions': True,
+                'url': '/markallnotificationsread/',
+                'classes': ['btn', 'btn-link-muted', 'pull-right'],
+                'title': _('Mark all as read'),
+                'icon': 'checked',
+            }
+            return buttons
+
         def extra_context(self, context):
-            # Mark notification as read
+            # Don't show total search results when opening from navbar popup
+            if len(context['request'].GET) == 1 and 'page_size' in context['request'].GET:
+                context['show_search_results'] = False
+            # Mark notification as read when they show up
             to_update = [item.pk for item in context['items'] if not item.seen]
             if to_update:
                 updated = models.Notification.objects.filter(pk__in=to_update).update(seen=True)
                 if updated:
-                    context['request'].user.preferences.unread_notifications -= updated
-                    if context['request'].user.preferences.unread_notifications < 0:
-                        context['request'].user.preferences.unread_notifications = 0
-                    context['request'].user.preferences.save()
+                    context['request'].user.preferences.force_update_cache('unread_notifications')
+            # Show alert when notifications have been marked as read
+            if (not context.get('before_template', None)
+                and context['request'].GET.get('marked_read', None)):
+                context['show_search_results'] = False
+                context['before_template'] = 'include/alert'
+                context['alert_message'] = _('{total} notifications were marked as read.').format(
+                    total=int(context['request'].GET['marked_read']),
+                )
+                context['alert_type'] = 'success'
+                context['alert_flaticon'] = 'checked'
             return context
 
     class ItemView(MagiCollection.ItemView):

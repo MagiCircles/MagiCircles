@@ -28,7 +28,5 @@ def pushNotification(user, notification_type, values, url_values=None, image=Non
             return None
 
     notification = models.Notification.objects.create(**data)
-    models.UserPreferences.objects.filter(pk=user.preferences.pk).update(
-        unread_notifications=F('unread_notifications') + 1,
-    )
+    user.preferences.force_update_cache('unread_notifications')
     return notification

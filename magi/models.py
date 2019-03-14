@@ -200,7 +200,6 @@ class UserPreferences(BaseMagiModel):
 
     view_activities_language_only = models.BooleanField(_('View activities in your language only?'), default=ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT)
     email_notifications_turned_off_string = models.CharField(max_length=15, null=True)
-    unread_notifications = models.PositiveIntegerField(default=0)
     invalid_email = models.BooleanField(default=False)
 
     GROUPS_CHOICES = [(_k, _v['translation']) for _k, _v in GROUPS]
@@ -427,6 +426,14 @@ class UserPreferences(BaseMagiModel):
         return int(i)
 
     cached_blocked_by_ids_map = cached_blocked_ids_map
+
+    # Cached unread notifications
+    _cache_unread_notifications_days = 5
+    _cache_unread_notifications_last_update = models.DateTimeField(null=True)
+    _cache_unread_notifications = models.PositiveIntegerField(default=0)
+
+    def to_cache_unread_notifications(self):
+        return self.user.notifications.filter(seen=False).count()
 
     class Meta:
         verbose_name_plural = "list of userpreferences"
