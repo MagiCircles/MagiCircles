@@ -1,5 +1,6 @@
 import hashlib, urllib, datetime, pytz
 from collections import OrderedDict
+from dateutil.relativedelta import relativedelta
 from django.db import models
 from django.contrib.auth.models import User
 from django.core import validators
@@ -48,6 +49,8 @@ from magi.settings import (
     MINIMUM_LIKES_POPULAR,
     DONATORS_GOAL,
     EXTRA_PREFERENCES,
+    USERS_REPUTATION_CALCULATOR,
+    GOOD_REPUTATION_THRESHOLD,
 )
 from magi.item_model import MagiModel, BaseMagiModel, get_image_url, i_choices, addMagiModelProperties, getInfoFromChoices
 from magi.abstract_models import CacheOwner
@@ -426,6 +429,49 @@ class UserPreferences(BaseMagiModel):
         return int(i)
 
     cached_blocked_by_ids_map = cached_blocked_ids_map
+
+    # Cached reputation score
+    _cache_reputation_days = 1
+    _cache_reputation_last_update = models.DateTimeField(null=True)
+    _cache_reputation = models.IntegerField(null=True, db_index=True)
+
+    def reputation_points(self):
+        # Reputation deal breakers
+        if self.invalid_email:
+            return {
+                'invalid_email': (0, 0),
+            }
+
+        now = timezone.now()
+        five_days_ago = now - relativedelta(days=5)
+        six_months_ago = now - datetime.timedelta(days=30 * 6)
+        reputation_points = {
+            'joined_5_days_ago': (int(self.user.date_joined >= five_days_ago), 10),
+            'joined_6_months_ago': (int(self.user.date_joined >= six_months_ago), 50),
+            'total_following': (self.following.count(), 1),
+            'total_followers': (self.user.followers.count(), 5),
+            'total_activities': (self.user.activities.count(), 2),
+            'total_accounts': (self.user.accounts.count(), 1),
+            'total_reported_item': (
+                Report.objects.filter(
+                    reported_thing_owner_id=self.user_id,
+                    i_status__in=[
+                        Report.get_i('status', 'Deleted'),
+                        Report.get_i('status', 'Edited'),
+                    ],
+                    modification__gte=six_months_ago,
+                ).count(), -1),
+        }
+        if USERS_REPUTATION_CALCULATOR:
+            reputation_points = USERS_REPUTATION_CALCULATOR(reputation_points)
+        return reputation_points
+
+    def to_cache_reputation(self):
+        return sum([total * points for total, points in self.reputation_points().values()])
+
+    @property
+    def has_good_reputation(self):
+        return self.cached_reputation >= GOOD_REPUTATION_THRESHOLD
 
     # Cached unread notifications
     _cache_unread_notifications_days = 5

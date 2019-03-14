@@ -160,7 +160,7 @@ def getUsersBirthdaysToday(image, latest_news=None, max_usernames=4):
             'url': (
                 users[0].item_url
                 if len(users) == 1
-                else u'/users/?ids={}'.format(u','.join([unicode(user.id) for user in users]))
+                else u'/users/?ids={}&ordering=preferences___cache_reputation&reverse_order=on'.format(u','.join([unicode(user.id) for user in users]))
             ),
             'hide_title': False,
             'css_classes': 'birthday font0-5',

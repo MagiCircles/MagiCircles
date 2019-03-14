@@ -1532,7 +1532,7 @@ class UserFilterForm(MagiFiltersForm):
     ordering_fields = (
         ('id', _('Join Date')),
         ('username', t['Username']),
-        ('followed,id', _('Follow')),
+        ('preferences___cache_reputation', _('Most popular')),
     )
 
     followers_of = HiddenModelChoiceField(queryset=models.User.objects.all())
@@ -1865,8 +1865,8 @@ class FilterActivities(MagiFiltersForm):
     ordering_fields = [
         ('last_bump', _('Hot')),
         ('creation', _('Creation')),
-        ('_cache_total_likes,creation', string_concat(_('Most Popular'), ' (', _('All time'), ')')),
-        ('_cache_total_likes,id', string_concat(_('Most Popular'), ' (', _('This week'), ')')),
+        ('_cache_total_likes,creation', string_concat(_('Most popular'), ' (', _('All time'), ')')),
+        ('_cache_total_likes,id', string_concat(_('Most popular'), ' (', _('This week'), ')')),
     ]
 
     with_image = forms.NullBooleanField(label=_('Image'))

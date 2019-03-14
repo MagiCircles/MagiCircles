@@ -245,24 +245,9 @@ def hasPermissionToMessage(from_user, to_user):
     return True
 
 def hasGoodReputation(request):
-    """
-    Reputation is calculated based on:
-    - must be logged in
-    - must not have an invalid email address
-    - must have joined more than 5 days ago
-    - must have at least 1 account added
-    """
     if not request.user.is_authenticated():
         return False
-    if request.user.preferences.invalid_email:
-        return False
-    now = timezone.now()
-    five_days_ago = now - relativedelta(days=5)
-    if request.user.date_joined >= five_days_ago:
-        return False
-    if len(getAccountIdsFromSession(request)) < 1:
-        return False
-    return True
+    return request.user.preferences.has_good_reputation
 
 def isInboxClosed(request):
     return (not hasGoodReputation(request)

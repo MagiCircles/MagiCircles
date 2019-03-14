@@ -490,7 +490,10 @@ def settingsContext(request):
     a_month_ago = now - datetime.timedelta(days=30)
     context['reports'] = list(models.Report.objects.filter(
         reported_thing_owner_id=request.user.id,
-        i_status__in=[1,2],
+        i_status__in=[
+            models.Report.get_i('status', 'Deleted'),
+            models.Report.get_i('status', 'Edited'),
+        ],
         modification__gte=a_month_ago,
     ).order_by('-modification'))
     for report in context['reports']:

@@ -255,6 +255,11 @@ if hasattr(settings_module, 'HOMEPAGE_RIBBON'):
 else:
     HOMEPAGE_RIBBON = False
 
+if hasattr(settings_module, 'GOOD_REPUTATION_THRESHOLD'):
+    GOOD_REPUTATION_THRESHOLD = getattr(settings_module, 'GOOD_REPUTATION_THRESHOLD')
+else:
+    GOOD_REPUTATION_THRESHOLD = 10
+
 ############################################################
 # Optional settings without default values (= None)
 
@@ -419,6 +424,11 @@ if hasattr(settings_module, 'JAVASCRIPT_COMMONS'):
     JAVASCRIPT_COMMONS = getattr(settings_module, 'JAVASCRIPT_COMMONS')
 else:
     JAVASCRIPT_COMMONS = None
+
+if hasattr(settings_module, 'USERS_REPUTATION_CALCULATOR'):
+    USERS_REPUTATION_CALCULATOR = getattr(settings_module, 'USERS_REPUTATION_CALCULATOR')
+else:
+    USERS_REPUTATION_CALCULATOR = None
 
 ############################################################
 # Specified in django settings

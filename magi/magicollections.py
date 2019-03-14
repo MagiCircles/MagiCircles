@@ -1777,6 +1777,20 @@ class UserCollection(MagiCollection):
         def buttons_per_item(self, request, context, item):
             buttons = super(UserCollection.ItemView, self).buttons_per_item(request, context, item)
             buttons = self.collection._buttons_per_item(self, buttons, request, context, item)
+
+            # Make sure reputation is calculated every day for all users
+            reputation = item.preferences.cached_reputation
+
+            # Reputation info button
+            if request.user.is_authenticated() and request.user.hasPermission('see_reputation'):
+                buttons['reputation'] = {
+                    'classes': self.item_buttons_classes + ['staff-only', 'disabled'],
+                    'show': True,
+                    'url': '#',
+                    'icon': 'leaderboard',
+                    'title': u'Reputation: {} points'.format(reputation),
+                    'has_permissions': True,
+                }
             return buttons
 
         def get_item(self, request, pk):
