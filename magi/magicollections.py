@@ -1057,6 +1057,7 @@ class MagiCollection(object):
         full_width = False
         show_relevant_fields_on_ordering = True
         hide_sidebar = False
+
         item_template = 'default_item_in_list'
         item_blocked_template = None
         auto_reloader = True

@@ -346,7 +346,6 @@ def aboutDefaultContext(request):
     context['api_enabled'] = False
     context['contribute_url'] = CONTRIBUTE_URL
     context['other_sites_colsize'] = int(math.ceil(12 / (len(context['other_sites']))))
-    context['ajax'] = context['current_url'].startswith('/ajax/')
     context['extends'] = 'base.html' if not context['ajax'] else 'ajax.html'
     return context
 
