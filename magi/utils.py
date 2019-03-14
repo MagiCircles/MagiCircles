@@ -1221,6 +1221,7 @@ def translationURL(value, from_language='en', to_language=None, with_wrapper=Tru
     return url
 
 def isTranslationField(field_name, translated_fields):
+    field_name = field_name.split('__')[-1]
     if (field_name.startswith('d_') and field_name.endswith('s')
         and field_name[2:-1] in translated_fields):
         return True
