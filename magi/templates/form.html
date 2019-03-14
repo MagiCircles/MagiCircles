@@ -9,7 +9,7 @@
 {% block content %}
 {% with forms=forms|getFormAsList:form %}
 <div class="{% if not ajax %}container{% endif %} container-for-generic-form">
-  {% block beforeforms %}{% endblock %}{% if beforeforms %}{{ beforeforms|getattribute:forms_name }}{% endif %}
+  {% block beforeforms %}{% endblock %}{% if beforeforms %}{{ beforeforms }}{% endif %}
   {% for form_name, form in forms.items %}
   {% block beforeform %}{% endblock %}{% if beforeform %}{{ beforeform|getattribute:form_name }}{% endif %}{% if form.beforeform %}{{ form.beforeform }}{% endif %}
   <h1 id="{{ form_name }}" class="text-center padding50 form-title">{% block imagetitle %}
@@ -20,7 +20,7 @@
     {% endif %}
     {% endblock %}
     {% block title %}{% if form.form_title %}{{ form.form_title }}{% else %}{{ page_title }}{% endif %}{% endblock %}</h1>
-  <form method="POST" class="{% if not ajax %}container_form{% endif %} generic-form"{% if multipart %} enctype="multipart/form-data"{% endif %} action="{% if form.action %}{{ form.action }}{% else %}{% if ajax %}{{ current_url }}{% else %}#{{ form_name }}{% endif %}{% endif %}" data-form-name="{{ form_name }}">
+  <form method="POST" class="{% if not ajax %}container_form{% endif %} generic-form"{% if multipart %} enctype="multipart/form-data"{% endif %} action="{% if form.action %}{{ form.action }}{% else %}{% if ajax %}{{ current_url }}{% elif forms|length > 1 and forloop.counter != 1 %}#{{ form_name }}{% endif %}{% endif %}" data-form-name="{{ form_name }}">
     {% block beforefields %}{% endblock %}{% if beforefields %}{{ beforefields|getattribute:form_name }}{% endif %}{% if form.beforefields %}{{ form.beforefields }}{% endif %}
     {% block form %}
     {% csrf_token %}
@@ -37,7 +37,7 @@
 <br><br>
   {% block belowform %}{% endblock %}{% if belowform %}{{ belowform|getattribute:form_name }}{% endif %}{% if form.belowform %}{{ form.belowform }}{% endif %}
 {% endfor %}
-{% block belowforms %}{% endblock %}{% if belowforms %}{{ belowforms|getattribute:forms_name }}{% endif %}
+{% block belowforms %}{% endblock %}{% if belowforms %}{{ belowforms }}{% endif %}
 </div>
 {% endwith %}
 {% endblock %}

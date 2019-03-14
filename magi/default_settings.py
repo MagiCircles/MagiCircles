@@ -24,6 +24,7 @@ FORCE_ADD_TO_TRANSLATION = [
     _('Copied'), _('Archived'), _('Unarchived'),
     _('End of new messages'),
     _('1st'), _('2nd'), _('3rd'),
+    _('More'),
 ]
 
 DEFAULT_JAVASCRIPT_TRANSLATED_TERMS = [
@@ -33,6 +34,7 @@ DEFAULT_JAVASCRIPT_TRANSLATED_TERMS = [
     'Local time',
     'Copied', 'Archived', 'Unarchived',
     'End of new messages',
+    'More',
 ]
 
 ############################################################

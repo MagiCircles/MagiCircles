@@ -1464,6 +1464,87 @@ function playSongButtons() {
 }
 
 // *****************************************
+// Dynamic forms
+
+function formShowMore(form, cutOff, includingCutOff, until, includingUntil) {
+    includingCutOff = typeof(includingCutOff) == 'undefined' ? false : includingCutOff;
+    includingUntil = typeof(includingUntil) == 'undefined' ? false : includingUntil;
+    if (typeof(until) != 'undefined') {
+        formSeparator(form, until, true);
+    }
+    var flag = false;
+    var hidden_fields = [];
+    var cutOffField = undefined;
+    var hidden_at_init = true;
+    form.find('.form-group').each(function() {
+        if (flag) {
+            if ($(this).find('#id_' + until).length == 0 || includingUntil) {
+                hidden_fields.push($(this));
+                let input = $(this).find('[id^="id_"]');
+                if (input.length > 0 && input.val() != '') {
+                    console.log($(this).prop('id'), $(this).find('[id^="id_"]').val());
+                    hidden_at_init = false;
+                }
+            } else {
+                flag = false;
+            }
+        } else {
+            if ($(this).find('#id_' + cutOff).length > 0) {
+                cutOffField = $(this);
+                flag = true;
+            }
+        }
+    });
+    if (typeof(cutOffField) != 'undefined') {
+        console.log('yes cutOff');
+        $.each(hidden_fields, function(i, field) {
+            if (hidden_at_init) {
+                field.hide();
+            } else {
+                field.show();
+            }
+        });
+        let more = gettext('More') + ' <span class="glyphicon glyphicon-triangle-bottom"></span>';
+        let less = gettext('Less') + ' <span class="glyphicon glyphicon-triangle-top"></span>';
+        let separator = $('<div class="title-separator" data-status="'
+                          + (hidden_at_init ? 'hidden' : 'shown') + '"><span>'
+                          + (hidden_at_init ? more : less) + '</span></div>');
+        if (includingCutOff) {
+            cutOffField.before(separator);
+        } else {
+            cutOffField.after(separator);
+        }
+        separator.click(function() {
+            if (separator.data('status') == 'hidden') {
+                $.each(hidden_fields, function(i, field) {
+                    field.show('fast');
+                });
+                separator.find('span').html(less);
+                separator.data('status', 'shown');
+            } else {
+                $.each(hidden_fields, function(i, field) {
+                    field.hide('fast');
+                });
+                separator.find('span').html(more);
+                separator.data('status', 'hidden');
+            }
+        });
+    }
+}
+
+function formSeparator(form, cutOff, includingCutOff, title) {
+    includingCutOff = typeof(includingCutOff) == 'undefined' ? false : includingCutOff;
+    title = typeof(title) == 'undefined' ? '' : title;
+    let separator = $('<div class="form-group"><div class="title-separator"><span>' + title + '</span></div></div>');
+    let cutOffField = form.find('#id_' + cutOff).closest('.form-group');
+    if (includingCutOff) {
+        cutOffField.before(separator);
+    } else {
+        cutOffField.after(separator);
+    }
+}
+
+// *****************************************
 // CuteForm
 
 function modalCuteFormSeparators(settings) {

@@ -372,13 +372,16 @@ table.text-center th {
     &>span {
         position: relative;
         display: inline-block;
+        .glyphicon {
+            font-size: 0.6em;
+        }
         &:before,
         &:after {
             content: "";
             position: absolute;
             top: 50%;
             width: 9999px;
-            height: 1.5px;
+            height: 1px;
             background: #eaeaea;
         }
         &:before {
@@ -1260,6 +1263,13 @@ form .form-group ul[id^=id_c_] {
         }
         .text-muted {
             color: fade(white, 50%);
+        }
+    }
+    .title-separator {
+        color: white;
+        padding: 10px 0 4px 0;
+        &:before, &:after {
+            background: white;
         }
     }
     .sticky-buttons {

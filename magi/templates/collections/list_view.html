@@ -47,7 +47,7 @@
 {% if filter_form %}
 <div id="wrapper" class="active{% if hide_sidebar %} toggled{% endif %}">
   <nav id="sidebar-wrapper"{% if hide_sidebar %} style="display: none;"{% endif %}>
-    <form class="form-horizontal" method="get" action="{% if filter_form.action %}{{ filter_form.action }}{% endif %}" role="form">
+    <form class="form-horizontal filter-form" method="get" action="{% if filter_form.action %}{{ filter_form.action }}{% endif %}" role="form" id="filter-form-{{ collection.name }}">
       <div class="padded-inner-sidebar">
         {{ filter_form|bootstrap }}
         <br>
