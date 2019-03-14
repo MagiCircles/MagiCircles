@@ -446,8 +446,8 @@ class UserPreferences(BaseMagiModel):
         five_days_ago = now - relativedelta(days=5)
         six_months_ago = now - datetime.timedelta(days=30 * 6)
         reputation_points = {
-            'joined_5_days_ago': (int(self.user.date_joined >= five_days_ago), 10),
-            'joined_6_months_ago': (int(self.user.date_joined >= six_months_ago), 50),
+            'joined_5_days_ago': (int(self.user.date_joined <= five_days_ago), 10),
+            'joined_6_months_ago': (int(self.user.date_joined <= six_months_ago), 50),
             'total_following': (self.following.count(), 1),
             'total_followers': (self.user.followers.count(), 5),
             'total_activities': (self.user.activities.count(), 2),
