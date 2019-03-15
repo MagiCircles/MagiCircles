@@ -1,4 +1,4 @@
-<div class="text-center top-item"{% if item_padding %} style="padding: {{ item_padding }}px;"{% endif %}>
+<div class="text-center top-item"{% if item_padding %} style="padding: {% if item_padding.0 %}{{ item_padding.0 }}px {{ item_padding.1 }}px{% if item_padding.2 %} {{ item_padding.2 }}px {{ item_padding.3 }}px{% endif %}{% else %}{{ item_padding }}px{% endif %};"{% endif %}>
   {% if item_view_enabled %}
   <a href="{{ item.item_url }}"{% if ajax_item_view_enabled %} data-ajax-url="{{ item.ajax_item_url }}" data-ajax-title="{{ item }}"{% endif %}{% if ajax_item_popover %} data-ajax-popover="{{ item.ajax_item_url }}" title="{{ item }}"{% endif %}>
     {% endif %}

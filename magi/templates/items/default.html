@@ -1,5 +1,5 @@
 <div class="{{ item.collection_name }}-info">
-  <div class="text-center top-item" style="padding: {{ item_padding }}px;">
+  <div class="text-center top-item" style="padding: {% if item_padding.0 %}{{ item_padding.0 }}px {{ item_padding.1 }}px{% if item_padding.2 %} {{ item_padding.2 }}px {{ item_padding.3 }}px{% endif %}{% else %}{{ item_padding }}px{% endif %};">
     {% if top_illustration %}
     {% include top_illustration|add:'.html' %}
     {% elif item.top_image_item or item.top_image or item.image %}
