@@ -782,7 +782,7 @@ class MagiFiltersForm(AutoForm):
                 for k, v in self.ordering_fields
             ]
             if self.collection:
-                self.fields['ordering'].initial = self.collection.list_view.plain_default_ordering
+                self.fields['ordering'].initial = ','.join(self.collection.list_view.plain_default_ordering_list)
                 self.fields['reverse_order'].initial = self.collection.list_view.default_ordering.startswith('-')
         # Set view selector
         if ('view' in self.fields
