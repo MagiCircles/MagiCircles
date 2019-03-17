@@ -28,6 +28,10 @@ def get_file_url_from_path(filePath):
         return fileURL
     if fileURL.startswith(django_settings.SITE + '/'):
         fileURL = fileURL.replace(django_settings.SITE + '/', '')
+    if getattr(django_settings, 'DEBUG', False):
+        uploaded_files_url = getattr(django_settings, 'UPLOADED_FILES_URL', None)
+        if uploaded_files_url:
+            return u'{}{}'.format(uploaded_files_url, fileURL)
     return u'{}{}'.format(django_settings.SITE_STATIC_URL, fileURL)
 
 def get_file_url(instance, file_name='file'):

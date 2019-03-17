@@ -389,6 +389,15 @@ class MagiForm(forms.ModelForm):
                 and self.m_previous_values[field] != getattr(instance, field)
                 and has_field(instance, u'_cache_{}'.format(field[2:]))):
                 setattr(instance, u'_cache_{}'.format(field[2:]), None)
+            # Check for files upload then UPLOADED_FILES_URL is set
+            if (field in self.cleaned_data
+                and (isinstance(self.cleaned_data[field], InMemoryUploadedFile)
+                     or isinstance(self.cleaned_data[field], TemporaryUploadedFile))
+                and getattr(django_settings, 'DEBUG', False)
+                and getattr(django_settings, 'UPLOADED_FILES_URL', None)):
+                raise forms.ValidationError(
+                    'Debug mode: UPLOADED_FILES_URL is specified so you can\'t upload files.'
+                )
             # Shrink images
             if (hasattr(instance, field)
                 and isinstance(self.fields[field], forms.Field)
