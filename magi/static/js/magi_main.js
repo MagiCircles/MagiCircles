@@ -204,35 +204,43 @@ function notificationsHandler() {
             button.unbind('click');
             world.hide();
             loader.show();
-            $.get('/ajax/notifications/?ajax_modal_only&page_size=2', function(data) {
-                var onShown = function() {
-                    var remaining = $('nav.navbar ul.navbar-right .popover span.remaining').text();
-                    if (remaining != '') {
-                        badge.text(remaining);
-                        badge.show();
-                    } else {
-                        button.unbind('click');
-                    }
-                };
-                loader.hide();
-                badge.hide();
-                world.show();
-                if ($('nav.navbar ul.navbar-right .popover').is(':visible')) {
-                    $('nav.navbar ul.navbar-right .popover .popover-content').html(data);
-                    onShown();
-                } else {
-                    button.popover({
-                        container: $('nav.navbar ul.navbar-right'),
-                        html: true,
-                        placement: 'bottom',
-                        content: data,
-                        trigger: 'manual',
-                    });
-                    button.popover('show');
-                    button.on('shown.bs.popover', function () {
+            $.ajax({
+                'url': '/ajax/notifications/?ajax_modal_only&page_size=2',
+                'success': function(data) {
+                    var onShown = function() {
+                        var remaining = $('nav.navbar ul.navbar-right .popover span.remaining').text();
+                        if (remaining != '') {
+                            badge.text(remaining);
+                            badge.show();
+                        } else {
+                            button.unbind('click');
+                        }
+                    };
+                    loader.hide();
+                    badge.hide();
+                    world.show();
+                    if ($('nav.navbar ul.navbar-right .popover').is(':visible')) {
+                        $('nav.navbar ul.navbar-right .popover .popover-content').html(data);
                         onShown();
-                    });
-                }
+                    } else {
+                        button.popover({
+                            container: $('nav.navbar ul.navbar-right'),
+                            html: true,
+                            placement: 'bottom',
+                            content: data,
+                            trigger: 'manual',
+                        });
+                        button.popover('show');
+                        button.on('shown.bs.popover', function () {
+                            onShown();
+                        });
+                    }
+                },
+                'error': genericAjaxErrorWithCallback(function() {
+                    loader.hide();
+                    world.show();
+                    badge.hide();
+                }),
             });
             return false;
         };
@@ -269,53 +277,60 @@ function ajaxModals() {
             loader.width(smaller);
             loader.css('line-height', smaller + 'px');
             loader.css('font-size', (smaller - (smaller * 0.4)) + 'px');
-            $.get(button.data('ajax-url'), function(data) {
-                if (data && data.indexOf('<!DOCTYPE html>') !== -1) {
-                    window.location.href = button.data('ajax-url').replace('/ajax/', '/');
-                    return false;
-                }
-                button.css('display', button_display);
-                button.html(button_content);
-                var title = button.data('ajax-title');
-                title = typeof title == 'undefined' ? button_content : title;
-                modal_size = button.data('ajax-modal-size');
-                freeModal(title, data, modalButtons, modal_size, $('#ajaxModal'));
-                if (typeof button.attr('href') != 'undefined') {
-                    $('#ajaxModal').data('original-url', button.attr('href'));
-                }
-                loadCommons();
-                if (typeof button.data('ajax-handle-form') != 'undefined') {
-                    var ajaxModals_handleForms;
-                    ajaxModals_handleForms = function() {
-                        formloaders();
-                        $('#ajaxModal form').submit(function(e) {
-                            e.preventDefault();
-                            var form_name = $(this).find('.generic-form-submit-button').attr('name');
-                            $(this).ajaxSubmit({
-                                context: this,
-                                success: function(data) {
-                                    var form_modal_size = modal_size;
-                                    if (typeof form_name != 'undefined'
-                                        && $(data).find('form .generic-form-submit-button[name="' + form_name + '"]').length == 0
-                                        && $(data).find('form .errorlist').length == 0
-                                        && typeof button.data('ajax-modal-after-form-size') != 'undefined') {
-                                        form_modal_size = button.data('ajax-modal-after-form-size');
-                                    }
-                                    freeModal(title, data, modalButtons, form_modal_size, $('#ajaxModal'));
-                                    if (typeof form_name != 'undefined'
-                                        && $('#ajaxModal form .generic-form-submit-button[name="' + form_name + '"]').length > 0
-                                        && $('#ajaxModal form .errorlist').length > 0) {
-                                        ajaxModals_handleForms();
-                                    }
-                                    loadCommons();
-                                },
-                                error: genericAjaxError,
+            $.ajax({
+                'url': button.data('ajax-url'),
+                'success': function(data) {
+                    if (data && data.indexOf('<!DOCTYPE html>') !== -1) {
+                        window.location.href = button.data('ajax-url').replace('/ajax/', '/');
+                        return false;
+                    }
+                    button.css('display', button_display);
+                    button.html(button_content);
+                    var title = button.data('ajax-title');
+                    title = typeof title == 'undefined' ? button_content : title;
+                    modal_size = button.data('ajax-modal-size');
+                    freeModal(title, data, modalButtons, modal_size, $('#ajaxModal'));
+                    if (typeof button.attr('href') != 'undefined') {
+                        $('#ajaxModal').data('original-url', button.attr('href'));
+                    }
+                    loadCommons();
+                    if (typeof button.data('ajax-handle-form') != 'undefined') {
+                        var ajaxModals_handleForms;
+                        ajaxModals_handleForms = function() {
+                            formloaders();
+                            $('#ajaxModal form').submit(function(e) {
+                                e.preventDefault();
+                                var form_name = $(this).find('.generic-form-submit-button').attr('name');
+                                $(this).ajaxSubmit({
+                                    context: this,
+                                    success: function(data) {
+                                        var form_modal_size = modal_size;
+                                        if (typeof form_name != 'undefined'
+                                            && $(data).find('form .generic-form-submit-button[name="' + form_name + '"]').length == 0
+                                            && $(data).find('form .errorlist').length == 0
+                                            && typeof button.data('ajax-modal-after-form-size') != 'undefined') {
+                                            form_modal_size = button.data('ajax-modal-after-form-size');
+                                        }
+                                        freeModal(title, data, modalButtons, form_modal_size, $('#ajaxModal'));
+                                        if (typeof form_name != 'undefined'
+                                            && $('#ajaxModal form .generic-form-submit-button[name="' + form_name + '"]').length > 0
+                                            && $('#ajaxModal form .errorlist').length > 0) {
+                                            ajaxModals_handleForms();
+                                        }
+                                        loadCommons();
+                                    },
+                                    error: genericAjaxError,
+                                });
+                                return false;
                             });
-                            return false;
-                        });
-                    };
-                    ajaxModals_handleForms();
-                }
+                        };
+                        ajaxModals_handleForms();
+                    }
+                },
+                'error': genericAjaxErrorWithCallback(function() {
+                    button.css('display', button_display);
+                    button.html(button_content);
+                }),
             });
             return false;
         });
@@ -343,13 +358,17 @@ function ajaxPopovers() {
                     });
                 button.popover('show');
                 popover = button.data('bs.popover');
-                $.get(button.data('ajax-popover'), function(data) {
-                    popover.options.content = data;
-                    button.on('shown.bs.popover', function() {
-                        loadCommons();
-                    });
-                    button.popover('show');
-                })
+                $.ajax({
+                    'url': button.data('ajax-popover'),
+                    'success': function(data) {
+                        popover.options.content = data;
+                        button.on('shown.bs.popover', function() {
+                            loadCommons();
+                        });
+                        button.popover('show');
+                    },
+                    'error': genericAjaxError,
+                });
             } else {
                 button.popover('show');
             }
@@ -552,70 +571,82 @@ function directAddCollectible(buttons, uniquePerOwner) {
                 || button.find('.badge').text() === '0') {
                 // Add
                 button.html('<i class="flaticon-loading"></i>');
-                $.get(form_url, function(data) {
-                    var form = $(data).find('form');
-                    if (typeof add_to_id !== 'undefined') {
-                        form.find('#id_' + fk_as_owner).val(add_to_id);
-                    }
-                    form.ajaxSubmit({
-                        success: function(data) {
-                            button.html(button_content);
-                            if ($(data).hasClass('success')) {
-                                button.find('.badge').text(parseInt(button.find('.badge').text()) + 1);
-                                var alt_message = button.data('alt-message');
-                                if (alt_message) {
-                                    button.data('alt-message', button.find('.message').text().trim());
-                                    button.find('.message').text(alt_message);
-                                    button.prop('title', alt_message);
-                                    if (button.data('toggle') == 'tooltip') {
-                                        button.tooltip('fixTitle');
+                $.ajax({
+                    'url': form_url,
+                    'success': function(data) {
+                        var form = $(data).find('form');
+                        if (typeof add_to_id !== 'undefined') {
+                            form.find('#id_' + fk_as_owner).val(add_to_id);
+                        }
+                        form.ajaxSubmit({
+                            success: function(data) {
+                                button.html(button_content);
+                                if ($(data).hasClass('success')) {
+                                    button.find('.badge').text(parseInt(button.find('.badge').text()) + 1);
+                                    var alt_message = button.data('alt-message');
+                                    if (alt_message) {
+                                        button.data('alt-message', button.find('.message').text().trim());
+                                        button.find('.message').text(alt_message);
+                                        button.prop('title', alt_message);
+                                        if (button.data('toggle') == 'tooltip') {
+                                            button.tooltip('fixTitle');
+                                        }
+                                        button.data('original-title', alt_message);
                                     }
-                                    button.data('original-title', alt_message);
+                                    button.find('.badge').show();
+                                    if (button.data('toggle') == 'tooltip') {
+                                        button.tooltip('hide');
+                                    }
                                 }
-                                button.find('.badge').show();
-                                if (button.data('toggle') == 'tooltip') {
-                                    button.tooltip('hide');
+                                else {
+                                    genericAjaxError({ responseText: 'Error' });
                                 }
-                            }
-                            else {
-                                genericAjaxError({ responseText: 'Error' });
-                            }
-                        },
-                        error: genericAjaxError,
-                    });
+                            },
+                            error: genericAjaxError,
+                        });
+                    },
+                    'error': genericAjaxErrorWithCallback(function() {
+                        button.html(button_content);
+                    }),
                 });
             } else {
                 // Delete
                 button.html('<i class="flaticon-loading"></i>');
-                $.get('/ajax/' + button.data('btn-name') + '/edit/unique/?' + button.data('parent-item') + '_id=' + button.data('parent-item-id') + (fk_as_owner ? ('&' + fk_as_owner + '=' + add_to_id) : ''), function(data) {
-                    var form = $(data).find('form[data-form-name^="delete_"]');
-                    form.find('#id_confirm').prop('checked', true);
-                    form.ajaxSubmit({
-                        success: function(data) {
-                            button.html(button_content);
-                            if ($(data).hasClass('success')) {
-                                button.find('.badge').text(parseInt(button.find('.badge').text()) - 1);
-                                var alt_message = button.data('alt-message');
-                                if (alt_message) {
-                                    button.data('alt-message', button.find('.message').text());
-                                    button.find('.message').text(alt_message);
-                                    button.prop('title', alt_message);
-                                    if (button.data('toggle') == 'tooltip') {
-                                        button.tooltip('fixTitle');
+                $.ajax({
+                    'url': '/ajax/' + button.data('btn-name') + '/edit/unique/?' + button.data('parent-item') + '_id=' + button.data('parent-item-id') + (fk_as_owner ? ('&' + fk_as_owner + '=' + add_to_id) : ''),
+                    'success': function(data) {
+                        var form = $(data).find('form[data-form-name^="delete_"]');
+                        form.find('#id_confirm').prop('checked', true);
+                        form.ajaxSubmit({
+                            success: function(data) {
+                                button.html(button_content);
+                                if ($(data).hasClass('success')) {
+                                    button.find('.badge').text(parseInt(button.find('.badge').text()) - 1);
+                                    var alt_message = button.data('alt-message');
+                                    if (alt_message) {
+                                        button.data('alt-message', button.find('.message').text());
+                                        button.find('.message').text(alt_message);
+                                        button.prop('title', alt_message);
+                                        if (button.data('toggle') == 'tooltip') {
+                                            button.tooltip('fixTitle');
+                                        }
+                                        button.data('original-title', alt_message);
                                     }
-                                    button.data('original-title', alt_message);
+                                    button.find('.badge').hide();
+                                    if (button.data('toggle') == 'tooltip') {
+                                        button.tooltip('hide');
+                                    }
                                 }
-                                button.find('.badge').hide();
-                                if (button.data('toggle') == 'tooltip') {
-                                    button.tooltip('hide');
+                                else {
+                                    genericAjaxError({ responseText: 'Error' });
                                 }
-                            }
-                            else {
-                                genericAjaxError({ responseText: 'Error' });
-                            }
-                        },
-                        error: genericAjaxError,
-                    });
+                            },
+                            error: genericAjaxError,
+                        });
+                    },
+                    'error': genericAjaxErrorWithCallback(function() {
+                        button.html(button_content);
+                    }),
                 });
             }
         });
@@ -717,36 +748,48 @@ function modalItemsReloaders() {
         $('.modal').on('hidden.bs.modal', function(e) {
             ids_to_reload = $.unique(ids_to_reload);
             if (ids_to_reload.length > 0) {
-                $.get(ajax_reload_url + reloaderLocation + (reloaderLocation == '' ? '?' : '&') + 'ids=' + ids_to_reload.join(',')
-                      + '&page_size=' + ids_to_reload.length, function(data) {
-                          var html = $(data);
-                          $.each(ids_to_reload, function(index, id) {
-                              var previous_item = $('[data-item="' + reload_data_item + '"][data-item-id="' + id + '"]');
-                              var new_item = html.find('[data-item="' + reload_data_item + '"][data-item-id="' + id + '"]');
-                              if (new_item.length == 0) {
-                                  // If not returned, remove it
-                                  previous_item.remove();
-                              } else {
-                                  // Replace element
-                                  previous_item.replaceWith(new_item);
-                              }
-                          });
-                          ids_to_reload = [];
-                          if (ajax_pagination_callback) {
-                              ajax_pagination_callback();
-                          }
-                          loadCommons();
-                      });
+                $.ajax({
+                    'url': (
+                        ajax_reload_url + reloaderLocation
+                            + (reloaderLocation == '' ? '?' : '&')
+                            + 'ids=' + ids_to_reload.join(',')
+                            + '&page_size=' + ids_to_reload.length
+                    ),
+                    'success': function(data) {
+                        var html = $(data);
+                        $.each(ids_to_reload, function(index, id) {
+                            var previous_item = $('[data-item="' + reload_data_item + '"][data-item-id="' + id + '"]');
+                            var new_item = html.find('[data-item="' + reload_data_item + '"][data-item-id="' + id + '"]');
+                            if (new_item.length == 0) {
+                                // If not returned, remove it
+                                previous_item.remove();
+                            } else {
+                                // Replace element
+                                previous_item.replaceWith(new_item);
+                            }
+                        });
+                        ids_to_reload = [];
+                        if (ajax_pagination_callback) {
+                            ajax_pagination_callback();
+                        }
+                        loadCommons();
+                    },
+                    'error': genericAjaxError,
+                });
             }
         });
     }
     if (typeof reload_item != 'undefined') {
         $('.modal').on('hidden.bs.modal', function(e) {
             if (reload_item === true) {
-                $.get(ajax_reload_url, function(data) {
-                    $('.item-container').html(data);
-                    reload_item = false;
-                    loadCommons();
+                $.ajax({
+                    'url': ajax_reload_url,
+                    'success': function(data) {
+                        $('.item-container').html(data);
+                        reload_item = false;
+                        loadCommons();
+                    },
+                    'error': genericAjaxError,
                 });
             }
         });
@@ -931,19 +974,31 @@ function confirmModal(onConfirmed, onCanceled /* optional */, title /* optional 
 
 function load_more_function(nextPageUrl, newPageParameters, newPageCallback /* optional */, onClick) {
     var button = $('#load_more');
+    let button_content = button.html();
     button.html('<div class="loader"><i class="flaticon-loading"></i></div>');
     var next_page = button.attr('data-next-page');
-    $.get(nextPageUrl + location.search + (location.search == '' ? '?' : '&') + 'page=' + next_page + newPageParameters, function(data) {
-        button.replaceWith(data);
-        if (onClick) {
-            paginationOnClick(onClick, nextPageUrl, newPageParameters, newPageCallback);
-        } else {
-            pagination(nextPageUrl, newPageParameters, newPageCallback);
-        }
-        if (typeof newPageCallback != 'undefined') {
-            newPageCallback();
-        }
-        loadCommons();
+    $.ajax({
+        'url': (
+            nextPageUrl + location.search
+                + (location.search == '' ? '?' : '&')
+                + 'page=' + next_page
+                + newPageParameters
+        ),
+        'success': function(data) {
+            button.replaceWith(data);
+            if (onClick) {
+                paginationOnClick(onClick, nextPageUrl, newPageParameters, newPageCallback);
+            } else {
+                pagination(nextPageUrl, newPageParameters, newPageCallback);
+            }
+            if (typeof newPageCallback != 'undefined') {
+                newPageCallback();
+            }
+            loadCommons();
+        },
+        'error': genericAjaxErrorWithCallback(function() {
+            button.html(button_content);
+        }),
     });
 }
 
@@ -1010,7 +1065,33 @@ function hideTooltips() {
 // Generic ajax error
 
 function genericAjaxError(xhr, ajaxOptions, thrownError) {
-    alert(xhr.responseText);
+    if (debug) {
+        let html;
+        try {
+            html = $(xhr.responseText);
+            if (html.find('body').length > 0) {
+                if (html.find('main').length > 0) {
+                    html = html.find('main');
+                } else {
+                    html = html.find('body');
+                    html.find('.navbar-fixed-top').remove();
+                }
+            }
+        }
+        catch(err) {
+            html = '<pre>' + xhr.responseText + '</pre>';
+        }
+        freeModal('Debug: ' + ajaxOptions + ' - ' + thrownError, html);
+    } else {
+        freeModal('Server error', 'Please retry. If the problem persists, contact us.');
+    }
+}
+
+function genericAjaxErrorWithCallback(callback) {
+    return function(xhr, ajaxOptions, thrownError) {
+        genericAjaxError(xhr, ajaxOptions, thrownError);
+        callback();
+    };
 }
 
 // *****************************************
@@ -1064,7 +1145,11 @@ function updateActivities() {
                     $(this).find('a[href="#likecount"]').text(data['total_likes']);
                 }
             },
-            error: genericAjaxError,
+            error: genericAjaxErrorWithCallback(function() {
+                loader.hide();
+                button.show();
+                button.addClass('disabled');
+            }),
         });
         return false;
     });
@@ -1153,7 +1238,10 @@ function updateActivities() {
                     loader.remove();
                     button.show();
                 },
-                error: genericAjaxError,
+                error: genericAjaxErrorWithCallback(function() {
+                    loader.remove();
+                    button.show();
+                }),
             });
             return false;
         });
@@ -1308,12 +1396,16 @@ function afterLoadBadges(user_id) {
 }
 
 function loadBadges(tab_name, user_id, onDone) {
-    $.get('/ajax/badges/?of_user=' + user_id, function(data) {
-        if ($(data).find('.items').length == 0 && !$(data).hasClass('items')) {
-            onDone('<div class="padding20"><div class="alert alert-warning">' + gettext('No result.') + '</div></div>');
-        } else {
-            onDone(data, afterLoadBadges);
-        }
+    $.ajax({
+        'url': '/ajax/badges/?of_user=' + user_id,
+        'success': function(data) {
+            if ($(data).find('.items').length == 0 && !$(data).hasClass('items')) {
+                onDone('<div class="padding20"><div class="alert alert-warning">' + gettext('No result.') + '</div></div>');
+            } else {
+                onDone(data, afterLoadBadges);
+            }
+        },
+        'error': genericAjaxError,
     });
 }
 
@@ -1482,7 +1574,6 @@ function formShowMore(form, cutOff, includingCutOff, until, includingUntil) {
                 hidden_fields.push($(this));
                 let input = $(this).find('[id^="id_"]');
                 if (input.length > 0 && input.val() != '') {
-                    console.log($(this).prop('id'), $(this).find('[id^="id_"]').val());
                     hidden_at_init = false;
                 }
             } else {
@@ -1496,7 +1587,6 @@ function formShowMore(form, cutOff, includingCutOff, until, includingUntil) {
         }
     });
     if (typeof(cutOffField) != 'undefined') {
-        console.log('yes cutOff');
         $.each(hidden_fields, function(i, field) {
             if (hidden_at_init) {
                 field.hide();

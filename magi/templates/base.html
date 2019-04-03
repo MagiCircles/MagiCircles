@@ -270,6 +270,7 @@
       var is_authenticated = {% if user.is_authenticated %}'{{ user.username }}'{% else %}false{% endif %};
       var translated_terms = {{ javascript_translated_terms_json|safe }};
       var staff_buttons_hidden = true;
+      var debug = {% if debug %}true{% else %}false{% endif %};
     </script>
 
     <script src="{{ static_url }}bower/jquery/jquery.min.js"></script>
