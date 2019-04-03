@@ -400,7 +400,8 @@ class MagiForm(forms.ModelForm):
                 and (isinstance(self.cleaned_data[field], InMemoryUploadedFile)
                      or isinstance(self.cleaned_data[field], TemporaryUploadedFile))
                 and getattr(django_settings, 'DEBUG', False)
-                and getattr(django_settings, 'UPLOADED_FILES_URL', None)):
+                and getattr(django_settings, 'UPLOADED_FILES_URL', None)
+                and not getattr(django_settings, 'AWS_STORAGE_BUCKET_NAME', None)):
                 raise forms.ValidationError(
                     'Debug mode: UPLOADED_FILES_URL is specified so you can\'t upload files.'
                 )
