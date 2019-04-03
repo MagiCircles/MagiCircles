@@ -703,6 +703,7 @@ class MagiCollection(object):
                     d['ajax_link'] = getattr(cache, 'ajax_item_url')
                     d['link_text'] = unicode(_(u'Open {thing}')).format(thing=d['verbose_name'].lower())
                     d['image_for_link'] = getattr(cache, 'image_url', None)
+                    d['icon'] = getattr(cache, 'icon', d['icon'])
                 else:
                     d['type'] = 'text'
                     d['value'] = getattr(cache, 'unicode', field_name)
