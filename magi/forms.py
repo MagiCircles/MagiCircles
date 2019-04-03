@@ -20,6 +20,7 @@ from django.core.validators import MinValueValidator, MinLengthValidator
 from django.shortcuts import get_object_or_404
 from magi.middleware.httpredirect import HttpRedirectException
 from magi.django_translated import t
+from magi.raw import GET_PARAMETERS_NOT_FROM_FORM
 from magi import models
 from magi.default_settings import RAW_CONTEXT
 from magi.settings import (
@@ -892,8 +893,8 @@ class MagiFiltersForm(AutoForm):
         queryset = filter_ids(queryset, request)
         # Go through form fields
         for field_name in self.fields.keys():
-            # ordering fields are Handled in views collection, used by pagination
-            if field_name in ['ordering', 'page', 'reverse_order']:
+            # Some fields are handled in views collection
+            if field_name in GET_PARAMETERS_NOT_FROM_FORM:
                 continue
             filter = getattr(self, '{}_filter'.format(field_name), None)
             if not filter:

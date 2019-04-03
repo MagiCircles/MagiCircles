@@ -13,6 +13,7 @@ from magi.utils import (
     listUnique,
     staticImageURL,
 )
+from magi.raw import GET_PARAMETERS_NOT_FROM_FORM
 from magi.forms import ConfirmDelete, filter_ids
 
 ############################################################
@@ -177,9 +178,11 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
             context['show_relevant_fields_on_ordering'] = True
             context['plain_ordering'] = [o[1:] if o.startswith('-') else o for o in ordering]
 
+    filled_filter_form = False
     if collection.list_view.filter_form:
-        if len(request.GET) > 1 or (len(request.GET) == 1 and 'page' not in request.GET):
+        if len([k for k in request.GET.keys() if k not in GET_PARAMETERS_NOT_FROM_FORM]) > 0:
             context['filter_form'] = collection.list_view.filter_form(filters, request=request, ajax=ajax, collection=collection)
+            filled_filter_form = True
         else:
             context['filter_form'] = collection.list_view.filter_form(request=request, ajax=ajax, collection=collection)
         if hasattr(context['filter_form'], 'filter_queryset'):
@@ -275,10 +278,18 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
         context['next_page_url'] = u'/ajax{}'.format(request.path)
     else:
         context['next_page_url'] = u'/ajax/{}/'.format(collection.plural_name)
+
+    # Ajax items reloader
+    if not ajax and collection.list_view.auto_reloader and collection.list_view.ajax:
+        context['ajax_reload_url'] = context['next_page_url']
+        context['reload_urls_start_with'] = [u'/{}/edit/'.format(collection.plural_name)];
+        if collection.collectible_collections:
+            context['reload_urls_start_with'] += [cc.get_add_url() for cc in collection.collectible_collections.values()]
+
     context['is_last_page'] = context['page'] == context['total_pages']
     context['page_size'] = page_size
     context['show_no_result'] = not ajax or context['ajax_modal_only']
-    context['show_search_results'] = collection.list_view.show_search_results and bool(request.GET)
+    context['show_search_results'] = collection.list_view.show_search_results and filled_filter_form
     context['show_owner'] = 'show_owner' in request.GET
     context['get_started'] = 'get_started' in request.GET
     context['name'] = name

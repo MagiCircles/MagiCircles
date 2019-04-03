@@ -16,6 +16,16 @@ donators_adjectives = [
     _('nice'),
 ]
 
+GET_PARAMETERS_NOT_FROM_FORM = [
+    'ids',
+    'ordering', 'reverse_order',
+    'page', 'page_size',
+    'ajax_modal_only', 'ajax_show_top_buttons',
+    'show_owner', 'get_started'
+    'max_per_line',
+    'only_show_buttons',
+]
+
 other_sites = [
     {
         'name': 'School Idol Tomodachi',
