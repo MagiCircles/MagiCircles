@@ -66,6 +66,11 @@ class DateInput(forms.DateInput):
     input_type = 'date'
 
 def date_input(field, value=None):
+    field = forms.DateField(
+        label=field.label,
+        required=field.required,
+        initial=field.initial,
+    )
     field.widget = DateInput()
     field.widget.attrs.update({
         'class': 'calendar-widget',
@@ -169,7 +174,7 @@ class MagiForm(forms.ModelForm):
             if model_field is not None and model_field.null:
                 self.fields[name].required = False
             # Fix dates fields
-            if isinstance(field, forms.DateField):
+            if isinstance(field, forms.DateField) or name in getattr(self.Meta, 'date_fields', []):
                 self.fields[name], value = date_input(field, value=(getattr(self.instance, name, None) if not self.is_creating else None))
                 if value:
                     setattr(self.instance, name, value)
