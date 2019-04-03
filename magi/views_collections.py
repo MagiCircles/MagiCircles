@@ -160,7 +160,18 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     collection.list_view.check_permissions(request, context)
     context['plural_name'] = collection.plural_name
     page = 0
+
+    # Alt views
+    context['view'] = None
+    context['alt_view'] = None
+    alt_views = dict(collection.list_view.alt_views)
     page_size = collection.list_view.page_size
+    if 'view' in request.GET and request.GET['view'] in alt_views:
+        context['view'] = request.GET['view']
+        context['alt_view'] = alt_views[context['view']]
+    if context['alt_view'] and 'page_size' in context['alt_view']:
+        page_size = context['alt_view']['page_size']
+
     if 'page_size' in request.GET:
         try: page_size = int(request.GET['page_size'])
         except ValueError: pass
@@ -168,12 +179,16 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     filters = _get_filters(request.GET, extra_filters)
     queryset = collection.list_view.get_queryset(collection.queryset, filters, request)
 
+    show_relevant_fields_on_ordering = collection.list_view.show_relevant_fields_on_ordering
+    if context['alt_view'] and 'show_relevant_fields_on_ordering' in context['alt_view']:
+        show_relevant_fields_on_ordering = context['alt_view']['show_relevant_fields_on_ordering']
+
     ordering = None
     if 'ordering' in request.GET and request.GET['ordering']:
         reverse = ('reverse_order' in request.GET and request.GET['reverse_order']) or not request.GET or len(request.GET) == 1
         prefix = '-' if reverse else ''
         ordering = [prefix + ordering for ordering in request.GET['ordering'].split(',')]
-        if (collection.list_view.show_relevant_fields_on_ordering
+        if (show_relevant_fields_on_ordering
             and request.GET['ordering'] != ','.join(collection.list_view.plain_default_ordering_list)):
             context['show_relevant_fields_on_ordering'] = True
             context['plain_ordering'] = [o[1:] if o.startswith('-') else o for o in ordering]
@@ -241,20 +256,6 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     if shortcut_url is not None:
         context['shortcut_url'] = shortcut_url
 
-    # Ajax items reloader
-    if not ajax and collection.list_view.auto_reloader and collection.list_view.ajax:
-        context['ajax_reload_url'] = collection.get_list_url(ajax=True)
-        context['reload_urls_start_with'] = [u'/{}/edit/'.format(collection.plural_name)];
-        if collection.collectible_collections:
-            context['reload_urls_start_with'] += [cc.get_add_url() for cc in collection.collectible_collections.values()]
-
-    # Alt views
-    context['view'] = None
-    context['alt_view'] = None
-    alt_views = dict(collection.list_view.alt_views)
-    if 'view' in request.GET and request.GET['view'] in alt_views:
-        context['view'] = request.GET['view']
-        context['alt_view'] = alt_views[context['view']]
     context['ordering'] = ordering
     context['page_title'] = _(u'{things} list').format(things=collection.plural_title)
     context['h1_page_title'] = collection.plural_title
