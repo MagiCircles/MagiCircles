@@ -464,6 +464,7 @@ class BaseMagiModel(models.Model):
                 'top_image',
                 'top_image_list',
                 'top_image_item',
+                'display_name',
                 'blocked',
                 'blocked_by_owner',
                 'reverse_related',
