@@ -506,6 +506,18 @@ class BaseMagiModel(models.Model):
             elif hasattr(self, '_cache_c_{}'.format(field_name)):
                 self._force_on_last_update_or_none(field_name, prefix='j_')
                 cache = type(self).get_cached_csv(field_name, getattr(self, '_cache_c_{}'.format(field_name)))
+            # Accessing cached_something when _cache_i_something exists
+            elif hasattr(self, '_cache_i_{}'.format(field_name)):
+                return type(self).get_reverse_i(
+                    'cached_{}'.format(field_name),
+                    getattr(self, 'cached_i_{}'.format(field_name)),
+                )
+            # Accessing cached_t_something when _cache_i_something exists
+            elif field_name.startswith('t_') and hasattr(self, '_cache_i_{}'.format(field_name[2:])):
+                return type(self).get_verbose_i(
+                    'cached_{}'.format(field_name[2:]),
+                    getattr(self, 'cached_i_{}'.format(field_name[2:])),
+                )
             # Accessing cached_something when _cache_something exists
             elif hasattr(self, '_cache_{}'.format(field_name)):
                 self._force_on_last_update_or_none(field_name)
