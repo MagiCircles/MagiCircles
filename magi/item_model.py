@@ -237,11 +237,11 @@ class BaseMagiModel(models.Model):
 
     @classmethod
     def _dict_choices(self, field_name):
-        return {
-            (choice[0] if isinstance(choice, tuple) else choice):
-            (choice[1] if isinstance(choice, tuple) else _(choice))
+        return OrderedDict([
+            ((choice[0] if isinstance(choice, tuple) else choice),
+            (choice[1] if isinstance(choice, tuple) else _(choice)))
             for choice in getattr(self, u'{name}_CHOICES'.format(name=field_name.upper()), [])
-        }
+        ])
 
     @classmethod
     def get_csv_values(self, field_name, values, translated=True):
@@ -259,19 +259,21 @@ class BaseMagiModel(models.Model):
         if not translated:
             return d
         choices = self._dict_choices(field_name)
-        return {
-            key: {
-                'value': value,
+        return OrderedDict([
+            (key, {
+                'value': d[key],
                 'verbose': choices.get(key, key),
-            } for key, value in d.items()
-        }
+            })
+            for key in choices.keys()
+            if key in d
+        ])
 
     @classmethod
     def get_markdown_dict_values(self, field_name, values, translated):
-        return {
-            k: (False, v)
+        return OrderedDict([
+            (k, (False, v))
             for k, v in self.get_dict_values(field_name, values, translated).items()
-        }
+        ])
 
     @classmethod
     def get_json_value(self, field_name, value):
@@ -285,11 +287,9 @@ class BaseMagiModel(models.Model):
         except FieldDoesNotExist: original_cls = None
         original_cls = getattr(self, u'_cache_{}_fk_class'.format(field_name), original_cls)
         if callable(original_cls): original_cls = original_cls()
-
         # Call pre if provided
         if hasattr(self, u'cached_{}_pre'.format(field_name)):
             getattr(self, u'cached_{}_pre'.format(field_name))(d)
-
         # Add default unicode if missing
         if 'unicode' not in d:
             d['unicode'] = d['name'] if 'name' in d else (d['id'] if 'id' in d else '?')

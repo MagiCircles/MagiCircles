@@ -656,8 +656,11 @@ class MagiCollection(object):
                 field_name = field_name[2:]
                 # Show dictionary
                 value = getattr(item, u't_{}'.format(field_name)).values()
-                value = mark_safe(u'<dl>{}</dl>'.format(u''.join([u'<dt>{verbose}</dt><dd>{value}</dd>'.format(**dt) for dt in value])))
-                if not value:
+                value = mark_safe(u'<dl>{}</dl>'.format(u''.join([
+                    u'<dt>{verbose}</dt><dd>{value}</dd>'.format(**dt)
+                    for dt in value if dict(dt)['value'] is not None
+                ])))
+                if not value or value == '<dl></dl>':
                     continue
             if self.translated_fields and field.name in self.translated_fields:
                 value = getattr(item, u't_{}'.format(field.name), None)
