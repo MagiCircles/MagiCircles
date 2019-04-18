@@ -333,6 +333,11 @@ def globalContext(request):
     else:
         pass
 
+    # Debug
+    if django_settings.DEBUG:
+        # Ensures that static assets are always reloaded
+        context['static_files_version'] = randomString(20)
+
     return context
 
 def getGlobalContext(request):
