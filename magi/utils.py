@@ -866,6 +866,10 @@ def setSubField(fields, field_name, value, key='icon'):
             fields[field_name][key] = value(field_name) if callable(value) else value
 
 def getSubField(fields, l, default=None):
+    """
+    Takes a list of sub attributes to look for.
+    Ex: fields = { 'fruits': ['banana', 'apple'] }, l = ['fruits', 1] will return 'apple'
+    """
     ret = fields
     for i in l:
         if isinstance(ret, dict):
@@ -879,6 +883,24 @@ def getSubField(fields, l, default=None):
             except AttributeError:
                 return default
     return ret
+
+############################################################
+# to_fields utils
+
+def toFieldsItemsGallery(d, items, image_field='image_url'):
+    d['type'] = 'images_links'
+    d['images'] = [{
+        'link': item.item_url,
+        'ajax_link': item.ajax_item_url,
+        'link_text': unicode(item),
+        'value': getattr(item, image_field, None),
+    } for item in items if getattr(item, image_field, None)]
+    return d
+
+def toFieldsAddAttribute(fields, field_name, attribute, value):
+    attributes = getSubField(fields, [field_name, 'attributes'], {})
+    attributes[attribute] = value
+    setSubField(fields, field_name, key='attributes', value=attributes)
 
 ############################################################
 # Join / Split data stored as string in database
