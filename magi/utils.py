@@ -684,15 +684,21 @@ def birthdayURL(user):
 ############################################################
 # Event status using start and end date
 
-def getEventStatus(start_date, end_date):
+def getEventStatus(start_date, end_date, ends_within=0, starts_within=0):
     if not end_date or not start_date:
         return None
+    if start_date > end_date:
+        return 'invalid'
     now = timezone.now()
-    if now > end_date:
-        return 'ended'
-    elif now > start_date:
+    if now < (start_date - relativedelta(days=starts_within)):
+        return 'future'
+    elif now < start_date:
+        return 'starts_soon'
+    elif now < end_date:
         return 'current'
-    return 'future'
+    elif now < (end_date + relativedelta(days=ends_within)):
+        return 'ended_recently'
+    return 'ended'
 
 def filterEventsByStatus(queryset, status, prefix=''):
     if status == 'all':
