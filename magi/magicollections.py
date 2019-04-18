@@ -1234,6 +1234,12 @@ class MagiCollection(object):
                 return item.http_image_url
             return self.collection.share_image(context, item)
 
+        def before_save(self, request, instance, type=None):
+            return instance
+
+        def after_save(self, request, instance, type=None):
+            return instance
+
         def get_item(self, request, pk):
             return { 'pk': pk }
 
@@ -1257,10 +1263,10 @@ class MagiCollection(object):
         max_per_user_per_minute = None
 
         def before_save(self, request, instance, type=None):
-            return instance
+            return self.collection.before_save(request, instance, type=type)
 
         def after_save(self, request, instance, type=None):
-            return instance
+            return self.collection.after_save(request, instance, type=type)
 
         def extra_context(self, context):
             pass
@@ -1320,10 +1326,10 @@ class MagiCollection(object):
         after_template = None
 
         def before_save(self, request, instance, type=None):
-            return instance
+            return self.collection.before_save(request, instance, type=type)
 
         def after_save(self, request, instance, type=None):
-            return instance
+            return self.collection.after_save(request, instance, type=type)
 
         def extra_context(self, context):
             pass
