@@ -45,7 +45,7 @@ def save_item(model, item, updated_fields, in_item=False):
             setattr(item, k, v)
         item.save()
     else:
-        model.objects.filter(id=item.id).update(**updated_fields)
+        model.objects.filter(id=item.pk).update(**updated_fields)
 
 # All callbacks return True or False whether or not they did something
 # When the first callback does something, the script stops
@@ -77,7 +77,7 @@ def tinypng_compress(model, field):
     if not item:
         return False
     print '[Info] Compressing on TinyPNG {} for {} #{}...'.format(
-        field.name, model.__name__, item.id
+        field.name, model.__name__, item.pk
     )
     value = getattr(item, field.name)
     filename = value.name
@@ -102,7 +102,7 @@ def tinypng_thumbnail(model, field):
     if not item:
         return False
     print '[Info] Generating thumbnail with TinyPNG {} for {} #{}...'.format(
-        field.name, model.__name__, item.id
+        field.name, model.__name__, item.pk,
     )
     value = getattr(item, field.name)
     filename = value.name
@@ -133,7 +133,7 @@ def thumbnail(model, field):
     if not item:
         return False
     print '[Info] Generating a thumbnail {} for {} #{}...'.format(
-        field.name, model.__name__, item.id,
+        field.name, model.__name__, item.pk,
     )
     value = getattr(item, field.name)
     filename = value.name
@@ -156,7 +156,7 @@ def update_markdown(model, field):
         item = get_next_item(model, field, u'_cache_{}'.format(field.name[2:]))
         if not item:
             return False
-        print u'[Info] Updating markdown {} for {} #{}...'.format(field.name, model.__name__, item.id)
+        print u'[Info] Updating markdown {} for {} #{}...'.format(field.name, model.__name__, item.pk)
         r = requests.post(
             u'https://api.github.com/markdown/raw',
             data=getattr(item, field.name).encode('utf-8'),
@@ -175,7 +175,7 @@ def update_on_change(model, field):
         item = get_next_item(model, field, field.name[:8], boolean_on_change=True)
         if not item:
             return False
-        print u'[Info] Updating {} after change occured for {} #{}...'.format(field.name[:8], model.__name__, item.id)
+        print u'[Info] Updating {} after change occured for {} #{}...'.format(field.name[:8], model.__name__, item.pk)
         callback = getattr(model, u'{}_ON_CHANGE'.format(field.name[:8].upper()))
         if callback(item):
             print '[Info] Done.'

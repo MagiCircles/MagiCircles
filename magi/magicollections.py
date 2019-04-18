@@ -238,10 +238,11 @@ class MagiCollection(object):
                 else:
                     a = {
                         u'total_{}'.format(collection.name):
-                        'SELECT COUNT(*) FROM {db_table} WHERE {item_field_name}_id = {item_db_table}.id AND {fk_owner}_id IN ({fk_owner_ids})'.format(
+                        'SELECT COUNT(*) FROM {db_table} WHERE {item_field_name}_id = {item_db_table}.{item_pk_name} AND {fk_owner}_id IN ({fk_owner_ids})'.format(
                             db_table=collection.queryset.model._meta.db_table,
                             item_field_name=item_field_name,
                             item_db_table=self.queryset.model._meta.db_table,
+                            item_pk_name=self.queryset.model._meta.pk.column,
                             fk_owner=fk_owner, fk_owner_ids=fk_owner_ids,
                         )
                     }
@@ -299,7 +300,7 @@ class MagiCollection(object):
                                 ): self.item_id
                             })
                         self.fields[model_class.fk_as_owner].choices = [
-                            (c.id, unicode(c)) for c in filtered_queryset
+                            (c.pk, unicode(c)) for c in filtered_queryset
                         ]
                         total_choices = len(self.fields[model_class.fk_as_owner].choices)
                         if total_choices == 0:
@@ -830,7 +831,7 @@ class MagiCollection(object):
             extra_attributes = {}
             quick_add_to_collection = collectible_collection.add_view.quick_add_to_collection(request) if request.user.is_authenticated() else False
             url_to_collectible_add_with_item = lambda url: u'{url}?{item_name}_id={item_id}&{variables}'.format(
-                url=url, item_name=self.name, item_id=item.id,
+                url=url, item_name=self.name, item_id=item.pk,
                 variables=u'&'.join([
                     u'{}_{}={}'.format(self.name, variable, getattr(item, variable))
                     for variable in collectible_collection.add_view.add_to_collection_variables
@@ -851,7 +852,7 @@ class MagiCollection(object):
             if quick_add_to_collection:
                 extra_attributes['quick-add-to-collection'] = 'true'
                 extra_attributes['parent-item'] = self.name
-                extra_attributes['parent-item-id'] = item.id
+                extra_attributes['parent-item-id'] = item.pk
                 if collectible_collection.queryset.model.fk_as_owner:
                     add_to_id_from_request = getattr(request, u'add_to_{}'.format(collectible_collection.name), None)
                     if not add_to_id_from_request:
@@ -1593,12 +1594,12 @@ class AccountCollection(MagiCollection):
                     return collection.parent_collection.get_list_url(
                         ajax=ajax, modal_only=ajax, parameters={
                             'get_started': '',
-                            'add_to_{}'.format(collection.name): instance.id,
+                            'add_to_{}'.format(collection.name): instance.pk,
                         },
                     )
             if ajax: # Ajax is not allowed for profile url
                 return '/ajax/successadd/'
-            return '{}#{}'.format(request.user.item_url, instance.id)
+            return '{}#{}'.format(request.user.item_url, instance.pk)
 
         def before_save(self, request, instance, type=None):
             if 'account_ids' in request.session:
@@ -1614,7 +1615,7 @@ class AccountCollection(MagiCollection):
         def redirect_after_edit(self, request, instance, ajax=False):
             if ajax:
                 return '/ajax/successedit/'
-            return '{}#{}'.format(request.user.item_url, instance.id)
+            return '{}#{}'.format(request.user.item_url, instance.pk)
 
         def before_delete(self, request, item, ajax):
             if 'account_ids' in request.session:

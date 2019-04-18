@@ -52,7 +52,7 @@
 <form class="container_form" action="#addLink" data-form-name="addLink">
   <table class="table table-main table-padded table-rounded">
     {% for link in links %}
-    <tr id="link{{link.id}}">
+    <tr id="link{{ link.id }}">
       <td>
 	{% include 'include/link.html' %}
       </td>

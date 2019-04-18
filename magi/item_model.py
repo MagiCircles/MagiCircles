@@ -125,7 +125,7 @@ def get_real_owner(instance):
         return instance
     if isinstance(instance.__class__.owner, property):
         if not getattr(instance, '_real_owner', None) or True:
-            instance._real_owner = getSubField(type(instance).objects.select_related(instance.selector_to_owner()).get(id=instance.id), instance.selector_to_owner().split('__'))
+            instance._real_owner = getSubField(type(instance).objects.select_related(instance.selector_to_owner()).get(pk=instance.pk), instance.selector_to_owner().split('__'))
         return instance._real_owner
     return instance.owner
 
@@ -332,7 +332,6 @@ class BaseMagiModel(models.Model):
                     d['t_{}'.format(k)] = v
                 else:
                     d['t_{}'.format(k)] = d[u'{}s'.format(k)].get(language, v)
-
         # Call extra if provided
         if hasattr(self, u'cached_{}_extra'.format(field_name)):
             getattr(self, u'cached_{}_extra'.format(field_name))(d)

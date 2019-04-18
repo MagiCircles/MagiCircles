@@ -460,7 +460,7 @@ def cuteFormFieldsForContext(cuteform_fields, context, form=None, prefix=None, a
                 k:v for k, v in field['extra_settings'].items()
                 if 'modal' not in k })
         for choice in choices:
-            key, value = choice if isinstance(choice, tuple) else (choice.id, choice)
+            key, value = choice if isinstance(choice, tuple) else (choice.pk, choice)
             if key == '':
                 cuteform = empty if field_type == CuteFormType.Images else empty_image
             else:
@@ -554,7 +554,7 @@ class uploadToRandom(_uploadToBase):
 @deconstructible
 class uploadItem(_uploadToBase):
     def get_name(self, instance, filename, limit_to):
-        id = unicode(instance.id if instance.id else randomString(6))
+        id = unicode(instance.pk if instance.pk else randomString(6))
         return u'{id}{string}-{random}'.format(
             id=id,
             string=tourldash(unicode(instance))[:(limit_to - len(id) - self.length)],
@@ -796,7 +796,7 @@ def dumpModel(instance):
     dump = model_to_dict(instance)
     for key in dump.keys():
         if isinstance(dump[key], models.Model):
-            dump[key] = dump[key].id
+            dump[key] = dump[key].pk
         else:
             dump[key] = unicode(dump[key])
     return dump
@@ -1144,7 +1144,7 @@ def duplicate_translation(model, field, term, only_for_language=None, print_log=
                         log = u'Add {language} translations to {open_a}#{id} {item}{close_a}'.format(
                             language=language,
                             open_a=u'<a href="{}" target="_blank">'.format(s_item.http_item_url) if html_log else '',
-                            id=s_item.id,
+                            id=s_item.pk,
                             item=s_item,
                             close_a='</a>' if html_log else '',
                         )

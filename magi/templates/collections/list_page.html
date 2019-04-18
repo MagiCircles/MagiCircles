@@ -31,8 +31,7 @@
   {% if display_style == 'rows' and forloop.counter0 != 0 and forloop.counter0|mod:per_line %}
 </div><div class="row items">
   {% endif %}
-  <{% if display_style == 'rows' %}div class="col-{{ col_break }}-{{ col_size }}"{% elif display_style == 'table' %}tr{% else %}div{% endif %} data-item="{{ collection.name }}" data-item-id="{{ item.id }}">
-
+  <{% if display_style == 'rows' %}div class="col-{{ col_break }}-{{ col_size }}"{% elif display_style == 'table' %}tr{% else %}div{% endif %} data-item="{{ collection.name }}" data-item-id="{{ item.pk }}">
     {% if item.blocked_by_owner %}
     <div class="hidden">blocked</div>
     {% elif item.blocked %}
