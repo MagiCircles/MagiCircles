@@ -771,6 +771,23 @@ def snakeToCamelCase(string):
 def listUnique(list):
     return OrderedDict([(item, None) for item in list]).keys()
 
+def matchesTemplate(template, string):
+    if '{}' in template:
+        regex = re.compile(template.format(*['(.+)'] * template.count('{}')))
+        match = regex.match(string)
+        if match:
+            return match.groups()
+        return None
+    variables = templateVariables(template)
+    regex = re.compile(template.format(**{
+        variable: u'(?P<{}>.+)'.format(variable)
+        for variable in variables
+    }))
+    match = regex.match(string)
+    if match:
+        return match.groupdict()
+    return None
+
 ############################################################
 # Redirections
 
