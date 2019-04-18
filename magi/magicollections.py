@@ -591,6 +591,12 @@ class MagiCollection(object):
     def share_image(self, context, item):
         return self.image
 
+    def before_save(self, request, instance, type=None):
+        return instance
+
+    def after_save(self, request, instance, type=None):
+        return instance
+
     def to_fields(self, view, item, to_dict=True, only_fields=None, icons=None, images=None, force_all_fields=False, order=None, extra_fields=None, exclude_fields=None, request=None, preselected=None):
         if extra_fields is None: extra_fields = []
         if exclude_fields is None: exclude_fields = []
@@ -1234,12 +1240,6 @@ class MagiCollection(object):
             if hasattr(item, 'http_image_url'):
                 return item.http_image_url
             return self.collection.share_image(context, item)
-
-        def before_save(self, request, instance, type=None):
-            return instance
-
-        def after_save(self, request, instance, type=None):
-            return instance
 
         def get_item(self, request, pk):
             return { 'pk': pk }
