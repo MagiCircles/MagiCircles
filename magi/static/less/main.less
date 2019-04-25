@@ -615,7 +615,7 @@ table.text-center th {
 .default-index {
     text-align: center;
     header {
-        padding: 30px 0 200px 0;
+        padding: 30px 0 40px 0;
         a[href="/donate/"] {
             margin-left: 20px;
         }
@@ -652,7 +652,28 @@ table.text-center th {
     }
 }
 
+#carousel-latest-news {
+    margin: auto;
+    width: 100%;
+    max-width: 800px;
+
+    .item.birthday {
+        background-size: 150%;
+        background-position-y: 30%;
+        background-position-x: 20%;
+        text-align: right;
+        .carousel-caption {
+            right: 40%;
+            left: 10%;
+            h2 {
+                text-shadow: 0px 2px 30px black;
+            }
+        }
+    }
+}
+
 .current-activity_list[class*="shortcut-"], .current-index {
+
     #page-content-wrapper {
         padding: 0;
     }

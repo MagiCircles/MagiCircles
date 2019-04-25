@@ -94,6 +94,8 @@ def getCharactersBirthdays(queryset, get_name_image_url_from_character,
     characters.sort(key=lambda c: getattr(c, field_name).replace(year=2000))
     for character in characters:
         name, image, url = get_name_image_url_from_character(character)
+        if name is None or image is None:
+            continue
         t_titles = {}
         old_lang = get_language()
         for lang, _verbose in django_settings.LANGUAGES:
