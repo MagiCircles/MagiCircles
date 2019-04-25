@@ -801,7 +801,7 @@ class MagiFiltersForm(AutoForm):
                     for view_name, view in self.collection.list_view.alt_views
                 ]
             if not [_v for _v in self.collection.list_view.alt_views or []
-                 if not _v[1].get('hide_in_filter', False)]: # None visible
+                    if not _v[1].get('hide_in_filter', False) and _v[1].get('hide_in_navbar', False)]: # None visible
                 self.fields['view'].widget = self.fields['view'].hidden_widget()
             self.fields['view'].choices = self.collection.list_view._alt_view_choices
         else:

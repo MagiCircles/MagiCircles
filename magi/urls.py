@@ -1,9 +1,10 @@
+# -*- coding: utf-8 -*-
 import string, inspect
 from collections import OrderedDict
 from django.conf.urls import include, patterns, url
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import string_concat, ugettext_lazy as _
 from django.utils import timezone
 #from magi import bouncy # unused, only to force load the feedback process
 from magi import views_collections, magicollections
@@ -202,9 +203,43 @@ for collection in collections.values():
                 'auth': (True, False) if collection.list_view.authentication_required else (True, True),
                 'show_link_callback': getCollectionShowLinkLambda(collection),
                 'divider_before': collection.navbar_link_list_divider_before,
-                'divider_after': collection.navbar_link_list_divider_after,
             }
             navbarAddLink(url_name, link, collection.navbar_link_list)
+            added_links = [link]
+            for view, details in collection.list_view.alt_views:
+                if not details.get('hide_in_navbar', False):
+                    view_link = link.copy()
+                    view_link['url_name'] = u'{}_list_{}'.format(collection.name, view)
+                    view_link['url'] = u'/{}/?view={}'.format(collection.plural_name, view)
+                    view_link['icon'] = view_link['image'] = None
+                    view_link['title'] = details.get('navbar_link_title', details['verbose_name'])
+                    if 'icon' in details:
+                        view_link['icon'] = details['icon']
+                    elif 'image' in details:
+                        view_link['image'] = details['image']
+                    else:
+                        view_link['title'] = string_concat(u'↳ ', view_link['title'])
+                    navbarAddLink(view_link['url_name'], view_link, collection.navbar_link_list)
+                    added_links.append(view_link)
+            added_links[-1]['divider_after'] = collection.navbar_link_list_divider_after
+            if len(added_links) > 1:
+                current_ordering = (
+                    navbar_links[collection.navbar_link_list].get('order', [])
+                    if collection.navbar_link_list
+                    else NAVBAR_ORDERING
+                )
+                if url_name in current_ordering:
+                    new_ordering = []
+                    for no in current_ordering:
+                        if no == url_name:
+                            new_ordering += [l['url_name'] for l in added_links]
+                        else:
+                            new_ordering.append(no)
+                if collection.navbar_link_list:
+                    print 'adding to enabled list'
+                    navbar_links[collection.navbar_link_list]['order'] = new_ordering
+                else:
+                    NAVBAR_ORDERING = new_ordering
     if collection.item_view.enabled:
         url_name = '{}_item'.format(collection.name)
         urls.append(url(r'^{}/(?P<pk>\d+)[/]*$'.format(collection.name), views_collections.item_view, parameters, name=url_name))
