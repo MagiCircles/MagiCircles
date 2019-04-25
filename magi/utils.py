@@ -719,6 +719,13 @@ def filterEventsByStatus(queryset, status, prefix=''):
         })
     return queryset
 
+def getCurrentEvents(queryset, prefix='', ends_within=0, starts_within=0, start_field_name='start_date', end_field_name='end_date'):
+    now = timezone.now()
+    return queryset.filter(**{
+        u'{}{}__lte'.format(prefix, start_field_name): now - relativedelta(days=starts_within),
+        u'{}{}__gte'.format(prefix, end_field_name): now + relativedelta(days=ends_within),
+    })
+
 ############################################################
 # Send email
 

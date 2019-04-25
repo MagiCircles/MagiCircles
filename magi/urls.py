@@ -236,7 +236,6 @@ for collection in collections.values():
                         else:
                             new_ordering.append(no)
                 if collection.navbar_link_list:
-                    print 'adding to enabled list'
                     navbar_links[collection.navbar_link_list]['order'] = new_ordering
                 else:
                     NAVBAR_ORDERING = new_ordering
