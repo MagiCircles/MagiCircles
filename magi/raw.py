@@ -24,6 +24,7 @@ GET_PARAMETERS_NOT_FROM_FORM = [
     'show_owner', 'get_started'
     'max_per_line',
     'only_show_buttons',
+    'open', 'view',
 ]
 
 other_sites = [
