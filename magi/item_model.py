@@ -491,6 +491,14 @@ class BaseMagiModel(models.Model):
                 return self.get_translation_from_dict(name)
             return self._attr_error(original_name)
 
+        # When accessing "has_something" and "i_something" exists
+        if name.startswith('has_'):
+            name = name[4:]
+            # For a i_choice
+            if hasattr(self, 'i_{name}'.format(name=name)):
+                return getattr(self, 'i_{name}'.format(name=name)) is not None
+            return self._attr_error(original_name)
+
         # Return cache
         elif name.startswith('cached_'):
             field_name = name[7:]
