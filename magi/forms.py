@@ -20,7 +20,10 @@ from django.core.validators import MinValueValidator, MinLengthValidator
 from django.shortcuts import get_object_or_404
 from magi.middleware.httpredirect import HttpRedirectException
 from magi.django_translated import t
-from magi.raw import GET_PARAMETERS_NOT_FROM_FORM
+from magi.raw import (
+    GET_PARAMETERS_NOT_IN_FORM,
+    GET_PARAMETERS_IN_FORM_HANDLED_OUTSIDE,
+)
 from magi import models
 from magi.default_settings import RAW_CONTEXT
 from magi.settings import (
@@ -819,6 +822,17 @@ class MagiFiltersForm(AutoForm):
                 # Marks all fields as not required
                 field.required = False
 
+        # Set default values from GET form
+        for field_name in GET_PARAMETERS_IN_FORM_HANDLED_OUTSIDE:
+            if field_name in self.fields and self.request.GET.get(field_name, None):
+                # Check for valid ordering choices, bypass when has permission
+                if (field_name == 'ordering'
+                    and not (self.request.user.is_authenticated()
+                             and self.request.user.hasPermission('order_by_any_field'))
+                    and self.request.GET[field_name] not in dict(self.fields[field_name].choices)):
+                    continue
+                self.fields[field_name].initial = self.request.GET[field_name]
+
     def _filter_queryset_for_field(self, field_name, queryset, request, value=None, filter=None):
         if True:
             if value is None or value == '':
@@ -900,7 +914,7 @@ class MagiFiltersForm(AutoForm):
         # Go through form fields
         for field_name in self.fields.keys():
             # Some fields are handled in views collection
-            if field_name in GET_PARAMETERS_NOT_FROM_FORM:
+            if field_name in GET_PARAMETERS_NOT_IN_FORM + GET_PARAMETERS_IN_FORM_HANDLED_OUTSIDE:
                 continue
             filter = getattr(self, '{}_filter'.format(field_name), None)
             if not filter:

@@ -13,7 +13,10 @@ from magi.utils import (
     listUnique,
     staticImageURL,
 )
-from magi.raw import GET_PARAMETERS_NOT_FROM_FORM
+from magi.raw import (
+    GET_PARAMETERS_NOT_IN_FORM,
+    GET_PARAMETERS_IN_FORM_HANDLED_OUTSIDE,
+)
 from magi.forms import ConfirmDelete, filter_ids
 
 ############################################################
@@ -184,7 +187,12 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
         show_relevant_fields_on_ordering = context['alt_view']['show_relevant_fields_on_ordering']
 
     ordering = None
-    if 'ordering' in request.GET and request.GET['ordering']:
+    if (request.GET.get('ordering', None)
+        and ((request.user.is_authenticated()
+              and request.user.hasPermission('order_by_any_field'))
+             or (collection.list_view.filter_form
+                 and request.GET['ordering'] in dict(
+                     getattr(collection.list_view.filter_form, 'ordering_fields', []))))):
         reverse = ('reverse_order' in request.GET and request.GET['reverse_order']) or not request.GET or len(request.GET) == 1
         prefix = '-' if reverse else ''
         ordering = [prefix + ordering for ordering in request.GET['ordering'].split(',')]
@@ -195,7 +203,10 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
 
     filled_filter_form = False
     if collection.list_view.filter_form:
-        if len([k for k in request.GET.keys() if k not in GET_PARAMETERS_NOT_FROM_FORM]) > 0:
+        if len([
+                k for k in request.GET.keys()
+                if k not in GET_PARAMETERS_NOT_IN_FORM + GET_PARAMETERS_IN_FORM_HANDLED_OUTSIDE
+        ]) > 0:
             context['filter_form'] = collection.list_view.filter_form(filters, request=request, ajax=ajax, collection=collection)
             filled_filter_form = True
         else:

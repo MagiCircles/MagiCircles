@@ -62,7 +62,7 @@ DEFAULT_GROUPS = [
             'edit_staff_configurations', 'add_badges', 'see_collections_details', 'manage_main_items',
             'edit_staff_details', 'moderate_reports', 'edit_reported_things', 'post_community_event_activities',
             'manage_prizes', 'manipulate_activities', 'mark_activities_as_staff_pick',
-            'edit_activities_post_language',
+            'edit_activities_post_language', 'order_by_any_field',
         ],
         'outside_permissions': {
             'Tweetdeck': 'https://tweetdeck.twitter.com/',
@@ -80,7 +80,10 @@ DEFAULT_GROUPS = [
     ('team', {
         'translation': _('Team manager'),
         'description': 'Knows all the team members and discuss with them on a regular basis to make sure they are all active. Ensures that the staff team is only composed of active members, keep track of members who are taking a break, regularly check with members if they\'re still interested, and help members retire if they want to. They are also in charge of assigning and revoking most permissions.',
-        'permissions': ['edit_staff_status', 'edit_roles', 'see_profile_edit_button', 'edit_staff_details'],
+        'permissions': [
+            'edit_staff_status', 'edit_roles', 'see_profile_edit_button', 'edit_staff_details',
+            'order_by_any_field',
+        ],
         'requires_staff': True,
         'outside_permissions': {
             'Administrate the contributors on GitHub': False, # Added in settings
@@ -106,14 +109,20 @@ DEFAULT_GROUPS = [
     ('db', {
         'translation': _('Database maintainer'),
         'description': 'We gather all the game data in one convenient place for you! Our database maintainers manually update the details as soon as they are available.',
-        'permissions': ['manage_main_items', 'translate_items'],
+        'permissions': [
+            'manage_main_items', 'translate_items',
+            'order_by_any_field',
+        ],
         'requires_staff': True,
         'guide': '/help/Database%20maintainers%20guide',
     }),
     ('dbapi', {
         'translation': string_concat(_('Database maintainer'), ' (API)'),
         'description': 'Extracts assets and data and automatically updates our website. They do their best to publish all the details as soon they are available.',
-        'permissions': ['manage_main_items'],
+        'permissions': [
+            'manage_main_items'
+            'order_by_any_field',
+        ],
         'requires_staff': True,
         'outside_permissions': {
             'API key': '/o/applications/',
@@ -267,7 +276,11 @@ DEFAULT_GROUPS = [
     ('developer', {
         'translation': _('Developer'),
         'description': 'Developers contribute to the website by adding new features or fixing bugs, and overall maintaining the website.',
-        'permissions': ['advanced_staff_configurations', 'see_collections_details'],
+        'permissions': [
+            'advanced_staff_configurations',
+            'see_collections_details',
+            'order_by_any_field',
+        ],
         'requires_staff': False,
         'guide': '/help/Developers%20guide',
     }),
@@ -279,6 +292,7 @@ DEFAULT_GROUPS = [
             'see_profile_edit_button',
             'mark_email_addresses_invalid',
             'see_collections_details',
+            'order_by_any_field',
         ],
         'requires_staff': False,
         'guide': '/help/System%30administrator%20guide',

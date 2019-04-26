@@ -16,15 +16,19 @@ donators_adjectives = [
     _('nice'),
 ]
 
-GET_PARAMETERS_NOT_FROM_FORM = [
-    'ids',
+GET_PARAMETERS_IN_FORM_HANDLED_OUTSIDE = [
     'ordering', 'reverse_order',
+    'view',
+]
+
+GET_PARAMETERS_NOT_IN_FORM = [
+    'ids',
     'page', 'page_size',
     'ajax_modal_only', 'ajax_show_top_buttons',
     'show_owner', 'get_started'
     'max_per_line',
     'only_show_buttons',
-    'open', 'view',
+    'open',
 ]
 
 other_sites = [
