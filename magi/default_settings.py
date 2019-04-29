@@ -120,7 +120,7 @@ DEFAULT_GROUPS = [
         'translation': string_concat(_('Database maintainer'), ' (API)'),
         'description': 'Extracts assets and data and automatically updates our website. They do their best to publish all the details as soon they are available.',
         'permissions': [
-            'manage_main_items'
+            'manage_main_items',
             'order_by_any_field',
         ],
         'requires_staff': True,
