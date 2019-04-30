@@ -211,6 +211,8 @@ def indexExtraContext(context):
               and random.randint(0, 5) == 5):
             character_id = random.choice(context['request'].user.preferences.favorite_characters)
             context['art'] = RANDOM_ART_FOR_CHARACTER(character_id)
+            if not context['art']:
+                context['art'] = random.choice(HOMEPAGE_ARTS).copy()
         else:
             context['art'] = random.choice(HOMEPAGE_ARTS).copy()
 
