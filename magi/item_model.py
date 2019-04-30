@@ -61,7 +61,7 @@ def i_choices(choices, translation=True):
         return []
     return [(i, choice[1 if translation else 0] if isinstance(choice, tuple) else choice) for i, choice in enumerate(choices.items() if isinstance(choices, dict) else choices)]
 
-def getInfoFromChoices(field_name, details, key):
+def getInfoFromChoices(field_name, details, key, default=None):
     def _getInfo(instance):
         value = getattr(instance, field_name)
         if (not value
@@ -70,7 +70,9 @@ def getInfoFromChoices(field_name, details, key):
                 if isinstance(details[value], tuple)
                 else (key not in details[value])))
         ):
-            return None
+            if callable(default):
+                return default(instance)
+            return default
         return details[value][key]
     return _getInfo
 
