@@ -73,15 +73,17 @@ def date_input(field, value=None):
         label=field.label,
         required=field.required,
         initial=field.initial,
+        validators=field.validators,
     )
     field.widget = DateInput()
     field.widget.attrs.update({
         'class': 'calendar-widget',
         'data-role': 'data',
     })
-    field.validators += [
-        MinValueValidator(datetime.date(1900, 1, 2)),
-    ]
+    if not any([isinstance(validator, MinValueValidator) for validator in field.validators]):
+        field.validators += [
+            MinValueValidator(datetime.date(1900, 1, 2)),
+        ]
     field.help_text = 'yyyy-mm-dd'
     field.input_formats = [
         '%Y-%m-%d'
