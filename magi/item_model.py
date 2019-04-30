@@ -294,7 +294,7 @@ class BaseMagiModel(models.Model):
             getattr(self, u'cached_{}_pre'.format(field_name))(d)
         # Add default unicode if missing
         if 'unicode' not in d:
-            d['unicode'] = d['name'] if 'name' in d else (d['id'] if 'id' in d else '?')
+            d['unicode'] = d['name'] if 'name' in d else (unicode(d['id']) if 'id' in d else '?')
 
         # TODO try to add a way to call __unicode__ smooth
 
@@ -313,11 +313,12 @@ class BaseMagiModel(models.Model):
                 d['http_item_url'] = u'https:{}'.format(d['full_item_url']) if 'http' not in d['full_item_url'] else d['full_item_url']
 
         # Set image url helpers
-        if 'image' in d:
-            if 'image_url' not in d:
-                d['image_url'] = get_image_url_from_path(d['image'])
-            if 'http_image_url' not in d:
-                d['http_image_url'] = get_http_image_url_from_path(d['image'])
+        for image_field in getattr(self, u'_cache_{}_images'.format(field_name), []) + ['image']:
+            if image_field in d:
+                if u'{}_url'.format(image_field) not in d:
+                    d[u'{}_url'.format(image_field)] = get_image_url_from_path(d[image_field])
+                if u'http_{}_url'.format(image_field) not in d:
+                    d[u'http_{}_url'.format(image_field)] = get_http_image_url_from_path(d[image_field])
 
         if original_cls:
             for k in d.keys():
