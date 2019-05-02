@@ -1384,6 +1384,19 @@ function loadCopyToClipboard() {
 }
 
 // *****************************************
+// Accounts
+
+function loadAccounts() {
+    let form = $('[id="filter-form-account"]');
+    if (!form.data('loaded-changers')) {
+        formOnChangeValueShow(form, 'has_friend_id', {
+            2: ['friend_id', 'accept_friend_requests'],
+        });
+        form.attr('data-loaded-changers', true);
+    }
+}
+
+// *****************************************
 // Load Badges
 
 function updateBadges() {
@@ -1490,7 +1503,7 @@ function loadiTunesData(song, successCallback, errorCallback) {
             let details = song.find('.itunes-details');
             details.find('.album').prop('src', data['artworkUrl60']);
             details.find('.itunes-link').prop('href', data['trackViewUrl'] + '&at=1001l8e6');
-            details.show('slow');
+            details.show('fast');
             song.find('audio source').prop('src', data['previewUrl'])
             song.find('audio')[0].load();
             playSongButtons();
@@ -1583,6 +1596,9 @@ function formShowMore(form, cutOff, includingCutOff, until, includingUntil) {
             if ($(this).find('#id_' + cutOff).length > 0) {
                 cutOffField = $(this);
                 flag = true;
+                if (includingCutOff) {
+                    hidden_fields.push(cutOffField);
+                }
             }
         }
     });
@@ -1632,6 +1648,39 @@ function formSeparator(form, cutOff, includingCutOff, title) {
     } else {
         cutOffField.after(separator);
     }
+}
+
+function formOnChangeValueShow(form, changingFieldName, valuesToShow) {
+    // valuesToShow can be an array of field names
+    // or an object { value: array of field names }
+    let changingField = form.find('#id_' + changingFieldName);
+    function onChange(animation) {
+        if (Array.isArray(valuesToShow)) {
+            $.each(valuesToShow, function(i, fieldName) {
+                let field = form.find('#id_' + fieldName).closest('.form-group');
+                if (changingField.val()) {
+                    field.show(animation);
+                } else {
+                    field.hide(animation);
+                }
+            });
+        } else {
+            $.each(valuesToShow, function(value, fields) {
+                $.each(fields, function(i, fieldName) {
+                    let field = form.find('#id_' + fieldName).closest('.form-group');
+                    if (changingField.val() == value) {
+                        field.show(animation);
+                    } else {
+                        field.hide(animation);
+                    }
+                });
+            });
+        }
+    }
+    onChange();
+    changingField.change(function() {
+        onChange('fast');
+    })
 }
 
 // *****************************************

@@ -35,6 +35,7 @@ from magi.utils import (
     isBirthdayToday,
     getSearchSingleFieldLabel,
     isTranslationField,
+    FAVORITE_CHARACTERS_IMAGES,
 )
 from magi.raw import please_understand_template_sentence
 from magi.django_translated import t
@@ -1438,6 +1439,22 @@ class AccountCollection(MagiCollection):
     show_item_buttons = False
     show_item_buttons_justified = False
 
+    filter_cuteform = {
+        'has_friend_id': {
+            'type': CuteFormType.OnlyNone,
+        },
+        'color': {
+            'type': CuteFormType.Images,
+        },
+        'favorite_character': {
+            'to_cuteform': lambda k, v: FAVORITE_CHARACTERS_IMAGES[k],
+            'extra_settings': {
+	        'modal': 'true',
+	        'modal-text': 'true',
+            },
+        },
+    }
+
     def get_profile_account_tabs(self, request, context, account=None):
         """
         Ordered dict that:
@@ -1506,6 +1523,8 @@ class AccountCollection(MagiCollection):
         show_title = True
         per_line = 1
         add_button_subtitle = _('Create your account to join the community and be in the leaderboard!')
+        filter_form = forms.AccountFilterForm
+        ajax_callback = 'loadAccounts'
 
         show_item_buttons_as_icons = True
         item_buttons_classes = ['btn', 'btn-link']
@@ -1647,6 +1666,19 @@ class UserCollection(MagiCollection):
     report_delete_templates = {
         'Inappropriate behavior towards other user(s)': 'We noticed that you\'ve been acting in an inappropriate manner towards other user(s), which doesn\'t correspond to what we expect from our community members. Your profile, accounts, activities and everything else you owned on our website has been permanently deleted, and we kindly ask you not to re-iterate your actions.',
         'Spam': 'We detected spam activities from your user profile. Your profile, accounts, activities and everything else you owned on our website has been permanently deleted, and we kindly ask you not to re-iterate your actions.',
+    }
+
+    filter_cuteform = {
+        'favorite_character': {
+            'to_cuteform': lambda k, v: FAVORITE_CHARACTERS_IMAGES[k],
+            'extra_settings': {
+	        'modal': 'true',
+	        'modal-text': 'true',
+            },
+        },
+        'color': {
+            'type': CuteFormType.Images,
+        },
     }
 
     def get_queryset(self, queryset, parameters, request):

@@ -1086,6 +1086,57 @@ def get_account_simple_form(account_form_class=None, simple_fields=['nickname', 
 
     return _AccountSimpleForm
 
+class AccountFilterForm(MagiFiltersForm):
+    search_fields = ['owner__username', 'nickname', 'owner__links__value']
+    search_fields_exact = ['owner__email']
+    search_fields_labels = {
+        'owner__username': t['Username'],
+        'owner__links__value': _('Links'),
+        'owner__email': _('Email'),
+    }
+
+    ordering_fields = [
+        ('level', _('Level')),
+        ('owner__username', t['Username']),
+        ('creation', _('Join Date')),
+        ('start_date', _('Start Date')),
+        ('owner__preferences___cache_reputation', _('Most popular')),
+    ]
+
+    if has_field(models.Account, 'friend_id'):
+        has_friend_id = forms.NullBooleanField(
+            required=False, initial=None,
+            label=models.Account._meta.get_field('friend_id').verbose_name,
+        )
+        has_friend_id_filter = MagiFilter(selector='friend_id__isnull')
+
+    favorite_character = forms.ChoiceField(choices=BLANK_CHOICE_DASH + [
+        (id, full_name)
+        for (id, full_name, image) in getattr(django_settings, 'FAVORITE_CHARACTERS', [])
+    ], required=False)
+    favorite_character_filter = MagiFilter(selectors=[
+        'owner__preferences__favorite_character{}'.format(i) for i in range(1, 4)])
+
+    if USER_COLORS:
+        color = forms.ChoiceField(label=_('Color'), choices=BLANK_CHOICE_DASH + [
+            (_color_name, _color_verbose_name)
+            for (_color_name, _color_verbose_name, _color_css, _color_hex) in USER_COLORS
+        ])
+        color_filter = MagiFilter(selector='owner__preferences__color')
+
+    def __init__(self, *args, **kwargs):
+        super(AccountFilterForm, self).__init__(*args, **kwargs)
+        if 'favorite_character' in self.fields:
+            self.fields['favorite_character'].label = models.UserPreferences.favorite_character_label()
+
+    class Meta(MagiFiltersForm.Meta):
+        model = models.Account
+        fields = ['search'] + (
+            ['has_friend_id', 'friend_id'] if has_field(models.Account, 'friend_id') else []
+        ) + ['favorite_character'] + (
+            ['color'] if USER_COLORS else []
+        ) + ['ordering', 'reverse_order']
+
 ############################################################
 # Users forms
 
@@ -1266,7 +1317,12 @@ class UserPreferencesForm(MagiForm):
     form_title = _('Customize profile')
     icon = 'id'
 
-    color = forms.ChoiceField(required=False, choices=[], label=_('Color'))
+    if USER_COLORS:
+        color = forms.ChoiceField(label=_('Color'), required=False, choices=BLANK_CHOICE_DASH + [
+            (_color_name, _color_verbose_name)
+            for (_color_name, _color_verbose_name, _color_css, _color_hex) in USER_COLORS
+        ])
+
     default_tab = forms.ChoiceField(
         label=_('Default tab'),
         required=False,
@@ -1325,14 +1381,6 @@ class UserPreferencesForm(MagiForm):
                     unicode(_(u'Open {thing}')).format(thing=unicode(_('Map')).lower()),
                 ))
 
-        # Color
-        if 'color' in self.fields:
-            if USER_COLORS:
-                self.fields['color'].choices = BLANK_CHOICE_DASH + [(name, localized_name) for (name, localized_name, css_color, hex_color) in USER_COLORS]
-                if self.instance:
-                    self.fields['color'].initial = self.instance.color
-            else:
-                self.fields.pop('color')
         self.old_location = self.instance.location if self.instance else None
         if 'm_description' in self.fields:
             self.fields['m_description'].help_text = markdownHelpText(self.request)
@@ -1579,6 +1627,24 @@ class UserFilterForm(MagiFiltersForm):
         distinct=True,
     )
 
+    favorite_character = forms.ChoiceField(choices=BLANK_CHOICE_DASH + [
+        (id, full_name)
+        for (id, full_name, image) in getattr(django_settings, 'FAVORITE_CHARACTERS', [])
+    ], required=False)
+    favorite_character_filter = MagiFilter(selectors=[
+        'preferences__favorite_character{}'.format(i) for i in range(1, 4)])
+
+    if USER_COLORS:
+        color = forms.ChoiceField(label=_('Color'), choices=BLANK_CHOICE_DASH + [
+            (c[0], c[1]) for c in USER_COLORS
+        ])
+        color_filter = MagiFilter(selector='preferences__color')
+
+    def __init__(self, *args, **kwargs):
+        super(UserFilterForm, self).__init__(*args, **kwargs)
+        if 'favorite_character' in self.fields:
+            self.fields['favorite_character'].label = models.UserPreferences.favorite_character_label()
+
     def filter_queryset(self, queryset, parameters, request):
         queryset = super(UserFilterForm, self).filter_queryset(queryset, parameters, request)
 
@@ -1607,7 +1673,7 @@ class UserFilterForm(MagiFiltersForm):
 
     class Meta(MagiFiltersForm.Meta):
         model = models.User
-        fields = ('search', 'ordering', 'reverse_order')
+        fields = ('search', 'favorite_character', 'color', 'ordering', 'reverse_order')
 
 ############################################################
 # User links

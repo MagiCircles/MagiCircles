@@ -294,21 +294,18 @@ class UserPreferences(BaseMagiModel):
     def favorite_character3_image(self): return self.favorite_character_image(3)
 
     @classmethod
-    def favorite_character_label(self, nth):
-        name_template = (
-            FAVORITE_CHARACTER_NAME
-            if FAVORITE_CHARACTER_NAME
-            else _('{nth} Favorite {thing}').format(thing=_('Character'))
-        )
-        if callable(name_template):
-            name_template = name_template()
-        if 'nth' not in name_template:
-            name_template = _('{nth} Favorite {thing}').format(
-                nth='{nth}',
-                thing=name_template,
+    def favorite_character_label(self, nth=None):
+        character_label = FAVORITE_CHARACTER_NAME or _('Character')
+        if callable(character_label):
+            character_label = character_label()
+        if nth is None:
+            return _(u'Favorite {thing}').format(
+                thing=character_label.lower(),
             )
-        return name_template.format(nth=_(ordinalNumber(nth)))
-
+        return _('{nth} Favorite {thing}').format(
+            nth=_(ordinalNumber(nth)),
+            thing=character_label.lower(),
+        )
 
     @property
     def background_id(self): return int(self.extra.get('background', '0')) or None
