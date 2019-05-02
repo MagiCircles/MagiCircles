@@ -610,7 +610,12 @@ class MagiCollection(object):
         many_fields = []
         collectible_fields = []
         # Fields from reverse
-        for (field_name, url, verbose_name) in getattr(item, 'reverse_related', []):
+        for details in getattr(item, 'reverse_related', []):
+            if len(details) == 3:
+                field_name, url, verbose_name = details
+                filter_field_name = item.collection_name
+            else:
+                field_name, url, verbose_name, filter_field_name = details
             if only_fields and field_name not in only_fields:
                 continue
             if field_name in exclude_fields:
@@ -628,8 +633,8 @@ class MagiCollection(object):
                     'value': (u'{total} {items}'.format(total=total, items=_(verbose_name).lower())
                               if '{total}' not in unicode(verbose_name)
                               else unicode(verbose_name).format(total=total)),
-                    'ajax_link': u'/ajax/{}/?{}={}&ajax_modal_only'.format(url, item.collection_name, item.pk),
-                    'link': u'/{}/?{}={}'.format(url, item.collection_name, item.pk),
+                    'ajax_link': u'/ajax/{}/?{}={}&ajax_modal_only'.format(url, filter_field_name, item.pk),
+                    'link': u'/{}/?{}={}'.format(url, filter_field_name, item.pk),
                     'link_text': _('View all'),
                     'icon': icons.get(field_name, None),
                     'image': images.get(field_name, None),
