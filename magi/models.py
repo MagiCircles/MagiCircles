@@ -64,7 +64,13 @@ def avatar(user, size=200):
     """
     Preferences in user objects must always be prefetched
     """
-    default = u'{}static/img/avatar.png'.format(SITE_STATIC_URL if SITE_STATIC_URL.startswith('http') else ('https:' + SITE_STATIC_URL if SITE_STATIC_URL.startswith('//') else 'https://' + SITE_STATIC_URL))
+    default = staticImageURL('avatar.png', full=True)
+    if (getattr(django_settings, 'DEBUG', False)
+        and getattr(django_settings, 'UPLOADED_FILES_URL', None)):
+        default = staticImageURL('avatar.png', static_url=u'{}{}static/'.format(
+            'https:' if 'http' not in django_settings.UPLOADED_FILES_URL else '',
+            django_settings.UPLOADED_FILES_URL,
+        ))
     if hasattr(django_settings, 'DEBUG_AVATAR'):
         default = django_settings.DEBUG_AVATAR
     if user.preferences.twitter:

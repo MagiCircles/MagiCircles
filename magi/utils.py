@@ -1071,14 +1071,16 @@ def shrinkImageFromData(data, filename, settings={}):
 ############################################################
 # Image URLs
 
-def staticImageURL(path, folder=None, extension=None, versionned=True, full=False):
+def staticImageURL(path, folder=None, extension=None, versionned=True, full=False, static_url=None):
     if not path and not folder and not extension:
         return None
     path = unicode(path)
     if path.startswith('//') or path.startswith('http://') or path.startswith('https://'):
         return path
+    if not static_url:
+        static_url = RAW_CONTEXT['static_url'] if not full else RAW_CONTEXT['full_static_url']
     return u'{static}img/{folder}{path}{extension}{version}'.format(
-        static=RAW_CONTEXT['static_url'] if not full else RAW_CONTEXT['full_static_url'],
+        static=static_url,
         folder=u'{}/'.format(folder) if folder else '',
         path=path,
         extension=u'.{}'.format(extension) if extension else '',
