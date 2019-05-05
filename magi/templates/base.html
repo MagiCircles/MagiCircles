@@ -77,7 +77,7 @@
               <ul class="dropdown-menu" role="menu">
                 {% for sub_link_name, sub_link in result_of_callwithcontext.items %}
                 {% if sub_link.is_header %}
-                <li class="dropdown-header" data-link-name="{{ sub_link_name }}">
+                <li class="dropdown-header{% if not sub_link.small %} large{% endif %}" data-link-name="{{ sub_link_name }}">
                   {% if sub_link.icon %}
                   <i class="flaticon-{{ sub_link.icon }}"></i>
                   {% elif sub_link.image %}
