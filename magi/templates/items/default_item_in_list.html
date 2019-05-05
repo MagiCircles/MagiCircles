@@ -7,7 +7,9 @@
     {% elif item.top_image_list or item.top_image or item.image %}
     <img src="{% if item.top_image_list %}{{ item.top_image_list }}{% elif item.top_image %}{{ item.top_image }}{% else %}{{ item.image_url }}{% endif %}" alt="{{ item }}" class="{{ item.collection_name }}-image img-responsive">
     {% elif not show_items_names %}
-    {% if item.display_name %}
+    {% if item.display_name_in_list %}
+    {{ item.display_name_in_list }}
+    {% elif item.display_name %}
     {{ item.display_name }}
     {% else %}
     {{ item }}
@@ -15,7 +17,9 @@
     {% endif %}
     {% if show_items_names %}
     <h3 class="{{ item.collection_name }}-name">
-      {% if item.display_name %}
+      {% if item.display_name_in_list %}
+      {{ item.display_name_in_list }}
+      {% elif item.display_name %}
       {{ item.display_name }}
       {% else %}
       {{ item }}
