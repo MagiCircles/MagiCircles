@@ -626,13 +626,18 @@ class MagiCollection(object):
                 continue
             if callable(verbose_name):
                 verbose_name = verbose_name()
+            try:
+                value = getattr(item, 'display_total_{}'.format(field_name))
+            except AttributeError:
+                value = (
+                    u'{total} {items}'.format(total=total, items=_(verbose_name).lower())
+                    if '{total}' not in unicode(verbose_name)
+                    else unicode(verbose_name).format(total=total))
             if total:
                 many_fields.append((field_name, {
                     'verbose_name': unicode(verbose_name).replace('{total}', ''),
                     'type': 'text_with_link' if url else 'text',
-                    'value': (u'{total} {items}'.format(total=total, items=_(verbose_name).lower())
-                              if '{total}' not in unicode(verbose_name)
-                              else unicode(verbose_name).format(total=total)),
+                    'value': value,
                     'ajax_link': u'/ajax/{}/?{}={}&ajax_modal_only'.format(url, filter_field_name, item.pk),
                     'link': u'/{}/?{}={}'.format(url, filter_field_name, item.pk),
                     'link_text': _('View all'),
@@ -767,6 +772,10 @@ class MagiCollection(object):
                 name_fields.append((field_name, d))
             else:
                 model_fields.append((field_name, d))
+            try:
+                d['value'] = getattr(item, u'display_{}'.format(field_name))
+            except AttributeError:
+                pass
         fields = name_fields + many_fields + model_fields + extra_fields
 
        # Re-order fields
