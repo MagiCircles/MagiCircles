@@ -760,6 +760,12 @@ def tourldash(string):
 def toHumanReadable(string):
     return string.lower().replace('_', ' ').replace('-', ' ').capitalize()
 
+def getTranslatedName(d, field_name='name', language=None):
+    return d.get(u'd_{}s'.format(field_name), {}).get(
+        language or get_language(),
+        d.get(field_name, None),
+    )
+
 def jsv(v):
     if isinstance(v, list) or isinstance(v, dict):
         return mark_safe(simplejson.dumps(v))
