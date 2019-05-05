@@ -1581,14 +1581,31 @@ function formShowMore(form, cutOff, includingCutOff, until, includingUntil) {
     var hidden_fields = [];
     var cutOffField = undefined;
     var hidden_at_init = true;
+
+    function hasValue(input) {
+        if (input.is('select')) {
+            let values = $.map(input.find('option'), function(elt, i) { return $(elt).val();})
+            let values_of_nullbool = ['1', '2', '3'];
+            if (values.length == values_of_nullbool.length
+                && values.every(function(element, index) { return element === values_of_nullbool[index]; })) {
+                return input.val() != '1';
+            }
+        }
+        return input.val() != '';
+    }
+
+    function pushToHiddenFields(field) {
+        hidden_fields.push(field);
+        let input = field.find('[id^="id_"]');
+        if (input.length > 0 && hasValue(input)) {
+            hidden_at_init = false;
+        }
+    }
+
     form.find('.form-group').each(function() {
         if (flag) {
             if ($(this).find('#id_' + until).length == 0 || includingUntil) {
-                hidden_fields.push($(this));
-                let input = $(this).find('[id^="id_"]');
-                if (input.length > 0 && input.val() != '') {
-                    hidden_at_init = false;
-                }
+                pushToHiddenFields($(this));
             } else {
                 flag = false;
             }
@@ -1597,7 +1614,7 @@ function formShowMore(form, cutOff, includingCutOff, until, includingUntil) {
                 cutOffField = $(this);
                 flag = true;
                 if (includingCutOff) {
-                    hidden_fields.push(cutOffField);
+                    pushToHiddenFields(cutOffField);
                 }
             }
         }
