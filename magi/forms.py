@@ -437,7 +437,9 @@ class MagiForm(forms.ModelForm):
         return instance
 
     def reorder_fields(self, order):
-        """Reorder form fields by order, removing items not in order.
+        """
+        Reorder form fields by order.
+        Fields not in order will be placed at the end.
 
         >>> reorder_fields(
         ...     OrderedDict([('a', 1), ('b', 2), ('c', 3)]),
@@ -731,6 +733,9 @@ class MagiFiltersForm(AutoForm):
             if 'reverse_order' in self.fields:
                 del(self.fields['reverse_order'])
 
+        fields_order = self.fields.keys()
+        order_changed = False
+
         # Modify fields
 
         # Merge filters
@@ -741,8 +746,14 @@ class MagiFiltersForm(AutoForm):
                     else [('_'.join(fields.keys() if isinstance(fields, dict) else fields), fields)
                           for fields in self.merge_fields]
             ):
+                if 'fields' in fields:
+                    details = fields
+                    fields = details['fields']
+                else:
+                    details = {}
                 choices = BLANK_CHOICE_DASH[:]
                 label_parts = []
+                met_first_field = False
                 for field_name, field_details in (
                         fields.items()
                         if isinstance(fields, dict)
@@ -750,6 +761,13 @@ class MagiFiltersForm(AutoForm):
                 ):
                     if field_name in self.fields:
                         self.fields[field_name].widget = self.fields[field_name].hidden_widget()
+                        if not met_first_field:
+                            fields_order = [
+                                (new_field_name if key == field_name
+                                 else key) for key in fields_order
+                            ]
+                            met_first_field = True
+                            order_changed = True
                     choices += [
                         (u'{}-{}'.format(field_name, _k), _v)
                         for _k, _v in (
@@ -771,7 +789,7 @@ class MagiFiltersForm(AutoForm):
                     label_parts.append(unicode(field_label))
                 self.fields[new_field_name] = forms.ChoiceField(
                     choices=choices,
-                    label=u' / '.join(label_parts)
+                    label=details.get('label', u' / '.join(label_parts)),
                 )
                 def _merged_field_to_queryset(form, queryset, request, value):
                     for field_name, field_details in (
@@ -787,6 +805,7 @@ class MagiFiltersForm(AutoForm):
                                     'filter', getattr(self, u'{}_filter'.format(field_name), None)),
                             )
                 setattr(self, u'{}_filter'.format(new_field_name), MagiFilter(to_queryset=_merged_field_to_queryset))
+
         # Set default ordering initial value
         if 'ordering' in self.fields:
             self.fields['ordering'].choices = [
@@ -796,6 +815,7 @@ class MagiFiltersForm(AutoForm):
             if self.collection:
                 self.fields['ordering'].initial = ','.join(self.collection.list_view.plain_default_ordering_list)
                 self.fields['reverse_order'].initial = self.collection.list_view.default_ordering.startswith('-')
+
         # Set view selector
         if ('view' in self.fields
             and self.collection
@@ -811,6 +831,7 @@ class MagiFiltersForm(AutoForm):
             self.fields['view'].choices = self.collection.list_view._alt_view_choices
         else:
             del(self.fields['view'])
+
         if getattr(self.Meta, 'all_optional', True):
             for field_name, field in self.fields.items():
                 # Add blank choice to list of choices that don't have one
@@ -834,6 +855,10 @@ class MagiFiltersForm(AutoForm):
                     and self.request.GET[field_name] not in dict(self.fields[field_name].choices)):
                     continue
                 self.fields[field_name].initial = self.request.GET[field_name]
+
+        # Reorder if needed
+        if order_changed:
+            self.reorder_fields(fields_order)
 
     def _filter_queryset_for_field(self, field_name, queryset, request, value=None, filter=None):
         if True:
