@@ -2520,11 +2520,18 @@ class ActivityCollection(MagiCollection):
                 }
             return buttons
 
+        def show_homepage(self, context):
+            return context.get('shortcut_url', None) is not None
+
+        def show_sidebar_on_homepage(self, context):
+            return context.get('shortcut_url', None) is not None
+
         def extra_context(self, context):
             super(ActivityCollection.ListView, self).extra_context(context)
-            if context.get('shortcut_url', None) is not None: # Homepage of the site
+            if self.show_homepage(context):
                 indexExtraContext(context)
-                context['hide_sidebar'] = True
+                if not self.show_sidebar_on_homepage(context):
+                    context['hide_sidebar'] = True
             if context['request'].user.is_authenticated():
                 context['activity_tabs'] = HOME_ACTIVITY_TABS
                 context['active_activity_tab_name'] = context['filter_form'].active_tab

@@ -1,7 +1,7 @@
 {% load i18n %}
 {% load tools %}
 {% load l10n %}
-{% if shortcut_url != None %}
+{% if show_homepage %}
 
 <style>
   {% if art %}
@@ -17,13 +17,13 @@
       background: url('{% if '//' in homepage_background %}{{ homepage_background }}{% else %}{{ static_url }}img/{{ homepage_background }}?{{ static_files_version }}{% endif %}');
   }
   @media(max-width: 991px) {
-      .current-activity_list[class*="shortcut-"] .home-wrapper .home, .current-index .home-wrapper .home {
+      body.homepage .home-wrapper .home {
           background: url('{% if '//' in homepage_background %}{{ homepage_background }}{% else %}{{ static_url }}img/{{ homepage_background }}?{{ static_files_version }}{% endif %}')!important;
       }
   }
   {% elif art %}
   @media(max-width: 991px) {
-      .current-activity_list[class*="shortcut-"] .home-wrapper .home, .current-index .home-wrapper .home {
+      body.homepage .home-wrapper .home {
           background: white!important;
       }
   }
@@ -201,4 +201,4 @@
 <div class="container activities-container{% if homepage_background %} with-background{% endif %}">
   {% endif %}
 
-  {% endif %}{# if shortcut_url != None #}
+  {% endif %}
