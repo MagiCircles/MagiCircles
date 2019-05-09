@@ -3,7 +3,7 @@
 {% load tools %}
 {% if not static_url %}{% forceLoadRawContext %}{% endif %}
 <!DOCTYPE html>
-<html lang="{{ LANGUAGE_CODE }}" class="html-current-{% if current %}{{ current }}{% else %}error{% endif %}{% if shortcut_url != None %} html-shortcut-{{ shortcut_url }}{% endif %}">
+<html lang="{{ LANGUAGE_CODE }}" class="html-current-{% if current %}{{ current }}{% else %}error{% endif %}{% if shortcut_url != None %} html-shortcut-{{ shortcut_url }}{% endif %}{% for page_definer in page_definers %} {{ page_definer }}{% endfor %}">
   <head>
     <meta charset="UTF-8">
     <title>{% block title %}{% if page_title %}{{ page_title }}{% else %}{{ game_name }}{% endif %}{% endblock %} | {{ t_site_name }}{% if page_title %} - {{ game_name }}{% endif %}</title>
@@ -30,7 +30,7 @@
         </script>
         <![endif]-->
   </head>
-  <body class="current-{% if current %}{{ current }}{% else %}error{% endif %}{% if shortcut_url != None %} shortcut-{{ shortcut_url }}{% endif %}">
+  <body class="current-{% if current %}{{ current }}{% else %}error{% endif %}{% if shortcut_url != None %} shortcut-{{ shortcut_url }}{% endif %}{% for page_definer in page_definers %} {{ page_definer }}{% endfor %}">
     {% if not hidenavbar %}
     <nav class="navbar navbar-main navbar-fixed-top">
       <div class="container">
