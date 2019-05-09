@@ -2,6 +2,7 @@ import datetime, sys
 from django.core.management.base import BaseCommand, CommandError
 from django.utils.html import escape
 from django.conf import settings as django_settings
+from magi import urls # unused
 from magi import models
 from magi.settings import SITE_STATIC_URL, STATIC_FILES_VERSION
 
