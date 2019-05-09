@@ -1923,7 +1923,18 @@ nav {
     .btn-link-light-danger { .button-variant(lighten(@brand-danger, 10%), @transparent, @transparent); }
 
     .btn-main { .button-variant(white, @mainColor, darken(@mainColor, 5%)); }
-    .btn-white { .button-variant(@mainColor, white, lighten(@mainColor, 50%)) }
+    .btn-white {
+        .button-variant(@mainColor, white, lighten(@mainColor, 50%));
+        &:hover,
+        &:focus,
+        &.focus,
+        &:active,
+        &.active,
+        .open > .dropdown-toggle& {
+            background-color: fade(white, 80%);
+            border-color: fade(white, 80%);
+        }
+    }
     .btn-secondary { .button-variant(white, @secondaryColor, darken(@secondaryColor, 5%)); }
     .btn-link {
         color: @mainColor;
