@@ -1459,6 +1459,18 @@ class MagiCollection(object):
                 return False
             return True
 
+class MainItemCollection(MagiCollection):
+    blockable = False
+    reportable = False
+
+    class AddView(MagiCollection.AddView):
+        staff_required = True
+        permissions_required = ['manage_main_items']
+
+    class EditView(MagiCollection.EditView):
+        staff_required = True
+        permissions_required = ['manage_main_items']
+
 ############################################################
 ############################################################
 ############################################################

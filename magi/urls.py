@@ -155,7 +155,7 @@ def _addToCollections(name, cls): # Class of the collection
     return collection
 
 def _addToEnabledCollections(name, cls, is_custom):
-    if name != 'MagiCollection' and inspect.isclass(cls) and issubclass(cls, magicollections.MagiCollection) and not name.startswith('_'):
+    if name != 'MagiCollection' and name != 'MainItemCollection' and inspect.isclass(cls) and issubclass(cls, magicollections.MagiCollection) and not name.startswith('_'):
         if cls.enabled:
             cls.is_custom = is_custom
             enabled[name] = cls
