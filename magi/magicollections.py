@@ -2524,7 +2524,7 @@ class ActivityCollection(MagiCollection):
             return context.get('shortcut_url', None) is not None
 
         def show_sidebar_on_homepage(self, context):
-            return context.get('shortcut_url', None) is not None
+            return context.get('shortcut_url', None) is None
 
         def extra_context(self, context):
             super(ActivityCollection.ListView, self).extra_context(context)
