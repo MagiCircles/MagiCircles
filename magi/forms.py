@@ -1698,7 +1698,13 @@ class UserFilterForm(MagiFiltersForm):
 
     class Meta(MagiFiltersForm.Meta):
         model = models.User
-        fields = ('search', 'favorite_character', 'color', 'ordering', 'reverse_order')
+        fields = [
+            'search', 'favorite_character',
+        ] + (
+            ['color'] if USER_COLORS else []
+        ) + [
+            'ordering', 'reverse_order',
+        ]
 
 ############################################################
 # User links

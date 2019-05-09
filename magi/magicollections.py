@@ -170,6 +170,8 @@ class MagiCollection(object):
     navbar_link_list_divider_after = False
     types = None
     filter_cuteform = None
+    fields_icons = {}
+    fields_images = {}
     collectible = None
     collectible_collections = {}
 
@@ -609,6 +611,15 @@ class MagiCollection(object):
         name_fields = []
         many_fields = []
         collectible_fields = []
+
+        icons = icons.copy()
+        icons.update(self.fields_icons)
+        icons.update(view.fields_icons)
+
+        images = images.copy()
+        images.update(self.fields_images)
+        images.update(view.fields_images)
+
         # Fields from reverse
         for details in getattr(item, 'reverse_related', []):
             if len(details) == 3:
@@ -760,22 +771,32 @@ class MagiCollection(object):
                 d['value'] = getattr(item, field_name + '_url')
                 if not d['value']:
                     continue
+            elif isinstance(field, models.models.TextField):
+                d['type'] = 'long_text'
             elif field_name == 'itunes_id':
                 d['type'] = 'itunes'
             elif isinstance(field, ColorField):
                 d['type'] = 'color'
             else:
                 d['type'] = 'text'
+
+            try:
+                d['value'] = getattr(item, u'display_{}'.format(field_name))
+            except AttributeError:
+                pass
+            if callable(d.get('image', None)):
+                d['image'] = d['image'](item)
+
+            # Fix types
+            if d['type'] == 'timezone_datetime' and not hasattr(d['value'], 'strftime'):
+                d['type'] = 'text'
+
             if d['type'] == 'text_with_link':
                 many_fields.append((field_name, d))
             elif field_name.endswith('name'):
                 name_fields.append((field_name, d))
             else:
                 model_fields.append((field_name, d))
-            try:
-                d['value'] = getattr(item, u'display_{}'.format(field_name))
-            except AttributeError:
-                pass
         fields = name_fields + many_fields + model_fields + extra_fields
 
        # Re-order fields
@@ -1057,6 +1078,8 @@ class MagiCollection(object):
         ajax_item_popover = False
         hide_icons = False
 
+        fields_icons = {}
+        fields_images = {}
         item_buttons_classes = property(propertyFromCollection('item_buttons_classes'))
         show_item_buttons = property(propertyFromCollection('show_item_buttons'))
         show_item_buttons_justified = property(propertyFromCollection('show_item_buttons_justified'))
@@ -1221,6 +1244,8 @@ class MagiCollection(object):
         template = 'default'
         item_padding = 20 # Only used with default item template
         hide_icons = False
+        fields_icons = {}
+        fields_images = {}
 
         @property
         def show_item_buttons(self):

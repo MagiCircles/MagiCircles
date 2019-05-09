@@ -471,6 +471,8 @@ class BaseMagiModel(models.Model):
                 'blocked',
                 'blocked_by_owner',
                 'reverse_related',
+                'html_attributes',
+                'html_attributes_in_list',
         ]:
             return self._attr_error(original_name)
 
