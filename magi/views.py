@@ -54,6 +54,7 @@ from magi.utils import (
     find_all_translations,
     duplicate_translation,
     hasGoodReputation,
+    getColSize,
 )
 from magi.notifications import pushNotification
 from magi.settings import (
@@ -349,7 +350,15 @@ def aboutDefaultContext(request):
     context['now'] = timezone.now()
     context['api_enabled'] = False
     context['contribute_url'] = CONTRIBUTE_URL
-    context['other_sites_colsize'] = int(math.ceil(12 / (len(context['other_sites']))))
+    total = len(context['other_sites'])
+    if total <= 4:
+        context['other_sites_per_line'] = total
+    elif (total % 4) == 1:
+        context['other_sites_per_line'] = 3
+    else:
+        context['other_sites_per_line'] = 4
+    context['other_sites_col_size'] = getColSize(context['other_sites_per_line'])
+
     context['extends'] = 'base.html' if not context['ajax'] else 'ajax.html'
     return context
 

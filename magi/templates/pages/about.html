@@ -78,6 +78,7 @@
     <div id="staff"></div>
     <hr>
 
+    {% if staff %}
     <br>
     <h1 class="text-main">{% trans 'Staff members' %}</h1>
     <br><br>
@@ -291,7 +292,9 @@
       </div>
       {% endfor %}
     </div>
+    {% endif %}
 
+    {% if contributors %}
     <div id="contributors"></div>
     <hr>
 
@@ -366,6 +369,7 @@
       </div>
       {% endfor %}
     </div>
+    {% endif %}
 
     <div id="contact"></div>
     <hr>
@@ -416,28 +420,31 @@
     <div id="othersites"></div>
     <hr>
 
+    {% if other_sites %}
     <br>
     <h1 class="text-main">{% trans 'Check out our other websites' %}</h1>
     <br>
     <div class="row">
       {% for site in other_sites %}
-      {% if site.name != site_name %}
-      <div class="col-md-{{ other_sites_colsize }}">
-	      <a href="{{ site.url }}" target="_blank">
-	        <figure class="padding20 text-center">
-	          <img src="{{ site.image }}" class="img-responsive img-rounded" alt="{{ site.name }}" />
-	          <figcaption>
-	            <h3>{{ site.name }}</h3>
-	            <p>
-		            {{ site.game_name }}
-	            </p>
-	          </figcaption>
-	        </figure>
-	      </a>
-      </div>
+      {% if forloop.counter0 != 0 and forloop.counter0|mod:other_sites_per_line %}
+    </div><div class="row">
       {% endif %}
+      <div class="col-md-{{ other_sites_col_size }}">
+	    <a href="{{ site.url }}" target="_blank">
+	      <figure class="padding20 text-center">
+	        <img src="{{ site.image }}" class="img-responsive img-rounded" alt="{{ site.name }}" width="200" />
+	        <figcaption>
+	          <h3>{{ site.name }}</h3>
+	          <p>
+		        {{ site.game_name }}
+	          </p>
+	        </figcaption>
+	      </figure>
+	    </a>
+      </div>
       {% endfor %}
     </div>
+    {% endif %}
 
     <div id="franchise"></div>
     <hr>

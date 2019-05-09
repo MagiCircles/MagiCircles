@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
-import os, string, random, csv, tinify, cStringIO, pytz, simplejson, datetime, io, operator, re
+import os, string, random, csv, tinify, cStringIO, pytz, simplejson, datetime, io, operator, re, math
 from PIL import Image
 from collections import OrderedDict
 from dateutil.relativedelta import relativedelta
@@ -1122,6 +1122,15 @@ def toCountDown(date, sentence, classes=None):
     return u'<span class="countdown {classes}" data-date="{date}" data-format="{sentence}"></h4>'.format(
         date=torfc2822(date), sentence=sentence, classes=u' '.join(classes or []),
     )
+
+def getColSize(per_line):
+    if per_line == 5:
+        return 'special-5'
+    elif per_line == 7:
+        return 'special-7'
+    elif per_line == 9:
+        return 'special-9'
+    return int(math.ceil(12 / per_line))
 
 ############################################################
 # Form labels and help texts
