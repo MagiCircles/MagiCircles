@@ -143,7 +143,7 @@ def signup(request):
                     preferences.i_default_activities_tab = models.UserPreferences.get_i(
                         'default_activities_tab', 'hot')
             else:
-                preferences.d_hidden_tags = '{"swearing": true, "nsfw": true}'
+                preferences.d_hidden_tags = '{"swearing": true, "questionable": true, "nsfw": true}'
                 preferences.i_private_message_settings = models.UserPreferences.get_i('private_message_settings', 'follow')
             preferences.save()
             login_action(request, user)
