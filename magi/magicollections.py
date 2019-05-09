@@ -1806,6 +1806,7 @@ class UserCollection(MagiCollection):
         alt_views = MagiCollection.ListView.alt_views + [
             ('send_private_message', {
                 'hide_in_filter': True,
+                'hide_in_navbar': True,
                 'verbose_name': _('Send a message'),
                 'template': 'userSendMessageItem',
             }),
