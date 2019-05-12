@@ -758,15 +758,15 @@ class MagiCollection(object):
                 if not value:
                     continue
                 choices = dict(getattr(item, u'{name}S_CHOICES'.format(name=field.name.upper()), [])).keys()
+                if (get_language() in choices
+                    and not getattr(item, u'{}s'.format(field_name), {}).get(get_language(), None)):
+                    if get_language() in LANGUAGES_CANT_SPEAK_ENGLISH:
+                        continue
+                    else:
+                        value = mark_safe(translationURL(
+                            value, with_wrapper=True, markdown=field.name.startswith('m_')))
                 if field.name.startswith('m_'):
                     value = (False, value)
-                else:
-                    if (get_language() in choices
-                        and not getattr(item, u'{}s'.format(field_name), {}).get(get_language(), None)):
-                        if get_language() in LANGUAGES_CANT_SPEAK_ENGLISH:
-                            continue
-                        else:
-                            value = mark_safe(translationURL(value))
             is_foreign_key = (isinstance(field, models.models.ForeignKey)
                               or isinstance(field, models.models.OneToOneField))
             if not value and not is_foreign_key:

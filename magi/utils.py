@@ -1281,16 +1281,29 @@ def find_all_translations(model, field, only_for_language=None, with_count_has=T
 
     return translations
 
-def translationURL(value, from_language='en', to_language=None, with_wrapper=True):
+def translationSentence(from_language, to_language):
+    return unicode(_(u'Translate from %(from_language)s to %(to_language)s')).replace(
+        '%(from_language)s', unicode(LANGUAGES_DICT.get(from_language, '')),
+    ).replace(
+        '%(to_language)s', unicode(LANGUAGES_DICT.get(to_language, '')),
+    )
+
+def translationURL(value, from_language='en', to_language=None, with_wrapper=True, markdown=False):
+    to_language = to_language if to_language else get_language()
     url = 'https://translate.google.com/#{from_language}/{to_language}/{value}'.format(
-        to_language=to_language if to_language else get_language(),
+        to_language=to_language,
         from_language=from_language,
         value=urlquote(value),
     )
     if with_wrapper:
-        return u'<a href="{url}" target="_blank"> {value} <i class="flaticon-link"></i></a>'.format(
+        return (
+            u'{value}\n\n[{translate}]({url})'
+            if markdown else
+            u'{value}<br><a href="{url}" target="_blank"><small class="text-muted">{translate} <i class="flaticon-link"></i></a>'
+        ).format(
             url=url,
             value=value,
+            translate=translationSentence(from_language=from_language, to_language=to_language),
         )
     return url
 
