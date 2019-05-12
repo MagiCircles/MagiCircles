@@ -600,7 +600,7 @@ class MagiCollection(object):
     def after_save(self, request, instance, type=None):
         return instance
 
-    def to_fields(self, view, item, to_dict=True, only_fields=None, icons=None, images=None, force_all_fields=False, order=None, extra_fields=None, exclude_fields=None, request=None, preselected=None):
+    def to_fields(self, view, item, to_dict=True, only_fields=None, icons=None, images=None, force_all_fields=False, order=None, extra_fields=None, exclude_fields=None, request=None, preselected=None, prefetched_together=None, prefetched=None):
         if extra_fields is None: extra_fields = []
         if exclude_fields is None: exclude_fields = []
         if only_fields is None: only_fields = []
@@ -608,9 +608,12 @@ class MagiCollection(object):
         if icons is None: icons = {}
         if images is None: images = {}
         if preselected is None: preselected = []
+        if prefetched_together is None: prefetched_together = []
+        if prefetched is None: prefetched = []
         name_fields = []
         many_fields = []
         collectible_fields = []
+        many_fields_end = []
 
         icons = icons.copy()
         icons.update(self.fields_icons)
@@ -631,30 +634,89 @@ class MagiCollection(object):
                 continue
             if field_name in exclude_fields:
                 continue
-            try:
-                total = getattr(item, 'cached_total_{}'.format(field_name))
-            except AttributeError:
-                continue
-            if callable(verbose_name):
-                verbose_name = verbose_name()
-            try:
-                value = getattr(item, 'display_total_{}'.format(field_name))
-            except AttributeError:
-                value = (
-                    u'{total} {items}'.format(total=total, items=_(verbose_name).lower())
-                    if '{total}' not in unicode(verbose_name)
-                    else unicode(verbose_name).format(total=total))
-            if total:
-                many_fields.append((field_name, {
-                    'verbose_name': unicode(verbose_name).replace('{total}', ''),
-                    'type': 'text_with_link' if url else 'text',
-                    'value': value,
-                    'ajax_link': u'/ajax/{}/?{}={}&ajax_modal_only'.format(url, filter_field_name, item.pk),
-                    'link': u'/{}/?{}={}'.format(url, filter_field_name, item.pk),
-                    'link_text': _('View all'),
+            if field_name in prefetched:
+                for related_item in getattr(item, field_name).all():
+                    d = {
+                        'verbose_name': unicode(verbose_name).capitalize(),
+                        'value': unicode(related_item),
+                        'icon': icons.get(field_name, None),
+                        'image': images.get(field_name, None),
+                    }
+                    item_url = getattr(related_item, 'item_url', None)
+                    if item_url:
+                        d['type'] = 'text_with_link'
+                        d['link'] = item_url
+                        d['ajax_link'] = getattr(related_item, 'ajax_item_url')
+                        d['link_text'] = unicode(_(u'Open {thing}')).format(thing=d['verbose_name'].lower())
+                        d['image_for_link'] = getattr(related_item, 'image_url', None)
+                        d['icon'] = getattr(related_item, 'icon', d['icon'])
+                    many_fields_end.append((u'{}{}'.format(field_name, related_item.pk), d))
+            elif field_name in prefetched_together:
+                d = {
+                    'verbose_name': unicode(verbose_name).capitalize(),
                     'icon': icons.get(field_name, None),
                     'image': images.get(field_name, None),
-                }))
+                    'images': [],
+                    'links': [],
+                }
+                and_more = False
+                max_shown = 5
+                for i, related_item in enumerate(getattr(item, field_name).all()[:max_shown + 1]):
+                    if i >= max_shown:
+                        and_more = getattr(item, field_name).count() - max_shown
+                        continue
+                    item_url = getattr(related_item, 'item_url', None)
+                    to_append = {
+                        'link': item_url,
+                        'link_text': unicode(related_item),
+                        'ajax_link': getattr(related_item, 'ajax_item_url'),
+                    }
+                    if hasattr(related_item, 'image_url'):
+                        d['type'] = 'images_links'
+                        to_append['value'] = related_item.image_url
+                        d['images'].append(to_append)
+                    else:
+                        d['type'] = 'list_links' if item_url else 'list'
+                        to_append['value'] = unicode(related_item)
+                        d['links'].append(to_append)
+                if and_more and url:
+                    try: verbose_name = getattr(item, 'display_total_{}'.format(field_name))
+                    except AttributeError: pass
+                    verbose_name = (
+                        u'{total} {items}'.format(total=and_more, items=_(verbose_name).lower())
+                        if '{total}' not in unicode(verbose_name)
+                        else unicode(verbose_name).format(total=and_more))
+                    d['and_more'] = {
+                        'ajax_link': u'/ajax/{}/?{}={}&ajax_modal_only'.format(url, filter_field_name, item.pk),
+                        'link': u'/{}/?{}={}'.format(url, filter_field_name, item.pk),
+                        'verbose_name': u'+ {} - {}'.format(verbose_name, _('View all')),
+                    }
+                many_fields_end.append((field_name, d))
+            else:
+                try:
+                    total = getattr(item, 'cached_total_{}'.format(field_name))
+                except AttributeError:
+                    continue
+                if callable(verbose_name):
+                    verbose_name = verbose_name()
+                try:
+                    value = getattr(item, 'display_total_{}'.format(field_name))
+                except AttributeError:
+                    value = (
+                        u'{total} {items}'.format(total=total, items=_(verbose_name).lower())
+                        if '{total}' not in unicode(verbose_name)
+                        else unicode(verbose_name).format(total=total))
+                if total:
+                    many_fields.append((field_name, {
+                        'verbose_name': unicode(verbose_name).replace('{total}', ''),
+                        'type': 'text_with_link' if url else 'text',
+                        'value': value,
+                        'ajax_link': u'/ajax/{}/?{}={}&ajax_modal_only'.format(url, filter_field_name, item.pk),
+                        'link': u'/{}/?{}={}'.format(url, filter_field_name, item.pk),
+                        'link_text': _('View all'),
+                        'icon': icons.get(field_name, None),
+                        'image': images.get(field_name, None),
+                    }))
         model_fields = []
         # Fields from model
         for field in item._meta.fields:
@@ -797,7 +859,7 @@ class MagiCollection(object):
                 name_fields.append((field_name, d))
             else:
                 model_fields.append((field_name, d))
-        fields = name_fields + many_fields + model_fields + extra_fields
+        fields = name_fields + many_fields + model_fields + extra_fields + many_fields_end
 
        # Re-order fields
         if order or force_all_fields:
