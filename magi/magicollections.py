@@ -704,6 +704,7 @@ class MagiCollection(object):
                             break
                     if item_image:
                         to_append['value'] = item_image
+                        to_append['tooltip'] = unicode(related_item)
                         d['type'] = 'images_links'
                         d['images'].append(to_append)
                     else:

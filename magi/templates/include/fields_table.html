@@ -46,8 +46,8 @@
         </a>
 	{% elif field.type == 'images_links'  %}
         {% for image in field.images %}
-        <a href="{{ image.link }}" target="_blank"{% if image.ajax_link %} data-ajax-url="{{ image.ajax_link }}" data-ajax-title="{{ image.link_text }}"{% endif %}>
-	      <img src="{{ image.value }}" alt="{{ image.link_text }}">
+        <a href="{{ image.link }}" class="a-nodifference" target="_blank"{% if image.ajax_link %} data-ajax-url="{{ image.ajax_link }}" data-ajax-title="{{ image.link_text }}"{% endif %}>
+	      <img src="{{ image.value }}" alt="{{ image.link_text }}"{% if image.tooltip %} data-toggle="tooltip" title="{{ image.tooltip }}"{% endif %}>
         </a>
         {% endfor %}
         {% if field.and_more %}
