@@ -22,7 +22,13 @@ from django.db import models
 from django.db.models.fields import BLANK_CHOICE_DASH, FieldDoesNotExist
 from django.db.models import Q
 from django.forms.models import model_to_dict
-from django.forms import NullBooleanField, TextInput, CharField as forms_CharField, CheckboxInput
+from django.forms import (
+    NullBooleanField,
+    TextInput,
+    CharField as forms_CharField,
+    CheckboxInput,
+    HiddenInput,
+)
 from django.core.mail import EmailMultiAlternatives
 from django.core.files.images import ImageFile
 from django_translated import t
@@ -422,6 +428,10 @@ def cuteFormFieldsForContext(cuteform_fields, context, form=None, prefix=None, a
         if 'to_cuteform' not in field:
             field['to_cuteform'] = CuteFormType.default_to_cuteform[field_type]
 
+        # Check if hidden
+        if (form and field_name in form.fields
+            and isinstance(form.fields[field_name].widget, HiddenInput)):
+            continue
         # Get choices
         choices = field.get('choices', [])
         if not choices and form and field_name in form.fields:
