@@ -613,7 +613,7 @@ class MagiCollection(object):
         name_fields = []
         many_fields = []
         collectible_fields = []
-        many_fields_end = []
+        many_fields_galleries = []
 
         icons = icons.copy()
         icons.update(self.fields_icons)
@@ -625,11 +625,21 @@ class MagiCollection(object):
 
         # Fields from reverse
         for details in getattr(item, 'reverse_related', []):
-            if len(details) == 3:
-                field_name, url, verbose_name = details
-                filter_field_name = item.collection_name
-            else:
-                field_name, url, verbose_name, filter_field_name = details
+            if isinstance(details, dict):
+                field_name = details['field_name']
+                url = details.get('url', field_name)
+                verbose_name = details.get('verbose_name', field_name)
+                plural_verbose_name = details.get('plural_verbose_name', verbose_name)
+                filter_field_name = details.get('filter_field_name', item.collection_name)
+                max_per_line = details.get('max_per_line', 5)
+            else: # old style
+                if len(details) == 4:
+                    field_name, url, verbose_name, filter_field_name = details
+                else:
+                    field_name, url, verbose_name = details
+                    filter_field_name = item.collection_name
+                max_per_line = 5
+                plural_verbose_name = verbose_name
             if only_fields and field_name not in only_fields:
                 continue
             if field_name in exclude_fields:
@@ -648,9 +658,14 @@ class MagiCollection(object):
                         d['link'] = item_url
                         d['ajax_link'] = getattr(related_item, 'ajax_item_url')
                         d['link_text'] = unicode(_(u'Open {thing}')).format(thing=d['verbose_name'].lower())
-                        d['image_for_link'] = getattr(related_item, 'image_url', None)
+                        item_image = None
+                        for image_field in ['top_image_list', 'top_image', 'image_thumbnail_url', 'image_url']:
+                            if getattr(related_item, image_field, None):
+                                item_image = getattr(related_item, image_field)
+                                break
+                        d['image_for_link'] = item_image
                         d['icon'] = getattr(related_item, 'icon', d['icon'])
-                    many_fields_end.append((u'{}{}'.format(field_name, related_item.pk), d))
+                    many_fields_galleries.append((u'{}{}'.format(field_name, related_item.pk), d))
             elif field_name in prefetched_together:
                 d = {
                     'verbose_name': unicode(verbose_name).capitalize(),
@@ -658,9 +673,10 @@ class MagiCollection(object):
                     'image': images.get(field_name, None),
                     'images': [],
                     'links': [],
+                    'spread_across': True,
                 }
                 and_more = False
-                max_shown = 5
+                max_shown = max_per_line
                 for i, related_item in enumerate(getattr(item, field_name).all()[:max_shown + 1]):
                     if i >= max_shown:
                         and_more = getattr(item, field_name).count() - max_shown
@@ -671,27 +687,30 @@ class MagiCollection(object):
                         'link_text': unicode(related_item),
                         'ajax_link': getattr(related_item, 'ajax_item_url'),
                     }
-                    if hasattr(related_item, 'image_url'):
+                    item_image = None
+                    for image_field in ['top_image_list', 'top_image', 'image_thumbnail_url', 'image_url']:
+                        if getattr(related_item, image_field, None):
+                            item_image = getattr(related_item, image_field)
+                            break
+                    if item_image:
+                        to_append['value'] = item_image
                         d['type'] = 'images_links'
-                        to_append['value'] = related_item.image_url
                         d['images'].append(to_append)
                     else:
                         d['type'] = 'list_links' if item_url else 'list'
                         to_append['value'] = unicode(related_item)
                         d['links'].append(to_append)
                 if and_more and url:
-                    try: verbose_name = getattr(item, 'display_total_{}'.format(field_name))
-                    except AttributeError: pass
                     verbose_name = (
-                        u'{total} {items}'.format(total=and_more, items=_(verbose_name).lower())
-                        if '{total}' not in unicode(verbose_name)
-                        else unicode(verbose_name).format(total=and_more))
+                        u'{total} {items}'.format(total=and_more, items=plural_verbose_name.lower())
+                        if '{total}' not in unicode(plural_verbose_name)
+                        else unicode(plural_verbose_name).format(total=and_more))
                     d['and_more'] = {
                         'ajax_link': u'/ajax/{}/?{}={}&ajax_modal_only'.format(url, filter_field_name, item.pk),
                         'link': u'/{}/?{}={}'.format(url, filter_field_name, item.pk),
                         'verbose_name': u'+ {} - {}'.format(verbose_name, _('View all')),
                     }
-                many_fields_end.append((field_name, d))
+                many_fields_galleries.append((field_name, d))
             else:
                 try:
                     total = getattr(item, 'cached_total_{}'.format(field_name))
@@ -699,13 +718,10 @@ class MagiCollection(object):
                     continue
                 if callable(verbose_name):
                     verbose_name = verbose_name()
-                try:
-                    value = getattr(item, 'display_total_{}'.format(field_name))
-                except AttributeError:
-                    value = (
-                        u'{total} {items}'.format(total=total, items=_(verbose_name).lower())
-                        if '{total}' not in unicode(verbose_name)
-                        else unicode(verbose_name).format(total=total))
+                value = (
+                    u'{total} {items}'.format(total=total, items=plural_verbose_name.lower())
+                    if '{total}' not in unicode(plural_verbose_name)
+                    else unicode(plural_verbose_name).format(total=total))
                 if total:
                     many_fields.append((field_name, {
                         'verbose_name': unicode(verbose_name).replace('{total}', ''),
@@ -859,7 +875,7 @@ class MagiCollection(object):
                 name_fields.append((field_name, d))
             else:
                 model_fields.append((field_name, d))
-        fields = name_fields + many_fields + model_fields + extra_fields + many_fields_end
+        fields = name_fields + many_fields + model_fields + extra_fields + many_fields_galleries
 
        # Re-order fields
         if order or force_all_fields:
