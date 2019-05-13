@@ -629,9 +629,13 @@ class MagiCollection(object):
                 field_name = details['field_name']
                 url = details.get('url', field_name)
                 verbose_name = details.get('verbose_name', field_name)
+                if callable(verbose_name):
+                    verbose_name = verbose_name()
                 plural_verbose_name = details.get('plural_verbose_name', verbose_name)
                 filter_field_name = details.get('filter_field_name', item.collection_name)
                 max_per_line = details.get('max_per_line', 5)
+                allow_ajax_per_item = details.get('allow_ajax_per_item', True)
+                allow_ajax_for_more = details.get('allow_ajax_for_more', True)
             else: # old style
                 if len(details) == 4:
                     field_name, url, verbose_name, filter_field_name = details
@@ -639,7 +643,11 @@ class MagiCollection(object):
                     field_name, url, verbose_name = details
                     filter_field_name = item.collection_name
                 max_per_line = 5
+                if callable(verbose_name):
+                    verbose_name = verbose_name()
                 plural_verbose_name = verbose_name
+                allow_ajax_per_item = True
+                allow_ajax_for_more = True
             if only_fields and field_name not in only_fields:
                 continue
             if field_name in exclude_fields:
@@ -656,7 +664,8 @@ class MagiCollection(object):
                     if item_url:
                         d['type'] = 'text_with_link'
                         d['link'] = item_url
-                        d['ajax_link'] = getattr(related_item, 'ajax_item_url')
+                        if allow_ajax_per_item:
+                            d['ajax_link'] = getattr(related_item, 'ajax_item_url')
                         d['link_text'] = unicode(_(u'Open {thing}')).format(thing=d['verbose_name'].lower())
                         item_image = None
                         for image_field in ['top_image_list', 'top_image', 'image_thumbnail_url', 'image_url']:
@@ -685,8 +694,9 @@ class MagiCollection(object):
                     to_append = {
                         'link': item_url,
                         'link_text': unicode(related_item),
-                        'ajax_link': getattr(related_item, 'ajax_item_url'),
                     }
+                    if allow_ajax_per_item:
+                        to_append['ajax_link'] = getattr(related_item, 'ajax_item_url')
                     item_image = None
                     for image_field in ['top_image_list', 'top_image', 'image_thumbnail_url', 'image_url']:
                         if getattr(related_item, image_field, None):
@@ -706,18 +716,18 @@ class MagiCollection(object):
                         if '{total}' not in unicode(plural_verbose_name)
                         else unicode(plural_verbose_name).format(total=and_more))
                     d['and_more'] = {
-                        'ajax_link': u'/ajax/{}/?{}={}&ajax_modal_only'.format(url, filter_field_name, item.pk),
                         'link': u'/{}/?{}={}'.format(url, filter_field_name, item.pk),
                         'verbose_name': u'+ {} - {}'.format(verbose_name, _('View all')),
                     }
+                    if allow_ajax_for_more:
+                        d['and_more']['ajax_link'] = u'/ajax/{}/?{}={}&ajax_modal_only'.format(
+                            url, filter_field_name, item.pk)
                 many_fields_galleries.append((field_name, d))
             else:
                 try:
                     total = getattr(item, 'cached_total_{}'.format(field_name))
                 except AttributeError:
                     continue
-                if callable(verbose_name):
-                    verbose_name = verbose_name()
                 value = (
                     u'{total} {items}'.format(total=total, items=plural_verbose_name.lower())
                     if '{total}' not in unicode(plural_verbose_name)
@@ -727,7 +737,9 @@ class MagiCollection(object):
                         'verbose_name': unicode(verbose_name).replace('{total}', ''),
                         'type': 'text_with_link' if url else 'text',
                         'value': value,
-                        'ajax_link': u'/ajax/{}/?{}={}&ajax_modal_only'.format(url, filter_field_name, item.pk),
+                        'ajax_link': (
+                            u'/ajax/{}/?{}={}&ajax_modal_only'.format(url, filter_field_name, item.pk)
+                        ) if allow_ajax_for_more else None,
                         'link': u'/{}/?{}={}'.format(url, filter_field_name, item.pk),
                         'link_text': _('View all'),
                         'icon': icons.get(field_name, None),

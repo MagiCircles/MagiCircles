@@ -51,7 +51,10 @@
         </a>
         {% endfor %}
         {% if field.and_more %}
-        <br><a href="{{ field.and_more.link }}" class="btn-link-secondary padding10">{{ field.and_more.verbose_name }}</a>
+        <br><a href="{{ field.and_more.link }}" class="btn-link-secondary padding10"
+               {% if field.and_more.ajax_link %} data-ajax-url="{{ field.and_more.ajax_link }}" data-ajax-title="{{ item }} - {{ field.verbose_name }}"{% endif %}>
+          {{ field.and_more.verbose_name }}
+        </a>
         {% endif %}
 	{% elif field.type == 'bool' %}
 	{% if field.value %}
@@ -92,7 +95,10 @@
             <a href="{{ link.link }}" target="_blank"{% if link.ajax_link %} data-ajax-url="{{ link.ajax_link }}" data-ajax-title="{{ link.value }}"{% endif %}>{{ link.value }}</a>
           </li>
           {% endfor %}{% if field.and_more %}
-          <li><a href="{{ field.and_more.link }}" class="btn-link-secondary">{{ field.and_more.verbose_name }}</a></li>
+          <li><a href="{{ field.and_more.link }}" class="btn-link-secondary"
+                 {% if field.and_more.ajax_link %} data-ajax-url="{{ field.and_more.ajax_link }}" data-ajax-title="{{ item }} - {{ field.verbose_name }}"{% endif %}>
+              {{ field.and_more.verbose_name }}
+          </a></li>
         {% endif %}</ul>
 	{% elif field.type == 'itunes' %}
         <div class="itunes" data-itunes-id="{{ field.value }}"></div>
