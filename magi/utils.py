@@ -691,6 +691,17 @@ def birthdayURL(user):
         username=user.username,
     )
 
+def getAge(birthdate, formatted=False):
+    if not birthdate:
+        return None
+    if isinstance(birthdate, str) or isinstance(birthdate, unicode):
+        birthdate = parse_date(birthdate)
+    today = datetime.date.today()
+    age = today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
+    if formatted:
+        return _(u'{age} years old').format(age=age)
+    return age
+
 ############################################################
 # Event status using start and end date
 

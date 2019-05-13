@@ -29,6 +29,7 @@ from magi.utils import (
     birthdayURL,
     hasPermissionToMessage,
     ordinalNumber,
+    getAge,
 )
 from magi.settings import (
     ACCOUNT_MODEL,
@@ -362,12 +363,7 @@ class UserPreferences(BaseMagiModel):
 
     @classmethod
     def get_age(self, birthdate):
-        if not birthdate:
-            return None
-        if isinstance(birthdate, str) or isinstance(birthdate, unicode):
-            birthdate = parse_date(birthdate)
-        today = datetime.date.today()
-        return today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
+        return getAge(birthdate)
 
     @property
     def age(self):
@@ -375,7 +371,7 @@ class UserPreferences(BaseMagiModel):
 
     @property
     def formatted_age(self):
-        return _(u'{age} years old').format(age=self.age) if self.birthdate else ''
+        return getAge(self.birthdate, formatted=True)
 
     @property
     def formatted_birthday_date(self):
