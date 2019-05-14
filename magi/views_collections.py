@@ -16,6 +16,7 @@ from magi.utils import (
     getColSize,
     getSearchFieldHelpText,
     simplifyMarkdown,
+    summarize,
 )
 from magi.raw import (
     GET_PARAMETERS_NOT_IN_FORM,
@@ -105,13 +106,19 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
     context['page_title'] = u'{item} - {title}'.format(title=collection.title, item=context['item'])
 
     # Page description
-    context['page_description'] = simplifyMarkdown(getattr(
-        context['item'], 't_m_description', getattr(
-            context['item'], 't_description', getattr(
-                context['item'], 'm_description', getattr(
-                    context['item'], 'description',
-                    unicode(context['item']),
-                )))), max_length=158)
+    if not ajax:
+        description = unicode(context['item'])
+        for field_name, is_markdown in [
+                ('t_m_description', True),
+                ('t_description', False),
+                ('m_description', True),
+                ('description', False),
+        ]:
+            description = getattr(context['item'], field_name, None)
+            if description:
+                description = (simplifyMarkdown if is_markdown else summarize)(description, max_length=158)
+                break
+        context['page_description'] = description
 
     context['js_files'] = collection.item_view.js_files
     context['reportable'] = collection.reportable
@@ -276,34 +283,35 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['page_title'] = _(u'{things} list').format(things=collection.plural_title)
 
     # Page description
-    if 'filter_form' in context:
-        filters_labels = [
-            unicode(field.label).lower()
-            for field_name, field in context['filter_form'].fields.items()
-            if (field.label and field_name not in [
-                    'search', 'ordering', 'reverse_order',
-            ] and not isinstance(field.widget, HiddenInput)
-                and (isinstance(field, ChoiceField)))
-        ]
-        search_fields = (
-            list(getattr(context['filter_form'], 'search_fields', []))
-            + list(getattr(context['filter_form'], 'search_fields_exact', []))
-        )
-        search_label = None
-        if search_fields:
-            search_label = getSearchFieldHelpText(
-                search_fields, collection.queryset.model, {},
-                collection.translated_fields or [], all_lower=True,
+    if not ajax:
+        if 'filter_form' in context:
+            filters_labels = [
+                unicode(field.label).lower()
+                for field_name, field in context['filter_form'].fields.items()
+                if (field.label and field_name not in [
+                        'search', 'ordering', 'reverse_order',
+                ] and not isinstance(field.widget, HiddenInput)
+                    and (isinstance(field, ChoiceField)))
+            ]
+            search_fields = (
+                list(getattr(context['filter_form'], 'search_fields', []))
+                + list(getattr(context['filter_form'], 'search_fields_exact', []))
             )
-    else:
-        filters_labels = []
-        search_label = []
-    context['page_description'] = _(u'All the {things}! Search by {search_terms} and filter by {filters} to find all the details you need about the {things} from {game}.').format(
-            things=collection.plural_title.lower(),
-            search_terms=search_label or _('Name').lower(),
-            filters=u', '.join(filters_labels) or _('Type').lower(),
-            game=context['game_name'],
-        )
+            search_label = None
+            if search_fields:
+                search_label = getSearchFieldHelpText(
+                    search_fields, collection.queryset.model, {},
+                    collection.translated_fields or [], all_lower=True,
+                )
+        else:
+            filters_labels = []
+            search_label = []
+        context['page_description'] = _(u'All the {things}! Search by {search_terms} and filter by {filters} to find all the details you need about the {things} from {game}.').format(
+                things=collection.plural_title.lower(),
+                search_terms=search_label or _('Name').lower(),
+                filters=u', '.join(filters_labels) or _('Type').lower(),
+                game=context['game_name'],
+            )
 
     context['h1_page_title'] = collection.plural_title
     context['total_pages'] = int(math.ceil(context['total_results'] / page_size))

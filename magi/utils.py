@@ -822,12 +822,16 @@ def matchesTemplate(template, string):
         return match.groupdict()
     return None
 
+def summarize(string, max_length=100):
+    string = ' '.join(string.split(' '))
+    if max_length is not None and len(string) > max_length:
+        string = u' '.join(string[:max_length + 1].split(' ')[0:-1]) + u'...'
+    return string
+
 def simplifyMarkdown(markdown_string, max_length=None):
-    if max_length is not None and len(markdown_string) > max_length:
-        markdown_string = u' '.join(markdown_string[:max_length + 1].split(' ')[0:-1]) + u'...'
+    markdown_string = summarize(markdown_string, max_length=max_length)
     for c in ['*', '>', '#', '-', '+', '![', '[', ']', '(', ')', 'https://', 'http://', '//']:
         markdown_string = markdown_string.replace(c, ' ')
-    markdown_string = ' '.join(markdown_string.split())
     return markdown_string
 
 ############################################################
