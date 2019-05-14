@@ -30,6 +30,7 @@ from magi.utils import (
     hasPermissionToMessage,
     ordinalNumber,
     getAge,
+    simplifyMarkdown,
 )
 from magi.settings import (
     ACCOUNT_MODEL,
@@ -939,13 +940,7 @@ class Activity(MagiModel):
         """
         Return the first {length} characters without cutting words
         """
-        message = self.m_message
-        if len(message) > length:
-            message = u' '.join(message[:length+1].split(' ')[0:-1]) + u'...'
-        for c in ['*', '>', '#', '-', '+', '![', '[', ']', '(', ')', 'https://', 'http://', '//']:
-            message = message.replace(c, ' ')
-        message = ' '.join(message.split())
-        return message
+        return simplifyMarkdown(self.m_message, max_length=length)
 
     def __unicode__(self):
         return self.summarize()

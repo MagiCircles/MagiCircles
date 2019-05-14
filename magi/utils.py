@@ -822,6 +822,14 @@ def matchesTemplate(template, string):
         return match.groupdict()
     return None
 
+def simplifyMarkdown(markdown_string, max_length=None):
+    if max_length is not None and len(markdown_string) > max_length:
+        markdown_string = u' '.join(markdown_string[:max_length + 1].split(' ')[0:-1]) + u'...'
+    for c in ['*', '>', '#', '-', '+', '![', '[', ']', '(', ')', 'https://', 'http://', '//']:
+        markdown_string = markdown_string.replace(c, ' ')
+    markdown_string = ' '.join(markdown_string.split())
+    return markdown_string
+
 ############################################################
 # Redirections
 
@@ -1174,7 +1182,7 @@ def getSearchSingleFieldLabel(field_name, model_class, labels={}, translated_fie
     try: return model_class._meta.get_field(field_name)._verbose_name
     except FieldDoesNotExist: return None
 
-def getSearchFieldHelpText(search_fields, model_class, labels, translated_fields):
+def getSearchFieldHelpText(search_fields, model_class, labels, translated_fields, all_lower=False):
     field_labels = []
     and_more = False
     first = True
@@ -1185,7 +1193,7 @@ def getSearchFieldHelpText(search_fields, model_class, labels, translated_fields
             and_more = True
         elif label:
             label = unicode(label)
-            field_labels.append(label if first else label.lower())
+            field_labels.append(label if first and not all_lower else label.lower())
             first = False
     if field_labels:
         return u'{}{}'.format(

@@ -6,6 +6,7 @@ from magi.middleware.httpredirect import HttpRedirectException
 from django.shortcuts import render
 from django.http import Http404
 from django.core.exceptions import PermissionDenied
+from django.forms import HiddenInput, ChoiceField
 from magi.utils import (
     cuteFormFieldsForContext,
     get_one_object_or_404,
@@ -13,6 +14,8 @@ from magi.utils import (
     listUnique,
     staticImageURL,
     getColSize,
+    getSearchFieldHelpText,
+    simplifyMarkdown,
 )
 from magi.raw import (
     GET_PARAMETERS_NOT_IN_FORM,
@@ -100,6 +103,16 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
     context['ajax'] = ajax
     context['name'] = name
     context['page_title'] = u'{item} - {title}'.format(title=collection.title, item=context['item'])
+
+    # Page description
+    context['page_description'] = simplifyMarkdown(getattr(
+        context['item'], 't_m_description', getattr(
+            context['item'], 't_description', getattr(
+                context['item'], 'm_description', getattr(
+                    context['item'], 'description',
+                    unicode(context['item']),
+                )))), max_length=158)
+
     context['js_files'] = collection.item_view.js_files
     context['reportable'] = collection.reportable
     context['share_image'] = _get_share_image(context, collection.item_view, item=context['item'])
@@ -261,6 +274,37 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
 
     context['ordering'] = ordering
     context['page_title'] = _(u'{things} list').format(things=collection.plural_title)
+
+    # Page description
+    if 'filter_form' in context:
+        filters_labels = [
+            unicode(field.label).lower()
+            for field_name, field in context['filter_form'].fields.items()
+            if (field.label and field_name not in [
+                    'search', 'ordering', 'reverse_order',
+            ] and not isinstance(field.widget, HiddenInput)
+                and (isinstance(field, ChoiceField)))
+        ]
+        search_fields = (
+            list(getattr(context['filter_form'], 'search_fields', []))
+            + list(getattr(context['filter_form'], 'search_fields_exact', []))
+        )
+        search_label = None
+        if search_fields:
+            search_label = getSearchFieldHelpText(
+                search_fields, collection.queryset.model, {},
+                collection.translated_fields or [], all_lower=True,
+            )
+    else:
+        filters_labels = []
+        search_label = []
+    context['page_description'] = _(u'All the {things}! Search by {search_terms} and filter by {filters} to find all the details you need about the {things} from {game}.').format(
+            things=collection.plural_title.lower(),
+            search_terms=search_label or _('Name').lower(),
+            filters=u', '.join(filters_labels) or _('Type').lower(),
+            game=context['game_name'],
+        )
+
     context['h1_page_title'] = collection.plural_title
     context['total_pages'] = int(math.ceil(context['total_results'] / page_size))
     context['items'] = queryset
