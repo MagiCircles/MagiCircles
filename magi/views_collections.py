@@ -17,6 +17,7 @@ from magi.utils import (
     getSearchFieldHelpText,
     simplifyMarkdown,
     summarize,
+    matchesTemplate,
 )
 from magi.raw import (
     GET_PARAMETERS_NOT_IN_FORM,
@@ -164,6 +165,27 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
     return render(request, 'collections/item_view.html', context)
 
 ############################################################
+# Random view
+
+def random_view(request, name, collection, ajax=False, extra_filters={}, shortcut_url=None, **kwargs):
+    collection.list_view.check_permissions(request, {})
+    filters = _get_filters(request.GET, extra_filters)
+    queryset = collection.list_view.get_queryset(collection.queryset, filters, request)
+
+    filter_form = collection.list_view.filter_form(
+        filters, request=request, ajax=ajax, collection=collection, preset=None)
+    if hasattr(filter_form, 'filter_queryset'):
+        queryset = filter_form.filter_queryset(queryset, filters, request)
+
+    try:
+        random_item = queryset.order_by('?')[0]
+    except IndexError:
+        raise HttpRedirectException(collection.get_list_url(
+            ajax=ajax, modal_only=ajax,
+        ))
+    raise HttpRedirectException(random_item.ajax_item_url if ajax else random_item.item_url)
+
+############################################################
 # List view
 
 def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_url=None, **kwargs):
@@ -192,6 +214,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
         except ValueError: pass
         if page_size > 500: page_size = 500
     filters = _get_filters(request.GET, extra_filters)
+
     queryset = collection.list_view.get_queryset(collection.queryset, filters, request)
 
     show_relevant_fields_on_ordering = collection.list_view.show_relevant_fields_on_ordering
@@ -215,14 +238,25 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
 
     filled_filter_form = False
     if collection.list_view.filter_form:
+        # Set default values from presets
+        preset = None
+        if getattr(collection.list_view.filter_form, 'presets'):
+            url = request.path[5:] if request.path.startswith('/ajax') else request.path
+            template = u'/{}/{}/'.format(collection.plural_name, '{preset}')
+            matches = matchesTemplate(template, url)
+            presets = collection.list_view.filter_form.get_presets()
+            if matches and matches['preset'] in presets:
+                preset = matches['preset']
+                filters.update(collection.list_view.filter_form.get_presets_fields(preset))
+
         if len([
-                k for k in request.GET.keys()
+                k for k in filters.keys()
                 if k not in GET_PARAMETERS_NOT_IN_FORM + GET_PARAMETERS_IN_FORM_HANDLED_OUTSIDE
         ]) > 0:
-            context['filter_form'] = collection.list_view.filter_form(filters, request=request, ajax=ajax, collection=collection)
+            context['filter_form'] = collection.list_view.filter_form(filters, request=request, ajax=ajax, collection=collection, preset=preset)
             filled_filter_form = True
         else:
-            context['filter_form'] = collection.list_view.filter_form(request=request, ajax=ajax, collection=collection)
+            context['filter_form'] = collection.list_view.filter_form(request=request, ajax=ajax, collection=collection, preset=preset)
         if hasattr(context['filter_form'], 'filter_queryset'):
             queryset = context['filter_form'].filter_queryset(queryset, filters, request)
         else:

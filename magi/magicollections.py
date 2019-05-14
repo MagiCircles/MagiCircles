@@ -456,6 +456,7 @@ class MagiCollection(object):
                 show_item_buttons = False
                 show_add_button = justReturn(False)
                 ajax_item_popover = True
+                allow_random = False
 
                 alt_views = MagiCollection.ListView.alt_views + [
                     ('quick_edit', {
@@ -1098,10 +1099,12 @@ class MagiCollection(object):
     #######################
     # Tools - not meant to be overriden
 
-    def get_list_url(self, ajax=False, modal_only=False, parameters=None):
-        return u'{}/{}/{}{}'.format(
+    def get_list_url(self, ajax=False, modal_only=False, parameters=None, preset=None, random=False):
+        return u'{}/{}/{}{}{}{}'.format(
             '' if not ajax else '/ajax',
             self.plural_name,
+            u'{}/'.format(preset) if preset else '',
+            'random/' if random else '',
             '' if not modal_only else '?ajax_modal_only',
             '' if not parameters else u'{}{}'.format(
                 '?' if not modal_only else '&',
@@ -1168,6 +1171,7 @@ class MagiCollection(object):
         item_padding = 20 # Only used with default item template
         ajax_item_popover = False
         hide_icons = False
+        allow_random = True
 
         fields_icons = {}
         fields_images = {}
@@ -2277,6 +2281,7 @@ class StaffConfigurationCollection(MagiCollection):
     navbar_link_list = 'staff'
     icon = 'settings'
     form_class = forms.StaffConfigurationForm
+    allow_random = False
     reportable = False
     blockable = False
     one_of_permissions_required = [
@@ -2367,6 +2372,7 @@ class StaffDetailsCollection(MagiCollection):
     blockable = False
     form_class = forms.StaffDetailsForm
     multipart = True
+    allow_random = False
 
     class ListView(MagiCollection.ListView):
         one_of_permissions_required = ['edit_own_staff_profile', 'translate_items', 'edit_staff_details']
@@ -2734,6 +2740,7 @@ class NotificationCollection(MagiCollection):
         page_size = 5
         default_ordering = '-creation,-id'
         authentication_required = True
+        allow_random = False
 
         def get_queryset(self, queryset, parameters, request):
             queryset = super(NotificationCollection.ListView, self).get_queryset(queryset, parameters, request)
@@ -2796,6 +2803,7 @@ class BadgeCollection(MagiCollection):
     queryset = models.Badge.objects.all()
     reportable = False
     blockable = False
+    allow_random = False
 
     types = OrderedDict([
         ('exclusive', {
@@ -2926,6 +2934,7 @@ class ReportCollection(MagiCollection):
     queryset = models.Report.objects.all().select_related('owner', 'owner__preferences', 'staff', 'staff__preferences').prefetch_related(Prefetch('images', to_attr='all_images'))
     reportable = False
     blockable = False
+    allow_random = False
 
     @property
     def types(self):
@@ -3009,6 +3018,7 @@ class DonateCollection(MagiCollection):
     reportable = False
     blockable = False
     form_class = forms.DonateForm
+    allow_random = False
 
     class ListView(MagiCollection.ListView):
         item_template = custom_item_template
@@ -3162,11 +3172,12 @@ class PrivateMessageCollection(MagiCollection):
         hide_sidebar = True
         ajax_pagination_callback = 'loadPrivateMessages'
         item_blocked_template = 'default_blocked_template_in_list'
+        allow_random = False
 
         def check_permissions(self, request, context):
             super(PrivateMessageCollection.ListView, self).check_permissions(request, context)
             # Only show in navbar when has good reputation + not nobody
-            if (not context['current'].startswith('privatemessage_list')
+            if (not context.get('current', '').startswith('privatemessage_list')
                 and isInboxClosed(request)):
                 raise PermissionDenied()
 

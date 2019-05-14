@@ -843,6 +843,7 @@ $(document).ready(function() {
     loadPageScroll();
     dismissPopoversOnClickOutside();
     switchLanguage();
+    loadFiltersButtons();
 });
 
 // *****************************************
@@ -1419,6 +1420,44 @@ function loadBadges(tab_name, user_id, onDone) {
             }
         },
         'error': genericAjaxError,
+    });
+}
+
+// *****************************************
+// Load filters buttons
+
+function loadFiltersButtons() {
+    $('#filter-form-extra-buttons a').each(function() {
+        if ($(this).data('callback')) {
+            window[$(this).data('callback')]($(this));
+        }
+    });
+}
+
+function loadPresets(button) {
+    button.show();
+    function onClick(e) {
+        e.preventDefault();
+        $('#filter-form-presets').toggle();
+        $('#filter-form-fields').toggle();
+        $('#filter-form-search-button').toggle();
+        $('#sidebar-wrapper .sticky-buttons.back').toggle();
+        return false;
+    }
+    button.unbind('click');
+    button.click(onClick);
+    $('#sidebar-wrapper .sticky-buttons.back a').unbind('click');
+    $('#sidebar-wrapper .sticky-buttons.back a').click(onClick);
+}
+
+function loadRandomFilters(button) {
+    let form = $('#sidebar-wrapper form[id^="filter-form-"]');
+    button.unbind('click');
+    button.click(function onClick(e) {
+        e.preventDefault();
+        form.prop('action', button.prop('href'));
+        form.submit();
+        return false;
     });
 }
 

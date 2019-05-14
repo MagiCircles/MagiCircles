@@ -48,11 +48,27 @@
 <div id="wrapper" class="active{% if hide_sidebar %} toggled{% endif %}">
   <nav id="sidebar-wrapper"{% if hide_sidebar %} style="display: none;"{% endif %}>
     <form class="form-horizontal filter-form" method="get" action="{% if filter_form.action %}{{ filter_form.action }}{% endif %}" role="form" id="filter-form-{{ collection.name }}">
-      <div class="padded-inner-sidebar">
+      <div id="filter-form-fields" class="padded-inner-sidebar">
         {{ filter_form|bootstrap }}
         <br>
       </div>
-      <div class="sticky-buttons"><button type="submit" class="btn btn-lg btn-secondary btn-block"><i class="flaticon-search"></i> {% t 'Search' %}</button></div>
+      {% for button in filter_form.extra_buttons.values %}
+      {% if button.insert_in_sidebar %}{{ button.insert_in_sidebar|safe }}{% endif %}
+      {% endfor %}
+      <div class="sticky-buttons text-center" id="filter-form-search-button">
+        <button type="submit" class="btn btn-lg btn-secondary btn-block"><i class="flaticon-search"></i> {% t 'Search' %}</button>
+        <div class="btn-group btn-group-justified" id="filter-form-extra-buttons">
+          {% for button_name, button in filter_form.extra_buttons.items %}
+          <a href="{{ button.url }}" class="btn btn-link-secondary btn-lg filter-form-extra-buttons"
+             data-toggle="tooltip" data-placement="top" title="{{ button.verbose_name }}" data-container="body"
+             {% if button.new_tab %} target="_blank"{% endif %}
+             {% for key, value in button.attributes.items %} {{ key }}="{{ value }}"{% endfor %}
+             {% if button.ajax_callback %} data-callback="{{ button.ajax_callback }}"{% endif %}>
+            <i class="flaticon-{{ button.icon }}"></i>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
     </form>
   </nav>
   <div id="page-content-wrapper">

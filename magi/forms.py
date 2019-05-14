@@ -57,6 +57,7 @@ from magi.utils import (
     LANGUAGES_NAMES_TO_CODES,
     BACKGROUNDS_NAMES,
     getSearchFieldHelpText,
+    tourldash,
 )
 
 ############################################################
@@ -663,9 +664,99 @@ class MagiFiltersForm(AutoForm):
             })
         return _to_missing_translation
 
+    presets = {}
+
+    @classmethod
+    def get_presets_fields(self, preset):
+        return { k: unicode(v) for k, v in self.get_presets().get(preset)['fields'].items() }
+
+    _internal_presets = {}
+    @classmethod
+    def get_presets(self):
+        if not self._internal_presets and self.presets:
+            self._internal_presets = OrderedDict([
+                (tourldash(k), {
+                    'fields': v
+                } if 'fields' not in v else v)
+                for k, v in self.presets.items()
+            ])
+        return self._internal_presets
+
+    @property
+    def extra_buttons(self):
+        buttons = OrderedDict()
+        # Random
+        if self.collection and self.collection.list_view.allow_random:
+            buttons['random'] = {
+                'icon': 'dice',
+                'verbose_name': _('Random'),
+                'url': self.collection.get_list_url(random=True),
+                'ajax_callback': 'loadRandomFilters',
+                'new_tab': True,
+            }
+        # Presets
+        links = []
+        for preset, preset_details in self.get_presets().items():
+            verbose_name = preset_details.get('verbose_name', preset)
+            if callable(verbose_name):
+                verbose_name = verbose_name()
+            label = preset_details.get('label', None)
+            if callable(label):
+                label = label()
+            if not label:
+                label = _('All {type} {things}').format(
+                    type=verbose_name,
+                    things=self.collection.plural_title.lower(),
+                )
+            image = preset_details.get('image', None)
+            image = u'<img src="{}" alt="{}" height="27px" style="display: block; margin: -5px 0;">'.format(
+                staticImageURL(image), verbose_name) if image else ''
+            icon = preset_details.get('icon', None)
+            icon = u'<i class="flaticon-{}" ></i>'.format(icon) if icon else ''
+            links.append(u'<a href="{}" class="list-group-item">{}<span class="pull-right">{}</span></a>'.format(
+                self.collection.get_list_url(preset=preset),
+                u'<span{}>{}</span>'.format(
+                    u' style="display: inline-block; width: 140px;"' if image else '',
+                    label,
+                ),
+                image or icon or '',
+            ))
+        if links:
+            buttons['presets'] = {
+                'icon': 'idea',
+                'verbose_name': _('Suggestions'),
+                'url': '#',
+                'attributes': { 'style': 'display: none;' },
+                'ajax_callback': 'loadPresets',
+                'insert_in_sidebar': (
+                    u'<div style="display: none;" id="filter-form-presets">{title}{nav}</div>{back}'.format(
+                        title=u'<h4>{}</h4>'.format(_('Suggestions')),
+                        nav=u'<nav class="list-group">{}</nav>'.format(
+                            u''.join(links),
+                        ),
+                        back=u'<div class="sticky-buttons back" style="display: none;"><a href="#" class="btn btn-secondary btn-block">{}</a></div>'.format(
+                            _('Back to {page_name}').format(page_name=u'"{}"'.format(_('Search').lower())),
+                        ),
+                    )),
+            }
+        if buttons:
+            # Reset
+            buttons['clear'] = {
+                'icon': 'clear',
+                'verbose_name': _('Clear'),
+                'url': self.collection.get_list_url(),
+            }
+        return buttons
+
     def __init__(self, *args, **kwargs):
+        self.preset = kwargs.pop('preset', None)
         super(MagiFiltersForm, self).__init__(*args, **kwargs)
         self.empty_permitted = True
+
+        # Set action when using a preset
+
+        if self.preset and self.collection:
+            self.action = self.collection.get_list_url()
 
         # Add/delete fields
 

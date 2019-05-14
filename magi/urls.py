@@ -193,6 +193,13 @@ for collection in collections.values():
             urls.append(url(r'^{}[/]*$'.format(shortcut_url), views_collections.list_view, shortcut_parameters, name=url_name))
             if collection.list_view.ajax:
                 urls.append(url(r'^ajax/{}/$'.format(shortcut_url), views_collections.list_view, shortcut_ajax_parameters, name='{}_ajax'.format(url_name)))
+        if collection.list_view.allow_random:
+            urls.append(url(r'^{}/random[/]*$'.format(collection.plural_name), views_collections.random_view, parameters, name=u'{}_random'.format(url_name)))
+        if collection.list_view.filter_form and getattr(collection.list_view.filter_form, 'presets', None):
+            for preset in collection.list_view.filter_form.get_presets().keys():
+                urls.append(url(r'^{}/{}[/]*$'.format(collection.plural_name, preset), views_collections.list_view, parameters, name=url_name))
+                if collection.list_view.ajax:
+                    urls.append(url(r'^ajax/{}/{}/$'.format(collection.plural_name, preset), views_collections.list_view, ajax_parameters, name='{}_ajax'.format(url_name)))
         if collection.navbar_link:
             link = {
                 'url_name': url_name,
