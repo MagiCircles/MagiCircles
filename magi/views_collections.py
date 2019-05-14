@@ -283,7 +283,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['page_title'] = _(u'{things} list').format(things=collection.plural_title)
 
     # Page description
-    if not ajax:
+    if not ajax and shortcut_url != '':
         if 'filter_form' in context:
             filters_labels = [
                 unicode(field.label).lower()
