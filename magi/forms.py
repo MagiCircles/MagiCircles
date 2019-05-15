@@ -735,7 +735,9 @@ class MagiFiltersForm(AutoForm):
             if icon:
                 icon = u'<i class="flaticon-{}" ></i>'.format(icon)
             links.append(u'<a href="{}" class="list-group-item">{}<span class="pull-right">{}</span></a>'.format(
-                self.collection.get_list_url(preset=preset),
+                self.collection.get_list_url(preset=preset, parameters={
+                    'view': self.request.GET['view'],
+                } if self.request and self.request.GET.get('view', None) else None),
                 u'<span{}>{}</span>'.format(
                     u' style="display: inline-block; width: 140px;"' if image else '',
                     label,
