@@ -170,6 +170,8 @@ def indexExtraContext(context):
     context['page_title'] = None
     context['latest_news'] = LATEST_NEWS
     context['call_to_action'] = CALL_TO_ACTION
+    context['about_site_sentence'] = _('About {thing}').format(thing=context['t_site_name'])
+    context['about_game_sentence'] = _('About {thing}').format(thing=context['game_name'])
     context['total_donators'] = TOTAL_DONATORS
     context['homepage_background'] = HOMEPAGE_BACKGROUND
     context['adjective'] = random.choice(donators_adjectives)
@@ -260,6 +262,8 @@ def index(request):
 
 def prelaunch(request, *args, **kwargs):
     context = getGlobalContext(request)
+    context['about_site_sentence'] = _('About {thing}').format(thing=context['t_site_name'])
+    context['about_game_sentence'] = _('About {thing}').format(thing=context['game_name'])
     if not context.get('launch_date', None):
         return redirect('signup')
     context['twitter'] = TWITTER_HANDLE
@@ -279,6 +283,7 @@ def aboutDefaultContext(request):
     context['about_description_template'] = 'include/about_description'
     context['about_photo'] = ABOUT_PHOTO
     context['site_long_description'] = SITE_LONG_DESCRIPTION
+    context['about_site_sentence'] = _('About {thing}').format(thing=context['t_site_name'])
     context['feedback_form'] = FEEDBACK_FORM
     context['contact_email'] = CONTACT_EMAIL
     context['contact_methods'] = [

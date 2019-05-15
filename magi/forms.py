@@ -777,7 +777,7 @@ class MagiFiltersForm(AutoForm):
                             u''.join(links),
                         ),
                         back=u'<div class="sticky-buttons back" style="display: none;"><a href="#" class="btn btn-secondary btn-block">{}</a></div>'.format(
-                            _('Back to {page_name}').format(page_name=u'"{}"'.format(_('Search').lower())),
+                            _('Back to {page_name}').format(page_name=u'"{}"'.format(t['Search'].lower())),
                         ),
                     )),
             }
@@ -786,7 +786,7 @@ class MagiFiltersForm(AutoForm):
             # Reset
             buttons['clear'] = {
                 'icon': 'clear',
-                'verbose_name': _('Clear'),
+                'verbose_name': t['Clear'],
                 'url': self.collection.get_list_url(parameters={
                     'view': self.request.GET['view'],
                 } if self.request and self.request.GET.get('view', None) else None),

@@ -11,10 +11,10 @@
     <h1 class="home-site-logo"><img src="{{ site_logo }}" class="img-responsive" alt="{{ t_site_name }}"></h1>
     <h2 class="home-site-description">{{ site_description|orcallable }}</h2>
     <a href="/about_game/" data-ajax-url="/ajax/about_game/" class="btn btn-link btn-lg home-about-game-button">
-      {% with site_name=game_name %}{% blocktrans %}About {{ site_name }}{% endblocktrans %}{% endwith %}
+      {{ about_game_sentence }}
     </a>
     <a href="/about/" data-ajax-url="/ajax/about/" class="btn btn-link btn-lg home-about-site-button">
-      {% with site_name=t_name %}{% blocktrans %}About {{ site_name }}{% endblocktrans %}{% endwith %}
+      {{ about_site_sentence }}
     </a>
     {% if not user.is_authenticated %}
     <br><br><br>
