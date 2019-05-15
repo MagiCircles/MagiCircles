@@ -624,6 +624,15 @@ class MagiCollection(object):
         images.update(self.fields_images)
         images.update(view.fields_images)
 
+        if hasattr(view, 'fields_preselected'):
+            preselected = preselected + view.fields_preselected
+
+        if hasattr(view, 'fields_prefetched'):
+            prefetched = prefetched + view.fields_prefetched
+
+        if hasattr(view, 'fields_prefetched_together'):
+            prefetched_together = prefetched + view.fields_prefetched_together
+
         # Fields from reverse
         for details in getattr(item, 'reverse_related', []):
             if isinstance(details, dict):
@@ -1341,6 +1350,9 @@ class MagiCollection(object):
         hide_icons = False
         fields_icons = {}
         fields_images = {}
+        fields_preselected = []
+        fields_prefetched = []
+        fields_prefetched_together = []
 
         @property
         def show_item_buttons(self):
@@ -1363,7 +1375,16 @@ class MagiCollection(object):
         show_item_buttons_in_one_line = property(propertyFromCollection('show_item_buttons_in_one_line'))
 
         def get_queryset(self, queryset, parameters, request):
-            return super(MagiCollection.ItemView, self).get_queryset(self.collection._collectibles_queryset(self, queryset, request), parameters, request)
+            queryset = super(MagiCollection.ItemView, self).get_queryset(self.collection._collectibles_queryset(self, queryset, request), parameters, request)
+            if self.fields_preselected:
+                queryset = queryset.select_related(*self.fields_preselected)
+            if self.fields_prefetched or self.fields_prefetched_together:
+                for prefetched in self.fields_prefetched + self.fields_prefetched_together:
+                    if isinstance(prefetched, tuple):
+                        queryset = queryset.prefetch_related(Prefetch(prefetched[0], prefetched[1]()))
+                    else:
+                        queryset = queryset.prefetch_related(prefetched)
+            return queryset
 
         def to_fields(self, *args, **kwargs):
             return self.collection.to_fields(self, *args, **kwargs)
