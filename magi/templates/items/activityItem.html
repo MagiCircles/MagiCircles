@@ -34,13 +34,8 @@
           <i class="flaticon-ghost text-muted"></i>
         </div>
         {% endif %}
-        {% if activity.language != LANGUAGE_CODE %}
-        <a href="https://translate.google.com/translate?js=n&sl={{ activity.language }}&tl={{ LANGUAGE_CODE }}&u={{ activity.http_item_url }}" class="language" target="_blank">
-          <small>{% with from_language=activity.t_language to_language=localized_language %}{% blocktrans %}Translate from {{ from_language }} to {{ to_language }}{% endblocktrans %}{% endwith %}</small>
-          <img src="{{ activity.language_image_url }}" alt="{{ activity.language }}">
-        </a>
-        {% elif activity.language != 'en' and user.is_authenticated and activity.cached_owner.username == user.username %}
-        <a href="{{ activity.edit_url }}" target="_blank" class="language"
+        {% if activity.language != 'en' and user.is_authenticated and activity.cached_owner.username == user.username %}
+        <a href="{{ activity.edit_url }}" target="_blank" class="language pull-right"
            data-ajax-url="{{ activity.ajax_edit_url }}" data-ajax-title="{{ activity.edit_sentence }}" data-ajax-handle-form="true"
            data-trigger="hover" data-toggle="tooltip" data-html="true"
            title="{% trans 'Language' %}: {{ activity.t_language }}<br>{{ activity.edit_sentence }}">
@@ -48,7 +43,7 @@
                alt="{{ activity.language }}">
         </a>
         {% endif %}
-        <a href="{{ activity.item_url }}" target="_blank" class="a-nodifference">
+        <a href="{{ activity.item_url }}" class="date-link" target="_blank">
           <small class="date">
             <span class="timezone" data-timeago="true">
               <span class="datetime">{{ activity.creation|torfc2822 }}</span>
@@ -88,6 +83,12 @@
           {% endif %}
           {% endwith %}
         </div>
+        {% if activity.language != LANGUAGE_CODE %}
+        <a href="https://translate.google.com/translate?js=n&sl={{ activity.language }}&tl={{ LANGUAGE_CODE }}&u={{ activity.http_item_url }}" class="language fontx0-8 text-muted" target="_blank">
+          <img src="{{ activity.language_image_url }}" alt="{{ activity.language }}">
+          {% with from_language=activity.t_language to_language=localized_language %}{% blocktrans %}Translate from {{ from_language }} to {{ to_language }}{% endblocktrans %}{% endwith %}
+        </a>
+        {% endif %}
         <div class="tags text-muted fontx0-8">{% for tag, t_tag in activity.t_tags.items %}<a href="/activities/?c_tags={{ tag }}" target="_blank" class="text-muted">#{{ t_tag }}</a> {% endfor %}</div>
         <div class="socialbar">
           <div class="btn-group share">
