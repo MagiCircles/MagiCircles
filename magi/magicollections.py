@@ -631,7 +631,7 @@ class MagiCollection(object):
             prefetched = prefetched + view.fields_prefetched
 
         if hasattr(view, 'fields_prefetched_together'):
-            prefetched_together = prefetched + view.fields_prefetched_together
+            prefetched_together = prefetched_together + view.fields_prefetched_together
 
         # Fields from reverse
         for details in getattr(item, 'reverse_related', []):
@@ -1692,6 +1692,7 @@ class AccountCollection(MagiCollection):
         add_button_subtitle = _('Create your account to join the community and be in the leaderboard!')
         filter_form = forms.AccountFilterForm
         ajax_callback = 'loadAccounts'
+        allow_random = False
 
         show_item_buttons_as_icons = True
         item_buttons_classes = ['btn', 'btn-link']
@@ -2302,7 +2303,6 @@ class StaffConfigurationCollection(MagiCollection):
     navbar_link_list = 'staff'
     icon = 'settings'
     form_class = forms.StaffConfigurationForm
-    allow_random = False
     reportable = False
     blockable = False
     one_of_permissions_required = [
@@ -2332,6 +2332,7 @@ class StaffConfigurationCollection(MagiCollection):
         before_template = 'include/beforeStaffConfigurations'
         filter_form = forms.StaffConfigurationFilters
         default_ordering = 'id'
+        allow_random = False
 
         def get_queryset(self, queryset, parameters, request):
             queryset = super(StaffConfigurationCollection.ListView, self).get_queryset(queryset, parameters, request)
@@ -2393,13 +2394,13 @@ class StaffDetailsCollection(MagiCollection):
     blockable = False
     form_class = forms.StaffDetailsForm
     multipart = True
-    allow_random = False
 
     class ListView(MagiCollection.ListView):
         one_of_permissions_required = ['edit_own_staff_profile', 'translate_items', 'edit_staff_details']
         add_button_subtitle = None
         filter_form = forms.StaffDetailsFilterForm
         hide_sidebar = True
+        allow_random = False
 
         def get_queryset(self, queryset, parameters, request):
             queryset = super(StaffDetailsCollection.ListView, self).get_queryset(queryset, parameters, request)
@@ -2824,7 +2825,6 @@ class BadgeCollection(MagiCollection):
     queryset = models.Badge.objects.all()
     reportable = False
     blockable = False
-    allow_random = False
 
     types = OrderedDict([
         ('exclusive', {
@@ -2881,6 +2881,7 @@ class BadgeCollection(MagiCollection):
         item_template = custom_item_template
         default_ordering = '-date'
         filter_form = forms.FilterBadges
+        allow_random = False
 
         def get_queryset(self, queryset, parameters, request):
             queryset = super(BadgeCollection.ListView, self).get_queryset(queryset, parameters, request)
@@ -2955,7 +2956,6 @@ class ReportCollection(MagiCollection):
     queryset = models.Report.objects.all().select_related('owner', 'owner__preferences', 'staff', 'staff__preferences').prefetch_related(Prefetch('images', to_attr='all_images'))
     reportable = False
     blockable = False
-    allow_random = False
 
     @property
     def types(self):
@@ -2991,6 +2991,7 @@ class ReportCollection(MagiCollection):
         filter_form = forms.FilterReports
         show_add_button = justReturn(False)
         default_ordering = 'i_status'
+        allow_random = False
 
     class ItemView(MagiCollection.ItemView):
         template = custom_item_template
@@ -3039,7 +3040,6 @@ class DonateCollection(MagiCollection):
     reportable = False
     blockable = False
     form_class = forms.DonateForm
-    allow_random = False
 
     class ListView(MagiCollection.ListView):
         item_template = custom_item_template
@@ -3051,6 +3051,7 @@ class DonateCollection(MagiCollection):
         show_add_button_superuser_only = True
         before_template = 'include/donate'
         add_button_subtitle = ''
+        allow_random = False
 
         def get_queryset(self, queryset, parameters, request):
             queryset = super(DonateCollection.ListView, self).get_queryset(queryset, parameters, request)

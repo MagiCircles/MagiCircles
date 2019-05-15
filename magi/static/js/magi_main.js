@@ -1435,6 +1435,9 @@ function loadFiltersButtons() {
 }
 
 function loadPresets(button) {
+    if (button.data('always-hidden')) {
+        return;
+    }
     button.show();
     function onClick(e) {
         e.preventDefault();

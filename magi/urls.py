@@ -6,6 +6,7 @@ from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.utils.translation import string_concat, ugettext_lazy as _
 from django.utils import timezone
+from django.views.generic.base import RedirectView
 #from magi import bouncy # unused, only to force load the feedback process
 from magi import views_collections, magicollections
 from magi import views as magi_views
@@ -360,7 +361,11 @@ for (name, pages) in ENABLED_PAGES.items():
             all_enabled.append(name)
         ajax = page.get('ajax', False)
         redirect = page.get('redirect', None)
-        if not redirect:
+        if redirect:
+            urls.append(url(r'^{}{}{}[/]*$'.format(
+                'ajax/' if ajax else '', name, '/' + url_variables if url_variables else '',
+            ), RedirectView.as_view(url=redirect, permanent=True)))
+        else:
             if name == 'index':
                 urls.append(url(r'^$', page_view(name, page), name=name))
             else:

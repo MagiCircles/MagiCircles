@@ -237,9 +237,9 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
             context['plain_ordering'] = [o[1:] if o.startswith('-') else o for o in ordering]
 
     filled_filter_form = False
+    preset = None
     if collection.list_view.filter_form:
         # Set default values from presets
-        preset = None
         if getattr(collection.list_view.filter_form, 'presets'):
             url = request.path[5:] if request.path.startswith('/ajax') else request.path
             template = u'/{}/{}/'.format(collection.plural_name, '{preset}')
@@ -247,6 +247,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
             presets = collection.list_view.filter_form.get_presets()
             if matches and matches['preset'] in presets:
                 preset = matches['preset']
+                context['preset'] = preset
                 filters.update(collection.list_view.filter_form.get_presets_fields(preset))
 
         if len([
@@ -254,7 +255,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
                 if k not in GET_PARAMETERS_NOT_IN_FORM + GET_PARAMETERS_IN_FORM_HANDLED_OUTSIDE
         ]) > 0:
             context['filter_form'] = collection.list_view.filter_form(filters, request=request, ajax=ajax, collection=collection, preset=preset)
-            filled_filter_form = True
+            filled_filter_form = len(request.GET) > 0
         else:
             context['filter_form'] = collection.list_view.filter_form(request=request, ajax=ajax, collection=collection, preset=preset)
         if hasattr(context['filter_form'], 'filter_queryset'):
@@ -348,6 +349,11 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
             )
 
     context['h1_page_title'] = collection.plural_title
+    if preset:
+        context['h1_page_title'] = collection.list_view.filter_form.get_preset_label(
+            preset, collection.plural_title)
+        context['h1_page_title_icon'] = collection.list_view.filter_form.get_preset_icon(preset)
+        context['h1_page_title_image'] = collection.list_view.filter_form.get_preset_image(preset)
     context['total_pages'] = int(math.ceil(context['total_results'] / page_size))
     context['items'] = queryset
     context['page'] = page + 1
@@ -395,7 +401,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     if context['alt_view'] and 'template' in context['alt_view']:
         context['item_template'] = context['alt_view']['template']
     context['item_padding'] = collection.list_view.item_padding
-    context['show_title'] = collection.list_view.show_title
+    context['show_title'] = collection.list_view.show_title or preset
     context['plural_title'] = collection.plural_title
     context['show_items_names'] = collection.list_view.show_items_names
     context['lowercase_plural_title'] = collection.plural_title.lower()

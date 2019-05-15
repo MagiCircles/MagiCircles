@@ -58,6 +58,7 @@ from magi.utils import (
     BACKGROUNDS_NAMES,
     getSearchFieldHelpText,
     tourldash,
+    jsv,
 )
 
 ############################################################
@@ -665,10 +666,7 @@ class MagiFiltersForm(AutoForm):
         return _to_missing_translation
 
     presets = {}
-
-    @classmethod
-    def get_presets_fields(self, preset):
-        return { k: unicode(v) for k, v in self.get_presets().get(preset)['fields'].items() }
+    show_presets_in_navbar = True
 
     _internal_presets = {}
     @classmethod
@@ -681,6 +679,70 @@ class MagiFiltersForm(AutoForm):
                 for k, v in self.presets.items()
             ])
         return self._internal_presets
+
+    @classmethod
+    def get_presets_fields(self, preset, details=None):
+        if details is None: details = self.get_presets()[preset]
+        return { k: unicode(v) for k, v in details['fields'].items() }
+
+    @classmethod
+    def get_preset_verbose_name(self, preset, details=None):
+        if details is None: details = self.get_presets()[preset]
+        verbose_name = details.get('verbose_name', preset)
+        if callable(verbose_name):
+            verbose_name = verbose_name()
+        return verbose_name
+
+    @classmethod
+    def get_preset_label(self, preset, plural_title, details=None):
+        if details is None: details = self.get_presets()[preset]
+        label = details.get('label', None)
+        if callable(label):
+            label = label()
+        if not label:
+            verbose_name = self.get_preset_verbose_name(preset, details=details)
+            label = _('All {type} {things}').format(
+                type=verbose_name,
+                things=plural_title.lower(),
+            )
+        return label
+
+    @classmethod
+    def get_preset_icon(self, preset, details=None):
+        if details is None: details = self.get_presets()[preset]
+        return details.get('icon', None)
+
+    @classmethod
+    def get_preset_image(self, preset, details=None):
+        if details is None: details = self.get_presets()[preset]
+        image = details.get('image', None)
+        if image:
+            return staticImageURL(image)
+        return None
+
+    def _get_all_presets_links(self):
+        links = []
+        for preset, preset_details in type(self).get_presets().items():
+            label = self.get_preset_label(
+                preset, plural_title=self.collection.plural_title,
+                details=preset_details,
+            )
+            image = self.get_preset_image(preset, details=preset_details)
+            if image:
+                image = u'<img src="{}" alt="{}" height="27px" style="display: block; margin: -5px 0;">'.format(
+                    image, label)
+            icon = self.get_preset_icon(preset, details=preset_details)
+            if icon:
+                icon = u'<i class="flaticon-{}" ></i>'.format(icon)
+            links.append(u'<a href="{}" class="list-group-item">{}<span class="pull-right">{}</span></a>'.format(
+                self.collection.get_list_url(preset=preset),
+                u'<span{}>{}</span>'.format(
+                    u' style="display: inline-block; width: 140px;"' if image else '',
+                    label,
+                ),
+                image or icon or '',
+            ))
+        return links
 
     @property
     def extra_buttons(self):
@@ -695,38 +757,16 @@ class MagiFiltersForm(AutoForm):
                 'new_tab': True,
             }
         # Presets
-        links = []
-        for preset, preset_details in self.get_presets().items():
-            verbose_name = preset_details.get('verbose_name', preset)
-            if callable(verbose_name):
-                verbose_name = verbose_name()
-            label = preset_details.get('label', None)
-            if callable(label):
-                label = label()
-            if not label:
-                label = _('All {type} {things}').format(
-                    type=verbose_name,
-                    things=self.collection.plural_title.lower(),
-                )
-            image = preset_details.get('image', None)
-            image = u'<img src="{}" alt="{}" height="27px" style="display: block; margin: -5px 0;">'.format(
-                staticImageURL(image), verbose_name) if image else ''
-            icon = preset_details.get('icon', None)
-            icon = u'<i class="flaticon-{}" ></i>'.format(icon) if icon else ''
-            links.append(u'<a href="{}" class="list-group-item">{}<span class="pull-right">{}</span></a>'.format(
-                self.collection.get_list_url(preset=preset),
-                u'<span{}>{}</span>'.format(
-                    u' style="display: inline-block; width: 140px;"' if image else '',
-                    label,
-                ),
-                image or icon or '',
-            ))
+        links = self._get_all_presets_links()
         if links:
+            attributes = { 'style': 'display: none;' }
+            if not self.show_presets_in_navbar:
+                attributes['data-always-hidden'] = jsv(True)
             buttons['presets'] = {
                 'icon': 'idea',
                 'verbose_name': _('Suggestions'),
                 'url': '#',
-                'attributes': { 'style': 'display: none;' },
+                'attributes': attributes,
                 'ajax_callback': 'loadPresets',
                 'insert_in_sidebar': (
                     u'<div style="display: none;" id="filter-form-presets">{title}{nav}</div>{back}'.format(
@@ -739,12 +779,15 @@ class MagiFiltersForm(AutoForm):
                         ),
                     )),
             }
+
         if buttons:
             # Reset
             buttons['clear'] = {
                 'icon': 'clear',
                 'verbose_name': _('Clear'),
-                'url': self.collection.get_list_url(),
+                'url': self.collection.get_list_url(parameters={
+                    'view': self.request.GET['view'],
+                } if self.request and self.request.GET.get('view', None) else None),
             }
         return buttons
 
