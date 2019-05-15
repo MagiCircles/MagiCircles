@@ -25,6 +25,7 @@ t = {
     'This field is required.': _('This field is required.'),
     'URL': _('URL'),
     'User': _('User'),
+    'users': _('users'),
     'Username': _('Username'),
     'Yes': _('Yes'),
     'Your old password was entered incorrectly. Please enter it again.': _('Your old password was entered incorrectly. Please enter it again.'),
