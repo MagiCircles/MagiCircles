@@ -45,6 +45,11 @@
 	</a>
 	{% elif field.type == 'button' %}
 	<a href="{{ field.value }}" target="_blank" class="btn btn-lg btn-secondary"{% if field.ajax_link %} data-ajax-url="{{ field.ajax_link }}" data-ajax-title="{{ field.value }}"{% endif %}>
+	  {% if field.icon %}
+	  <i class="flaticon-{{ field.icon }}"></i>
+	  {% elif field.image %}
+	  <img src="{{ field.image }}" alt="{{ field.verbose_name }}">
+	  {% endif %}
 	  {{ field.link_text }}
 	</a>
 	{% elif field.type == 'long_text' %}
