@@ -702,7 +702,6 @@ class MagiCollection(object):
                     'image': images.get(field_name, None),
                     'images': [],
                     'links': [],
-                    'spread_across': True,
                 }
                 and_more = False
                 max_shown = max_per_line
@@ -731,6 +730,7 @@ class MagiCollection(object):
                         to_append['tooltip'] = unicode(related_item)
                         d['type'] = 'images_links'
                         d['images'].append(to_append)
+                        d['spread_across'] = True
                     else:
                         d['type'] = 'list_links' if item_url else 'list'
                         to_append['value'] = unicode(related_item)
