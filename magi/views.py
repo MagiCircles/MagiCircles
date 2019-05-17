@@ -502,7 +502,14 @@ def settingsContext(request):
         context['forms']['donationLink'].form_title = context['add_custom_link_sentence']
 
     # Links
-    context['links'] = list(request.user.links.all())
+    context['links'] = [{
+        'name': link.type,
+        'verbose_name': link.t_type,
+        'value': link.value,
+        'pk': link.pk,
+        'url': link.url,
+        'image': link.image_url,
+    } for link in request.user.links.all()]
 
     # Blocked users
     context['blocked'] = list(request.user.preferences.blocked.all())
@@ -968,7 +975,7 @@ def archiveactivity(request, pk):
             raise PermissionDenied()
         activity.archived_by_staff = request.user
     activity.save()
-    if request.user.is_staff:
+    if activity.archived_by_staff:
         return JsonResponse({
             'result': {
                 'archived': activity.archived_by_owner,
@@ -984,6 +991,7 @@ def archiveactivity(request, pk):
 
 def unarchiveactivity(request, pk):
     context = ajaxContext(request)
+    by_staff = False
     if not request.user.is_authenticated() or request.method != 'POST':
         raise PermissionDenied()
     activity = get_object_or_404(models.Activity.objects.select_related('archived_by_staf'), pk=pk)
@@ -995,8 +1003,9 @@ def unarchiveactivity(request, pk):
         if not activity.has_permissions_to_ghost_archive(request.user):
             raise PermissionDenied()
         activity.archived_by_staff = None
+        by_staff = True
     activity.save()
-    if request.user.is_staff:
+    if by_staff:
         return JsonResponse({
             'result': {
                 'archived': activity.archived_by_owner,

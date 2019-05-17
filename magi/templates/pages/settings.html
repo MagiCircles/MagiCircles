@@ -52,11 +52,11 @@
 <form class="container_form" action="#addLink" data-form-name="addLink">
   <table class="table table-main table-padded table-rounded">
     {% for link in links %}
-    <tr id="link{{ link.id }}">
+    <tr id="link{{ link.pk }}">
       <td>
 	{% include 'include/link.html' %}
       </td>
-      <td class="text-right" width="200"><a href="#deleteLink" data-link-id="{{ link.id }}" class="btn btn-lg btn-danger">{{ delete_link_sentence }}</a></td>
+      <td class="text-right" width="200"><a href="#deleteLink" data-link-id="{{ link.pk }}" class="btn btn-lg btn-danger">{{ delete_link_sentence }}</a></td>
     </tr>
     {% endfor %}
   </table>

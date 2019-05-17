@@ -1,19 +1,15 @@
-{# link must contain: url, type, value #}
-{# link may contain: translate_type, flaticon, image_url #}
-<a href="{{ link.url }}" target="_blank">
+{# link must contain: name, verbose_name, value, url #}
+{# link may contain: flaticon, image, raw_value #}
+<a href="{{ link.url }}" target="_blank" class="user-link" data-link="{{ link.name }}"{% if link.raw_value %}
+   data-raw-value="{{ link.raw_value }}"{% endif %}>
   <div class="row"><div class="col-xs-8"><strong>
-	{% if link.translate_type %}
-	{% load i18n %}
-	{% trans link.type %}
-	{% else %}
-	{{ link.t_type }}
-	{% endif %}
+	{{ link.verbose_name }}
     </strong></div>
     <div class="col-xs-4 text-right">
       {% if link.flaticon %}
       <i class="flaticon-{{ link.flaticon }}"></i>
-      {% elif link.image_url %}
-      <img src="{{ link.image_url }}" alt="{{ link.type }}" width="24" height="24">
+      {% elif link.image %}
+      <img src="{{ link.image }}" alt="{{ link.verbose_name }}" width="24" height="24">
       {% endif %}
     </div>
   </div>

@@ -2088,51 +2088,51 @@ class UserCollection(MagiCollection):
                         break
                 if not already_linked:
                     first_links.append(AttrDict({
-                        'type': 'Website',
+                        'name': 'website',
+                        'verbose_name': _('Website'),
                         'value': user.preferences.donation_link_title,
-                        'translate_type': True,
-                        'flaticon': 'url',
                         'url': user.preferences.donation_link,
+                        'flaticon': 'url',
                     }))
             if FAVORITE_CHARACTERS:
                 for i in range(1, 4):
-                    if getattr(user.preferences, 'favorite_character{}'.format(i)):
-                        name = models.UserPreferences.favorite_character_label(i)
+                    field_name = 'favorite_character{}'.format(i)
+                    if getattr(user.preferences, field_name):
                         link = AttrDict({
-                            'type': name,
-                            't_type': name,
-                            # May be used by FAVORITE_CHARACTER_TO_URL
-                            'raw_value': getattr(user.preferences, 'favorite_character{}'.format(i)),
+                            'name': field_name,
+                            'verbose_name': models.UserPreferences.favorite_character_label(i),
                             'value': user.preferences.localized_favorite_character(i),
-                            'translate_type': False,
-                            'image_url': user.preferences.favorite_character_image(i),
+                            'image': user.preferences.favorite_character_image(i),
+                            'raw_value': getattr(user.preferences, field_name),
                         })
                         link.url = FAVORITE_CHARACTER_TO_URL(link)
                         meta_links.append(AttrDict(link))
             if user.preferences.location:
                 latlong = '{},{}'.format(user.preferences.latitude, user.preferences.longitude) if user.preferences.latitude else None
                 link = AttrDict({
-                    'type': 'Location',
+                    'name': 'location',
+                    'verbose_name': _('Location'),
                     'value': user.preferences.location,
-                    'translate_type': True,
-                    'flaticon': 'pinpoint',
                     'url': user.preferences.location_url,
+                    'flaticon': 'pinpoint',
                 })
                 meta_links.append(link)
             if context['is_me'] or user.preferences.language != context['request'].LANGUAGE_CODE:
                 meta_links.append(AttrDict({
-                    'type': 'Language',
+                    'name': 'language',
+                    'verbose_name': _('Language'),
                     'value': user.preferences.t_language,
-                    'translate_type': True,
-                    'image_url': staticImageURL(user.preferences.language, folder='language', extension='png'),
+                    'raw_value': user.preferences.language,
+                    'url': u'/users/{}/'.format(user.preferences.language),
+                    'image': staticImageURL(user.preferences.language, folder='language', extension='png'),
                 }))
             if user.preferences.birthdate:
                 meta_links.append(AttrDict({
-                    'type': 'Birthdate',
+                    'name': 'birthdate',
+                    'verbose_name': _('Birthdate'),
                     'value': user.preferences.formatted_birthday,
-                    'translate_type': True,
-                    'flaticon': 'birthday',
                     'url': user.birthday_url,
+                    'flaticon': 'birthday',
                 }))
             return (
                 first_links, meta_links,
