@@ -40,6 +40,7 @@ from magi.settings import (
     MAX_LEVEL_BEFORE_SCREENSHOT_REQUIRED,
     MAX_LEVEL_UP_STEP_BEFORE_SCREENSHOT_REQUIRED,
     FIRST_COLLECTION,
+    TRANSLATION_HELP_URL,
 )
 from magi.utils import (
     randomString,
@@ -180,6 +181,28 @@ class MagiForm(forms.ModelForm):
                 model_field = None
             if model_field is not None and model_field.null:
                 self.fields[name].required = False
+            # Show languages on translatable fields
+            if self.collection and self.collection.translated_fields and name in self.collection.translated_fields:
+                choices = getattr(self.Meta.model, u'{name}S_CHOICES'.format(name=name.upper()), [])
+                self.fields[name].below_field = mark_safe(
+                    u'<div class="text-right"><i class="flaticon-translate text-muted"></i> {}</div>'.format(
+                        u' '.join([
+                            u'<a href="{url}"><img src="{image}" alt="{language}" height="15"></a>'.format(
+                                language=language,
+                                image=staticImageURL(language, folder='language', extension='png'),
+                                url=(self.collection.get_list_url(parameters={
+                                    'missing_{}_translations'.format(name): language,
+                                }) if self.is_creating
+                                     else u'{}{}translate&language={}'.format(
+                                             self.instance.edit_url,
+                                             '&' if '?' in self.instance.edit_url else '?',
+                                             language,
+                                     )
+                                ) if self.allow_translate else TRANSLATION_HELP_URL,
+                            ) for language, language_verbose in choices
+                        ]),
+                    )
+                )
             # Fix dates fields
             if isinstance(field, forms.DateField) or name in getattr(self.Meta, 'date_fields', []):
                 self.fields[name], value = date_input(field, value=(getattr(self.instance, name, None) if not self.is_creating else None))
@@ -523,7 +546,12 @@ def to_translate_form_class(view):
         def __init__(self, *args, **kwargs):
             self.is_translate_form = True
             super(_TranslateForm, self).__init__(*args, **kwargs)
-            spoken_languages = (self.request.user.preferences.settings_per_groups or {}).get('translator', {}).get('languages', [])
+            spoken_languages = (
+                self.request.GET['language'].split(',')
+                if self.request.GET.get('language', None)
+                else (self.request.user.preferences.settings_per_groups or {}).get(
+                        'translator', {}).get('languages', [])
+            )
             if spoken_languages:
                 if self._needsVisibleEnglishFields(spoken_languages):
                     spoken_languages.append('en')
