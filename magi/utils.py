@@ -823,12 +823,14 @@ def matchesTemplate(template, string):
     return None
 
 def summarize(string, max_length=100):
+    if string is None: return None
     string = ' '.join(string.split(' '))
     if max_length is not None and len(string) > max_length:
         string = u' '.join(string[:max_length + 1].split(' ')[0:-1]) + u'...'
     return string
 
 def simplifyMarkdown(markdown_string, max_length=None):
+    if string is None: return None
     markdown_string = summarize(markdown_string, max_length=max_length)
     for c in ['*', '>', '#', '-', '+', '![', '[', ']', '(', ')', 'https://', 'http://', '//']:
         markdown_string = markdown_string.replace(c, ' ')
