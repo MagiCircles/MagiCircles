@@ -19,8 +19,8 @@
 </div>
 {% endif %}
 {% else %}
-{% if display_style == 'rows' %}<div class="row items" id="{{ collection.name }}-page-{{ page }}" data-page-number="{{ page }}">{% endif %}
-  {% if display_style == 'table' %}<div class="table-responsive"><table class="items {% for class in display_style_table_classes %}{{ class }} {% endfor %}collection-table" data-page-number="{{ page }}">
+{% if display_style == 'rows' %}<div class="row items list-items-{{ collection.name }}" id="{{ collection.name }}-page-{{ page }}" data-page-number="{{ page }}">{% endif %}
+  {% if display_style == 'table' %}<div class="table-responsive"><table class="items list-items-{{ collection.name }} {% for class in display_style_table_classes %}{{ class }} {% endfor %}collection-table" data-page-number="{{ page }}" id="{{ collection.name }}-page-{{ page }}" data-page-number="{{ page }}">
     {% if page == 1 %}{% if table_fields_headers_sections %}<tr class="table-headers-sections">{% for name, verbose_name, colspan in table_fields_headers_sections %}
       <th data-header-field="{{ name }}" colspan="{{ colspan }}">{{ verbose_name }}</th class="table-headers">{% endfor %}{% endif %}
     <tr>{% for name, verbose_name in table_fields_headers %}
