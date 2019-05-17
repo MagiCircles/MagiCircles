@@ -117,6 +117,8 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
         ]:
             description = getattr(context['item'], field_name, None)
             if description:
+                if isinstance(description, tuple):
+                    description = description[1]
                 description = (simplifyMarkdown if is_markdown else summarize)(description, max_length=158)
                 break
         context['page_description'] = description
