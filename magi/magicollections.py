@@ -619,6 +619,9 @@ class MagiCollection(object):
         collectible_fields = []
         many_fields_galleries = []
 
+        if hasattr(view, 'fields_exclude'):
+            exclude_fields = exclude_fields + view.fields_exclude
+
         icons = icons.copy()
         icons.update(self.fields_icons)
         icons.update(view.fields_icons)
