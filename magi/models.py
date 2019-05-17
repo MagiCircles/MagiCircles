@@ -289,8 +289,10 @@ class UserPreferences(BaseMagiModel):
                 imagePath = (image for (name, __, image) in FAVORITE_CHARACTERS if unicode(name) == getattr(self, 'favorite_character{}'.format(number))).next()
             except StopIteration:
                 return None
-            if '//' in imagePath:
+            if '//' in (imagePath or ''):
                 return imagePath
+            if not imagePath:
+                return None
             return get_image_url(imagePath)
         return None
 
