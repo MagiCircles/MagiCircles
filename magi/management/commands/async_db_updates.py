@@ -195,7 +195,9 @@ field_suffix_to_action = [
 ]
 
 def model_async_update(model):
-    if inspect.isclass(model) and issubclass(model, BaseMagiModel):
+    if (inspect.isclass(model)
+        and issubclass(model, BaseMagiModel)
+        and not getattr(model._meta, 'abstract', False)):
         for field in model._meta.fields:
             for type_of_field, callback in field_type_to_action:
                 if isinstance(field, type_of_field):
