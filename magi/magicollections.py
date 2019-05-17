@@ -1855,6 +1855,9 @@ class UserCollection(MagiCollection):
         'color': {
             'type': CuteFormType.Images,
         },
+        'i_language': {
+            'image_folder': 'language',
+        }
     }
 
     def get_queryset(self, queryset, parameters, request):

@@ -1911,6 +1911,26 @@ class UserFilterForm(MagiFiltersForm):
         ])
         color_filter = MagiFilter(selector='preferences__color')
 
+    i_language = forms.ChoiceField(label=_('Language'), choices=(
+        BLANK_CHOICE_DASH + list(models.UserPreferences.LANGUAGE_CHOICES)))
+    i_language_filter = MagiFilter(selector='preferences__i_language')
+
+    def _get_preset_language_label(verbose_language):
+        return lambda: _('Users who can speak {language}').format(language=verbose_language)
+
+    show_presets_in_navbar = False
+    presets = OrderedDict([
+        # Used when clicking on the language of a user
+        (_language, {
+            'verbose_name': _verbose_language,
+            'label': _get_preset_language_label(_verbose_language),
+            'fields': {
+                'i_language': _language
+            },
+            'image': u'language/{}.png'.format(_language),
+        }) for _language, _verbose_language in models.UserPreferences.LANGUAGE_CHOICES
+    ])
+
     def __init__(self, *args, **kwargs):
         super(UserFilterForm, self).__init__(*args, **kwargs)
         if 'favorite_character' in self.fields:
@@ -1945,11 +1965,13 @@ class UserFilterForm(MagiFiltersForm):
     class Meta(MagiFiltersForm.Meta):
         model = models.User
         fields = [
-            'search', 'favorite_character',
+            'search',
+            'ordering', 'reverse_order',
+            'favorite_character',
         ] + (
             ['color'] if USER_COLORS else []
         ) + [
-            'ordering', 'reverse_order',
+            'i_language',
         ]
 
 ############################################################
