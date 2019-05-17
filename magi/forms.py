@@ -940,7 +940,7 @@ class MagiFiltersForm(AutoForm):
                                 initial=initial,
                             ))] + self.fields.items())
         # Add missing_{}_translations for all translatable fields if the current user has permission
-        if self.collection and self.request.user.is_authenticated() and self.request.user.hasPermission('translate_items') and self.collection.translated_fields:
+        if self.collection and self.request.user.is_authenticated() and self.allow_translate and self.collection.translated_fields:
             for field_name in self.collection.translated_fields:
                 filter_field_name = u'missing_{}_translations'.format(field_name)
                 setattr(self, u'{}_filter'.format(filter_field_name), MagiFilter(
