@@ -1,0 +1,18 @@
+{% load firstof from future %}
+{% if wrap != 0 %}
+<form class='form-horizontal' method='post' action='{{ action }}' role='form'>{% csrf_token %}
+  {% endif %}
+  {% include "bootstrap_form_horizontal/_bootstrap_form_horizontal_non_field_errors.html" %}
+  {% for field in form %}
+  {% include "bootstrap_form_horizontal/_bootstrap_form_horizontal_field.html" %}
+  {% endfor %}
+  {% if submit %}
+  <div class='form-group'>
+    <div class='col-sm-offset-4 col-sm-8'>
+      <input type='submit' value='{{ submit }}' class='btn btn-primary btn-lg' />
+    </div>
+  </div>
+  {% endif %}
+  {% if wrap != 0 %}
+</form>
+{% endif %}

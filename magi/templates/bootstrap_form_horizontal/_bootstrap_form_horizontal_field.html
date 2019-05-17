@@ -1,0 +1,63 @@
+{% load firstof from future %}
+{% load bootstrap_form_horizontal_tags %}
+{% if field.is_hidden %}
+{{ field }}
+{% if field.errors %}
+<div class="row form-group">
+  <div class="{% firstof label_class 'col-sm-4' %}"></div>
+  <div class="{% firstof field_class 'col-sm-8' %} alert alert-warning">
+    {{ field.label }}:
+    {{ field.errors }}
+  </div>
+</div>
+{% endif %}
+{% else %}
+<div class="row form-group {% if field.errors %}has-error{% endif %} {% if field.required %}required{% endif %}{% for cls in field.field.form_group_classes %} {{ cls }}{% endfor %}">
+  {% if field|is_boolean %}
+  <div class="{% firstof label_class 'col-sm-4' %}"></div>
+  {% else %}
+  <label for="{{ field.id_for_label }}" class="{% firstof label_class 'col-sm-4' %} control-label" style="text-align: right;">
+    {% if field.field.required %}<span class="text-secondary">*</span>{% endif %}{{ field.label }}
+  </label>
+  {% endif %}
+  <div class="{% firstof field_class 'col-sm-8' %}">
+    {% if field.errors %}
+    <div class="alert alert-warning">
+      {{ field.errors }}
+    </div>
+    {% endif %}
+    {% if field.help_text %}
+    <span class="help-block">{{ field.help_text }}</span>
+    {% endif %}
+    {% if field|is_boolean %}
+    <label>{{ field }} {{ field.label }}</label>
+    {% else %}
+    {% if field|is_date_time_field %}
+    <div data-role="bootstrap-form-horizontal-date-time-widget">
+      <input type="hidden" value="{{ field.value|date:"Y-m-d H:i:s" }}" name="{{ field.html_name }}" data-role="date-time" />
+      <input type="date" value="{{ field.value|date:"Y-m-d" }}"
+             class="calendar-widget" data-role="date" />
+      <nobr>
+        <select data-role="hours">
+          {% for val,selected in field|hours_for_field %}
+          <option value="{{ val }}" {% if selected %}selected="selected"{% endif %}>{{ val }}</option>
+          {% endfor %}
+        </select>:<select data-role="minutes">
+          {% for val,selected in field|minutes_for_field %}
+          <option value="{{ val }}" {% if selected %}selected="selected"{% endif %}>{{ val }}</option>
+          {% endfor %}
+        </select><select data-role="ampm">
+          {% for val,selected in field|ampm_for_field %}
+          <option value="{{ val }}" {% if selected %}selected="selected"{% endif %}>{{ val }}</option>
+          {% endfor %}
+        </select>
+      </nobr>
+    </div>
+    {% else %}
+    {{ field|bootstrap_control_field }}
+    {% endif %}
+    {% endif %}
+    {{ field.field.below_field }}
+  </div>
+</div>
+{% endif %}

@@ -1,0 +1,9 @@
+{% load firstof from future %}
+{% if form.non_field_errors %}
+<div class='row form-group'>
+  <div class='{% firstof label_class "col-sm-4" %}'></div>
+  <div class='{% firstof field_class "col-sm-8" %} alert alert-warning'>
+    {{ form.non_field_errors }}
+  </div>
+</div>
+{% endif %}

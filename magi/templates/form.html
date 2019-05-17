@@ -1,7 +1,6 @@
 {# blocks: beforeform, imagetitle, title, beforefields, form, afterfields, belowform #}
 {# variables: forms (dict name: form) or form (single) #}
 {% extends extends %}
-{% load bootstrap %}
 {% load i18n %}
 {% load tools %}
 {% load magi_tags %}
@@ -24,7 +23,7 @@
     {% block beforefields %}{% endblock %}{% if beforefields %}{{ beforefields|getattribute:form_name }}{% endif %}{% if form.beforefields %}{{ form.beforefields }}{% endif %}
     {% block form %}
     {% csrf_token %}
-    {% include "bootstrap_form_horizontal.html" with form=form wrap=0 %}
+    {% include "bootstrap_form_horizontal/bootstrap_form_horizontal.html" with form=form wrap=0 %}
     <input type="hidden" name="{{ form_name }}" value="true">
     {% endblock %}
     {% block afterfields %}{% endblock %}{% if afterfields %}{{ afterfields|getattribute:form_name }}{% endif %}{% if form.afterfields %}{{ form.afterfields }}{% endif %}
