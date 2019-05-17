@@ -448,8 +448,8 @@ class MagiForm(forms.ModelForm):
 
     def save(self, commit=True):
         instance = super(MagiForm, self).save(commit=False)
-        # Save owner on creation if specified
-        if hasattr(self.Meta, 'save_owner_on_creation') and self.Meta.save_owner_on_creation and self.is_creating:
+        # Save owner on creation when owner field is missing but there is a owner field in model
+        if self.is_creating and 'owner' not in self.fields and modelHasField(self.queryset.model, 'owner'):
             owner = getattr(self, 'to_owner', None)
             if owner:
                 instance.owner = owner
