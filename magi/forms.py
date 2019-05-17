@@ -560,13 +560,20 @@ class MagiForm(forms.ModelForm):
 class AutoForm(MagiForm):
     """
     This form can be used to include all the fields but ignore the _cache data or anything that starts with '_'
+    with the exception of _ fields related to images, when the user has permissions
     """
     def __init__(self, *args, **kwargs):
         super(AutoForm, self).__init__(*args, **kwargs)
-        for field in self.fields.keys():
-            if (field.startswith('_')
-                or field == 'owner'):
-                del(self.fields[field])
+
+        if 'owner' in self.fields:
+            del(self.fields['owner'])
+
+        for field_name in self.fields.keys():
+            if field_name.startswith('_') and field_name not in self.keep_underscore_fields:
+                del(self.fields[field_name])
+
+    class Meta(MagiForm.Meta):
+        fields = '__all__'
 
 ############################################################
 # Translate form

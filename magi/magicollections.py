@@ -258,9 +258,8 @@ class MagiCollection(object):
 
     def to_form_class(self):
         class _Form(forms.AutoForm):
-            class Meta:
+            class Meta(forms.AutoForm.Meta):
                 model = self.queryset.model
-                fields = '__all__'
         self._form_class = _Form
 
     def form_class(self, request, context):
