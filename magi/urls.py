@@ -123,7 +123,7 @@ def getURLLambda(name, lambdas):
     return (lambda context: u'/{}/{}/'.format(name, '/'.join([f(context) for f in lambdas])))
 
 def getCollectionShowLinkLambda(collection):
-    return (lambda context: collection.list_view.has_permissions(context['request'], context))
+    return (lambda context: collection.list_view.has_permissions_to_see_in_navbar(context['request'], context))
 
 def _addToCollections(name, cls): # Class of the collection
     collection = cls()

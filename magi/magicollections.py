@@ -1241,6 +1241,9 @@ class MagiCollection(object):
         _alt_view_choices = None # Cache
         alt_views = []
 
+        def has_permissions_to_see_in_navbar(self, request, context):
+            return self.has_permissions(request, context)
+
         def get_queryset(self, queryset, parameters, request):
             return super(MagiCollection.ListView, self).get_queryset(self.collection._collectibles_queryset(self, queryset, request), parameters, request)
 
