@@ -684,7 +684,11 @@ class MagiCollection(object):
                             d['ajax_link'] = getattr(related_item, 'ajax_item_url')
                         d['link_text'] = unicode(_(u'Open {thing}')).format(thing=d['verbose_name'].lower())
                         item_image = None
-                        for image_field in ['top_image_list', 'top_image', 'image_thumbnail_url', 'image_url']:
+                        for image_field in [
+                                'image_for_prefetched',
+                                'top_image_list', 'top_image',
+                                'image_thumbnail_url', 'image_url',
+                        ]:
                             if getattr(related_item, image_field, None):
                                 item_image = getattr(related_item, image_field)
                                 break
@@ -714,7 +718,11 @@ class MagiCollection(object):
                     if allow_ajax_per_item:
                         to_append['ajax_link'] = getattr(related_item, 'ajax_item_url')
                     item_image = None
-                    for image_field in ['top_image_list', 'top_image', 'image_thumbnail_url', 'image_url']:
+                    for image_field in [
+                            'image_for_prefetched',
+                            'top_image_list', 'top_image',
+                            'image_thumbnail_url', 'image_url',
+                    ]:
                         if getattr(related_item, image_field, None):
                             item_image = getattr(related_item, image_field)
                             break
@@ -841,7 +849,16 @@ class MagiCollection(object):
                     d['link'] = link
                     d['ajax_link'] = getattr(cache, 'ajax_item_url')
                     d['link_text'] = unicode(_(u'Open {thing}')).format(thing=d['verbose_name'].lower())
-                    d['image_for_link'] = getattr(cache, 'image_url', None)
+                    item_image = None
+                    for image_field in [
+                            'image_for_prefetched',
+                            'top_image_list', 'top_image',
+                            'image_thumbnail_url', 'image_url',
+                    ]:
+                        if getattr(cache, image_field, None):
+                            item_image = getattr(cache, image_field)
+                            break
+                    d['image_for_link'] = item_image
                     d['icon'] = getattr(cache, 'icon', d['icon'])
                 else:
                     d['type'] = 'text'
