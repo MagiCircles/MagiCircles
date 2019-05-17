@@ -1178,6 +1178,8 @@ class MagiCollection(object):
         col_break = 'md'
         page_size = 12
         item_padding = 20 # Only used with default item template
+        item_max_height = 300
+
         ajax_item_popover = False
         hide_icons = False
         allow_random = True
@@ -1347,6 +1349,9 @@ class MagiCollection(object):
         auto_reloader = True
         template = 'default'
         item_padding = 20 # Only used with default item template
+        item_max_height = 600
+        ajax_item_max_height = 400
+
         hide_icons = False
         fields_icons = {}
         fields_images = {}

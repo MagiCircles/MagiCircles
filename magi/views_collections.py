@@ -127,10 +127,15 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
     context['comments_enabled'] = collection.item_view.comments_enabled
     context['share_enabled'] = collection.item_view.share_enabled
     context['item_padding'] = collection.item_view.item_padding
+    if ajax:
+        context['item_max_height'] = collection.item_view.ajax_item_max_height
+    else:
+        context['item_max_height'] = collection.item_view.item_max_height
     context['item_template'] = collection.item_view.template
     context['full_width'] = collection.item_view.full_width
     context['ajax_callback'] = collection.item_view.ajax_callback
     context['hide_icons'] = collection.item_view.hide_icons
+    context['staff_only_view'] = collection.item_view.staff_required
     context['collection'] = collection
     if context['item_template'] == 'default':
         context['top_illustration'] = collection.item_view.top_illustration
@@ -401,6 +406,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     if context['alt_view'] and 'template' in context['alt_view']:
         context['item_template'] = context['alt_view']['template']
     context['item_padding'] = collection.list_view.item_padding
+    context['item_max_height'] = collection.list_view.item_max_height
     context['show_title'] = collection.list_view.show_title or preset
     context['plural_title'] = collection.plural_title
     context['show_items_names'] = collection.list_view.show_items_names
@@ -434,6 +440,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['item_view_enabled'] = collection.item_view.enabled
     context['ajax_item_view_enabled'] = context['item_view_enabled'] and collection.item_view.ajax and not context['ajax_item_popover']
     context['include_below_item'] = False # May be set to true below
+    context['staff_only_view'] = collection.list_view.staff_required
     context['collection'] = collection
 
     if context['display_style'] == 'table':

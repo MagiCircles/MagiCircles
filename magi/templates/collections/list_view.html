@@ -80,6 +80,9 @@
     <div class="{% if not full_width %}container{% endif %}">
     {% endif %}{# filter_form #}
     <div class="collection-page-wrapper{% if not full_width %} as-container{% endif %}">
+      {% if staff_only_view %}
+      <br><div class="alert alert-warning"><i class="flaticon-warning"></i> Staff only <small> - <i>Do not share</i></small></div>
+      {% endif %}
       <h1 class="padding50 text-center{% if not show_title %} hidden{% endif %}">
         {% if h1_page_title_icon %}
         <i class="flaticon-{{ h1_page_title_icon }}"></i>
