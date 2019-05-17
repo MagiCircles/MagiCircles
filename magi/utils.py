@@ -1055,7 +1055,15 @@ def shrinkImageFromData(data, filename, settings={}):
         return dataToImageFile(data)
     tinify.key = api_key
     source = tinify.from_buffer(data)
-    if settings.get('resize', None) == 'fit':
+    if (settings.get('resize', None) == 'fit'
+        and settings.get('width', None)
+        and settings.get('height', None)):
+        source = source.resize(
+            method='fit',
+            width=settings['width'],
+            height=settings['height'],
+        )
+    elif settings.get('resize', None) == 'fit':
         image = Image.open(cStringIO.StringIO(data))
         max_width = settings.get('max_width', django_settings.MAX_WIDTH)
         max_height = settings.get('max_height', django_settings.MAX_HEIGHT)
