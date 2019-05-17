@@ -1617,6 +1617,7 @@ class MainItemCollection(MagiCollection):
     class EditView(MagiCollection.EditView):
         staff_required = True
         permissions_required = ['manage_main_items']
+        allow_delete = True
 
 ############################################################
 ############################################################
