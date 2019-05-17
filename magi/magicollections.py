@@ -103,9 +103,13 @@ class _View(object):
             raise PermissionDenied()
         if self.authentication_required:
             redirectWhenNotAuthenticated(request, context, next_title=self.get_page_title())
-        if self.staff_required or self.prelaunch_staff_required:
+        if self.staff_required:
             redirectWhenNotAuthenticated(request, context, next_title=self.get_page_title())
             if not request.user.is_staff and not request.user.is_superuser:
+                raise PermissionDenied()
+        if self.prelaunch_staff_required:
+            redirectWhenNotAuthenticated(request, context, next_title=self.get_page_title())
+            if not request.user.hasPermission('access_site_before_launch'):
                 raise PermissionDenied()
         if self.permissions_required:
             redirectWhenNotAuthenticated(request, context, next_title=self.get_page_title())

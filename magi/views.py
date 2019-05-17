@@ -251,7 +251,9 @@ def indexExtraContext(context):
 
 def index(request):
     context = getGlobalContext(request)
-    if context.get('launch_date', None) and not request.user.is_staff:
+    if (context.get('launch_date', None)
+        and not request.user.is_authenticated()
+        or not request.user.hasPermission('access_site_before_launch')):
         return redirect('/prelaunch/')
     indexExtraContext(context)
     context['ajax_callback'] = 'loadIndex'

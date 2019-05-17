@@ -352,7 +352,7 @@ for (name, pages) in ENABLED_PAGES.items():
     for page in pages:
         if not launched:
             if name not in PRELAUNCH_ENABLED_PAGES:
-                page['staff_required'] = True
+                page['permissions_required'] = page.get('permissions_required', []) + ['access_site_before_launch']
         if 'title' not in page:
             page['title'] = string.capwords(name)
         if not page.get('enabled', True):

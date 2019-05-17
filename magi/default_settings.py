@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from collections import OrderedDict
 from django.conf import settings as django_settings
 from django.utils.translation import ugettext_lazy as _, string_concat
@@ -63,6 +64,8 @@ DEFAULT_GROUPS = [
             'edit_staff_details', 'moderate_reports', 'edit_reported_things', 'post_community_event_activities',
             'manage_prizes', 'manipulate_activities', 'mark_activities_as_staff_pick',
             'edit_activities_post_language', 'order_by_any_field',
+            'access_site_before_launch',
+            'beta_test_features',
         ],
         'outside_permissions': {
             'Tweetdeck': 'https://tweetdeck.twitter.com/',
@@ -75,6 +78,10 @@ DEFAULT_GROUPS = [
         'translation': string_concat('Circles - ', _('Manager')),
         'description': 'Supervises and helps the creation and growth of all the websites. Advises but generally doesn\'t interfere with the managers\' decisions.',
         'requires_staff': True,
+        'permissions': [
+            'access_site_before_launch',
+            'beta_test_features',
+        ],
         'guide': '/help/Circles%20managers%20guide',
     }),
     ('team', {
@@ -83,6 +90,8 @@ DEFAULT_GROUPS = [
         'permissions': [
             'edit_staff_status', 'edit_roles', 'see_profile_edit_button', 'edit_staff_details',
             'order_by_any_field',
+            'access_site_before_launch',
+            'beta_test_features',
         ],
         'requires_staff': True,
         'outside_permissions': {
@@ -112,6 +121,8 @@ DEFAULT_GROUPS = [
         'permissions': [
             'manage_main_items', 'translate_items',
             'order_by_any_field',
+            'access_site_before_launch',
+            'beta_test_features',
         ],
         'requires_staff': True,
         'guide': '/help/Database%20maintainers%20guide',
@@ -122,6 +133,8 @@ DEFAULT_GROUPS = [
         'permissions': [
             'manage_main_items',
             'order_by_any_field',
+            'access_site_before_launch',
+            'beta_test_features',
         ],
         'requires_staff': True,
         'outside_permissions': {
@@ -132,7 +145,11 @@ DEFAULT_GROUPS = [
     ('cm', {
         'translation': _('Community manager'),
         'description': 'We got you covered with all the game news on the website! Thanks to our active team, you know that by following our latest activities, you\'ll never miss anything!',
-        'permissions': ['edit_staff_configurations'],
+        'permissions': [
+            'edit_staff_configurations',
+            'access_site_before_launch',
+            'beta_test_features',
+        ],
         'requires_staff': True,
         'stats': [
             {
@@ -147,6 +164,10 @@ DEFAULT_GROUPS = [
         'translation': string_concat(_('Community manager'), ' (', _('Twitter'), ')'),
         'description': 'We got you covered with all the game news on Twitter! Thanks to our active team, you know that by following us on Twitter, you\'ll never miss anything!',
         'requires_staff': True,
+        'permissions': [
+            'access_site_before_launch',
+            'beta_test_features',
+        ],
         'outside_permissions': {
             'Tweetdeck': 'https://tweetdeck.twitter.com/',
         },
@@ -156,12 +177,20 @@ DEFAULT_GROUPS = [
         'translation': _('External communication'),
         'description': 'We\'re very active on other social media, such as Facebook, reddit and various forums! Our team will take the time to inform the other community about our website news and hopefully get more users from there, as well as valuable feedback to improve the website!',
         'requires_staff': True,
+        'permissions': [
+            'access_site_before_launch',
+            'beta_test_features',
+        ],
         'guide': '/help/External%20communication%20guide',
     }),
     ('support', {
         'translation': _('Support'),
         'description': 'Need help with our website or the game? Our support team is here to help you and answer your questions!',
         'requires_staff': True,
+        'permissions': [
+            'access_site_before_launch',
+            'beta_test_features',
+        ],
         'outside_permissions': {
             'Tweetdeck': 'https://tweetdeck.twitter.com/',
             'Receive private messages on Facebook': False, # Added in settings
@@ -178,6 +207,8 @@ DEFAULT_GROUPS = [
             'see_profile_edit_button',
             'edit_activities_post_language',
             'manipulate_activities',
+            'access_site_before_launch',
+            'beta_test_features',
         ],
         'requires_staff': True,
         'stats': [
@@ -196,6 +227,8 @@ DEFAULT_GROUPS = [
             'edit_reported_things',
             'manipulate_activities',
             'edit_activities_post_language',
+            'access_site_before_launch',
+            'beta_test_features',
         ],
         'requires_staff': True,
         'outside_permissions': {
@@ -221,6 +254,8 @@ DEFAULT_GROUPS = [
             'add_prizes',
             'manipulate_activities',
             'mark_activities_as_staff_pick',
+            'access_site_before_launch',
+            'beta_test_features',
         ],
         'requires_staff': True,
         'outside_permissions': {
@@ -239,6 +274,10 @@ DEFAULT_GROUPS = [
         'translation': _('Backup staff'),
         'description': 'Our super heroes, magicians and jack-of-all-trades. There\'s nothing they can\'t do! We call them to the rescue whenever something needs to get done and they quickly and efficiently help our website and community.',
         'requires_staff': True,
+        'permissions': [
+            'access_site_before_launch',
+            'beta_test_features',
+        ],
         'guide': '/help/Backup%20staff%20guide',
     }),
     ('discord', {
@@ -253,7 +292,12 @@ DEFAULT_GROUPS = [
     ('translator', {
         'translation': _('Translator'),
         'description': 'Many people can\'t understand English very well, so by doing so our amazing translators work hard to translate our websites in many languages. By doing so they\'re helping hundreds of people access the information we provide easily and comfortably.',
-        'permissions': ['translate_items', 'translate_staff_configurations'],
+        'permissions': [
+            'translate_items',
+            'translate_staff_configurations',
+            'access_site_before_launch',
+            'beta_test_features',
+        ],
         'requires_staff': False,
         'outside_permissions': {
             'POEditor': DEFAULT_POEDITOR_URL,
@@ -280,6 +324,8 @@ DEFAULT_GROUPS = [
             'advanced_staff_configurations',
             'see_collections_details',
             'order_by_any_field',
+            'access_site_before_launch',
+            'beta_test_features',
         ],
         'requires_staff': False,
         'guide': '/help/Developers%20guide',
@@ -293,9 +339,19 @@ DEFAULT_GROUPS = [
             'mark_email_addresses_invalid',
             'see_collections_details',
             'order_by_any_field',
+            'access_site_before_launch',
+            'beta_test_features',
         ],
         'requires_staff': False,
         'guide': '/help/System%30administrator%20guide',
+    }),
+    ('betatester', {
+        'translation': _(u'β-tester'),
+        'description': 'Beta testers have access to features before everybody else!',
+        'permissions': [
+            'access_site_before_launch',
+            'beta_test_features',
+        ],
     }),
 ]
 
