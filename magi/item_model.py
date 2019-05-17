@@ -473,6 +473,9 @@ class BaseMagiModel(models.Model):
                 'reverse_related',
                 'html_attributes',
                 'html_attributes_in_list',
+                'thumbnail_size',
+                'image_for_prefetched',
+                'display_item_url',
         ]:
             return self._attr_error(original_name)
 
