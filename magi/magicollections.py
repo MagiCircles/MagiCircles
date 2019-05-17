@@ -452,7 +452,7 @@ class MagiCollection(object):
 
             class ListView(MagiCollection.ListView):
                 filter_form = _CollectibleFilterForm
-                item_padding = '7px 0'
+                item_padding = (7, 0)
                 col_break = 'sm'
                 per_line = 6
                 page_size = 30
