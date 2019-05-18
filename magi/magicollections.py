@@ -2088,6 +2088,14 @@ class UserCollection(MagiCollection):
             if user.preferences.donation_link:
                 for link in context['item'].all_links:
                     if link.url == user.preferences.donation_link:
+                        link = {
+                            'name': link.type,
+                            'verbose_name': link.t_type,
+                            'value': link.value,
+                            'pk': link.pk,
+                            'url': link.url,
+                            'image': link.image_url,
+                        }
                         already_linked = link
                         first_links.append(link)
                         break
@@ -2141,7 +2149,15 @@ class UserCollection(MagiCollection):
                 }))
             return (
                 first_links, meta_links,
-                [link for link in list(context['item'].all_links) if link != already_linked],
+                [link for link in [{
+                    'name': link.type,
+                    'verbose_name': link.t_type,
+                    'value': link.value,
+                    'pk': link.pk,
+                    'url': link.url,
+                    'image': link.image_url,
+                } for link in context['item'].all_links
+                ] if link != already_linked],
             )
 
         def extra_context(self, context):
