@@ -748,7 +748,8 @@ class MagiCollection(object):
                     if allow_ajax_for_more:
                         d['and_more']['ajax_link'] = u'/ajax/{}/?{}={}&ajax_modal_only'.format(
                             url, filter_field_name, item.pk)
-                many_fields_galleries.append((field_name, d))
+                if d['images'] or d['links']:
+                    many_fields_galleries.append((field_name, d))
             else:
                 try:
                     total = getattr(item, 'cached_total_{}'.format(field_name))
