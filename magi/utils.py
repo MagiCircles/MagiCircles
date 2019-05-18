@@ -706,11 +706,15 @@ def getAge(birthdate, formatted=False):
 
 def birthdayOrderingQueryset(queryset, field_name='birthday'):
     return queryset.extra(select={
-        '{field_name}_month'.format(field_name): 'strftime("%m", {field_name})'.format(field_name),
-        '{field_name}_day'.format(field_name): 'strftime("%d", {field_name})'.format(field_name),
+        '{field_name}_month'.format(field_name=field_name):
+        'strftime("%m", {field_name})'.format(field_name=field_name),
+        '{field_name}_day'.format(field_name=field_name):
+        'strftime("%d", {field_name})'.format(field_name=field_name),
     } if connection.vendor == 'sqlite' else {
-        '{field_name}_month'.format(field_name): 'MONTH({field_name})'.format(field_name),
-        '{field_name}_day'.format(field_name): 'DAY({field_name})'.format(field_name),
+        '{field_name}_month'.format(field_name=field_name):
+        'MONTH({field_name})'.format(field_name=field_name),
+        '{field_name}_day'.format(field_name=field_name):
+        'DAY({field_name})'.format(field_name=field_name),
     })
 
 ############################################################
