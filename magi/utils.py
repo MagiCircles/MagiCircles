@@ -19,6 +19,7 @@ from django.utils import timezone
 from django.template import Context
 from django.template.loader import get_template
 from django.db import models
+from django.db import connection
 from django.db.models.fields import BLANK_CHOICE_DASH, FieldDoesNotExist
 from django.db.models import Q
 from django.forms.models import model_to_dict
@@ -633,7 +634,7 @@ def torfc2822(date):
     return date.strftime("%B %d, %Y %H:%M:%S %z")
 
 ############################################################
-# Birthday within
+# Birthday utils
 
 def birthdays_within(days_after, days_before=0, field_name='birthday'):
     now = timezone.now()
@@ -702,6 +703,15 @@ def getAge(birthdate, formatted=False):
     if formatted:
         return _(u'{age} years old').format(age=age)
     return age
+
+def birthdayOrderingQueryset(queryset, field_name='birthday'):
+    return queryset.extra(select={
+        '{field_name}_month'.format(field_name): 'strftime("%m", {field_name})'.format(field_name),
+        '{field_name}_day'.format(field_name): 'strftime("%d", {field_name})'.format(field_name),
+    } if connection.vendor == 'sqlite' else {
+        '{field_name}_month'.format(field_name): 'MONTH({field_name})'.format(field_name),
+        '{field_name}_day'.format(field_name): 'DAY({field_name})'.format(field_name),
+    })
 
 ############################################################
 # Event status using start and end date
