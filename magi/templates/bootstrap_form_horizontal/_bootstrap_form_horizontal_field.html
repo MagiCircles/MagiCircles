@@ -2,6 +2,12 @@
 {% load bootstrap_form_horizontal_tags %}
 {% if field.is_hidden %}
 {{ field }}
+{% if field.field.show_value_instead %}
+<div class="row form-group{% for cls in field.field.form_group_classes %} {{ cls }}{% endfor %}">
+  <label class="col-sm-4 control-label text-right">{{ field.label }}</label>
+  <div class="col-sm-8">{{ field.field.show_value_instead }}</div>
+</div>
+{% endif %}
 {% if field.errors %}
 <div class="row form-group">
   <div class="{% firstof label_class 'col-sm-4' %}"></div>

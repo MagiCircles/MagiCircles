@@ -613,7 +613,10 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
         formDelete = ConfirmDelete(initial={
             'thing_to_delete': instance.pk,
         }, request=request, instance=instance, collection=collection)
-    form = None
+    form = formClass(instance=instance, request=request, ajax=ajax, collection=collection)
+    # Todo: needed to load twice to ensure the setattr of c_ fields is done and c_ fields show
+    # default values. need to find a way to get values to show without having to set the list value
+    form = formClass(instance=instance, request=request, ajax=ajax, collection=collection)
     if allowDelete and request.method == 'POST' and u'delete_{}'.format(collection.name) in request.POST:
         formDelete = ConfirmDelete(request.POST, request=request, instance=instance, collection=collection)
         if formDelete.is_valid():
@@ -632,8 +635,6 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
             instance = collection.edit_view.after_save(request, instance)
             redirectURL = collection.edit_view.redirect_after_edit(request, instance, ajax)
             raise HttpRedirectException(redirectURL)
-    if form is None:
-        form = formClass(instance=instance, request=request, ajax=ajax, collection=collection)
     cuteFormFieldsForContext(
         collection.edit_view.filter_cuteform,
         context, form=form,

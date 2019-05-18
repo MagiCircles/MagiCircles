@@ -179,6 +179,7 @@ class MagiForm(forms.ModelForm):
                 if field in self.fields:
                     self.fields[field].required = False
 
+        allow_initial_in_get = getattr(self.Meta, 'allow_initial_in_get', [])
         self.allow_upload_custom_thumbnail = False
         self.allow_upload_custom_2x = False
         self.allow_translate = False
@@ -196,6 +197,19 @@ class MagiForm(forms.ModelForm):
                 model_field = None
             if model_field is not None and model_field.null:
                 self.fields[name].required = False
+
+            # Set initial value from GET
+            if allow_initial_in_get == '__all__' or name in allow_initial_in_get:
+                value = self.request.GET.get(name, None)
+                if value:
+                    field.initial = value
+                    field.widget = field.hidden_widget()
+                    field.show_value_instead = (
+                        { unicode(k): v for k, v in dict(field.choices).items() }[value]
+                        if isinstance(field, forms.ChoiceField)
+                        else value
+                    )
+
             # Show languages on translatable fields
             if self.collection and self.collection.translated_fields and name in self.collection.translated_fields:
                 choices = getattr(self.Meta.model, u'{name}S_CHOICES'.format(name=name.upper()), [])
@@ -449,7 +463,7 @@ class MagiForm(forms.ModelForm):
     def save(self, commit=True):
         instance = super(MagiForm, self).save(commit=False)
         # Save owner on creation when owner field is missing but there is a owner field in model
-        if self.is_creating and 'owner' not in self.fields and modelHasField(self.queryset.model, 'owner'):
+        if self.is_creating and 'owner' not in self.fields and has_field(self.Meta.model, 'owner'):
             owner = getattr(self, 'to_owner', None)
             if owner:
                 instance.owner = owner

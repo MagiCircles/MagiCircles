@@ -32,11 +32,12 @@ function formloaders() {
 }
 
 function deleteFormConfirm() {
-    let form = $('form[data-form-name^="delete_"]');
+    let form = $('form[data-form-name^="delete_"]:not(.handled)');
     if (form.length > 0) {
         if (!show_cascade_before_delete) {
             return;
         }
+        form.addClass('handled');
         let thing_to_delete = form.data('form-name').substring(7);
         let id_thing_to_delete = form.find('[name=thing_to_delete]').val();
         if (form.closest('.modal').length > 0) {

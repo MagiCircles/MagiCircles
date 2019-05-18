@@ -705,10 +705,10 @@ class MagiCollection(object):
                 }
                 and_more = False
                 max_shown = max_per_line
-                for i, related_item in enumerate(getattr(item, field_name).all()[:max_shown + 1]):
-                    if i >= max_shown:
+                for i, related_item in enumerate(getattr(item, field_name).all()):
+                    if max_shown and i >= max_shown:
                         and_more = getattr(item, field_name).count() - max_shown
-                        continue
+                        break
                     item_url = getattr(related_item, 'item_url', None)
                     to_append = {
                         'link': item_url,

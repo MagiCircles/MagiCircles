@@ -836,6 +836,13 @@ def simplifyMarkdown(markdown_string, max_length=None):
         markdown_string = markdown_string.replace(c, ' ')
     return markdown_string
 
+def addParametersToURL(url, parameters={}):
+    return u'{}{}{}'.format(
+        url,
+        '?' if '?' not in url else ('&' if not url.endswith('&') else ''),
+        '&'.join([u'{}={}'.format(k, v) for k, v in parameters.items() if v is not None]),
+    )
+
 ############################################################
 # Redirections
 
