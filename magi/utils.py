@@ -26,6 +26,7 @@ from django.forms import (
     NullBooleanField,
     TextInput,
     CharField as forms_CharField,
+    URLField as forms_URLField,
     CheckboxInput,
     HiddenInput,
 )
@@ -935,6 +936,27 @@ class ColorField(models.CharField):
         kwargs['form_class'] = ColorFormField
         kwargs['widget'] = ColorInput
         return super(ColorField, self).formfield(**kwargs)
+
+class YouTubeVideoFormField(forms_URLField):
+    pass
+
+class YouTubeVideoField(models.URLField):
+    _help = u'Enter a valid YouTube URL with format: https://www.youtube.com/watch?v=xxxxxxxxxxx'
+    default_validators = [
+        RegexValidator(
+            re.compile(r'^https\:\/\/www\.youtube\.com\/watch\?v\=([^&]+)$'),
+            _help,
+            'invalid',
+        ),
+    ]
+
+    def formfield(self, **kwargs):
+        defaults = {
+            'help_text': self._help,
+            'form_class': YouTubeVideoFormField,
+        }
+        defaults.update(kwargs)
+        return super(YouTubeVideoField, self).formfield(**defaults)
 
 ############################################################
 # Set a field in a sub dictionary

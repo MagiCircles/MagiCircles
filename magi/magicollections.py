@@ -28,6 +28,7 @@ from magi.utils import (
     jsv,
     staticImageURL,
     ColorField,
+    YouTubeVideoField,
     hasGoodReputation,
     isInboxClosed,
     translationURL,
@@ -901,6 +902,10 @@ class MagiCollection(object):
                 d['type'] = 'itunes'
             elif isinstance(field, ColorField):
                 d['type'] = 'color'
+            elif isinstance(field, YouTubeVideoField):
+                d['type'] = 'youtube_video'
+                d['value'] = d['value'].replace('watch?v=', 'embed/')
+                d['spread_across'] = True
             else:
                 d['type'] = 'text'
 

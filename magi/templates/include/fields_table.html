@@ -121,6 +121,8 @@
 	{% elif field.type == 'color' %}
         <span class="text-muted">{{ field.value }}</span>
         <div class="color-viewer" style="background-color: {{ field.value }};"></div>
+	{% elif field.type == 'youtube_video' %}
+        <div class="youtube-embed-container"><iframe src="{{ field.value }}" frameborder="0" allowfullscreen></iframe></div>
 	{% else %}
 	{{ field.value }}
 	{% endif %}
