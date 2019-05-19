@@ -1624,6 +1624,9 @@ class MainItemCollection(MagiCollection):
     blockable = False
     reportable = False
 
+    class ListView(MagiCollection.ListView):
+        add_button_subtitle = None
+
     class AddView(MagiCollection.AddView):
         staff_required = True
         permissions_required = ['manage_main_items']
