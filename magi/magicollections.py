@@ -37,6 +37,7 @@ from magi.utils import (
     getSearchSingleFieldLabel,
     isTranslationField,
     FAVORITE_CHARACTERS_IMAGES,
+    addParametersToURL,
 )
 from magi.raw import please_understand_template_sentence
 from magi.django_translated import t
@@ -1115,6 +1116,13 @@ class MagiCollection(object):
                 for field in self.translated_fields:
                     if request.GET.get(u'missing_{}_translations'.format(field), None):
                         buttons['translate']['classes'] = [c for c in buttons['translate']['classes'] if c != 'staff-only']
+                        parameters = {
+                            'language': request.GET.get(u'missing_{}_translations'.format(field)),
+                        }
+                        buttons['translate']['url'] = addParametersToURL(
+                            buttons['translate']['url'], parameters)
+                        buttons['translate']['ajax_url'] = addParametersToURL(
+                            buttons['translate']['ajax_url'], parameters)
                         break
 
             buttons['translate']['title'] = unicode(_('Edit {thing}')).format(thing=unicode(_('Translations')).lower())
