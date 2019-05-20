@@ -143,8 +143,6 @@ def api_pages(url, name, details, local=False, results_location=None, log_functi
         elif results_location is not None:
             results = getSubField(results, results_location, default=[])
         for item in results:
-            if item['id'] != 1010001:
-                continue
             not_in_fields = {}
             if details.get('callback_per_item', False):
                 unique_data, data = details['callback_per_item'](details, item)
