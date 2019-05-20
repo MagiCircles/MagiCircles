@@ -696,6 +696,10 @@ class MagiCollection(object):
                                 break
                         d['image_for_link'] = item_image
                         d['icon'] = getattr(related_item, 'icon', d['icon'])
+                    if 'image' in d:
+                        if callable(d['image']):
+                            d['image'] = d['image'](item)
+                        d['image'] = staticImageURL(d['image'])
                     many_fields_galleries.append((u'{}{}'.format(field_name, related_item.pk), d))
             elif field_name in prefetched_together:
                 d = {
@@ -750,6 +754,10 @@ class MagiCollection(object):
                         d['and_more']['ajax_link'] = u'/ajax/{}/?{}={}&ajax_modal_only'.format(
                             url, filter_field_name, item.pk)
                 if d['images'] or d['links']:
+                    if 'image' in d:
+                        if callable(d['image']):
+                            d['image'] = d['image'](item)
+                        d['image'] = staticImageURL(d['image'])
                     many_fields_galleries.append((field_name, d))
             else:
                 try:
@@ -761,6 +769,11 @@ class MagiCollection(object):
                     if '{total}' not in unicode(plural_verbose_name)
                     else unicode(plural_verbose_name).format(total=total))
                 if total:
+                    if 'image' in d:
+                        image = images.get(field_name, None)
+                        if callable(image):
+                            image = image(item)
+                        image = staticImageURL(image)
                     many_fields.append((field_name, {
                         'verbose_name': unicode(verbose_name).replace('{total}', ''),
                         'type': 'text_with_link' if url else 'text',
@@ -771,7 +784,7 @@ class MagiCollection(object):
                         'link': u'/{}/?{}={}'.format(url, filter_field_name, item.pk),
                         'link_text': _('View all'),
                         'icon': icons.get(field_name, None),
-                        'image': images.get(field_name, None),
+                        'image': image,
                     }))
         model_fields = []
         # Fields from model
@@ -917,6 +930,7 @@ class MagiCollection(object):
                 pass
             if callable(d.get('image', None)):
                 d['image'] = d['image'](item)
+            d['image'] = staticImageURL(d['image'])
 
             # Fix types
             if d['type'] == 'timezone_datetime' and not hasattr(d['value'], 'strftime'):
