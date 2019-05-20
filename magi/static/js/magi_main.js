@@ -1626,6 +1626,7 @@ function formShowMore(form, cutOff, includingCutOff, until, includingUntil) {
     var hidden_at_init = true;
 
     function hasValue(input) {
+        // Null boolean
         if (input.is('select')) {
             let values = $.map(input.find('option'), function(elt, i) { return $(elt).val();})
             let values_of_nullbool = ['1', '2', '3'];
@@ -1634,6 +1635,11 @@ function formShowMore(form, cutOff, includingCutOff, until, includingUntil) {
                 return input.val() != '1';
             }
         }
+        // Multiple choice checkboxes
+        if (input.is('ul') && input.filter('[type="checkbox"]:checked').length > 0) {
+            return true;
+        }
+
         return input.val() != '';
     }
 
