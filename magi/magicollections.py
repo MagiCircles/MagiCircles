@@ -2313,7 +2313,7 @@ class UserCollection(MagiCollection):
                         },
                     } if 'privatemessage' in context['all_enabled'] else None,
                     'image': context['corner_popup_image'],
-                    'image_overflow': False,
+                    'image_overflow': context['corner_popup_image_overflow'],
                     'allow_close_once': True,
                 }
 

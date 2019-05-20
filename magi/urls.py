@@ -50,6 +50,7 @@ from magi.settings import (
     JAVASCRIPT_COMMONS,
     LANGUAGES_CANT_SPEAK_ENGLISH,
     CORNER_POPUP_IMAGE,
+    CORNER_POPUP_IMAGE_OVERFLOW,
 )
 from magi.models import UserPreferences
 from magi.utils import redirectWhenNotAuthenticated, hasPermissions, hasOneOfPermissions, tourldash, groupsWithPermissions, groupsWithOneOfPermissions, staticImageURL
@@ -597,6 +598,7 @@ RAW_CONTEXT['preferences_model'] = UserPreferences
 RAW_CONTEXT['languages_cant_speak_english'] = LANGUAGES_CANT_SPEAK_ENGLISH
 RAW_CONTEXT['other_sites'] = [s for s in other_sites if s['name'] != SITE_NAME]
 RAW_CONTEXT['corner_popup_image'] = staticImageURL(CORNER_POPUP_IMAGE)
+RAW_CONTEXT['corner_popup_image_overflow'] = CORNER_POPUP_IMAGE_OVERFLOW
 
 if not launched:
     RAW_CONTEXT['launch_date'] = LAUNCH_DATE

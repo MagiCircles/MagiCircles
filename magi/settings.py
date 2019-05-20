@@ -260,6 +260,11 @@ if hasattr(settings_module, 'GOOD_REPUTATION_THRESHOLD'):
 else:
     GOOD_REPUTATION_THRESHOLD = 10
 
+if hasattr(settings_module, 'CORNER_POPUP_IMAGE_OVERFLOW'):
+    CORNER_POPUP_IMAGE_OVERFLOW = getattr(settings_module, 'CORNER_POPUP_IMAGE_OVERFLOW')
+else:
+    CORNER_POPUP_IMAGE_OVERFLOW = False
+
 ############################################################
 # Optional settings without default values (= None)
 

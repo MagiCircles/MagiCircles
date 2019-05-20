@@ -317,7 +317,7 @@ def globalContext(request):
                     request.user.preferences.formatted_age,
                 )),
                 'image': context['corner_popup_image'],
-                'image_overflow': False,
+                'image_overflow': context['corner_popup_image_overflow'],
                 'allow_close_once': True,
                 'allow_close_forever': True,
             }
@@ -332,7 +332,7 @@ def globalContext(request):
                     },
                 },
                 'image': context['corner_popup_image'],
-                'image_overflow': False,
+                'image_overflow': context['corner_popup_image_overflow'],
                 'allow_close_once': True,
                 'allow_close_remind': 2,
             }
