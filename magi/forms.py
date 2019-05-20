@@ -1097,7 +1097,7 @@ class MagiFiltersForm(AutoForm):
                 # Add blank choice to list of choices that don't have one
                 if (isinstance(field, forms.fields.ChoiceField)
                     and not isinstance(field, forms.fields.MultipleChoiceField)
-                    and field.choices and not field.initial):
+                    and field.choices):
                     choices = list(self.fields[field_name].choices)
                     if choices and choices[0][0] != '':
                         self.fields[field_name].choices = BLANK_CHOICE_DASH + choices
