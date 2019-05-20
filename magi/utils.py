@@ -78,6 +78,16 @@ LANGUAGES_NAMES = {
 LANGUAGES_NAMES_TO_CODES = { _v: _k for _k, _v in LANGUAGES_NAMES.items() }
 
 ############################################################
+# Getters for django settings
+
+def getStaffConfiguration(key, default=None, language=None):
+    if language is not None:
+        if language == True:
+            language = get_language()
+        return django_settings.STAFF_CONFIGURATIONS.get(key, {}).get(language, default)
+    return django_settings.STAFF_CONFIGURATIONS.get(key, default)
+
+############################################################
 # Use a dict as a class
 
 class AttrDict(dict):
