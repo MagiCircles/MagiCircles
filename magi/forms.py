@@ -415,6 +415,41 @@ class MagiForm(forms.ModelForm):
             and self.instance.owner != self.request.user
         )
 
+        if (not self.is_reported
+            and not self.is_creating
+            and self.collection
+            and getattr(self.collection, 'sub_collections', None)
+        ):
+            self.sub_collections = []
+            for sub_collection in getattr(self.collection, 'sub_collections', None).values():
+                if sub_collection.main_many2many:
+                    if sub_collection.main_related in self.fields:
+                        self.fields[sub_collection.main_related].below_field = mark_safe(u"""
+                        <div class="btn-group btn-group-justified">
+                        <a href="{list_url}" target="_blank"
+                           class="btn btn-secondary">{plural_title}</a>
+                        <a href="{add_url}" target="_blank"
+                           class="btn btn-secondary">{add_sentence}</a>
+                        </div>
+                        """.format(
+                            list_url=sub_collection.get_list_url(),
+                            plural_title=sub_collection.plural_title,
+                            add_url=sub_collection.get_add_url(),
+                            add_sentence=sub_collection.add_sentence,
+                        ))
+                else:
+                    self.sub_collections.append(self.get_sub_collections_details(sub_collection))
+
+    def get_sub_collections_details(self, sub_collection):
+        return {
+            'plural_title': sub_collection.plural_title,
+            'add_sentence': sub_collection.add_sentence,
+            'add_url': sub_collection.get_add_url(item=self.instance),
+            'ajax_add_url': sub_collection.get_add_url(ajax=True, item=self.instance),
+            'items': getattr(self.instance, sub_collection.main_related).all(),
+            'item_view_enabled': sub_collection.item_view.enabled,
+        }
+
     def clean(self):
         # Check max_per_user
         owner = getattr(self, 'to_owner', self.request.user)

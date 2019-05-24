@@ -1634,6 +1634,9 @@ class MagiCollection(object):
                 return False
             return True
 
+############################################################
+# Abstract collections
+
 class MainItemCollection(MagiCollection):
     blockable = False
     reportable = False
@@ -1649,6 +1652,53 @@ class MainItemCollection(MagiCollection):
         staff_required = True
         permissions_required = ['manage_main_items']
         allow_delete = True
+
+class SubItemCollection(MainItemCollection):
+    # Required variable
+    @property
+    def main_collection(self):
+        raise NotImplementedError('Main collection is required in a SubItemCollection')
+
+    # Overridable variable
+    main_fk = property(lambda _s: _s.main_collection)
+    main_related = property(lambda _s: _s.plural_name)
+    main_many2many = False
+
+    def get_add_url(self, ajax=False, type=None, item=None):
+        return addParametersToURL(
+            super(SubItemCollection, self).get_add_url(ajax=ajax, type=type),
+            { self.main_fk: item.pk } if item else {},
+        )
+
+    # Defaults
+    navbar_link_list = 'staff'
+    one_of_permissions_required = ['manage_main_items', 'translate_items']
+
+    def to_form_class(self):
+        class _Form(forms.AutoForm):
+            def __init__(self, *args, **kwargs):
+                super(_Form, self).__init__(*args, **kwargs)
+                if not self.is_creating and self.collection.main_fk in self.fields:
+                    del(self.fields[self.collection.main_fk])
+            class Meta(forms.AutoForm.Meta):
+                model = self.queryset.model
+                allow_initial_in_get = (self.main_fk, )
+        self._form_class = _Form
+
+    def to_main_item_url(self, item):
+        return getattr(item, self.main_fk).item_url
+
+    class AddView(MainItemCollection.AddView):
+        back_to_list_button = False
+
+        def redirect_after_add(self, request, item, ajax):
+            return self.collection.to_main_item_url(item) if not ajax else '/ajax/successadd/'
+
+    class EditView(MainItemCollection.EditView):
+        back_to_list_button = False
+
+        def redirect_after_edit(self, request, item, ajax):
+            return self.collection.to_main_item_url(item) if not ajax else '/ajax/successedit/'
 
 ############################################################
 ############################################################

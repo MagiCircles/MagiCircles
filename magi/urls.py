@@ -73,6 +73,8 @@ enabled = {}
 all_enabled = []
 urls = []
 collectible_collections = {}
+main_collections = []
+sub_collections = {}
 
 ############################################################
 # Default enabled URLs (outside of collections + pages)
@@ -132,6 +134,14 @@ def _addToCollections(name, cls): # Class of the collection
     collection.item_view = collection.ItemView(collection)
     collection.add_view = collection.AddView(collection)
     collection.edit_view = collection.EditView(collection)
+
+    if issubclass(cls, magicollections.SubItemCollection):
+        if collection.main_collection not in sub_collections:
+            sub_collections[collection.main_collection] = {}
+        sub_collections[collection.main_collection][collection.name] = collection
+    elif issubclass(cls, magicollections.MainItemCollection):
+        main_collections.append(collection)
+
     collection.to_form_class()
     collection.edit_view.to_translate_form_class()
     for view in ['list', 'item', 'add', 'edit']:
@@ -157,7 +167,12 @@ def _addToCollections(name, cls): # Class of the collection
     return collection
 
 def _addToEnabledCollections(name, cls, is_custom):
-    if name != 'MagiCollection' and name != 'MainItemCollection' and inspect.isclass(cls) and issubclass(cls, magicollections.MagiCollection) and not name.startswith('_'):
+    if (name != 'MagiCollection'
+        and name != 'MainItemCollection'
+        and name != 'SubItemCollection'
+        and inspect.isclass(cls)
+        and issubclass(cls, magicollections.MagiCollection)
+        and not name.startswith('_')):
         if cls.enabled:
             cls.is_custom = is_custom
             enabled[name] = cls
@@ -173,6 +188,10 @@ for name, cls in custom_magicollections_module.items():
 # Instanciate collection objects
 for name, cls in enabled.items():
     _addToCollections(name, cls)
+
+# Link main collections and their sub collections
+for collection in main_collections:
+    collection.sub_collections = sub_collections.get(collection.name, {})
 
 # Add collection URLs to router
 for collection in collections.values():

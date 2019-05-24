@@ -37,6 +37,33 @@
 {% endblock %}
 
 {% block belowform %}
+{% if form.sub_collections %}
+{% for sub_collection in form.sub_collections %}
+<h1 class="text-center padding50 form-title">{{ sub_collection.plural_title }}</h1>
+<ul class="container_form list-group">
+  {% for sub_item in sub_collection.items %}
+  <li class="list-group-item">
+    <a href="{{ sub_item.edit_url }}" class="btn btn-secondary btn-sm pull-right" data-ajax-url="{{ sub_item.ajax_edit_url }}" data-ajax-handle-form="true">
+      {{ sub_item.edit_sentence }}
+    </a>
+    {% if sub_item.display_item_url or sub_collection.item_view_enabled %}
+    <a {% if sub_item.display_item_url %}href="{{ sub_item.display_item_url }}" target="_blank"
+       {% else %}href="{{ sub_item.item_url }}" data-ajax-url="{{ sub_item.ajax_item_url }}"{% endif %}>
+      {{ sub_item }}
+    </a>
+    {% else %}
+    {{ sub_item }}
+    {% endif %}
+  </li>
+  {% endfor %}
+  <li class="list-group-item">
+    <a href="{{ sub_collection.add_url }}" data-ajax-url="{{ sub_collection.ajax_add_url }}" data-ajax-handle-form="true" class="btn btn-secondary btn-sm btn-block">
+      {{ sub_collection.add_sentence }}
+    </a>
+  </li>
+</ul>
+{% endfor %}
+{% endif %}
 {% if after_template %}
 {% include after_template|add:'.html' %}
 {% endif %}
