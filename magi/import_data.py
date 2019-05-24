@@ -86,6 +86,7 @@ def import_generic_item(details, item):
     return unique_data, data, not_in_fields
 
 def prepare_data(data, model):
+    manytomany = {}
     for k, v in data.items():
         if k.startswith('d_') and isinstance(v, dict):
             data[k] = json.dumps(v)
@@ -93,11 +94,18 @@ def prepare_data(data, model):
             and not getattr(model, u'{}_WITHOUT_I_CHOICES'.format(k[2:].upper()), False)
             and not isinstance(v, int)):
             data[k] = model.get_i(k[2:], v)
+        elif (k.startswith('j_')):
+            data[k] = json.dumps(v)
+        elif isinstance(v, list):
+            manytomany[k] = v
+    for k in manytomany.keys():
+        del(data[k])
+    return data, manytomany
 
 def save_item(model, unique_data, data, log_function):
     if (data or unique_data):
-        prepare_data(unique_data, model)
-        prepare_data(data, model)
+        unique_data, _ = prepare_data(unique_data, model)
+        data, manytomany = prepare_data(data, model)
         log_function(model.__name__)
         log_function('- Unique data:')
         log_function(unique_data)
@@ -113,6 +121,12 @@ def save_item(model, unique_data, data, log_function):
                 data['owner_id'] = 1
             item = model.objects.create(**data)
             log_function('Created')
+        if manytomany:
+            for k, v in manytomany.items():
+                getattr(item, k).clear()
+                getattr(item, k).add(*v)
+        return item
+    return None
 
 def api_pages(url, name, details, local=False, results_location=None, log_function=print):
     log_function('Downloading list of {}...'.format(name))
