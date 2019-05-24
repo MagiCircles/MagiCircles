@@ -678,8 +678,13 @@ class MagiCollection(object):
                         'icon': icons.get(field_name, None),
                         'image': images.get(field_name, None),
                     }
+                    template = getattr(related_item, 'template_for_prefetched', None)
                     item_url = getattr(related_item, 'item_url', None)
-                    if item_url:
+                    if template:
+                        d['type'] = 'template'
+                        d['template'] = template
+                        d['item'] = related_item
+                    elif item_url:
                         d['type'] = 'text_with_link'
                         d['link'] = item_url
                         if allow_ajax_per_item:
@@ -695,7 +700,7 @@ class MagiCollection(object):
                                 item_image = getattr(related_item, image_field)
                                 break
                         d['image_for_link'] = item_image
-                        d['icon'] = getattr(related_item, 'icon', d['icon'])
+                    d['icon'] = getattr(related_item, 'icon', d['icon'])
                     if 'image' in d:
                         if callable(d['image']):
                             d['image'] = d['image'](item)
@@ -708,6 +713,8 @@ class MagiCollection(object):
                     'image': images.get(field_name, None),
                     'images': [],
                     'links': [],
+                    'template': None,
+                    'items': [],
                 }
                 and_more = False
                 max_shown = max_per_line
@@ -715,6 +722,7 @@ class MagiCollection(object):
                     if max_shown and i >= max_shown:
                         and_more = getattr(item, field_name).count() - max_shown
                         break
+                    template = getattr(related_item, 'template_for_prefetched', None)
                     item_url = getattr(related_item, 'item_url', None)
                     to_append = {
                         'link': item_url,
@@ -731,7 +739,12 @@ class MagiCollection(object):
                         if getattr(related_item, image_field, None):
                             item_image = getattr(related_item, image_field)
                             break
-                    if item_image:
+                    if template:
+                        d['type'] = 'templates'
+                        d['template'] = template
+                        d['items'].append(related_item)
+                        d['spread_across'] = True
+                    elif item_image:
                         to_append['value'] = item_image
                         to_append['tooltip'] = unicode(related_item)
                         d['type'] = 'images_links'
@@ -753,7 +766,7 @@ class MagiCollection(object):
                     if allow_ajax_for_more:
                         d['and_more']['ajax_link'] = u'/ajax/{}/?{}={}&ajax_modal_only'.format(
                             url, filter_field_name, item.pk)
-                if d['images'] or d['links']:
+                if d['images'] or d['links'] or d['items']:
                     if 'image' in d:
                         if callable(d['image']):
                             d['image'] = d['image'](item)

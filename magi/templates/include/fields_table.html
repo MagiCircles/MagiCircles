@@ -123,6 +123,22 @@
         <div class="color-viewer" style="background-color: {{ field.value }};"></div>
 	{% elif field.type == 'youtube_video' %}
         <div class="youtube-embed-container"><iframe src="{{ field.value }}" frameborder="0" allowfullscreen></iframe></div>
+        {% elif field.type == 'template' %}
+        {% include field.template with parent_item=item item=field.item %}
+        {% elif field.type == 'templates' %}
+        {% if field.template %}
+        {% include field.template with parent_item=item items=field.items %}
+        {% else %}
+        {% for sub_item in field.items %}
+        {% include sub_item.template with parent_item=item item=sub_item %}
+        {% endfor %}
+        {% endif %}
+        {% if field.and_more %}
+        <br><a href="{{ field.and_more.link }}" class="btn-link-secondary padding10"
+               {% if field.and_more.ajax_link %} data-ajax-url="{{ field.and_more.ajax_link }}" data-ajax-title="{{ item }} - {{ field.verbose_name }}"{% endif %}>
+          {{ field.and_more.verbose_name }}
+        </a>
+        {% endif %}
 	{% else %}
 	{{ field.value }}
 	{% endif %}
