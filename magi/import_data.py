@@ -102,7 +102,7 @@ def prepare_data(data, model):
         del(data[k])
     return data, manytomany
 
-def save_item(model, unique_data, data, log_function):
+def save_item(model, unique_data, data, log_function, unique_together=False):
     if (data or unique_data):
         unique_data, _ = prepare_data(unique_data, model)
         data, manytomany = prepare_data(data, model)
@@ -113,7 +113,12 @@ def save_item(model, unique_data, data, log_function):
         log_function(data)
         data.update(unique_data)
         try:
-            item = model.objects.get(reduce(lambda qs, (k, v): qs | Q(**{k: v}), [(k, v) for k, v in unique_data.items() if v is not None], Q()))
+            item = model.objects.get(reduce(
+                ((lambda qs, (k, v): qs & Q(**{k: v}))
+                 if unique_together else (lambda qs, (k, v): qs | Q(**{k: v}))), [
+                    (k, v) for k, v in unique_data.items() if v is not None
+                ], Q()
+            ))
             model.objects.filter(pk=item.pk).update(**data)
             log_function('Updated')
         except ObjectDoesNotExist:
@@ -162,7 +167,8 @@ def api_pages(url, name, details, local=False, results_location=None, log_functi
                 unique_data, data = details['callback_per_item'](details, item)
             else:
                 unique_data, data, not_in_fields = import_generic_item(details, item)
-            save_item(details['model'], unique_data, data, log_function)
+            save_item(details['model'], unique_data, data, log_function, unique_together=details.get(
+                'unique_together', False))
             if not_in_fields:
                 log_function('- Ignored:')
                 log_function(not_in_fields)
@@ -205,6 +211,7 @@ def import_data(
         callback_end (function): called after importing all the items
         mapping (dict of string or callable): see below
         unique_fields (list): list of fields to detect if it already exists
+        unique_together (bool): should the unique fields be considered together? (or/and condition)
         ignore_fields (list): list of explicitely ignored fields, no warning printed
 
     mapping must be a dictionary with:
