@@ -1701,16 +1701,23 @@ class SubItemCollection(MainItemCollection):
     def to_main_item_url(self, item):
         return getattr(item, self.main_fk).item_url
 
+    class ItemView(MainItemCollection.ItemView):
+        comments_enabled = False
+
     class AddView(MainItemCollection.AddView):
         back_to_list_button = False
 
         def redirect_after_add(self, request, item, ajax):
+            if self.collection.main_many2many:
+                return super(SubItemCollection.AddView, self).redirect_after_add(request, item, ajax)
             return self.collection.to_main_item_url(item) if not ajax else '/ajax/successadd/'
 
     class EditView(MainItemCollection.EditView):
         back_to_list_button = False
 
         def redirect_after_edit(self, request, item, ajax):
+            if self.collection.main_many2many:
+                return super(SubItemCollection.EditView, self).redirect_after_edit(request, item, ajax)
             return self.collection.to_main_item_url(item) if not ajax else '/ajax/successedit/'
 
 ############################################################
