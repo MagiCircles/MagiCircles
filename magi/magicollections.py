@@ -1667,6 +1667,12 @@ class MainItemCollection(MagiCollection):
         allow_delete = True
 
 class SubItemCollection(MainItemCollection):
+    """
+    The list view is visible to all users, but only in the navbar for translators and database maintainers.
+    The item view doesn't have comments.
+    The add/edit view are only for translators and database maintainers.
+    The form to edit the main item has direct links to add/edit sub items.
+    """
     # Required variable
     @property
     def main_collection(self):
@@ -1685,7 +1691,6 @@ class SubItemCollection(MainItemCollection):
 
     # Defaults
     navbar_link_list = 'staff'
-    one_of_permissions_required = ['manage_main_items', 'translate_items']
 
     def to_form_class(self):
         class _Form(forms.AutoForm):
@@ -1700,6 +1705,15 @@ class SubItemCollection(MainItemCollection):
 
     def to_main_item_url(self, item):
         return getattr(item, self.main_fk).item_url
+
+    class ListView(MainItemCollection.ListView):
+        def has_permissions_to_see_in_navbar(self, request, context):
+            super(SubItemCollection.ListView, self).has_permissions_to_see_in_navbar(request, context)
+            return (request.user.is_authenticated()
+                    and (request.user.hasOneOfPermissions([
+                        'manage_main_items',
+                        'translate_items',
+                    ])))
 
     class ItemView(MainItemCollection.ItemView):
         comments_enabled = False
