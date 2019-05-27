@@ -1580,8 +1580,8 @@ class ActivitiesPreferencesForm(MagiForm):
         for field_name in self.fields.keys():
             if field_name.startswith('d_hidden_tags'):
                 self.fields[field_name] = forms.BooleanField(
-                    label=self.fields[field_name].help_text,
-                    help_text=self.fields[field_name].label,
+                    label=self.fields[field_name].label,
+                    help_text=self.fields[field_name].help_text,
                     required=False,
                     initial=self.instance.hidden_tags.get(field_name.replace('d_hidden_tags-', ''), False),
                 )
@@ -1595,7 +1595,7 @@ class ActivitiesPreferencesForm(MagiForm):
                 self.fields['i_activities_language'].label).format(language='')
         if ('i_default_activities_tab' in self.fields
             and self.request.LANGUAGE_CODE not in LANGUAGES_CANT_SPEAK_ENGLISH):
-            self.fields['i_default_activities_tab'].help_text = mark_safe(
+            self.fields['i_default_activities_tab'].below_field = mark_safe(
                 u'<a href="/help/Activities%20tabs" class="pull-right btn btn-main btn-sm" target="_blank">{}</a>'.format(
                     _('Learn more'),
                 ))

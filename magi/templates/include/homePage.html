@@ -141,10 +141,10 @@
     {% endif %}
 
     <div class="container
-                {% if user.is_authenticated and 'activity' in all_enabled %} tabs-container{% endif %}
+                {% if user.is_authenticated and 'activity' in all_enabled and activity_tabs %} tabs-container{% endif %}
                 {% if homepage_background %} with-background{% endif %}">
 
-      {% if user.is_authenticated and 'activity' in all_enabled %}
+      {% if user.is_authenticated and 'activity' in all_enabled and activity_tabs %}
       <h3 class="visible-xs active-tab-title">
         <i class="flaticon-{{ active_activity_tab.icon }}"></i>
         {{ active_activity_tab.title }}
@@ -187,7 +187,7 @@
   </div>{# home #}
 </div>{# home-wrapper #}
 
-{% if not user.is_authenticated and 'activity' in all_enabled %}
+{% if not user.is_authenticated and 'activity' in all_enabled and activity_tabs %}
 <div class="container home-transition hidden-xs">
     <svg id="bigHalfCircle" xmlns="http://www.w3.org/2000/svg"
          version="1.1" width="100%" height="100" viewBox="0 0 100 100" preserveAspectRatio="none">

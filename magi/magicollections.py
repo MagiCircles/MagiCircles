@@ -2860,14 +2860,17 @@ class ActivityCollection(MagiCollection):
                     if not isinstance(details, dict):
                         details = {}
                     has_permission = details.get('has_permission_to_show', lambda r: True)(context['request'])
+                    label = details.get('translation', tag)
+                    if callable(label):
+                        label = label()
                     if has_permission != True:
                         context['item'].hidden_reasons.append(u'{} {}'.format(
-                            error_message.format(tag=details.get('translation', tag)),
+                            error_message.format(tag=label),
                             has_permission,
                         ))
                     else:
                         context['item'].hidden_reasons.append(u'{} {}'.format(
-                            error_message.format(tag=details.get('translation', tag)),
+                            error_message.format(tag=label),
                             _('You can change which tags you would like to see or hide in your settings.'),
                         ))
             if context['item'].hidden_reasons:

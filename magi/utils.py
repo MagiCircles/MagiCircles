@@ -297,6 +297,7 @@ def globalContext(request):
     context['current_url'] = request.get_full_path() + ('?' if request.get_full_path()[-1] == '/' else '&')
     context['t_site_name'] = context['site_name_per_language'].get(request.LANGUAGE_CODE, context['site_name'])
     context['t_site_image'] = context['site_image_per_language'].get(request.LANGUAGE_CODE, context['site_image'])
+    context['t_game_name'] = context['game_name_per_language'].get(request.LANGUAGE_CODE, context['game_name'])
     context['t_full_site_image'] = context['full_site_image_per_language'].get(request.LANGUAGE_CODE, context['full_site_image'])
     context['t_email_image'] = context['email_image_per_language'].get(request.LANGUAGE_CODE, context['email_image'])
     context['t_full_email_image'] = context['full_email_image_per_language'].get(request.LANGUAGE_CODE, context['full_email_image'])

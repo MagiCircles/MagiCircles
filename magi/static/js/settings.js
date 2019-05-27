@@ -9,6 +9,4 @@ $(document).ready(function() {
 	    });
 	    return false;
     });
-    // Format hide tags form
-    d_FieldCheckBoxes($('[id^="id_d_hidden_tags-"]'));
 });

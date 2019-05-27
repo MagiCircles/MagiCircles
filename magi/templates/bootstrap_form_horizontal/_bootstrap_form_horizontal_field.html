@@ -19,7 +19,7 @@
 {% endif %}
 {% else %}
 <div class="row form-group {% if field.errors %}has-error{% endif %} {% if field.required %}required{% endif %}{% for cls in field.field.form_group_classes %} {{ cls }}{% endfor %}">
-  {% if field|is_boolean %}
+  {% if field|is_boolean and not field.help_text %}
   <div class="{% firstof label_class 'col-sm-4' %}"></div>
   {% else %}
   <label for="{{ field.id_for_label }}" class="{% firstof label_class 'col-sm-4' %} control-label" style="text-align: right;">
@@ -32,11 +32,13 @@
       {{ field.errors }}
     </div>
     {% endif %}
-    {% if field.help_text %}
+    {% if not field|is_boolean and field.help_text %}
     <span class="help-block">{{ field.help_text }}</span>
     {% endif %}
     {% if field|is_boolean %}
-    <label>{{ field }} {{ field.label }}</label>
+    <label>{{ field }} {% if field.help_text %}
+      <span class="help-block" style="display: inline-block; max-width: 300px; vertical-align: top; padding-left: 10px; margin: 0;">{{ field.help_text }}</span>
+      {% else %}{{ field.label }}{% endif %}</label>
     {% else %}
     {% if field|is_date_time_field %}
     <div data-role="bootstrap-form-horizontal-date-time-widget">

@@ -19,6 +19,7 @@ from magi.settings import (
     EMAIL_IMAGE,
     EMAIL_IMAGE_PER_LANGUAGE,
     GAME_NAME,
+    GAME_NAME_PER_LANGUAGE,
     SITE_DESCRIPTION,
     SITE_STATIC_URL,
     SITE_URL,
@@ -588,6 +589,7 @@ RAW_CONTEXT['site_description'] = SITE_DESCRIPTION
 RAW_CONTEXT['staff_configurations'] = STAFF_CONFIGURATIONS
 RAW_CONTEXT['get_started_video'] = GET_STARTED_VIDEO
 RAW_CONTEXT['game_name'] = GAME_NAME
+RAW_CONTEXT['game_name_per_language'] = GAME_NAME_PER_LANGUAGE
 RAW_CONTEXT['static_uploaded_files_prefix'] = STATIC_UPLOADED_FILES_PREFIX
 RAW_CONTEXT['static_url'] = SITE_STATIC_URL + 'static/'
 RAW_CONTEXT['static_files_version'] = STATIC_FILES_VERSION

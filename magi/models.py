@@ -976,9 +976,11 @@ def getAllowedTags(request, is_creating=False, force_allow=None):
     can_add = getTagsWithPermissionToAdd(request) if is_creating else None
     return [
         (_tag,
-         _details.get('translation', _tag)
+         (_details.get('translation', _tag)()
+          if callable(_details.get('translation', _tag))
+          else _details.get('translation', _tag))
          if isinstance(_details, dict)
-         else _details)
+         else (_details() if callable(_details) else _details))
         for (_tag, _details) in ACTIVITY_TAGS
         if (_tag in (force_allow or [])
             or (_tag not in hidden and (not is_creating or _tag in can_add)))

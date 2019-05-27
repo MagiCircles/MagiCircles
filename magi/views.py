@@ -171,7 +171,7 @@ def indexExtraContext(context):
     context['latest_news'] = LATEST_NEWS
     context['call_to_action'] = CALL_TO_ACTION
     context['about_site_sentence'] = _('About {thing}').format(thing=context['t_site_name'])
-    context['about_game_sentence'] = _('About {thing}').format(thing=context['game_name'])
+    context['about_game_sentence'] = _('About {thing}').format(thing=context['t_game_name'])
     context['total_donators'] = TOTAL_DONATORS
     context['homepage_background'] = HOMEPAGE_BACKGROUND
     context['adjective'] = random.choice(donators_adjectives)
@@ -265,7 +265,12 @@ def index(request):
 def prelaunch(request, *args, **kwargs):
     context = getGlobalContext(request)
     context['about_site_sentence'] = _('About {thing}').format(thing=context['t_site_name'])
-    context['about_game_sentence'] = _('About {thing}').format(thing=context['game_name'])
+    context['about_game_sentence'] = _('About {thing}').format(thing=context['t_game_name'])
+    context['homepage_background'] = HOMEPAGE_BACKGROUND
+    if SITE_LOGO_PER_LANGUAGE:
+        logo_per_language = SITE_LOGO_PER_LANGUAGE.get(get_language(), None)
+        if logo_per_language:
+            context['site_logo'] = staticImageURL(logo_per_language)
     if not context.get('launch_date', None):
         return redirect('signup')
     context['twitter'] = TWITTER_HANDLE
