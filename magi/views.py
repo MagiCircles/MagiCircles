@@ -264,6 +264,7 @@ def index(request):
 
 def prelaunch(request, *args, **kwargs):
     context = getGlobalContext(request)
+    context['page_definers'] = context.get('page_definers', []) + ['homepage']
     context['about_site_sentence'] = _('About {thing}').format(thing=context['t_site_name'])
     context['about_game_sentence'] = _('About {thing}').format(thing=context['t_game_name'])
     context['homepage_background'] = HOMEPAGE_BACKGROUND

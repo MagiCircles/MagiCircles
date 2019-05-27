@@ -1902,6 +1902,7 @@ class AccountCollection(MagiCollection):
         allow_next = True
         max_per_user = 10
         simpler_form = None
+        back_to_list_button = False
 
         def form_class(self, request, context):
             form_class = super(AccountCollection.AddView, self).form_class(request, context)
