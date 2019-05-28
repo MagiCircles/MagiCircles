@@ -2836,6 +2836,8 @@ class ActivityCollection(MagiCollection):
                 # Context based on tab
                 if context['filter_form'].active_tab == 'following':
                     context['no_result_template'] = 'include/activityFollowMessage'
+            else:
+                context['show_bump'] = True
 
     class ItemView(MagiCollection.ItemView):
         template = custom_item_template
