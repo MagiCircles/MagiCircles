@@ -2293,6 +2293,7 @@ class ActivityForm(MagiForm):
         if not self.is_creating and instance.m_message != self.previous_m_message:
             instance.last_bump = timezone.now()
         if (hasattr(self, 'previous_activities_language')
+            and 'save_activities_language' in self.cleaned_data
             and self.cleaned_data['save_activities_language']
             and self.previous_activities_language != instance.i_language):
             models.UserPreferences.objects.filter(user_id=instance.owner_id).update(
@@ -2411,7 +2412,8 @@ class FilterActivities(MagiFiltersForm):
     def filter_queryset(self, queryset, parameters, request):
         queryset = super(FilterActivities, self).filter_queryset(queryset, parameters, request)
         if (parameters.get('ordering', None) == '_cache_total_likes,id'
-            or (self.fields['ordering'].initial == '_cache_total_likes,id'
+            or ('ordering' in self.fields
+                and self.fields['ordering'].initial == '_cache_total_likes,id'
                 and 'ordering' not in parameters)):
             queryset = queryset.filter(creation__gte=timezone.now() - relativedelta(weeks=1))
         return queryset
