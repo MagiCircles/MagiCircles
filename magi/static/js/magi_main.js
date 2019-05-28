@@ -1469,6 +1469,12 @@ function loadRandomFilters(button) {
 // Index
 
 function loadIndex() {
+    // Load filters more
+    let form = $('[id="filter-form-activity"]');
+    if (!form.data('loaded-separators')) {
+        form.data('loaded-separators', true);
+        formShowMore(form, 'is_popular', false, 'ordering', false);
+    }
     // Load HD background image when provided
     let home = $('.home-wrapper[data-hd-art]');
     if (home.length > 0 && $(document).width() > 992) {
@@ -1626,8 +1632,16 @@ function formShowMore(form, cutOff, includingCutOff, until, includingUntil) {
     var hidden_at_init = true;
 
     function hasValue(input) {
+        // Multiple choice checkboxes
+        if (input.is('ul') && input.filter('[type="checkbox"]:checked').length > 0) {
+            return true;
+        }
+        // Checkbox
+        if (input.is('[type="checkbox"]')) {
+            return input.prop('checked');
+        }
         // Null boolean
-        if (input.is('select')) {
+        else if (input.is('select')) {
             let values = $.map(input.find('option'), function(elt, i) { return $(elt).val();})
             let values_of_nullbool = ['1', '2', '3'];
             if (values.length == values_of_nullbool.length
@@ -1635,11 +1649,6 @@ function formShowMore(form, cutOff, includingCutOff, until, includingUntil) {
                 return input.val() != '1';
             }
         }
-        // Multiple choice checkboxes
-        if (input.is('ul') && input.filter('[type="checkbox"]:checked').length > 0) {
-            return true;
-        }
-
         return input.val() != '';
     }
 
