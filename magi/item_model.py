@@ -477,6 +477,7 @@ class BaseMagiModel(models.Model):
                 'image_for_prefetched',
                 'template_for_prefetched',
                 'display_item_url',
+                'show_section_header',
         ]:
             return self._attr_error(original_name)
 

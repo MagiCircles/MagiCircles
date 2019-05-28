@@ -298,6 +298,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
         page = int(request.GET['page']) - 1
         if page < 0:
             page = 0
+    unpaginated_queryset = queryset
     queryset = queryset[(page * page_size):((page * page_size) + page_size)]
 
     if 'filter_form' in context and not ajax:
@@ -456,6 +457,19 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
             context['top_buttons_col_size'] = getColSize(context['top_buttons_total'])
 
     context['show_item_buttons'] = collection.list_view.show_item_buttons
+
+    if not filled_filter_form and collection.list_view.show_section_header_on_change:
+        if page > 0:
+            try:
+                previous_section_header = getattr(
+                    unpaginated_queryset[(page * page_size) - 1],
+                    collection.list_view.show_section_header_on_change,
+                )
+            except IndexError:
+                previous_section_header = None
+        else:
+            previous_section_header = None
+
     for i, item in enumerate(queryset):
         item.request = request
         if collection.list_view.foreach_items:
@@ -487,6 +501,12 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
                 item.unblock_button = _(u'Unblock {username}').format(username=username)
             elif item.owner_id in request.user.preferences.cached_blocked_by_ids:
                 item.blocked_by_owner = True
+        if not filled_filter_form and collection.list_view.show_section_header_on_change:
+            if getattr(item, collection.list_view.show_section_header_on_change) != previous_section_header:
+                item.show_section_header = getattr(item, collection.list_view.show_section_header_on_change)
+                previous_section_header = item.show_section_header
+            else:
+                item.show_section_header = False
 
     collection.list_view.extra_context(context)
 

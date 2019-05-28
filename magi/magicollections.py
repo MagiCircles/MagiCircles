@@ -1281,6 +1281,7 @@ class MagiCollection(object):
         auto_reloader = True
         _alt_view_choices = None # Cache
         alt_views = []
+        show_section_header_on_change = None
 
         def has_permissions_to_see_in_navbar(self, request, context):
             return self.has_permissions(request, context)

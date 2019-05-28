@@ -30,7 +30,18 @@
   {% for item in items %}
   {% if display_style == 'rows' and forloop.counter0 != 0 and forloop.counter0|mod:per_line %}
 </div><div class="row items">
-  {% endif %}
+    {% endif %}
+    {% if item.show_section_header %}
+    {% if display_style == 'table' %}
+    <tr><th colspan="42" class="table-section-header">
+        {{ item.show_section_header }}
+    </th></tr>
+    {% else %}
+  </div>
+  <h3 class="table-section-header">{{ item.show_section_header }}</h3>
+  <div class="row items">
+    {% endif %}
+    {% endif %}
   <{% if display_style == 'rows' %}div class="col-{{ col_break }}-{{ col_size }}"{% elif display_style == 'table' %}tr{% else %}div{% endif %} data-item="{{ collection.name }}" data-item-id="{{ item.pk }}"{% if item.html_attributes_in_list %}{% for key, value in item.html_attributes_in_list.items %} {{ key }}="{{ value }}"{% endfor %}{% elif item.html_attributes %}{% for key, value in item.html_attributes.items %} {{ key }}="{{ value }}"{% endfor %}{% endif %}>
     {% if item.blocked_by_owner %}
     <div class="hidden">blocked</div>
