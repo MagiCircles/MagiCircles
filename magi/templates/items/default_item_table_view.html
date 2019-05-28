@@ -63,6 +63,25 @@
         <div class="itunes" data-itunes-id="{{ field.value }}"></div>
 	{% elif field.type == 'html' %}
 	{{ field.value|safe }}
+	{% elif field.type == 'markdown' %}
+        <div class="long-text-value">
+          {% if field.value.0 %}
+          {{ field.value.1|safe }}
+          {% else %}
+          <div class="to-markdown">{{ field.value.1 }}</div>
+          {% endif %}
+        </div>
+    {% elif field.type == 'list_links' %}
+        <ul>{% for link in field.links %}
+          <li>
+            <a href="{{ link.link }}" target="_blank"{% if link.ajax_link %} data-ajax-url="{{ link.ajax_link }}" data-ajax-title="{{ link.value }}"{% endif %}>{{ link.value }}</a>
+          </li>
+          {% endfor %}{% if field.and_more %}
+          <li><a href="{{ field.and_more.link }}" class="btn-link-secondary"
+                 {% if field.and_more.ajax_link %} data-ajax-url="{{ field.and_more.ajax_link }}" data-ajax-title="{{ item }} - {{ field.verbose_name }}"{% endif %}>
+              {{ field.and_more.verbose_name }}
+          </a></li>
+        {% endif %}</ul>
 	{% else %}
 	{{ field.value }}
 	{% endif %}

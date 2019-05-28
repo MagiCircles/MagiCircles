@@ -962,8 +962,10 @@ class MagiCollection(object):
             dict_fields = dict(fields)
             sorted_fields = OrderedDict()
             for field_name in (order or []):
-                if field_name.startswith('i_') or field_name.startswith('c_'):
-                    field_name = field_name[2:]
+                for prefix in ['i_', 'c_', 'm_', 'j_']:
+                    if field_name.startswith(prefix):
+                        field_name = field_name[2:]
+                        break
                 if only_fields and field_name not in only_fields:
                     continue
                 if field_name in dict_fields:
@@ -971,8 +973,10 @@ class MagiCollection(object):
                 elif force_all_fields:
                     sorted_fields[field_name] = { 'verbose_name': '', 'type': 'text', 'value': '' }
             for field_name in (only_fields if only_fields else dict_fields.keys()):
-                if field_name.startswith('i_') or field_name.startswith('c_'):
-                    field_name = field_name[2:]
+                for prefix in ['i_', 'c_', 'm_', 'j_']:
+                    if field_name.startswith(prefix):
+                        field_name = field_name[2:]
+                        break
                 if field_name not in sorted_fields:
                     sorted_fields[field_name] = dict_fields[field_name] if field_name in dict_fields else { 'verbose_name': '', 'type': 'text', 'value': '' }
             if to_dict:
