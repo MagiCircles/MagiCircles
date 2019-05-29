@@ -1137,7 +1137,8 @@ class MagiFiltersForm(AutoForm):
                 if (isinstance(field, forms.fields.ChoiceField)
                     and not isinstance(field, forms.fields.MultipleChoiceField)
                     and field.choices
-                    and field_name != 'ordering'):
+                    and field_name != 'ordering'
+                    and not field_name.startswith('add_to_')):
                     choices = list(self.fields[field_name].choices)
                     if choices and choices[0][0] != '':
                         self.fields[field_name].choices = BLANK_CHOICE_DASH + choices
