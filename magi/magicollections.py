@@ -632,6 +632,9 @@ class MagiCollection(object):
         images.update(self.fields_images)
         images.update(view.fields_images)
 
+        if hasattr(view, 'fields_order'):
+            order = order + view.fields_order
+
         if hasattr(view, 'fields_preselected'):
             preselected = preselected + view.fields_preselected
 
