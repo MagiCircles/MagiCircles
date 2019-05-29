@@ -704,6 +704,9 @@ class MagiCollection(object):
                                 break
                         d['image_for_link'] = item_image
                     d['icon'] = getattr(related_item, 'icon', d['icon'])
+                    if 'icon' in d:
+                        if callable(d['icon']):
+                            d['icon'] = d['icon'](item)
                     if 'image' in d:
                         if callable(d['image']):
                             d['image'] = d['image'](item)
@@ -755,8 +758,8 @@ class MagiCollection(object):
                         d['spread_across'] = True
                     else:
                         d['type'] = 'list_links' if item_url else 'list'
-                        to_append['value'] = unicode(related_item)
-                        d['links'].append(to_append)
+                    to_append['value'] = unicode(related_item)
+                    d['links'].append(to_append)
                 if and_more and url:
                     verbose_name = (
                         u'{total} {items}'.format(total=and_more, items=plural_verbose_name.lower())
@@ -770,6 +773,9 @@ class MagiCollection(object):
                         d['and_more']['ajax_link'] = u'/ajax/{}/?{}={}&ajax_modal_only'.format(
                             url, filter_field_name, item.pk)
                 if d['images'] or d['links'] or d['items']:
+                    if 'icon' in d:
+                        if callable(d['icon']):
+                            d['icon'] = d['icon'](item)
                     if 'image' in d:
                         if callable(d['image']):
                             d['image'] = d['image'](item)
@@ -785,6 +791,12 @@ class MagiCollection(object):
                     if '{total}' not in unicode(plural_verbose_name)
                     else unicode(plural_verbose_name).format(total=total))
                 if total:
+                    icon = None
+                    if 'icon' in d:
+                        icon = icons.get(field_name, None)
+                        if callable(icon):
+                            icon = icon(item)
+                    image = None
                     if 'image' in d:
                         image = images.get(field_name, None)
                         if callable(image):
@@ -799,7 +811,7 @@ class MagiCollection(object):
                         ) if allow_ajax_for_more else None,
                         'link': u'/{}/?{}={}'.format(url, filter_field_name, item.pk),
                         'link_text': _('View all'),
-                        'icon': icons.get(field_name, None),
+                        'icon': icon,
                         'image': image,
                     }))
         model_fields = []
@@ -944,6 +956,8 @@ class MagiCollection(object):
                 d['value'] = getattr(item, u'display_{}'.format(field_name))
             except AttributeError:
                 pass
+            if callable(d.get('icon', None)):
+                d['icon'] = d['icon'](item)
             if callable(d.get('image', None)):
                 d['image'] = d['image'](item)
             d['image'] = staticImageURL(d['image'])
