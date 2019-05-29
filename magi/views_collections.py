@@ -73,6 +73,7 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
     """
     context = collection.item_view.get_global_context(request)
     collection.item_view.check_permissions(request, context)
+    request.show_collect_button = collection.item_view.show_collect_button
     queryset = collection.item_view.get_queryset(collection.queryset, _get_filters(request.GET, extra_filters), request)
     if not pk and reverse:
         options = collection.item_view.reverse_url(reverse)
@@ -210,11 +211,14 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['alt_view'] = None
     alt_views = dict(collection.list_view.alt_views)
     page_size = collection.list_view.page_size
+    request.show_collect_button = collection.list_view.show_collect_button
     if 'view' in request.GET and request.GET['view'] in alt_views:
         context['view'] = request.GET['view']
         context['alt_view'] = alt_views[context['view']]
     if context['alt_view'] and 'page_size' in context['alt_view']:
         page_size = context['alt_view']['page_size']
+    if context['alt_view'] and 'show_collect_button' in context['alt_view']:
+        request.show_collect_button = context['alt_view']['show_collect_button']
 
     if 'page_size' in request.GET:
         try: page_size = int(request.GET['page_size'])
@@ -487,6 +491,8 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
                     button['show'] = False
         item.show_item_buttons_justified = collection.list_view.show_item_buttons_justified
         item.show_item_buttons_as_icons = collection.list_view.show_item_buttons_as_icons
+        if context['alt_view'] and 'show_item_buttons_as_icons' in context['alt_view']:
+            item.show_item_buttons_as_icons = context['alt_view']['show_item_buttons_as_icons']
         item.show_item_buttons_in_one_line = collection.list_view.show_item_buttons_in_one_line
         if collection.list_view.show_item_buttons and [True for b in item.buttons_to_show.values() if b['show'] and b['has_permissions']]:
             context['include_below_item'] = True

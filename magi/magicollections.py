@@ -196,13 +196,13 @@ class MagiCollection(object):
     def _collectibles_queryset(self, view, queryset, request):
         # Select related total collectible for authenticated user
         if request.user.is_authenticated() and self.collectible_collections:
-            if not view.show_collect_button:
+            if not request.show_collect_button:
                 return queryset
             account_ids = getAccountIdsFromSession(request)
             for name, collection in self.collectible_collections.items():
                 if (not collection.add_view.enabled
-                    or (isinstance(view.show_collect_button, dict)
-                        and not view.show_collect_button.get(name, True))
+                    or (isinstance(request.show_collect_button, dict)
+                        and not request.show_collect_button.get(name, True))
                     or not collection.add_view.has_permissions(request, {})):
                     continue
                 item_field_name = getattr(collection.queryset.model, 'selector_to_collected_item',
@@ -1027,8 +1027,9 @@ class MagiCollection(object):
         ])
         # Collectible buttons
         for name, collectible_collection in self.collectible_collections.items():
-            if (not view.show_collect_button
-                or (isinstance(view.show_collect_button, dict) and not view.show_collect_button.get(name, True))
+            if (not request.show_collect_button
+                or (isinstance(request.show_collect_button, dict)
+                    and not request.show_collect_button.get(name, True))
                 or not collectible_collection.add_view.enabled):
                 del(buttons[name])
                 continue
@@ -1041,7 +1042,9 @@ class MagiCollection(object):
                     for variable in collectible_collection.add_view.add_to_collection_variables
                     if hasattr(item, variable)]),
                 )
-            buttons[name]['show'] = view.show_collect_button[name] if isinstance(view.show_collect_button, dict) else view.show_collect_button
+            buttons[name]['show'] = (
+                request.show_collect_button[name]
+                if isinstance(request.show_collect_button, dict) else request.show_collect_button)
             buttons[name]['title'] = collectible_collection.add_sentence
             show_total = view.show_collect_total.get(name, True) if isinstance(view.show_collect_total, dict) else view.show_collect_total
             if quick_add_to_collection:
