@@ -36,12 +36,20 @@
     {% if item.show_section_header %}
     {% if display_style == 'table' %}
     <tr><th colspan="42" class="table-section-header">
-        {{ item.display_section_header|default_if_none:item.show_section_header }}
+        {% if item.display_section_header %}
+        {{ item.display_section_header }}
+        {% else %}
+        {{ item.show_section_header }}
+        {% endif %}
     </th></tr>
     {% else %}
   </div>
   <h3 class="table-section-header">
-    {{ item.display_section_header|default_if_none:item.show_section_header }}
+    {% if item.display_section_header %}
+    {{ item.display_section_header }}
+    {% else %}
+    {{ item.show_section_header }}
+    {% endif %}
   </h3>
   <div class="row items">
     {% endif %}
