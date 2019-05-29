@@ -28,8 +28,10 @@
       {# tab.name, .icon, .image #}
       {% for tab_name, tab in account.tabs.items %}
       <li{% if account.opened_tab == tab_name %} class="active"{% endif %} style="width: {% localize off %}{{ account.tabs_size }}{% endlocalize %}%;"><a href="#account-{{ account.id }}-tab-{{ tab_name }}" data-toggle="tab">
-	  {% if tab.icon %}<i class="flaticon-{{ tab.icon }}"></i><span class="hidden-xs hidden-sm">{% endif %}
-	    {{ tab.name }}{% if tab.icon %}</span>{% endif %}
+	      {% if tab.icon or tab.image %}
+          {% if tab.icon %}<i class="flaticon-{{ tab.icon }}"></i>
+          {% elif tab.image %}<img src="{{ static_url }}img/{{ tab.image }}.png?{{ static_files_version }}" height="21" />{% endif %}<span class="hidden-xs hidden-sm">{% endif %}
+	    {{ tab.name }}{% if tab.icon or tab.image %}</span>{% endif %}
       </a></li>
       {% endfor %}
     </ul>
