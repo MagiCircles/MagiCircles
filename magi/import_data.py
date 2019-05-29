@@ -130,6 +130,7 @@ def save_item(model, unique_data, data, log_function, unique_together=False):
             for k, v in manytomany.items():
                 getattr(item, k).clear()
                 getattr(item, k).add(*v)
+            item.save()
         return item
     return None
 
