@@ -2,7 +2,9 @@
   {% if item_view_enabled or item.display_item_url %}
   <a href="{% if item.display_item_url %}{{ item.display_item_url }}{% else %}{{ item.item_url }}{% endif %}"{% if ajax_item_view_enabled %} data-ajax-url="{{ item.ajax_item_url }}" data-ajax-title="{{ item }}"{% endif %}{% if ajax_item_popover %} data-ajax-popover="{{ item.ajax_item_url }}" title="{{ item }}"{% endif %}>
     {% endif %}
-    {% if item.top_html %}
+    {% if item.top_html_list %}
+    {{ item.top_html_list|safe }}
+    {% elif item.top_html %}
     {{ item.top_html|safe }}
     {% elif item.top_image_list or item.top_image or item.image %}
     <img src="{% if item.top_image_list %}{{ item.top_image_list }}{% elif item.top_image %}{{ item.top_image }}{% else %}{{ item.image_url }}{% endif %}" alt="{{ item }}" class="{{ item.collection_name }}-image img-responsive" style="{% if item_max_height %} max-height: {{ item_max_height }}px;{% endif %}">

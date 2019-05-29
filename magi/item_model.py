@@ -463,6 +463,9 @@ class BaseMagiModel(models.Model):
 
         # Reserved names
         if original_name in [
+                'top_html',
+                'top_html_list',
+                'top_html_item',
                 'top_image',
                 'top_image_list',
                 'top_image_item',
@@ -478,6 +481,7 @@ class BaseMagiModel(models.Model):
                 'template_for_prefetched',
                 'display_item_url',
                 'show_section_header',
+                'selector_to_collected_item',
         ]:
             return self._attr_error(original_name)
 
