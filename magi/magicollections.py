@@ -442,11 +442,11 @@ class MagiCollection(object):
 
             @property
             def title(self):
-                return _('Collected {thing}').format(thing=parent_collection.title)
+                return _('Collected {thing}').format(thing=parent_collection.title.lower())
 
             @property
             def plural_title(self):
-                return _('Collected {things}').format(things=parent_collection.plural_title)
+                return _('Collected {things}').format(things=parent_collection.plural_title.lower())
 
             @property
             def add_sentence(self):
@@ -758,7 +758,7 @@ class MagiCollection(object):
                         d['spread_across'] = True
                     else:
                         d['type'] = 'list_links' if item_url else 'list'
-                    to_append['value'] = unicode(related_item)
+                        to_append['value'] = unicode(related_item)
                     d['links'].append(to_append)
                 if and_more and url:
                     verbose_name = (
@@ -791,16 +791,13 @@ class MagiCollection(object):
                     if '{total}' not in unicode(plural_verbose_name)
                     else unicode(plural_verbose_name).format(total=total))
                 if total:
-                    icon = None
-                    if 'icon' in d:
-                        icon = icons.get(field_name, None)
-                        if callable(icon):
-                            icon = icon(item)
-                    image = None
-                    if 'image' in d:
-                        image = images.get(field_name, None)
-                        if callable(image):
-                            image = image(item)
+                    icon = icons.get(field_name, None)
+                    if callable(icon):
+                        icon = icon(item)
+                    image = images.get(field_name, None)
+                    if callable(image):
+                        image = image(item)
+                    if image:
                         image = staticImageURL(image)
                     many_fields.append((field_name, {
                         'verbose_name': unicode(verbose_name).replace('{total}', ''),
