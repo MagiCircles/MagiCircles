@@ -1035,8 +1035,9 @@ class MagiCollection(object):
                 'open_in_new_window': False,
                 'ajax_url': False,
                 'ajax_title': False, # By default will use title
-                'classes': (view.item_buttons_classes
-                            + (['btn-block'] if not view.show_item_buttons_in_one_line else [])),
+                'classes': ((context.get('alt_view', {}) or {}).get(
+                    'item_buttons_classes', view.item_buttons_classes
+                ) + (['btn-block'] if not view.show_item_buttons_in_one_line else [])),
             }) for button_name in self.collectible_collections.keys() + ['edit', 'translate', 'report']
         ])
         # Collectible buttons
@@ -1119,7 +1120,8 @@ class MagiCollection(object):
             buttons[name]['extra_attributes'] = extra_attributes
         # Edit button
         if self.edit_view.enabled:
-            buttons['edit']['show'] = view.show_edit_button
+            buttons['edit']['show'] = (context.get('alt_view', {}) or {}).get(
+                'show_edit_button', view.show_edit_button)
             buttons['edit']['title'] = item.edit_sentence
             buttons['edit']['icon'] = 'edit'
             if (self.edit_view.authentication_required
