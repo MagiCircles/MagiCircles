@@ -511,6 +511,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
             if getattr(item, collection.list_view.show_section_header_on_change) != previous_section_header:
                 item.show_section_header = getattr(item, collection.list_view.show_section_header_on_change)
                 previous_section_header = item.show_section_header
+                context['showing_section_headers'] = True
             else:
                 item.show_section_header = False
 

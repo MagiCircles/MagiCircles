@@ -27,18 +27,22 @@
       <th data-header-field="{{ name }}">{{ verbose_name }}</th>
     {% endfor %}{% if include_below_item and table_fields_headers %}<th></th>{% endif %}</tr>{% endif %}
     {% endif %}
-  {% for item in items %}
+    {% for item in items %}
+    {% if not showing_section_headers %}
   {% if display_style == 'rows' and forloop.counter0 != 0 and forloop.counter0|mod:per_line %}
 </div><div class="row items">
+    {% endif %}
     {% endif %}
     {% if item.show_section_header %}
     {% if display_style == 'table' %}
     <tr><th colspan="42" class="table-section-header">
-        {{ item.show_section_header }}
+        {{ item.display_section_header|default_if_none:item.show_section_header }}
     </th></tr>
     {% else %}
   </div>
-  <h3 class="table-section-header">{{ item.show_section_header }}</h3>
+  <h3 class="table-section-header">
+    {{ item.display_section_header|default_if_none:item.show_section_header }}
+  </h3>
   <div class="row items">
     {% endif %}
     {% endif %}
