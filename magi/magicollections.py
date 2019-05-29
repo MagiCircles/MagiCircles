@@ -474,7 +474,7 @@ class MagiCollection(object):
                 ]
 
                 def table_fields(self, item, *args, **kwargs):
-                    image = getattr(item, 'image_url')
+                    image = getattr(item, 'image_url', None)
                     fields = super(_CollectibleCollection.ListView, self).table_fields(item, *args, extra_fields=(
                         [(('image', { 'verbose_name': unicode(item), 'value': image, 'type': 'image' })
                           if image else ('name', {
@@ -531,7 +531,7 @@ class MagiCollection(object):
                     add_form = context['forms'][u'add_{}'.format(self.collection.name)]
                     if hasattr(add_form, 'collectible_variables'):
                         image = add_form.collectible_variables.get('image_url')
-                        if image:
+                        if image and image != 'None':
                             context['imagetitle'] = image
                             context['imagetitle_size'] = 100
                             context['icontitle'] = None
