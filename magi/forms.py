@@ -971,11 +971,15 @@ class MagiFiltersForm(AutoForm):
                     setattr(self, u'add_to_{}_filter'.format(collection_name), MagiFilter(noop=True))
                     queryset = collection.queryset.model.owners_queryset(self.request.user)
                     initial = getattr(self.request, u'add_to_{}'.format(collection_name), None)
+                    label = collection.add_sentence
+                    help_text = None
                     # Check if only one option, hide picker
                     total_fk_owner_ids = getattr(self.request, u'total_fk_owner_ids_{}'.format(collection_name), None)
                     if total_fk_owner_ids is None:
                         if collection.queryset.model.fk_as_owner == 'account':
                             total_fk_owner_ids = len(getAccountIdsFromSession(self.request))
+                            label = _('Account')
+                            help_text = collection.add_sentence
                         else:
                             total_fk_owner_ids = len(queryset)
                     if total_fk_owner_ids <= 1:
@@ -985,8 +989,8 @@ class MagiFiltersForm(AutoForm):
                     else:
                         self.fields = OrderedDict(
                             [(u'add_to_{}'.format(collection_name), forms.ModelChoiceField(
-                                queryset=queryset, label=collection.add_sentence, required=True,
-                                initial=initial,
+                                queryset=queryset, required=True,
+                                initial=initial, label=label, help_text=help_text,
                             ))] + self.fields.items())
         # Add missing_{}_translations for all translatable fields if the current user has permission
         if self.collection and self.request.user.is_authenticated() and self.allow_translate and self.collection.translated_fields:
