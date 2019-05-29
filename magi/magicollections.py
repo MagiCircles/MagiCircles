@@ -39,7 +39,7 @@ from magi.utils import (
     FAVORITE_CHARACTERS_IMAGES,
     addParametersToURL,
 )
-from magi.raw import please_understand_template_sentence
+from magi.raw import please_understand_template_sentence, unrealistic_template_sentence
 from magi.django_translated import t
 from magi.notifications import pushNotification
 from magi.middleware.httpredirect import HttpRedirectException
@@ -1810,18 +1810,28 @@ class AccountCollection(MagiCollection):
     @property
     def report_edit_templates(self):
         templates = OrderedDict([
-            ('Unrealistic Level', 'Your level is unrealistic, so we edited it. If this was a mistake, please upload a screenshot of your game to the details of your account to prove your level and change it back. Thank you for your understanding.'),
+            ('Unrealistic Level', unrealistic_template_sentence.format(thing='level')),
             ('Unrealistic Level (recidivist)', 'After multiple warnings, you have failed to provide a valid screenshot proving your level, so you have been removed from the leaderboard completely. You may still use this account normally and it is still accessible from your profile, with a visual indication that it cannot be trusted. If this was a mistake, you may contact us with a valid screenshot and we will change it back. Thank you for your understanding.'),
         ])
         for field in self.queryset.model._meta.fields:
-            if not field.name.startswith('_') and field.name not in ['id', 'owner', 'creation', 'level', 'default_tab']:
+            if not field.name.startswith('_') and field.name not in [
+                    'id', 'owner', 'creation', 'level', 'default_tab', 'level_on_screenshot_upload',
+            ]:
                 name = field.name
                 if name.startswith('i_'):
                     name = name[2:]
                 name = name.replace('_', ' ').title()
                 if (isinstance(field, models.models.fields.CharField)
                     or isinstance(field, models.models.ImageField)):
-                    templates[u'Inappropriate {}'.format(name)] = u'Your account\'s {} was inappropriate. {}'.format(name.lower(), please_understand_template_sentence)
+                    templates[u'Inappropriate {}'.format(name)] = (
+                        u'Your account\'s {} was inappropriate. {}'.format(
+                            name.lower(), please_understand_template_sentence))
+                elif field.name == 'friend_id':
+                    templates['Invalid friend id'] = 'Your friend ID doesn\'t seem to exist in the game. It may have been a typo, so please check again and re-enter your friend ID.'
+                elif (not field.name.startswith('i_')
+                    and isinstance(field, models.models.fields.PositiveIntegerField)):
+                    templates[u'Unrealistic {}'.format(name)] = unrealistic_template_sentence.format(
+                        thing=name)
         return templates
 
     def to_fields(self, view, item, icons=None, *args, **kwargs):
@@ -1879,7 +1889,10 @@ class AccountCollection(MagiCollection):
 
         def to_fields(self, item, exclude_fields=None, *args, **kwargs):
             if not exclude_fields: exclude_fields = []
-            exclude_fields += ['owner', 'level_on_screenshot_upload', 'is_hidden_from_leaderboard']
+            exclude_fields += [
+                'owner', 'level_on_screenshot_upload',
+                'is_hidden_from_leaderboard', 'show_friend_id',
+            ]
             fields = super(AccountCollection.ItemView, self).to_fields(item, *args, exclude_fields=exclude_fields, **kwargs)
             if hasattr(item, 'cached_leaderboard') and item.cached_leaderboard:
                 fields['leaderboard'] = {

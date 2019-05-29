@@ -3,6 +3,8 @@ from django.utils.translation import ugettext_lazy as _, string_concat
 
 please_understand_template_sentence = 'Please understand that we have a very young audience, so we have to be very careful with what appears on our website.'
 
+unrealistic_template_sentence = u'Your {thing} is unrealistic, so we edited it. If this was a mistake, please upload a screenshot of your game to the details of your account to prove your {thing} and change it back. Thank you for your understanding.'
+
 donators_adjectives = [
     _('lovely'),
     _('awesome'),
