@@ -1966,6 +1966,9 @@ class UserFilterForm(MagiFiltersForm):
         ])
         color_filter = MagiFilter(selector='preferences__color')
 
+    location = forms.CharField(label=_('Location'))
+    location_filter = MagiFilter(selector='preferences__location__icontains', multiple=False)
+
     i_language = forms.ChoiceField(label=_('Language'), choices=(
         BLANK_CHOICE_DASH + list(models.UserPreferences.LANGUAGE_CHOICES)))
     i_language_filter = MagiFilter(selector='preferences__i_language')
@@ -2026,6 +2029,7 @@ class UserFilterForm(MagiFiltersForm):
         ] + (
             ['color'] if USER_COLORS else []
         ) + [
+            'location',
             'i_language',
         ]
 
