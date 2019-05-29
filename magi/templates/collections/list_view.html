@@ -83,7 +83,7 @@
       {% if staff_only_view %}
       <br><div class="alert alert-warning"><i class="flaticon-warning"></i> Staff only <small> - <i>Do not share</i></small></div>
       {% endif %}
-      <h1 class="padding50 text-center{% if not show_title %} hidden{% endif %}">
+      <h1 class="padding50 text-center list-page-title list-page-title-{{ collection.name }}{% if not show_title %} hidden{% endif %}">
         {% if h1_page_title_icon %}
         <i class="flaticon-{{ h1_page_title_icon }}"></i>
         {% elif h1_page_title_image %}

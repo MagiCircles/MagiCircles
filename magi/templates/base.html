@@ -9,6 +9,13 @@
     <title>{% block title %}{% if page_title %}{{ page_title }}{% else %}{{ game_name }}{% endif %}{% endblock %} | {{ t_site_name }}{% if page_title %} - {{ game_name }}{% endif %}</title>
 
     <link rel="shortcut icon" type="image/x-icon" href="{{ static_url }}favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ static_url }}apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ static_url }}favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ static_url }}favicon-16x16.png">
+    <link rel="mask-icon" href="{{ static_url }}safari-pinned-tab.svg" color="{{ site_color }}">
+    <meta name="msapplication-TileColor" content="{{ site_color }}">
+    <meta name="theme-color" content="{{ site_color }}">
+
     <link rel="stylesheet" href="{{ static_url }}bower/bootstrap/dist/css/bootstrap.min.css">
     {% if debug %}
     <link rel="stylesheet/less" type="text/css" href="{{ static_url }}less/style.less?{{ static_files_version }}" />
@@ -16,7 +23,7 @@
     {% else %}
     <link rel="stylesheet" href="{{ static_url }}css/style.css?{{ static_files_version }}">
     {% endif %}
-    {% block extracss %}{% endblock %}{% if extracss %}<style>{{ extracss|safe }}</style>{% endif %}
+    {% block extracss %}{% endblock %}{% if extracss %}<style>{{ extracss|safe }}</style>{% endif %}{% if extracss_template %}<style>{% include extracss_template %}</style>{% endif %}
 
     <meta property="og:image" content="{% block shareimage %}{% if share_image %}{{ share_image }}{% else %}{{ t_full_site_image }}{% endif %}{% endblock %}"/>
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
