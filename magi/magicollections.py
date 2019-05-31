@@ -570,7 +570,7 @@ class MagiCollection(object):
 
     enabled = True
     navbar_link = True
-    multipart = False
+    multipart = True
 
     staff_required = False
     permissions_required = []
@@ -2597,7 +2597,6 @@ class StaffDetailsCollection(MagiCollection):
     reportable = False
     blockable = False
     form_class = forms.StaffDetailsForm
-    multipart = True
 
     class ListView(MagiCollection.ListView):
         one_of_permissions_required = ['edit_own_staff_profile', 'translate_items', 'edit_staff_details']
@@ -2918,14 +2917,12 @@ class ActivityCollection(MagiCollection):
                 context['comments_enabled'] = False
 
     class AddView(MagiCollection.AddView):
-        multipart = True
         alert_duplicate = False
         form_class = forms.ActivityForm
         max_per_user_per_hour = 3
         ajax_callback = 'updateActivityForm'
 
     class EditView(MagiCollection.EditView):
-        multipart = True
         form_class = forms.ActivityForm
         ajax_callback = 'updateActivityForm'
         owner_only_or_permissions_required = []
@@ -3129,7 +3126,6 @@ class BadgeCollection(MagiCollection):
     class AddView(MagiCollection.AddView):
         staff_required = True
         one_of_permissions_required = ['add_donation_badges', 'add_badges']
-        multipart = True
         alert_duplicate = False
 
         def check_type_permissions(self, request, context, type=None):
@@ -3148,7 +3144,6 @@ class BadgeCollection(MagiCollection):
     class EditView(MagiCollection.EditView):
         staff_required = True
         one_of_permissions_required = ['add_donation_badges', 'add_badges']
-        multipart = True
         allow_delete = True
 
         def check_type_permissions(self, request, context, type=None, item=None):
@@ -3215,7 +3210,6 @@ class ReportCollection(MagiCollection):
         alert_duplicate = False
         back_to_list_button = False
         form_class = forms.ReportForm
-        multipart = True
 
         def extra_context(self, context):
             context['alert_message'] = mark_safe(u'{message}<ul>{list}</ul>{learn_more}'.format(
@@ -3228,7 +3222,6 @@ class ReportCollection(MagiCollection):
             return context
 
     class EditView(MagiCollection.EditView):
-        multipart = True
         allow_delete = True
         redirect_after_delete = justReturn('/')
         back_to_list_button = False
@@ -3306,12 +3299,10 @@ class DonateCollection(MagiCollection):
     class AddView(MagiCollection.AddView):
         staff_required = True
         permissions_required = ['manage_donation_months']
-        multipart = True
 
     class EditView(MagiCollection.EditView):
         staff_required = True
         permissions_required = ['manage_donation_months']
-        multipart = True
         allow_delete = True
 
 ############################################################
@@ -3360,12 +3351,10 @@ class PrizeCollection(MagiCollection):
     class AddView(MagiCollection.AddView):
         staff_required = True
         one_of_permissions_required = ['add_prizes', 'manage_prizes']
-        multipart = True
 
     class EditView(MagiCollection.EditView):
         staff_required = True
         owner_only_or_permissions_required = ['manage_prizes']
-        multipart = True
         allow_delete = True
 
 ############################################################
