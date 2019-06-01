@@ -144,7 +144,9 @@ def _addToCollections(name, cls): # Class of the collection
         main_collections.append(collection)
 
     collection.to_form_class()
+    collection.list_view.to_filter_form_class()
     collection.edit_view.to_translate_form_class()
+
     for view in ['list', 'item', 'add', 'edit']:
         getattr(collection, view + '_view').prelaunch_staff_required = not launched and u'{}_{}'.format(collection.name, view) not in PRELAUNCH_ENABLED_PAGES
     all_enabled.append(collection.name)

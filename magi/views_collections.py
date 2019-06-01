@@ -306,6 +306,14 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     queryset = queryset[(page * page_size):((page * page_size) + page_size)]
 
     if 'filter_form' in context and not ajax:
+        form_cuteform = getattr(context['filter_form'], 'cuteform', None)
+        if form_cuteform:
+            cuteFormFieldsForContext(
+                form_cuteform,
+                context, form=context['filter_form'],
+                prefix='#sidebar-wrapper ',
+                ajax=ajax,
+            )
         cuteFormFieldsForContext(
             collection.list_view.filter_cuteform,
             context, form=context['filter_form'],

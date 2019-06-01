@@ -4,6 +4,7 @@ from dateutil.relativedelta import relativedelta
 from multiupload.fields import MultiFileField
 from django import forms
 from django.http.request import QueryDict
+from django.db import models as django_models
 from django.db.models.fields import BLANK_CHOICE_DASH, FieldDoesNotExist, TextField, CharField
 from django.db.models.fields.files import ImageField
 from django.db.models import Q
@@ -61,6 +62,7 @@ from magi.utils import (
     getSearchFieldHelpText,
     tourldash,
     jsv,
+    CuteFormType,
 )
 
 ############################################################
@@ -541,7 +543,7 @@ class MagiForm(forms.ModelForm):
             if (hasattr(instance, field)
                 and isinstance(self.fields[field], forms.Field)
                 and has_field(instance, field)
-                and type(self.Meta.model._meta.get_field(field)) == models.models.ImageField):
+                and type(self.Meta.model._meta.get_field(field)) == django_models.ImageField):
                 image = self.cleaned_data[field]
                 if image and (isinstance(image, InMemoryUploadedFile) or isinstance(image, TemporaryUploadedFile)):
                     filename = image.name
@@ -1294,6 +1296,67 @@ class MagiFiltersForm(AutoForm):
 
     def save(self, commit=True):
         raise NotImplementedError('MagiFiltersForm are not meant to be used to save models. Use a regular MagiForm instead.')
+
+def to_auto_filter_form(list_view):
+    auto_search_fields = []
+    auto_ordering_fields = []
+    filter_fields = []
+    for field_name in list_view.collection.queryset.model._meta.get_all_field_names():
+        if field_name.startswith('_'):
+            continue
+        try:
+            field = list_view.collection.queryset.model._meta.get_field(field_name)
+        except FieldDoesNotExist: # ManyToMany and reverse relations
+            continue
+        print field_name
+        if (isinstance(field, django_models.CharField)
+            or isinstance(field, django_models.TextField)):
+            auto_search_fields.append(field_name)
+
+        if (not field_name.startswith('i_')
+              and (('name' in field_name and not field_name.startswith('d_'))
+                   or isinstance(field, django_models.IntegerField)
+                   or isinstance(field, django_models.FloatField)
+                   or isinstance(field, django_models.AutoField)
+                   or isinstance(field, django_models.DateField)
+              )):
+            auto_ordering_fields.append((field_name, field.verbose_name))
+
+        if (field_name.startswith('i_')
+            or isinstance(field, django_models.BooleanField)
+            or isinstance(field, django_models.NullBooleanField)):
+            filter_fields.append(field_name)
+
+    class _AutoFiltersForm(MagiFiltersForm):
+        if auto_search_fields:
+            search_fields = auto_search_fields
+        if auto_ordering_fields:
+            ordering_fields = auto_ordering_fields
+
+        def __init__(self, *args, **kwargs):
+            super(_AutoFiltersForm, self).__init__(*args, **kwargs)
+            self.cuteform = {}
+            for field_name in filter_fields:
+                if field_name in self.fields and isinstance(self.fields[field_name], forms.BooleanField):
+                    self.cuteform[field_name] = {
+                        'type': CuteFormType.YesNo,
+                    }
+                    self.fields[field_name] = forms.NullBooleanField(
+                        required=False, initial=None,
+                        label=self.fields[field_name].label,
+                    )
+
+        class Meta(MagiFiltersForm.Meta):
+            model = list_view.collection.queryset.model
+            fields = ([
+                'search'
+            ] if auto_search_fields else []) + (
+                filter_fields
+            ) + ([
+                'ordering', 'reverse_order'
+            ] if auto_ordering_fields else [])
+
+    return _AutoFiltersForm
 
 ############################################################
 ############################################################

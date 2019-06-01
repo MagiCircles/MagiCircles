@@ -1271,6 +1271,8 @@ class MagiCollection(object):
         hide_icons = False
         allow_random = True
 
+        auto_filter_form = False
+
         fields_icons = {}
         fields_images = {}
         item_buttons_classes = property(propertyFromCollection('item_buttons_classes'))
@@ -1400,6 +1402,10 @@ class MagiCollection(object):
                         'subtitle': self.collection.list_view.add_button_subtitle,
                     }, **for_all_buttons)
             return buttons
+
+        def to_filter_form_class(self):
+            if self.auto_filter_form:
+                self.filter_form = forms.to_auto_filter_form(self)
 
         #######################
         # Tools - not meant to be overriden
