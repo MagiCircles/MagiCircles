@@ -2265,7 +2265,9 @@ class StaffDetailsForm(AutoForm):
     def __init__(self, *args, **kwargs):
         super(StaffDetailsForm, self).__init__(*args, **kwargs)
         for field_name in self.fields:
-            if field_name == 'for_user':
+            if (field_name == 'for_user'
+                or field_name.startswith('d_availability')
+                or field_name.startswith('d_weekend_availability')):
                 continue
             if field_name in models.StaffDetails.PUBLIC_FIELDS:
                 self.fields[field_name].help_text = mark_safe(u'{} (Public)'.format(self.fields[field_name].help_text))
@@ -2278,8 +2280,12 @@ class StaffDetailsForm(AutoForm):
         for field_name in self.fields.keys():
             if field_name.startswith('d_availability') or field_name.startswith('d_weekend_availability'):
                 self.fields[field_name] = forms.BooleanField(
-                    label=self.fields[field_name].help_text,
-                    help_text=self.fields[field_name].label,
+                    label=(
+                        self.fields[field_name].label
+                        if field_name.endswith(models.StaffDetails.AVAILABILITY_CHOICES[0][0])
+                        else ''
+                    ),
+                    help_text=self.fields[field_name].help_text,
                     initial=self.fields[field_name].initial,
                     required=False,
                 )

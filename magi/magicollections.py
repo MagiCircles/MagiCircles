@@ -2628,15 +2628,11 @@ class StaffDetailsCollection(MagiCollection):
         alert_duplicate = False
         max_per_user = 1
         one_of_permissions_required = ['edit_own_staff_profile']
-        js_files = ['staffdetails']
-        ajax_callback = 'updateStaffDetailsForm'
 
     class EditView(MagiCollection.EditView):
         one_of_permissions_required = ['edit_own_staff_profile', 'translate_items', 'edit_staff_details']
         owner_only = False
         owner_only_or_permissions_required = ['edit_staff_details']
-        js_files = ['staffdetails']
-        ajax_callback = 'updateStaffDetailsForm'
 
         def redirect_after_edit(self, request, item, ajax):
             if ajax:
