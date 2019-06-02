@@ -137,9 +137,10 @@ def _addToCollections(name, cls): # Class of the collection
     collection.edit_view = collection.EditView(collection)
 
     if issubclass(cls, magicollections.SubItemCollection):
-        if collection.main_collection not in sub_collections:
-            sub_collections[collection.main_collection] = {}
-        sub_collections[collection.main_collection][collection.name] = collection
+        for main_collection in (collection.main_collections or [collection.main_collection]):
+            if main_collection not in sub_collections:
+                sub_collections[main_collection] = {}
+            sub_collections[main_collection][collection.name] = collection
     elif issubclass(cls, magicollections.MainItemCollection):
         main_collections.append(collection)
 

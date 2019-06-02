@@ -1703,10 +1703,13 @@ class SubItemCollection(MainItemCollection):
     The add/edit view are only for translators and database maintainers.
     The form to edit the main item has direct links to add/edit sub items.
     """
-    # Required variable
+    # Required variable (either)
     @property
     def main_collection(self):
+        if self.main_collections:
+            return self.main_collections[0]
         raise NotImplementedError('Main collection is required in a SubItemCollection')
+    main_collections = []
 
     # Overridable variable
     main_fk = property(lambda _s: _s.main_collection)
