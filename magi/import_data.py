@@ -128,7 +128,6 @@ def save_item(model, unique_data, data, log_function, unique_together=False):
             log_function('Created')
         if manytomany:
             for k, v in manytomany.items():
-                getattr(item, k).clear()
                 getattr(item, k).add(*v)
             item.save()
         return item
