@@ -196,7 +196,7 @@ class MagiCollection(object):
     def _collectibles_queryset(self, view, queryset, request):
         # Select related total collectible for authenticated user
         if request.user.is_authenticated() and self.collectible_collections:
-            if not request.show_collect_button:
+            if not getattr(request, 'show_collect_button', False):
                 return queryset
             account_ids = getAccountIdsFromSession(request)
             for name, collection in self.collectible_collections.items():
