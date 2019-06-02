@@ -418,6 +418,7 @@ class MagiForm(forms.ModelForm):
         )
 
         if (not self.is_reported
+            and not getattr(self, 'is_translate_form', False)
             and not self.is_creating
             and self.collection
             and getattr(self.collection, 'sub_collections', None)
