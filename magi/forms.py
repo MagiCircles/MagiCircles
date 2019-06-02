@@ -1308,7 +1308,6 @@ def to_auto_filter_form(list_view):
             field = list_view.collection.queryset.model._meta.get_field(field_name)
         except FieldDoesNotExist: # ManyToMany and reverse relations
             continue
-        print field_name
         if (isinstance(field, django_models.CharField)
             or isinstance(field, django_models.TextField)):
             auto_search_fields.append(field_name)
