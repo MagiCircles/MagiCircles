@@ -1097,7 +1097,7 @@ function genericAjaxErrorWithCallback(callback) {
 }
 
 // *****************************************
-// Objects
+// Objects, arrays
 
 function set(object, keys, value) {
     if (keys.length == 0) {
@@ -1111,6 +1111,13 @@ function set(object, keys, value) {
             return set(object[keys[0]], keys.slice(1), value);
         }
     }
+}
+
+function getAllValues(elements, attribute) {
+    return Array.from(new Set(
+        elements.map(function() {
+            return $(this).attr(attribute);
+        }).get()));
 }
 
 // *****************************************

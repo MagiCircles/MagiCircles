@@ -36,7 +36,7 @@
 	</a>
 	{% elif field.type == 'images' %}
         {% for image in field.images %}
-	<a href="{{ image.value }}" target="_blank"{% if image.ajax_link %} data-ajax-url="{{ image.ajax_link }}" data-ajax-title="{{ image.value }}"{% endif %}>
+	<a href="{{ image.value }}" target="_blank"{% if image.ajax_link %} data-ajax-url="{{ image.ajax_link }}" data-ajax-title="{{ image.value }}"{% endif %}{% if image.attributes %}{% for attribute, value in image.attributes.items %} {{ attribute }}="{{ value }}"{% endfor %}{% endif %}>
 	  <img src="{{ image.value }}" alt="{{ image.verbose_name }}">
 	</a>
         {% endfor %}
