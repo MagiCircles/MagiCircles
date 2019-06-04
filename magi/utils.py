@@ -1171,6 +1171,27 @@ def shrinkImageFromData(data, filename, settings={}):
             pass
     return dataToImageFile(data)
 
+def localImageToImageFile(path, return_data=False):
+    try:
+        fd = open(path, 'r')
+    except IOError as e:
+        if return_data:
+            return None, None
+        return None
+    data = fd.read()
+    fd.close()
+    image = dataToImageFile(data)
+    if return_data:
+        return (data, image)
+    return image
+
+def saveLocalImageToModel(item, field_name, path, return_data=False):
+    data, image = localImageToImageFile(path, return_data=True)
+    setattr(item, field_name, image)
+    if return_data:
+        return (data, image)
+    return image
+
 ############################################################
 # Image URLs
 
