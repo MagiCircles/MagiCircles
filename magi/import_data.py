@@ -85,27 +85,35 @@ def import_generic_item(details, item):
         details['callback'](details, item, unique_data, data)
     return unique_data, data, not_in_fields
 
-def prepare_data(data, model):
+def prepare_data(data, model, unique):
     manytomany = {}
+    dictionaries = {}
     for k, v in data.items():
         if k.startswith('d_') and isinstance(v, dict):
-            data[k] = json.dumps(v)
+            if unique:
+                data[k] = json.dumps(v)
+            else:
+                dictionaries[k] = v
         elif (k.startswith('i_')
             and not getattr(model, u'{}_WITHOUT_I_CHOICES'.format(k[2:].upper()), False)
             and not isinstance(v, int)):
             data[k] = model.get_i(k[2:], v)
         elif (k.startswith('j_')):
             data[k] = json.dumps(v)
-        elif isinstance(v, list):
+        elif not unique and isinstance(v, list):
             manytomany[k] = v
     for k in manytomany.keys():
         del(data[k])
-    return data, manytomany
+    for k in dictionaries.keys():
+        del(data[k])
+    if unique:
+        return data
+    return data, manytomany, dictionaries
 
 def save_item(model, unique_data, data, log_function, unique_together=False):
     if (data or unique_data):
-        unique_data, _ = prepare_data(unique_data, model)
-        data, manytomany = prepare_data(data, model)
+        unique_data = prepare_data(unique_data, model, unique=True)
+        data, manytomany, dictionaries = prepare_data(data, model, unique=False)
         log_function(model.__name__)
         log_function('- Unique data:')
         log_function(unique_data)
@@ -127,8 +135,17 @@ def save_item(model, unique_data, data, log_function, unique_together=False):
             item = model.objects.create(**data)
             log_function('Created')
         if manytomany:
-            for k, v in manytomany.items():
-                getattr(item, k).add(*v)
+            log_function('- Many to many:')
+            for field_name, list_of_items in manytomany.items():
+                getattr(item, field_name).add(*list_of_items)
+                log_function('    ', field_name)
+            item.save()
+        if dictionaries:
+            log_function('- Updated dictionaries:')
+            for field_name, dictionary in dictionaries.items():
+                for k, v in dictionary.items():
+                    item.add_d(field_name[2:], k, v)
+                log_function('    ', field_name, getattr(item, field_name[2:]))
             item.save()
         return item
     return None
