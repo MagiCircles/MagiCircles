@@ -1627,9 +1627,12 @@ function playSongButtons() {
 // *****************************************
 // Dynamic forms
 
-function formShowMore(form, cutOff, includingCutOff, until, includingUntil) {
+function formShowMore(form, cutOff, includingCutOff, until, includingUntil, messageMore, messageLess, checkValues) {
     includingCutOff = typeof(includingCutOff) == 'undefined' ? false : includingCutOff;
     includingUntil = typeof(includingUntil) == 'undefined' ? false : includingUntil;
+    messageMore = typeof(messageMore) == 'undefined' ? gettext('More') : messageMore;
+    messageLess = typeof(messageLess) == 'undefined' ? gettext('Less') : messageLess;
+    checkValues = typeof(checkValues) == 'undefined' ? true : checkValues;
     if (typeof(until) != 'undefined') {
         formSeparator(form, until, true);
     }
@@ -1639,6 +1642,9 @@ function formShowMore(form, cutOff, includingCutOff, until, includingUntil) {
     var hidden_at_init = true;
 
     function hasValue(input) {
+        if (!checkValues) {
+            return false;
+        }
         // Multiple choice checkboxes
         if (input.is('ul') && input.filter('[type="checkbox"]:checked').length > 0) {
             return true;
@@ -1692,8 +1698,8 @@ function formShowMore(form, cutOff, includingCutOff, until, includingUntil) {
                 field.show();
             }
         });
-        let more = gettext('More') + ' <span class="glyphicon glyphicon-triangle-bottom"></span>';
-        let less = gettext('Less') + ' <span class="glyphicon glyphicon-triangle-top"></span>';
+        let more = messageMore + ' <span class="glyphicon glyphicon-triangle-bottom"></span>';
+        let less = messageLess + ' <span class="glyphicon glyphicon-triangle-top"></span>';
         let separator = $('<div class="title-separator" data-status="'
                           + (hidden_at_init ? 'hidden' : 'shown') + '"><span>'
                           + (hidden_at_init ? more : less) + '</span></div>');
