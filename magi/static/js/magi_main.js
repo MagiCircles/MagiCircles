@@ -378,6 +378,22 @@ function ajaxPopovers() {
 }
 
 // *****************************************
+// Load HD images
+
+function loadHDImages() {
+    if ($(document).width() > 992) {
+        $('img[data-hd-src]').each(function() {
+            let image = $(this);
+            let hd = image.data('hd-src');
+            if (hd && hd != '' && hd != 'None' && image.attr('src') != hd) {
+                image.prop('src', hd);
+                console.log('Loading', hd);
+            }
+        });
+    }
+}
+
+// *****************************************
 // Load ranges
 
 function loadRanges() {
@@ -867,6 +883,7 @@ function loadCommons(onPageLoad /* optional = false */) {
     loadCornerPopups();
     ajaxModals();
     ajaxPopovers();
+    loadHDImages();
     loadCountdowns();
     loadRanges();
     loadTimezones();
