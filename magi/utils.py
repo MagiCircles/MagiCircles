@@ -728,6 +728,29 @@ def birthdayOrderingQueryset(queryset, field_name='birthday'):
         'DAY({field_name})'.format(field_name=field_name),
     })
 
+ASTROLOGICAL_SIGNS = [
+    ((12, 22), 'capricorn'),
+    ((11, 22), 'sagittarius'),
+    ((10, 23), 'scorpio'),
+    ((9, 23), 'libra'),
+    ((8, 23), 'virgo'),
+    ((7, 23), 'leo'),
+    ((6, 21), 'cancer'),
+    ((5, 21), 'gemini'),
+    ((4, 20), 'taurus'),
+    ((3, 20), 'aries'),
+    ((2, 18), 'pisces'),
+    ((1, 20), 'aquarius'),
+    ((1, 1), 'capricorn'),
+]
+
+def getAstrologicalSign(month, day):
+    for (start_month, start_day), sign in ASTROLOGICAL_SIGNS:
+        if (month > start_month
+            or (month == start_month and day >= start_day)):
+            return sign
+    return None
+
 ############################################################
 # Event status using start and end date
 
