@@ -500,23 +500,12 @@ class MagiCollection(object):
                 def extra_context(self, context):
                     context['item_parent'] = getattr(context['item'], item_field_name)
 
-                def to_fields(self, item, extra_fields=None, force_all_fields=False, *args, **kwargs):
-                    if extra_fields is None: extra_fields = []
-                    item_parent = getattr(item, item_field_name)
-                    extra_fields += [
-                        (item_field_name, {
-                            'type': 'text_with_link',
-                            'verbose_name': parent_collection.title,
-                            'value': unicode(item_parent),
-                            'icon': parent_collection.icon,
-                            'image': parent_collection.image,
-                            'link': item_parent.item_url,
-                            'ajax_link': item_parent.ajax_item_url,
-                            'link_text': unicode(_(u'Open {thing}')).format(thing=unicode(parent_collection.title).lower()),
-                        }),
-                    ]
+                def to_fields(self, item, force_all_fields=False, preselected=None, *args, **kwargs):
+                    if preselected is None: preselected = []
+                    preselected.append(item_field_name)
                     fields = super(_CollectibleCollection.ItemView, self).to_fields(
-                        item, *args, extra_fields=extra_fields, force_all_fields=force_all_fields, **kwargs)
+                        item, *args, preselected=preselected, force_all_fields=force_all_fields, **kwargs)
+                    setSubField(fields, item_field_name, key='spread_across', value=True)
                     if not force_all_fields and model_class.fk_as_owner and model_class.fk_as_owner in fields:
                         del(fields[model_class.fk_as_owner])
                     return fields
