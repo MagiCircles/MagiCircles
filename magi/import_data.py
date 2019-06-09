@@ -128,6 +128,7 @@ def save_item(model, unique_data, data, log_function, unique_together=False):
                 ], Q()
             ))
             model.objects.filter(pk=item.pk).update(**data)
+            item = model.objects.filter(pk=item.pk)[0]
             log_function('Updated')
         except ObjectDoesNotExist:
             if modelHasField(model, 'owner') and 'owner' not in data and 'owner_id' not in data:
