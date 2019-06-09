@@ -1042,6 +1042,17 @@ class MagiFiltersForm(AutoForm):
 
         # Merge filters
         if getattr(self, 'merge_fields', None):
+            def _get_merged_field_to_queryset(fields):
+                def _merged_field_to_queryset(form, queryset, request, value):
+                    for field_name, field_details in fields:
+                        if value.startswith(field_name):
+                            return self._filter_queryset_for_field(
+                                field_name, queryset, request,
+                                value=[value[len(field_name) + 1:]],
+                                filter=field_details.get(
+                                    'filter', getattr(self, u'{}_filter'.format(field_name), None)),
+                            )
+                return _merged_field_to_queryset
             for new_field_name, fields in (
                     self.merge_fields.items()
                     if isinstance(self.merge_fields, dict)
@@ -1093,20 +1104,12 @@ class MagiFiltersForm(AutoForm):
                     choices=choices,
                     label=details.get('label', u' / '.join(label_parts)),
                 )
-                def _merged_field_to_queryset(form, queryset, request, value):
-                    for field_name, field_details in (
-                            fields.items()
-                            if isinstance(fields, dict)
-                            else [(field, {}) for field in fields]
-                    ):
-                        if value.startswith(field_name):
-                            return self._filter_queryset_for_field(
-                                field_name, queryset, request,
-                                value=[value[len(field_name) + 1:]],
-                                filter=field_details.get(
-                                    'filter', getattr(self, u'{}_filter'.format(field_name), None)),
-                            )
-                setattr(self, u'{}_filter'.format(new_field_name), MagiFilter(to_queryset=_merged_field_to_queryset))
+                setattr(self, u'{}_filter'.format(new_field_name), MagiFilter(
+                    to_queryset=_get_merged_field_to_queryset(
+                        fields.items()
+                        if isinstance(fields, dict)
+                        else [(field, {}) for field in fields]
+                    )))
 
         # Set default ordering initial value
         if 'ordering' in self.fields:
