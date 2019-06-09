@@ -805,6 +805,11 @@ class MagiFiltersForm(AutoForm):
             for field_name in getattr(self, 'search_fields_exact', []):
                 condition |= Q(**{ '{}__iexact'.format(field_name): term })
             queryset = queryset.filter(condition)
+        if self.search_filter.distinct or any(
+            '__' in _term for _term in (
+                getattr(self, 'search_fields', [])
+                + getattr(self, 'search_fields_exact', []))):
+            queryset = queryset.distinct()
         return queryset
 
     search_filter = MagiFilter(to_queryset=_search_to_queryset)
