@@ -419,7 +419,6 @@ class MagiForm(forms.ModelForm):
 
         if (not self.is_reported
             and not getattr(self, 'is_translate_form', False)
-            and not self.is_creating
             and self.collection
             and getattr(self.collection, 'sub_collections', None)
         ):
@@ -440,7 +439,7 @@ class MagiForm(forms.ModelForm):
                             add_url=sub_collection.get_add_url(),
                             add_sentence=sub_collection.add_sentence,
                         ))
-                else:
+                elif not self.is_creating:
                     self.sub_collections.append(self.get_sub_collections_details(sub_collection))
 
     def get_sub_collections_details(self, sub_collection):
