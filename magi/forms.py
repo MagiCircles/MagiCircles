@@ -1085,13 +1085,16 @@ class MagiFiltersForm(AutoForm):
                             ]
                             met_first_field = True
                             order_changed = True
+                    field_choices = (
+                        field_details.get('choices', None)
+                        or getattr(self.fields.get(field_name, None), 'choices', None)
+                        or self.Meta.model.get_choices(field_name)
+                    )
+                    if callable(field_choices):
+                        field_choices = field_choices()
                     choices += [
                         (u'{}-{}'.format(field_name, _k), _v)
-                        for _k, _v in (
-                                field_details.get('choices', None)
-                                or getattr(self.fields.get(field_name, None), 'choices', None)
-                                or self.Meta.model.get_choices(field_name)
-                        )
+                        for _k, _v in field_choices
                         if _v != BLANK_CHOICE_DASH[0][1]
                     ]
                     field_label = (
