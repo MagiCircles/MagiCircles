@@ -121,16 +121,16 @@ def save_item(model, unique_data, data, log_function, unique_together=False):
         log_function(data)
         data.update(unique_data)
         try:
-            item = model.objects.get(reduce(
+            item = model.objects.filter(reduce(
                 ((lambda qs, (k, v): qs & Q(**{k: v}))
                  if unique_together else (lambda qs, (k, v): qs | Q(**{k: v}))), [
                     (k, v) for k, v in unique_data.items() if v is not None
                 ], Q()
-            ))
+            ))[0]
             model.objects.filter(pk=item.pk).update(**data)
             item = model.objects.filter(pk=item.pk)[0]
             log_function('Updated')
-        except ObjectDoesNotExist:
+        except IndexError:
             if modelHasField(model, 'owner') and 'owner' not in data and 'owner_id' not in data:
                 data['owner_id'] = 1
             item = model.objects.create(**data)
