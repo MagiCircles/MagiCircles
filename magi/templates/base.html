@@ -117,9 +117,9 @@
                 <li class="dropdown-header">
                   {% for site in other_sites %}
                   <a href="{{ site.url }}" target="_blank" class="other-site">
-	                <img src="{{ site.image }}" alt="{{ site.name }}"
-                         data-toggle="tooltip" data-trigger="hover" data-html="true"
-                         title="<strong>{{ site.name }}</strong><br>{{ site.game_name }}">
+	                <img src="{{ static_url }}img/other_sites/{{ site.image }}.png?{{ static_files_version }}"
+                         alt="{{ site.name }}" title="<strong>{{ site.name }}</strong><br>{{ site.game_name }}"
+                         data-toggle="tooltip" data-trigger="hover" data-html="true" />
                   </a>
                   {% endfor %}
                 </li>

@@ -432,11 +432,12 @@
       <div class="col-md-{{ other_sites_col_size }}">
 	    <a href="{{ site.url }}" target="_blank">
 	      <figure class="padding20 text-center">
-	        <img src="{{ site.image }}" class="img-responsive img-rounded" alt="{{ site.name }}" width="200" />
+	        <img src="{{ static_url }}img/other_sites/{{ site.image }}.png?{{ static_files_version }}"
+                 class="img-responsive img-rounded" alt="{{ site.name }}" width="200" />
 	        <figcaption>
-	          <h3>{{ site.name }}</h3>
+	          <h3>{% translatedName d=site field_name='name' %}</h3>
 	          <p>
-		        {{ site.game_name }}
+                {% translatedName d=site field_name='game_name' %}
 	          </p>
 	        </figcaption>
 	      </figure>
