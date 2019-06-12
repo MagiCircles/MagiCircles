@@ -1429,7 +1429,7 @@ def translationSentence(from_language, to_language):
         '%(to_language)s', unicode(LANGUAGES_DICT.get(to_language, '')),
     )
 
-def translationURL(value, from_language='en', to_language=None, with_wrapper=True, markdown=False):
+def translationURL(value, from_language='en', to_language=None, with_wrapper=True, markdown=False, one_line=False):
     to_language = to_language if to_language else get_language()
     url = 'https://translate.google.com/#{from_language}/{to_language}/{value}'.format(
         to_language=to_language,
@@ -1438,10 +1438,11 @@ def translationURL(value, from_language='en', to_language=None, with_wrapper=Tru
     )
     if with_wrapper:
         return (
-            u'{value}\n\n[{translate}]({url})'
+            u'{value}{newline}[{translate}]({url})'
             if markdown else
-            u'{value}<br><a href="{url}" target="_blank"><small class="text-muted">{translate} <i class="flaticon-link"></i></a>'
+            u'{value}{newline}<a href="{url}" target="_blank"><small class="text-muted">{translate} <i class="flaticon-link"></i></small></a>'
         ).format(
+            newline=' ' if one_line else ('\n\n' if markdown else '<br>'),
             url=url,
             value=value,
             translate=translationSentence(from_language=from_language, to_language=to_language),
