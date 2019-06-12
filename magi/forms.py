@@ -1467,7 +1467,9 @@ def get_account_simple_form(account_form_class=None, simple_fields=['nickname', 
     class _AccountSimpleForm(account_form_class):
         def __init__(self, *args, **kwargs):
             super(_AccountSimpleForm, self).__init__(*args, **kwargs)
-            if not self.data.get('screenshot') and 'screenshot' in self.fields and int(self.data.get('level', 0) or 0) < 200:
+            if (not self.data.get('screenshot')
+                and 'screenshot' in self.fields
+                and int(self.data.get('level', 0) or 0) < MAX_LEVEL_BEFORE_SCREENSHOT_REQUIRED):
                 self.fields['screenshot'].widget = forms.HiddenInput()
             if 'start_date' in self.fields:
                 del(self.fields['start_date'])
