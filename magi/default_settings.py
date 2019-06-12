@@ -755,7 +755,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
 DEFAULT_PROFILE_TABS = OrderedDict([
     ('account', {
         'name': _('Accounts'),
-        'icon': 'users',
+        'icon': 'game',
     }),
     ('activity', {
         'name': _('Activities'),
