@@ -449,7 +449,7 @@ def settingsContext(request):
                             ON_USER_EDITED(request.user)
                         _settingsOnSuccess(form)
                 elif form_name == 'preferences':
-                    form = UserPreferencesForm(request.POST, instance=context['preferences'], request=request)
+                    form = preferences_form_class(request.POST, instance=context['preferences'], request=request)
                     if form.is_valid():
                         form.save()
                         models.onPreferencesEdited(request.user)
