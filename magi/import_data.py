@@ -110,7 +110,22 @@ def prepare_data(data, model, unique):
         return data
     return data, manytomany, dictionaries
 
-def save_item(model, unique_data, data, log_function, unique_together=False):
+def default_find_existing_item(model, unique_together, unique_data):
+    try:
+        return model.objects.filter(reduce(
+            ((lambda qs, (k, v): qs & Q(**{k: v}))
+             if unique_together else (lambda qs, (k, v): qs | Q(**{k: v}))), [
+                     (k, v) for k, v in unique_data.items() if v is not None
+             ], Q()
+        ))[0]
+    except IndexError:
+        return None
+
+def save_item(details, unique_data, data, log_function):
+    model = details['model']
+    unique_together = details.get('unique_together', False)
+    find_existing_item = details.get('find_existing_item', None)
+    dont_erase_existing_value_fields = details.get('dont_erase_existing_value_fields', [])
     if (data or unique_data):
         unique_data = prepare_data(unique_data, model, unique=True)
         data, manytomany, dictionaries = prepare_data(data, model, unique=False)
@@ -120,21 +135,26 @@ def save_item(model, unique_data, data, log_function, unique_together=False):
         log_function('- Data:')
         log_function(data)
         data.update(unique_data)
-        try:
-            item = model.objects.filter(reduce(
-                ((lambda qs, (k, v): qs & Q(**{k: v}))
-                 if unique_together else (lambda qs, (k, v): qs | Q(**{k: v}))), [
-                    (k, v) for k, v in unique_data.items() if v is not None
-                ], Q()
-            ))[0]
+
+        if find_existing_item:
+            item = find_existing_item(model, unique_data, data)
+        else:
+            item = default_find_existing_item(model, unique_together, unique_data)
+
+        if item:
+            data = {
+                k: v for k, v in data.items()
+                if v or k not in dont_erase_existing_value_fields
+            }
             model.objects.filter(pk=item.pk).update(**data)
             item = model.objects.filter(pk=item.pk)[0]
             log_function('Updated')
-        except IndexError:
+        else:
             if modelHasField(model, 'owner') and 'owner' not in data and 'owner_id' not in data:
                 data['owner_id'] = 1
             item = model.objects.create(**data)
             log_function('Created')
+
         if manytomany:
             log_function('- Many to many:')
             for field_name, list_of_items in manytomany.items():
@@ -185,8 +205,7 @@ def api_pages(url, name, details, local=False, results_location=None, log_functi
                 unique_data, data = details['callback_per_item'](details, item)
             else:
                 unique_data, data, not_in_fields = import_generic_item(details, item)
-            save_item(details['model'], unique_data, data, log_function, unique_together=details.get(
-                'unique_together', False))
+            save_item(details, unique_data, data, log_function)
             if not_in_fields:
                 log_function('- Ignored:')
                 log_function(not_in_fields)
@@ -228,9 +247,11 @@ def import_data(
         callback_before (function): called before importing all the items
         callback_end (function): called after importing all the items
         mapping (dict of string or callable): see below
+        dont_erase_existing_value_fields (list): On update, if the value is None, it will not erase existing value
         unique_fields (list): list of fields to detect if it already exists
         unique_together (bool): should the unique fields be considered together? (or/and condition)
         ignore_fields (list): list of explicitely ignored fields, no warning printed
+        find_existing_item (function(model, unique_data, data): retrieve the item to update, or None to create
 
     mapping must be a dictionary with:
     key: field name in the result object
