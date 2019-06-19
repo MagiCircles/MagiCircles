@@ -1367,7 +1367,30 @@ function escapeHtml(string) {
 }
 
 function applyMarkdown(elt) {
-    elt.html(Autolinker.link(marked(escapeHtml(elt.text())), { newWindow: true, stripPrefix: true } ));
+    if (elt.hasClass('allow-html')) {
+        elt.html(Autolinker.link(marked(elt.text()), { newWindow: true, stripPrefix: true } ));
+    } else if (elt.hasClass('with-github')) {
+        let content = elt.text();
+        elt.css('opacity', 0.1);
+        elt.css('white-space', 'pre');
+        let loader = $('<div class="text-center" style="font-size: 50px; line-height: 60px; margin-bottom: -60px;"><i class="flaticon-loading"></i></div>');
+        elt.parent().prepend(loader);
+        $.ajax({
+            'method': 'post',
+            'url': 'https://api.github.com/markdown/raw',
+            'data': content,
+            'headers': { 'content-type': 'text/plain' },
+            'success': function(data) {
+                loader.remove();
+                elt.html(data);
+                elt.css('white-space', 'normal');
+                elt.css('opacity', 1);
+            },
+            'error': genericAjaxError,
+        });
+    } else {
+        elt.html(Autolinker.link(marked(escapeHtml(elt.text())), { newWindow: true, stripPrefix: true } ));
+    }
 }
 
 function _loadMarkdown() {

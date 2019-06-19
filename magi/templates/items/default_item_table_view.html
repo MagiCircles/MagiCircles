@@ -68,7 +68,7 @@
           {% if field.value.0 %}
           {{ field.value.1|safe }}
           {% else %}
-          <div class="to-markdown">{{ field.value.1 }}</div>
+          <div class="to-markdown{% if field.allow_html %} allow-html{% endif %}">{{ field.value.1 }}</div>
           {% endif %}
         </div>
     {% elif field.type == 'list_links' %}

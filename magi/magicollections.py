@@ -574,6 +574,8 @@ class MagiCollection(object):
 
     translated_fields = None
 
+    allow_html_in_markdown = False
+
     @property
     def plural_name(self):
         return '{}s'.format(self.name)
@@ -632,6 +634,8 @@ class MagiCollection(object):
 
         if hasattr(view, 'fields_prefetched_together'):
             prefetched_together = prefetched_together + view.fields_prefetched_together
+
+        language = get_language()
 
         # Fields from reverse
         for details in getattr(item, 'reverse_related', []):
@@ -841,15 +845,21 @@ class MagiCollection(object):
                 if not value:
                     continue
                 choices = dict(getattr(item, u'{name}S_CHOICES'.format(name=field.name.upper()), [])).keys()
-                if (get_language() in choices
-                    and not getattr(item, u'{}s'.format(field_name), {}).get(get_language(), None)):
-                    if get_language() in LANGUAGES_CANT_SPEAK_ENGLISH:
+                if (language in choices
+                    and not getattr(item, u'{}s'.format(field_name), {}).get(language, None)):
+                    if language in LANGUAGES_CANT_SPEAK_ENGLISH:
                         continue
                     else:
                         value = mark_safe(translationURL(
                             value, with_wrapper=True, markdown=field.name.startswith('m_')))
                 if field.name.startswith('m_'):
-                    value = (False, value)
+                    cache = None
+                    if language == 'en':
+                        cache = getattr(item, u'cached_{}'.format(field.name[2:]), None)
+                    if cache:
+                        value = (True, cache)
+                    else:
+                        value = (False, value)
             is_foreign_key = (isinstance(field, models.models.ForeignKey)
                               or isinstance(field, models.models.OneToOneField))
             if not value and not is_foreign_key:
@@ -897,6 +907,10 @@ class MagiCollection(object):
                 d['type'] = 'list'
             elif field.name.startswith('m_'): # original field name
                 d['type'] = 'markdown'
+                d['allow_html'] = self.allow_html_in_markdown
+            elif isinstance(field, models.models.URLField):
+                d['type'] = 'button'
+                d['link_text'] = d['verbose_name']
             elif isinstance(field, models.models.ManyToManyField):
                 d['type'] = 'text_with_link'
                 d['value'] = getattr(item, 'cached_total_' + field_name).unicode
@@ -1672,6 +1686,7 @@ class MagiCollection(object):
 class MainItemCollection(MagiCollection):
     blockable = False
     reportable = False
+    allow_html_in_markdown = True
 
     class ListView(MagiCollection.ListView):
         add_button_subtitle = None
