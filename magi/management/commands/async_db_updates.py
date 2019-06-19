@@ -194,11 +194,14 @@ field_suffix_to_action = [
     ('_changed', update_on_change),
 ]
 
-def model_async_update(model):
+def model_async_update(model, specified_model=None, field_name=None):
     if (inspect.isclass(model)
         and issubclass(model, BaseMagiModel)
-        and not getattr(model._meta, 'abstract', False)):
+        and not getattr(model._meta, 'abstract', False)
+        and (not specified_model or model.__name__ == specified_model)):
         for field in model._meta.fields:
+            if field_name and field.name != field_name:
+                continue
             for type_of_field, callback in field_type_to_action:
                 if isinstance(field, type_of_field):
                     if callback(model, field):
@@ -227,13 +230,19 @@ class Command(BaseCommand):
 
         print '[Info]', datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 
+        try: specified_model = args[0]
+        except IndexError: specified_model = None
+
+        try: specified_field_name = args[1]
+        except IndexError: specified_field_name = None
+
         for model in magi_models.__dict__.values():
-            if model_async_update(model):
+            if model_async_update(model, specified_model=specified_model, field_name=specified_field_name):
                 return
 
         custom_models = __import__(django_settings.SITE + '.models', fromlist=['']).__dict__
         for model in custom_models.values():
-            if model_async_update(model):
+            if model_async_update(model, specified_model=specified_model, field_name=specified_field_name):
                 return
 
         print '[Info] Nothing to do'
