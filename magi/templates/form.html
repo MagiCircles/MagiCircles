@@ -19,7 +19,7 @@
     {% endif %}
     {% endblock %}
     {% block title %}{% if form.form_title %}{{ form.form_title }}{% else %}{{ page_title }}{% endif %}{% endblock %}</h1>
-  <form method="POST" class="{% if not ajax %}container_form{% endif %} generic-form"{% if multipart %} enctype="multipart/form-data"{% endif %} action="{% if form.action %}{{ form.action }}{% else %}{% if ajax %}{{ current_url }}{% elif forms|length > 1 and forloop.counter != 1 %}#{{ form_name }}{% endif %}{% endif %}" data-form-name="{{ form_name }}">
+  <form method="POST" class="{% if not ajax %}container_form{% endif %} generic-form"{% if multipart %} enctype="multipart/form-data"{% endif %} action="{% if form.action_url %}{{ form.action_url }}{% else %}{% if ajax %}{{ current_url }}{% elif forms|length > 1 and forloop.counter != 1 %}#{{ form_name }}{% endif %}{% endif %}" data-form-name="{{ form_name }}">
     {% block beforefields %}{% endblock %}{% if beforefields %}{{ beforefields|getattribute:form_name }}{% endif %}{% if form.beforefields %}{{ form.beforefields }}{% endif %}
     {% block form %}
     {% csrf_token %}

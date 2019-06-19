@@ -967,7 +967,7 @@ class MagiFiltersForm(AutoForm):
         # Set action when using a preset
 
         if self.preset and self.collection:
-            self.action = self.collection.get_list_url()
+            self.action_url = self.collection.get_list_url()
 
         # Add/delete fields
 
