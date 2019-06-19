@@ -10,6 +10,22 @@ from magi.utils import birthdays_within
 from magi import models
 
 ############################################################
+# Create user
+
+def create_user(username, email=None, password=None, language='en'):
+    new_user = models.User.objects.create_user(
+        username=username,
+        email=email or u'{}@yopmail.com'.format(username),
+        password=username * 2,
+    )
+    preferences = models.UserPreferences.objects.create(
+        user=new_user,
+        i_language=language,
+    )
+    new_user.preferences = preferences
+    return new_user
+
+############################################################
 # Get total donators (for generated settings)
 
 def totalDonatorsThisMonth():
