@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
-import os, string, random, csv, tinify, cStringIO, pytz, simplejson, datetime, io, operator, re, math
+import os, string, random, csv, tinify, cStringIO, pytz, simplejson, datetime, io, operator, re, math, requests
 from PIL import Image
 from collections import OrderedDict
 from dateutil.relativedelta import relativedelta
@@ -1213,6 +1213,29 @@ def saveLocalImageToModel(item, field_name, path, return_data=False):
     setattr(item, field_name, image)
     if return_data:
         return (data, image)
+    return image
+
+def imageURLToImageFile(url):
+    if not url:
+        return None
+    print url
+    img_temp = NamedTemporaryFile(delete=True)
+    r = requests.get(url)
+    # Read the streamed image in sections
+    for block in r.iter_content(1024 * 8):
+        # If no more file then stop
+        if not block:
+            break
+        # Write image block to temporary file
+        img_temp.write(block)
+    img_temp.flush()
+    return ImageFile(img_temp)
+
+def saveImageURLToModel(item, field_name, url):
+    image = imageURLToImageFile(url)
+    filename = url.split('/')[-1].split('\\')[-1]
+    image.name = item._meta.model._meta.get_field(field_name).upload_to(item, filename)
+    setattr(item, field_name, image)
     return image
 
 ############################################################
