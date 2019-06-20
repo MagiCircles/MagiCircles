@@ -1386,7 +1386,13 @@ function applyMarkdown(elt) {
                 elt.css('white-space', 'normal');
                 elt.css('opacity', 1);
             },
-            'error': genericAjaxError,
+            'error': function() {
+                console.log('Couldn\'t use GitHub to convert Markdown!');
+                loader.remove();
+                elt.html(Autolinker.link(marked(escapeHtml(elt.text())), { newWindow: true, stripPrefix: true } ));
+                elt.css('white-space', 'normal');
+                elt.css('opacity', 1);
+            },
         });
     } else {
         elt.html(Autolinker.link(marked(escapeHtml(elt.text())), { newWindow: true, stripPrefix: true } ));
