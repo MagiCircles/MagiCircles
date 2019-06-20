@@ -248,6 +248,7 @@ def import_data(
         endpoint (string): defaults to key in dict
         callback (function(details, item, unique_data, data)): called at the end of generic importing
         callback_per_item (function): called instead of generic importing
+        callback_after_save (function(details, item, json_item)): called after each item has been saved
         callback_before (function): called before importing all the items
         callback_end (function): called after importing all the items
         mapping (dict of string or callable): see below
