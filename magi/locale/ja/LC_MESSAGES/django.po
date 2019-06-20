@@ -1,0 +1,954 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2019-06-20 06:48+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: starlight/forms.py:59
+#, python-brace-format
+msgid "Favorite {thing}"
+msgstr ""
+
+#: starlight/forms.py:60 starlight/magicollections.py:72
+#: starlight/magicollections.py:96 starlight/magicollections.py:315
+#: starlight/magicollections.py:405 starlight/magicollections.py:406
+#: starlight/magicollections.py:599 starlight/models.py:428
+#: starlight/models.py:531 starlight/settings.py:165 starlight/settings.py:167
+#: starlight/settings.py:169 starlight/views.py:49
+msgid "Voice actress"
+msgstr ""
+
+#: starlight/forms.py:104
+msgid "All your favorites must be unique"
+msgstr ""
+
+#: starlight/forms.py:111
+msgid "Creation"
+msgstr ""
+
+#: starlight/forms.py:155 starlight/forms.py:166
+#: starlight/magicollections.py:114 starlight/magicollections.py:115
+#: starlight/settings.py:234 starlight/settings.py:320
+#: starlight/settings.py:337
+msgid "News"
+msgstr ""
+
+#: starlight/forms.py:190
+msgid "Skip"
+msgstr ""
+
+#: starlight/forms.py:194 starlight/forms.py:199
+msgid "Friend ID"
+msgstr ""
+
+#: starlight/forms.py:197 starlight/forms.py:199 starlight/models.py:216
+#: starlight/models.py:982
+msgid "ID"
+msgstr ""
+
+#: starlight/forms.py:261 starlight/forms.py:341 starlight/models.py:325
+#: starlight/models.py:327 starlight/models.py:457 starlight/models.py:459
+#: starlight/models.py:510 starlight/models.py:512 starlight/models.py:717
+#: starlight/models.py:719
+msgid "Name"
+msgstr ""
+
+#: starlight/forms.py:262 starlight/forms.py:342 starlight/models.py:334
+#: starlight/models.py:552 starlight/settings.py:224
+msgid "Birthday"
+msgstr ""
+
+#: starlight/forms.py:263
+msgid "Age"
+msgstr ""
+
+#: starlight/forms.py:264 starlight/models.py:353
+msgid "Height"
+msgstr ""
+
+#: starlight/forms.py:267 starlight/forms.py:340 starlight/forms.py:521
+#: starlight/magicollections.py:428 starlight/models.py:537
+#: starlight/utils.py:170
+msgid "School"
+msgstr ""
+
+#: starlight/forms.py:364 starlight/forms.py:493 starlight/models.py:774
+#: starlight/models.py:985 starlight/models.py:990
+msgid "Release date"
+msgstr ""
+
+#: starlight/forms.py:365 starlight/forms.py:366 starlight/models.py:762
+#: starlight/models.py:764 starlight/models.py:766 starlight/models.py:883
+#: starlight/models.py:884 starlight/models.py:886 starlight/models.py:994
+#: starlight/models.py:996
+msgid "Title"
+msgstr ""
+
+#: starlight/forms.py:366 starlight/models.py:766 starlight/models.py:798
+msgid "Romaji"
+msgstr ""
+
+#: starlight/forms.py:367 starlight/models.py:772
+msgid "Length"
+msgstr ""
+
+#: starlight/forms.py:368
+msgid "BPM"
+msgstr ""
+
+#: starlight/forms.py:384 starlight/models.py:781 starlight/models.py:816
+#: starlight/utils.py:182
+msgid "Singers"
+msgstr ""
+
+#: starlight/forms.py:412 starlight/forms.py:573 starlight/forms.py:600
+#: starlight/models.py:921 starlight/models.py:922 starlight/models.py:924
+#: starlight/models.py:926
+msgid "Target"
+msgstr ""
+
+#: starlight/forms.py:415 starlight/forms.py:603
+msgid "Other"
+msgstr ""
+
+#: starlight/forms.py:489 starlight/magicollections.py:698
+#: starlight/models.py:1103 starlight/models.py:1333
+msgid "Acts"
+msgstr ""
+
+#: starlight/forms.py:494
+msgid "Number"
+msgstr ""
+
+#: starlight/forms.py:512 starlight/models.py:209
+msgid "Version"
+msgstr ""
+
+#: starlight/forms.py:519 starlight/forms.py:568
+#: starlight/magicollections.py:457 starlight/models.py:388
+#: starlight/models.py:1355 starlight/settings.py:157 starlight/utils.py:161
+#: starlight/utils.py:170
+msgid "Stage girl"
+msgstr ""
+
+#: starlight/forms.py:523 starlight/models.py:881
+msgid "Type"
+msgstr ""
+
+#: starlight/forms.py:591 starlight/magicollections.py:1033
+msgid "Effective against"
+msgstr ""
+
+#: starlight/forms.py:594 starlight/magicollections.py:1034
+msgid "Less effective against"
+msgstr ""
+
+#: starlight/forms.py:597
+msgid "Hits more than once"
+msgstr ""
+
+#: starlight/magicollections.py:95 starlight/settings.py:164
+#: starlight/settings.py:166 starlight/settings.py:168 starlight/views.py:47
+#, python-brace-format
+msgid "{nth} Favorite {thing}"
+msgstr ""
+
+#: starlight/magicollections.py:198 starlight/magicollections.py:217
+msgid "Feed"
+msgstr ""
+
+#: starlight/magicollections.py:217 starlight/settings.py:229
+#: starlight/settings.py:425
+msgid "Community"
+msgstr ""
+
+#: starlight/magicollections.py:223
+msgid "Relive account"
+msgstr ""
+
+#: starlight/magicollections.py:254 starlight/models.py:221
+#: starlight/models.py:1374
+msgid "Center"
+msgstr ""
+
+#: starlight/magicollections.py:316 starlight/settings.py:192
+msgid "Voice actresses"
+msgstr ""
+
+#: starlight/magicollections.py:318 starlight/magicollections.py:576
+#: starlight/magicollections.py:580 starlight/models.py:708
+msgid "Cast"
+msgstr ""
+
+#: starlight/magicollections.py:405
+msgid "Link"
+msgstr ""
+
+#: starlight/magicollections.py:406
+msgid "Links"
+msgstr ""
+
+#: starlight/magicollections.py:429
+msgid "Schools"
+msgstr ""
+
+#: starlight/magicollections.py:458 starlight/magicollections.py:938
+#: starlight/models.py:1579 starlight/models.py:1684 starlight/settings.py:191
+msgid "Stage girls"
+msgstr ""
+
+#: starlight/magicollections.py:541 starlight/models.py:709
+msgid "Staff"
+msgstr ""
+
+#: starlight/magicollections.py:576 starlight/models.py:708
+#: starlight/models.py:709 starlight/settings.py:194
+msgid "Anime"
+msgstr ""
+
+#: starlight/magicollections.py:625
+msgid "Song"
+msgstr ""
+
+#: starlight/magicollections.py:626 starlight/models.py:390
+#: starlight/settings.py:214
+msgid "Songs"
+msgstr ""
+
+#: starlight/magicollections.py:628
+msgid "Discography"
+msgstr ""
+
+#: starlight/magicollections.py:628 starlight/models.py:798
+#: starlight/models.py:801 starlight/models.py:804 starlight/models.py:806
+msgid "Lyrics"
+msgstr ""
+
+#: starlight/magicollections.py:656
+#, python-brace-format
+msgid "Buy {thing}"
+msgstr ""
+
+#: starlight/magicollections.py:656
+msgid "CD"
+msgstr ""
+
+#: starlight/magicollections.py:697
+msgid "Act"
+msgstr ""
+
+#: starlight/magicollections.py:845
+msgid "Icons"
+msgstr ""
+
+#: starlight/magicollections.py:845
+msgid "Quick add"
+msgstr ""
+
+#: starlight/magicollections.py:882
+msgid "Cost"
+msgstr ""
+
+#: starlight/magicollections.py:892
+msgid "Statistics"
+msgstr ""
+
+#: starlight/magicollections.py:911 starlight/models.py:1785
+msgid "Rank"
+msgstr ""
+
+#: starlight/magicollections.py:936 starlight/models.py:1774
+msgid "Card"
+msgstr ""
+
+#: starlight/magicollections.py:937 starlight/magicollections.py:938
+#: starlight/models.py:636 starlight/models.py:1547 starlight/settings.py:207
+msgid "Cards"
+msgstr ""
+
+#: starlight/magicollections.py:989 starlight/models.py:722
+#: starlight/models.py:724
+msgid "Role"
+msgstr ""
+
+#: starlight/magicollections.py:1061
+msgid "None"
+msgstr ""
+
+#: starlight/magicollections.py:1082 starlight/models.py:1807
+msgid "Memoir"
+msgstr ""
+
+#: starlight/magicollections.py:1083 starlight/models.py:637
+#: starlight/models.py:1689
+msgid "Memoirs"
+msgstr ""
+
+#: starlight/magicollections.py:1183 starlight/models.py:875
+#: starlight/models.py:1043 starlight/models.py:1288
+msgid "Event"
+msgstr ""
+
+#: starlight/magicollections.py:1184 starlight/settings.py:201
+#: starlight/settings.py:210
+msgid "Events"
+msgstr ""
+
+#: starlight/magicollections.py:1194
+msgid "Conversation"
+msgstr ""
+
+#: starlight/magicollections.py:1195
+msgid "Conversations"
+msgstr ""
+
+#: starlight/magicollections.py:1197 starlight/settings.py:213
+msgid "My theater"
+msgstr ""
+
+#: starlight/magicollections.py:1206
+msgid "Comic"
+msgstr ""
+
+#: starlight/magicollections.py:1207
+msgid "Comics"
+msgstr ""
+
+#: starlight/models.py:82 starlight/models.py:985
+msgid "Japanese version"
+msgstr ""
+
+#: starlight/models.py:88 starlight/models.py:990
+msgid "Worldwide version"
+msgstr ""
+
+#: starlight/models.py:107
+msgid "Flower"
+msgstr ""
+
+#: starlight/models.py:115
+msgid "Wind"
+msgstr ""
+
+#: starlight/models.py:123
+msgid "Snow"
+msgstr ""
+
+#: starlight/models.py:131
+msgid "Cloud"
+msgstr ""
+
+#: starlight/models.py:139
+msgid "Moon"
+msgstr ""
+
+#: starlight/models.py:147
+msgid "Space"
+msgstr ""
+
+#: starlight/models.py:155
+msgid "Dream"
+msgstr ""
+
+#: starlight/models.py:170
+msgid "Leo"
+msgstr ""
+
+#: starlight/models.py:171
+msgid "Aries"
+msgstr ""
+
+#: starlight/models.py:172
+msgid "Libra"
+msgstr ""
+
+#: starlight/models.py:173
+msgid "Virgo"
+msgstr ""
+
+#: starlight/models.py:174
+msgid "Scorpio"
+msgstr ""
+
+#: starlight/models.py:175
+msgid "Capricorn"
+msgstr ""
+
+#: starlight/models.py:176
+msgid "Pisces"
+msgstr ""
+
+#: starlight/models.py:177
+msgid "Gemini"
+msgstr ""
+
+#: starlight/models.py:178
+msgid "Cancer"
+msgstr ""
+
+#: starlight/models.py:179
+msgid "Sagittarius"
+msgstr ""
+
+#: starlight/models.py:180
+msgid "Aquarius"
+msgstr ""
+
+#: starlight/models.py:181
+msgid "Taurus"
+msgstr ""
+
+#: starlight/models.py:219
+msgid "Should your friend ID be visible to other players?"
+msgstr ""
+
+#: starlight/models.py:230
+msgid "Screenshot"
+msgstr ""
+
+#: starlight/models.py:230
+msgid "In-game profile screenshot"
+msgstr ""
+
+#: starlight/models.py:240
+msgid "Casual"
+msgstr ""
+
+#: starlight/models.py:244
+msgid "Hardcore"
+msgstr ""
+
+#: starlight/models.py:250
+msgid "Play style"
+msgstr ""
+
+#: starlight/models.py:253
+msgid "Stage of dreams level"
+msgstr ""
+
+#: starlight/models.py:256 starlight/models.py:257 starlight/models.py:258
+msgid "Bronze"
+msgstr ""
+
+#: starlight/models.py:259 starlight/models.py:260 starlight/models.py:261
+msgid "Silver"
+msgstr ""
+
+#: starlight/models.py:262 starlight/models.py:263 starlight/models.py:264
+msgid "Gold"
+msgstr ""
+
+#: starlight/models.py:265 starlight/models.py:266 starlight/models.py:267
+msgid "Platinum"
+msgstr ""
+
+#: starlight/models.py:268
+msgid "Legend"
+msgstr ""
+
+#: starlight/models.py:272
+msgid "Vs. Revue rank"
+msgstr ""
+
+#: starlight/models.py:283
+msgid "Operating System"
+msgstr ""
+
+#: starlight/models.py:287
+msgid "Device"
+msgstr ""
+
+#: starlight/models.py:288
+msgid "The model of your device. Example: Nexus 5, iPhone 4, iPad 2, ..."
+msgstr ""
+
+#: starlight/models.py:291
+msgid "Total stars bought"
+msgstr ""
+
+#: starlight/models.py:294
+msgid "Playground"
+msgstr ""
+
+#: starlight/models.py:295
+msgid "Check this box if this account doesn't exist in the game."
+msgstr ""
+
+#: starlight/models.py:330 starlight/models.py:461 starlight/models.py:516
+#: starlight/models.py:902 starlight/models.py:1060
+msgid "Image"
+msgstr ""
+
+#: starlight/models.py:341 starlight/models.py:557
+msgid "Astrological sign"
+msgstr ""
+
+#: starlight/models.py:351
+msgid "Blood type"
+msgstr ""
+
+#: starlight/models.py:356 starlight/models.py:358
+msgid "Specialty"
+msgstr ""
+
+#: starlight/models.py:360 starlight/models.py:362 starlight/models.py:593
+#: starlight/models.py:595
+msgid "Hobbies"
+msgstr ""
+
+#: starlight/models.py:364 starlight/models.py:366 starlight/models.py:467
+#: starlight/models.py:469 starlight/models.py:601 starlight/models.py:603
+#: starlight/models.py:888 starlight/models.py:890 starlight/models.py:892
+#: starlight/models.py:1408 starlight/models.py:1410
+msgid "Description"
+msgstr ""
+
+#: starlight/models.py:369 starlight/models.py:371 starlight/models.py:733
+#: starlight/models.py:735 starlight/models.py:1412 starlight/models.py:1414
+msgid "Message"
+msgstr ""
+
+#: starlight/models.py:374 starlight/models.py:377 starlight/models.py:606
+#: starlight/models.py:609
+msgid "Video"
+msgstr ""
+
+#: starlight/models.py:389 starlight/models.py:726
+msgid "Social media"
+msgstr ""
+
+#: starlight/models.py:394 starlight/models.py:641
+msgid "Fans"
+msgstr ""
+
+#: starlight/models.py:432 starlight/models.py:434
+msgid "Platform"
+msgstr ""
+
+#: starlight/models.py:436
+msgid "URL"
+msgstr ""
+
+#: starlight/models.py:479
+msgid "Students"
+msgstr ""
+
+#: starlight/models.py:500 starlight/models.py:501 starlight/models.py:502
+#, python-brace-format
+msgid "{nth} year"
+msgstr ""
+
+#: starlight/models.py:542 starlight/models.py:545
+msgid "Department"
+msgstr ""
+
+#: starlight/models.py:548
+msgid "School year"
+msgstr ""
+
+#: starlight/models.py:561
+msgid "Color"
+msgstr ""
+
+#: starlight/models.py:564 starlight/models.py:568 starlight/models.py:571
+#: starlight/models.py:575
+msgid "Weapon"
+msgstr ""
+
+#: starlight/models.py:577 starlight/models.py:579
+msgid "Liked food"
+msgstr ""
+
+#: starlight/models.py:581 starlight/models.py:583
+msgid "Disliked food"
+msgstr ""
+
+#: starlight/models.py:585 starlight/models.py:587
+msgid "Likes"
+msgstr ""
+
+#: starlight/models.py:589 starlight/models.py:591
+msgid "Dislikes"
+msgstr ""
+
+#: starlight/models.py:597 starlight/models.py:599
+msgid "Introduction"
+msgstr ""
+
+#: starlight/models.py:710
+msgid "General"
+msgstr ""
+
+#: starlight/models.py:711
+msgid "Stage play"
+msgstr ""
+
+#: starlight/models.py:712
+msgid "Additional"
+msgstr ""
+
+#: starlight/models.py:714
+msgid "Category"
+msgstr ""
+
+#: starlight/models.py:771
+msgid "Preview"
+msgstr ""
+
+#: starlight/models.py:773
+msgid "Beats per minute"
+msgstr ""
+
+#: starlight/models.py:783 starlight/models.py:785
+msgid "Composer"
+msgstr ""
+
+#: starlight/models.py:787 starlight/models.py:789
+msgid "Lyricist"
+msgstr ""
+
+#: starlight/models.py:791 starlight/models.py:793
+msgid "Arranger"
+msgstr ""
+
+#: starlight/models.py:804 starlight/models.py:806
+msgid "Translations"
+msgstr ""
+
+#: starlight/models.py:855
+msgid "Basic"
+msgstr ""
+
+#: starlight/models.py:860
+msgid "Climax"
+msgstr ""
+
+#: starlight/models.py:865
+msgid "Auto"
+msgstr ""
+
+#: starlight/models.py:870
+msgid "Finishing"
+msgstr ""
+
+#: starlight/models.py:895 starlight/models.py:899 starlight/models.py:1050
+#: starlight/models.py:1054
+msgid "Tips"
+msgstr ""
+
+#: starlight/models.py:911
+#, python-brace-format
+msgid "Unlock at rank {rank}"
+msgstr ""
+
+#: starlight/models.py:914
+#, python-brace-format
+msgid "Hits {number_of_times} times"
+msgstr ""
+
+#: starlight/models.py:917
+msgid "Front enemy"
+msgstr ""
+
+#: starlight/models.py:918
+msgid "Front group of enemies"
+msgstr ""
+
+#: starlight/models.py:919
+msgid "All enemies"
+msgstr ""
+
+#: starlight/models.py:931
+msgid "After full bound break"
+msgstr ""
+
+#: starlight/models.py:950
+msgid "AP"
+msgstr ""
+
+#: starlight/models.py:1034 starlight/models.py:1781
+msgid "Rarity"
+msgstr ""
+
+#: starlight/models.py:1042 starlight/models.py:1282
+msgid "Limited"
+msgstr ""
+
+#: starlight/models.py:1044 starlight/models.py:1294
+msgid "Seasonal"
+msgstr ""
+
+#: starlight/models.py:1069
+msgid "Icon"
+msgstr ""
+
+#: starlight/models.py:1076
+msgid "Art"
+msgstr ""
+
+#: starlight/models.py:1105 starlight/models.py:1111 starlight/models.py:1117
+#: starlight/models.py:1125
+msgid "HP"
+msgstr ""
+
+#: starlight/models.py:1106 starlight/models.py:1112 starlight/models.py:1118
+#: starlight/models.py:1126
+msgid "ACT Power"
+msgstr ""
+
+#: starlight/models.py:1107 starlight/models.py:1113 starlight/models.py:1120
+#: starlight/models.py:1128
+msgid "Normal defense"
+msgstr ""
+
+#: starlight/models.py:1108 starlight/models.py:1114 starlight/models.py:1122
+#: starlight/models.py:1130
+msgid "Special defense"
+msgstr ""
+
+#: starlight/models.py:1109 starlight/models.py:1115 starlight/models.py:1123
+#: starlight/models.py:1131
+msgid "Agility"
+msgstr ""
+
+#: starlight/models.py:1138
+msgid "Base"
+msgstr ""
+
+#: starlight/models.py:1139 starlight/models.py:1141
+#, python-brace-format
+msgid "Level {level}"
+msgstr ""
+
+#: starlight/models.py:1275
+msgid "Permanent"
+msgstr ""
+
+#: starlight/models.py:1358
+msgid "Element"
+msgstr ""
+
+#: starlight/models.py:1365
+msgid "Normal"
+msgstr ""
+
+#: starlight/models.py:1366
+msgid "Special"
+msgstr ""
+
+#: starlight/models.py:1368
+msgid "Damage"
+msgstr ""
+
+#: starlight/models.py:1373
+msgid "Rear"
+msgstr ""
+
+#: starlight/models.py:1375
+msgid "Front"
+msgstr ""
+
+#: starlight/models.py:1377
+msgid "Position"
+msgstr ""
+
+#: starlight/models.py:1384
+msgid "Anti-tank"
+msgstr ""
+
+#: starlight/models.py:1385
+msgid "Assassin"
+msgstr ""
+
+#: starlight/models.py:1386
+msgid "Attacker"
+msgstr ""
+
+#: starlight/models.py:1387
+msgid "Burn"
+msgstr ""
+
+#: starlight/models.py:1388
+msgid "Debuffer"
+msgstr ""
+
+#: starlight/models.py:1389
+msgid "Defender"
+msgstr ""
+
+#: starlight/models.py:1390
+msgid "Disabler"
+msgstr ""
+
+#: starlight/models.py:1391
+msgid "Healer"
+msgstr ""
+
+#: starlight/models.py:1392
+msgid "Nuker"
+msgstr ""
+
+#: starlight/models.py:1393
+msgid "Poison"
+msgstr ""
+
+#: starlight/models.py:1394
+msgid "Special defender"
+msgstr ""
+
+#: starlight/models.py:1395
+msgid "Special defense tank"
+msgstr ""
+
+#: starlight/models.py:1396
+msgid "Support"
+msgstr ""
+
+#: starlight/models.py:1397
+msgid "Tank"
+msgstr ""
+
+#: starlight/models.py:1399
+msgid "Roles"
+msgstr ""
+
+#: starlight/models.py:1404 starlight/models.py:1406
+msgid "Profile"
+msgstr ""
+
+#: starlight/models.py:1419
+msgid "Transparent"
+msgstr ""
+
+#: starlight/models.py:1547 starlight/models.py:1689
+#, python-brace-format
+msgid "Collected {things}"
+msgstr ""
+
+#: starlight/models.py:1607 starlight/models.py:1654
+msgid "Upgrade"
+msgstr ""
+
+#: starlight/models.py:1608 starlight/models.py:1660
+msgid "VS. Revue reward"
+msgstr ""
+
+#: starlight/models.py:1610
+msgid "Selling price"
+msgstr ""
+
+#: starlight/models.py:1615 starlight/models.py:1617
+msgid "Explanation"
+msgstr ""
+
+#: starlight/models.py:1728
+msgid "Max leveled"
+msgstr ""
+
+#: starlight/models.py:1776
+msgid "Max bonded"
+msgstr ""
+
+#: starlight/settings.py:195
+msgid "Manga"
+msgstr ""
+
+#: starlight/settings.py:196
+msgid "Movie"
+msgstr ""
+
+#: starlight/settings.py:200
+msgid "Meetups"
+msgstr ""
+
+#: starlight/settings.py:208
+msgid "Gacha"
+msgstr ""
+
+#: starlight/settings.py:221
+msgid "Introduce yourself"
+msgstr ""
+
+#: starlight/settings.py:222
+msgid "Comedy"
+msgstr ""
+
+#: starlight/settings.py:223
+msgid "Meme"
+msgstr ""
+
+#: starlight/settings.py:225
+msgid "Cosplay"
+msgstr ""
+
+#: starlight/settings.py:226
+msgid "Fanart"
+msgstr ""
+
+#: starlight/settings.py:227
+msgid "Graphic edit"
+msgstr ""
+
+#: starlight/settings.py:228
+msgid "Merchandise"
+msgstr ""
+
+#: starlight/settings.py:230
+msgid "Question"
+msgstr ""
+
+#: starlight/settings.py:238
+msgid "Community event"
+msgstr ""
+
+#: starlight/settings.py:241
+#, python-brace-format
+msgid "Not about {thing}"
+msgstr ""
+
+#: starlight/settings.py:244
+msgid "Swearing"
+msgstr ""
+
+#: starlight/settings.py:246
+msgid "Questionable"
+msgstr ""
+
+#: starlight/settings.py:249
+msgid "NSFW"
+msgstr ""
+
+#: starlight/settings.py:251
+msgid "You need to be over 18 years old."
+msgstr ""
+
+#: starlight/settings.py:251
+msgid "You can change your birthdate in your settings."
+msgstr ""
+
+#: starlight/settings.py:311 starlight/settings.py:328
+#, python-brace-format
+msgid "About {thing}"
+msgstr ""
+
+#: starlight/templates/pages/map.html:1
+msgid "Map"
+msgstr ""
+
+#: starlight/views.py:37
+msgid "Wiki"
+msgstr ""
