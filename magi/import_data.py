@@ -121,7 +121,7 @@ def default_find_existing_item(model, unique_together, unique_data):
     except IndexError:
         return None
 
-def save_item(details, unique_data, data, log_function):
+def save_item(details, unique_data, data, log_function, json_item=None):
     model = details['model']
     unique_together = details.get('unique_together', False)
     find_existing_item = details.get('find_existing_item', None)
@@ -168,6 +168,10 @@ def save_item(details, unique_data, data, log_function):
                     item.add_d(field_name[2:], k, v)
                 log_function('    ', field_name, getattr(item, field_name[2:]))
             item.save()
+
+        if 'callback_after_save' in details:
+            details['callback_after_save'](details, item, json_item)
+
         return item
     return None
 
@@ -205,7 +209,7 @@ def api_pages(url, name, details, local=False, results_location=None, log_functi
                 unique_data, data = details['callback_per_item'](details, item)
             else:
                 unique_data, data, not_in_fields = import_generic_item(details, item)
-            save_item(details, unique_data, data, log_function)
+            save_item(details, unique_data, data, log_function, json_item=item)
             if not_in_fields:
                 log_function('- Ignored:')
                 log_function(not_in_fields)
