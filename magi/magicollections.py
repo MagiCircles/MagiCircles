@@ -908,9 +908,6 @@ class MagiCollection(object):
             elif field.name.startswith('m_'): # original field name
                 d['type'] = 'markdown'
                 d['allow_html'] = self.allow_html_in_markdown
-            elif isinstance(field, models.models.URLField):
-                d['type'] = 'button'
-                d['link_text'] = d['verbose_name']
             elif isinstance(field, models.models.ManyToManyField):
                 d['type'] = 'text_with_link'
                 d['value'] = getattr(item, 'cached_total_' + field_name).unicode
@@ -949,6 +946,9 @@ class MagiCollection(object):
                 d['type'] = 'youtube_video'
                 d['value'] = d['value'].replace('watch?v=', 'embed/')
                 d['spread_across'] = True
+            elif isinstance(field, models.models.URLField):
+                d['type'] = 'button'
+                d['link_text'] = d['verbose_name']
             else:
                 d['type'] = 'text'
 
