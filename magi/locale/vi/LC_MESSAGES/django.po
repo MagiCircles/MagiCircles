@@ -18,71 +18,71 @@ msgstr "Bạn"
 msgid "Account"
 msgstr "Tài khoản"
 
-#: bang/magicollections.py:1135 bang/magicollections.py:1462
+#: bang/magicollections.py:1136 bang/magicollections.py:1462
 #: bang/magicollections.py:1465 bang/magicollections.py:1469
-#: bang/magicollections.py:1898
+#: bang/magicollections.py:1896
 msgid "Leaderboard"
 msgstr "Bảng xếp hạng"
 
-#: magi/magicollections.py:1692
+#: magi/magicollections.py:1886
 msgid "Create your account to join the community and be in the leaderboard!"
 msgstr "Hãy tạo một tài khoản cho riêng mình, gia nhập cộng đồng và góp mặt trong bảng xếp hạng!"
 
-#: bang/templates/pages/indexBackground.html:20
+#: starlight/models.py:1404 starlight/models.py:1406
 msgid "Profile"
 msgstr "Hồ sơ"
 
-#: magi/magicollections.py:1821
+#: magi/magicollections.py:2019
 msgid "Players"
 msgstr "Người chơi khác"
 
-#: magi/magicollections.py:2447 magi/models.py:1010 magi/models.py:1024
+#: magi/magicollections.py:2659 magi/models.py:1014 magi/models.py:1028
 msgid "Activity"
 msgstr "Hoạt động"
 
-#: magi/default_settings.py:705 magi/forms.py:1410 magi/magicollections.py:2448
+#: magi/default_settings.py:761 magi/forms.py:1650 magi/magicollections.py:2660
 msgid "Activities"
 msgstr "Các hoạt động"
 
-#: magi/magicollections.py:2596
+#: magi/magicollections.py:2808
 msgid "Share your adventures!"
 msgstr "Chia sẻ hành trình của bạn!"
 
-#: magi/magicollections.py:2750
+#: magi/magicollections.py:2965
 #: magi/management/commands/cron_notifications.py:35
 #: magi/templates/emails/notification.html:5
 #: magi/templates/emails/notification.html:6
 msgid "Notification"
 msgstr "Thông báo"
 
-#: magi/magicollections.py:2751
+#: magi/magicollections.py:2966
 msgid "Notifications"
 msgstr "Các thông báo"
 
-#: bang/models.py:1975
+#: bang/models.py:1969
 msgid "Login"
 msgstr "Đăng nhập"
 
-#: magi/default_settings.py:382 magi/templates/pages/login.html:8
+#: magi/default_settings.py:438 magi/templates/pages/login.html:8
 #: magi/templates/pages/signup.html:4 magi/templates/pages/signup.html.py:6
 msgid "Sign Up"
 msgstr "Đăng kí"
 
-#: magi/default_settings.py:398 magi/magicollections.py:1944
+#: magi/default_settings.py:454 magi/magicollections.py:2145
 #: magi/templates/items/profile.html:33 magi/templates/pages/settings.html:8
-#: magi/utils.py:328 magi/views.py:392 magi/views.py:395 magi/views.py:650
+#: magi/utils.py:341 magi/views.py:406 magi/views.py:409 magi/views.py:671
 msgid "Settings"
 msgstr "Cài đặt"
 
-#: magi/default_settings.py:406
+#: magi/default_settings.py:462
 msgid "Logout"
 msgstr "Đăng xuất"
 
-#: bang/magicollections.py:2435 bang/models.py:1713 bang/models.py:1715
+#: bang/magicollections.py:2429 bang/models.py:1713 bang/models.py:1715
 msgid "About"
 msgstr "Về chúng tôi"
 
-#: bang/settings.py:258
+#: bang/settings.py:264
 msgid "Donate"
 msgstr "Ủng hộ"
 
@@ -92,30 +92,30 @@ msgid "Map"
 msgstr "Bản đồ"
 
 #. Link to the help pages that look like a wiki and help people use the site.
-#: magi/default_settings.py:446 magi/default_settings.py:452
-#: magi/templates/pages/about.html:388 magi/views.py:610
+#: magi/default_settings.py:502 magi/default_settings.py:508
+#: magi/templates/pages/about.html:388 magi/views.py:631
 msgid "Help"
 msgstr "Hỗ trợ"
 
 #. The favorite color of the user. Will be used to personalize their profile.
-#: starlight/models.py:296
+#: starlight/models.py:561
 msgid "Color"
 msgstr "Màu sắc"
 
 #. This is about the favorite characters the user specified in their preferences.
-#: magi/forms.py:1559
+#: starlight/forms.py:104
 msgid "All your favorites must be unique"
 msgstr "Bạn đã chọn yêu thích nhân vật này rồi!"
 
-#: magi/forms.py:1738
+#: magi/forms.py:1978
 msgid "Old Password"
 msgstr "Mật khẩu cũ"
 
-#: magi/forms.py:1739
+#: magi/forms.py:1979
 msgid "New Password"
 msgstr "Mật khẩu mới"
 
-#: magi/forms.py:1740
+#: magi/forms.py:1980
 msgid "New Password Again"
 msgstr "Nhập lại mật khẩu mới"
 
@@ -139,65 +139,67 @@ msgstr "Người chơi bậc thầy"
 msgid "Ultimate Player"
 msgstr "Master Player"
 
-#: magi/models.py:526
+#: magi/models.py:528
 msgid "Never"
 msgstr "Không bao giờ"
 
-#: magi/models.py:527
+#: magi/models.py:529
 msgid "Sometimes"
 msgstr "Thi thoảng"
 
-#: magi/models.py:528
+#: magi/models.py:530
 msgid "Often"
 msgstr "Thường xuyên"
 
-#: magi/models.py:529
+#: magi/models.py:531
 msgid "Every single day"
 msgstr "Hàng ngày"
 
 #. Example of replacement: "db0 liked your activity: I love going to the beach!" where db0 is the user who liked your activity and "I love going to the beach!" is the content of your activity.
-#: magi/models.py:1008 magi/models.py:1022
+#: magi/models.py:1012 magi/models.py:1026
 msgid "{} liked your activity: {}."
 msgstr "{} đã thích hoạt động của bạn: {}."
 
 #. Make sure there's as many {} in your translation than in the original sentence.
 #. Example of replacement: "db0 just followed you." where db0 is the user who follows you.
-#: magi/models.py:1015
+#: magi/models.py:1019
 msgid "{} just followed you."
 msgstr "{} vừa theo dõi bạn."
 
 #. For the emails settings.
-#: magi/models.py:1009
+#: magi/models.py:1013
 msgid "When someone likes your activity."
 msgstr "Khi một ai đó thích hoạt động của bạn."
 
 #. For the emails settings.
-#: magi/models.py:1016
+#: magi/models.py:1020
 msgid "When someone follows you."
 msgstr "Khi một ai đó theo dõi bạn"
 
 #. Personal description you can write on your profile. Similar to twitter's "bio".
-#: starlight/models.py:179 starlight/models.py:181 starlight/models.py:233
-#: starlight/models.py:235 starlight/models.py:324 starlight/models.py:326
+#: starlight/models.py:364 starlight/models.py:366 starlight/models.py:467
+#: starlight/models.py:469 starlight/models.py:601 starlight/models.py:603
+#: starlight/models.py:888 starlight/models.py:890 starlight/models.py:892
+#: starlight/models.py:1408 starlight/models.py:1410
 msgid "Description"
 msgstr "Giới thiệu bản thân"
 
 #. Your translation must be gender neutral. Example 1er/ère
-#: bang/forms.py:387 bang/magicollections.py:552 bang/models.py:919
+#: bang/forms.py:394 bang/magicollections.py:556 bang/models.py:919
 msgid "1st"
 msgstr "Nhất"
 
 #. Your translation must be gender neutral. Example 1er/ère
-#: magi/default_settings.py:26
+#: magi/default_settings.py:27
 msgid "2nd"
 msgstr "Nhì"
 
 #. Your translation must be gender neutral. Example 1er/ère
-#: magi/default_settings.py:26
+#: magi/default_settings.py:27
 msgid "3rd"
 msgstr "Ba"
 
-#: magi/models.py:148
+#: magi/magicollections.py:2306 magi/models.py:148
 msgid "Birthdate"
 msgstr "Ngày sinh"
 
@@ -215,29 +217,29 @@ msgid "It might take up to 24 hours to update your location on the map."
 msgstr "Có thể mất 24 giờ để cập nhật địa chỉ của bạn trên bản đồ"
 
 #. For links. Select your platform before adding a link. Can be Facebook/Twitter/Reddit, etc.
-#: magi/models.py:523
+#: starlight/models.py:432 starlight/models.py:434
 msgid "Platform"
 msgstr "Link (Có thể là Facebook, Twitter,...)"
 
-#: magi/models.py:493
+#: magi/models.py:495
 msgid "Username/ID"
 msgstr "Tên in-game/ID"
 
 #. For links.
-#: magi/models.py:493
+#: magi/models.py:495
 msgid "Write your username only, no URL."
 msgstr "Chỉ viết tên in-game của bạn, không cần link"
 
 #. For links.
-#: magi/forms.py:1858
+#: magi/forms.py:2124
 msgid "How often do you tweet/stream/post about {}?"
 msgstr "Mật độ bạn tweet/stream/đăng bài về {}?"
 
-#: magi/templates/base.html:131
+#: magi/templates/base.html:138
 msgid "Help us translate the site"
 msgstr "Giúp đỡ bọn mình dịch trang này"
 
-#: magi/default_settings.py:21 magi/templates/collections/list_page.html:16
+#: magi/default_settings.py:22 magi/templates/collections/list_page.html:16
 msgid "No result."
 msgstr "Không có kết quả"
 
@@ -300,12 +302,12 @@ msgid "Edit"
 msgstr "Sửa"
 
 #. Feel free to use Twitter's word in your language.
-#: magi/magicollections.py:1956 magi/templates/items/profile.html:27
+#: magi/magicollections.py:2157 magi/templates/items/profile.html:27
 msgid "Unfollow"
 msgstr "Hủy theo dõi"
 
 #. Feel free to use Twitter's word in your language.
-#: magi/magicollections.py:1956 magi/templates/items/profile.html:27
+#: magi/magicollections.py:2157 magi/templates/items/profile.html:27
 #: magi/templates/items/profile.html:31
 msgid "Follow"
 msgstr "Theo dõi"
@@ -316,7 +318,7 @@ msgid "Followers"
 msgstr "Người theo dõi"
 
 #. Feel free to use Twitter's word in your language.
-#: magi/default_settings.py:348 magi/forms.py:2172
+#: magi/default_settings.py:404 magi/forms.py:2445
 #: magi/templates/items/profile.html:46 magi/templates/items/profile.html:48
 msgid "Following"
 msgstr "Đang theo dõi"
@@ -336,12 +338,12 @@ msgstr[0] "%(length)s tài khoản"
 msgid "Contact us"
 msgstr "Liên hệ"
 
-#: magi/templates/pages/about.html:453
+#: magi/templates/pages/about.html:454
 #, fuzzy
 msgid "Franchise credits"
 msgstr "Quyền thương mại"
 
-#: magi/templates/pages/about.html:462
+#: magi/templates/pages/about.html:463
 msgid "Icons credits"
 msgstr "Quyền sử dụng hình ảnh"
 
@@ -349,39 +351,39 @@ msgstr "Quyền sử dụng hình ảnh"
 msgid "Staff members"
 msgstr "Nhân viên"
 
-#: starlight/magicollections.py:207
+#: starlight/magicollections.py:541 starlight/models.py:709
 msgid "Staff"
 msgstr "Nhân viên cấp cao"
 
-#: magi/templates/base.html:109 magi/templates/pages/about.html:425
+#: magi/templates/base.html:116 magi/templates/pages/about.html:425
 msgid "Check out our other websites"
 msgstr "Ngó qua các trang web khác của bọn mình"
 
-#: magi/templates/pages/about.html:473
+#: magi/templates/pages/about.html:474
 msgid "Contribute"
 msgstr "Đóng góp"
 
-#: magi/templates/pages/about.html:473 magi/templates/pages/about.html:489
+#: magi/templates/pages/about.html:474 magi/templates/pages/about.html:490
 msgid "Dev"
 msgstr "Nhà phát triển"
 
-#: magi/templates/pages/about.html:475
+#: magi/templates/pages/about.html:476
 msgid "Our project is open-source and open for contributions. We are more than happy to accept pull-requests on GitHub!"
 msgstr "Dự án của chúng mình là một dạng mã nguồn mở và luôn tiếp nhận những đóng góp từ các bạn. Chúng mình rất vui khi chấp nhận những yêu cầu đóng góp trên GitHub!"
 
-#: magi/templates/pages/about.html:477
+#: magi/templates/pages/about.html:478
 msgid "The website has been made using"
 msgstr "Trang web này được tạo ra bằng"
 
-#: magi/templates/pages/about.html:477
+#: magi/templates/pages/about.html:478
 msgid "so in Python 2. We also use"
 msgstr "trong Python 2. Chúng mình cũng sử dụng"
 
-#: magi/templates/pages/about.html:477
+#: magi/templates/pages/about.html:478
 msgid "for the front-end of the website."
 msgstr "cho front-end của trang web."
 
-#: magi/templates/pages/about.html:479
+#: magi/templates/pages/about.html:480
 msgid "We accept all kind of contributions, from tools to help players, statistics pages, mini-games, or even little CSS changes. Don't be shy! If you need help getting started, just contact us and we will happily take the time to teach you the basics, no matter your level."
 msgstr "Chúng mình chấp nhận tất cả các đóng góp, từ công cụ cho đến giúp đỡ người chơi, trang số liệu thông kê, mini games, hoặc kể cả những thay đổi nhỏ nhất về CSS. Đừng ngại! Nếu bạn cần giúp đỡ khi mới bắt đầu, hãy cứ liên hệ với chúng mình, chúng mình rất vui khi dành thời gian dạy cho bạn những kiến thức cơ bản nhất, bất kể trình độ của bạn đang ở đâu"
 
@@ -389,15 +391,15 @@ msgstr "Chúng mình chấp nhận tất cả các đóng góp, từ công cụ 
 msgid "Get Started"
 msgstr "Bắt đầu"
 
-#: magi/templates/pages/about.html:491
+#: magi/templates/pages/about.html:492
 msgid "If you're a developer and you would like to get the data of the game in a convenient format, we provide a public REST API to get the game data, our users datacards, and more!"
 msgstr "Nếu bạn là lập trình viên và bạn muốn sử dụng dữ liệu của game ở một định dạng thuận tiện hơn, chúng mình cung cấp một REST API công cộng để lấy dữ liệu về game, các thẻ dữ liệu từ những người dùng, và hơn nữa!"
 
-#: magi/magicollections.py:3034 magi/templates/include/donate.html:59
+#: magi/magicollections.py:3245 magi/templates/include/donate.html:59
 msgid "Donators"
 msgstr "Những người đóng góp"
 
-#: magi/default_settings.py:463 magi/default_settings.py:471 magi/views.py:613
+#: starlight/views.py:37
 msgid "Wiki"
 msgstr "Wiki"
 
@@ -405,16 +407,15 @@ msgstr "Wiki"
 msgid "Forgot password?"
 msgstr "Quên mật khẩu?"
 
-#: magi/forms.py:1735
+#: magi/forms.py:1975
 msgid "Change your password"
 msgstr "Đổi mật khẩu"
 
-#: magi/forms.py:1383
+#: magi/forms.py:1623
 msgid "Emails"
 msgstr "Emails"
 
-#: magi/forms.py:1255 magi/forms.py:1771 magi/templates/pages/settings.html:19
-#: magi/templates/pages/settings.html:50
+#: starlight/magicollections.py:406
 msgid "Links"
 msgstr "Liên kết"
 
@@ -434,58 +435,58 @@ msgstr "F.A.Q"
 msgid "Change Avatar"
 msgstr "Thay hình đại diện"
 
-#: magi/default_settings.py:701 magi/magicollections.py:1599
+#: magi/default_settings.py:757 magi/magicollections.py:1783
 #: magi/templates/pages/settings.html:29
 msgid "Accounts"
 msgstr "Tài khoản"
 
 #. Make sure {object} also appears in your sentence. Will be replaced with the corresponding values.
-#: magi/views_collections.py:288
+#: magi/views_collections.py:299
 msgid "1 {object} matches your search:"
 msgstr "1 {object} phù hợp với tìm kiếm:"
 
 #. Make sure {total} and {object} also appear in your sentence. Will be replaced with the corresponding values.
-#: magi/views_collections.py:288
+#: magi/views_collections.py:299
 msgid "{total} {objects} match your search:"
 msgstr "{total} {objects} phù hợp với tìm kiếm:"
 
-#: magi/magicollections.py:1207
+#: magi/magicollections.py:1301
 msgid "Become a contributor to help us fill the database"
 msgstr "Trở thành người đóng góp để giúp chúng mình hoàn thành cơ sở dữ liệu"
 
-#: magi/views.py:715 magi/views_collections.py:646
+#: magi/views.py:736 magi/views_collections.py:692
 msgid "You can't cancel this action afterwards."
 msgstr "Bạn không được hủy bỏ hành động này sau đó"
 
-#: magi/forms.py:1853 magi/views.py:405 magi/views.py:406
+#: starlight/magicollections.py:405
 msgid "Link"
 msgstr "Liên kết"
 
-#: magi/forms.py:1905 magi/forms.py:1939
+#: magi/forms.py:2171 magi/forms.py:2205
 msgid "Confirm"
 msgstr "Xác nhận"
 
-#: bang/models.py:1986
+#: bang/models.py:1980
 msgid "Tags"
 msgstr "Tags"
 
-#: magi/forms.py:1894 magi/models.py:139 magi/models.py:588 magi/models.py:818
-#: magi/templates/base.html:120 magi/templates/items/activityItem.html:41
+#: magi/forms.py:2047 magi/forms.py:2160 magi/magicollections.py:2297
+#: magi/models.py:139 magi/models.py:590 magi/models.py:820
+#: magi/templates/base.html:127 magi/templates/items/activityItem.html:41
 msgid "Language"
 msgstr "Ngôn ngữ"
 
-#: magi/forms.py:2253 magi/models.py:811 magi/models.py:1095
-#: magi/models.py:1333 magi/templates/items/reportItem.html:33
-#: magi/templates/items/reportItem.html:58
+#: starlight/models.py:369 starlight/models.py:371 starlight/models.py:733
+#: starlight/models.py:735 starlight/models.py:1412 starlight/models.py:1414
 msgid "Message"
 msgstr "Tin nhắn"
 
-#: starlight/models.py:147 starlight/models.py:231 starlight/models.py:271
-#: starlight/models.py:413
+#: starlight/models.py:330 starlight/models.py:461 starlight/models.py:516
+#: starlight/models.py:902 starlight/models.py:1060
 msgid "Image"
 msgstr "Hình ảnh"
 
-#: magi/forms.py:2178 magi/templates/items/activityItem.html:103
+#: magi/forms.py:2451 magi/templates/items/activityItem.html:103
 #: magi/templates/items/activityItem.html:105
 msgid "Liked"
 msgstr "Đã thích"
@@ -517,28 +518,28 @@ msgstr "Báo cáo"
 msgid "Reported by:"
 msgstr "Báo cáo bởi:"
 
-#: magi/views.py:784 magi/views.py:819
+#: magi/views.py:805 magi/views.py:840
 msgid "This {thing} you reported has been reviewed by a moderator and {verb}. Thank you so much for your help!"
 msgstr "{thing} mà bạn đã báo cáo đã được xem xét bởi một Mod và {verb}. Cảm ơn bạn rất nhiều!"
 
-#: magi/views.py:524 magi/views.py:784 magi/views.py:795 magi/views.py:800
-#: magi/views.py:830
+#: magi/views.py:545 magi/views.py:805 magi/views.py:816 magi/views.py:821
+#: magi/views.py:851
 msgid "edited"
 msgstr "đã thay đổi"
 
-#: magi/views.py:789 magi/views.py:824
+#: magi/views.py:810 magi/views.py:845
 msgid "Thank you for reporting this {thing}"
 msgstr "Cảm ơn bạn đã báo cáo về {thing}"
 
-#: magi/views.py:518 magi/views.py:795 magi/views.py:830
+#: magi/views.py:539 magi/views.py:816 magi/views.py:851
 msgid "Your {thing} has been reported, and a moderator confirmed it should be {verb}."
 msgstr "{thing} của bạn đã được báo cáo, và một Mod chắc chắn rằng nó nên được {verb}."
 
-#: magi/views.py:800 magi/views.py:835
+#: magi/views.py:821 magi/views.py:856
 msgid "Your {thing} has been {verb}"
 msgstr "{thing} của bạn đã được {verb}"
 
-#: magi/views.py:527 magi/views.py:819 magi/views.py:835
+#: magi/views.py:548 magi/views.py:840 magi/views.py:856
 msgid "deleted"
 msgstr "đã xoá"
 
@@ -552,15 +553,15 @@ msgstr "Chào"
 msgid "The {game} Database & Community"
 msgstr "Cơ sở dữ liệu & Cộng đồng về {game}"
 
-#: magi/views.py:298
+#: magi/views.py:306
 msgid "{site} is not a representative and is not associated with {game}. Its logos and images are Trademarks of {company}."
 msgstr "{site} không phải là một đại diện và cũng không có mối liên quan nào đến {game}. Các logo và hình ảnh đều là thương hiệu của {company}."
 
-#: magi/views.py:300
+#: magi/views.py:308
 msgid "the company that owns {game}"
 msgstr "công ty sở hữu {game}"
 
-#: magi/views_collections.py:556
+#: magi/views_collections.py:600
 msgid "Make sure the {thing} you're about to add doesn't already exist."
 msgstr "Hãy chắc rằng {thing} mà bạn sắp thêm vào chưa tồn tại"
 
@@ -615,7 +616,7 @@ msgstr "Khởi đầu"
 msgid "This date cannot be in the future."
 msgstr "Ngày này không được phép liên quan đến tương lai"
 
-#: bang/forms.py:106 bang/forms.py:1038 bang/models.py:1317 bang/models.py:1322
+#: bang/forms.py:113 bang/forms.py:1045 bang/models.py:1317 bang/models.py:1322
 #: bang/models.py:1792
 msgid "Level"
 msgstr "Cấp độ"
@@ -731,7 +732,7 @@ msgstr "Bay"
 msgid "Ground"
 msgstr "Đất"
 
-#: stardustrun/model_choices.py:52
+#: starlight/models.py:1393
 msgid "Poison"
 msgstr "Độc"
 
@@ -759,7 +760,7 @@ msgstr "Nước"
 msgid "Fire"
 msgstr "Lửa"
 
-#: starlight/models.py:396
+#: starlight/models.py:1365
 msgid "Normal"
 msgstr "Thường"
 
@@ -785,7 +786,8 @@ msgstr "Mua Pokécoins"
 msgid "CP"
 msgstr "CP"
 
-#: sukutomo/models.py:1303
+#: starlight/models.py:1105 starlight/models.py:1111 starlight/models.py:1117
+#: starlight/models.py:1125
 msgid "HP"
 msgstr "HP"
 
@@ -794,7 +796,7 @@ msgstr "HP"
 msgid "Weight"
 msgstr "Cân nặng"
 
-#: starlight/models.py:168
+#: starlight/forms.py:264 starlight/models.py:353
 msgid "Height"
 msgstr "Chiều cao"
 
@@ -909,7 +911,7 @@ msgstr "Thay đổi danh sách"
 msgid "You have {} of them in you collection. Delete them before changing this."
 msgstr "Bạn có {} loại này trong bộ sưu tập. Hãy xoá chúng trước khi thay đổi."
 
-#: magi/default_settings.py:433
+#: magi/default_settings.py:489
 msgid "About the game"
 msgstr "Về tựa game này"
 
@@ -917,7 +919,7 @@ msgstr "Về tựa game này"
 msgid "View activities in your language only?"
 msgstr "Xem hoạt động chỉ bằng ngôn ngữ của bạn?"
 
-#: magi/models.py:933
+#: magi/models.py:935
 msgid "Check out {username}'s activity on {site}: {activity}"
 msgstr "Kiểm tra hoạt động của {username} tại {site}: {activity}"
 
@@ -925,7 +927,7 @@ msgstr "Kiểm tra hoạt động của {username} tại {site}: {activity}"
 msgid "Join the community!"
 msgstr "Tham gia cộng đồng!"
 
-#: magi/settings.py:111
+#: magi/settings.py:112
 msgid "{site} provides an extended database of information about the game {game} and allows you to keep track of your progress in the game. You can create and customize your very own profile to share your progress and your collection to all your friends. You can also meet other players like you with the social network: read what the others are doing and share your adventures with the community. Comment, like and follow the other players to grow your network. Find players near you with the global map of all the players. And much more!"
 msgstr "{site} cung cấp thông tin mở rộng từ cơ sở dữ liệu về tựa game {game} và cho phép bạn theo dõi tiến độ của bạn trong game. Bạn có thể tạo và tùy chỉnh hồ sơ của riêng bạn để chia sẻ tiến độ và bộ sưu tập đến bạn bè. Bạn còn có thể gặp gỡ những người chơi khác qua mạng xã hội: đọc những gì họ đang làm và chia sẻ chuyến hành trình của bạn đến cộng đồng. Bình luận, thích và theo dõi những người chơi khác để phát triển mối quan hệ. Tìm người chơi gần bạn bằng bản đồ thế giới của tất cả những người chơi. Và hơn thế nữa!"
 
@@ -937,7 +939,7 @@ msgstr "Bắt đầu theo dõi người chơi khác để xem hoạt động c�
 msgid "is crowdfunded by %(total_donators)s %(adjective)s donators"
 msgstr "đã đóng góp bởi %(total_donators)s người ủng hộ %(adjective)s"
 
-#: starlight/settings.py:171 starlight/settings.py:195
+#: starlight/settings.py:311 starlight/settings.py:328
 #, fuzzy
 msgid "About {thing}"
 msgstr "Về {thing}"
@@ -946,7 +948,7 @@ msgstr "Về {thing}"
 msgid "All"
 msgstr "Tất cả"
 
-#: magi/magicollections.py:2207
+#: magi/magicollections.py:2424
 msgid "Check out {username}'s awesome collection!"
 msgstr "Xem qua bộ sưu tập tuyệt vời của {username}!"
 
@@ -966,11 +968,11 @@ msgstr "Pokémon trong bộ sưu tập của bạn"
 msgid "Pokémon you've seen"
 msgstr "Pokémon bạn đã thấy"
 
-#: starlight/models.py:397
+#: starlight/models.py:1366
 msgid "Special"
 msgstr "Đặc biệt"
 
-#: starlight/models.py:399
+#: starlight/models.py:1368
 msgid "Damage"
 msgstr "Sát thương"
 
@@ -1067,21 +1069,21 @@ msgstr "Tất cả đòn tấn công"
 msgid "seconds"
 msgstr "thứ hai"
 
-#: bang/forms.py:595 bang/forms.py:852
+#: starlight/forms.py:111
 msgid "Creation"
 msgstr "Sự sáng tạo"
 
-#: bang/forms.py:186 bang/forms.py:244 bang/forms.py:245 bang/forms.py:524
-#: bang/forms.py:945
+#: bang/forms.py:193 bang/forms.py:251 bang/forms.py:252 bang/forms.py:531
+#: bang/forms.py:952
 #, fuzzy
 msgid "Most popular"
 msgstr "Nổi tiếng nhất"
 
-#: bang/magicollections.py:262 bang/magicollections.py:266
+#: bang/magicollections.py:268 bang/magicollections.py:272
 msgid "All time"
 msgstr "Tất cả"
 
-#: bang/magicollections.py:262 bang/magicollections.py:266
+#: bang/magicollections.py:268 bang/magicollections.py:272
 msgid "This week"
 msgstr "Tuần này"
 
@@ -1108,16 +1110,16 @@ msgstr "Xem qua bộ sưu tập thẻ của tôi!"
 msgid "The game didn't even exist at that time."
 msgstr "Game này chưa từng tồn tại ở thời điểm đó"
 
-#: sukutomo/forms.py:393 sukutomo/magicollections.py:1106
-#: sukutomo/models.py:891
+#: starlight/forms.py:523 starlight/models.py:881
 msgid "Type"
 msgstr "Loại"
 
-#: starlight/models.py:403
+#: starlight/magicollections.py:254 starlight/models.py:221
+#: starlight/models.py:1374
 msgid "Center"
 msgstr "Trung tâm"
 
-#: starlight/models.py:390
+#: starlight/models.py:1034 starlight/models.py:1781
 msgid "Rarity"
 msgstr "Độ hiếm"
 
@@ -1137,16 +1139,19 @@ msgstr "Đảo ngược thứ tự"
 msgid "Accept friend requests"
 msgstr "Chấp nhận lời mời kết bạn"
 
-#: starlight/models.py:141 starlight/models.py:143 starlight/models.py:226
-#: starlight/models.py:228 starlight/models.py:265 starlight/models.py:267
+#: starlight/forms.py:261 starlight/forms.py:341 starlight/models.py:325
+#: starlight/models.py:327 starlight/models.py:457 starlight/models.py:459
+#: starlight/models.py:510 starlight/models.py:512 starlight/models.py:717
+#: starlight/models.py:719
 msgid "Name"
 msgstr "Tên"
 
-#: sukutomo/forms.py:116 sukutomo/models.py:379
+#: starlight/forms.py:263
 msgid "Age"
 msgstr "Tuổi"
 
-#: starlight/models.py:149 starlight/models.py:287 starlight/settings.py:102
+#: starlight/forms.py:262 starlight/forms.py:342 starlight/models.py:334
+#: starlight/models.py:552 starlight/settings.py:224
 msgid "Birthday"
 msgstr "Sinh nhật"
 
@@ -1184,11 +1189,12 @@ msgstr "Điểm T{}"
 msgid "T{} rank"
 msgstr "Rank T{}"
 
-#: starlight/magicollections.py:264 starlight/settings.py:98
+#: starlight/magicollections.py:1183 starlight/models.py:875
+#: starlight/models.py:1043 starlight/models.py:1288
 msgid "Event"
 msgstr "Event"
 
-#: sukutomo/models.py:878 sukutomo/models.py:1003 sukutomo/models.py:1326
+#: starlight/models.py:1042 starlight/models.py:1282
 msgid "Limited"
 msgstr "Giới hạn"
 
@@ -1201,7 +1207,7 @@ msgstr "Giới hạn"
 msgid "Awakened"
 msgstr "Thức tỉnh"
 
-#: starlight/models.py:421
+#: starlight/models.py:1076
 msgid "Art"
 msgstr "Art"
 
@@ -1210,7 +1216,8 @@ msgstr "Art"
 msgid "Release Date"
 msgstr "Ngày ra mắt"
 
-#: starlight/models.py:376
+#: starlight/forms.py:197 starlight/forms.py:199 starlight/models.py:216
+#: starlight/models.py:982
 msgid "ID"
 msgstr "ID"
 
@@ -1226,7 +1233,7 @@ msgstr "Vocal"
 msgid "Dance"
 msgstr "Dance"
 
-#: bang/forms.py:254 bang/forms.py:255 bang/magicollections.py:1031
+#: bang/forms.py:261 bang/forms.py:262 bang/magicollections.py:1035
 #: bang/models.py:694 bang/models.py:695 bang/models.py:696 bang/models.py:761
 #: bang/models.py:1092 bang/models.py:1703
 msgid "Visual"
@@ -1282,51 +1289,51 @@ msgstr "Tay trái"
 msgid "Both"
 msgstr "Cả hai"
 
-#: starlight/models.py:100
+#: starlight/models.py:170
 msgid "Leo"
 msgstr "Cung Sư Tử"
 
-#: starlight/models.py:101
+#: starlight/models.py:171
 msgid "Aries"
 msgstr "Cung Bạch Dương"
 
-#: starlight/models.py:102
+#: starlight/models.py:172
 msgid "Libra"
 msgstr "Cung Thiên Bình"
 
-#: starlight/models.py:103
+#: starlight/models.py:173
 msgid "Virgo"
 msgstr "Cung Xử Nữ"
 
-#: starlight/models.py:104
+#: starlight/models.py:174
 msgid "Scorpio"
 msgstr "Cung Thiên Yết"
 
-#: starlight/models.py:105
+#: starlight/models.py:175
 msgid "Capricorn"
 msgstr "Cung Ma Kết"
 
-#: starlight/models.py:106
+#: starlight/models.py:176
 msgid "Pisces"
 msgstr "Cung Song Ngư"
 
-#: starlight/models.py:107
+#: starlight/models.py:177
 msgid "Gemini"
 msgstr "Cung Song Tử"
 
-#: starlight/models.py:108
+#: starlight/models.py:178
 msgid "Cancer"
 msgstr "Cung Cự Giải"
 
-#: starlight/models.py:109
+#: starlight/models.py:179
 msgid "Sagittarius"
 msgstr "Cung Xạ Thủ"
 
-#: starlight/models.py:110
+#: starlight/models.py:180
 msgid "Aquarius"
 msgstr "Cung Bảo Bình"
 
-#: starlight/models.py:111
+#: starlight/models.py:181
 msgid "Taurus"
 msgstr "Cung Kim Ngưu"
 
@@ -1374,7 +1381,7 @@ msgstr "Extreme Perfect Lock"
 msgid "Combo Lock"
 msgstr "Combo Lock"
 
-#: cpro/model_choices.py:171
+#: starlight/models.py:1391
 msgid "Healer"
 msgstr "Healer"
 
@@ -1496,7 +1503,7 @@ msgstr "Ngón trỏ"
 msgid "One hand"
 msgstr "Một tay"
 
-#: sukutomo/models.py:249 sukutomo/models.py:653
+#: starlight/forms.py:415 starlight/forms.py:603
 msgid "Other"
 msgstr "Khác"
 
@@ -1516,12 +1523,12 @@ msgstr "Cung hoàng đạo"
 msgid "Hometown"
 msgstr "Quê"
 
-#: starlight/models.py:175 starlight/models.py:177 starlight/models.py:320
-#: starlight/models.py:322
+#: starlight/models.py:360 starlight/models.py:362 starlight/models.py:593
+#: starlight/models.py:595
 msgid "Hobbies"
 msgstr "Sở thích"
 
-#: bang/magicollections.py:361 bang/models.py:224 bang/models.py:225
+#: bang/magicollections.py:367 bang/models.py:224 bang/models.py:225
 msgid "CV"
 msgstr "VA"
 
@@ -1538,7 +1545,7 @@ msgstr "Loại"
 msgid "Game ID"
 msgstr "Game ID"
 
-#: sukutomo/models.py:220
+#: starlight/models.py:287
 msgid "Device"
 msgstr "Máy"
 
@@ -1546,7 +1553,7 @@ msgstr "Máy"
 msgid "Play with"
 msgstr "Chơi với"
 
-#: sukutomo/models.py:261
+#: starlight/models.py:283
 msgid "Operating System"
 msgstr "Hệ điều hành"
 
@@ -1558,15 +1565,18 @@ msgstr "Hệ điều hành"
 msgid "Idol"
 msgstr "Idol"
 
-#: starlight/models.py:379 starlight/models.py:381
+#: starlight/forms.py:365 starlight/forms.py:366 starlight/models.py:762
+#: starlight/models.py:764 starlight/models.py:766 starlight/models.py:883
+#: starlight/models.py:884 starlight/models.py:886 starlight/models.py:994
+#: starlight/models.py:996
 msgid "Title"
 msgstr "Chủ đề"
 
-#: starlight/models.py:426
+#: starlight/models.py:1419
 msgid "Transparent"
 msgstr "Transparent"
 
-#: starlight/models.py:416
+#: starlight/models.py:1069
 msgid "Icon"
 msgstr "Icon"
 
@@ -1586,17 +1596,18 @@ msgstr "Nhỏ nhất"
 msgid "Maximum"
 msgstr "Lớn nhất"
 
-#: bang/forms.py:256 bang/forms.py:257 bang/magicollections.py:988
-#: bang/magicollections.py:995 bang/magicollections.py:1032 bang/models.py:762
+#: bang/forms.py:263 bang/forms.py:264 bang/magicollections.py:992
+#: bang/magicollections.py:999 bang/magicollections.py:1036 bang/models.py:762
 msgid "Overall"
 msgstr "Tổng cộng"
 
 #: cpro/models.py:758 cpro/templates/items/ownedcardItem.html:9
-msgid "Max Bonded"
+#, fuzzy
+msgid "Max bonded"
 msgstr "Gắn kết tối đa"
 
 #: cpro/models.py:759 cpro/templates/items/ownedcardItem.html:8
-msgid "Max Leveled"
+msgid "Max leveled"
 msgstr "Cấp độ tối đa"
 
 #: cpro/models.py:760 cpro/templates/items/ownedcardItem.html:11
@@ -1612,16 +1623,18 @@ msgstr "Cấp độ kĩ năng"
 msgid "Obtained Date"
 msgstr "Ngày sở hữu"
 
-#: starlight/magicollections.py:236 starlight/models.py:332
-#: starlight/settings.py:96
+#: starlight/magicollections.py:937 starlight/magicollections.py:938
+#: starlight/models.py:636 starlight/models.py:1547 starlight/settings.py:207
 msgid "Cards"
 msgstr "Thẻ"
 
-#: starlight/magicollections.py:265
+#: starlight/magicollections.py:1184 starlight/settings.py:201
+#: starlight/settings.py:210
 msgid "Events"
 msgstr "Events"
 
-#: starlight/magicollections.py:219 starlight/settings.py:99
+#: starlight/magicollections.py:626 starlight/models.py:390
+#: starlight/settings.py:214
 msgid "Songs"
 msgstr "Bài hát"
 
@@ -1637,11 +1650,11 @@ msgstr "Thẻ yêu thích"
 msgid "New Cards"
 msgstr "Thẻ mới"
 
-#: bang/models.py:1983 bang/models.py:2055
+#: bang/models.py:1977 bang/models.py:2049
 msgid "Live"
 msgstr "Live"
 
-#: starlight/settings.py:94
+#: starlight/settings.py:222
 msgid "Comedy"
 msgstr "Hài hước"
 
@@ -1649,7 +1662,7 @@ msgstr "Hài hước"
 msgid "Room Decoration"
 msgstr "Trang trí phòng"
 
-#: starlight/settings.py:100
+#: starlight/settings.py:221
 msgid "Introduce yourself"
 msgstr "Giới thiệu bản thân"
 
@@ -1657,19 +1670,21 @@ msgstr "Giới thiệu bản thân"
 msgid "Idols"
 msgstr "Idols"
 
-#: starlight/settings.py:104
+#: starlight/settings.py:225
 msgid "Cosplay"
 msgstr "Cosplay"
 
-#: starlight/settings.py:103
+#: starlight/magicollections.py:576 starlight/models.py:708
+#: starlight/models.py:709 starlight/settings.py:194
 msgid "Anime"
 msgstr "Anime"
 
-#: starlight/settings.py:108 starlight/settings.py:300
+#: starlight/magicollections.py:217 starlight/settings.py:229
+#: starlight/settings.py:425
 msgid "Community"
 msgstr "Cộng đồng"
 
-#: starlight/magicollections.py:235
+#: starlight/magicollections.py:936 starlight/models.py:1774
 msgid "Card"
 msgstr "Thẻ"
 
@@ -1741,15 +1756,15 @@ msgstr "Bỏ thẻ này khỏi danh sách yêu thích của bạn"
 msgid "Add this card to your favorites"
 msgstr "Thêm thẻ này vào danh sách yêu thích của bạn"
 
-#: bang/models.py:304
+#: starlight/models.py:394 starlight/models.py:641
 msgid "Fans"
 msgstr "Fans"
 
-#: magi/forms.py:2172 magi/forms.py:2178 magi/utils.py:446
+#: magi/forms.py:2445 magi/forms.py:2451 magi/utils.py:459
 msgid "Only"
 msgstr "Duy nhất"
 
-#: magi/utils.py:449
+#: starlight/magicollections.py:1061
 msgid "None"
 msgstr "Trống"
 
@@ -1757,7 +1772,7 @@ msgstr "Trống"
 msgid "Liked this activity"
 msgstr "Đã thích hoạt động này"
 
-#: magi/default_settings.py:21
+#: magi/default_settings.py:22
 msgid "Loading"
 msgstr "Đang tải..."
 
@@ -1777,24 +1792,24 @@ msgstr "%(idol)s đã trình diễn %(total_results)s event"
 msgid "%(total_results)s producers scouted %(own_card)s"
 msgstr "%(total_results)s Producer đã sở hữu %(own_card)s"
 
-#: magi/magicollections.py:2822 magi/magicollections.py:2933
-#: magi/models.py:1213
+#: magi/magicollections.py:3037 magi/magicollections.py:3147
+#: magi/models.py:1217
 msgid "Badge"
 msgstr "Huy hiệu"
 
-#: magi/default_settings.py:710 magi/magicollections.py:2823
+#: magi/default_settings.py:766 magi/magicollections.py:3038
 msgid "Badges"
 msgstr "Các huy hiệu"
 
-#: magi/models.py:1243
+#: starlight/models.py:256 starlight/models.py:257 starlight/models.py:258
 msgid "Bronze"
 msgstr "Đồng"
 
-#: magi/models.py:1244
+#: starlight/models.py:259 starlight/models.py:260 starlight/models.py:261
 msgid "Silver"
 msgstr "Bạc"
 
-#: magi/models.py:1245
+#: starlight/models.py:262 starlight/models.py:263 starlight/models.py:264
 msgid "Gold"
 msgstr "Vàng"
 
@@ -1823,11 +1838,11 @@ msgstr "Độ nổi tiếng"
 msgid "Favorited by"
 msgstr "Được yêu thích bởi"
 
-#: bang/settings.py:128
+#: bang/settings.py:130
 msgid "Fan made"
 msgstr "Fan made"
 
-#: starlight/settings.py:107
+#: starlight/settings.py:228
 msgid "Merchandise"
 msgstr "Sản phẩm"
 
@@ -1847,7 +1862,7 @@ msgstr[0] "%(total)s Producer"
 msgid "Share"
 msgstr "Chia sẻ"
 
-#: magi/default_settings.py:23
+#: magi/default_settings.py:24
 msgid "Local time"
 msgstr "Giờ địa phương"
 
@@ -1855,86 +1870,86 @@ msgstr "Giờ địa phương"
 msgid "Open {thing}"
 msgstr "Mở {thing}"
 
-#: magi/forms.py:652
+#: magi/forms.py:818
 msgid "Reverse order"
 msgstr "Đảo ngược thứ tự"
 
-#: magi/forms.py:2265 magi/models.py:1094
+#: magi/forms.py:2539 magi/models.py:1098
 #: magi/templates/items/reportItem.html:29
 msgid "Reason"
 msgstr "Lý do"
 
-#: magi/item_model.py:681 magi/magicollections.py:1091
-#: magi/magicollections.py:1139
+#: magi/item_model.py:690 magi/magicollections.py:1181
+#: magi/magicollections.py:1229
 msgid "Edit {thing}"
 msgstr "Chỉnh sửa {thing}"
 
-#: magi/item_model.py:684 magi/magicollections.py:1021 magi/views.py:406
+#: magi/item_model.py:693 magi/magicollections.py:1103 magi/views.py:420
 msgid "Delete {thing}"
 msgstr "Xoá {thing}"
 
-#: magi/item_model.py:687 magi/models.py:92
+#: magi/item_model.py:696 magi/models.py:92
 msgid "Report {thing}"
 msgstr "Báo cáo {thing}"
 
-#: magi/forms.py:1853 magi/magicollections.py:1135 magi/views.py:405
-#: magi/views.py:492
+#: magi/forms.py:2119 magi/magicollections.py:1225 magi/views.py:419
+#: magi/views.py:506
 msgid "Add {thing}"
 msgstr "Thêm {thing}"
 
-#: magi/magicollections.py:3013
+#: magi/magicollections.py:3225
 msgid "Only submit a report if there is a problem with this specific {thing}. If it's about something else, your report will be ignored. For example, don't report an account or a profile if there is a problem with an activity. Look for \"Report\" buttons on the following to report individually:"
 msgstr "Chỉ được gửi báo cáo nếu có một vấn đề cụ thể với {thing}. Nếu nó liên quan tới một thứ khác, báo cáo của bạn sẽ bị bỏ qua. Ví dụ, đừng báo cáo một tài khoản hoặc một hồ sơ nếu có vấn đề với hoạt động của họ. Tìm thanh \"Báo cáo\" ngay bây giờ để báo cáo riêng lẻ:"
 
-#: magi/models.py:826
+#: magi/models.py:828
 msgid "Only post official artworks, artworks you own, or fan artworks that are approved by the artist and credited."
 msgstr "Chỉ được đăng bức vẽ chính thức, bức vẽ của riêng bạn, hoặc bức vẽ của fan đã được công nhận bởi hoạ sĩ gốc."
 
-#: magi/models.py:1207 magi/models.py:1276
+#: magi/models.py:1211 magi/models.py:1280
 msgid "{month} Donator"
 msgstr "{month} Người đóng góp"
 
-#: magi/models.py:1282
+#: magi/models.py:1286
 msgid "{donation_platform} supporter of {site_name} who donated to help cover the server costs"
 msgstr "{donation_platform} người ủng hộ của {site_name} đã đóng góp để giúp bù đắp chi phí của server"
 
-#: magi/raw.py:7
+#: magi/raw.py:9
 msgid "lovely"
 msgstr "đáng yêu"
 
-#: magi/raw.py:8
+#: magi/raw.py:10
 msgid "awesome"
 msgstr "tuyệt vời"
 
-#: magi/raw.py:9
+#: magi/raw.py:11
 msgid "incredible"
 msgstr "tuyệt vời"
 
-#: magi/raw.py:10
+#: magi/raw.py:12
 msgid "adorable"
 msgstr "dễ thương"
 
-#: magi/raw.py:11
+#: magi/raw.py:13
 msgid "generous"
 msgstr "hào phóng"
 
-#: magi/raw.py:12
+#: magi/raw.py:14
 msgid "idols-addicted"
 msgstr "nghiện idol"
 
-#: magi/raw.py:13
+#: magi/raw.py:15
 msgid "friendly"
 msgstr "thân thiện"
 
-#: magi/raw.py:14
+#: magi/raw.py:16
 msgid "kind"
 msgstr "tốt bụng"
 
-#: magi/raw.py:15
+#: magi/raw.py:17
 msgid "warmhearted"
 msgstr "hăng hái"
 
-#: magi/raw.py:16
+#: magi/raw.py:18
 msgid "nice"
 msgstr "tốt"
 
@@ -1950,7 +1965,7 @@ msgstr "Nhấn vào để tắt thông báo email."
 
 #: magi/templates/emails/report.html:21
 #: magi/templates/items/activityItem.html:89
-#: magi/templates/pages/settings.html:107 magi/utils.py:1318
+#: magi/templates/pages/settings.html:107 magi/utils.py:1449
 msgid "Translate from %(from_language)s to %(to_language)s"
 msgstr "Dịch từ %(from_language)s sang %(to_language)s"
 
@@ -1958,7 +1973,7 @@ msgstr "Dịch từ %(from_language)s sang %(to_language)s"
 msgid "follows you"
 msgstr "theo dõi bạn"
 
-#: magi/views.py:386 magi/views.py:1107
+#: magi/views.py:400 magi/views.py:1130
 msgid "Successfully edited!"
 msgstr "Chỉnh sửa thành công!"
 
@@ -1979,24 +1994,24 @@ msgstr "Còn lại {time}"
 msgid "Starts in {time}"
 msgstr "Bắt đầu trong {time}"
 
-#: bang/forms.py:52 bang/forms.py:73 bang/forms.py:239 bang/forms.py:246
-#: bang/forms.py:247 bang/forms.py:711 bang/forms.py:1202 bang/forms.py:1431
-#: bang/forms.py:1478 bang/magicollections.py:68 bang/magicollections.py:118
-#: bang/magicollections.py:309 bang/magicollections.py:607
-#: bang/magicollections.py:631 bang/magicollections.py:2471
-#: bang/magicollections.py:2701 bang/models.py:372 bang/models.py:1693
-#: bang/models.py:2104 bang/settings.py:179 bang/utils.py:120
+#: bang/forms.py:52 bang/forms.py:73 bang/forms.py:246 bang/forms.py:253
+#: bang/forms.py:254 bang/forms.py:718 bang/forms.py:1209 bang/forms.py:1438
+#: bang/forms.py:1485 bang/magicollections.py:68 bang/magicollections.py:124
+#: bang/magicollections.py:315 bang/magicollections.py:611
+#: bang/magicollections.py:635 bang/magicollections.py:2465
+#: bang/magicollections.py:2694 bang/models.py:372 bang/models.py:1693
+#: bang/models.py:2098 bang/settings.py:185 bang/utils.py:120
 msgid "Member"
 msgstr "Thành viên"
 
-#: bang/forms.py:52 bang/forms.py:78 bang/forms.py:185 bang/forms.py:1009
-#: bang/forms.py:1460 bang/forms.py:1491 bang/magicollections.py:84
-#: bang/magicollections.py:370 bang/magicollections.py:607
-#: bang/magicollections.py:1949 bang/magicollections.py:2317
-#: bang/magicollections.py:2459 bang/magicollections.py:2471
-#: bang/magicollections.py:2710 bang/models.py:205 bang/models.py:1243
+#: bang/forms.py:52 bang/forms.py:78 bang/forms.py:192 bang/forms.py:1016
+#: bang/forms.py:1467 bang/forms.py:1498 bang/magicollections.py:85
+#: bang/magicollections.py:376 bang/magicollections.py:611
+#: bang/magicollections.py:1947 bang/magicollections.py:2312
+#: bang/magicollections.py:2453 bang/magicollections.py:2465
+#: bang/magicollections.py:2703 bang/models.py:205 bang/models.py:1243
 #: bang/models.py:1245 bang/models.py:1247 bang/models.py:1322
-#: bang/models.py:1954 bang/settings.py:175 bang/utils.py:120 bang/utils.py:146
+#: bang/models.py:1948 bang/settings.py:181 bang/utils.py:120 bang/utils.py:146
 #: bang/views.py:35
 msgid "Band"
 msgstr "Nhóm nhạc"
@@ -2005,26 +2020,26 @@ msgstr "Nhóm nhạc"
 msgid "Attribute"
 msgstr "Thuộc tính"
 
-#: bang/forms.py:250 bang/forms.py:251 bang/magicollections.py:1029
+#: bang/forms.py:257 bang/forms.py:258 bang/magicollections.py:1033
 #: bang/models.py:688 bang/models.py:689 bang/models.py:690 bang/models.py:759
 #: bang/models.py:1090 bang/models.py:1701
 msgid "Performance"
 msgstr "Khả năng trình diễn"
 
-#: bang/forms.py:251 bang/forms.py:253 bang/forms.py:255 bang/forms.py:257
-#: bang/magicollections.py:995 bang/magicollections.py:1042 bang/models.py:654
-#: bang/models.py:676 bang/models.py:685 bang/models.py:690 bang/models.py:693
+#: bang/forms.py:258 bang/forms.py:260 bang/forms.py:262 bang/forms.py:264
+#: bang/magicollections.py:999 bang/magicollections.py:1046 bang/models.py:653
+#: bang/models.py:673 bang/models.py:683 bang/models.py:690 bang/models.py:693
 #: bang/models.py:696 bang/models.py:916
 msgid "Trained"
 msgstr "Đã tập luyện"
 
-#: bang/forms.py:252 bang/forms.py:253 bang/magicollections.py:1030
+#: bang/forms.py:259 bang/forms.py:260 bang/magicollections.py:1034
 #: bang/models.py:691 bang/models.py:692 bang/models.py:693 bang/models.py:760
 #: bang/models.py:1091 bang/models.py:1702
 msgid "Technique"
 msgstr "Kĩ thuật"
 
-#: bang/magicollections.py:310 bang/magicollections.py:2634 bang/models.py:1956
+#: bang/magicollections.py:316 bang/magicollections.py:2627 bang/models.py:1950
 msgid "Members"
 msgstr "Các thành viên"
 
@@ -2045,7 +2060,7 @@ msgstr "Power"
 msgid "Pure"
 msgstr "Pure"
 
-#: bang/models.py:397 bang/settings.py:185
+#: bang/models.py:397 bang/settings.py:191
 msgid "Happy"
 msgstr "Happy"
 
@@ -2061,21 +2076,21 @@ msgstr "Hồi thể lực"
 msgid "Perfect lock"
 msgstr "Perfect lock"
 
-#: starlight/magicollections.py:131 starlight/models.py:279
+#: starlight/forms.py:267 starlight/forms.py:340 starlight/forms.py:521
+#: starlight/magicollections.py:428 starlight/models.py:537
+#: starlight/utils.py:170
 msgid "School"
 msgstr "Trường"
 
-#: starlight/models.py:304 starlight/models.py:306
+#: starlight/models.py:577 starlight/models.py:579
 msgid "Liked food"
 msgstr "Đồ ăn ưa thích"
 
-#: starlight/models.py:308 starlight/models.py:310
+#: starlight/models.py:581 starlight/models.py:583
 msgid "Disliked food"
 msgstr "Đồ ăn không thích"
 
-#: bang/magicollections.py:528 bang/magicollections.py:2413 bang/models.py:739
-#: bang/models.py:740 bang/models.py:743 bang/models.py:1318
-#: bang/models.py:1323 bang/models.py:1805
+#: starlight/models.py:1139 starlight/models.py:1141
 msgid "Level {level}"
 msgstr "Cấp {level}"
 
@@ -2091,24 +2106,24 @@ msgstr "giờ"
 msgid "minutes"
 msgstr "phút"
 
-#: bang/models.py:1991
+#: bang/models.py:1985
 msgid "Source"
 msgstr "Nguồn"
 
-#: bang/forms.py:1062 bang/models.py:257 bang/models.py:259 bang/models.py:1691
+#: bang/forms.py:1069 bang/models.py:257 bang/models.py:259 bang/models.py:1691
 msgid "Instrument"
 msgstr "Nhạc cụ"
 
-#: magi/magicollections.py:440
+#: magi/magicollections.py:445
 msgid "Collected {thing}"
 msgstr "Đã sưu tập {thing}"
 
-#: bang/magicollections.py:773 bang/models.py:553 bang/models.py:554
+#: bang/magicollections.py:777 bang/models.py:553 bang/models.py:554
 #: bang/models.py:556
 msgid "Skill name"
 msgstr "Tên kĩ năng"
 
-#: bang/forms.py:387 bang/magicollections.py:552 bang/models.py:919
+#: bang/forms.py:394 bang/magicollections.py:556 bang/models.py:919
 msgid "{nth} episode"
 msgstr "{nth} tập"
 
@@ -2128,50 +2143,50 @@ msgstr "Đặt một nickname cho tài khoản của bạn để dễ nhận bi�
 msgid "Start date"
 msgstr "Ngày bắt đầu"
 
-#: magi/abstract_models.py:134 magi/forms.py:1488 magi/models.py:150
+#: magi/abstract_models.py:134 magi/forms.py:1728 magi/models.py:150
 #: magi/models.py:171
 msgid "Default tab"
 msgstr "Trang mặc định"
 
-#: magi/forms.py:1256 magi/views.py:294
+#: magi/forms.py:1496 magi/views.py:302
 msgid "Email"
 msgstr "Email"
 
-#: magi/forms.py:342 magi/forms.py:351 magi/forms.py:360
+#: magi/forms.py:468 magi/forms.py:477 magi/forms.py:486
 msgid "You've added a lot of {things}, lately. Try to wait a little bit before adding more."
 msgstr "Bạn đã vừa thêm quá nhiều {things}. Thử đợi một lúc trước khi thêm nhiều hơn nữa."
 
-#: magi/forms.py:367
+#: magi/forms.py:493
 msgid "You already have {total} {things}. You can only add up to {max} {things}."
 msgstr "Bạn đã có {total} {things}. Bạn chỉ có thể thêm tối đa {max} {things}"
 
-#: magi/forms.py:654
+#: magi/forms.py:820
 msgid "View"
 msgstr "Xem"
 
-#: magi/forms.py:1202
+#: magi/forms.py:1440
 msgid "Please provide an updated screenshot of your in-game profile to prove your level."
 msgstr "Xin hãy cung cấp ảnh chụp màn hình tài khoản trong game của bạn để chứng minh cấp độ của bạn."
 
-#: magi/utils.py:1175 magi/utils.py:1179
+#: magi/utils.py:1306 magi/utils.py:1310
 msgid "You may use Markdown formatting."
 msgstr "Bạn có thể dùng định dạng Markdown."
 
 #. Example: Adding to your account db0
 #. Adding to your card Kotori
-#: magi/magicollections.py:338
+#: magi/magicollections.py:343
 msgid "Adding to your {thing} {name}"
 msgstr "Thêm vào {thing} của bạn {name}"
 
-#: magi/magicollections.py:448
+#: magi/magicollections.py:453
 msgid "Add to your {thing}"
 msgstr "Thêm vào {thing}"
 
-#: magi/magicollections.py:464
+#: magi/magicollections.py:469
 msgid "Quick edit"
 msgstr "Chỉnh sửa nhanh"
 
-#: magi/magicollections.py:1734
+#: magi/magicollections.py:1931
 msgid "Leaderboard position"
 msgstr "Vị trí tại Bảng xếp hạng"
 
@@ -2212,23 +2227,23 @@ msgstr "Theo cách khác..."
 msgid "The staff team is available on:"
 msgstr "Đội ngũ đang hoạt động tại:"
 
-#: magi/utils.py:471
+#: magi/utils.py:484
 msgid "Select {}"
 msgstr "Chọn {}"
 
-#: magi/utils.py:1016
+#: magi/utils.py:1095
 msgid "This date has to be in the future."
 msgstr "Ngày này phải tồn tại trong tương lai."
 
-#: magi/views.py:386 magi/views.py:1113
+#: magi/views.py:400 magi/views.py:1136
 msgid "Successfully added!"
 msgstr "Thêm vào thành công!"
 
-#: magi/views.py:1119
+#: magi/views.py:1142
 msgid "Successfully deleted!"
 msgstr "Xoá bỏ thành công!"
 
-#: magi/views_collections.py:318
+#: magi/views_collections.py:338
 msgid "{things} list"
 msgstr "Danh sách {things}"
 
@@ -2276,15 +2291,15 @@ msgstr "giây còn lại"
 msgid "translated in English"
 msgstr "đã dịch sang Tiếng Anh"
 
-#: bang/forms.py:124 bang/magicollections.py:174
+#: bang/forms.py:131 bang/magicollections.py:180
 msgid "Total {item} bought"
 msgstr "Tổng cổng {item} đã mua"
 
-#: bang/forms.py:124 bang/magicollections.py:174
+#: bang/forms.py:131 bang/magicollections.py:180
 msgid "Star gems"
 msgstr "Star Gems"
 
-#: sukutomo/models.py:217
+#: starlight/forms.py:194 starlight/forms.py:199
 msgid "Friend ID"
 msgstr "ID của bạn bè"
 
@@ -2292,16 +2307,16 @@ msgstr "ID của bạn bè"
 msgid "Promo"
 msgstr "Quảng cáo"
 
-#: sukutomo/forms.py:239 sukutomo/forms.py:278 sukutomo/forms.py:379
-#: sukutomo/models.py:561 sukutomo/models.py:1019
+#: starlight/forms.py:364 starlight/forms.py:493 starlight/models.py:774
+#: starlight/models.py:985 starlight/models.py:990
 msgid "Release date"
 msgstr "Ngày ra mắt"
 
-#: bang/forms.py:338
+#: bang/forms.py:345
 msgid "Origin"
 msgstr "Gốc"
 
-#: sukutomo/models.py:874
+#: starlight/settings.py:208
 msgid "Gacha"
 msgstr "Gacha"
 
@@ -2310,10 +2325,10 @@ msgstr "Gacha"
 msgid "Server availability"
 msgstr "Server khả dụng"
 
-#: bang/forms.py:433 bang/forms.py:434 bang/forms.py:521 bang/forms.py:624
-#: bang/forms.py:625 bang/forms.py:692 bang/models.py:94 bang/models.py:1060
-#: bang/models.py:1061 bang/models.py:1062 bang/models.py:1484
-#: bang/models.py:1485 bang/models.py:1486 bang/models.py:1824
+#: bang/forms.py:440 bang/forms.py:441 bang/forms.py:528 bang/forms.py:631
+#: bang/forms.py:632 bang/forms.py:699 bang/models.py:94 bang/models.py:1059
+#: bang/models.py:1061 bang/models.py:1062 bang/models.py:1483
+#: bang/models.py:1485 bang/models.py:1486 bang/models.py:1823
 msgid "English version"
 msgstr "Bản Tiếng Anh"
 
@@ -2332,24 +2347,23 @@ msgstr "Bản Tiếng Hàn"
 msgid "Date"
 msgstr "Ngày"
 
-#: sukutomo/forms.py:209 sukutomo/models.py:37 sukutomo/models.py:760
-#: sukutomo/models.py:761 sukutomo/models.py:762 sukutomo/models.py:765
+#: starlight/models.py:82 starlight/models.py:985
 msgid "Japanese version"
 msgstr "Bản Tiếng Nhật"
 
-#: sukutomo/forms.py:280 sukutomo/models.py:523 sukutomo/models.py:696
+#: starlight/forms.py:366 starlight/models.py:766 starlight/models.py:798
 msgid "Romaji"
 msgstr "La Mã tự"
 
-#: sukutomo/forms.py:281 sukutomo/models.py:565
+#: starlight/forms.py:367 starlight/models.py:772
 msgid "Length"
 msgstr "Độ dài"
 
-#: bang/forms.py:948
+#: starlight/forms.py:368
 msgid "BPM"
 msgstr "BPM"
 
-#: bang/forms.py:949 bang/forms.py:950 bang/models.py:1227 bang/models.py:1278
+#: bang/forms.py:956 bang/forms.py:957 bang/models.py:1227 bang/models.py:1278
 #: bang/models.py:1279 bang/models.py:1408
 msgid "Hard"
 msgstr "Khó"
@@ -2366,59 +2380,60 @@ msgstr "Notes"
 msgid "Difficulty"
 msgstr "Độ khó"
 
-#: bang/forms.py:951 bang/forms.py:952 bang/models.py:1228 bang/models.py:1280
+#: bang/forms.py:958 bang/forms.py:959 bang/models.py:1228 bang/models.py:1280
 #: bang/models.py:1281 bang/models.py:1409
 msgid "Expert"
 msgstr "Cực khó"
 
-#: bang/magicollections.py:178
+#: bang/magicollections.py:184
 msgid "~{}円 spent (~${})"
 msgstr "~{} ¥ đã tiêu (~${})"
 
-#: starlight/settings.py:101
+#: bang/magicollections.py:317 bang/settings.py:126
+#: bang/templates/pages/indexBackground.html:22
 msgid "Characters"
 msgstr "Nhân vật"
 
 #. Fixed wrong order sentence
-#: bang/magicollections.py:84 bang/magicollections.py:449 bang/settings.py:175
+#: starlight/forms.py:59
 msgid "Favorite {thing}"
 msgstr "{thing} yêu thích"
 
-#: bang/forms.py:245 bang/magicollections.py:453 bang/models.py:871
+#: bang/forms.py:252 bang/magicollections.py:457 bang/models.py:871
 msgid "Favorite {things}"
 msgstr "{things} yêu thích"
 
-#: bang/magicollections.py:835 bang/magicollections.py:839
-#: bang/magicollections.py:840 bang/magicollections.py:2781
-#: bang/magicollections.py:2785 bang/magicollections.py:2786
+#: bang/magicollections.py:839 bang/magicollections.py:843
+#: bang/magicollections.py:844 bang/magicollections.py:2773
+#: bang/magicollections.py:2777 bang/magicollections.py:2778
 msgid "Chibi"
 msgstr "Chibi"
 
-#: sukutomo/magicollections.py:980 sukutomo/magicollections.py:1212
+#: starlight/magicollections.py:845
 msgid "Icons"
 msgstr "Icons"
 
-#: sukutomo/magicollections.py:1212
+#: starlight/magicollections.py:845
 msgid "Quick add"
 msgstr "Thêm nhanh"
 
-#: bang/magicollections.py:946
+#: starlight/magicollections.py:892
 msgid "Statistics"
 msgstr "Số liệu thống kê"
 
-#: bang/magicollections.py:1041
+#: bang/magicollections.py:1045
 msgid "Min"
 msgstr "Nhỏ nhất"
 
-#: bang/magicollections.py:1041
+#: bang/magicollections.py:1045
 msgid "Max"
 msgstr "Lớn nhất"
 
-#: bang/magicollections.py:1091
+#: bang/magicollections.py:1093
 msgid "Participated event"
 msgstr "Event đã tham gia"
 
-#: bang/forms.py:524 bang/magicollections.py:1092 bang/models.py:1117
+#: bang/forms.py:531 bang/magicollections.py:1094 bang/models.py:1117
 msgid "Participated events"
 msgstr "Những event đã tham gia"
 
@@ -2430,27 +2445,27 @@ msgstr "Thành viên được cường hoá"
 msgid "Gift song"
 msgstr "Bài hát được tặng"
 
-#: bang/forms.py:355 bang/forms.py:708 bang/magicollections.py:1728
+#: bang/forms.py:362 bang/forms.py:715 bang/magicollections.py:1727
 msgid "Gacha type"
 msgstr "Loại Gacha"
 
-#: sukutomo/magicollections.py:1087 sukutomo/models.py:1321
+#: starlight/models.py:1275
 msgid "Permanent"
 msgstr "Vĩnh viễn"
 
-#: bang/magicollections.py:1859
+#: bang/magicollections.py:1858
 msgid "Played song"
 msgstr "Bài hát đã chơi"
 
-#: bang/forms.py:945 bang/magicollections.py:1860 bang/models.py:1365
+#: bang/forms.py:952 bang/magicollections.py:1859 bang/models.py:1365
 msgid "Played songs"
 msgstr "Người chơi hoàn thành bài hát gần nhất"
 
-#: starlight/magicollections.py:218
+#: starlight/magicollections.py:625
 msgid "Song"
 msgstr "Bài hát"
 
-#: bang/magicollections.py:2107
+#: bang/magicollections.py:2104
 msgid "{} notes"
 msgstr "{} notes"
 
@@ -2458,19 +2473,19 @@ msgstr "{} notes"
 msgid "Songwriters"
 msgstr "Người viết nhạc"
 
-#: sukutomo/models.py:214
+#: starlight/forms.py:512 starlight/models.py:209
 msgid "Version"
 msgstr "Phiên bản"
 
-#: sukutomo/models.py:220
+#: starlight/models.py:288
 msgid "The model of your device. Example: Nexus 5, iPhone 4, iPad 2, ..."
 msgstr "Model máy của bạn. Ví dụ: Nexus 5, iPhone 4, iPad 2, ..."
 
-#: bang/forms.py:859 bang/models.py:160 bang/models.py:1151 bang/models.py:1421
+#: starlight/models.py:230
 msgid "Screenshot"
 msgstr "Ảnh chụp màn hình"
 
-#: bang/models.py:160
+#: starlight/models.py:230
 msgid "In-game profile screenshot"
 msgstr "Ảnh chụp màn hình hồ sơ trong game"
 
@@ -2522,20 +2537,20 @@ msgstr "Challenge Live"
 msgid "Event type"
 msgstr "Loại Event"
 
-#: bang/forms.py:597 bang/forms.py:853 bang/models.py:1141 bang/models.py:1162
+#: bang/forms.py:604 bang/forms.py:860 bang/models.py:1141 bang/models.py:1162
 #: bang/models.py:1416 bang/models.py:1440
 msgid "Score"
 msgstr "Điểm"
 
-#: bang/forms.py:596 bang/models.py:1142
+#: bang/forms.py:603 bang/models.py:1142
 msgid "Ranking"
 msgstr "Xếp hạng"
 
-#: bang/forms.py:598 bang/models.py:1144 bang/models.py:1167
+#: bang/forms.py:605 bang/models.py:1144 bang/models.py:1167
 msgid "Song score"
 msgstr "Điểm bài hát"
 
-#: bang/forms.py:599 bang/models.py:1145 bang/models.py:1172
+#: bang/forms.py:606 bang/models.py:1145 bang/models.py:1172
 msgid "Song ranking"
 msgstr "Xếp hạng của bài hát"
 
@@ -2544,15 +2559,15 @@ msgstr "Xếp hạng của bài hát"
 msgid "Easy"
 msgstr "Dễ"
 
-#: sukutomo/models.py:511 sukutomo/models.py:573 sukutomo/models.py:578
+#: starlight/models.py:783 starlight/models.py:785
 msgid "Composer"
 msgstr "Biên soạn"
 
-#: sukutomo/models.py:512 sukutomo/models.py:574 sukutomo/models.py:579
+#: starlight/models.py:787 starlight/models.py:789
 msgid "Lyricist"
 msgstr "Người soạn lời"
 
-#: sukutomo/models.py:513 sukutomo/models.py:575 sukutomo/models.py:580
+#: starlight/models.py:791 starlight/models.py:793
 msgid "Arranger"
 msgstr "Người sắp xếp"
 
@@ -2560,7 +2575,7 @@ msgstr "Người sắp xếp"
 msgid "Translation"
 msgstr "Biên dịch"
 
-#: sukutomo/models.py:564
+#: starlight/models.py:771
 msgid "Preview"
 msgstr "Xem trước"
 
@@ -2568,7 +2583,7 @@ msgstr "Xem trước"
 msgid "Cover song"
 msgstr "Bài cover"
 
-#: sukutomo/forms.py:282 sukutomo/models.py:566
+#: starlight/models.py:773
 msgid "Beats per minute"
 msgstr "Số nhịp trên phút (BPM)"
 
@@ -2609,16 +2624,16 @@ msgid "Full combo"
 msgstr "Full Combo"
 
 #. Name of a license, so it's unlikely you need to translate unless your language uses a different set of characters (Chinese, Japanese, Korean, Russian, etc.)
-#: starlight/settings.py:118
+#: bang/settings.py:30 bang/settings.py:166 bang/settings.py:312
 msgid "BanG Dream!"
 msgstr "BanG Dream!"
 
 #. Name of a license, so it's unlikely you need to translate unless your language uses a different set of characters (Chinese, Japanese, Korean, Russian, etc.)
-#: bang/settings.py:28 bang/settings.py:311
+#: bang/settings.py:30 bang/settings.py:317
 msgid "Girls Band Party"
 msgstr "Girl Band Party"
 
-#: bang/settings.py:265 bang/views.py:90 bang/views.py:91
+#: bang/settings.py:271 bang/views.py:90 bang/views.py:91
 msgid "Team builder"
 msgstr "Người xây dựng nhóm"
 
@@ -2626,7 +2641,7 @@ msgstr "Người xây dựng nhóm"
 msgid "You can find your friend id by going to the \"Friends\" section from the home, then \"ID Search\". Players will be able to send you friend requests or messages using this number."
 msgstr "Bạn có thể tìm ID của bạn bè bằng cách nhấn vào phần \"Friends\" ở trang chủ, rồi \"ID Search\". Những người chơi khác sẽ gửi cho bạn lời mời kết bạn hoặc tin nhắn qua những con số này"
 
-#: sukutomo/models.py:218
+#: starlight/models.py:219
 msgid "Should your friend ID be visible to other players?"
 msgstr "Có nên hiện thỉ ID của bạn bè cho những người chơi khác thấy?"
 
@@ -2684,7 +2699,7 @@ msgstr "Nhóm"
 msgid "Subunit"
 msgstr "Nhóm phụ"
 
-#: starlight/models.py:156 starlight/models.py:292
+#: starlight/models.py:341 starlight/models.py:557
 msgid "Astrological sign"
 msgstr "Cung hoàng đạo"
 
@@ -2708,7 +2723,7 @@ msgstr "Idol Producer"
 msgid "Ultimate Idol Devotee"
 msgstr "Ultimate Idol Devotee"
 
-#: bang/forms.py:244 bang/models.py:872
+#: starlight/models.py:1547 starlight/models.py:1689
 msgid "Collected {things}"
 msgstr "Đã thu thập {things}"
 
@@ -2716,7 +2731,7 @@ msgstr "Đã thu thập {things}"
 msgid "For the next {duration} seconds, score of PERFECT notes boosted by +{percentage}%"
 msgstr "Trong {duration} giây tiếp theo, điểm của PERFECT tăng thêm +{percentage}%"
 
-#: bang/magicollections.py:1436 bang/models.py:1897
+#: bang/magicollections.py:1436 bang/models.py:1895
 msgid "Rare stamp"
 msgstr "Sticker hiếm"
 
@@ -2724,31 +2739,31 @@ msgstr "Sticker hiếm"
 msgid "Boost attribute"
 msgstr "Thuộc tính được cường hoá"
 
-#: bang/forms.py:529 bang/magicollections.py:1212 bang/models.py:1096
+#: bang/forms.py:536 bang/magicollections.py:1213 bang/models.py:1096
 msgid "Boost members"
 msgstr "Thành viên được cường hoá"
 
-#: magi/default_settings.py:58 magi/default_settings.py:75
+#: magi/default_settings.py:59 magi/default_settings.py:78
 msgid "Manager"
 msgstr "Quản lý"
 
-#: magi/default_settings.py:81
+#: magi/default_settings.py:88
 msgid "Team manager"
 msgstr "Quản lý đội ngũ"
 
-#: magi/default_settings.py:96
+#: magi/default_settings.py:105
 msgid "Finance manager"
 msgstr "Quản lý tài chính"
 
-#: magi/default_settings.py:110 magi/default_settings.py:120
+#: magi/default_settings.py:119 magi/default_settings.py:131
 msgid "Database maintainer"
 msgstr "Người bảo trì dữ liệu"
 
-#: magi/default_settings.py:133 magi/default_settings.py:147
+#: magi/default_settings.py:146 magi/default_settings.py:164
 msgid "Community manager"
 msgstr "Quản lý cộng đồng"
 
-#: magi/default_settings.py:141
+#: magi/default_settings.py:158
 msgid "Posted {total} news"
 msgstr "Đã đăng {total} tin mới"
 
@@ -2756,80 +2771,80 @@ msgstr "Đã đăng {total} tin mới"
 msgid "Twitter"
 msgstr "Twitter"
 
-#: magi/default_settings.py:156
+#: magi/default_settings.py:177
 msgid "External communication"
 msgstr "Giới truyền thông bên ngoài"
 
-#: sukutomo/models.py:649 sukutomo/models.py:1004 sukutomo/models.py:1341
+#: starlight/models.py:1396
 msgid "Support"
 msgstr "Hỗ trợ"
 
-#: magi/default_settings.py:175 magi/default_settings.py:192
-#: magi/default_settings.py:245
+#: magi/default_settings.py:204 magi/default_settings.py:223
+#: magi/default_settings.py:284
 msgid "Moderator"
 msgstr "Moderator"
 
-#: magi/default_settings.py:175
+#: magi/default_settings.py:204
 msgid "Active"
 msgstr "Còn hoạt động"
 
-#: magi/default_settings.py:186
+#: magi/default_settings.py:217
 msgid "Submitted {total} reports"
 msgstr "Đã gửi {total} báo cáo"
 
-#: magi/default_settings.py:192
+#: magi/default_settings.py:223
 msgid "Decisive"
 msgstr "Quyết định"
 
-#: magi/default_settings.py:209
+#: magi/default_settings.py:242
 msgid "Edited or deleted {total} reported items"
 msgstr "Đã sửa hoặc xoá {total} bản báo cáo"
 
-#: magi/default_settings.py:215
+#: magi/default_settings.py:248
 msgid "Community entertainer"
 msgstr "Nghệ sĩ của cộng đồng"
 
-#: magi/default_settings.py:233
+#: magi/default_settings.py:268
 msgid "Organized and posted about {total} community events"
 msgstr "Đã tổ chức và đăng {total} sự kiện cho cộng đồng"
 
-#: magi/default_settings.py:239
+#: magi/default_settings.py:274
 msgid "Backup staff"
 msgstr "Staff dự phòng"
 
-#: magi/default_settings.py:254
+#: magi/default_settings.py:293
 msgid "Translator"
 msgstr "Phiên dịch viên"
 
-#: magi/default_settings.py:265
+#: magi/default_settings.py:309
 msgid "Graphic designer"
 msgstr "Nhà thiết kế đồ hoạ"
 
-#: magi/default_settings.py:271
+#: magi/default_settings.py:315
 msgid "Artist"
 msgstr "Hoạ sĩ"
 
-#: magi/default_settings.py:277
+#: magi/default_settings.py:321
 msgid "Developer"
 msgstr "Nhà phát triển"
 
-#: magi/default_settings.py:288
+#: magi/default_settings.py:334
 msgid "System administrator"
 msgstr "Quản trị viên máy chủ"
 
-#: magi/forms.py:1455 magi/magicollections.py:2689
+#: magi/forms.py:1695 magi/magicollections.py:2903
 msgid "You are not allowed to see activities with the tag \"{tag}\"."
 msgstr "Bạn không được phép xem các hoạt động có liên quan tới thẻ \"{tag}\"."
 
-#: magi/magicollections.py:1091
+#: starlight/models.py:804 starlight/models.py:806
 msgid "Translations"
 msgstr "Dịch"
 
-#: magi/magicollections.py:1905 magi/magicollections.py:3277 magi/views.py:657
+#: magi/magicollections.py:2106 magi/magicollections.py:3484 magi/views.py:678
 msgid "Block {username}"
 msgstr "Chặn {username}"
 
-#: magi/magicollections.py:2705
+#: magi/magicollections.py:2922
 msgid "You can change which tags you would like to see or hide in your settings."
 msgstr "Bạn có thể thay đổi những tags nào bạn muốn xem hoặc ẩn đi ở phần cài đặt."
 
@@ -2837,7 +2852,7 @@ msgstr "Bạn có thể thay đổi những tags nào bạn muốn xem hoặc �
 msgid "Display your birthdate year"
 msgstr "Hiển thị ngày sinh của bạn"
 
-#: magi/models.py:218
+#: starlight/models.py:1399
 msgid "Roles"
 msgstr "Các vị trí"
 
@@ -2845,7 +2860,7 @@ msgstr "Các vị trí"
 msgid "Hide tags"
 msgstr "Ẩn tags"
 
-#: magi/models.py:658
+#: magi/models.py:660
 msgid "hobbies"
 msgstr "sở thích"
 
@@ -2853,65 +2868,66 @@ msgstr "sở thích"
 msgid "About us"
 msgstr "Về chúng tôi"
 
-#: magi/templates/pages/prelaunch.html:21
+#: magi/templates/pages/prelaunch.html:28
 msgid "Pre-register"
 msgstr "Đăng ký sớm"
 
-#: magi/forms.py:1467
+#: magi/forms.py:1707
 msgid "Security"
 msgstr "Bảo vệ"
 
-#: magi/magicollections.py:3316 magi/views.py:502 magi/views.py:655
-#: magi/views_collections.py:92 magi/views_collections.py:477
+#: magi/magicollections.py:3523 magi/views.py:523 magi/views.py:676
+#: magi/views_collections.py:93 magi/views_collections.py:514
 msgid "You blocked {username}."
 msgstr "Bạn đã chặn {username}."
 
-#: magi/magicollections.py:3317 magi/views.py:503 magi/views.py:657
-#: magi/views_collections.py:93 magi/views_collections.py:478
+#: magi/magicollections.py:3524 magi/views.py:524 magi/views.py:678
+#: magi/views_collections.py:94 magi/views_collections.py:515
 msgid "Unblock {username}"
 msgstr "Bỏ chặn {username}"
 
-#: magi/views.py:661
+#: magi/views.py:682
 msgid "Are you sure you want to block {username}? You will not be able to see any content created by {username}."
 msgstr "Bạn có chắc chắn muốn chặn {username}? You sẽ không thể xem bất kì thứ gì liên quan tới {username}."
 
-#: magi/views.py:661
+#: magi/views.py:682
 msgid "Are you sure you want to unblock {username}?"
 msgstr "Bạn có chắc muốn bỏ chặn {username}?"
 
-#: magi/views_collections.py:91 magi/views_collections.py:476
+#: magi/views_collections.py:92 magi/views_collections.py:513
 msgid "this user"
 msgstr "người dùng này"
 
-#: bang/forms.py:322
+#: bang/forms.py:329
 msgid "Include cameos"
 msgstr "Bao gồm"
 
-#: bang/magicollections.py:819 bang/models.py:709
+#: bang/magicollections.py:823 bang/models.py:709
 msgid "Cameos"
 msgstr "Cameos"
 
-#: bang/forms.py:339 bang/models.py:417
+#: bang/forms.py:346 bang/models.py:417
 msgid "Original card"
 msgstr "Thẻ gốc"
 
-#: starlight/settings.py:115
+#: starlight/settings.py:238
 msgid "Community event"
 msgstr "Sự kiện cộng đồng"
 
-#: starlight/settings.py:118
-msgid "Not about %(game)s"
-msgstr "Không liên quan tới %(game)s"
+#: bang/settings.py:166
+#, fuzzy
+msgid "Not about {thing}"
+msgstr "Không liên quan tới {thing}"
 
-#: starlight/settings.py:124
+#: starlight/settings.py:249
 msgid "NSFW"
 msgstr "NSFW"
 
-#: starlight/settings.py:126
+#: starlight/settings.py:251
 msgid "You need to be over 18 years old."
 msgstr "Bạn phải đủ 18 tuổi."
 
-#: starlight/settings.py:126
+#: starlight/settings.py:251
 msgid "You can change your birthdate in your settings."
 msgstr "Bạn có thể thay đổi ngày sinh ở phần cài đặt."
 
@@ -2955,15 +2971,15 @@ msgstr "Trung học nữ sinh Uranohoshi"
 msgid "Otonokizaka Academy"
 msgstr "Học viện Otonokizaka"
 
-#: starlight/models.py:283
+#: starlight/models.py:548
 msgid "School year"
 msgstr "Năm học"
 
-#: starlight/models.py:166
+#: starlight/models.py:351
 msgid "Blood type"
 msgstr "Nhóm máu"
 
-#: starlight/models.py:255 starlight/models.py:256 starlight/models.py:257
+#: starlight/models.py:500 starlight/models.py:501 starlight/models.py:502
 msgid "{nth} year"
 msgstr "Năm {nth}"
 
@@ -2971,7 +2987,7 @@ msgstr "Năm {nth}"
 msgid "Contributors"
 msgstr "Người giúp việc"
 
-#: bang/magicollections.py:856
+#: bang/magicollections.py:860
 msgid "View model"
 msgstr "Xem model"
 
@@ -2979,7 +2995,7 @@ msgstr "Xem model"
 msgid "Controls"
 msgstr "Điều khiển"
 
-#: bang/models.py:2077 bang/templates/include/costumeTopIllustration.html:21
+#: bang/models.py:2071 bang/templates/include/costumeTopIllustration.html:21
 msgctxt "BanPa model viewer"
 msgid "Model"
 msgstr "Model"
@@ -3036,30 +3052,30 @@ msgstr "(đi kèm hình nền)"
 msgid "All perfect"
 msgstr "Tất cả đều hoàn hảo"
 
-#: bang/settings.py:149
+#: bang/settings.py:155
 msgid "Thank you Yurishii"
 msgstr "cảm ơn Yurishii"
 
 #. Refers to the "hot feed" of activities on the homepage (don't translate literally!)
-#: magi/default_settings.py:333 magi/forms.py:2131
+#: magi/default_settings.py:389 magi/forms.py:2404
 msgid "Hot"
 msgstr "Nóng"
 
-#: bang/forms.py:1500
+#: bang/forms.py:1507
 msgid "How often do you hit PERFECT notes?"
 msgstr "Bạn thường xuyên đạt được PERFECT như thế nào?"
 
-#: bang/forms.py:1508
+#: bang/forms.py:1515
 msgid "How often is your life above 900?"
 msgstr "Thể lực của bạn thường trên mức 900 như thế nào?"
 
-#: bang/magicollections.py:847 bang/magicollections.py:853
-#: bang/magicollections.py:2729 bang/magicollections.py:2762
-#: bang/models.py:2036
+#: bang/magicollections.py:851 bang/magicollections.py:857
+#: bang/magicollections.py:2722 bang/magicollections.py:2754
+#: bang/models.py:2030
 msgid "Costume"
 msgstr "Trang phục"
 
-#: bang/magicollections.py:2182 bang/magicollections.py:2218
+#: bang/magicollections.py:2179 bang/magicollections.py:2215
 #: bang/models.py:1623
 msgid "Item"
 msgstr "Vật dụng"
@@ -3068,7 +3084,7 @@ msgstr "Vật dụng"
 msgid "Items"
 msgstr "Những vật dụng"
 
-#: bang/forms.py:1059 bang/magicollections.py:2359 bang/magicollections.py:2423
+#: bang/forms.py:1066 bang/magicollections.py:2354 bang/magicollections.py:2417
 #: bang/models.py:1682
 msgid "Area"
 msgstr "Khu vực"
@@ -3077,32 +3093,33 @@ msgstr "Khu vực"
 msgid "Areas"
 msgstr "Các khu vực"
 
-#: bang/magicollections.py:2290
+#: bang/magicollections.py:2285
 msgid "See all"
 msgstr "Xem tất cả"
 
-#: starlight/settings.py:242
+#: bang/magicollections.py:2286 bang/models.py:285 bang/settings.py:278
+#: bang/templates/include/galleryBackButtons.html:16 bang/views.py:52
 msgid "Gallery"
 msgstr "Bộ sưu tập"
 
-#: bang/magicollections.py:2345 bang/magicollections.py:2388
+#: bang/magicollections.py:2340 bang/magicollections.py:2383
 #: bang/models.py:1746 bang/models.py:1791
 msgid "Area item"
 msgstr "Vật dụng của khu vực"
 
-#: bang/magicollections.py:2346 bang/magicollections.py:2389 bang/views.py:64
+#: bang/magicollections.py:2341 bang/magicollections.py:2384 bang/views.py:64
 msgid "Area items"
 msgstr "Các vật dụng của khu vực"
 
-#: bang/magicollections.py:2520
+#: bang/magicollections.py:2514
 msgid "Asset"
 msgstr "Tài sản"
 
-#: bang/magicollections.py:2521 bang/magicollections.py:2616 bang/models.py:286
+#: bang/magicollections.py:2515 bang/magicollections.py:2609 bang/models.py:286
 msgid "Assets"
 msgstr "Tài sản"
 
-#: bang/magicollections.py:2730 bang/models.py:280
+#: bang/magicollections.py:2723 bang/models.py:280
 msgid "Costumes"
 msgstr "Các trang phục"
 
@@ -3114,7 +3131,7 @@ msgstr "Số lượng"
 msgid "Poster"
 msgstr "Áp phích"
 
-#: starlight/magicollections.py:286
+#: starlight/magicollections.py:1207
 msgid "Comics"
 msgstr ""
 
@@ -3122,49 +3139,49 @@ msgstr ""
 msgid "Backgrounds"
 msgstr ""
 
-#: bang/models.py:298 bang/models.py:1891 bang/models.py:1897
+#: bang/models.py:298 bang/models.py:1889 bang/models.py:1895
 msgid "Stamps"
 msgstr ""
 
-#: bang/models.py:1902
+#: bang/models.py:1899
 msgid "Titles"
 msgstr ""
 
-#: bang/models.py:1920 bang/models.py:1922
+#: bang/models.py:1916 bang/models.py:1918
 msgid "Interface"
 msgstr ""
 
-#: bang/models.py:1959
+#. direct translation of out (and) door
+#: bang/models.py:1953
 msgid "Outdoor"
-msgstr ""
+msgstr "ngoài cửa"
 
-#: bang/models.py:1960
+#. direct translation to in the house
+#: bang/models.py:1954
 msgid "Indoor"
-msgstr ""
+msgstr "trong nhà"
 
-#: bang/models.py:1962
+#: bang/models.py:1956
 msgid "Stage"
 msgstr ""
 
-#: bang/models.py:1963
+#: bang/models.py:1957
 msgid "Home"
 msgstr "nhà"
 
-#: bang/models.py:1964
+#: bang/models.py:1958
 msgid "Dating spot"
 msgstr ""
 
-#: bang/models.py:2059
+#: bang/models.py:2053
 msgid "Costume type"
 msgstr ""
 
-#: bang/settings.py:145
+#: bang/settings.py:151
 msgid "Change My Mind Challenge"
 msgstr ""
 
-#: sukutomo/forms.py:210 sukutomo/models.py:43 sukutomo/models.py:769
-#: sukutomo/models.py:770 sukutomo/models.py:771 sukutomo/models.py:774
-#: sukutomo/models.py:777
+#: starlight/models.py:88 starlight/models.py:990
 msgid "Worldwide version"
 msgstr ""
 
@@ -3193,15 +3210,15 @@ msgstr ""
 msgid "Friendly Match"
 msgstr ""
 
-#: bang/magicollections.py:2236
+#: bang/magicollections.py:2232
 msgid "Edit your {thing}"
 msgstr ""
 
-#: magi/views.py:713
+#: magi/views.py:734
 msgid "If you delete this {thing} ({instance}), the following will automatically be deleted as well:"
 msgstr ""
 
-#: magi/views.py:714
+#: magi/views.py:735
 msgid "Are you sure you want to delete this {thing} ({instance})?"
 msgstr ""
 
@@ -3211,18 +3228,18 @@ msgstr ""
 
 #: stardustrun/settings.py:57
 msgid "Gym"
-msgstr ""
+msgstr "phòng thể dục"
 
-#: magi/magicollections.py:2216 magi/tools.py:104 magi/tools.py:140
-#: magi/utils.py:312
+#: magi/magicollections.py:2433 magi/tools.py:120 magi/tools.py:156
+#: magi/utils.py:325
 msgid "Happy Birthday"
 msgstr "Chúc mừng sinh nhật"
 
 #: bang/models.py:219
 msgid "Classroom"
-msgstr ""
+msgstr "phòng học"
 
-#: bang/models.py:1927 bang/models.py:1935 bang/settings.py:278
+#: bang/models.py:1922 bang/models.py:1930 bang/settings.py:284
 msgid "Official art"
 msgstr ""
 
@@ -3230,65 +3247,65 @@ msgstr ""
 msgid "Rerun"
 msgstr ""
 
-#: magi/default_settings.py:24
+#: magi/default_settings.py:25
 msgid "Copied"
 msgstr ""
 
-#: magi/default_settings.py:24 magi/templates/items/activityItem.html:26
+#: magi/default_settings.py:25 magi/templates/items/activityItem.html:26
 msgid "Archived"
 msgstr ""
 
-#: magi/default_settings.py:24
+#: magi/default_settings.py:25
 msgid "Unarchived"
 msgstr ""
 
-#: magi/default_settings.py:327 magi/forms.py:2164
+#: magi/default_settings.py:383 magi/forms.py:2437
 #: magi/templates/items/activityItem.html:14
 msgid "Popular"
 msgstr ""
 
-#: magi/default_settings.py:340
+#: magi/default_settings.py:396
 msgid "New"
-msgstr ""
+msgstr "Mới"
 
-#: starlight/settings.py:111
+#: bang/settings.py:135
 msgid "Staff picks"
 msgstr ""
 
-#: magi/forms.py:1478
+#: magi/forms.py:1718
 msgid "Customize profile"
 msgstr ""
 
-#: magi/forms.py:2167
+#: magi/forms.py:2440
 msgid "Hide archived activities"
 msgstr ""
 
-#: magi/magicollections.py:2511
+#: magi/magicollections.py:2723
 msgid "Unarchive"
 msgstr ""
 
-#: magi/magicollections.py:2520 magi/magicollections.py:2522
+#: magi/magicollections.py:2732 magi/magicollections.py:2734
 msgid "Archive"
 msgstr ""
 
-#: magi/magicollections.py:2525 magi/templates/pages/settings.html:70
+#: magi/magicollections.py:2737 magi/templates/pages/settings.html:70
 #: magi/templates/pages/settings.html:139
 msgid "Premium feature"
 msgstr ""
 
-#: magi/magicollections.py:2634
+#: magi/magicollections.py:2846
 msgid "You might be the first person who sees these activities!"
 msgstr ""
 
-#: magi/magicollections.py:2635
+#: magi/magicollections.py:2847
 msgid "If you see anything that doesn't follow our rules, please help us by reporting it."
 msgstr ""
 
-#: magi/models.py:203 magi/views.py:492
+#: magi/models.py:203 magi/views.py:506
 msgid "Custom link"
 msgstr ""
 
-#: magi/models.py:1023
+#: magi/models.py:1027
 msgid "When someone likes an activity you archived."
 msgstr ""
 
@@ -3296,18 +3313,8 @@ msgstr ""
 msgid "Preferences"
 msgstr ""
 
-#: magi/default_settings.py:27 magi/templates/pages/settings.html:15
+#: magi/default_settings.py:28 magi/templates/pages/settings.html:15
 msgid "More"
-msgstr ""
-
-#. Name of a license, so it's unlikely you need to translate unless your language uses a different set of characters (Chinese, Japanese, Korean, Russian, etc.)
-#: magi/raw.py:55
-msgid "Utano☆Princesama"
-msgstr ""
-
-#. Name of a license, so it's unlikely you need to translate unless your language uses a different set of characters (Chinese, Japanese, Korean, Russian, etc.)
-#: magi/raw.py:55
-msgid "Shining Live"
 msgstr ""
 
 #: magi/templates/include/donate.html:27
@@ -3320,11 +3327,12 @@ msgstr ""
 
 #: magi/templates/items/donateItem.html:42
 msgid "Total spent"
-msgstr ""
+msgstr "Tổng đã dành"
 
+#. direct translation of ‘again’
 #: cpro/model_choices.py:181
 msgid "Encore"
-msgstr ""
+msgstr "lần nữa"
 
 #: cpro/model_choices.py:182
 msgid "Life Sparkle"
@@ -3348,7 +3356,7 @@ msgstr ""
 
 #: sukutomo/models.py:1085
 msgid "Princess"
-msgstr ""
+msgstr "công chúa"
 
 #: cpro/model_choices.py:315
 msgid "Cheer"
@@ -3387,80 +3395,80 @@ msgstr ""
 msgid "Skill probability"
 msgstr ""
 
-#: bang/forms.py:540 bang/forms.py:723
+#: bang/forms.py:547 bang/forms.py:730
 msgid "Status"
-msgstr ""
+msgstr "tình trạng"
 
-#: bang/forms.py:541 bang/forms.py:724
+#: bang/forms.py:548 bang/forms.py:731
 msgid "Past"
 msgstr ""
 
-#: bang/forms.py:542 bang/forms.py:725
+#: bang/forms.py:549 bang/forms.py:732
 msgid "Current"
 msgstr ""
 
-#: bang/forms.py:543 bang/forms.py:726
+#: bang/forms.py:550 bang/forms.py:733
 msgid "Future"
 msgstr ""
 
-#: starlight/settings.py:95
+#: starlight/settings.py:223
 msgid "Meme"
 msgstr ""
 
-#: starlight/settings.py:97
+#: bang/settings.py:122
 msgid "Scouting"
 msgstr ""
 
-#: starlight/settings.py:103
+#: starlight/settings.py:195
 msgid "Manga"
 msgstr ""
 
-#: starlight/settings.py:109
+#: starlight/settings.py:230
 msgid "Question"
-msgstr ""
+msgstr "câu hỏi"
 
-#: starlight/settings.py:119
+#: starlight/settings.py:244
 msgid "Swearing"
 msgstr ""
 
-#: magi/default_settings.py:25
+#: magi/default_settings.py:26
 msgid "End of new messages"
 msgstr ""
 
-#: magi/magicollections.py:1888 magi/magicollections.py:3167
+#: magi/magicollections.py:2089 magi/magicollections.py:3374
 msgid "Private messages"
 msgstr ""
 
-#: magi/magicollections.py:1927 magi/magicollections.py:2226
-#: magi/magicollections.py:3178
+#: magi/magicollections.py:2128 magi/magicollections.py:2443
+#: magi/magicollections.py:3385
 msgid "Send a message"
 msgstr ""
 
-#: magi/magicollections.py:3166 magi/models.py:1031
+#: magi/magicollections.py:3373 magi/models.py:1035
 msgid "Private message"
 msgstr ""
 
-#: magi/magicollections.py:3175 magi/magicollections.py:3329
-#: magi/magicollections.py:3382 magi/magicollections.py:3383
+#: magi/magicollections.py:3382 magi/magicollections.py:3536
+#: magi/magicollections.py:3589 magi/magicollections.py:3590
 msgid "Inbox"
 msgstr ""
 
-#: magi/forms.py:780 magi/magicollections.py:3329 magi/views.py:408
-#: magi/views.py:604 magi/views_collections.py:53
+#: magi/forms.py:946 magi/magicollections.py:3536 magi/views.py:422
+#: magi/views.py:625 magi/views_collections.py:53
 msgid "Back to {page_name}"
 msgstr "Trở về {page_name}"
 
-#: magi/magicollections.py:3385
+#: magi/magicollections.py:3592
 msgid "You are not allowed to send private messages."
 msgstr ""
 
-#: magi/magicollections.py:3386
+#: magi/magicollections.py:3593
 msgid "Take some time to play around {site_name} to unlock this feature!"
 msgstr ""
 
 #: magi/models.py:254
 msgid "Anyone"
-msgstr ""
+msgstr "bất kỳ ai"
 
 #: magi/models.py:255
 msgid "Only people I follow"
@@ -3468,41 +3476,41 @@ msgstr ""
 
 #: magi/models.py:256
 msgid "Nobody"
-msgstr ""
+msgstr "không ai"
 
 #: magi/models.py:258
 msgid "Who is allowed to send you private messages?"
 msgstr ""
 
-#: magi/models.py:1029
+#: magi/models.py:1033
 msgid "You have a new private message from {}."
 msgstr ""
 
-#: magi/models.py:1030
+#: magi/models.py:1034
 msgid "When someone sends you a private message."
 msgstr ""
 
-#: magi/templates/base.html:248
+#: magi/templates/base.html:255
 msgid "Close"
-msgstr ""
+msgstr "đóng lại"
 
-#: magi/templates/base.html:252
+#: magi/templates/base.html:259
 msgid "Remind me later"
-msgstr ""
+msgstr "nhắc tôi sau"
 
-#: magi/templates/base.html:256
+#: magi/templates/base.html:263
 msgid "Don't show this again"
 msgstr ""
 
-#: magi/utils.py:324
+#: magi/utils.py:337
 msgid "Your email address is invalid."
 msgstr ""
 
-#: magi/utils.py:325
+#: magi/utils.py:338
 msgid "Some features might not work properly."
 msgstr ""
 
-#: magi/views.py:605
+#: magi/views.py:626
 msgid "Wiki home"
 msgstr ""
 
@@ -3518,71 +3526,72 @@ msgstr ""
 msgid "VS Live"
 msgstr ""
 
-#: bang/models.py:1979
+#: bang/models.py:1973
 msgid "Collab"
 msgstr ""
 
-#: bang/models.py:1980
+#: bang/models.py:1974
 msgid "Dengeki G's magazine"
-msgstr ""
+msgstr "tạp chí của Dengeki G"
 
-#: bang/models.py:1965 bang/models.py:1981
+#: starlight/models.py:1044 starlight/models.py:1294
 msgid "Seasonal"
 msgstr ""
 
-#: bang/settings.py:153
+#: bang/settings.py:159
 msgid "Thank you Ake-san"
-msgstr ""
+msgstr " cảm ơn Ake-san"
 
-#: bang/models.py:121
+#: starlight/models.py:294
 msgid "Playground"
 msgstr ""
 
-#: bang/models.py:1966
+#: bang/models.py:1960
 msgid "Sunset"
 msgstr ""
 
-#: bang/models.py:1967
+#: bang/models.py:1961
 msgid "Night"
-msgstr ""
+msgstr "buổi tối"
 
-#: bang/models.py:1968
+#: bang/models.py:1962
 msgid "Rain"
-msgstr ""
+msgstr "mưa"
 
-#: starlight/models.py:63
+#: starlight/models.py:123
 msgid "Snow"
-msgstr ""
+msgstr "tuyết"
 
-#: bang/models.py:1970
+#: bang/models.py:1964
 msgid "Cherry blossoms"
 msgstr ""
 
-#: bang/models.py:1971
+#: bang/models.py:1965
 msgid "Fireworks"
 msgstr ""
 
-#: bang/settings.py:157
+#: bang/settings.py:163
 msgid "CosParty 2018"
-msgstr ""
+msgstr "CosParty 2018"
 
-#: magi/models.py:1217
+#: magi/models.py:1221
 msgid "This is {month}'s badge. It's limited to this month only, and only our donators can get it. It's not too late! If you donate now, it will appear on your profile."
 msgstr ""
 
-#: bang/models.py:1885
+#: bang/models.py:1884
 msgid "Background"
 msgstr ""
 
-#: magi/models.py:313
+#: starlight/magicollections.py:95 starlight/settings.py:164
+#: starlight/settings.py:166 starlight/settings.py:168 starlight/views.py:47
 msgid "{nth} Favorite {thing}"
 msgstr "{nth} {thing} yêu thích"
 
-#: magi/models.py:306
+#: magi/models.py:308
 msgid "Character"
 msgstr ""
 
-#: bang/magicollections.py:261 bang/magicollections.py:265 bang/settings.py:100
+#: bang/magicollections.py:267 bang/magicollections.py:271 bang/settings.py:102
 msgid "TOP"
 msgstr ""
 
@@ -3592,7 +3601,7 @@ msgstr ""
 
 #: sukutomo/settings.py:20 sukutomo/settings.py:526
 msgid "Love Live!"
-msgstr ""
+msgstr "Love Live!"
 
 #: sukutomo/settings.py:475
 msgid "Puchis"
@@ -3618,7 +3627,7 @@ msgstr ""
 msgid "School Idol Memory"
 msgstr ""
 
-#: starlight/magicollections.py:84
+#: starlight/magicollections.py:316 starlight/settings.py:192
 msgid "Voice actresses"
 msgstr ""
 
@@ -3660,18 +3669,18 @@ msgstr ""
 
 #: sukutomo/settings.py:544
 msgid "Games"
-msgstr ""
+msgstr "Trò chơi"
 
 #: sukutomo/settings.py:613
 msgid "Shop"
-msgstr ""
+msgstr "tiệm"
 
-#: magi/forms.py:2077 magi/models.py:177
+#: magi/forms.py:2349 magi/models.py:177
 msgid "Always post activities in {language}"
 msgstr ""
 
 #. Name of the gacha followed by "Gacha". For example if the name of the gacha is "The pretty butterfly" then it will show up as "The pretty butterfly Gacha". If it doesn't sound good in your language, feel free to change the formatting. For example, if you enter "Gacha: {}", it will show up as "Gacha: The pretty butterfly".
-#: bang/magicollections.py:1631 bang/magicollections.py:1634
+#: bang/magicollections.py:1630 bang/magicollections.py:1633
 #: bang/models.py:1541
 msgid "{} Gacha"
 msgstr ""
@@ -3736,7 +3745,7 @@ msgstr ""
 #. A location in a game.
 #: bang/models.py:1679
 msgid "Garden"
-msgstr ""
+msgstr "công viên"
 
 #: bang/models.py:1685 bang/models.py:1733
 msgid "Mic"
@@ -3744,7 +3753,7 @@ msgstr ""
 
 #: bang/models.py:1686
 msgid "Guitar"
-msgstr ""
+msgstr "đàn ghita"
 
 #: bang/models.py:1687
 msgid "Bass"
@@ -3791,7 +3800,7 @@ msgstr ""
 
 #: sukutomo/models.py:1104
 msgid "Heart"
-msgstr ""
+msgstr "trái tim"
 
 #: sukutomo/models.py:1207 sukutomo/models.py:1247 sukutomo/models.py:1271
 #: sukutomo/models.py:1279 sukutomo/models.py:1293 sukutomo/models.py:1297
@@ -3811,9 +3820,10 @@ msgstr ""
 msgid "Set"
 msgstr ""
 
+#. this can actually just stay as Hakodate Seisen Girls’ Academy, my suggestion just made academy in viet
 #: sukutomo/models.py:368
 msgid "Hakodate Seisen Girls' Academy"
-msgstr ""
+msgstr " Trường của Hakodate Seisen Girls"
 
 #: sukutomo/models.py:369
 msgid "UTX High School"
@@ -3823,7 +3833,7 @@ msgstr ""
 msgid "Instagram"
 msgstr ""
 
-#: sukutomo/models.py:480
+#: starlight/models.py:389 starlight/models.py:726
 msgid "Social media"
 msgstr ""
 
@@ -3847,15 +3857,15 @@ msgstr ""
 msgid "Specials menu"
 msgstr ""
 
-#: bang/forms.py:580
+#: bang/forms.py:587
 msgid "Please provide a screenshot to prove your ranking."
 msgstr ""
 
-#: bang/forms.py:1068 bang/models.py:1705
+#: bang/forms.py:1075 bang/models.py:1705
 msgid "Statistic"
 msgstr ""
 
-#: bang/magicollections.py:2091
+#: bang/magicollections.py:2088
 #, fuzzy
 msgid "Original song"
 msgstr "Nguyên gốc"
@@ -3890,7 +3900,7 @@ msgstr ""
 msgid "{name}'s {thing}"
 msgstr ""
 
-#: bang/magicollections.py:2150 bang/models.py:1978
+#: bang/magicollections.py:2147 bang/models.py:1972
 msgid "Album cover"
 msgstr ""
 
@@ -3926,11 +3936,11 @@ msgstr ""
 msgid "{group} members points up by +{number}%"
 msgstr ""
 
-#: magi/magicollections.py:2780
+#: magi/magicollections.py:2995
 msgid "Mark all as read"
 msgstr "Đánh dấu tất cả là đã đọc"
 
-#: magi/magicollections.py:2800
+#: magi/magicollections.py:3015
 msgid "{total} notifications were marked as read."
 msgstr ""
 
@@ -3954,27 +3964,27 @@ msgstr ""
 msgid "Boost"
 msgstr ""
 
-#: bang/forms.py:1147
+#: bang/forms.py:1154
 msgid "All {type} {things}"
 msgstr ""
 
-#: magi/forms.py:756
+#: magi/forms.py:922
 msgid "Random"
 msgstr ""
 
-#: magi/forms.py:769 magi/forms.py:775
+#: magi/forms.py:935 magi/forms.py:941
 msgid "Suggestions"
 msgstr ""
 
-#: magi/views_collections.py:344
+#: magi/views_collections.py:364
 msgid "All the {things}! Search by {search_terms} and filter by {filters} to find all the details you need about the {things} from {game}."
 msgstr ""
 
-#: bang/forms.py:405
+#: bang/forms.py:412
 msgid "Default"
 msgstr ""
 
-#: bang/magicollections.py:2812
+#: bang/magicollections.py:2804
 msgid "Chibis"
 msgstr ""
 
@@ -4001,136 +4011,438 @@ msgstr ""
 msgid "The character that you selected when you started playing."
 msgstr ""
 
-#: starlight/magicollections.py:50
+#: starlight/magicollections.py:198 starlight/magicollections.py:217
 msgid "Feed"
-msgstr ""
+msgstr "nuôi"
 
-#: starlight/magicollections.py:83 starlight/models.py:274
+#: starlight/forms.py:60 starlight/magicollections.py:72
+#: starlight/magicollections.py:96 starlight/magicollections.py:315
+#: starlight/magicollections.py:405 starlight/magicollections.py:406
+#: starlight/magicollections.py:599 starlight/models.py:428
+#: starlight/models.py:531 starlight/settings.py:165 starlight/settings.py:167
+#: starlight/settings.py:169 starlight/views.py:49
 msgid "Voice actress"
 msgstr ""
 
-#: starlight/magicollections.py:86
+#: starlight/magicollections.py:318 starlight/magicollections.py:576
+#: starlight/magicollections.py:580 starlight/models.py:708
 msgid "Cast"
 msgstr ""
 
-#: starlight/magicollections.py:132
+#: starlight/magicollections.py:429
 msgid "Schools"
-msgstr ""
+msgstr "Trường"
 
-#: starlight/magicollections.py:153 starlight/models.py:187
-#: starlight/models.py:377 starlight/settings.py:81
+#: starlight/forms.py:519 starlight/forms.py:568
+#: starlight/magicollections.py:457 starlight/models.py:388
+#: starlight/models.py:1355 starlight/settings.py:157 starlight/utils.py:161
+#: starlight/utils.py:170
 msgid "Stage girl"
 msgstr ""
 
-#: starlight/magicollections.py:154
+#: starlight/magicollections.py:458 starlight/magicollections.py:938
+#: starlight/models.py:1579 starlight/models.py:1684 starlight/settings.py:191
 msgid "Stage girls"
 msgstr ""
 
-#: starlight/magicollections.py:221
+#: starlight/magicollections.py:628
 msgid "Discography"
 msgstr ""
 
-#: starlight/magicollections.py:254
+#: starlight/magicollections.py:1082 starlight/models.py:1807
 msgid "Memoir"
 msgstr ""
 
-#: starlight/magicollections.py:255
+#: starlight/magicollections.py:1083 starlight/models.py:637
+#: starlight/models.py:1689
 msgid "Memoirs"
 msgstr ""
 
-#: starlight/magicollections.py:274
+#: starlight/magicollections.py:1194
 msgid "Conversation"
 msgstr ""
 
-#: starlight/magicollections.py:275
+#: starlight/magicollections.py:1195
 msgid "Conversations"
 msgstr ""
 
-#: starlight/magicollections.py:277
+#: starlight/magicollections.py:1197 starlight/settings.py:213
 msgid "My theater"
 msgstr ""
 
-#: starlight/magicollections.py:285
+#: starlight/magicollections.py:1206
 msgid "Comic"
 msgstr ""
 
-#: starlight/models.py:51
+#: starlight/models.py:107
 msgid "Flower"
 msgstr ""
 
-#: starlight/models.py:57
+#: starlight/models.py:115
 msgid "Wind"
-msgstr ""
+msgstr "gió"
 
-#: starlight/models.py:69
+#: starlight/models.py:131
 msgid "Cloud"
 msgstr ""
 
-#: starlight/models.py:75
+#: starlight/models.py:139
 msgid "Moon"
 msgstr ""
 
-#: starlight/models.py:81
-msgid "Cosmos"
-msgstr ""
-
-#: starlight/models.py:87
+#: starlight/models.py:155
 msgid "Dream"
 msgstr ""
 
-#: starlight/models.py:171 starlight/models.py:173
+#: starlight/models.py:356 starlight/models.py:358
 msgid "Specialty"
 msgstr ""
 
-#: starlight/models.py:241
+#: starlight/models.py:479
 msgid "Students"
 msgstr ""
 
-#: starlight/models.py:300 starlight/models.py:302
+#: starlight/models.py:564 starlight/models.py:568 starlight/models.py:571
+#: starlight/models.py:575
 msgid "Weapon"
 msgstr ""
 
-#: starlight/models.py:312 starlight/models.py:314
+#: starlight/models.py:585 starlight/models.py:587
 msgid "Likes"
-msgstr ""
+msgstr "Thích"
 
-#: starlight/models.py:316 starlight/models.py:318
+#: starlight/models.py:589 starlight/models.py:591
 msgid "Dislikes"
-msgstr ""
+msgstr "Không thích"
 
-#: starlight/models.py:393
-msgid "Elements"
-msgstr ""
-
-#: starlight/models.py:402
+#: starlight/models.py:1375
 msgid "Front"
 msgstr ""
 
-#: starlight/models.py:404
+#: starlight/models.py:1373
 msgid "Rear"
 msgstr ""
 
-#: starlight/models.py:406
+#: starlight/models.py:1377
 msgid "Position"
 msgstr ""
 
-#: starlight/settings.py:105
+#: starlight/settings.py:226
 msgid "Fanart"
 msgstr ""
 
-#: starlight/settings.py:106
+#: starlight/settings.py:227
 msgid "Graphic edit"
 msgstr ""
 
-#: starlight/settings.py:121
+#: starlight/settings.py:246
 msgid "Questionable"
 msgstr ""
 
-#: starlight/settings.py:180
+#: starlight/forms.py:155 starlight/forms.py:166
+#: starlight/magicollections.py:114 starlight/magicollections.py:115
+#: starlight/settings.py:234 starlight/settings.py:320
+#: starlight/settings.py:337
 msgid "News"
 msgstr ""
 
-#: starlight/settings.py:188
+#: starlight/magicollections.py:628 starlight/models.py:798
+#: starlight/models.py:801 starlight/models.py:804 starlight/models.py:806
 msgid "Lyrics"
+msgstr ""
+
+#: magi/default_settings.py:28
+msgid "Less"
+msgstr ""
+
+#: magi/default_settings.py:349
+msgid "β-tester"
+msgstr ""
+
+#: magi/forms.py:2052
+msgid "Users who can speak {language}"
+msgstr ""
+
+#: magi/magicollections.py:2266
+msgid "Website"
+msgstr ""
+
+#: starlight/forms.py:190
+msgid "Skip"
+msgstr ""
+
+#: starlight/forms.py:384 starlight/models.py:781 starlight/models.py:816
+#: starlight/utils.py:182
+msgid "Singers"
+msgstr ""
+
+#: starlight/forms.py:412 starlight/forms.py:573 starlight/forms.py:600
+#: starlight/models.py:921 starlight/models.py:922 starlight/models.py:924
+#: starlight/models.py:926
+msgid "Target"
+msgstr ""
+
+#: starlight/forms.py:489 starlight/magicollections.py:698
+#: starlight/models.py:1103 starlight/models.py:1333
+msgid "Acts"
+msgstr ""
+
+#: starlight/forms.py:494
+msgid "Number"
+msgstr ""
+
+#: starlight/forms.py:591 starlight/magicollections.py:1033
+msgid "Effective against"
+msgstr ""
+
+#: starlight/forms.py:594 starlight/magicollections.py:1034
+msgid "Less effective against"
+msgstr ""
+
+#: starlight/forms.py:597
+msgid "Hits more than once"
+msgstr ""
+
+#: starlight/magicollections.py:223
+msgid "Relive account"
+msgstr ""
+
+#: starlight/magicollections.py:656
+msgid "Buy {thing}"
+msgstr ""
+
+#: starlight/magicollections.py:656
+msgid "CD"
+msgstr ""
+
+#: starlight/magicollections.py:697
+msgid "Act"
+msgstr ""
+
+#: starlight/magicollections.py:882
+msgid "Cost"
+msgstr ""
+
+#: starlight/magicollections.py:911 starlight/models.py:1785
+msgid "Rank"
+msgstr ""
+
+#: starlight/magicollections.py:989 starlight/models.py:722
+#: starlight/models.py:724
+msgid "Role"
+msgstr ""
+
+#: starlight/models.py:147
+msgid "Space"
+msgstr ""
+
+#: starlight/models.py:240
+msgid "Casual"
+msgstr ""
+
+#: starlight/models.py:244
+msgid "Hardcore"
+msgstr ""
+
+#: starlight/models.py:250
+msgid "Play style"
+msgstr ""
+
+#: starlight/models.py:253
+msgid "Stage of dreams level"
+msgstr ""
+
+#: starlight/models.py:265 starlight/models.py:266 starlight/models.py:267
+msgid "Platinum"
+msgstr ""
+
+#: starlight/models.py:268
+msgid "Legend"
+msgstr ""
+
+#: starlight/models.py:272
+msgid "Vs. Revue rank"
+msgstr ""
+
+#: starlight/models.py:291
+msgid "Total stars bought"
+msgstr ""
+
+#: starlight/models.py:295
+msgid "Check this box if this account doesn't exist in the game."
+msgstr ""
+
+#: starlight/models.py:374 starlight/models.py:377 starlight/models.py:606
+#: starlight/models.py:609
+msgid "Video"
+msgstr ""
+
+#: starlight/models.py:542 starlight/models.py:545
+msgid "Department"
+msgstr ""
+
+#: starlight/models.py:597 starlight/models.py:599
+msgid "Introduction"
+msgstr ""
+
+#: starlight/models.py:710
+msgid "General"
+msgstr ""
+
+#: starlight/models.py:711
+msgid "Stage play"
+msgstr ""
+
+#: starlight/models.py:712
+msgid "Additional"
+msgstr ""
+
+#: starlight/models.py:714
+msgid "Category"
+msgstr ""
+
+#: starlight/models.py:855
+msgid "Basic"
+msgstr ""
+
+#: starlight/models.py:860
+msgid "Climax"
+msgstr ""
+
+#: starlight/models.py:865
+msgid "Auto"
+msgstr ""
+
+#: starlight/models.py:870
+msgid "Finishing"
+msgstr ""
+
+#: starlight/models.py:895 starlight/models.py:899 starlight/models.py:1050
+#: starlight/models.py:1054
+msgid "Tips"
+msgstr ""
+
+#: starlight/models.py:911
+msgid "Unlock at rank {rank}"
+msgstr ""
+
+#: starlight/models.py:914
+msgid "Hits {number_of_times} times"
+msgstr ""
+
+#: starlight/models.py:917
+msgid "Front enemy"
+msgstr ""
+
+#: starlight/models.py:918
+msgid "Front group of enemies"
+msgstr ""
+
+#: starlight/models.py:919
+msgid "All enemies"
+msgstr ""
+
+#: starlight/models.py:931
+msgid "After full bound break"
+msgstr ""
+
+#: starlight/models.py:950
+msgid "AP"
+msgstr ""
+
+#: starlight/models.py:1106 starlight/models.py:1112 starlight/models.py:1118
+#: starlight/models.py:1126
+msgid "ACT Power"
+msgstr ""
+
+#: starlight/models.py:1107 starlight/models.py:1113 starlight/models.py:1120
+#: starlight/models.py:1128
+msgid "Normal defense"
+msgstr ""
+
+#: starlight/models.py:1108 starlight/models.py:1114 starlight/models.py:1122
+#: starlight/models.py:1130
+msgid "Special defense"
+msgstr ""
+
+#: starlight/models.py:1109 starlight/models.py:1115 starlight/models.py:1123
+#: starlight/models.py:1131
+msgid "Agility"
+msgstr ""
+
+#: starlight/models.py:1138
+msgid "Base"
+msgstr ""
+
+#: starlight/models.py:1358
+msgid "Element"
+msgstr ""
+
+#: starlight/models.py:1384
+msgid "Anti-tank"
+msgstr ""
+
+#: starlight/models.py:1385
+msgid "Assassin"
+msgstr ""
+
+#: starlight/models.py:1386
+msgid "Attacker"
+msgstr ""
+
+#: starlight/models.py:1387
+msgid "Burn"
+msgstr ""
+
+#: starlight/models.py:1388
+msgid "Debuffer"
+msgstr ""
+
+#: starlight/models.py:1389
+msgid "Defender"
+msgstr ""
+
+#: starlight/models.py:1390
+msgid "Disabler"
+msgstr ""
+
+#: starlight/models.py:1392
+msgid "Nuker"
+msgstr ""
+
+#: starlight/models.py:1394
+msgid "Special defender"
+msgstr ""
+
+#: starlight/models.py:1395
+msgid "Special defense tank"
+msgstr ""
+
+#: starlight/models.py:1397
+msgid "Tank"
+msgstr ""
+
+#: starlight/models.py:1607 starlight/models.py:1654
+msgid "Upgrade"
+msgstr ""
+
+#: starlight/models.py:1608 starlight/models.py:1660
+msgid "VS. Revue reward"
+msgstr ""
+
+#: starlight/models.py:1610
+msgid "Selling price"
+msgstr ""
+
+#: starlight/models.py:1615 starlight/models.py:1617
+msgid "Explanation"
+msgstr ""
+
+#: starlight/settings.py:196
+msgid "Movie"
+msgstr ""
+
+#: starlight/settings.py:200
+msgid "Meetups"
 msgstr ""
 
