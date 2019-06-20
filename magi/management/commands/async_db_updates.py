@@ -45,7 +45,7 @@ def save_item(model, item, updated_fields, in_item=False):
             setattr(item, k, v)
         item.save()
     else:
-        model.objects.filter(id=item.pk).update(**updated_fields)
+        model.objects.filter(pk=item.pk).update(**updated_fields)
 
 # All callbacks return True or False whether or not they did something
 # When the first callback does something, the script stops
