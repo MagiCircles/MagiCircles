@@ -867,7 +867,7 @@ class MagiCollection(object):
                     value = getattr(item, field_name, None)
                 except AttributeError:
                     continue
-                if value is None:
+                if value is None or field.name.startswith('m_') and not value[1]:
                     continue
             d = {
                 'verbose_name': getattr(field, 'verbose_name', _(field_name.capitalize())),
