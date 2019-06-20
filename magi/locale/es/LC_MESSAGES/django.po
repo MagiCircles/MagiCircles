@@ -3963,7 +3963,7 @@ msgstr ""
 
 #: sukutomo/models.py:1189
 msgid "Boost"
-msgstr ""
+msgstr "Incremento"
 
 #: bang/forms.py:1154
 msgid "All {type} {things}"
@@ -3971,34 +3971,35 @@ msgstr ""
 
 #: magi/forms.py:922
 msgid "Random"
-msgstr ""
+msgstr "Al azar"
 
 #: magi/forms.py:935 magi/forms.py:941
 msgid "Suggestions"
-msgstr ""
+msgstr "Sugerencias"
 
+#. Since {things} can be a lot of stuff, I can't translate this without having a possible gender problem. Should I use masculine or feminine?
 #: magi/views_collections.py:364
 msgid "All the {things}! Search by {search_terms} and filter by {filters} to find all the details you need about the {things} from {game}."
 msgstr ""
 
 #: bang/forms.py:412
 msgid "Default"
-msgstr ""
+msgstr "Predeterminado"
 
 #: bang/magicollections.py:2804
 msgid "Chibis"
-msgstr ""
+msgstr "Chibis"
 
 #: sukutomo/magicollections.py:692 sukutomo/magicollections.py:779
 #: sukutomo/models.py:777
 msgid "Merged with other event"
-msgstr ""
+msgstr "Combinado con otro evento"
 
 #: sukutomo/magicollections.py:791 sukutomo/models.py:765
 #: sukutomo/models.py:774 sukutomo/models.py:787 sukutomo/models.py:796
 #: sukutomo/models.py:805
 msgid "Tiers"
-msgstr ""
+msgstr "Puestos"
 
 #: sukutomo/magicollections.py:1096
 msgid "Can be sold for stickers?"
@@ -4006,7 +4007,7 @@ msgstr "¿Puede ser vendida por stickers?"
 
 #: sukutomo/magicollections.py:1160
 msgid "Buy this card"
-msgstr ""
+msgstr "Compra esta carta"
 
 #: sukutomo/models.py:208
 msgid "The character that you selected when you started playing."
@@ -4155,7 +4156,7 @@ msgstr "Letras"
 
 #: magi/default_settings.py:28
 msgid "Less"
-msgstr ""
+msgstr "Menos"
 
 #: magi/default_settings.py:349
 msgid "β-tester"
@@ -4199,85 +4200,85 @@ msgstr ""
 
 #: starlight/forms.py:594 starlight/magicollections.py:1034
 msgid "Less effective against"
-msgstr ""
+msgstr "Menos efectiva contra"
 
 #: starlight/forms.py:597
 msgid "Hits more than once"
-msgstr ""
+msgstr "Ataca más de una vez"
 
 #: starlight/magicollections.py:223
 msgid "Relive account"
-msgstr ""
+msgstr "Cuenta de ReLive"
 
 #: starlight/magicollections.py:656
 msgid "Buy {thing}"
-msgstr ""
+msgstr "Compra {thing}"
 
 #: starlight/magicollections.py:656
 msgid "CD"
-msgstr ""
+msgstr "CD"
 
 #: starlight/magicollections.py:697
 msgid "Act"
-msgstr ""
+msgstr "Acto"
 
 #: starlight/magicollections.py:882
 msgid "Cost"
-msgstr ""
+msgstr "Coste"
 
 #: starlight/magicollections.py:911 starlight/models.py:1785
 msgid "Rank"
-msgstr ""
+msgstr "Rank"
 
 #: starlight/magicollections.py:989 starlight/models.py:722
 #: starlight/models.py:724
 msgid "Role"
-msgstr ""
+msgstr "Rol"
 
 #: starlight/models.py:147
 msgid "Space"
-msgstr ""
+msgstr "Cosmos"
 
 #: starlight/models.py:240
 msgid "Casual"
-msgstr ""
+msgstr "Casual"
 
 #: starlight/models.py:244
 msgid "Hardcore"
-msgstr ""
+msgstr "Hardcore"
 
 #: starlight/models.py:250
 msgid "Play style"
-msgstr ""
+msgstr "Estilo de juego"
 
 #: starlight/models.py:253
 msgid "Stage of dreams level"
-msgstr ""
+msgstr "Nivel del Escenario de Ensueño"
 
 #: starlight/models.py:265 starlight/models.py:266 starlight/models.py:267
 msgid "Platinum"
-msgstr ""
+msgstr "Platino"
 
 #: starlight/models.py:268
 msgid "Legend"
-msgstr ""
+msgstr "Leyenda"
 
 #: starlight/models.py:272
 msgid "Vs. Revue rank"
-msgstr ""
+msgstr "Rango de VS. Revue"
 
 #: starlight/models.py:291
 msgid "Total stars bought"
-msgstr ""
+msgstr "Total de estrellas compradas"
 
 #: starlight/models.py:295
 msgid "Check this box if this account doesn't exist in the game."
-msgstr ""
+msgstr "Marca esta cajita si esta cuenta no existe en el juego."
 
 #: starlight/models.py:374 starlight/models.py:377 starlight/models.py:606
 #: starlight/models.py:609
 msgid "Video"
-msgstr ""
+msgstr "Vídeo"
 
 #: starlight/models.py:542 starlight/models.py:545
 msgid "Department"
