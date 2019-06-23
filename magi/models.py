@@ -54,6 +54,7 @@ from magi.settings import (
     USERS_REPUTATION_CALCULATOR,
     GOOD_REPUTATION_THRESHOLD,
 )
+from magi.raw import other_sites
 from magi.item_model import MagiModel, BaseMagiModel, get_image_url, i_choices, addMagiModelProperties, getInfoFromChoices
 from magi.abstract_models import CacheOwner
 
@@ -494,15 +495,15 @@ class UserLink(BaseMagiModel):
     owner = models.ForeignKey(User, related_name='links')
     value = models.CharField(_('Username/ID'), max_length=64, help_text=_('Write your username only, no URL.'), validators=[alphanumeric])
 
-    TYPE_CHOICES = (
+    TYPE_CHOICES = [
         ('twitter', 'Twitter'),
         ('facebook', 'Facebook'),
         ('reddit', 'Reddit'),
-        ('schoolidolu', 'School Idol Tomodachi'),
-        ('cpro', 'Cinderella Producers'),
-        ('bang', 'Bandori Party'),
-        ('stardustrun', 'Stardust Run'),
-        ('frgl', 'fr.gl'),
+    ] + [
+        (_details['shortname'], _details['name'])
+        for _details in other_sites
+        if _details['name'] != SITE_NAME and _details.get('shortname', None)
+    ] + [
         ('instagram', 'Instagram'),
         ('youtube', 'YouTube'),
         ('tumblr', 'Tumblr'),
@@ -519,7 +520,7 @@ class UserLink(BaseMagiModel):
         ('github', 'GitHub'),
         ('carrd', 'Carrd'),
         ('listography', 'Listography'),
-    )
+    ]
 
     TYPE_WITHOUT_I_CHOICES = True
     i_type = models.CharField(_('Platform'), max_length=20, choices=TYPE_CHOICES)
@@ -538,11 +539,6 @@ class UserLink(BaseMagiModel):
         'twitter': u'http://twitter.com/{}',
         'facebook': u'https://www.facebook.com/{}',
         'reddit': u'http://www.reddit.com/user/{}',
-        'schoolidolu': u'https://schoolido.lu/user/{}/',
-        'cpro': u'https://cinderella.pro/user/{}/',
-        'bang': u'https://bandori.party/user/{}/',
-        'stardustrun': u'http://stardust.run/user/{}/',
-        'frgl': u'http://fr.gl/user/{}/',
         'instagram': u'https://instagram.com/{}/',
         'youtube': u'https://www.youtube.com/{}',
         'tumblr': u'http://{}.tumblr.com/',
@@ -560,6 +556,11 @@ class UserLink(BaseMagiModel):
         'carrd': u'https://{}.carrd.co/',
         'listography': u'https://listography.com/{}',
     }
+    LINK_URLS.update({
+        (_details['shortname'], _details['profile_url'])
+        for _details in other_sites
+        if _details['name'] != SITE_NAME and _details.get('shortname', None)
+    })
 
     @property
     def url(self):

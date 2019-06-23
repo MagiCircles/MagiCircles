@@ -51,6 +51,8 @@ other_sites = [
         },
         'image': 'schoolidolu',
         'url': 'https://schoolido.lu/',
+        'profile_url': 'https://schoolido.lu/user/{}/',
+        'shortname': 'schoolidolu',
     },
     {
         'name': 'Bandori Party',
@@ -70,6 +72,8 @@ other_sites = [
         },
         'image': 'bang',
         'url': 'https://bandori.party/',
+        'profile_url': 'https://bandori.party/user/{}/',
+        'shortname': 'bang',
     },
     {
         'name': 'Starlight Academy',
@@ -86,6 +90,8 @@ other_sites = [
         },
         'image': 'starlight',
         'url': 'https://starlight.academy/',
+        'profile_url': 'https://starlight.academy/user/{}/',
+        'shortname': 'starlight',
     },
     {
         'name': 'Cinderella Producers',
@@ -101,6 +107,8 @@ other_sites = [
         },
         'image': 'cpro',
         'url': 'https://cinderella.pro/',
+        'profile_url': 'https://cinderella.pro/user/{}/',
+        'shortname': 'cpro',
     },
     {
         'name': 'Maji Love',
@@ -135,6 +143,8 @@ other_sites = [
         },
         'image': 'stardustrun',
         'url': 'https://stardust.run/',
+        'profile_url': 'https://stardust.run/user/{}/',
+        'shortname': 'stardustrun',
     },
     {
         'name': 'fr.gl',
@@ -144,5 +154,7 @@ other_sites = [
         },
         'image': 'frgl',
         'url': 'http://frgl.db0.company/',
+        'profile_url': 'http://frgl.db0.company/user/{}/',
+        'shortname': 'frgl',
     },
 ]
