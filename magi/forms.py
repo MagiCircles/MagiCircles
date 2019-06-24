@@ -688,17 +688,16 @@ def to_translate_form_class(view):
             if spoken_languages:
                 if self._needsVisibleEnglishFields(spoken_languages):
                     spoken_languages.append('en')
-                self.beforefields = mark_safe(u'<div class="text-right languages-buttons" data-spoken-languages="{spoken_languages}" style="display: none"><a href="#translations_see_all" class="btn btn-main btn-sm">See all languages</a><br>{languages}</div><br>'.format(
-                    spoken_languages=u','.join(spoken_languages),
-                    languages=u' '.join([
-                        u'<a href="#translations_see_language" data-language="{language}"><img src="{image}" width="20" alt="{vlanguage}"></a>'.format(
-                            language=language,
-                            vlanguage=verbose_language,
-                            image=staticImageURL(language, folder='language', extension='png'),
-                        ) for language, verbose_language in django_settings.LANGUAGES
-                    ]),
-                ))
-
+            self.beforefields = mark_safe(u'<div class="text-right languages-buttons" data-spoken-languages="{spoken_languages}" style="display: none"><a href="#translations_see_all" class="btn btn-main btn-sm">See all languages</a><br>{languages}</div><br>'.format(
+                spoken_languages=u','.join(spoken_languages),
+                languages=u' '.join([
+                    u'<a href="#translations_see_language" data-language="{language}"><img src="{image}" width="20" alt="{vlanguage}"></a>'.format(
+                        language=language,
+                        vlanguage=verbose_language,
+                        image=staticImageURL(language, folder='language', extension='png'),
+                    ) for language, verbose_language in django_settings.LANGUAGES
+                ]),
+            ))
 
         class Meta(MagiForm.Meta):
             model = view.collection.queryset.model
