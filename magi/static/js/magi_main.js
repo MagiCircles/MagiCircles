@@ -1140,6 +1140,37 @@ function getAllValues(elements, attribute) {
 // *****************************************
 // Handle actions on activities view
 
+function cropActivityWhenTooLong(activity) {
+    if (!max_activity_height) {
+        return;
+    }
+    let message = activity.find('.message').first();
+    if (message.height() > max_activity_height) {
+        let message_more = activity.find('.title-separator');
+        if (message_more.length == 0) {
+            let messageMore = gettext('More') + ' <span class="glyphicon glyphicon-triangle-bottom"></span>';
+            let messageLess = gettext('Less') + ' <span class="glyphicon glyphicon-triangle-top"></span>';
+            message_more = $('<div class="title-separator"><span>' + messageMore + '</span></div>');
+            message.css('height', max_activity_height);
+            message.css('overflow', 'hidden');
+            message_more.click(function(e) {
+                e.preventDefault();
+                if (message_more.find('span').html() == messageMore) {
+                    message.css('height', 'auto');
+                    message.css('overflow', 'auto');
+                    message_more.find('span').html(messageLess);
+                } else {
+                    message.css('height', max_activity_height);
+                    message.css('overflow', 'hidden');
+                    message_more.find('span').html(messageMore);
+                }
+                return false;
+            });
+            message.after(message_more);
+        }
+    }
+}
+
 function updateActivities() {
     // Like activities
     $('.likeactivity').unbind('submit');
@@ -1178,6 +1209,16 @@ function updateActivities() {
             }),
         });
         return false;
+    });
+
+    // Activities that are too long
+
+    $('.activity').each(function () {
+        let activity = $(this);
+        if (!activity.data('updated-activity')) {
+            activity.data('updated-activity', true);
+            cropActivityWhenTooLong(activity);
+        }
     });
 
     // Archive/Unarchive, Bump, Drown activity
@@ -1401,8 +1442,8 @@ function applyMarkdown(elt) {
 
 function _loadMarkdown() {
     $('.to-markdown:not(.markdowned)').each(function() {
-        applyMarkdown($(this));
         $(this).addClass('markdowned');
+        applyMarkdown($(this));
     });
 }
 

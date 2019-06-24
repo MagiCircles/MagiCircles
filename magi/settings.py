@@ -213,6 +213,11 @@ if hasattr(settings_module, 'HOME_ACTIVITY_TABS'):
 else:
     HOME_ACTIVITY_TABS = DEFAULT_HOME_ACTIVITY_TABS
 
+if hasattr(settings_module, 'MAX_ACTIVITY_HEIGHT'):
+    MAX_ACTIVITY_HEIGHT = getattr(settings_module, 'MAX_ACTIVITY_HEIGHT')
+else:
+    MAX_ACTIVITY_HEIGHT = 1200
+
 if hasattr(settings_module, 'PRELAUNCH_ENABLED_PAGES'):
     PRELAUNCH_ENABLED_PAGES = getattr(settings_module, 'PRELAUNCH_ENABLED_PAGES')
 else:

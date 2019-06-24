@@ -274,6 +274,7 @@
       var static_url = '{{ static_url }}';
       var empty_image = '{{ static_url }}img/{{ empty_image }}';
       var disqus_shortname = '{{ disqus_shortname }}';
+      var max_activity_height = {{ max_activity_height }};
       var is_authenticated = {% if user.is_authenticated %}'{{ user.username }}'{% else %}false{% endif %};
       var translated_terms = {{ javascript_translated_terms_json|safe }};
       var staff_buttons_hidden = true;
