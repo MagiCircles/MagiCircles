@@ -29,6 +29,8 @@ from magi.forms import (
     SecurityPreferencesForm,
     Confirm,
     TranslationCheckForm,
+    get_total_translations,
+    get_missing_translations,
 )
 from magi import models
 from magi.raw import donators_adjectives
@@ -55,6 +57,7 @@ from magi.utils import (
     duplicate_translation,
     hasGoodReputation,
     getColSize,
+    LANGUAGES_NAMES,
 )
 from magi.notifications import pushNotification
 from magi.settings import (
@@ -1180,24 +1183,38 @@ def translations(request):
                     django_settings.LANGUAGES,
                 )
 
+                source_languages = getattr(
+                    collection.queryset.model, u'{}_SOURCE_LANGUAGES'.format(field.upper()),
+                    ['en']) or ['en']
+
+                limit_sources_to = dict(languages).keys()
+
+                if source_languages != ['en']:
+                    languages = [('en', t['English'])] + languages
+
                 for language, verbose_name in languages:
-                    if only_languages and language not in only_languages:
-                        continue
+                    if only_languages:
+                        if language == 'en':
+                            if not set(source_languages).intersection(set(only_languages)):
+                                continue
+                        elif language not in only_languages:
+                            continue
                     if language not in c['translated_fields_per_languages']:
                         c['translated_fields_per_languages'][language] = {
                             'verbose_name': verbose_name,
                             'fields': [],
                             'image': staticImageURL(language, folder='language', extension='png')
                         }
-                    items_with_something_to_translate = collection.queryset.exclude(**{
-                        u'{}__isnull'.format(field): True,
-                    }).exclude(**{
-                        field: '',
-                    })
+
+                    _limit_sources_to = [
+                        l for l in limit_sources_to if l != language
+                    ] if language == 'en' else []
+                    items_with_something_to_translate = get_total_translations(
+                        collection.queryset, field, limit_sources_to=_limit_sources_to)
                     count_total = items_with_something_to_translate.count()
-                    count_need_translations = items_with_something_to_translate.exclude(**{
-                        u'd_{}s__contains'.format(field): u'"{}"'.format(language),
-                    }).count()
+                    count_need_translations = get_missing_translations(
+                        collection.queryset, field, [language], limit_sources_to=_limit_sources_to,
+                    ).count()
                     if not count_total:
                         continue
                     c['translated_fields_per_languages'][language]['fields'].append({
@@ -1206,6 +1223,12 @@ def translations(request):
                         'total': count_total,
                         'total_need_translations': count_need_translations,
                         'total_translated': count_total - count_need_translations,
+                        'source_languages': {
+                            source_language: LANGUAGES_NAMES.get(source_language, source_language).replace(
+                                '_', ' ').title()
+                            for source_language in source_languages
+                            if source_language != 'en'
+                        } if language == 'en' else None,
                     })
                     context['total'] += count_total
                     context['total_need_translations'] += count_need_translations

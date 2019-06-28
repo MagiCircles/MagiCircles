@@ -44,6 +44,7 @@
       <img src="{{ details.image }}" height="30" />
       {{ details.verbose_name }}
       {% for field in details.fields %}
+      <div>
       <div class="btn-group">
         <{% if field.total_need_translations == 0 %}span style="cursor: not-allowed;"{% else %}a href="{{ collection.list_url }}?missing_{{ field.name }}_translations={{ language }}"{% endif %}
            class="btn btn-{% if field.total_need_translations == 0 %}success{% else %}secondary{% endif %} btn-sm" target="_blank">
@@ -68,6 +69,14 @@
           {% endif %}
         </ul>
         {% endif %}
+      </div>
+      {% if field.source_languages %}<br>
+      <div class="label label-default"><small>Translate from:
+        {% for source_verbose in field.source_languages.values %}{% if forloop.counter0 != 0 %} or {% endif %}
+          {{ source_verbose }}
+        {% endfor %}
+      </small></div>
+      {% endif %}
       </div>
       {% endfor %}
     </div>

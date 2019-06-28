@@ -105,6 +105,61 @@ def has_field(model, field_name):
     except FieldDoesNotExist:
         return False
 
+def get_total_translations(queryset, field_name, limit_sources_to=[], exclude_sources=[]):
+    # Filter fields that have a value in the source language(s)
+    for language in queryset.model.get_field_translation_sources(field_name):
+        if limit_sources_to and language not in limit_sources_to:
+            continue
+        if language in exclude_sources:
+            continue
+        if language == 'en':
+            queryset = queryset.filter(**{ u'{}__isnull'.format(field_name): False,
+            }).exclude(**{ field_name: '' })
+        else:
+            long_source_field_name = u'{}_{}'.format(LANGUAGES_NAMES.get(language, None), field_name)
+            short_source_field_name = u'{}_{}'.format(language, field_name)
+            if has_field(queryset.model, long_source_field_name):
+                queryset = queryset.filter(**{ u'{}__isnull'.format(long_source_field_name): False,
+                }).exclude(**{ long_source_field_name: '' })
+            elif has_field(queryset.model, short_source_field_name):
+                queryset = queryset.filter(**{ u'{}__isnull'.format(short_source_field_name): False,
+                }).exclude(**{ short_source_field_name: '' })
+            else: # dict
+                queryset = queryset.filter(**{
+                    u'd_{}s__contains'.format(field_name): u'"{}"'.format(language) })
+    return queryset
+
+def get_missing_translations(queryset, field_name, destination_languages, limit_sources_to=[]):
+    # Filter fields that have a value in the source language(s)
+    queryset = get_total_translations(
+        queryset, field_name, limit_sources_to=limit_sources_to,
+        exclude_sources=destination_languages,
+    )
+    # Filter fields that don't have a value in the destionation languages
+    for language in destination_languages:
+        if language == 'en':
+            queryset = queryset.filter(
+                Q(**{ u'{}__isnull'.format(field_name): True })
+                | Q(** { field_name: '' })
+            )
+        else:
+            long_source_field_name = u'{}_{}'.format(LANGUAGES_NAMES.get(language, None), field_name)
+            short_source_field_name = u'{}_{}'.format(language, field_name)
+            if has_field(queryset.model, long_source_field_name):
+                queryset = queryset.filter(
+                    Q(**{ u'{}__isnull'.format(long_source_field_name): True })
+                    | Q(** { long_source_field_name: '' })
+                )
+            elif has_field(queryset.model, short_source_field_name):
+                queryset = queryset.filter(
+                    Q(**{ u'{}__isnull'.format(short_source_field_name): True })
+                    | Q(** { short_source_field_name: '' })
+                )
+            else: # dict
+                queryset = queryset.exclude(**{
+                    u'd_{}s__contains'.format(field_name): u'"{}"'.format(language) })
+    return queryset
+
 ############################################################
 # HiddenModelChoiceField is a form field type that will not retrieve
 # the list of choices but will validate if the foreign key
@@ -260,7 +315,10 @@ class MagiForm(forms.ModelForm):
             elif name.startswith('d_') and not isinstance(self, MagiFiltersForm):
                 choices = getattr(self.Meta.model, u'{name}_CHOICES'.format(name=name[2:].upper()), None)
                 if choices is not None:
-                    if not self.collection or not self.collection.translated_fields or name[2:-1] not in self.collection.translated_fields or getattr(self, 'is_translate_form', False):
+                    if (not self.collection
+                        or not self.collection.translated_fields
+                        or name[2:-1] not in self.collection.translated_fields
+                        or getattr(self, 'is_translate_form', False)):
                         self.d_choices[name[2:]] = []
                         for choice in (choices.items() if isinstance(choices, dict) else choices):
                             key = choice[0] if isinstance(choice, tuple) else choice
@@ -268,31 +326,24 @@ class MagiForm(forms.ModelForm):
                             verbose_name = verbose_name() if callable(verbose_name) else verbose_name
                             field_name = u'{}-{}'.format(name, key)
                             self.d_choices[name[2:]].append((field_name, key))
+
+                            # Widget
                             widget = forms.TextInput
+                            try: singular_field = self.Meta.model._meta.get_field(name[2:-1])
+                            except FieldDoesNotExist: singular_field = None
+                            if singular_field and isinstance(singular_field, TextField):
+                                widget = forms.Textarea
+
+                            # Label and help text
                             label = self.fields[name].label
-                            if getattr(self, 'is_translate_form', False):
-                                try: singular_field = self.Meta.model._meta.get_field(name[2:-1])
-                                except FieldDoesNotExist: singular_field = None
-                                if singular_field and isinstance(singular_field, TextField):
-                                    widget = forms.Textarea
-                                default = getattr(self.instance, name[2:-1], None)
-                                if default and name[2:-1].startswith('m_'):
-                                    default = mark_safe(u'<pre>{}</pre>'.format(default))
-                                help_text = mark_safe(u'{original}<img src="{img}" height="20" /> {lang}{default}'.format(
-                                    img=staticImageURL(key, folder='language', extension='png'),
-                                    lang=verbose_name,
-                                    default=u' <code>English: {}</code>'.format(default or 'no value'),
-                                    original=u'{}<br>'.format(self.fields[name].help_text) if self.fields[name].help_text else '',
-                                ))
+                            if getattr(self.Meta.model, u'{}_CHOICES_KEYS_AS_LABELS'.format(name[2:].upper()), False):
+                                help_text = self.fields[name].help_text
+                                label = verbose_name
                             else:
-                                if getattr(self.Meta.model, u'{}_CHOICES_KEYS_AS_LABELS'.format(name[2:].upper()), False):
-                                    help_text = self.fields[name].help_text
-                                    label = verbose_name
-                                else:
-                                    help_text = mark_safe(u'{original}{key}'.format(
-                                        original=u'{}<br>'.format(self.fields[name].help_text) if self.fields[name].help_text else '',
-                                        key=verbose_name,
-                                    ))
+                                help_text = mark_safe(u'{original}{key}'.format(
+                                    original=u'{}<br>'.format(self.fields[name].help_text) if self.fields[name].help_text else '',
+                                    key=verbose_name,
+                                ))
                             if self.is_creating:
                                 initial = None
                             elif name.startswith('d_m_'):
@@ -328,36 +379,6 @@ class MagiForm(forms.ModelForm):
                     self.m_previous_values[name] = getattr(self.instance, name)
                 if not self.fields[name].help_text:
                     self.fields[name].help_text = markdownHelpText(request=self.request)
-            # Help text: "English" + translation fields stored separately
-            elif getattr(self, 'is_translate_form', False):
-                language = None
-                suffix = None
-                if name in self.collection.translated_fields:
-                    # English field
-                    language = 'en'
-                else:
-                    # Other languages
-                    for _f in self.collection.translated_fields:
-                        if name.endswith(_f):
-                            language_name = name[:-(len(_f) + 1)]
-                            if language_name in LANGUAGES_NAMES_TO_CODES:
-                                language = LANGUAGES_NAMES_TO_CODES[language_name]
-                            if language_name in LANGUAGES_NAMES:
-                                language = language_name
-                            if language:
-                                suffix=u' <code>English: {}</code>'.format(
-                                    getattr(self.instance, _f, None) or 'no value')
-                                break
-                if language:
-                    self.fields[name].help_text = mark_safe(
-                        u'{original}<img src="{img}" height="20" /> {lang}{suffix}'.format(
-                            original=u'{}<br>'.format(
-                                self.fields[name].help_text) if self.fields[name].help_text else '',
-                            img=staticImageURL(language, folder='language', extension='png'),
-                            lang=LANGUAGES_NAMES[language].replace('_', ' ').title(),
-                            suffix=suffix or '',
-                        ))
-                    self.fields[name].widget.attrs['data-language'] = language
 
             elif name.startswith('_'):
 
@@ -635,59 +656,98 @@ def to_translate_form_class(view):
 
     class _TranslateForm(MagiForm):
 
-        def _addHelpTextReverseTranslation(self, field_name, reverse_value, language):
-            self.fields[field_name].help_text = mark_safe(
-                u'{original} <code>{language}: {value}</code>'.format(
-                    original=self.fields[field_name].help_text,
-                    language=LANGUAGES_NAMES.get(language, language).replace('_', ' ').title(),
-                    value=reverse_value or 'no value',
-                ))
+        def _language_to_field_name(self, field_name, language):
+            if language == 'en':
+                return field_name
+            else:
+                long_source_field_name = u'{}_{}'.format(LANGUAGES_NAMES.get(language, None), field_name)
+                short_source_field_name = u'{}_{}'.format(language, field_name)
+                if has_field(self.Meta.model, long_source_field_name):
+                    return long_source_field_name
+                elif has_field(self.Meta.model, short_source_field_name):
+                    return short_source_field_name
+                else: # dict
+                    return u'd_{}s-{}'.format(field_name, language)
 
-        def _needsVisibleEnglishFields(self, spoken_languages):
-            """
-            Check if English should be added to visible languages because value exists
-            in a language you speak but not in English (= reverse translation).
-            Will also add help text in English field if translations are available in a language you speak.
-            """
-            needs_english = False
-            for language in spoken_languages:
-                for field in view.collection.translated_fields:
-                    if (field in self.fields
-                        and not getattr(self.instance, field, None)):
-                        # Regular translations stored in dict
-                        if u'd_{}s-{}'.format(field, language) in self.fields:
-                            reverse_value = getattr(
-                                self.instance, u'{}s'.format(field, language), {}).get(language, None)
-                            if reverse_value:
-                                needs_english = True
-                                self._addHelpTextReverseTranslation(
-                                    field, reverse_value, language)
-                        reverse_value = None
-                        # Translation fields stored separately
-                        for field_name in [
-                                u'{}_{}'.format(LANGUAGES_NAMES[language], field),
-                                u'{}_{}'.format(language, field),
-                        ]:
-                            if field_name in self.fields:
-                                reverse_value = getattr(self.instance, field_name, None)
-                                if reverse_value:
-                                    needs_english = True
-                                    self._addHelpTextReverseTranslation(
-                                        field, reverse_value, language)
-            return needs_english
+        def _get_verbose_language(self, language):
+            return LANGUAGES_NAMES.get(language, language).replace('_', ' ').title()
+
+        def _language_help_text(self, language, verbose_language, field_name, sources):
+            formatted_sources = [
+                u' <span class="label label-info">{language}</span> {value}'.format(
+                    language=self._get_verbose_language(source_language),
+                    value=(
+                        u'<pre style="white-space: pre-line;">{}</pre>'.format(value)
+                        if field_name.startswith('d_m_')
+                        else value
+                    ),
+                ) for source_language, value in sources.items()
+                if value and language != source_language
+            ]
+            self.fields[field_name].help_text = mark_safe(
+                u'{is_source}{no_value}{original}{sources}<img src="{img}" height="20" /> {lang}'.format(
+                    is_source=(
+                        u'<span class="label label-info pull-right">Source</span>'
+                        if language in sources else ''
+                    ),
+                    no_value=(
+                        u'<span class="label label-danger pull-right">No value</span>'
+                        if not formatted_sources and language not in sources else ''
+                    ),
+                    original=(
+                        u'{}<br>'.format(self.fields[field_name].help_text)
+                        if self.fields[field_name].help_text and not field_name.startswith('d_')
+                        else ''
+                    ),
+                    img=staticImageURL(language, folder='language', extension='png'),
+                    lang=verbose_language,
+                    sources=(
+                        u'<div class="alert alert-info">{}</div>'.format(
+                            u'<br>'.join(formatted_sources)
+                        ) if formatted_sources else ''
+                    ),
+                ))
+            self.fields[field_name].widget.attrs['data-language'] = language
 
         def __init__(self, *args, **kwargs):
             self.is_translate_form = True
             super(_TranslateForm, self).__init__(*args, **kwargs)
+
+            # Get spoken languages or languages specified in GET
             spoken_languages = (
                 self.request.GET['language'].split(',')
                 if self.request.GET.get('language', None)
                 else (self.request.user.preferences.settings_per_groups or {}).get(
                         'translator', {}).get('languages', [])
             )
-            if spoken_languages:
-                if self._needsVisibleEnglishFields(spoken_languages):
+
+            for field_name in self.collection.translated_fields:
+                # Get source values
+                source_languages = self.Meta.model.get_field_translation_sources(field_name)
+                sources = OrderedDict([
+                    (language, self.instance.get_translation_from_dict(
+                        field_name, language=language, fallback_to_english=False) or None)
+                    for language in source_languages
+                ])
+
+                # Add a language help text on top of each field
+                # with the list of sources + "Source" + "No value"
+                self._language_help_text('en', t['English'], field_name, sources)
+                for language, verbose_language in getattr(self.Meta.model, u'{name}S_CHOICES'.format(
+                        name=field_name.upper()), []):
+                    destination_field_name = u'd_{}s-{}'.format(field_name, language)
+                    if destination_field_name in self.fields:
+                        self._language_help_text(language, verbose_language, destination_field_name, sources)
+                for language, fields in self.Meta.external_translation_fields.items():
+                    if field_name in fields:
+                        verbose_language = self._get_verbose_language(language)
+                        self._language_help_text(language, verbose_language, fields[field_name], sources)
+
+                # Add English to spoken languages if needed
+                if 'en' not in spoken_languages and set(source_languages).intersection(set(spoken_languages)):
                     spoken_languages.append('en')
+
+            # Add Javascript buttons to show/hide languages
             self.beforefields = mark_safe(u'<div class="text-right languages-buttons" data-spoken-languages="{spoken_languages}" style="display: none"><a href="#translations_see_all" class="btn btn-main btn-sm">See all languages</a><br>{languages}</div><br>'.format(
                 spoken_languages=u','.join(spoken_languages),
                 languages=u' '.join([
@@ -701,6 +761,7 @@ def to_translate_form_class(view):
 
         class Meta(MagiForm.Meta):
             model = view.collection.queryset.model
+            external_translation_fields = {}
             fields = []
             for translated_field in (view.collection.translated_fields or []):
                 fields.append(translated_field)
@@ -708,12 +769,15 @@ def to_translate_form_class(view):
                 if has_field(model, field_name):
                     fields.append(field_name)
                     for language, language_name in LANGUAGES_NAMES.items():
-                        for field_name in [
+                        for translated_field_name in [
                                 u'{}_{}'.format(language_name, translated_field),
                                 u'{}_{}'.format(language, translated_field),
                         ]:
-                            if has_field(model, field_name):
-                                fields.append(field_name)
+                            if has_field(model, translated_field_name):
+                                if language not in external_translation_fields:
+                                    external_translation_fields[language] = {}
+                                external_translation_fields[language][translated_field] = translated_field_name
+                                fields.append(translated_field_name)
     return _TranslateForm
 
 class TranslationCheckForm(forms.Form):
@@ -821,13 +885,7 @@ class MagiFiltersForm(AutoForm):
 
     def _to_missing_translation_lambda(self, field_name):
         def _to_missing_translation(form, queryset, request, value=None):
-            return queryset.exclude(**{
-                u'{}__isnull'.format(field_name): True,
-            }).exclude(**{
-                field_name: '',
-            }).exclude(**{
-                u'd_{}s__contains'.format(field_name): u'"{}"'.format(value),
-            })
+            return get_missing_translations(queryset, field_name, value.split(','))
         return _to_missing_translation
 
     presets = {}
@@ -1002,12 +1060,13 @@ class MagiFiltersForm(AutoForm):
         if self.collection and self.request.user.is_authenticated() and self.allow_translate and self.collection.translated_fields:
             for field_name in self.collection.translated_fields:
                 filter_field_name = u'missing_{}_translations'.format(field_name)
-                setattr(self, u'{}_filter'.format(filter_field_name), MagiFilter(
-                    to_queryset=self._to_missing_translation_lambda(field_name),
-                ))
-                self.fields[filter_field_name] = forms.CharField(
-                    widget=forms.HiddenInput
-                )
+                if filter_field_name in self.request.GET:
+                    setattr(self, u'{}_filter'.format(filter_field_name), MagiFilter(
+                        to_queryset=self._to_missing_translation_lambda(field_name),
+                    ))
+                    self.fields[filter_field_name] = forms.CharField(
+                        widget=forms.HiddenInput
+                    )
         if 'search' in self.fields:
             # Remove search from field if search_fields is not specified
             if not getattr(self, 'search_fields', None) and not getattr(self, 'search_fields_exact', None):

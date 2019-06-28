@@ -15,6 +15,7 @@ from magi.utils import (
     AttrDict,
     getSubField,
     LANGUAGES_NAMES,
+    listUnique,
 )
 
 ############################################################
@@ -445,15 +446,23 @@ class BaseMagiModel(models.Model):
     def get_2x(self, field_name):
         return getattr(self, u'_2x_{}'.format(field_name))
 
-    def get_translation_from_dict(self, field_name):
-        language = get_language()
-        if language != 'en':
+    @classmethod
+    def get_field_translation_sources(self, field_name):
+        return listUnique(getattr(self, u'{}_SOURCE_LANGUAGES'.format(
+            field_name.upper()), []) + ['en'])
+
+    def get_translation_from_dict(self, field_name, language=None, fallback_to_english=True):
+        if not language:
+            language = get_language()
+        if language == 'en':
+            return getattr(self, field_name)
+        else:
             value = getattr(self, u'{}_{}'.format(LANGUAGES_NAMES.get(language, None), field_name),
                             getattr(self, u'{}_{}'.format(language, field_name), None))
             if value:
                 return value
         d = getattr(self, u't_{name}s'.format(name=field_name))
-        return d.get(language, { 'value': getattr(self, field_name) })['value']
+        return d.get(language, { 'value': getattr(self, field_name) if fallback_to_english else None })['value']
 
     def _attr_error(self, name):
         raise AttributeError("%r object has no attribute %r" % (self.__class__, name))
