@@ -684,6 +684,7 @@ def to_translate_form_class(view):
                 ) for source_language, value in sources.items()
                 if value and language != source_language
             ]
+            original_help_text = self.fields[field_name].help_text.replace(unicode(verbose_language), '').strip()
             self.fields[field_name].help_text = mark_safe(
                 u'{is_source}{no_value}{original}{sources}<img src="{img}" height="20" /> {lang}'.format(
                     is_source=(
@@ -695,8 +696,8 @@ def to_translate_form_class(view):
                         if not formatted_sources and language not in sources else ''
                     ),
                     original=(
-                        u'{}<br>'.format(self.fields[field_name].help_text)
-                        if self.fields[field_name].help_text and not field_name.startswith('d_')
+                        u'{}<br>'.format(original_help_text)
+                        if original_help_text
                         else ''
                     ),
                     img=staticImageURL(language, folder='language', extension='png'),
