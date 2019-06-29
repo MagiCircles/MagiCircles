@@ -1215,10 +1215,9 @@ def saveLocalImageToModel(item, field_name, path, return_data=False):
         return (data, image)
     return image
 
-def imageURLToImageFile(url):
+def imageURLToImageFile(url, return_data=False):
     if not url:
         return None
-    print url
     img_temp = NamedTemporaryFile(delete=True)
     r = requests.get(url)
     # Read the streamed image in sections
@@ -1229,13 +1228,19 @@ def imageURLToImageFile(url):
         # Write image block to temporary file
         img_temp.write(block)
     img_temp.flush()
-    return ImageFile(img_temp)
+    image = ImageFile(img_temp)
+    if return_data:
+        image.seek(0)
+        return image.read(), image
+    return image
 
-def saveImageURLToModel(item, field_name, url):
-    image = imageURLToImageFile(url)
+def saveImageURLToModel(item, field_name, url, return_data=False):
+    data, image = imageURLToImageFile(url, return_data=True)
     filename = url.split('/')[-1].split('\\')[-1]
     image.name = item._meta.model._meta.get_field(field_name).upload_to(item, filename)
     setattr(item, field_name, image)
+    if return_data:
+        return (data, image)
     return image
 
 ############################################################
