@@ -373,7 +373,18 @@ DEFAULT_ENABLED_NAVBAR_LISTS = OrderedDict([
     ('more', {
         'title': '',
         'icon': 'more',
-        'order': ['about', 'donate_list', 'help', 'map', 'staffdetails_list', 'report_list', 'badge_list', 'staffconfiguration_list', 'collections'],
+        'order': [
+            'about',
+            'about_game',
+            'donate_list',
+            'help',
+            'map',
+            'staffdetails_list',
+            'report_list',
+            'badge_list',
+            'staffconfiguration_list',
+            'collections',
+        ],
         'url': '/about/',
     }),
 ])
@@ -466,14 +477,14 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
     }),
     ('about', [
         {
-            'title': _('About'),
+            'title': lambda _c: _('About {thing}').format(thing=_c['t_site_name']),
             'custom': False,
             'icon': 'about',
             'navbar_link_list': 'more',
         },
         {
             'ajax': True,
-            'title': _('About'),
+            'title': lambda _c: _('About {thing}').format(thing=_c['t_site_name']),
             'custom': False,
             'icon': 'about',
             'navbar_link_list': 'more',
@@ -484,12 +495,21 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'custom': False,
         'navbar_link': False,
     }),
-    ('about_game', {
-        'ajax': True,
-        'title': _('About the game'),
-        'custom': False,
-        'icon': 'about',
-    }),
+    ('about_game', [
+        {
+            'title': lambda _c: _('About {thing}').format(thing=_c['t_game_name']),
+            'custom': False,
+            'icon': 'about',
+            'navbar_link_list': 'more',
+            'logout_required': True,
+        },
+        {
+            'ajax': True,
+            'title': lambda _c: _('About {thing}').format(thing=_c['t_game_name']),
+            'custom': False,
+            'icon': 'about',
+        },
+    ]),
     ('map', {
         'title': _('Map'),
         'custom': False,
@@ -699,21 +719,6 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
             ('report', '\d+'),
         ],
     }),
-    ('about', [
-        {
-            'title': _('About'),
-            'custom': False,
-            'icon': 'about',
-            'navbar_link_list': 'more',
-        },
-        {
-            'ajax': True,
-            'title': _('About'),
-            'custom': False,
-            'icon': 'about',
-            'navbar_link_list': 'more',
-        },
-    ]),
     ('successedit', [
         {
             'custom': False,

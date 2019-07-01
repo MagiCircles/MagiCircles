@@ -388,9 +388,15 @@ def about(request):
     return render(request, 'pages/about.html', aboutDefaultContext(request))
 
 def about_game(request):
-    context = getGlobalContext(request)
+    ajax = request.path_info.startswith('/ajax/')
+    context = ajaxContext(request) if ajax else getGlobalContext(request)
+    context['ajax'] = ajax
     context['game_description'] = GAME_DESCRIPTION
     context['game_url'] = GAME_URL
+    context['button_sentence'] = _('Learn more')
+    context['extends'] = 'ajax.html' if context['ajax'] else 'base.html'
+    if not ajax:
+        context['h1_page_title'] = _('About {thing}').format(thing=context['t_game_name'])
     return render(request, 'ajax/about_game.html', context)
 
 ############################################################
