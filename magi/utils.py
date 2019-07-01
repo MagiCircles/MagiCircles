@@ -16,6 +16,7 @@ from django.utils.translation import ugettext_lazy as _, get_language
 from django.utils.formats import dateformat
 from django.utils.safestring import mark_safe
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 from django.template import Context
 from django.template.loader import get_template
 from django.db import models

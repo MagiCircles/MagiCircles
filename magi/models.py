@@ -7,7 +7,6 @@ from django.core import validators
 from django.utils.translation import ugettext_lazy as _, string_concat, get_language
 from django.utils import timezone
 from django.utils.formats import date_format
-from django.utils.dateparse import parse_date
 from django.forms.models import model_to_dict
 from django.conf import settings as django_settings
 from magi.utils import (
