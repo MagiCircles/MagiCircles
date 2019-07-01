@@ -1733,6 +1733,27 @@ function playSongButtons() {
 // *****************************************
 // Dynamic forms
 
+function hasValue(input) {
+    // Multiple choice checkboxes
+    if (input.is('ul') && input.filter('[type="checkbox"]:checked').length > 0) {
+        return true;
+    }
+    // Checkbox
+    if (input.is('[type="checkbox"]')) {
+        return input.prop('checked');
+    }
+    // Null boolean
+    else if (input.is('select')) {
+        let values = $.map(input.find('option'), function(elt, i) { return $(elt).val();})
+        let values_of_nullbool = ['1', '2', '3'];
+        if (values.length == values_of_nullbool.length
+            && values.every(function(element, index) { return element === values_of_nullbool[index]; })) {
+            return input.val() != '1';
+        }
+    }
+    return input.val() != '';
+}
+
 function formShowMore(form, cutOff, includingCutOff, until, includingUntil, messageMore, messageLess, checkValues) {
     includingCutOff = typeof(includingCutOff) == 'undefined' ? false : includingCutOff;
     includingUntil = typeof(includingUntil) == 'undefined' ? false : includingUntil;
@@ -1747,34 +1768,17 @@ function formShowMore(form, cutOff, includingCutOff, until, includingUntil, mess
     var cutOffField = undefined;
     var hidden_at_init = true;
 
-    function hasValue(input) {
+    function _hasValue(input) {
         if (!checkValues) {
             return false;
         }
-        // Multiple choice checkboxes
-        if (input.is('ul') && input.filter('[type="checkbox"]:checked').length > 0) {
-            return true;
-        }
-        // Checkbox
-        if (input.is('[type="checkbox"]')) {
-            return input.prop('checked');
-        }
-        // Null boolean
-        else if (input.is('select')) {
-            let values = $.map(input.find('option'), function(elt, i) { return $(elt).val();})
-            let values_of_nullbool = ['1', '2', '3'];
-            if (values.length == values_of_nullbool.length
-                && values.every(function(element, index) { return element === values_of_nullbool[index]; })) {
-                return input.val() != '1';
-            }
-        }
-        return input.val() != '';
+        return hasValue(input);
     }
 
     function pushToHiddenFields(field) {
         hidden_fields.push(field);
         let input = field.find('[id^="id_"]');
-        if (input.length > 0 && hasValue(input)) {
+        if (input.length > 0 && _hasValue(input)) {
             hidden_at_init = false;
         }
     }
@@ -1851,20 +1855,24 @@ function formOnChangeValueShow(form, changingFieldName, valuesToShow) {
     function onChange(animation) {
         if (Array.isArray(valuesToShow)) {
             $.each(valuesToShow, function(i, fieldName) {
-                let field = form.find('#id_' + fieldName).closest('.form-group');
-                if (changingField.val()) {
+                let input = form.find('#id_' + fieldName);
+                let field = input.closest('.form-group');
+                if (hasValue(changingField)) {
                     field.show(animation);
                 } else {
+                    input.val('');
                     field.hide(animation);
                 }
             });
         } else {
             $.each(valuesToShow, function(value, fields) {
                 $.each(fields, function(i, fieldName) {
-                    let field = form.find('#id_' + fieldName).closest('.form-group');
+                    let input = form.find('#id_' + fieldName);
+                    let field = input.closest('.form-group');
                     if (changingField.val() == value) {
                         field.show(animation);
                     } else {
+                        input.val('');
                         field.hide(animation);
                     }
                 });
