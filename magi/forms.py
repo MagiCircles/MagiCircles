@@ -211,6 +211,7 @@ class MagiForm(forms.ModelForm):
         self.is_creating = not hasattr(self, 'instance') or not self.instance.pk
         self.c_choices = []
         self.d_choices = {}
+        self.date_fields = []
         self.m_previous_values = {}
         self.keep_underscore_fields = []
         self.force_tinypng_on_save = []
@@ -290,8 +291,11 @@ class MagiForm(forms.ModelForm):
                     )
                 )
             # Fix dates fields
-            if isinstance(field, forms.DateField) or name in getattr(self.Meta, 'date_fields', []):
+            if (isinstance(field, forms.DateField)
+                or isinstance(field, forms.DateTimeField)
+                or name in getattr(self.Meta, 'date_fields', [])):
                 self.fields[name], value = date_input(field, value=(getattr(self.instance, name, None) if not self.is_creating else None))
+                self.date_fields.append(name)
                 if value:
                     setattr(self.instance, name, value)
             # Make CSV values with choices use a CheckboxSelectMultiple widget
@@ -527,6 +531,16 @@ class MagiForm(forms.ModelForm):
                 instance.owner = owner
             else:
                 instance.owner = self.request.user if self.request.user.is_authenticated() else None
+
+        # Save datetime times
+        times = getattr(self.Meta, 'date_times', {})
+        if times:
+            for field_name in self.date_fields:
+                if field_name in times and getattr(instance, field_name, None):
+                    setattr(
+                        instance, field_name,
+                        getattr(instance, field_name).replace(
+                            hour=times[field_name][0], minute=times[field_name][1]))
         # Save d_ dict choices
         for dfield, choices in self.d_choices.items():
             d = {}
@@ -642,6 +656,8 @@ class AutoForm(MagiForm):
 
         for field_name in self.fields.keys():
             if field_name.startswith('_') and field_name not in self.keep_underscore_fields:
+                del(self.fields[field_name])
+            if field_name in getattr(self.Meta, 'exclude_fields', []):
                 del(self.fields[field_name])
 
     class Meta(MagiForm.Meta):
