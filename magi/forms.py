@@ -291,9 +291,10 @@ class MagiForm(forms.ModelForm):
                     )
                 )
             # Fix dates fields
-            if (isinstance(field, forms.DateField)
-                or isinstance(field, forms.DateTimeField)
-                or name in getattr(self.Meta, 'date_fields', [])):
+            if (not name.startswith('_cache_')
+                and (isinstance(field, forms.DateField)
+                     or isinstance(field, forms.DateTimeField)
+                     or name in getattr(self.Meta, 'date_fields', []))):
                 self.fields[name], value = date_input(field, value=(getattr(self.instance, name, None) if not self.is_creating else None))
                 self.date_fields.append(name)
                 if value:
