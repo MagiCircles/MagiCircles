@@ -847,7 +847,8 @@ class MagiCollection(object):
                 choices = dict(getattr(item, u'{name}S_CHOICES'.format(name=field.name.upper()), [])).keys()
                 if (language in choices
                     and not getattr(item, u'{}s'.format(field_name), {}).get(language, None)):
-                    if language in LANGUAGES_CANT_SPEAK_ENGLISH:
+                    if (language in LANGUAGES_CANT_SPEAK_ENGLISH
+                        and not force_all_fields):
                         continue
                     else:
                         value = mark_safe(translationURL(
