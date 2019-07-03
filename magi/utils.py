@@ -42,13 +42,44 @@ from magi.default_settings import RAW_CONTEXT
 # Favorite characters / Backgrounds
 
 FAVORITE_CHARACTERS_IMAGES = OrderedDict([
-    (id, image)
-    for (id, name, image) in getattr(django_settings, 'FAVORITE_CHARACTERS', [])
+    (_pk, _image)
+    for (_pk, _name, _image) in getattr(django_settings, 'FAVORITE_CHARACTERS', [])
 ])
 FAVORITE_CHARACTERS_NAMES = OrderedDict([
-    (id, name)
-    for (id, name, image) in getattr(django_settings, 'FAVORITE_CHARACTERS', [])
+    (_pk, _name)
+    for (_pk, _name, _image) in getattr(django_settings, 'FAVORITE_CHARACTERS', [])
 ])
+_FAVORITE_CHARACTERS_LOCALIZED_NAMES = OrderedDict([
+    (_pk, _names)
+    for (_pk, _names) in getattr(django_settings, 'FAVORITE_CHARACTERS_NAMES', {}).items()
+])
+_FAVORITE_CHARACTERS_LOCALIZED_NAMES_UNICODE = OrderedDict([
+    (unicode(_pk), _names)
+    for (_pk, _names) in getattr(django_settings, 'FAVORITE_CHARACTERS_NAMES', {}).items()
+])
+
+def getFavoriteCharacterNamesFromPk(pk):
+    return {
+        'name': FAVORITE_CHARACTERS_NAMES.get(pk, None),
+        'names': (
+            _FAVORITE_CHARACTERS_LOCALIZED_NAMES.get(pk, {})
+            or _FAVORITE_CHARACTERS_LOCALIZED_NAMES_UNICODE.get(pk, {})
+        ),
+    }
+
+def getFavoriteCharacterNameFromPk(pk):
+    return getTranslatedName(getFavoriteCharacterNamesFromPk(pk))
+
+def getFavoriteCharacterImageFromPk(pk, default=None):
+   return (
+       FAVORITE_CHARACTERS_IMAGES.get(pk, None)
+       or default
+   )
+def getFavoriteCharacterChoices():
+    return [
+        (pk, getFavoriteCharacterNameFromPk(pk))
+        for (pk, full_name, image) in getattr(django_settings, 'FAVORITE_CHARACTERS', [])
+    ]
 
 BACKGROUNDS_IMAGES = OrderedDict([
     (_b['id'], _b['image'])

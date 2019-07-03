@@ -30,6 +30,7 @@ from magi.utils import (
     ordinalNumber,
     getAge,
     simplifyMarkdown,
+    getFavoriteCharacterNameFromPk,
 )
 from magi.settings import (
     ACCOUNT_MODEL,
@@ -271,11 +272,8 @@ class UserPreferences(BaseMagiModel):
         ] if c]
 
     def localized_favorite_character(self, number):
-        if getattr(self, 'favorite_character{}'.format(number)) and FAVORITE_CHARACTERS:
-            try:
-                return (_(localized) for (name, localized, __) in FAVORITE_CHARACTERS if unicode(name) == getattr(self, 'favorite_character{}'.format(number))).next()
-            except: pass
-        return ''
+        return getFavoriteCharacterNameFromPk(getattr(self, 'favorite_character{}'.format(number)))
+
     @property
     def localized_favorite_character1(self): return self.localized_favorite_character(1)
     @property

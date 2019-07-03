@@ -63,6 +63,7 @@ from magi.utils import (
     tourldash,
     jsv,
     CuteFormType,
+    getFavoriteCharacterChoices,
 )
 
 ############################################################
@@ -1474,6 +1475,7 @@ class AccountForm(AutoForm):
             else:
                 self.fields['default_tab'] = forms.ChoiceField(
                     required=False,
+                    label=_('Default tab'),
                     initial=FIRST_COLLECTION,
                     choices=BLANK_CHOICE_DASH + [
                         (tab_name, tab['name'])
@@ -1587,10 +1589,7 @@ class AccountFilterForm(MagiFiltersForm):
         )
         has_friend_id_filter = MagiFilter(selector='friend_id__isnull')
 
-    favorite_character = forms.ChoiceField(choices=BLANK_CHOICE_DASH + [
-        (id, full_name)
-        for (id, full_name, image) in getattr(django_settings, 'FAVORITE_CHARACTERS', [])
-    ], required=False)
+    favorite_character = forms.ChoiceField(choices=BLANK_CHOICE_DASH + getFavoriteCharacterChoices(), required=False)
     favorite_character_filter = MagiFilter(selectors=[
         'owner__preferences__favorite_character{}'.format(i) for i in range(1, 4)])
 
@@ -1604,6 +1603,7 @@ class AccountFilterForm(MagiFiltersForm):
     def __init__(self, *args, **kwargs):
         super(AccountFilterForm, self).__init__(*args, **kwargs)
         if 'favorite_character' in self.fields:
+            self.fields['favorite_character'].choices = BLANK_CHOICE_DASH + getFavoriteCharacterChoices()
             self.fields['favorite_character'].label = models.UserPreferences.favorite_character_label()
 
     class Meta(MagiFiltersForm.Meta):
@@ -1827,10 +1827,7 @@ class UserPreferencesForm(MagiForm):
             for i in range(1, 4):
                 self.fields['favorite_character{}'.format(i)] = forms.ChoiceField(
                     required=False,
-                    choices=BLANK_CHOICE_DASH + [
-                        (name, localized)
-                        for (name, localized, image) in FAVORITE_CHARACTERS
-                    ],
+                    choices=BLANK_CHOICE_DASH + getFavoriteCharacterChoices(),
                     label=models.UserPreferences.favorite_character_label(i),
                 )
 
@@ -2189,16 +2186,22 @@ class UserFilterForm(MagiFiltersForm):
 
 class AddLinkForm(MagiForm):
     action = '#links'
+    icon = 'add'
 
     @property
     def form_title(self):
         return _(u'Add {thing}').format(thing=unicode(_('Link')).lower())
-    icon = 'add'
 
     def __init__(self, *args, **kwargs):
         super(AddLinkForm, self).__init__(*args, **kwargs)
-        self.fields['i_relevance'].label = _('How often do you tweet/stream/post about {}?').format(GAME_NAME)
-        self.fields['i_type'].choices = [(name, localized) for (name, localized) in self.fields['i_type'].choices if name != django_settings.SITE]
+        if 'i_relevance' in self.fields:
+            self.fields['i_relevance'].label = _('How often do you tweet/stream/post about {}?').format(GAME_NAME)
+        if 'i_type' in self.fields:
+            self.fields['i_type'].choices = [
+                (name, localized)
+                for (name, localized) in self.fields['i_type'].choices
+                if name != django_settings.SITE
+            ]
 
     def save(self, commit=True):
         instance = super(AddLinkForm, self).save(commit)
