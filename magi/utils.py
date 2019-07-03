@@ -1247,11 +1247,15 @@ def saveLocalImageToModel(item, field_name, path, return_data=False):
         return (data, image)
     return image
 
-def imageURLToImageFile(url, return_data=False):
+def imageURLToImageFile(url, return_data=False, request_options={}):
     if not url:
         return None
     img_temp = NamedTemporaryFile(delete=True)
-    r = requests.get(url)
+    r = requests.get(url, **request_options)
+    if r.status_code != 200:
+        if return_data:
+            return None, None
+        return None
     # Read the streamed image in sections
     for block in r.iter_content(1024 * 8):
         # If no more file then stop
@@ -1266,8 +1270,12 @@ def imageURLToImageFile(url, return_data=False):
         return image.read(), image
     return image
 
-def saveImageURLToModel(item, field_name, url, return_data=False):
-    data, image = imageURLToImageFile(url, return_data=True)
+def saveImageURLToModel(item, field_name, url, return_data=False, request_options={}):
+    data, image = imageURLToImageFile(url, return_data=True, request_options=request_options)
+    if not image:
+        if return_data:
+            return None, None
+        return None
     filename = url.split('/')[-1].split('\\')[-1]
     image.name = item._meta.model._meta.get_field(field_name).upload_to(item, filename)
     setattr(item, field_name, image)

@@ -175,7 +175,10 @@ def save_item(details, unique_data, data, log_function, json_item=None):
         return item
     return None
 
-def api_pages(url, name, details, local=False, results_location=None, log_function=print):
+def api_pages(
+        url, name, details, local=False, results_location=None,
+        log_function=print, request_options={},
+):
     log_function('Downloading list of {}...'.format(name))
     details.get('callback_before', lambda: None)()
     url = addParametersToURL(
@@ -185,15 +188,22 @@ def api_pages(url, name, details, local=False, results_location=None, log_functi
         ),
         details.get('url_parameters', {}),
     )
-    log_function(url)
     total = 0
+    request_options = request_options.copy()
+    request_options.update(details.get('request_options', {}))
     while url:
         if local:
             f = open('{}.json'.format(name), 'r')
             result = json.loads(f.read())
             f.close()
         else:
-            r = requests.get(url)
+            r = requests.get(url, **request_options)
+            if r.status_code != 200:
+                log_function('ERROR: unable to load {}'.format(url))
+                log_function(r.status_code)
+                log_function(r.text)
+                log_function('')
+                return
             f = open('{}.json'.format(name), 'w')
             f.write(r.text.encode('utf-8'))
             f.close()
@@ -229,6 +239,7 @@ def download_image(url):
 def import_data(
         url, import_configuration, results_location=None,
         local=False, to_import=None, log_function=print,
+        request_options={},
 ):
     """
     url: must end with a /. Example: https://schoolido.lu/api/. can be overriden per conf
@@ -237,6 +248,7 @@ def import_data(
     to_import: list of keys to take into account in import_configuration
     results_location: in case the results are not at the root of the JSON response
     log_function: where to log
+    request_options: dict of options passed to requests in python
 
     import_configuration must be a dictionary with:
     - key: name of the items
@@ -257,6 +269,7 @@ def import_data(
         unique_together (bool): should the unique fields be considered together? (or/and condition)
         ignore_fields (list): list of explicitely ignored fields, no warning printed
         find_existing_item (function(model, unique_data, data): retrieve the item to update, or None to create
+        request_options: dict of options passed to requests in python
 
     mapping must be a dictionary with:
     key: field name in the result object
@@ -276,4 +289,5 @@ def import_data(
                 url, name, details, local=local,
                 results_location=results_location,
                 log_function=log_function,
+                request_options=request_options,
             )
