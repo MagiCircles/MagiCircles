@@ -480,10 +480,19 @@ function _loadTimezones() {
     });
 }
 
+function _localeNameToTimeAgoLocaleName() {
+    let locale = $('html').attr('lang');
+    let to_locale = {
+        'zh-hans': 'zh-CN',
+        'zh-hant': 'zh-TW',
+    }[locale];
+    return to_locale ? to_locale : locale;
+}
+
 function loadTimezones() {
     if ($('[data-timeago]').length > 0 && typeof jQuery.timeago == 'undefined') {
         $.getScript(static_url + 'bower/jquery-timeago/jquery.timeago.js', function() {
-            $.getScript(static_url + 'bower/jquery-timeago/locales/jquery.timeago.' + $('html').attr('lang')+ '.js', function() {
+            $.getScript(static_url + 'bower/jquery-timeago/locales/jquery.timeago.' +  _localeNameToTimeAgoLocaleName() + '.js', function() {
                 jQuery.timeago.settings.allowPast = true;
                 jQuery.timeago.settings.allowFuture = true;
                 _loadTimezones();
