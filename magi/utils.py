@@ -49,6 +49,10 @@ FAVORITE_CHARACTERS_NAMES = OrderedDict([
     (_pk, _name)
     for (_pk, _name, _image) in getattr(django_settings, 'FAVORITE_CHARACTERS', [])
 ])
+_FAVORITE_CHARACTERS_NAMES_UNICODE = OrderedDict([
+    (unicode(_pk), _name)
+    for (_pk, _name, _image) in getattr(django_settings, 'FAVORITE_CHARACTERS', [])
+])
 _FAVORITE_CHARACTERS_LOCALIZED_NAMES = OrderedDict([
     (_pk, _names)
     for (_pk, _names) in getattr(django_settings, 'FAVORITE_CHARACTERS_NAMES', {}).items()
@@ -60,7 +64,10 @@ _FAVORITE_CHARACTERS_LOCALIZED_NAMES_UNICODE = OrderedDict([
 
 def getFavoriteCharacterNamesFromPk(pk):
     return {
-        'name': FAVORITE_CHARACTERS_NAMES.get(pk, None),
+        'name': (
+            FAVORITE_CHARACTERS_NAMES.get(pk, None)
+            or _FAVORITE_CHARACTERS_NAMES_UNICODE.get(pk, None)
+        ),
         'names': (
             _FAVORITE_CHARACTERS_LOCALIZED_NAMES.get(pk, {})
             or _FAVORITE_CHARACTERS_LOCALIZED_NAMES_UNICODE.get(pk, {})
