@@ -6,6 +6,7 @@ from magi.utils import (
     modelHasField,
     matchesTemplate,
     addParametersToURL,
+    getSubField,
 )
 
 def import_map(maps, field_name, value):
