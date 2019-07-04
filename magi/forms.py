@@ -2890,7 +2890,7 @@ class PrivateMessageForm(MagiForm):
         save_owner_on_creation = True
 
 class PrivateMessageFilterForm(MagiFiltersForm):
-    search_fields = ('message', 'to_user__username', 'owner__username')
+    search_fields = ['message', 'to_user__username', 'owner__username']
     search_fields_labels = {
         'to_user__username': t['Username'],
         'owner__username': '',
