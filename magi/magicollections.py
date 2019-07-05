@@ -843,7 +843,9 @@ class MagiCollection(object):
             if self.translated_fields and field.name in self.translated_fields:
                 language = request.LANGUAGE_CODE if request else get_language()
                 result_language, value = item.get_translation_from_dict(
-                    field_name, language=language, return_language=True)
+                    field.name, language=language, return_language=True)
+                if not value:
+                    continue
                 if language != result_language:
                     if (language in LANGUAGES_CANT_SPEAK_ENGLISH
                         and not force_all_fields):

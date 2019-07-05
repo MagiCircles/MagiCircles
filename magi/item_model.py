@@ -456,6 +456,7 @@ class BaseMagiModel(models.Model):
             return_language=False,
     ):
         result_language = language
+        d = getattr(self, u'{name}s'.format(name=field_name[2:] if field_name.startswith('m_') else field_name))
         if not language:
             language = get_language()
         if language == 'en':
@@ -464,19 +465,24 @@ class BaseMagiModel(models.Model):
             value = getattr(self, u'{}_{}'.format(LANGUAGES_NAMES.get(language, None), field_name),
                             getattr(self, u'{}_{}'.format(language, field_name), None))
             if not value:
-                d = getattr(self, u'{name}s'.format(name=field_name))
                 value = d.get(language, None)
+                if value and field_name.startswith('m_'):
+                    value = value[1]
         if not value and fallback_to_english:
             value = getattr(self, field_name)
-            result_language = 'en'
+            if value:
+                result_language = 'en'
         if not value and fallback_to_other_sources:
-            d = getattr(self, u'{name}s'.format(name=field_name))
-            for source in self.get_field_translation_sources(field_name):
+            for source in self.get_field_translation_sources(
+                    field_name[2:] if field_name.startswith('m_') else field_name):
                 if source != 'en':
                     value_for_source = d.get(source, None)
                     if value_for_source:
                         value = value_for_source
-                        result_language = source
+                        if field_name.startswith('m_'):
+                            value = value[1]
+                        if value:
+                            result_language = source
                         break
         if return_language:
             return result_language, value
