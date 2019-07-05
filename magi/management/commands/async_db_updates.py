@@ -14,6 +14,10 @@ def get_next_item(model, field, modified_field_name, boolean_on_change=None):
     try:
         queryset = model.objects.all()
 
+        global specified_pks
+        if specified_pks:
+            queryset = queryset.filter(pk__in=specified_pks)
+
         if boolean_on_change is not None:
             # Field (boolean) = boolean_on_change
             # Modified field = NOT NULL
@@ -216,6 +220,8 @@ def model_async_update(model, specified_model=None, field_name=None):
                         return True
     return False
 
+specified_pks = []
+
 class Command(BaseCommand):
     """
     Performs one asynchronous operation among the default ones, such as:
@@ -235,6 +241,9 @@ class Command(BaseCommand):
 
         try: specified_field_name = args[1]
         except IndexError: specified_field_name = None
+
+        global specified_pks
+        specified_pks += args[2:]
 
         for model in magi_models.__dict__.values():
             if model_async_update(model, specified_model=specified_model, field_name=specified_field_name):
