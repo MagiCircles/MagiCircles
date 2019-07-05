@@ -1505,7 +1505,8 @@ def translationSentence(from_language, to_language):
     )
 
 def translationURL(value, from_language='en', to_language=None, with_wrapper=True, markdown=False, one_line=False):
-    to_language = to_language if to_language else get_language()
+    if not to_language:
+        to_language = get_language()
     url = 'https://translate.google.com/#{from_language}/{to_language}/{value}'.format(
         to_language=to_language,
         from_language=from_language,

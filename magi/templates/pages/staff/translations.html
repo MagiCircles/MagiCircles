@@ -15,7 +15,9 @@
   {% for language, details in total_per_languages.items %}
   <div style="display: inline-block" class="padding20">
     <img src="{{ details.image }}" height="30" />
-    <a href="?language={{ language }}">{{ details.verbose_name }}</a>
+    {% if language != 'en' %}<a href="?language={{ language }}">{% endif %}
+      {{ details.verbose_name }}
+    {% if language != 'en' %}</a>{% endif %}
     <span href="#" class="badge" data-toggle="tooltip" data-html="true"
           title="{{ details.total_translated }}/{{ details.total }}<br> {{ details.total_need_translations }} missing translations">
       {{ details.percent_translated }}%</span>

@@ -841,18 +841,21 @@ class MagiCollection(object):
                 if not value or value == '<dl></dl>':
                     continue
             if self.translated_fields and field.name in self.translated_fields:
-                value = getattr(item, u't_{}'.format(field.name), None)
-                if not value:
-                    continue
-                choices = dict(getattr(item, u'{name}S_CHOICES'.format(name=field.name.upper()), [])).keys()
-                if (language in choices
-                    and not getattr(item, u'{}s'.format(field_name), {}).get(language, None)):
+                language = request.LANGUAGE_CODE if request else get_language()
+                result_language, value = item.get_translation_from_dict(
+                    field_name, language=language, return_language=True)
+                if language != result_language:
                     if (language in LANGUAGES_CANT_SPEAK_ENGLISH
                         and not force_all_fields):
                         continue
                     else:
                         value = mark_safe(translationURL(
-                            value, with_wrapper=True, markdown=field.name.startswith('m_')))
+                            value,
+                            from_language=result_language,
+                            to_language=language,
+                            with_wrapper=True,
+                            markdown=field.name.startswith('m_'),
+                        ))
                 if field.name.startswith('m_'):
                     cache = None
                     if language == 'en':

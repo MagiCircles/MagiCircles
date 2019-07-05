@@ -451,18 +451,36 @@ class BaseMagiModel(models.Model):
         return listUnique(getattr(self, u'{}_SOURCE_LANGUAGES'.format(
             field_name.upper()), []) + ['en'])
 
-    def get_translation_from_dict(self, field_name, language=None, fallback_to_english=True):
+    def get_translation_from_dict(
+            self, field_name, language=None, fallback_to_english=True, fallback_to_other_sources=True,
+            return_language=False,
+    ):
+        result_language = language
         if not language:
             language = get_language()
         if language == 'en':
-            return getattr(self, field_name)
+            value = getattr(self, field_name)
         else:
             value = getattr(self, u'{}_{}'.format(LANGUAGES_NAMES.get(language, None), field_name),
                             getattr(self, u'{}_{}'.format(language, field_name), None))
-            if value:
-                return value
-        d = getattr(self, u't_{name}s'.format(name=field_name))
-        return d.get(language, { 'value': getattr(self, field_name) if fallback_to_english else None })['value']
+            if not value:
+                d = getattr(self, u'{name}s'.format(name=field_name))
+                value = d.get(language, None)
+        if not value and fallback_to_english:
+            value = getattr(self, field_name)
+            result_language = 'en'
+        if not value and fallback_to_other_sources:
+            d = getattr(self, u'{name}s'.format(name=field_name))
+            for source in self.get_field_translation_sources(field_name):
+                if source != 'en':
+                    value_for_source = d.get(source, None)
+                    if value_for_source:
+                        value = value_for_source
+                        result_language = source
+                        break
+        if return_language:
+            return result_language, value
+        return value
 
     def _attr_error(self, name):
         raise AttributeError("%r object has no attribute %r" % (self.__class__, name))
