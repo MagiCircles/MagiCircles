@@ -183,7 +183,7 @@ def api_pages(
     log_function('Downloading list of {}...'.format(name))
     details.get('callback_before', lambda: None)()
     url = addParametersToURL(
-        u'{}{}/'.format(
+        u'{}{}'.format(
             details.get('url', url),
             details.get('endpoint', name),
         ),
@@ -228,7 +228,8 @@ def api_pages(
         if local:
             url = None
         else:
-            url = result['next']
+            if 'next' in result:
+                url = result['next']
     details.get('callback_end', lambda: None)()
     log_function('Total {}'.format(total))
     log_function('Done.')
