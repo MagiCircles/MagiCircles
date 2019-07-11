@@ -360,7 +360,7 @@ def globalContext(request):
     context['corner_popups'] = OrderedDict()
     if request.user.is_authenticated():
         if isBirthdayToday(request.user.preferences.birthdate):
-            context['corner_popups']['happy_birthday'] = {
+            context['corner_popups'][u'happy_birthday{}'.format(datetime.datetime.today().year)] = {
                 'title': mark_safe(u'<span class="fontx1-5">{} 🎉</span>'.format(_('Happy Birthday'))),
                 'content': mark_safe(u'<p class="fontx1-5">🗓 {}<br>🎂 {}</p>'.format(
                     request.user.preferences.formatted_birthday_date,
