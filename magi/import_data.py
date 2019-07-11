@@ -230,6 +230,8 @@ def api_pages(
         else:
             if 'next' in result:
                 url = result['next']
+            else:
+                url = None
     details.get('callback_end', lambda: None)()
     log_function('Total {}'.format(total))
     log_function('Done.')
