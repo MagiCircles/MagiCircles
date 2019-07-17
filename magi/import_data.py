@@ -122,7 +122,7 @@ def default_find_existing_item(model, unique_together, unique_data):
     except IndexError:
         return None
 
-def save_item(details, unique_data, data, log_function, json_item=None):
+def save_item(details, unique_data, data, log_function, json_item=None, verbose=True):
     model = details['model']
     unique_together = details.get('unique_together', False)
     find_existing_item = details.get('find_existing_item', None)
@@ -130,12 +130,13 @@ def save_item(details, unique_data, data, log_function, json_item=None):
     if (data or unique_data):
         unique_data = prepare_data(unique_data, model, unique=True)
         data, manytomany, dictionaries = prepare_data(data, model, unique=False)
-        log_function(model.__name__)
-        log_function('- Unique data:')
-        log_function(unique_data)
-        log_function('- Data:')
-        log_function(data)
-        data.update(unique_data)
+        if verbose:
+            log_function(model.__name__)
+            log_function('- Unique data:')
+            log_function(unique_data)
+            log_function('- Data:')
+            log_function(data)
+            data.update(unique_data)
 
         if find_existing_item:
             item = find_existing_item(model, unique_data, data)
@@ -149,25 +150,29 @@ def save_item(details, unique_data, data, log_function, json_item=None):
             }
             model.objects.filter(pk=item.pk).update(**data)
             item = model.objects.filter(pk=item.pk)[0]
-            log_function('Updated')
+            log_function(u'Updated {} #{}'.format(model.__name__, item.pk))
         else:
             if modelHasField(model, 'owner') and 'owner' not in data and 'owner_id' not in data:
                 data['owner_id'] = 1
             item = model.objects.create(**data)
-            log_function('Created')
+            log_function(u'Created {} #{}'.format(model.__name__, item.pk))
 
         if manytomany:
-            log_function('- Many to many:')
+            if verbose:
+                log_function('- Many to many:')
             for field_name, list_of_items in manytomany.items():
                 getattr(item, field_name).add(*list_of_items)
-                log_function('    ', field_name)
+                if verbose:
+                    log_function('    ', field_name)
             item.save()
         if dictionaries:
-            log_function('- Updated dictionaries:')
+            if verbose:
+                log_function('- Updated dictionaries:')
             for field_name, dictionary in dictionaries.items():
                 for k, v in dictionary.items():
                     item.add_d(field_name[2:], k, v)
-                log_function('    ', field_name, getattr(item, field_name[2:]))
+                if verbose:
+                    log_function('    ', field_name, getattr(item, field_name[2:]))
             item.save()
 
         if 'callback_after_save' in details:
@@ -179,6 +184,7 @@ def save_item(details, unique_data, data, log_function, json_item=None):
 def api_pages(
         url, name, details, local=False, results_location=None,
         log_function=print, request_options={},
+        verbose=True,
 ):
     log_function('Downloading list of {}...'.format(name))
     details.get('callback_before', lambda: None)()
@@ -220,7 +226,7 @@ def api_pages(
                 unique_data, data = details['callback_per_item'](details, item)
             else:
                 unique_data, data, not_in_fields = import_generic_item(details, item)
-            save_item(details, unique_data, data, log_function, json_item=item)
+            save_item(details, unique_data, data, log_function, json_item=item, verbose=verbose)
             if not_in_fields:
                 log_function('- Ignored:')
                 log_function(not_in_fields)
@@ -243,7 +249,7 @@ def download_image(url):
 def import_data(
         url, import_configuration, results_location=None,
         local=False, to_import=None, log_function=print,
-        request_options={},
+        request_options={}, verbose=True,
 ):
     """
     url: must end with a /. Example: https://schoolido.lu/api/. can be overriden per conf
@@ -294,4 +300,5 @@ def import_data(
                 results_location=results_location,
                 log_function=log_function,
                 request_options=request_options,
+                verbose=verbose,
             )
