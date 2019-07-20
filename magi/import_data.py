@@ -139,7 +139,7 @@ def save_item(details, unique_data, data, log_function, json_item=None, verbose=
             data.update(unique_data)
 
         if find_existing_item:
-            item = find_existing_item(model, unique_data, data)
+            item = find_existing_item(model, unique_data, data, manytomany, dictionaries)
         else:
             item = default_find_existing_item(model, unique_together, unique_data)
 
@@ -227,7 +227,7 @@ def api_pages(
             else:
                 unique_data, data, not_in_fields = import_generic_item(details, item)
             save_item(details, unique_data, data, log_function, json_item=item, verbose=verbose)
-            if not_in_fields:
+            if not_in_fields and verbose:
                 log_function('- Ignored:')
                 log_function(not_in_fields)
             total += 1

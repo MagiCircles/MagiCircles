@@ -108,6 +108,7 @@ LANGUAGES = (
     ('de', _('German')),
     ('it', _('Italian')),
     ('ru', _('Russian')),
+    ('kr', _('Korean')),
 )
 
 LANGUAGE_CODE = 'en'

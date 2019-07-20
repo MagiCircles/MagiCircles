@@ -288,6 +288,7 @@ class TranslatedNames(BaseMagiModel):
         ('ru', _('Russian')),
         ('zh-hans', _('Chinese')),
     )
+    korean_name = models.CharField(max_length=100, null=True)
     d_names = models.TextField(null=True)
 
     # With choices but not translation

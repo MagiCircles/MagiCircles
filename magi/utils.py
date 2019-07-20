@@ -1000,6 +1000,137 @@ class ColorInput(TextInput):
             return None
         return value
 
+class FilterByMode:
+    Exact, Contains, StartsWith, EndsWith = range(4)
+
+def filterByTranslatedValue(
+        queryset, field_name, language=None, value=None,
+        mode=FilterByMode.Exact,
+        # only for Contains and EndsWith:
+        strict=False, force_queryset=False,
+):
+    """
+    When mode is Contains or EndsWith:
+      If strict = False, you'll always get a queryset, but if another
+      language contains or ends with the same value, they'll be returned as well.
+      You can set strict to True to avoid that, but the query will run and you'll
+      get a list and not a queryset as the returned value.
+      Only in that specific case, you can use force_queryset to return a queryset,
+      but it will be rebuilt from the result, which means the extra query can't
+      be avoided.
+    """
+    if language:
+        special_field_name = None
+
+        long_source_field_name = u'{}_{}'.format(LANGUAGES_NAMES.get(language, None), field_name)
+        short_source_field_name = u'{}_{}'.format(language, field_name)
+        if language == 'en':
+            special_field_name = field_name
+        elif modelHasField(queryset.model, long_source_field_name):
+            special_field_name = long_source_field_name
+        elif modelHasField(queryset.model, short_source_field_name):
+            special_field_name = short_source_field_name
+
+        if value is None:
+            if special_field_name:
+                return queryset.filter(**{
+                    u'{}__isnull'.format(special_field_name): False,
+                }).exclude(**{
+                    special_field_name: '',
+                })
+            return queryset.filter(**{
+                u'd_{}s__contains'.format(field_name): u'"{}": '.format(language),
+            })
+
+        if special_field_name:
+            if mode == FilterByMode.Exact:
+                return queryset.filter(**{ special_field_name: value })
+            elif mode == FilterByMode.Contains:
+                return queryset.filter(**{ u'{}__contains'.format(special_field_name): value })
+            elif mode == FilterByMode.StartsWith:
+                return queryset.filter(**{ u'{}__startswith'.format(special_field_name): value })
+            elif mode == FilterByMode.EndsWith:
+                return queryset.filter(**{ u'{}__endswith'.format(special_field_name): value })
+            return queryset
+    else:
+        if value is None:
+            return queryset.none()
+
+        other_languages_fields = [field_name]
+        for other_language, other_language_name in LANGUAGES_NAMES.items():
+            long_source_field_name = u'{}_{}'.format(other_language_name, field_name)
+            short_source_field_name = u'{}_{}'.format(other_language, field_name)
+            if modelHasField(queryset.model, long_source_field_name):
+                other_languages_fields.append(long_source_field_name)
+            elif modelHasField(queryset.model, short_source_field_name):
+                other_languages_fields.append(short_source_field_name)
+
+    if isinstance(value, basestring):
+        d_value = u'{}'.format(value.encode('unicode-escape'))
+
+    if mode == FilterByMode.Exact:
+        if isinstance(value, basestring):
+            d_value = u'"{}"'.format(d_value)
+        if language:
+            return queryset.filter(
+                Q(**{ u'd_{}s__contains'.format(field_name): u'"{}": {},'.format(language, d_value) })
+                | Q(**{ u'd_{}s__contains'.format(field_name): u'"{}": {}}}'.format(language, d_value) }),
+            )
+        else:
+            condition = (
+                Q(**{ u'd_{}s__contains'.format(field_name): u'": {},'.format(d_value) })
+                | Q(**{ u'd_{}s__contains'.format(field_name): u'": {}}}'.format(d_value) })
+            )
+            for other_field_name in other_languages_fields:
+                condition |= Q(**{ other_field_name: value })
+            return queryset.filter(condition)
+
+    elif mode == FilterByMode.StartsWith:
+        if isinstance(value, basestring):
+            d_value = u'"{}'.format(d_value)
+        if language:
+            return queryset.filter(**{
+                u'd_{}s__contains'.format(field_name): u'"{}": {}'.format(language, d_value),
+            })
+        else:
+            condition = Q(**{ u'd_{}s__contains'.format(field_name): u'": {}'.format(d_value) })
+            for other_field_name in other_languages_fields:
+                condition |= Q(**{ u'{}__contains'.format(other_field_name): value })
+            return queryset.filter(condition)
+
+    elif mode in [FilterByMode.Contains, FilterByMode.EndsWith]:
+        if language:
+            queryset = queryset.filter(**{
+                u'd_{}s__contains'.format(field_name): u'"{}": '.format(language),
+            })
+        if mode == FilterByMode.EndsWith:
+            condition = Q(**{ u'd_{}s__contains'.format(field_name): u'{}"'.format(d_value) })
+            if not language:
+                for other_field_name in other_languages_fields:
+                    condition |= Q(**{ u'{}__endswith'.format(other_field_name): value })
+        else: # Contains
+            condition = Q(**{ u'd_{}s__contains'.format(field_name): d_value })
+            if not language:
+                for other_field_name in other_languages_fields:
+                    condition |= Q(**{ u'{}__contains'.format(other_field_name): value })
+        queryset = queryset.filter(condition)
+        if language and strict:
+            items = []
+            for item in queryset:
+                value_for_language = item.get_translation_from_dict(
+                    field_name, language=language, fallback_to_english=False, fallback_to_other_sources=False,
+                )
+                if mode == FilterByMode.EndsWith and value_for_language.endswith(value):
+                    items.append(item)
+                elif value in value_for_language:
+                    items.append(item)
+            if force_queryset:
+                return queryset.filter(pk__in=[item.pk for item in items])
+            return items
+        return queryset
+
+    return queryset
+
 ############################################################
 # Form utils
 
