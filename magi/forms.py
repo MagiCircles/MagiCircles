@@ -64,6 +64,8 @@ from magi.utils import (
     jsv,
     CuteFormType,
     getFavoriteCharacterChoices,
+    FilterByMode,
+    filterByTranslatedValue,
 )
 
 ############################################################
@@ -882,9 +884,29 @@ class MagiFiltersForm(AutoForm):
         for term in terms:
             condition = Q()
             for field_name in getattr(self, 'search_fields', []):
-                condition |= Q(**{ '{}__icontains'.format(field_name): term })
+                # Translated fields
+                if field_name.startswith('d_') and field_name[2:-1] in (
+                        getattr(self, 'search_fields', []) + getattr(self, 'search_fields_exact', [])):
+                    condition |= filterByTranslatedValue(
+                        queryset, field_name[2:-1], value=term,
+                        mode=FilterByMode.Contains,
+                        as_condition=True,
+                        include_english=False,
+                    )
+                else:
+                    condition |= Q(**{ '{}__icontains'.format(field_name): term })
             for field_name in getattr(self, 'search_fields_exact', []):
-                condition |= Q(**{ '{}__iexact'.format(field_name): term })
+                # Translated fields
+                if field_name.startswith('d_') and field_name[2:-1] in (
+                        getattr(self, 'search_fields', []) + getattr(self, 'search_fields_exact', [])):
+                    condition |= filterByTranslatedValue(
+                        queryset, field_name[2:-1], value=term,
+                        mode=FilterByMode.Exact,
+                        as_condition=True,
+                        include_english=False,
+                    )
+                else:
+                    condition |= Q(**{ '{}__iexact'.format(field_name): term })
             queryset = queryset.filter(condition)
         if self.search_filter.distinct or any(
             '__' in _term for _term in (

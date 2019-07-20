@@ -9,19 +9,28 @@ from test import models
 
 class FilterByTranslationTestCase(TestCase):
     def setUp(self):
-        self.item = models.TranslatedNames.objects.create(
+        item = models.TranslatedNames.objects.create(
             name='abcdef',
             korean_name=u'ㄱㄴㄷㄹㅁㅂㅅㅇ',
         )
-        self.item.add_d('names', 'ja', u'あいうえお')
-        self.item.save()
+        item.add_d('names', 'ja', u'あいうえお')
+        item.save()
 
-        self.ambiguous_item = models.TranslatedNames.objects.create(
+        ambiguous_item = models.TranslatedNames.objects.create(
             name='hello world',
         )
-        self.ambiguous_item.add_d('names', 'ja', u'nothing in common')
-        self.ambiguous_item.add_d('names', 'ru', u'welcome to the world!')
-        self.ambiguous_item.save()
+        ambiguous_item.add_d('names', 'ja', u'nothing in common')
+        ambiguous_item.add_d('names', 'ru', u'welcome to the world!')
+        ambiguous_item.save()
+
+        never_returned_item = models.TranslatedNames.objects.create(
+            name='Passage weather as up am exposed.',
+        )
+        never_returned_item.add_d('names', 'ja', 'Vanity day giving points')
+        never_returned_item.add_d('names', 'zh-hans', 'Position two saw greatest stronger old')
+        never_returned_item.save()
+
+        empty_item = models.TranslatedNames.objects.create()
 
         self.queryset = models.TranslatedNames.objects.all()
 
@@ -34,7 +43,7 @@ class FilterByTranslationTestCase(TestCase):
     def test_no_language_no_value(self):
         self.assertEqual(self._toNameList(filterByTranslatedValue(
             self.queryset, 'name',
-        )), [])
+        )), ['abcdef', 'hello world', 'Passage weather as up am exposed.', ''])
 
     def test_english_exact(self):
         self.assertEqual(self._toNameList(filterByTranslatedValue(
