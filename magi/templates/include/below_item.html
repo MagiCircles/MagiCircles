@@ -5,11 +5,11 @@
   {% if button.show and button.has_permissions %}
   <a href="{{ button.url }}" data-btn-name="{{ name }}"
      class="{% for class in button.classes %}{{ class }} {% endfor %}"
-     title="{% if button.alt_title %}{{ button.alt_title }}{% else %}{{ button.title }}{% endif %}"
+     title="{% if button.tooltip %}{{ button.tooltip }}{% elif button.alt_title %}{{ button.alt_title }}{% else %}{{ button.title }}{% endif %}"
      {% for attr, value in button.extra_attributes.items %}data-{{ attr }}="{{ value }}"
      {% endfor %}
      {% if button.open_in_new_window %} target="_blank"{% endif %}
-     {% if item.show_item_buttons_as_icons %}
+     {% if button.tooltip or item.show_item_buttons_as_icons %}
      data-toggle="tooltip"
      data-placement="top"
      data-container="body"
