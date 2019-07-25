@@ -1069,34 +1069,55 @@ class MagiFiltersForm(AutoForm):
 
         # Add/delete fields
 
-        # Add add_to_{} to fields that are collectible and have a quick add option
+        # Collectible
         if self.collection and self.request.user.is_authenticated():
             for collection_name, collection in self.collection.collectible_collections.items():
-                if collection.queryset.model.fk_as_owner and collection.add_view.enabled and collection.add_view.quick_add_to_collection(self.request):
-                    setattr(self, u'add_to_{}_filter'.format(collection_name), MagiFilter(noop=True))
-                    queryset = collection.queryset.model.owners_queryset(self.request.user)
-                    initial = getattr(self.request, u'add_to_{}'.format(collection_name), None)
-                    label = collection.add_sentence
-                    help_text = None
-                    # Check if only one option, hide picker
-                    total_fk_owner_ids = getattr(self.request, u'total_fk_owner_ids_{}'.format(collection_name), None)
-                    if total_fk_owner_ids is None:
-                        if collection.queryset.model.fk_as_owner == 'account':
-                            total_fk_owner_ids = len(getAccountIdsFromSession(self.request))
-                            label = _('Account')
-                            help_text = collection.add_sentence
+                if (collection.queryset.model.fk_as_owner
+                    and collection.add_view.enabled):
+                    # Add add_to_{} to fields that are collectible and have a quick add option
+                    if collection.add_view.quick_add_to_collection(self.request):
+                        setattr(self, u'add_to_{}_filter'.format(collection_name), MagiFilter(noop=True))
+                        queryset = collection.queryset.model.owners_queryset(self.request.user)
+                        initial = getattr(self.request, u'add_to_{}'.format(collection_name), None)
+                        label = collection.add_sentence
+                        help_text = None
+                        # Check if only one option, hide picker
+                        total_fk_owner_ids = getattr(
+                            self.request, u'total_fk_owner_ids_{}'.format(collection_name), None)
+                        if total_fk_owner_ids is None:
+                            if collection.queryset.model.fk_as_owner == 'account':
+                                total_fk_owner_ids = len(getAccountIdsFromSession(self.request))
+                                label = _('Account')
+                                help_text = collection.add_sentence
+                            else:
+                                total_fk_owner_ids = len(queryset)
+                        if total_fk_owner_ids <= 1:
+                            self.fields[u'add_to_{}'.format(collection_name)] = forms.IntegerField(
+                                initial=initial,
+                                widget=forms.HiddenInput(attrs=({'value': initial} if initial else {})),
+                            )
                         else:
-                            total_fk_owner_ids = len(queryset)
-                    if total_fk_owner_ids <= 1:
-                        self.fields[u'add_to_{}'.format(collection_name)] = forms.IntegerField(
-                            initial=initial, widget=forms.HiddenInput(attrs=({'value': initial} if initial else {})),
+                            self.fields = OrderedDict(
+                                [(u'add_to_{}'.format(collection_name), forms.ModelChoiceField(
+                                    queryset=queryset, required=True,
+                                    initial=initial, label=label, help_text=help_text,
+                                ))] + self.fields.items())
+                    # Add added_{} for fields that are collectible
+                    field_name = u'added_{}'.format(collection_name)
+                    if field_name in self.request.GET:
+                        parent_item_name = self.collection.queryset.model.__name__.lower()
+                        related_name = collection.queryset.model._meta.get_field(
+                            parent_item_name).related_query_name()
+                        setattr(self, u'{}_filter'.format(field_name), MagiFilter(
+                            selector=u'{}__{}'.format(
+                                related_name,
+                                collection.queryset.model.fk_as_owner or 'owner',
+                            )))
+                        initial = getattr(self.request, u'add_to_{}'.format(collection_name), None)
+                        self.fields[field_name] = forms.IntegerField(
+                            initial=initial,
+                            widget=forms.HiddenInput(attrs=({'value': initial} if initial else {})),
                         )
-                    else:
-                        self.fields = OrderedDict(
-                            [(u'add_to_{}'.format(collection_name), forms.ModelChoiceField(
-                                queryset=queryset, required=True,
-                                initial=initial, label=label, help_text=help_text,
-                            ))] + self.fields.items())
         # Add missing_{}_translations for all translatable fields if the current user has permission
         if self.collection and self.request.user.is_authenticated() and self.allow_translate and self.collection.translated_fields:
             for field_name in self.collection.translated_fields:

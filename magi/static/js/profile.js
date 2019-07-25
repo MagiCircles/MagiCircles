@@ -84,13 +84,12 @@ function onProfileTabOpened() {
 
 function loadCollectionForAccount(load_url, callback) {
     return function(tab_name, user_id, account_id, onDone) {
-        $.get(load_url + '&ajax_modal_only', function(data) {
-            onDone($.trim(data) === '' ? '<div class="alert alert-warning">' + gettext('No result.') + '</div>'
-                   : '<a href="' + load_url.replace('/ajax/', '/') + '" target="_blank" class="collectible-search-button">' + gettext('Search and filter') + ' <i class="flaticon-link"></i></a>' + data, function() {
-                       if (callback) {
-                           callback();
-                       }
-                   });
+        $.get(load_url + '&ajax_modal_only&ajax_show_top_buttons&color=' + $('[data-account-id="' + account_id + '"]').data('color'), function(data) {
+            onDone(data, function() {
+                if (callback) {
+                    callback();
+                }
+            });
         });
     }
 }

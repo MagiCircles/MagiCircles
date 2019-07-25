@@ -426,19 +426,17 @@ class MagiCollection(object):
                 super(_CollectibleCollection, self).__init__(*args, **kwargs)
                 self.parent_collection = parent_collection
 
-            def get_list_url_for_authenticated_owner(self, request, ajax, item=None, fk_as_owner=None):
-                url = u'{url}?{parameters}'.format(
-                    url=self.get_list_url(ajax=ajax),
-                    parameters=u'&'.join([p for p in [
-                        u'owner={}'.format(request.user.id) if not fk_as_owner else None,
-                        u'{}={}'.format(
-                            item_field_name,
-                            getattr(item, item_field_name_id),
-                        ) if item else None,
-                        u'{}={}'.format(model_class.fk_as_owner, fk_as_owner) if fk_as_owner else None,
-                    ] if p is not None]),
-                )
-                return url
+            def get_list_url_for_authenticated_owner(
+                    self, request, ajax=False, item=None, fk_as_owner=None, parameters=None):
+                new_parameters = {
+                    k: v for k, v in {
+                        'owner': request.user.id if not fk_as_owner else None,
+                        item_field_name: getattr(item, item_field_name_id) if item else None,
+                        model_class.fk_as_owner: fk_as_owner if fk_as_owner else None,
+                    }.items() if v
+                }
+                new_parameters.update(parameters or {})
+                return self.get_list_url(ajax=ajax, parameters=new_parameters)
 
             @property
             def title(self):
@@ -469,9 +467,59 @@ class MagiCollection(object):
                         'verbose_name': _('Quick edit'),
                         'template': 'default_item_table_view',
                         'display_style': 'table',
-                        'display_style_table_fields': ['image'] + ([model_class.fk_as_owner] if model_class.fk_as_owner else []) + ['edit_button'],
+                        'display_style_table_fields': ['image'] + ([
+                            model_class.fk_as_owner] if model_class.fk_as_owner else []) + ['edit_button'],
                     }),
                 ]
+
+                def top_buttons(self, request, context):
+                    buttons = super(_CollectibleCollection.ListView, self).top_buttons(request, context)
+                    if (context['ajax']
+                        and 'account' in request.GET
+                        and int(request.GET['account']) in getAccountIdsFromSession(request)):
+                        account_id = int(request.GET['account'])
+                        color = request.GET.get('color', 'main')
+                        classes = [cls for cls in self.top_buttons_classes if cls != 'btn-main'] + [
+                            u'btn-{}'.format(color)]
+                        if context['total_results']:
+                            buttons['search_and_filter'] = {
+                                'show': True, 'has_permissions': True,
+                                'url': self.collection.get_list_url_for_authenticated_owner(request),
+                                'classes': classes,
+                                'title': _('Search and filter'),
+                                'icon': 'search',
+                            }
+                        buttons['add_to_collected'] = {
+                            'show': True, 'has_permissions': True,
+                            'url': parent_collection.get_list_url(
+                                parameters={
+                                    'view': parent_collection.list_view.quick_add_view
+                                } if parent_collection.list_view.quick_add_view else None,
+                            ),
+                            'classes': classes,
+                            'title': self.collection.add_sentence,
+                            'icon': 'add',
+                        }
+                        if context['total_results']:
+                            buttons['delete_collected'] = {
+                                'show': True, 'has_permissions': True,
+                                'url': (
+                                    parent_collection.get_list_url(
+                                        parameters={
+                                            'view': parent_collection.list_view.quick_add_view,
+                                            u'added_{}'.format(self.collection.name): account_id,
+                                        })
+                                    if parent_collection.list_view.quick_add_view
+                                    else self.collection.get_list_url_for_authenticated_owner(
+                                            request, fk_as_owner=account_id, parameters={
+                                                'view': 'quick_edit',
+                                            })
+                                ),
+                                'classes': classes,
+                                'title': _('Delete {thing}').format(thing=self.collection.plural_title.lower()),
+                                'icon': 'delete',
+                            }
+                    return buttons
 
                 def table_fields(self, item, *args, **kwargs):
                     image = getattr(item, 'image_url', None)
@@ -1037,7 +1085,7 @@ class MagiCollection(object):
             (button_name, {
                 'show': False,
                 'has_permissions': False,
-                'title': button_name,
+              'title': button_name,
                 'icon': False,
                 'image': False,
                 'url': False,
@@ -1315,6 +1363,7 @@ class MagiCollection(object):
         auto_reloader = True
         _alt_view_choices = None # Cache
         alt_views = []
+        quick_add_view = None
         show_section_header_on_change = None
 
         def has_permissions_to_see_in_navbar(self, request, context):

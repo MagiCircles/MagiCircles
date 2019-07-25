@@ -1,7 +1,7 @@
 {% load l10n %}
 {% for account in profile_user.all_accounts %}
 <div class="panel panel-{% if account.center and account.center.color %}{{ account.center.color }}{% else %}{{ account.cached_owner.preferences.css_color }}{% endif %} panel-default-account{% if account.is_playground or account.is_hidden_from_leaderboard %} playground{% endif %}"
-     data-account-id="{{ account.id }}" id="{{ account.id }}">
+     data-account-id="{{ account.id }}" id="{{ account.id }}" data-color="{% if account.center and account.center.color %}{{ account.center.color }}{% else %}{{ account.cached_owner.preferences.css_color }}{% endif %}">
   <div class="panel-heading default-account"{% if account.center and account.center.art %} style="background-image: url('{{ account.center.art_url_original }}');"{% endif %}><div class="panel-heading-inside">
     <div class="row">
       {% if not account.center or not account.center.art %}<div class="col-md-2">
