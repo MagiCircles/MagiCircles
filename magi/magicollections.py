@@ -468,7 +468,7 @@ class MagiCollection(object):
                         'template': 'default_item_table_view',
                         'display_style': 'table',
                         'display_style_table_fields': ['image'] + ([
-                            model_class.fk_as_owner] if model_class.fk_as_owner else []) + ['edit_button'],
+                            model_class.fk_as_owner] if model_class.fk_as_owner else []),
                     }),
                 ]
 
@@ -522,11 +522,23 @@ class MagiCollection(object):
                     return buttons
 
                 def table_fields(self, item, *args, **kwargs):
-                    image = getattr(item, 'image_url', None)
+                    item_image = None
+                    for image_field in [
+                            'top_image_list', 'top_image',
+                            'image_thumbnail_url', 'image_url',
+                    ]:
+                        if getattr(item, image_field, None):
+                            item_image = getattr(item, image_field)
+                            break
                     fields = super(_CollectibleCollection.ListView, self).table_fields(item, *args, extra_fields=(
-                        [(('image', { 'verbose_name': unicode(item), 'value': image, 'type': 'image' })
-                          if image else ('name', {
-                                  'verbose_name': unicode(item), 'value': unicode(item), 'type': 'text',
+                        [(('image', {
+                            'verbose_name': unicode(item),
+                            'value': item_image,
+                            'type': 'image',
+                        }) if item_image else ('image', {
+                            'verbose_name': unicode(item),
+                            'value': unicode(item),
+                            'type': 'text',
                           }))]), **kwargs)
                     if (model_class.fk_as_owner and model_class.fk_as_owner in fields
                         and 'ajax_link' in fields[model_class.fk_as_owner]):
