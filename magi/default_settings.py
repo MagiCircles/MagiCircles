@@ -49,7 +49,7 @@ DEFAULT_LANGUAGES_CANT_SPEAK_ENGLISH = ['ja', 'zh-hans', 'zh-hant', 'kr']
 # Groups
 
 DEFAULT_GLOBAL_OUTSIDE_PERMISSIONS = {
-    'Staff/Contributor Discord': DEFAULT_CONTACT_DISCORD,
+    'Staff/Contributor Discord': { 'image': 'links/discord', 'url': DEFAULT_CONTACT_DISCORD },
     'Bug tracker': False, # Added in settings
     # 'Wiki editor' added in settings
 }
@@ -60,15 +60,17 @@ DEFAULT_GROUPS = [
         'description': 'The leader of our staff team is here to make sure that the website is doing well! They make sure we all get things done together and the website keeps getting new users everyday. They\'re also the decision maker in case of conflicts that can\'t be resolved via votes.',
         'permissions': [
             'edit_roles', 'edit_staff_status', 'edit_donator_status', 'see_profile_edit_button',
-            'edit_staff_configurations', 'add_badges', 'see_collections_details', 'manage_main_items',
+            'edit_staff_configurations', 'add_badges', 'see_collections_details',
+            'manage_main_items', 'view_items_history',
             'edit_staff_details', 'moderate_reports', 'edit_reported_things', 'post_community_event_activities',
+            'apply_suggestions',
             'manage_prizes', 'manipulate_activities', 'mark_activities_as_staff_pick',
             'edit_activities_post_language', 'order_by_any_field',
             'access_site_before_launch',
             'beta_test_features',
         ],
         'outside_permissions': {
-            'Tweetdeck': 'https://tweetdeck.twitter.com/',
+            'Tweetdeck': { 'image': 'links/twitter', 'url': 'https://tweetdeck.twitter.com/' },
             'Disqus moderation': False, # Added in settings
         },
         'requires_staff': True,
@@ -96,7 +98,10 @@ DEFAULT_GROUPS = [
         'requires_staff': True,
         'outside_permissions': {
             'Administrate the contributors on GitHub': False, # Added in settings
-            'Administrate the contributors on Tweetdeck': 'https://tweetdeck.twitter.com/',
+            'Administrate the contributors on Tweetdeck': {
+                'image': 'links/twitter',
+                'url': 'https://tweetdeck.twitter.com/',
+            },
             'Administrate the moderators on Disqus': False, # Added in settings
         },
         'guide': '/help/Team%20managers%20guide',
@@ -108,10 +113,19 @@ DEFAULT_GROUPS = [
         'requires_staff': True,
         'requires_staff': True,
         'outside_permissions': {
-            'Patreon manager': 'https://www.patreon.com/manageRewards',
-            'Donators forms responses': 'https://docs.google.com/spreadsheets/d/18yFRsk3JpM-lIwT-Gp7teXVpliPgzBP7Lq2T7F6LJjk/edit',
-            'Monthly prizes': 'https://docs.google.com/spreadsheets/d/1Ocv1uDoqlC_4ffg1SUQKLv1Xjd9H84Qg-YYhzh4WH7Q/edit',
-            'Budget sheet': 'https://docs.google.com/spreadsheets/d/18dwZyE37SKFRXDG3hWd7O7JpQv41CSINg_904S96T1M/edit',
+            'Patreon manager': { 'icon': 'heart', 'url': 'https://www.patreon.com/manageRewards' },
+            'Donators forms responses': {
+                'icon': 'icons-list',
+                'url': 'https://docs.google.com/spreadsheets/d/18yFRsk3JpM-lIwT-Gp7teXVpliPgzBP7Lq2T7F6LJjk/edit',
+            },
+            'Monthly prizes': {
+                'icon': 'present',
+                'url': 'https://docs.google.com/spreadsheets/d/1Ocv1uDoqlC_4ffg1SUQKLv1Xjd9H84Qg-YYhzh4WH7Q/edit',
+            },
+            'Budget sheet': {
+                'icon': 'money',
+                'url': 'https://docs.google.com/spreadsheets/d/18dwZyE37SKFRXDG3hWd7O7JpQv41CSINg_904S96T1M/edit',
+            },
         },
         'guide': '/help/Finance%20managers%20guide',
     }),
@@ -138,7 +152,10 @@ DEFAULT_GROUPS = [
         ],
         'requires_staff': True,
         'outside_permissions': {
-            'API key': '/o/applications/',
+            'API key': {
+                'icon': 'developer',
+                'url': '/o/applications/',
+            },
         },
         'guide': '/help/Database%20maintainers%20guide',
     }),
@@ -169,7 +186,7 @@ DEFAULT_GROUPS = [
             'beta_test_features',
         ],
         'outside_permissions': {
-            'Tweetdeck': 'https://tweetdeck.twitter.com/',
+            'Tweetdeck': { 'image': 'links/twitter', 'url': 'https://tweetdeck.twitter.com/' },
         },
         'guide': '/help/Community%20managers%20guide',
     }),
@@ -192,10 +209,10 @@ DEFAULT_GROUPS = [
             'beta_test_features',
         ],
         'outside_permissions': {
-            'Tweetdeck': 'https://tweetdeck.twitter.com/',
+            'Tweetdeck': { 'image': 'links/twitter', 'url': 'https://tweetdeck.twitter.com/' },
             'Receive private messages on Facebook': False, # Added in settings
             'Receive private messages on Reddit': False, # Added in settings
-            'Receive emails': u'mailto:{}'.format(django_settings.AWS_SES_RETURN_PATH),
+            'Receive emails': { 'icon': 'contact', 'url': u'mailto:{}'.format(django_settings.AWS_SES_RETURN_PATH) },
             # 'Feedback form' added in settings if exists
         },
         'guide': '/help/Support%20guide',
@@ -259,7 +276,7 @@ DEFAULT_GROUPS = [
         ],
         'requires_staff': True,
         'outside_permissions': {
-            'Tweetdeck': 'https://tweetdeck.twitter.com/',
+            'Tweetdeck': { 'image': 'links/twitter', 'url': 'https://tweetdeck.twitter.com/' },
         },
         'stats': [
             {
@@ -285,7 +302,7 @@ DEFAULT_GROUPS = [
         'description': 'Help keep Circle\'s private server well organized and fun for all our staff and contributors.',
         'requires_staff': False,
         'outside_permissions': {
-            'Discord moderation': DEFAULT_CONTACT_DISCORD,
+            'Discord moderation': { 'image': 'links/discord', 'url': DEFAULT_CONTACT_DISCORD },
         },
         'guide': '/help/Discord%20moderators%20guide',
     }),
@@ -300,7 +317,7 @@ DEFAULT_GROUPS = [
         ],
         'requires_staff': False,
         'outside_permissions': {
-            'POEditor': DEFAULT_POEDITOR_URL,
+            'POEditor': { 'icon': 'link', 'url': DEFAULT_POEDITOR_URL },
         },
         'guide': '/help/Translators%20guide',
         'settings': ['languages'],

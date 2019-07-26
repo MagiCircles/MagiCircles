@@ -1977,7 +1977,9 @@ class StaffEditUser(_UserCheckEmailUsernameForm):
                         operms=u'<br><div class="alert alert-danger"><small>Make sure you also grant/revoke {user} the following permissions <b>manually</b>:</small> <ul>{permissions}</ul></div>'.format(
                             user=instance.username,
                             permissions=u''.join([u'<li style="display: list-item"><small>{}</small></li>'.format(
-                                p if not u else u'<a href="{}" target="_blank">{} <i class="flaticon-link"></i></a>'.format(u, p),
+                                p if not u
+                                else u'<a href="{}" target="_blank">{} <i class="flaticon-link"></i></a>'.format(
+                                        u['url'] if isinstance(u, dict) else u, p),
                             ) for p, u in group['outside_permissions'].items()]),
                         ) if group.get('outside_permissions', {}) else u'',
                     ))) for key, group in instance.preferences.GROUPS.items()

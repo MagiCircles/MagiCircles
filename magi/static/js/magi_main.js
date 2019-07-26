@@ -1403,18 +1403,25 @@ function loadPrivateMessages() {
 // Handle form to update users for staff
 
 function updateStaffEditUserForm() {
-    function _onCheck() {
+    function _onCheck(action) {
         $('[data-form-name="edit_user"] #id_c_groups input[name="c_groups"]').each(function() {
-            let form_group = $('[data-form-name="edit_user"] [id^=id_group_settings_' + $(this).val() + '_]').closest('.form-group');
-            if ($(this).prop('checked') !== true) {
-                form_group.hide();
+            let input = $(this);
+            let form_group = $('[data-form-name="edit_user"] [id^=id_group_settings_' + input.val() + '_]').closest('.form-group');
+            if (input.prop('checked') !== true) {
+                form_group.hide(action);
+                input.parent().find('p, br:not(:first-of-type), ul, .alert').hide(action);
+                input.parent().find('img').css('height', 30);
             } else {
-                form_group.show();
+                form_group.show(action);
+                input.parent().find('p, br:not(:first-of-type), ul, .alert').show(action);
+                input.parent().find('img').css('height', 60);
             }
         });
     }
     _onCheck();
-    $('[data-form-name="edit_user"] #id_c_groups input[name="c_groups"]').change(_onCheck);
+    $('[data-form-name="edit_user"] #id_c_groups input[name="c_groups"]').change(function() {
+        _onCheck('fast');
+    });
 }
 
 // *****************************************

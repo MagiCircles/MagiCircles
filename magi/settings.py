@@ -479,18 +479,37 @@ def _set_permission_link_on_unset(d, permission, url):
 
 _permission_url_to_set = {
     'team': {
-        'Administrate the contributors on GitHub': u'https://github.com/{}/{}/settings/collaboration'.format(GITHUB_REPOSITORY[0], GITHUB_REPOSITORY[1]),
-        'Administrate the moderators on Disqus': u'https://{}.disqus.com/admin/settings/moderators/'.format(DISQUS_SHORTNAME),
+        'Administrate the contributors on GitHub': {
+            'image': 'links/github',
+            'url': u'https://github.com/{}/{}/settings/collaboration'.format(
+                GITHUB_REPOSITORY[0], GITHUB_REPOSITORY[1]),
+        },
+        'Administrate the moderators on Disqus': {
+            'icon': 'comments',
+            'url': u'https://{}.disqus.com/admin/settings/moderators/'.format(DISQUS_SHORTNAME),
+        },
     },
     'support': {
-        'Receive private messages on Facebook': u'https://facebook.com/{}/'.format(CONTACT_FACEBOOK) if CONTACT_FACEBOOK else None,
-        'Receive private messages on Reddit': u'https://www.reddit.com/user/{}/'.format(CONTACT_REDDIT) if CONTACT_REDDIT else None,
+        'Receive private messages on Facebook': {
+            'image': 'links/facebook',
+            'url': u'https://facebook.com/{}/'.format(CONTACT_FACEBOOK) if CONTACT_FACEBOOK else None,
+        },
+        'Receive private messages on Reddit': {
+            'image': 'links/reddit',
+            'url': u'https://www.reddit.com/user/{}/'.format(CONTACT_REDDIT) if CONTACT_REDDIT else None,
+        },
     },
     'd_moderator': {
-        'Disqus moderation': u'https://{}.disqus.com/admin/moderate/#/pending'.format(DISQUS_SHORTNAME),
+        'Disqus moderation': {
+            'icon': 'comments',
+            'url': u'https://{}.disqus.com/admin/moderate/#/pending'.format(DISQUS_SHORTNAME),
+        },
     },
     'manager': {
-        'Disqus moderation': u'https://{}.disqus.com/admin/moderate/#/pending'.format(DISQUS_SHORTNAME),
+        'Disqus moderation': {
+            'icon': 'comments',
+            'url': u'https://{}.disqus.com/admin/moderate/#/pending'.format(DISQUS_SHORTNAME),
+        },
     },
 }
 
@@ -503,7 +522,7 @@ for _g, _d in GROUPS:
     if _g == 'support' and FEEDBACK_FORM:
         if 'outside_permissions' not in _d:
             _d['outside_permissions'] = {}
-        _d['outside_permissions']['Feedback form'] = FEEDBACK_FORM
+        _d['outside_permissions']['Feedback form'] = { 'icon': 'idea', 'url': FEEDBACK_FORM }
     # Add staff details edit permission
     if _d.get('requires_staff', False):
         if 'permissions' not in _d:
@@ -516,9 +535,12 @@ for _g, _d in GROUPS:
 # GLOBAL_OUTSIDE_PERMISSIONS
 
 for _permission, _url in [
-        ('Bug tracker', BUG_TRACKER_URL),
+        ('Bug tracker', { 'icon': 'bug', 'url': BUG_TRACKER_URL }),
 ]:
     _set_permission_link_on_unset(GLOBAL_OUTSIDE_PERMISSIONS, _permission, _url)
 
 if WIKI:
-    GLOBAL_OUTSIDE_PERMISSIONS['Wiki editor'] = 'https://github.com/{}/{}/wiki'.format(WIKI[0], WIKI[1])
+    GLOBAL_OUTSIDE_PERMISSIONS['Wiki editor'] = {
+        'icon': 'wiki',
+        'url': 'https://github.com/{}/{}/wiki'.format(WIKI[0], WIKI[1]),
+    }

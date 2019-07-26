@@ -419,12 +419,16 @@ for (name, pages) in ENABLED_PAGES.items():
 ############################################################
 # Add staff links to navbar
 
-for permission, url in GLOBAL_OUTSIDE_PERMISSIONS.items():
-    if url:
+for permission, details in GLOBAL_OUTSIDE_PERMISSIONS.items():
+    if not isinstance(details, dict):
+        details = { 'url': url }
+    if details.get('url', None):
         url_name = u'staff-global-{}'.format(tourldash(permission).lower())
         navbarAddLink(url_name, {
             'url_name': url_name,
-            'url': url,
+            'url': details['url'],
+            'image': details.get('image', None),
+            'icon': details.get('icon', None),
             'title': permission,
             'show_link_callback': lambda context: context['request'].user.is_staff,
             'new_tab': True,
@@ -459,6 +463,8 @@ for collection in collections.values():
                 _links_for_groups[group].append(name)
                 navbarAddLink(name, {
                     'title': collection.plural_title,
+                    'icon': collection.icon,
+                    'image': collection.image,
                     'url': collection.get_list_url(),
                     'show_link_callback': _getPageShowLinkForGroupsLambda(group),
                 }, 'staff')
@@ -484,6 +490,8 @@ for name, pages in ENABLED_PAGES.items():
                     url_name = u'{}-{}'.format(group, name)
                     navbarAddLink(url_name, {
                         'title': page['title'],
+                        'icon': page.get('icon', None),
+                        'image': page.get('image', None),
                         'url': page.get('redirect', None) or '/{}/'.format(name),
                         'get_url': None if not page.get('url_variables', None) else (getURLLambda(name, lambdas)),
                         'show_link_callback': _getPageShowLinkForGroupsLambda(group),
@@ -498,12 +506,16 @@ for name, pages in ENABLED_PAGES.items():
 _staff_order = _links_to_show_first
 for group, group_details in GROUPS:
     links_to_add = []
-    for permission, url in group_details.get('outside_permissions', {}).items():
-        if url:
+    for permission, details in group_details.get('outside_permissions', {}).items():
+        if not isinstance(details, dict):
+            details = { 'url': url }
+        if details.get('url', None):
             url_name = u'staff-{}-{}'.format(group, tourldash(permission).lower())
             links_to_add.append((url_name, {
                 'url_name': url_name,
-                'url': url,
+                'url': details['url'],
+                'image': details.get('image', None),
+                'icon': details.get('icon', None),
                 'title': permission,
                 'show_link_callback': _getPageShowLinkForGroupsLambda(group),
                 'new_tab': True,

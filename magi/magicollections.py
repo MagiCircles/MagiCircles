@@ -2558,7 +2558,9 @@ class UserCollection(MagiCollection):
                 context['afterfields']['edit_user'] = mark_safe(u'<div class="alert alert-danger">If you are making {user} a new staff, or if you are revoking the staff status of {user}, make sure you also <b>manually grant or revoke</b> the following permissions: <ul>{permissions}</ul></div>'.format(
                     user=context['item'].username,
                     permissions=u''.join([u'<li>{}</li>'.format(
-                        p if not u else u'<a href="{}" target="_blank">{} <i class="flaticon-link"></i></a>'.format(u, p),
+                        p if not u
+                        else u'<a href="{}" target="_blank">{} <i class="flaticon-link"></i></a>'.format(
+                                u['url'] if isinstance(u, dict) else u, p),
                     ) for p, u in GLOBAL_OUTSIDE_PERMISSIONS.items()]),
                 ))
 

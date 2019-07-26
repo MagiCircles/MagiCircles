@@ -181,11 +181,12 @@
       </small>
     </p>
     <ul>
-      {% for permission, url in global_outside_permissions.items %}
+      {% for permission, details in global_outside_permissions.items %}
       <li>
-        {% if url %}<a href="{{ url }}" target="_blank">{% endif %}
+        {% if details.url  %}<a href="{{ details.url }}" target="_blank">
+        {% elif details  %}<a href="{{ details }}" target="_blank">{% endif %}
           {{ permission }}
-        {% if url %} <i class="flaticon-link"></i></a>{% endif %}
+        {% if details.url or details %} <i class="flaticon-link"></i></a>{% endif %}
       </li>
       {% endfor %}
     </ul>
@@ -226,11 +227,12 @@
             </small>
           </p>
           <ul>
-            {% for permission, url in details.outside_permissions.items %}
+            {% for permission, details in details.outside_permissions.items %}
             <li>
-              {% if url %}<a href="{{ url }}" target="_blank">{% endif %}
-                {{ permission }}
-              {% if url %} <i class="flaticon-link"></i></a>{% endif %}
+              {% if details.url %}<a href="{{ details.url }}" target="_blank">
+              {% elif details %}<a href="{{ details }}" target="_blank">{% endif %}
+                  {{ permission }}
+              {% if details.url or details %} <i class="flaticon-link"></i></a>{% endif %}
             </li>
             {% endfor %}
           </ul>
