@@ -2829,6 +2829,7 @@ class DonatorBadgeForm(_BadgeForm):
         ('True', t['Yes']),
         ('False', t['No']),
     ], label='Is the donation over $10?')
+    is_special_offer = forms.BooleanField(required=False, label='Is it a special offer?', initial=False)
 
     def __init__(self, *args, **kwargs):
         super(DonatorBadgeForm, self).__init__(*args, **kwargs)
@@ -2845,12 +2846,14 @@ class DonatorBadgeForm(_BadgeForm):
         instance.description = self.cleaned_data['source']
         instance.url = '/donate/'
         instance.show_on_top_profile = instance.show_on_profile
+        if self.cleaned_data.get('is_special_offer', False):
+            instance.show_on_profile = True
         if commit:
             instance.save()
         return instance
 
     class Meta(_BadgeForm.Meta):
-        fields = ('username', 'donation_month', 'source', 'show_on_profile', 'rank')
+        fields = ('username', 'donation_month', 'source', 'show_on_profile', 'is_special_offer', 'rank')
 
 class FilterBadges(MagiFiltersForm):
     search_fields = ['user__username', 'name', 'description']
