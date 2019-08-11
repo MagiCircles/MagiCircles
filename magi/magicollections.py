@@ -3352,7 +3352,7 @@ class DonateCollection(MagiCollection):
                          ).prefetch_related(
                              Prefetch('user__links', to_attr='all_links'),
                          ).extra(select=extra_select).order_by(*[
-                             '-show_on_profile',
+                             '-show_on_top_profile',
                              '-has_rank',
                              '-rank',
                              '-user_has_status',
