@@ -178,7 +178,7 @@
     {% endif %}
     {% if bottom %}
     {% load i18n %}
-    {% if comments_enabled %}
+    {% if comments_enabled and not comments_displayed_below %}
     <tr data-field="comments">
       <td><i class="flaticon-comments"></i></td>
       <th>{% trans 'Comments' %}</th>

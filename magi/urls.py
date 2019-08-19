@@ -32,6 +32,7 @@ from magi.settings import (
     SITE_IMAGE,
     SITE_IMAGE_PER_LANGUAGE,
     TRANSLATION_HELP_URL,
+    COMMENTS_ENGINE,
     DISQUS_SHORTNAME,
     MAX_ACTIVITY_HEIGHT,
     HASHTAGS,
@@ -614,7 +615,9 @@ RAW_CONTEXT['full_static_url'] = u'http{}:{}'.format('' if settings.DEBUG else '
 RAW_CONTEXT['site_logo'] = staticImageURL(SITE_LOGO)
 RAW_CONTEXT['full_site_logo'] = u'http{}:{}'.format('' if settings.DEBUG else 's',RAW_CONTEXT['site_logo']) if 'http' not in RAW_CONTEXT['site_logo'] else RAW_CONTEXT['site_logo']
 RAW_CONTEXT['site_nav_logo'] = SITE_NAV_LOGO
-RAW_CONTEXT['disqus_shortname'] = DISQUS_SHORTNAME
+RAW_CONTEXT['comments_engine'] = COMMENTS_ENGINE
+if RAW_CONTEXT['comments_engine'] == 'disqus':
+    RAW_CONTEXT['disqus_shortname'] = DISQUS_SHORTNAME
 RAW_CONTEXT['max_activity_height'] = MAX_ACTIVITY_HEIGHT
 RAW_CONTEXT['javascript_translated_terms'] = JAVASCRIPT_TRANSLATED_TERMS
 RAW_CONTEXT['javascript_commons'] = JAVASCRIPT_COMMONS

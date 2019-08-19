@@ -27,13 +27,20 @@ SITE_NAME = getattr(settings_module, 'SITE_NAME')
 SITE_URL = getattr(settings_module, 'SITE_URL')
 SITE_IMAGE = getattr(settings_module, 'SITE_IMAGE')
 SITE_STATIC_URL = getattr(settings_module, 'SITE_STATIC_URL')
-DISQUS_SHORTNAME = getattr(settings_module, 'DISQUS_SHORTNAME')
 GAME_NAME = getattr(settings_module, 'GAME_NAME')
 ACCOUNT_MODEL = getattr(settings_module, 'ACCOUNT_MODEL')
 COLOR = getattr(settings_module, 'COLOR')
 
+# Required when COMMENTS_ENGINE = 'disqus' (default)
+DISQUS_SHORTNAME = getattr(settings_module, 'DISQUS_SHORTNAME', None)
+
 ############################################################
 # Optional settings with default values
+
+if hasattr(settings_module, 'COMMENTS_ENGINE'):
+    COMMENTS_ENGINE = getattr(settings_module, 'COMMENTS_ENGINE')
+else:
+    COMMENTS_ENGINE = 'disqus'
 
 if hasattr(settings_module, 'SITE_LOGO'):
     SITE_LOGO = getattr(settings_module, 'SITE_LOGO')

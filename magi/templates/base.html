@@ -267,13 +267,19 @@
     {% endfor %}
     {% endif %}
 
+    {% if comments_engine == 'commento' %}
+    <script src="https://cdn.commento.io/js/commento.js"></script>
+    {% else %}
     <script>
       var disqus_config = function () {
       this.language = "{{ LANGUAGE_CODE }}";
       };
+      var disqus_shortname = '{{ disqus_shortname }}';
+    </script>
+    {% endif %}
+    <script>
       var static_url = '{{ static_url }}';
       var empty_image = '{{ static_url }}img/{{ empty_image }}';
-      var disqus_shortname = '{{ disqus_shortname }}';
       var max_activity_height = {{ max_activity_height }};
       var is_authenticated = {% if user.is_authenticated %}'{{ user.username }}'{% else %}false{% endif %};
       var translated_terms = {{ javascript_translated_terms_json|safe }};
@@ -327,6 +333,7 @@
       ga('create', '{{ google_analytics }}', 'auto');
       ga('send', 'pageview');
     </script>
+    {% endif %}
     <!-- Temporarily disabled due to jQuery bug <script id="dsq-count-scr" src="//{{ disqus_shortname }}.disqus.com/count.js" async></script> -->
     {% else %}
     <script src="{{ static_url }}bower/jquery/jquery.min.js"></script>
