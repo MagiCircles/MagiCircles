@@ -122,7 +122,7 @@ def default_find_existing_item(model, unique_together, unique_data):
     except IndexError:
         return None
 
-def save_item(details, unique_data, data, log_function, json_item=None, verbose=True):
+def save_item(details, unique_data, data, log_function, json_item=None, verbose=False):
     model = details['model']
     unique_together = details.get('unique_together', False)
     find_existing_item = details.get('find_existing_item', None)
@@ -136,7 +136,7 @@ def save_item(details, unique_data, data, log_function, json_item=None, verbose=
             log_function(unique_data)
             log_function('- Data:')
             log_function(data)
-            data.update(unique_data)
+        data.update(unique_data)
 
         if find_existing_item:
             item = find_existing_item(model, unique_data, data, manytomany, dictionaries)
@@ -150,7 +150,8 @@ def save_item(details, unique_data, data, log_function, json_item=None, verbose=
             }
             model.objects.filter(pk=item.pk).update(**data)
             item = model.objects.filter(pk=item.pk)[0]
-            log_function(u'Updated {} #{}'.format(model.__name__, item.pk))
+            if verbose:
+                log_function(u'Updated {} #{}'.format(model.__name__, item.pk))
         else:
             if modelHasField(model, 'owner') and 'owner' not in data and 'owner_id' not in data:
                 data['owner_id'] = 1
@@ -184,7 +185,7 @@ def save_item(details, unique_data, data, log_function, json_item=None, verbose=
 def api_pages(
         url, name, details, local=False, results_location=None,
         log_function=print, request_options={},
-        verbose=True,
+        verbose=False,
 ):
     log_function('Downloading list of {}...'.format(name))
     details.get('callback_before', lambda: None)()
@@ -215,6 +216,8 @@ def api_pages(
             f.write(r.text.encode('utf-8'))
             f.close()
             result = r.json()
+        if 'callback_before_page' in details:
+            result = details['callback_before_page'](result)
         results = result
         if 'results_location' in details:
             results = getSubField(results, details['results_location'], default=[])
@@ -222,6 +225,9 @@ def api_pages(
             results = getSubField(results, results_location, default=[])
         for item in results:
             not_in_fields = {}
+            if (details.get('callback_should_import', None)
+                and not details['callback_should_import'](details, item)):
+                continue
             if details.get('callback_per_item', False):
                 unique_data, data = details['callback_per_item'](details, item)
             else:
@@ -249,7 +255,7 @@ def download_image(url):
 def import_data(
         url, import_configuration, results_location=None,
         local=False, to_import=None, log_function=print,
-        request_options={}, verbose=True,
+        request_options={}, verbose=False,
 ):
     """
     url: must end with a /. Example: https://schoolido.lu/api/. can be overriden per conf
@@ -270,14 +276,16 @@ def import_data(
         endpoint (string): defaults to key in dict
         callback (function(details, item, unique_data, data)): called at the end of generic importing
         callback_per_item (function): called instead of generic importing
+        callback_should_import (function): called to check if the item should be imported or skipped
         callback_after_save (function(details, item, json_item)): called after each item has been saved
         callback_before (function): called before importing all the items
+        callback_before_page (function): called before importing all the items of a page
         callback_end (function): called after importing all the items
         mapping (dict of string or callable): see below
         dont_erase_existing_value_fields (list): On update, if the value is None, it will not erase existing value
         unique_fields (list): list of fields to detect if it already exists
         unique_together (bool): should the unique fields be considered together? (or/and condition)
-        ignore_fields (list): list of explicitely ignored fields, no warning printed
+        ignored_fields (list): list of explicitely ignored fields, no warning printed
         find_existing_item (function(model, unique_data, data): retrieve the item to update, or None to create
         request_options: dict of options passed to requests in python
 
