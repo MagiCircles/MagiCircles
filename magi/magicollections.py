@@ -781,6 +781,10 @@ class MagiCollection(object):
                 }
                 and_more = False
                 max_shown = max_per_line
+                all_have_images = True
+                l_images = []
+                l_links = []
+                with_template = False
                 for i, related_item in enumerate(getattr(item, field_name).all()):
                     if max_shown and i >= max_shown:
                         and_more = getattr(item, field_name).count() - max_shown
@@ -793,30 +797,40 @@ class MagiCollection(object):
                     }
                     if allow_ajax_per_item:
                         to_append['ajax_link'] = getattr(related_item, 'ajax_item_url')
-                    item_image = None
-                    for image_field in [
-                            'image_for_prefetched',
-                            'top_image_list', 'top_image',
-                            'image_thumbnail_url', 'image_url',
-                    ]:
-                        if getattr(related_item, image_field, None):
-                            item_image = getattr(related_item, image_field)
-                            break
                     if template:
+                        with_template = True
                         d['type'] = 'templates'
                         d['template'] = template
                         d['items'].append(related_item)
                         d['spread_across'] = True
-                    elif item_image:
-                        to_append['value'] = item_image
-                        to_append['tooltip'] = unicode(related_item)
+                    else:
+                        link_to_append = to_append.copy()
+                        link_to_append['value'] = unicode(related_item)
+                        l_links.append(link_to_append)
+                        item_image = None
+                        for image_field in [
+                                'image_for_prefetched',
+                                'top_image_list', 'top_image',
+                                'image_thumbnail_url', 'image_url',
+                        ]:
+                            if getattr(related_item, image_field, None):
+                                item_image = getattr(related_item, image_field)
+                                break
+                        if item_image:
+                            image_to_append = to_append.copy()
+                            image_to_append['value'] = item_image
+                            image_to_append['tooltip'] = unicode(related_item)
+                            l_images.append(image_to_append)
+                        else:
+                            all_have_images = False
+                if not with_template:
+                    if all_have_images:
                         d['type'] = 'images_links'
-                        d['images'].append(to_append)
+                        d['images'] = l_images
                         d['spread_across'] = True
                     else:
                         d['type'] = 'list_links' if item_url else 'list'
-                        to_append['value'] = unicode(related_item)
-                    d['links'].append(to_append)
+                        d['links'] = l_links
                 if and_more and url:
                     verbose_name = (
                         u'{total} {items}'.format(total=and_more, items=plural_verbose_name.lower())
