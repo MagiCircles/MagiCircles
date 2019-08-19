@@ -1153,7 +1153,11 @@ class MagiCollection(object):
                 show_total = True
             if show_total:
                 buttons[name]['badge'] = getattr(item, u'total_{}'.format(name), 0)
-            buttons[name]['icon'] = 'add'
+            buttons[name]['icon'] = (
+                collectible_collection.icon
+                if collectible_collection.list_view.add_button_use_collection_icon
+                else 'add'
+            )
             buttons[name]['image'] = collectible_collection.image
             buttons[name]['ajax_title'] = u'{}: {}'.format(collectible_collection.add_sentence, unicode(item))
             if collectible_collection.add_view.unique_per_owner:
