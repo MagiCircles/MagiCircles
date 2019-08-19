@@ -12,11 +12,13 @@ from magi import models
 ############################################################
 # Create user
 
-def create_user(username, email=None, password=None, language='en'):
+def create_user(username, email=None, password=None, language='en', is_superuser=False):
     new_user = models.User.objects.create_user(
         username=username,
         email=email or u'{}@yopmail.com'.format(username),
         password=username * 2,
+        is_superuser=is_superuser,
+        is_staff=is_superuser,
     )
     preferences = models.UserPreferences.objects.create(
         user=new_user,
@@ -24,6 +26,12 @@ def create_user(username, email=None, password=None, language='en'):
     )
     new_user.preferences = preferences
     return new_user
+
+def get_default_owner():
+    try:
+        return models.User.objects.filter(is_superuser=True).order_by('-id')[0]
+    except IndexError:
+        return create_user('db0', is_superuser=True)
 
 ############################################################
 # Get total donators (for generated settings)

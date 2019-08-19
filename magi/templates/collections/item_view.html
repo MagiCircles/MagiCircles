@@ -17,7 +17,7 @@
   {% if staff_only_view %}
   <br><div class="alert alert-warning"><i class="flaticon-warning"></i> Staff only <small> - <i>Do not share</i></small></div>
   {% endif %}
-  {% include 'items/'|add:item_template|add:'.html' %}
+  {% include 'items/'|add:item_template|add:'.html' with comments_displayed_below=comments_enabled %}
   {% if include_below_item %}{% include 'include/below_item.html' %}{% endif %}
   <br><br>
   {% if comments_enabled %}{% include 'include/disqus.html' with disqus_identifier=name|add:'-'|addint:item.pk %}{% endif %}

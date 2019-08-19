@@ -12,7 +12,7 @@ from django.core.validators import BaseValidator, RegexValidator
 from django.http import Http404
 from django.utils.http import urlquote
 from django.utils.deconstruct import deconstructible
-from django.utils.translation import ugettext_lazy as _, get_language
+from django.utils.translation import ugettext_lazy as _, get_language, activate as translation_activate
 from django.utils.formats import dateformat
 from django.utils.safestring import mark_safe
 from django.utils import timezone
@@ -875,6 +875,30 @@ def getTranslatedName(d, field_name='name', language=None):
         d.get(field_name, None),
     )
 
+def getAllTranslations(term, unique=False):
+    translations = {}
+    old_lang = get_language()
+    for lang, _verbose in django_settings.LANGUAGES:
+        translation_activate(lang)
+        if callable(term):
+            translations[lang] = unicode(term(lang))
+        else:
+            translations[lang] = unicode(term)
+        translation_activate(old_lang)
+    if unique:
+        translations = {
+            language: value
+            for language, value in translations.items()
+            if language == 'en' or translations.get('en', None) != value
+        }
+    return translations
+
+def getAllTranslationsOfModelField(item, field_name='name', unique=False):
+    return getAllTranslations(
+        lambda language: item.get_translation_from_dict(field_name, language=language),
+        unique=unique,
+    )
+
 def jsv(v):
     if isinstance(v, list) or isinstance(v, dict):
         return mark_safe(simplejson.dumps(v))
@@ -1487,7 +1511,7 @@ def getColSize(per_line):
         return 'special-7'
     elif per_line == 9:
         return 'special-9'
-    return int(math.ceil(12 / per_line))
+    return int(math.ceil(12 / (per_line or 1)))
 
 ############################################################
 # Form labels and help texts

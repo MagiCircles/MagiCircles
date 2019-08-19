@@ -112,6 +112,7 @@
                 {% endif %}
                 {% endfor %}
                 {% if link.is_list and link_name == 'more' %}
+                {% if other_sites %}
                 <li class="divider"></li>
                 <li class="dropdown-header">{% trans 'Check out our other websites' %}</li>
                 <li class="dropdown-header">
@@ -123,6 +124,7 @@
                   </a>
                   {% endfor %}
                 </li>
+                {% endif %}
                 <li class="divider"></li>
                 <li class="dropdown-header">{% trans 'Language' %}</li>
                 <li>
@@ -324,6 +326,7 @@
     {% endif %}
     {% block afterjs %}{% endblock %}{% if afterjs %}{{ afterjs|safe }}{% endif %}
 
+    {% if google_analytics %}
     <script>
       (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
       (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),

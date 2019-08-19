@@ -21,13 +21,13 @@
           {% if staff_configurations.about_the_website and staff_configurations.about_the_website|getattribute:LANGUAGE_CODE %}
           <span class="to-markdown">{{ staff_configurations.about_the_website|getattribute:LANGUAGE_CODE }}</span>
           {% else %}
-          {{ site_long_description|orcallable }}
+          <span class="to-markdown">{{ site_long_description|orcallable }}</span>
           {% endif %}
 	</p>
       </div>
       {% if staff_configurations.about_image %}
       <div class="col-md-4">
-	<img src="{{ staff_configurations.about_image }}" class="img-circle img-responsive img-thumbnail">
+	    <img src="{% if '//' in staff_configurations.about_image %}{{ staff_configurations.about_image }}{% else %}{{ static_url }}img/{{ staff_configurations.about_image }}?{{ static_files_version }}{% endif %}" class="img-circle img-responsive img-thumbnail">
       </div>
       {% endif %}
     </div>
@@ -416,11 +416,11 @@
     {% endif %}
     {% endif %}
 
+    {% if other_sites %}
     <br><br>
     <div id="othersites"></div>
     <hr>
 
-    {% if other_sites %}
     <br>
     <h1 class="text-main">{% trans 'Check out our other websites' %}</h1>
     <br>

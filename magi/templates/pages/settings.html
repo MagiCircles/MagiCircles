@@ -21,12 +21,12 @@
     {% endif %}
     <a href="#{{ form_name }}" class="list-group-item page-scroll"><i class="flaticon-{{ form.icon }}"></i> {{ form.form_title }} <span class="glyphicon glyphicon-chevron-down pull-right"></span></a>
     {% if form_name == 'addLink' %}
-    {% if 'donationLink' not in forms %}
+    {% if 'donationLink' not in forms and 'donate' in all_enabled %}
     <a href="#customLink" class="list-group-item page-scroll"><i class="flaticon-add"></i> {{ add_custom_link_sentence }} <span class="glyphicon glyphicon-chevron-down pull-right"></span></a>
     {% endif %}
     {% endif %}
     {% endfor %}
-    <a href="#accounts" class="list-group-item page-scroll"><i class="flaticon-album"></i> {% trans 'Accounts' %} <span class="glyphicon glyphicon-chevron-down pull-right"></span></a>
+    <a href="#accounts" class="list-group-item page-scroll"><i class="flaticon-album"></i> {{ accounts_title_sentence }} <span class="glyphicon glyphicon-chevron-down pull-right"></span></a>
     {% if user.preferences.groups %}
     <a href="#groups" class="list-group-item page-scroll"><i class="flaticon-about"></i> Your groups <span class="glyphicon glyphicon-chevron-down pull-right"></span></a>
     {% endif %}
@@ -132,7 +132,7 @@
 </div>
 {% endif %}
 {% elif form_name == 'addLink' %}
-{% if 'donationLink' not in forms %}
+{% if 'donationLink' not in forms and 'donate' in all_enabled %}
 <h1 id="customLink" class="text-center padding50"><i class="flaticon-add"></i> {{ add_custom_link_sentence }}</h1>
 <br>
 <form class="container_form" data-form-name="customlink">
