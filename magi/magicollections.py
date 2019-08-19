@@ -451,6 +451,8 @@ class MagiCollection(object):
                 return _(u'Add to your {thing}').format(thing=self.plural_title.lower())
 
             class ListView(MagiCollection.ListView):
+                add_button_use_collection_icon = False
+
                 filter_form = _CollectibleFilterForm
                 item_padding = (7, 0)
                 col_break = 'sm'
@@ -491,11 +493,13 @@ class MagiCollection(object):
                             }
                         buttons['add_to_collected'] = {
                             'show': True, 'has_permissions': True,
-                            'url': parent_collection.get_list_url(
+                            'url': addParametersToURL(parent_collection.get_list_url(
                                 parameters={
                                     'view': parent_collection.list_view.quick_add_view
                                 } if parent_collection.list_view.quick_add_view else None,
-                            ),
+                            ), {
+                                u'add_to_{}'.format(self.collection.name): account_id,
+                            }),
                             'classes': classes,
                             'title': self.collection.add_sentence,
                             'icon': 'add',
