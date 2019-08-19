@@ -358,6 +358,7 @@ class UserPreferences(BaseMagiModel):
                 return (css_color for (name, _, css_color, _) in USER_COLORS if unicode(name) == color).next()
             except: pass
         return 'main'
+
     @property
     def css_color(self):
         return type(self).get_css_color(self.color)

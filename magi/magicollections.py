@@ -2275,6 +2275,7 @@ class UserCollection(MagiCollection):
             ('me', 'me'),
         ]
         accounts_template = 'include/defaultAccountsForProfile'
+        profile_accounts_top_template = None
 
         def buttons_per_item(self, request, context, item):
             buttons = super(UserCollection.ItemView, self).buttons_per_item(request, context, item)
@@ -2415,6 +2416,7 @@ class UserCollection(MagiCollection):
             request = context['request']
             context['is_me'] = user.id == request.user.id
             context['accounts_template'] = self.accounts_template
+            context['profile_accounts_top_template'] = self.profile_accounts_top_template
             account_collection = getMagiCollection('account')
             if 'js_variables' not in context:
                 context['js_variables'] = {}
@@ -2458,9 +2460,11 @@ class UserCollection(MagiCollection):
 
             # Profile tabs
             context['show_total_accounts'] = SHOW_TOTAL_ACCOUNTS
-            context['profile_tabs'] = PROFILE_TABS
+            context['profile_tabs'] = PROFILE_TABS.copy()
             if context['collectible_collections'] and 'owner' in context['collectible_collections']:
                 for collection_name, collection in context['collectible_collections']['owner'].items():
+                    if collection_name in context['profile_tabs']:
+                        continue
                     context['profile_tabs'][collection_name] = {
                         'name': collection.plural_title,
                         'icon': collection.icon,
@@ -2470,6 +2474,15 @@ class UserCollection(MagiCollection):
                             callback=collection.list_view.ajax_pagination_callback or 'undefined',
                         )),
                     }
+
+            # Update profile account tabs using collection setings
+            if 'account' in context['profile_tabs']:
+                context['profile_tabs']['account']['name'] = (
+                    account_collection.title
+                    if len(user.all_accounts) <= 1
+                    else account_collection.plural_title
+                )
+                context['profile_tabs']['account']['icon'] = account_collection.icon
 
             context['profile_tabs_size'] = 100 / len(context['profile_tabs']) if context['profile_tabs'] else 100
             context['opened_tab'] = context['profile_tabs'].keys()[0] if context['profile_tabs'] else None
@@ -2512,8 +2525,6 @@ class UserCollection(MagiCollection):
                 context['add_account_sentence'] = account_collection.add_sentence
             context['share_sentence'] = _('Check out {username}\'s awesome collection!').format(username=context['item'].username)
             context['share_url'] = context['item'].http_item_url
-
-            context['single_account_sentence'] = account_collection.title
 
             # Show birthday popup
             if not context['is_me'] and isBirthdayToday(user.preferences.birthdate):
