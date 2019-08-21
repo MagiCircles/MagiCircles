@@ -3,10 +3,11 @@ import requests, json
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from magi.utils import (
-    modelHasField,
-    matchesTemplate,
     addParametersToURL,
     getSubField,
+    join_data,
+    modelHasField,
+    matchesTemplate,
 )
 
 def import_map(maps, field_name, value):
@@ -99,6 +100,9 @@ def prepare_data(data, model, unique):
             and not getattr(model, u'{}_WITHOUT_I_CHOICES'.format(k[2:].upper()), False)
             and not isinstance(v, int)):
             data[k] = model.get_i(k[2:], v)
+        elif (k.startswith('c_')
+              and isinstance(v, list)):
+            data[k] = join_data(*v)
         elif (k.startswith('j_')):
             data[k] = json.dumps(v)
         elif not unique and isinstance(v, list):
