@@ -345,6 +345,11 @@ if hasattr(settings_module, 'LAUNCH_DATE'):
 else:
     LAUNCH_DATE = None
 
+if hasattr(settings_module, 'REDIRECT_AFTER_SIGNUP'):
+    REDIRECT_AFTER_SIGNUP = getattr(settings_module, 'REDIRECT_AFTER_SIGNUP')
+else:
+    REDIRECT_AFTER_SIGNUP = None
+
 if hasattr(settings_module, 'GET_GLOBAL_CONTEXT'):
     GET_GLOBAL_CONTEXT = getattr(settings_module, 'GET_GLOBAL_CONTEXT')
 else:

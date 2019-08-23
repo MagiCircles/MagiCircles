@@ -88,6 +88,7 @@ from magi.settings import (
     ON_PREFERENCES_EDITED,
     ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT,
     ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES,
+    REDIRECT_AFTER_SIGNUP,
     SITE_LOGO_PER_LANGUAGE,
     GLOBAL_OUTSIDE_PERMISSIONS,
     CUSTOM_PREFERENCES_FORM,
@@ -152,6 +153,8 @@ def signup(request):
             login_action(request, user)
             if context.get('launch_date', None):
                 return redirect('/prelaunch/')
+            if REDIRECT_AFTER_SIGNUP:
+                return redirect(REDIRECT_AFTER_SIGNUP(user))
             url = u'/accounts/add/{}{}'.format(
                 (u'?next={}'.format(urlquote(request.GET['next'])) if 'next' in request.GET else ''),
                 (u'&next_title={}'.format(request.GET['next_title']) if 'next' in request.GET and 'next_title' in request.GET else ''))
