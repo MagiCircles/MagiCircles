@@ -13,7 +13,7 @@ class Command(BaseCommand):
             if arg in options:
                 kwargs[arg] = True
             else:
-                kwargs['to_import'] = arg
+                kwargs['to_import'].append(arg)
         if not kwargs['to_import']:
             kwargs['to_import'] = None
 
