@@ -506,6 +506,7 @@ class BaseMagiModel(models.Model):
                 'display_name_in_list',
                 'blocked',
                 'blocked_by_owner',
+                'blocked_owner_id',
                 'reverse_related',
                 'html_attributes',
                 'html_attributes_in_list',

@@ -3624,6 +3624,7 @@ class PrivateMessageCollection(MagiCollection):
                     item.blocked = True
                     item.blocked_message = _(u'You blocked {username}.').format(username=item.to_user.username)
                     item.unblock_button = _(u'Unblock {username}').format(username=item.to_user.username)
+                    item.blocked_owner_id = item.to_user.id
 
         def extra_context(self, context):
             super(PrivateMessageCollection.ListView, self).extra_context(context)

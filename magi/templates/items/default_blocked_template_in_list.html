@@ -1,6 +1,6 @@
 <p class="default-blocked-in-list">
   <i class="flaticon-block"></i> <span>{{ item.blocked_message }}</span>
-  <a href="/block/{{ item.owner_id }}/{% if item.collection.item_view.enabled %}?next={{ item.item_url }}{% endif %}"
+  <a href="/block/{% if item.blocked_owner_id %}{{ item.blocked_owner_id }}{% else %}{{ item.owner_id }}{% endif %}/{% if item.collection.item_view.enabled %}?next={{ item.item_url }}{% endif %}"
      class="btn btn-sm btn-danger pull-right" target="_blank">
     {{ item.unblock_button }}
   </a>
