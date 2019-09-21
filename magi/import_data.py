@@ -126,7 +126,7 @@ def default_find_existing_item(model, unique_together, unique_data):
     except IndexError:
         return None
 
-def save_item(details, unique_data, data, log_function, json_item=None, verbose=False):
+def save_item(details, unique_data, data, log_function=print, json_item=None, verbose=False):
     model = details['model']
     unique_together = details.get('unique_together', False)
     find_existing_item = details.get('find_existing_item', None)
@@ -216,9 +216,10 @@ def api_pages(
                 log_function(r.text)
                 log_function('')
                 return
-            f = open('{}.json'.format(name), 'w')
-            f.write(r.text.encode('utf-8'))
-            f.close()
+            if total == 0:
+                f = open('{}.json'.format(name), 'w')
+                f.write(r.text.encode('utf-8'))
+                f.close()
             result = r.json()
         if 'callback_before_page' in details:
             result = details['callback_before_page'](result)

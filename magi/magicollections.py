@@ -20,12 +20,12 @@ from magi.utils import (
     CuteFormTransform,
     redirectWhenNotAuthenticated,
     custom_item_template,
+    getNavbarPrefix,
     getAccountIdsFromSession,
     setSubField,
     hasPermission,
     hasPermissions,
     hasOneOfPermissions,
-    jsv,
     staticImageURL,
     ColorField,
     YouTubeVideoField,
@@ -81,6 +81,8 @@ class _View(object):
       # ItemView/EditView: List of (url, pk) or list of URLs
 
     # Optional variables with default values
+    show_title = False
+    show_small_title = True
     ajax_callback = None
     enabled = True
     logout_required = False
@@ -188,10 +190,14 @@ class MagiCollection(object):
 
     @property
     def navbar_link_title(self):
-        return self.plural_title
+        return self.list_view.get_page_title()
 
     def get_queryset(self, queryset, parameters, request):
         return queryset
+
+    def get_title_prefixes(self, request, context):
+        navbar_prefix = getNavbarPrefix(self.navbar_link_list, request, context)
+        return [navbar_prefix] if navbar_prefix else []
 
     def _collectibles_queryset(self, view, queryset, request):
         # Select related total collectible for authenticated user
@@ -274,7 +280,8 @@ class MagiCollection(object):
         """
         parent_collection = self
         item_field_name = parent_collection.queryset.model.__name__.lower()
-        item_field_name_id = u'{}_id'.format(item_field_name)
+        item_field_model_class = model_class._meta.get_field(item_field_name).rel.to
+        item_field_name_id = u'{}_{}'.format(item_field_name, item_field_model_class._meta.pk.column)
 
         class _CollectibleForm(forms.AutoForm):
             def __init__(self, *args, **kwargs):
@@ -350,7 +357,9 @@ class MagiCollection(object):
                                 widget=forms.forms.HiddenInput,
                             )
                 # Collectible: retrieve passed data or get item
-                if self.collection and self.collection.add_view.add_to_collection_variables and not isinstance(self, forms.MagiFiltersForm):
+                if (self.collection
+                    and self.collection.add_view.add_to_collection_variables
+                    and not isinstance(self, forms.MagiFiltersForm)):
                     self.collectible_variables = {}
                     missing = False
                     # add variables from GET parameters
@@ -368,7 +377,10 @@ class MagiCollection(object):
                         else:
                             item = getattr(self.instance, item_field_name)
                         for variable in self.collection.add_view.add_to_collection_variables:
-                            self.collectible_variables[variable] = unicode(getattr(item, variable))
+                            if variable == 'unicode':
+                                self.collectible_variables[variable] = unicode(item)
+                            else:
+                                self.collectible_variables[variable] = unicode(getattr(item, variable))
 
             class Meta:
                 model = model_class
@@ -414,7 +426,7 @@ class MagiCollection(object):
 
         class _CollectibleCollection(MagiCollection):
             name = model_class.collection_name
-            queryset = model_class.objects.all().select_related(self.name)
+            queryset = model_class.objects.all().select_related(item_field_name)
             icon = self.icon
             image = self.image
             navbar_link = False
@@ -450,6 +462,120 @@ class MagiCollection(object):
             def add_sentence(self):
                 return _(u'Add to your {thing}').format(thing=self.plural_title.lower())
 
+            def get_parent_prefix(self, request, context):
+                user = getattr(request, 'user_for_parent_prefix', None)
+                owner = getattr(request, 'owner_for_parent_prefix', None)
+                item = getattr(request, 'item_for_parent_prefix', None)
+                fk_as_owner = model_class.fk_as_owner or 'owner'
+                return {
+                    'title': self.list_view.get_page_title(),
+                    'url': (
+                        # Link to profile tab within profile
+                        addParametersToURL(user.item_url, anchor='profiletabs', parameters={
+                            'open': self.name,
+                        })
+                        if fk_as_owner == 'owner' and user
+                        else
+                        # Link to regular list view with set item and/or owner
+                        self.get_list_url(
+                            parameters={ k: v for k, v in {
+                                fk_as_owner: owner.pk if owner else None,
+                                item_field_name: item.pk if item else None,
+                            }.items() if v })
+                    ),
+                }
+
+            def get_title_prefixes(self, request, context):
+                title_prefixes = super(_CollectibleCollection, self).get_title_prefixes(request, context)
+
+                fk_as_owner = model_class.fk_as_owner or 'owner'
+                request = context['request']
+
+                # List view + Item view
+                # Show profile of user in prefixes
+
+                if 'item' in context or fk_as_owner in request.GET:
+
+                    # User profile
+
+                    if fk_as_owner == 'owner':
+                        if 'item' in context:
+                            owner = getattr(context['item'], fk_as_owner) # Preselected
+                        else:
+                            try:
+                                owner = (
+                                    request.user
+                                    if unicode(request.user.id) == unicode(request.GET[fk_as_owner])
+                                    else model_class.get_owner_from_pk(request.GET[fk_as_owner])
+                                )
+                            except ObjectDoesNotExist:
+                                raise Http404
+
+                        title_prefixes.append({
+                            'title': unicode(owner),
+                            'url': owner.item_url,
+                        })
+
+                        # Hack for get_parent_prefix
+                        request.user_for_parent_prefix = owner
+                        request.owner_for_parent_prefix = owner
+
+                    # Account
+
+                    elif fk_as_owner == 'account':
+                        if 'item' in context:
+                            account = getattr(context['item'], fk_as_owner) # Preselected
+                        else:
+                            try:
+                                account = model_class.get_owner_from_pk(request.GET[fk_as_owner])
+                            except ObjectDoesNotExist:
+                                raise Http404
+                        title_prefixes += [
+                            {
+                                'title': unicode(account.cached_owner.username),
+                                'url': account.cached_owner.item_url,
+                            },
+                            {
+                                'title': unicode(account),
+                                'url': addParametersToURL(account.cached_owner.item_url, {
+                                    'open': 'account',
+                                    u'account{}'.format(account.pk): self.name,
+                                }, anchor=account.id),
+                            },
+                        ]
+                        # Hack for get_parent_prefix
+                        request.user_for_parent_prefix = account.cached_owner
+                        request.owner_for_parent_prefix = account
+
+                    # Other
+                    else:
+                        pass # No prefix
+
+                # List view only
+                # Show item view in prefixes
+
+                elif item_field_name in request.GET:
+                    try:
+                        item = item_field_model_class.objects.get(
+                            pk=request.GET[item_field_name])
+                    except ObjectDoesNotExist:
+                        raise Http404
+                    item_title_prefixes, item_h1 = self.parent_collection.item_view.get_h1_title(
+                        request, context, item)
+                    title_prefixes += item_title_prefixes + [
+                        {
+                            'title': (
+                                item_h1.get('title', None)
+                                or self.parent_collection.item_view.get_page_title(item=item)
+                            ),
+                            'url': item.item_url,
+                        },
+                    ]
+                    # Hack for get_parent_prefix
+                    request.item_for_parent_prefix = item
+
+                return title_prefixes
+
             class ListView(MagiCollection.ListView):
                 add_button_use_collection_icon = False
 
@@ -474,6 +600,14 @@ class MagiCollection(object):
                     }),
                 ]
 
+                def check_permissions(self, request, context):
+                    super(_CollectibleCollection.ListView, self).check_permissions(request, context)
+                    # At least owner filter or item filter required
+                    if (not request.GET.get(model_class.fk_as_owner or 'owner', None)
+                        and not request.GET.get(item_field_name, None)
+                        and not request.GET.get('owner', None)):
+                        raise PermissionDenied()
+
                 def top_buttons(self, request, context):
                     buttons = super(_CollectibleCollection.ListView, self).top_buttons(request, context)
                     if (context['ajax']
@@ -486,7 +620,8 @@ class MagiCollection(object):
                         if context['total_results']:
                             buttons['search_and_filter'] = {
                                 'show': True, 'has_permissions': True,
-                                'url': self.collection.get_list_url_for_authenticated_owner(request),
+                                'url': self.collection.get_list_url_for_authenticated_owner(
+                                    request, fk_as_owner=account_id),
                                 'classes': classes,
                                 'title': _('Search and filter'),
                                 'icon': 'search',
@@ -553,6 +688,7 @@ class MagiCollection(object):
                     return []
 
                 def extra_context(self, context):
+                    super(_CollectibleCollection.ListView, self).extra_context(context)
                     if context['view'] == 'quick_edit':
                         context['include_below_item'] = True
                         context['show_item_buttons'] = True
@@ -561,7 +697,12 @@ class MagiCollection(object):
                 comments_enabled = False
                 share_enabled = False
 
+                def get_queryset(self, queryset, parameters, request):
+                    return super(_CollectibleCollection.ItemView, self).get_queryset(
+                        queryset, parameters, request).select_related(model_class.fk_as_owner or 'owner')
+
                 def extra_context(self, context):
+                    super(_CollectibleCollection.ItemView, self).extra_context(context)
                     context['item_parent'] = getattr(context['item'], item_field_name)
 
                 def to_fields(self, item, force_all_fields=False, preselected=None, *args, **kwargs):
@@ -579,15 +720,27 @@ class MagiCollection(object):
                 back_to_list_button = False
                 max_per_user = 3000
 
-                def extra_context(self, context):
-                    # Display which item is being added using the image
+                def get_h1_title(self, request, context, *args, **kwargs):
+                    title_prefixes, h1 = super(_CollectibleCollection.AddView, self).get_h1_title(
+                        request, context, *args, **kwargs)
+
                     add_form = context['forms'][u'add_{}'.format(self.collection.name)]
                     if hasattr(add_form, 'collectible_variables'):
+
+                        # Add item to title prefixes
+                        title_prefixes.append({
+                            'title': add_form.collectible_variables['unicode'],
+                            'url': add_form.collectible_variables['item_url'],
+                        })
+
+                        # Display which item is being added using the image
                         image = add_form.collectible_variables.get('image_url')
                         if image and image != 'None':
-                            context['imagetitle'] = image
-                            context['imagetitle_size'] = 100
-                            context['icontitle'] = None
+                            h1['image'] = image
+                            h1['image_size'] = 100
+                            h1['icon'] = None
+
+                    return title_prefixes, h1
 
                 def redirect_after_add(self, request, item, ajax):
                     if ajax:
@@ -760,10 +913,10 @@ class MagiCollection(object):
                                 item_image = getattr(related_item, image_field)
                                 break
                         d['image_for_link'] = item_image
-                    d['icon'] = getattr(related_item, 'icon', d['icon'])
-                    if 'icon' in d:
-                        if callable(d['icon']):
-                            d['icon'] = d['icon'](item)
+                    d['icon'] = getattr(related_item, 'icon_for_prefetched',
+                                        getattr(related_item, 'flaticon', d['icon']))
+                    if callable(d['icon']):
+                        d['icon'] = d['icon'](item)
                     if 'image' in d:
                         if callable(d['image']):
                             d['image'] = d['image'](item)
@@ -983,7 +1136,8 @@ class MagiCollection(object):
                             item_image = getattr(cache, image_field)
                             break
                     d['image_for_link'] = item_image
-                    d['icon'] = getattr(cache, 'icon', d['icon'])
+                    d['icon'] = getattr(cache, 'icon_for_prefetched',
+                                        getattr(cache, 'flaticon', d['icon']))
                 else:
                     d['type'] = 'text'
                     d['value'] = getattr(cache, 'unicode', field_name)
@@ -1115,7 +1269,7 @@ class MagiCollection(object):
             (button_name, {
                 'show': False,
                 'has_permissions': False,
-              'title': button_name,
+                'title': button_name,
                 'icon': False,
                 'image': False,
                 'url': False,
@@ -1140,9 +1294,11 @@ class MagiCollection(object):
             url_to_collectible_add_with_item = lambda url: u'{url}?{item_name}_id={item_id}&{variables}'.format(
                 url=url, item_name=self.name, item_id=item.pk,
                 variables=u'&'.join([
-                    u'{}_{}={}'.format(self.name, variable, getattr(item, variable))
-                    for variable in collectible_collection.add_view.add_to_collection_variables
-                    if hasattr(item, variable)]),
+                    u'{}_{}={}'.format(
+                        self.name, variable,
+                        unicode(item) if variable == 'unicode' else getattr(item, variable),
+                    ) for variable in collectible_collection.add_view.add_to_collection_variables
+                    if hasattr(item, variable) or variable == 'unicode']),
                 )
             buttons[name]['show'] = (
                 request.show_collect_button[name]
@@ -1283,6 +1439,17 @@ class MagiCollection(object):
             buttons['report']['open_in_new_window'] = True
         return buttons
 
+    def get_parent_prefix(self, request, context):
+        """
+        Called by item/add/edit views (always) and list view (when a view or preset is set)
+        """
+        if not self.list_view.enabled or not self.list_view.has_permissions(request, context):
+            return None
+        return {
+            'title': self.list_view.get_page_title(),
+            'url': self.get_list_url(),
+        }
+
     #######################
     # Tools - not meant to be overriden
 
@@ -1387,7 +1554,6 @@ class MagiCollection(object):
         authentication_required = False
         distinct = False
         add_button_subtitle = _('Become a contributor to help us fill the database')
-        show_title = False
         full_width = False
         show_relevant_fields_on_ordering = True
         hide_sidebar = False
@@ -1478,7 +1644,8 @@ class MagiCollection(object):
                     for (type, button) in self.collection.types.items():
                         if not button.get('show_button', True):
                             continue
-                        if not self.collection.add_view.has_type_permissions(request, context, type=type):
+                        if (not self.collection.add_view.has_permissions(request, context)
+                            or not self.collection.add_view.has_type_permissions(request, context, type=type)):
                             continue
                         buttons[u'add_{}'.format(type)] = dict({
                             'url': self.collection.get_add_url(type=type),
@@ -1495,15 +1662,78 @@ class MagiCollection(object):
                     }, **for_all_buttons)
             return buttons
 
+        def get_page_title(self):
+            return _(u'{things} list').format(things=self.collection.plural_title)
+
+        def get_h1_title(self, request, context, view=None, preset=None):
+            """
+            title_prefixes = list of dict with { title, url, include_in_title }
+            h1 = dict with { title, icon, image, classes, attributes, image_size }, none required
+            """
+            h1 = {
+                'classes': 'list-page-title list-page-title-{}'.format(self.collection.name),
+            }
+
+            # Navbar prefix
+
+            title_prefixes = self.collection.get_title_prefixes(request, context)
+
+            # Preset and view prefixes
+
+            if view:
+                dict_alt_views = dict(self.alt_views)
+
+                # Don't show view details if view is not visible anywhere
+                if (dict_alt_views[view].get('hide_in_filter', False)
+                    and dict_alt_views[view].get('hide_in_navbar', False)):
+                    view = None
+
+            def _preset_title():
+                h1['title'] = self.collection.list_view.filter_form.get_preset_label(
+                    preset, self.collection.plural_title)
+                h1['icon'] = self.collection.list_view.filter_form.get_preset_icon(preset)
+                h1['image'] = self.collection.list_view.filter_form.get_preset_image(preset)
+            def _list_title():
+                h1['title'] = self.get_page_title()
+                h1['icon'] = self.collection.icon
+                h1['image'] = self.collection.image
+            def _view_title():
+                h1['title'] = dict_alt_views[view]['verbose_name']
+            def _parent_prefix():
+                parent_prefix = self.collection.get_parent_prefix(request, context)
+                if parent_prefix:
+                    title_prefixes.append(parent_prefix)
+            def _view_prefix():
+                title_prefixes.append({
+                    'title': dict_alt_views[view]['verbose_name'],
+                    'url': self.collection.get_list_url(parameters={ 'view': view }),
+                })
+
+            if preset and view:
+                # Ex: Cards / Statistics / [ All R cards ]
+                _parent_prefix()
+                _view_prefix()
+                _preset_title()
+            elif view:
+                # Ex: Cards / [ Statistics ]
+                _parent_prefix()
+                _view_title()
+            elif preset:
+                # Ex: Cards / [ All R cards ]
+                _parent_prefix()
+                _preset_title()
+            else:
+                # Ex: [ Cards ]
+                _list_title()
+
+            return title_prefixes, h1
+
         def to_filter_form_class(self):
             if self.auto_filter_form:
                 self.filter_form = forms.to_auto_filter_form(self)
 
         #######################
         # Tools - not meant to be overriden
-
-        def get_page_title(self):
-            return self.collection.plural_title
 
         @property
         def plain_default_ordering_list(self):
@@ -1594,13 +1824,37 @@ class MagiCollection(object):
         def get_item(self, request, pk):
             return { 'pk': pk }
 
-        #######################
-        # Tools - not meant to be overriden
+        def get_h1_title(self, request, context, item):
+            """
+            title_prefixes = list of dict with { title, url, include_in_title }
+            h1 = dict with { title, icon, image, classes, attributes, image_size }, none required
+            """
+            title_prefixes = self.collection.get_title_prefixes(request, context)
+
+            parent_prefix = self.collection.get_parent_prefix(request, context)
+            if parent_prefix:
+                title_prefixes.append(parent_prefix)
+
+            type = item.type if self.collection.types else None
+
+            h1 = {
+                'title': self.get_page_title(item=item),
+                'icon': (
+                    getattr(item, 'flaticon', None)
+                    or (self.collection.types[type].get('icon', None) if type else None)
+                    or self.collection.icon
+                ),
+                'image': (
+                    (self.collection.types[type].get('image', None) if type else None)
+                    or self.collection.image
+                ),
+                'classes': 'item-page-title item-page-title-{}'.format(self.collection.name),
+            }
+
+            return title_prefixes, h1
 
         def get_page_title(self, item=None):
-            if item:
-                return u'{}: {}'.format(self.collection.title, unicode(item))
-            return self.collection.title
+            return unicode(item) if item else self.collection.title
 
     class AddView(_View):
         view = 'add_view'
@@ -1623,6 +1877,7 @@ class MagiCollection(object):
             pass
 
         # Optional variables with default values
+        show_title = True
         authentication_required = True
         savem2m = False
         allow_next = True
@@ -1633,7 +1888,11 @@ class MagiCollection(object):
         def quick_add_to_collection(self, request):
             return False # for collectibles only
 
-        add_to_collection_variables = ['image_url']
+        add_to_collection_variables = [
+            'unicode',
+            'item_url',
+            'image_url',
+        ]
 
         @property
         def filter_cuteform(self):
@@ -1656,11 +1915,42 @@ class MagiCollection(object):
         def check_type_permissions(self, request, context, type=None):
             pass
 
+        def get_h1_title(self, request, context, type=None):
+            """
+            title_prefixes = list of dict with { title, url, include_in_title }
+            h1 = dict with { title, icon, image, classes, attributes, image_size }, none required
+            """
+            title_prefixes = self.collection.get_title_prefixes(request, context)
+
+            parent_prefix = self.collection.get_parent_prefix(request, context)
+            if parent_prefix:
+                title_prefixes.append(parent_prefix)
+
+            if type:
+                title_prefixes.append({
+                    'title': self.collection.types[type].get('title', type),
+                })
+
+            h1 = {
+                'title': self.get_page_title(type=type),
+                'icon': (
+                    (self.collection.types[type].get('icon', None) if type else None)
+                    or self.collection.icon
+                ),
+                'image': (
+                    (self.collection.types[type].get('image', None) if type else None)
+                    or self.collection.image
+                ),
+                'classes': 'form-title add-view-title add-view-title-{}'.format(self.collection.name),
+            }
+
+            return title_prefixes, h1
+
+        def get_page_title(self, type=None):
+            return self.collection.add_sentence
+
         #######################
         # Tools - not meant to be overriden
-
-        def get_page_title(self):
-            return self.collection.add_sentence
 
         def has_type_permissions(self, request, context, type=None):
             try:
@@ -1686,6 +1976,7 @@ class MagiCollection(object):
             pass
 
         # Optional variables with default values
+        show_title = True
         authentication_required = True
         allow_delete = False
         @property
@@ -1696,6 +1987,7 @@ class MagiCollection(object):
         def owner_only_or_permissions_required(self):
             return ['edit_reported_things'] if self.collection.reportable and not self.staff_required else []
         owner_only_or_one_of_permissions_required = []
+        allow_next = True
         savem2m = False
         back_to_list_button = True
         show_cascade_before_delete = True
@@ -1747,13 +2039,47 @@ class MagiCollection(object):
         def check_type_permissions(self, request, context, type=None, item=None):
             pass
 
-        #######################
-        # Tools - not meant to be overriden
+        def get_h1_title(self, request, context, item, type=None, is_translate=False):
+            """
+            title_prefixes = list of dict with { title, url, include_in_title }
+            h1 = dict with { title, icon, image, classes, attributes, image_size }, none required
+            """
+            title_prefixes = self.collection.get_title_prefixes(request, context)
 
-        def get_page_title(self, item=None):
-            if item:
+            parent_prefix = self.collection.get_parent_prefix(request, context)
+            if parent_prefix:
+                title_prefixes.append(parent_prefix)
+
+            title_prefixes.append({
+                'title': unicode(item),
+                'url': item.item_url if self.collection.item_view.enabled else None,
+            })
+
+            h1 = {
+                'title': self.collection.edit_sentence if not is_translate else _('Translations'),
+                'icon': (
+                    getattr(item, 'flaticon', None)
+                    or (self.collection.types[type].get('icon', None) if type else None)
+                    or self.collection.icon
+                ),
+                'image': (
+                    (self.collection.types[type].get('image', None) if type else None)
+                    or self.collection.image
+                ),
+                'classes': 'form-title edit-view-title edit-view-title-{}'.format(self.collection.name),
+            }
+
+            return title_prefixes, h1
+
+        def get_page_title(self, item=None, type=None, is_translate=False):
+            if item and is_translate:
+                return u'{}: {}'.format(_('Translations'), unicode(item))
+            elif item:
                 return u'{}: {}'.format(item.edit_sentence, unicode(item))
             return self.collection.edit_sentence
+
+        #######################
+        # Tools - not meant to be overriden
 
         def has_translate_permissions(self, request, context):
             try:
@@ -1870,7 +2196,6 @@ class SubItemCollection(MainItemCollection):
 class AccountCollection(MagiCollection):
     title = _('Account')
     plural_title = _('Accounts')
-    navbar_link_title = _('Leaderboard')
     icon = 'leaderboard'
     queryset = ACCOUNT_MODEL.objects.all()
     report_allow_delete = False
@@ -1999,9 +2324,8 @@ class AccountCollection(MagiCollection):
             except FieldDoesNotExist:
                 return MagiCollection.ListView.default_ordering.__get__(self)
 
-        def extra_context(self, context):
-            super(AccountCollection.ListView, self).extra_context(context)
-            context['h1_page_title'] = _('Leaderboard')
+        def get_page_title(self):
+            return _('Leaderboard')
 
     class ItemView(MagiCollection.ItemView):
         template = 'defaultAccountItem'
@@ -2276,6 +2600,7 @@ class UserCollection(MagiCollection):
         ]
         accounts_template = 'include/defaultAccountsForProfile'
         profile_accounts_top_template = None
+        show_small_title = False
 
         def buttons_per_item(self, request, context, item):
             buttons = super(UserCollection.ItemView, self).buttons_per_item(request, context, item)
@@ -2515,11 +2840,11 @@ class UserCollection(MagiCollection):
             activity_collection = getMagiCollection('activity')
             if activity_collection:
                 if activity_collection.add_view.has_permissions(request, context):
-                    context['js_variables']['show_add_activity_button'] = jsv(context['is_me'])
-                    context['js_variables']['add_activity_sentence'] = jsv(activity_collection.add_sentence)
-                    context['js_variables']['add_activity_subtitle'] = jsv(unicode(activity_collection.list_view.add_button_subtitle))
+                    context['js_variables']['show_add_activity_button'] = context['is_me']
+                    context['js_variables']['add_activity_sentence'] = activity_collection.add_sentence
+                    context['js_variables']['add_activity_subtitle'] = unicode(activity_collection.list_view.add_button_subtitle)
                 else:
-                    context['js_variables']['show_add_activity_button'] = jsv(False)
+                    context['js_variables']['show_add_activity_button'] = False
             if account_collection and account_collection.add_view.has_permissions(request, context):
                 context['can_add_account'] = True
                 context['add_account_sentence'] = account_collection.add_sentence
@@ -2917,6 +3242,9 @@ class ActivityCollection(MagiCollection):
         show_item_buttons_justified = False
         ajax_callback = 'loadIndex'
 
+        def get_page_title(self):
+            return _('Feed')
+
         @property
         def item_buttons_classes(self):
             return [cls for cls in super(ActivityCollection.ListView, self).item_buttons_classes if cls != 'btn-secondary'] + ['btn-link']
@@ -2996,6 +3324,11 @@ class ActivityCollection(MagiCollection):
             queryset = super(ActivityCollection.ItemView, self).get_queryset(queryset, parameters, request)
             return self.collection._get_queryset_for_list_and_item(queryset, parameters, request)
 
+        def get_h1_title(self, *args, **kwargs):
+            title_prefixes, h1 = super(ActivityCollection.ItemView, self).get_h1_title(*args, **kwargs)
+            h1['title'] = _('Activity')
+            return title_prefixes, h1
+
         def extra_context(self, context):
             super(ActivityCollection.ItemView, self).extra_context(context)
 
@@ -3025,6 +3358,7 @@ class ActivityCollection(MagiCollection):
                         ))
             if context['item'].hidden_reasons:
                 context['page_title'] = None
+                context['h1_page_title'] = None
                 context['comments_enabled'] = False
 
     class AddView(MagiCollection.AddView):
@@ -3234,6 +3568,22 @@ class BadgeCollection(MagiCollection):
             queryset = super(BadgeCollection.ItemView, self).get_queryset(queryset, parameters, request)
             return queryset.select_related('owner')
 
+        def get_h1_title(self, request, context, item):
+            _unused_title_prefixes, h1 = super(BadgeCollection.ItemView, self).get_h1_title(request, context, item)
+            title_prefixes = [
+                {
+                    'title': unicode(item.owner),
+                    'url': item.owner.item_url,
+                },
+                {
+                    'title': _('{things} list').format(things=_('Badges')),
+                    'url': addParametersToURL(item.owner.item_url, parameters={
+                        'open': 'badge',
+                    }, anchor='profiletabs'),
+                }
+            ]
+            return title_prefixes, h1
+
     class AddView(MagiCollection.AddView):
         staff_required = True
         one_of_permissions_required = ['add_donation_badges', 'add_badges']
@@ -3345,7 +3695,6 @@ class DonateCollection(MagiCollection):
     enabled = False
     title = 'Donation Month'
     plural_title = _('Donators')
-    navbar_link_title = _('Donate')
     plural_name = 'donate'
     icon = 'heart'
     navbar_link_list = 'more'
@@ -3365,6 +3714,9 @@ class DonateCollection(MagiCollection):
         before_template = 'include/donate'
         add_button_subtitle = ''
         allow_random = False
+
+        def get_page_title(self):
+            return _('Donate')
 
         def get_queryset(self, queryset, parameters, request):
             queryset = super(DonateCollection.ListView, self).get_queryset(queryset, parameters, request)
@@ -3481,10 +3833,22 @@ class PrivateMessageCollection(MagiCollection):
     icon = 'contact'
     form_class = forms.PrivateMessageForm
     navbar_link_list = 'you'
-    navbar_link_title = _('Inbox')
     reportable = False
 
     add_sentence = _('Send a message')
+
+    @classmethod
+    def _get_user_for_thread_with(self, request):
+        request.thread_with = get_object_or_404(models.User.objects.select_related('preferences').extra(select={
+            'is_followed_by': 'SELECT COUNT(*) FROM {table}_following WHERE userpreferences_id = (SELECT id FROM {table} WHERE user_id = auth_user.id) AND user_id = {id}'.format(
+                table=models.UserPreferences._meta.db_table,
+                id=request.user.id,
+            ),
+            'followed': 'SELECT COUNT(*) FROM {table}_following WHERE userpreferences_id = {id} AND user_id = auth_user.id'.format(
+                table=models.UserPreferences._meta.db_table,
+                id=request.user.preferences.id,
+            ),
+        }), pk=request.GET['to_user'])
 
     def get_queryset(self, queryset, parameters, request):
         queryset = super(PrivateMessageCollection, self).get_queryset(queryset, parameters, request)
@@ -3493,7 +3857,6 @@ class PrivateMessageCollection(MagiCollection):
         return queryset
 
     class ListView(MagiCollection.ListView):
-        show_title = True
         filter_form = forms.PrivateMessageFilterForm
         per_line = 1
         authentication_required = True
@@ -3504,6 +3867,9 @@ class PrivateMessageCollection(MagiCollection):
         ajax_pagination_callback = 'loadPrivateMessages'
         item_blocked_template = 'default_blocked_template_in_list'
         allow_random = False
+
+        def get_page_title(self):
+            return _('Inbox')
 
         def check_permissions(self, request, context):
             super(PrivateMessageCollection.ListView, self).check_permissions(request, context)
@@ -3517,16 +3883,7 @@ class PrivateMessageCollection(MagiCollection):
             # Thread view (including search)
             if request.GET.get('to_user', None):
                 # Get user thread with
-                request.thread_with = get_object_or_404(models.User.objects.select_related('preferences').extra(select={
-                    'is_followed_by': 'SELECT COUNT(*) FROM {table}_following WHERE userpreferences_id = (SELECT id FROM {table} WHERE user_id = auth_user.id) AND user_id = {id}'.format(
-                        table=models.UserPreferences._meta.db_table,
-                        id=request.user.id,
-                    ),
-                    'followed': 'SELECT COUNT(*) FROM {table}_following WHERE userpreferences_id = {id} AND user_id = auth_user.id'.format(
-                        table=models.UserPreferences._meta.db_table,
-                        id=request.user.preferences.id,
-                    ),
-                }), pk=request.GET['to_user'])
+                self.collection._get_user_for_thread_with(request)
             # Inbox view
             else:
                 if not request.GET.get('search', None):
@@ -3626,71 +3983,43 @@ class PrivateMessageCollection(MagiCollection):
                     item.unblock_button = _(u'Unblock {username}').format(username=item.to_user.username)
                     item.blocked_owner_id = item.to_user.id
 
+        def get_h1_title(self, request, context, *args, **kwargs):
+            title_prefixes, h1 = super(PrivateMessageCollection.ListView, self).get_h1_title(
+                request, context, *args, **kwargs)
+            # Thread view
+            if request.GET.get('to_user', None):
+                title_prefixes.append({
+                    'title': _('Inbox'),
+                    'url': self.collection.get_list_url(),
+                })
+                h1 = {
+                    'title': request.thread_with.username,
+                    'image': models.avatar(request.thread_with, size=39),
+                }
+            # Inbox view
+            else:
+                pass
+            return title_prefixes, h1
+
         def extra_context(self, context):
             super(PrivateMessageCollection.ListView, self).extra_context(context)
 
-            back_to_inbox_url = self.collection.get_list_url(
-                ajax=context['ajax'],
-                modal_only=context['ajax'],
-                parameters={
-                    'ajax_show_top_buttons': True,
-                } if context['ajax'] else {},
-            )
-            back_to_inbox_sentence = _('Back to {page_name}').format(page_name=_('Inbox').lower())
-
             # Thread view
             if context['request'].GET.get('to_user', None):
-                context['thread_with'] = context['request'].thread_with
                 context['pm_view'] = 'thread'
-                context['page_title'] = u'{} - {}'.format(
-                    context['thread_with'].username,
-                    context['page_title'],
-                )
-                context['h1_page_title'] = mark_safe(u'{title}: <a href="{profile_url}">{username}</a> \
-                <br><small>{belowlink}</small>'.format(
-                    profile_url=context['thread_with'].item_url,
-                    title=self.collection.plural_title,
-                    username=context['thread_with'].username,
-                    belowlink=u'<a href="{back_to_url}" class="a-nodifference text-muted"> \
-                    {back_to_sentence}</a>'.format(
-                        back_to_url=back_to_inbox_url,
-                        back_to_sentence=back_to_inbox_sentence,
-                    ) if not context['request'].GET.get('search', None)
-                    else u'{search}: {terms}<br><a href="{url}" class="btn btn-default">{clear}</a>'.format(
-                            search=t['Search'],
-                            terms=context['request'].GET['search'],
-                            url=self.collection.get_list_url(
-                                ajax=context['ajax'],
-                                modal_only=context['ajax'],
-                                parameters={
-                                    'ajax_show_top_buttons': True if context['ajax'] else None,
-                                    'to_user': context['request'].GET['to_user'],
-                                },
-                            ),
-                            clear=t['Clear'],
-                    ),
-                ))
+                context['thread_with'] = context['request'].thread_with
                 context['show_search_results'] = 'search' in context['request'].GET
                 context['hide_sidebar'] = not bool(context['request'].GET.get('search', None))
                 context['top_buttons_col_size'] = 12
             # Inbox view
             else:
                 context['pm_view'] = 'inbox'
+                # Search
                 if context['request'].GET.get('search', None):
                     context['hide_sidebar'] = False
-                    context['search_terms'] = context['request'].GET['search']
                     context['show_search_results'] = True
-                    context['h1_page_title'] = mark_safe(u'{search}: {terms}<br>\
-                    <small><a href="{back_to_url}" class="a-nodifference text-muted"> \
-                    {back_to_sentence}</a></small>'.format(
-                        search=t['Search'],
-                        terms=context['request'].GET['search'],
-                        back_to_url=back_to_inbox_url,
-                        back_to_sentence=back_to_inbox_sentence,
-                    ))
+                # Normal, without search
                 else:
-                    context['page_title'] = _('Inbox')
-                    context['h1_page_title'] = _('Inbox')
                     if isInboxClosed(context['request']):
                         context['alert_title'] = _('You are not allowed to send private messages.')
                         context['alert_message'] = _('Take some time to play around {site_name} to unlock this feature!').format(site_name=context['t_site_name'])
@@ -3709,9 +4038,23 @@ class PrivateMessageCollection(MagiCollection):
 
         def check_permissions(self, request, context):
             super(PrivateMessageCollection.AddView, self).check_permissions(request, context)
-            # Permissions are not checked here but when message is being sent to avoid extra query
             if not request.GET.get('to_user', None):
                 raise PermissionDenied()
+            self.collection._get_user_for_thread_with(request)
+            if (not request.user.hasPermissionToMessage(request.thread_with)
+                or not hasGoodReputation(request)):
+                raise PermissionDenied()
+
+        def get_h1_title(self, request, context, *args, **kwargs):
+            title_prefixes, h1 = super(PrivateMessageCollection.AddView, self).get_h1_title(
+                request, context, *args, **kwargs)
+            title_prefixes.append({
+                'title': request.thread_with.username,
+                'url': self.collection.get_list_url(parameters={
+                    'to_user': request.thread_with.pk,
+                }),
+            })
+            return title_prefixes, h1
 
         def redirect_after_add(self, request, instance, ajax=False):
             return self.collection.get_list_url(ajax=ajax, modal_only=ajax, parameters={

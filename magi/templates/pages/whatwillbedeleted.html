@@ -6,7 +6,7 @@
   <ul>
     {% for thing in to_delete %}
     {% if thing|isList %}
-    {% include 'ajax/whatwillbedeleted.html' with to_delete=thing hide_warning=True %}
+    {% include 'pages/whatwillbedeleted.html' with to_delete=thing hide_warning=True %}
     {% else %}
     <li>{% if thing.collection %}{{ thing.collection.title }}{% else %}{{ thing|modelName }}{% endif %}:
       {% if thing.collection and thing.collection.item_view.enabled %}

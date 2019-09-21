@@ -4,8 +4,10 @@
 {% load magi_tags %}
 
 {% block beforeforms %}
+<div class="padding15" id="content">
+  {% include 'include/page_title.html' with show_title=False show_small_title=True h1_page_title_icon='settings' hide_prefixes=False %}
+</div>
 <div class="container_form">
-  <h1 id="content" class="text-center padding50"><i class="flaticon-settings"></i> {% trans 'Settings' %}</h1>
   <div class="list-group">
     <div class="list-group-item active"><h4>{% trans 'Profile' %}</h4></div>
     {% for form_name, form in forms.items %}
@@ -19,7 +21,7 @@
     <a href="#links" class="list-group-item page-scroll"><i class="flaticon-url"></i> {% trans 'Links' %} <span class="glyphicon glyphicon-chevron-down pull-right"></span></a>
     {% endif %}
     {% endif %}
-    <a href="#{{ form_name }}" class="list-group-item page-scroll"><i class="flaticon-{{ form.icon }}"></i> {{ form.form_title }} <span class="glyphicon glyphicon-chevron-down pull-right"></span></a>
+    <a href="#{{ form_name }}" class="list-group-item page-scroll"><i class="flaticon-{{ form.form_icon }}"></i> {{ form.form_title }} <span class="glyphicon glyphicon-chevron-down pull-right"></span></a>
     {% if form_name == 'addLink' %}
     {% if 'donationLink' not in forms and 'donate' in all_enabled %}
     <a href="#customLink" class="list-group-item page-scroll"><i class="flaticon-add"></i> {{ add_custom_link_sentence }} <span class="glyphicon glyphicon-chevron-down pull-right"></span></a>

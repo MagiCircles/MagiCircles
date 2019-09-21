@@ -1,4 +1,4 @@
-{# optional variables: hide_side_bar, side_bar_no_padding, small_container, no_container #}
+{# optional variables: hide_side_bar, side_bar_no_padding, small_container, no_container, sidebar_template, content_template #}
 {% extends "base.html" %}
 
 {% block content %}
@@ -7,7 +7,7 @@
 <div id="wrapper" class="active">
   <nav id="sidebar-wrapper">
     {% if not side_bar_no_padding %}<div class="padded-inner-sidebar">{% endif %}
-      {% block sidebar %}{% endblock %}
+      {% block sidebar %}{% include sidebar_template %}{% endblock %}
     {% if not side_bar_no_padding %}</div>{% endif %}
   </nav>
   <div id="page-content-wrapper">
@@ -17,7 +17,8 @@
     </a>
     {% endif %}
     <div class="page-content-inner{% if small_container %} as-small-container{% elif not no_container %} as-container{% endif %}">
-      {% block sidebar_content %}{% endblock %}
+      {% if sidebar_show_title %}<div class="padding15">{% include 'include/page_title.html' %}</div>{% endif %}
+      {% block sidebar_content %}{% include template %}{% endblock %}
     </div>
     {% if not hide_side_bar %}
   </div>

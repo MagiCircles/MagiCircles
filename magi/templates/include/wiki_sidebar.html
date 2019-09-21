@@ -1,0 +1,10 @@
+{% load tools %}
+<div id="wiki-sidebar"></div>
+<br><br><br>
+{% if user.is_staff %}
+<div class="staff-only">
+  <a href="{{ full_wiki_url }}_new" target="_blank">Create a new wiki page</a><br>
+  <a href="{{ full_wiki_url }}_Sidebar/_edit" target="_blank">Edit the sidebar</a><br>
+  <small class="text-muted"><i>Note: You need an account on GitHub to add/edit wiki pages</i></small>
+</div>
+{% endif %}

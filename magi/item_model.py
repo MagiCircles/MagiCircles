@@ -98,6 +98,12 @@ def get_owner_ids(cls, user):
         return list(cls.owners_queryset(user).values_list('id', flat=True))
     return [user.id]
 
+def get_owner_from_pk(cls, owner_pk):
+    """
+    Always performs a database query, use with caution.
+    """
+    return cls._meta.get_field(cls.fk_as_owner or 'owner').rel.to.objects.get(pk=owner_pk)
+
 def get_owner_collection(cls):
     if cls.fk_as_owner:
         return getMagiCollection(cls.fk_as_owner)
@@ -162,6 +168,7 @@ class BaseMagiModel(models.Model):
     selector_to_owner = classmethod(get_selector_to_owner)
     owners_queryset = classmethod(get_owners_queryset)
     owner_ids = classmethod(get_owner_ids)
+    get_owner_from_pk = classmethod(get_owner_from_pk)
     allow_multiple_per_owner = classmethod(get_allow_multiple_per_owner)
     owner_collection = classmethod(get_owner_collection)
     is_owner = get_is_owner
@@ -296,8 +303,6 @@ class BaseMagiModel(models.Model):
         # Add default unicode if missing
         if 'unicode' not in d:
             d['unicode'] = d['name'] if 'name' in d else (unicode(d['id']) if 'id' in d else '?')
-
-        # TODO try to add a way to call __unicode__ smooth
 
         if 'id' in d:
             if 'pk' not in d:
@@ -511,6 +516,8 @@ class BaseMagiModel(models.Model):
                 'html_attributes',
                 'html_attributes_in_list',
                 'thumbnail_size',
+                'flaticon',
+                'icon_for_prefetched',
                 'image_for_prefetched',
                 'template_for_prefetched',
                 'display_item_url',
@@ -773,6 +780,7 @@ def addMagiModelProperties(modelClass, collection_name):
     modelClass.selector_to_owner = classmethod(get_selector_to_owner)
     modelClass.owners_queryset = classmethod(get_owners_queryset)
     modelClass.owner_ids = classmethod(get_owner_ids)
+    modelClass.get_owner_from_pk = classmethod(get_owner_from_pk)
     modelClass.allow_multiple_per_owner = classmethod(get_allow_multiple_per_owner)
     modelClass.owner_collection = classmethod(get_owner_collection)
     modelClass.is_owner = get_is_owner

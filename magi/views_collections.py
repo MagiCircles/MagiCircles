@@ -1,6 +1,7 @@
 from __future__ import division
-import math
+import math, string
 from collections import OrderedDict
+from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from magi.middleware.httpredirect import HttpRedirectException
 from django.shortcuts import render
@@ -10,14 +11,17 @@ from django.forms import HiddenInput, ChoiceField
 from magi.utils import (
     cuteFormFieldsForContext,
     get_one_object_or_404,
-    jsv,
     listUnique,
     staticImageURL,
     getColSize,
     getSearchFieldHelpText,
+    pageTitleFromPrefixes,
+    h1ToContext,
     simplifyMarkdown,
     summarize,
     matchesTemplate,
+    HTMLAlert,
+    addParametersToURL,
 )
 from magi.raw import (
     GET_PARAMETERS_NOT_IN_FORM,
@@ -56,10 +60,45 @@ def _modification_view(context, name, view, ajax):
     context['after_template'] = view.after_template
     return context
 
-def _modification_views_page_titles(action_sentence, context, after_title):
-    context['page_title'] = u'{action_sentence}{after_title}'.format(
-        action_sentence=action_sentence,
-        after_title=u': {}'.format(after_title) if after_title else '',
+def _set_javascript_form_details(form, form_selector, context, cuteforms, ajax):
+    # CuteForm
+    cuteform = {}
+    for a_cuteform in cuteforms:
+        if a_cuteform:
+            cuteform.update(a_cuteform)
+    if cuteform:
+        cuteFormFieldsForContext(
+            cuteform,
+            context, form=form,
+            prefix=form_selector + ' ',
+            ajax=ajax,
+        )
+    # Modal cuteform separators
+    modal_cuteform_separators = getattr(form, 'modal_cuteform_separators', None)
+    if modal_cuteform_separators:
+        if 'modal_cuteform_separators' not in context:
+            context['modal_cuteform_separators'] = {}
+        if form_selector not in context['modal_cuteform_separators']:
+            context['modal_cuteform_separators'][form_selector] = []
+        context['modal_cuteform_separators'][form_selector].append(modal_cuteform_separators)
+    # Show more
+    form_show_more = getattr(form, 'show_more', None)
+    if form_show_more:
+        if 'form_show_more' not in context:
+            context['form_show_more'] = {}
+        if form_selector not in context['form_show_more']:
+            context['form_show_more'][form_selector] = []
+        context['form_show_more'][form_selector] += (
+            [form_show_more] if not isinstance(form_show_more, list) else form_show_more
+        )
+
+def _add_h1_and_prefixes_to_context(view, context, title_prefixes, h1, item=None, get_page_title_parameters={}):
+    context['show_title'] = view.show_title
+    context['show_small_title'] = view.show_small_title
+    context['title_prefixes'] = title_prefixes
+    h1ToContext(h1, context)
+    context['page_title'] = pageTitleFromPrefixes(
+        title_prefixes, view.get_page_title(**get_page_title_parameters),
     )
 
 def _type(a): return type(a)
@@ -105,24 +144,22 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
         context['shortcut_url'] = shortcut_url
     context['ajax'] = ajax
     context['name'] = name
-    context['page_title'] = u'{item} - {title}'.format(title=collection.title, item=context['item'])
 
     # Page description
-    if not ajax:
-        description = unicode(context['item'])
-        for field_name, is_markdown in [
-                ('t_m_description', True),
-                ('t_description', False),
-                ('m_description', True),
-                ('description', False),
-        ]:
-            description = getattr(context['item'], field_name, None)
-            if description:
-                if isinstance(description, tuple):
-                    description = description[1]
-                description = (simplifyMarkdown if is_markdown else summarize)(description, max_length=158)
-                break
-        context['page_description'] = description
+    description = unicode(context['item'])
+    for field_name, is_markdown in [
+            ('t_m_description', True),
+            ('t_description', False),
+            ('m_description', True),
+            ('description', False),
+    ]:
+        description = getattr(context['item'], field_name, None)
+        if description:
+            if isinstance(description, tuple):
+                description = description[1]
+            description = (simplifyMarkdown if is_markdown else summarize)(description, max_length=158)
+            break
+    context['page_description'] = description
 
     context['js_files'] = collection.item_view.js_files
     context['reportable'] = collection.reportable
@@ -151,6 +188,12 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
         if collection.collectible_collections:
             context['reload_urls_start_with'] += [cc.get_add_url() for cc in collection.collectible_collections.values()]
 
+    # Title and prefixes
+    title_prefixes, h1 = collection.item_view.get_h1_title(request, context, context['item'])
+    _add_h1_and_prefixes_to_context(
+        collection.item_view, context, title_prefixes, h1, context['item'], get_page_title_parameters={
+            'item': context['item'], })
+
     context['include_below_item'] = False
     context['show_item_buttons'] = collection.item_view.show_item_buttons
     context['item'].request = request
@@ -168,6 +211,7 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
 
     collection.item_view.extra_context(context)
     if ajax:
+        context['ajax_include_title'] = True
         context['include_template'] = 'items/{}'.format(context['item_template'])
         return render(request, 'ajax.html', context)
     return render(request, 'collections/item_view.html', context)
@@ -181,7 +225,7 @@ def random_view(request, name, collection, ajax=False, extra_filters={}, shortcu
     queryset = collection.list_view.get_queryset(collection.queryset, filters, request)
 
     filter_form = collection.list_view.filter_form(
-        filters, request=request, ajax=ajax, collection=collection, preset=None)
+        filters, request=request, ajax=ajax, collection=collection, preset=None, allow_next=False)
     if hasattr(filter_form, 'filter_queryset'):
         queryset = filter_form.filter_queryset(queryset, filters, request)
 
@@ -265,10 +309,10 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
                 k for k in filters.keys()
                 if k not in GET_PARAMETERS_NOT_IN_FORM + GET_PARAMETERS_IN_FORM_HANDLED_OUTSIDE
         ]) > 0:
-            context['filter_form'] = collection.list_view.filter_form(filters, request=request, ajax=ajax, collection=collection, preset=preset)
+            context['filter_form'] = collection.list_view.filter_form(filters, request=request, ajax=ajax, collection=collection, preset=preset, allow_next=False)
             filled_filter_form = len(request.GET) > 0
         else:
-            context['filter_form'] = collection.list_view.filter_form(request=request, ajax=ajax, collection=collection, preset=preset)
+            context['filter_form'] = collection.list_view.filter_form(request=request, ajax=ajax, collection=collection, preset=preset, allow_next=False)
         if hasattr(context['filter_form'], 'filter_queryset'):
             queryset = context['filter_form'].filter_queryset(queryset, filters, request)
         else:
@@ -306,18 +350,11 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     queryset = queryset[(page * page_size):((page * page_size) + page_size)]
 
     if 'filter_form' in context and not ajax:
-        form_cuteform = getattr(context['filter_form'], 'cuteform', None)
-        if form_cuteform:
-            cuteFormFieldsForContext(
-                form_cuteform,
-                context, form=context['filter_form'],
-                prefix='#sidebar-wrapper ',
-                ajax=ajax,
-            )
-        cuteFormFieldsForContext(
-            collection.list_view.filter_cuteform,
-            context, form=context['filter_form'],
-            prefix='#sidebar-wrapper ',
+        _set_javascript_form_details(
+            form=context['filter_form'],
+            form_selector='#filter-form-{}'.format(collection.name),
+            context=context,
+            cuteforms=[getattr(context['filter_form'], 'cuteform', None), collection.list_view.filter_cuteform],
             ajax=ajax,
         )
 
@@ -335,10 +372,9 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
         context['shortcut_url'] = shortcut_url
 
     context['ordering'] = ordering
-    context['page_title'] = _(u'{things} list').format(things=collection.plural_title)
 
     # Page description
-    if not ajax and shortcut_url != '':
+    if shortcut_url != '':
         if 'filter_form' in context:
             filters_labels = [
                 unicode(field.label).lower()
@@ -368,12 +404,6 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
                 game=context['game_name'],
             )
 
-    context['h1_page_title'] = collection.plural_title
-    if preset:
-        context['h1_page_title'] = collection.list_view.filter_form.get_preset_label(
-            preset, collection.plural_title)
-        context['h1_page_title_icon'] = collection.list_view.filter_form.get_preset_icon(preset)
-        context['h1_page_title_image'] = collection.list_view.filter_form.get_preset_image(preset)
     context['total_pages'] = int(math.ceil(context['total_results'] / page_size))
     context['items'] = queryset
     context['page'] = page + 1
@@ -422,7 +452,6 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
         context['item_template'] = context['alt_view']['template']
     context['item_padding'] = collection.list_view.item_padding
     context['item_max_height'] = collection.list_view.item_max_height
-    context['show_title'] = collection.list_view.show_title or preset
     context['plural_title'] = collection.plural_title
     context['show_items_names'] = collection.list_view.show_items_names
     context['lowercase_plural_title'] = collection.plural_title.lower()
@@ -461,6 +490,13 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     if context['display_style'] == 'table':
         context['table_fields_headers'] = collection.list_view.table_fields_headers(context['display_style_table_fields'], view=context['view'])
         context['table_fields_headers_sections'] = collection.list_view.table_fields_headers_sections(view=context['view'])
+
+    # Title and prefixes
+    title_prefixes, h1 = collection.list_view.get_h1_title(
+        request, context, view=context['view'], preset=preset)
+    _add_h1_and_prefixes_to_context(collection.list_view, context, title_prefixes, h1)
+
+    # Top buttons
 
     if not ajax or context['ajax_show_top_buttons']:
         context['top_buttons'] = collection.list_view.top_buttons(request, context)
@@ -527,6 +563,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
 
     if ajax:
         context['include_template'] = 'collections/list_page'
+        context['ajax_include_title'] = True
         if context['ajax_modal_only'] and context['ajax_pagination_callback']:
             context['ajax_callback'] = context['ajax_pagination_callback']
         return render(request, 'ajax.html', context)
@@ -542,10 +579,7 @@ def add_view(request, name, collection, type=None, ajax=False, shortcut_url=None
     with_types = False
     if shortcut_url is not None:
         context['shortcut_url'] = shortcut_url
-    context['next'] = request.GET.get('next', None)
-    context['next_title'] = request.GET.get('next_title', None)
     context['type'] = None
-    after_title = None
     if type is not None and collection.types:
         if type not in collection.types:
             raise Http404
@@ -553,19 +587,14 @@ def add_view(request, name, collection, type=None, ajax=False, shortcut_url=None
         context['type'] = type
         collection.add_view.check_type_permissions(request, context, type=type)
         formClass = collection.types[type].get('form_class', collection.add_view.form_class)
-        context['imagetitle'] = collection.types[type].get('image', collection.image)
-        context['icontitle'] = collection.types[type].get('icon', collection.icon)
-        after_title = collection.types[type].get('title', type)
     else:
         formClass = collection.add_view.form_class
-        context['imagetitle'] = collection.image
-        context['icontitle'] = collection.icon
     if str(_type(formClass)) == '<type \'instancemethod\'>':
         formClass = formClass(request, context)
     if request.method == 'GET':
-        form = formClass(request=request, ajax=ajax, collection=collection) if not with_types else formClass(request=request, ajax=ajax, collection=collection, type=type)
+        form = formClass(request=request, ajax=ajax, collection=collection, allow_next=collection.add_view.allow_next) if not with_types else formClass(request=request, ajax=ajax, collection=collection, type=type, allow_next=collection.add_view.allow_next)
     elif request.method == 'POST':
-        form = formClass(request.POST, request.FILES, request=request, ajax=ajax, collection=collection) if not with_types else formClass(request.POST, request.FILES, request=request, ajax=ajax, collection=collection, type=type)
+        form = formClass(request.POST, request.FILES, request=request, ajax=ajax, collection=collection, allow_next=collection.add_view.allow_next) if not with_types else formClass(request.POST, request.FILES, request=request, ajax=ajax, collection=collection, type=type, allow_next=collection.add_view.allow_next)
         if form.is_valid():
             instance = form.save(commit=False)
             instance = collection.add_view.before_save(request, instance, type=type)
@@ -573,33 +602,45 @@ def add_view(request, name, collection, type=None, ajax=False, shortcut_url=None
             if collection.add_view.savem2m:
                 form.save_m2m()
             instance = collection.add_view.after_save(request, instance, type=type)
-            if collection.add_view.allow_next and context['next']:
-                raise HttpRedirectException(context['next'])
-            redirectURL = collection.add_view.redirect_after_add(request, instance, ajax)
-            if context['next']:
-                redirectURL += '{}next={}&next_title={}'.format(
-                    '&' if '?' in redirectURL else '?',
-                    context['next'],
-                    context['next_title'] if context['next_title'] else '',
-                )
-            raise HttpRedirectException(redirectURL)
-    cuteFormFieldsForContext(
-        collection.add_view.filter_cuteform,
-        context, form=form,
-        prefix=u'[data-form-name="add_{}"] '.format(collection.name),
-        ajax=ajax,
-    )
-    _modification_views_page_titles(collection.add_sentence, context, after_title)
-    context['action_sentence'] = collection.add_sentence # Used in page title
-    form.action_sentence = collection.add_sentence # Genericity when we have multiple forms
-    context['share_image'] = _get_share_image(context, collection.add_view)
+            next_value = form.cleaned_data.get('next', None)
+            if collection.add_view.allow_next and next_value:
+                raise HttpRedirectException(next_value)
+            raise HttpRedirectException(addParametersToURL(
+                collection.add_view.redirect_after_add(request, instance, ajax),
+                parameters={
+                    'next': next_value,
+                    'next_title': form.cleaned_data.get('next_title', ''),
+                } if next_value else {}))
+
     context['forms'] = { u'add_{}'.format(collection.name): form }
+    context['share_image'] = _get_share_image(context, collection.add_view)
     context['ajax_callback'] = collection.add_view.ajax_callback
     context['collection'] = collection
+
+    _set_javascript_form_details(
+        form=form,
+        form_selector=u'[data-form-name="add_{}"]'.format(collection.name),
+        context=context,
+        cuteforms=[getattr(form, 'cuteform', None), collection.add_view.filter_cuteform],
+        ajax=ajax,
+    )
+
+    # Alert
     if collection.add_view.alert_duplicate:
-        context['alert_message'] = _('Make sure the {thing} you\'re about to add doesn\'t already exist.').format(thing=_(collection.title.lower()))
-        context['alert_button_link'] = context['list_url']
-        context['alert_button_string'] = _(collection.plural_title)
+        form.beforefields = mark_safe(u'{}{}'.format(
+            getattr(form, 'beforefield', ''), HTMLAlert(
+                message=_('Make sure the {thing} you\'re about to add doesn\'t already exist.').format(
+                    thing=_(collection.title.lower())),
+                button={ 'url': context['list_url'], 'verbose': unicode(collection.plural_title) },
+            )))
+
+    # Title and prefixes
+    title_prefixes, h1 = collection.add_view.get_h1_title(request, context, type=type)
+    _add_h1_and_prefixes_to_context(collection.add_view, context, title_prefixes, h1, get_page_title_parameters={
+        'type': type, })
+
+    if not getattr(form, 'submit_title', None):
+        form.submit_title = collection.add_sentence
 
     collection.add_view.extra_context(context)
     if ajax:
@@ -632,12 +673,8 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
         context['type'] = type
         collection.edit_view.check_type_permissions(request, context, type=type, item=instance)
         formClass = collection.types[type].get('form_class', collection.edit_view.form_class)
-        context['imagetitle'] = collection.types[type].get('image', collection.image)
-        context['icontitle'] = collection.types[type].get('icon', collection.icon)
     else:
         formClass = collection.edit_view.form_class
-        context['imagetitle'] = collection.image
-        context['icontitle'] = collection.icon
     if str(_type(formClass)) == '<type \'instancemethod\'>':
         formClass = formClass(request, context)
     allowDelete = collection.edit_view.allow_delete
@@ -648,10 +685,10 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
         formDelete = ConfirmDelete(initial={
             'thing_to_delete': instance.pk,
         }, request=request, instance=instance, collection=collection)
-    form = formClass(instance=instance, request=request, ajax=ajax, collection=collection)
+    form = formClass(instance=instance, request=request, ajax=ajax, collection=collection, allow_next=collection.edit_view.allow_next)
     # Todo: needed to load twice to ensure the setattr of c_ fields is done and c_ fields show
     # default values. need to find a way to get values to show without having to set the list value
-    form = formClass(instance=instance, request=request, ajax=ajax, collection=collection)
+    form = formClass(instance=instance, request=request, ajax=ajax, collection=collection, allow_next=collection.edit_view.allow_next)
     if allowDelete and request.method == 'POST' and u'delete_{}'.format(collection.name) in request.POST:
         formDelete = ConfirmDelete(request.POST, request=request, instance=instance, collection=collection)
         if formDelete.is_valid():
@@ -660,7 +697,7 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
             instance.delete()
             raise HttpRedirectException(redirectURL)
     elif request.method == 'POST':
-        form = formClass(request.POST, request.FILES, instance=instance, request=request, ajax=ajax, collection=collection)
+        form = formClass(request.POST, request.FILES, instance=instance, request=request, ajax=ajax, collection=collection, allow_next=collection.edit_view.allow_next)
         if form.is_valid():
             instance = form.save(commit=False)
             instance = collection.edit_view.before_save(request, instance)
@@ -668,12 +705,20 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
             if collection.edit_view.savem2m and not context['is_translate']:
                 form.save_m2m()
             instance = collection.edit_view.after_save(request, instance)
-            redirectURL = collection.edit_view.redirect_after_edit(request, instance, ajax)
-            raise HttpRedirectException(redirectURL)
-    cuteFormFieldsForContext(
-        collection.edit_view.filter_cuteform,
-        context, form=form,
-        prefix=u'[data-form-name="edit_{}"] '.format(collection.name),
+            next_value = form.cleaned_data.get('next', None)
+            if collection.edit_view.allow_next and next_value:
+                raise HttpRedirectException(next_value)
+            raise HttpRedirectException(addParametersToURL(
+                collection.edit_view.redirect_after_edit(request, instance, ajax),
+                parameters={
+                    'next': next_value,
+                    'next_title': form.cleaned_data.get('next_title', ''),
+                } if next_value else {}))
+    _set_javascript_form_details(
+        form=form,
+        form_selector=u'[data-form-name="edit_{}"]'.format(collection.name),
+        context=context,
+        cuteforms=[getattr(form, 'cuteform', None), collection.edit_view.filter_cuteform],
         ajax=ajax,
     )
     if shortcut_url is not None:
@@ -684,18 +729,34 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
     context['item'] = instance
     context['item'].request = request
     context['share_image'] = _get_share_image(context, collection.edit_view, item=context['item'])
-    _modification_views_page_titles(instance.edit_sentence, context, unicode(instance))
+    context['collection'] = collection
     context['ajax_callback'] = collection.edit_view.ajax_callback
     context['forms'][u'edit_{}'.format(collection.name)] = form
-    context['collection'] = collection
+
     if allowDelete:
-        formDelete.alert_message = _('You can\'t cancel this action afterwards.')
-        formDelete.action_sentence = instance.delete_sentence
+        formDelete.submit_title = instance.delete_sentence
         formDelete.form_title = u'{}: {}'.format(instance.delete_sentence, unicode(instance))
+
+        # Alert
+        formDelete.beforefields = mark_safe(u'{}{}'.format(
+            getattr(form, 'beforefield', ''), HTMLAlert(
+                type='danger',
+                message=unicode(_('You can\'t cancel this action afterwards.')),
+            )))
+
         if 'js_variables' not in context or not context['js_variables']:
             context['js_variables'] = OrderedDict()
-        context['js_variables']['show_cascade_before_delete'] = jsv(collection.edit_view.show_cascade_before_delete)
+        context['js_variables']['show_cascade_before_delete'] = collection.edit_view.show_cascade_before_delete
         context['forms'][u'delete_{}'.format(collection.name)] = formDelete
+
+    # Title and prefixes
+    title_prefixes, h1 = collection.edit_view.get_h1_title(
+        request, context, context['item'], type=context['type'], is_translate=context['is_translate'])
+    _add_h1_and_prefixes_to_context(collection.edit_view, context, title_prefixes, h1, get_page_title_parameters={
+        'item': context['item'], 'type': context['type'], 'is_translate': context['is_translate'] })
+
+    if not getattr(form, 'submit_title', None):
+        form.submit_title = collection.edit_sentence
 
     collection.edit_view.extra_context(context)
     if ajax:

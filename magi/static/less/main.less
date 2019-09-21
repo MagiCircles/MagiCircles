@@ -95,6 +95,17 @@
     white-space: normal;
 }
 
+.navbar .dropdown-menu >li>a, body.sitemap a.list-group-item {
+    img[src*="/static/img/links/"] {
+        display: inline-block;
+        box-sizing: content-box;
+        padding: 3px;
+        margin: -3px 0 -3px -4px;
+        background: #333;
+        border-radius: 5px;
+    }
+}
+
 .navbar {
     .dropdown-menu {
         font-size: inherit;
@@ -103,14 +114,6 @@
         overflow-x: hidden;
         &>li>a {
             line-height: 2em;
-            img[src*="/static/img/links/"] {
-                display: inline-block;
-                box-sizing: content-box;
-                padding: 3px;
-                margin: -3px 0 -3px -4px;
-                background: #333;
-                border-radius: 5px;
-            }
         }
         .dropdown-header.large {
             &:first-child {
@@ -497,6 +500,37 @@ table.text-center th {
     }
 }
 
+a.text-muted {
+    &:hover, &:focus {
+        color: #777;
+    }
+}
+
+.page-title-small {
+    font-size: 24px;
+}
+.page-title .separator {
+    padding: 0 10px;
+}
+.page-title-prefixes {
+    font-size: 24px;
+    &, a, a:focus, a:hover {
+        color: #aaa;
+    }
+}
+
+#ajaxModal h1 {
+    &, .page-title-prefixes {
+        font-size: 18px;
+    }
+    .padding50.text-center {
+        padding: 0;
+        padding-top: 10px;
+        font-size: 24px;
+        font-weight: bold;
+    }
+}
+
 .collection-table tr[data-item="staffconfiguration"] {
     td:first-child, td {
         text-align: left;
@@ -639,6 +673,7 @@ table.text-center th {
 }
 
 .padding10 { padding: 5px; }
+.padding15 { padding: 5px; }
 .padding20 { padding: 5px; }
 .padding30 { padding: 10px; }
 .padding50 { padding: 20px; }
@@ -646,6 +681,7 @@ table.text-center th {
 
 @media (min-width: 768px) {
     .padding10 { padding: 10px; }
+    .padding15 { padding: 15px; }
     .padding20 { padding: 20px; }
     .padding30 { padding: 30px; }
     .padding50 { padding: 50px; }
@@ -1118,12 +1154,35 @@ body.current-map, html.html-current-map {
     padding: 0;
     main {
         height: 100%;
-        padding-bottom: 51px;
+        margin-bottom: 0;
+        margin-top: 0;
     }
 }
 
 #map {
     height: 100%;
+}
+#map-title {
+    position: absolute;
+    top: 51px;
+    z-index: 100;
+    background: white;
+    border-bottom-right-radius: 10px;
+    h1 {
+        padding: 5px 25px 15px 25px;
+    }
+}
+
+.list-page-title-privatemessage .h1-page-title-image {
+    border-radius: 5px;
+}
+
+@media(max-width:767px) {
+    #map-title {
+        width: 100%;
+        border-bottom-right-radius: 0;
+        text-align: center;
+    }
 }
 
 .top_buttons {

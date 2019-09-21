@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
-import datetime, time
+import datetime, time, sys
 from django.utils import timezone
 from django.utils.translation import activate as translation_activate, ugettext_lazy as _, get_language
 from django.utils.formats import date_format
+from django.utils.html import escape
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings as django_settings
 from django.db.models import Count
 from magi.utils import birthdays_within
+from magi.settings import SITE_STATIC_URL, STATIC_FILES_VERSION
 from magi import models
 
 ############################################################
@@ -196,3 +198,35 @@ GENERATED_DATE = datetime.datetime.fromtimestamp(' + unicode(time.time()) + u')\
     with open(django_settings.BASE_DIR + '/' + django_settings.SITE + '_project/generated_settings.py', 'w') as f:
         f.write(s.encode('utf8'))
         f.close()
+
+############################################################
+# Generate map
+
+def generateMap():
+    print '[Info]', datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), 'Generating map...'
+    map = models.UserPreferences.objects.filter(latitude__isnull=False).select_related('user')
+
+    mapcache = u'{# this file is generated, do not edit it #}{% extends "base.html" %}{% load l10n %}{% block content %}<div class="padding15" id="map-title">{% include \'include/page_title.html\' with show_small_title=True %}</div><div id="map"></div>{% endblock %}{% block afterjs %}{% localize off %}<script>var center=new google.maps.LatLng({% if center %}{{ center.latitude }},{{ center.longitude }}{% else %}30,0{% endif %});var zoom={% if zoom %}{{ zoom }}{% else %}2{% endif %};var addresses = ['
+
+    for u in map:
+        try:
+            mapcache += u'{open}"username": "{username}","avatar": "{avatar}","location": "{location}","icon": "{icon}","latlong": new google.maps.LatLng({latitude},{longitude}){close},'.format(
+                open=u'{',
+                username=escape(u.user.username),
+                avatar=escape(models.avatar(u.user)),
+                location=escape(u.location),
+                icon=escape(u.favorite_character1_image if u.favorite_character1_image else SITE_STATIC_URL + u'static/img/default_map_icon.png'),
+                latitude=u.latitude,
+                longitude=u.longitude,
+                close=u'}',
+            )
+        except:
+            print 'One user not added in map', u.user.username, u.location
+            print sys.exc_info()[0]
+
+    mapcache += u'];</script><script src="' + SITE_STATIC_URL + u'static/js/map.js?' + STATIC_FILES_VERSION + u'"></script>{% endlocalize %}{% endblock %}'
+
+    with open(django_settings.BASE_DIR + '/' + django_settings.SITE + '/templates/pages/map.html', 'w') as f:
+        f.write(mapcache.encode('UTF-8'))
+    f.close()
+    print '[Info]', datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), 'Done'

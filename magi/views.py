@@ -1,5 +1,5 @@
 from __future__ import division
-import math, datetime, random
+import math, datetime, random, string
 from collections import OrderedDict
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, JsonResponse, Http404
@@ -36,7 +36,8 @@ from magi import models
 from magi.raw import donators_adjectives
 from magi.utils import (
     getGlobalContext,
-    ajaxContext,
+    getNavbarPrefix,
+    HTMLAlert,
     redirectToProfile,
     tourldash,
     toHumanReadable,
@@ -58,9 +59,12 @@ from magi.utils import (
     hasGoodReputation,
     getColSize,
     LANGUAGES_NAMES,
+    h1ToContext,
 )
 from magi.notifications import pushNotification
 from magi.settings import (
+    ENABLED_PAGES,
+    ENABLED_NAVBAR_LISTS,
     SITE_NAME,
     SITE_NAME_PER_LANGUAGE,
     GAME_NAME,
@@ -107,22 +111,56 @@ if CUSTOM_PREFERENCES_FORM:
     forms_module = __import__(django_settings.SITE + '.forms', fromlist=[''])
 
 ############################################################
+# Sitemap
+
+def sitemap(request, context):
+    context['page_definers'] = ['sitemap']
+    navbar = request.path_info.replace('/', '')
+    if navbar == 'sitemap':
+        context['sitemap'] = OrderedDict(context['navbar_links'].items())
+    else:
+        if navbar not in context['navbar_links']:
+            raise Http404
+        navbar_details = context['navbar_links'][navbar]
+        context['h1_page_title'] = (
+            _('More')
+            if navbar == 'more'
+            else (
+                    navbar_details['title'](context)
+                    if callable(navbar_details['title'])
+                    else navbar_details['title']
+            )
+        )
+        context['sitemap'] = OrderedDict([
+            (link_name, link)
+            for link_name, link in navbar_details['links'].items()
+            if link['show_link_callback'](context)
+        ])
+
+############################################################
 # Login / Logout / Sign up
 
 def login(request):
     context = getGlobalContext(request)
+    h1ToContext({}, context)
     context['next'] = request.GET['next'] if 'next' in request.GET else None
     context['next_title'] = request.GET['next_title'] if 'next_title' in request.GET else None
+    context['page_title'] = _('Login')
     del(context['form'])
+    if 'login' in context['navbar_links'].get('you', {}).get('links', {}):
+        title = context['navbar_links']['you'].get('title', _('You'))
+        context['title_prefixes'] = [{
+            'title': title(context) if callable(title) else title,
+            'url': u'/you/',
+        }]
     return login_view(request, template_name='pages/login.html', extra_context=context)
 
 def logout(request):
     return logout_view(request, next_page='/')
 
-def signup(request):
+def signup(request, context):
     if request.user.is_authenticated():
         redirectToProfile(request)
-    context = getGlobalContext(request)
     if request.method == "POST":
         form = CreateUserForm(request.POST, request=request)
         if form.is_valid():
@@ -165,7 +203,6 @@ def signup(request):
     context['next'] = request.GET.get('next', None)
     context['next_title'] = request.GET.get('next_title', None)
     context['js_files'] = ['signup']
-    return render(request, 'pages/signup.html', context)
 
 ############################################################
 # Index
@@ -268,8 +305,8 @@ def index(request):
 ############################################################
 # Prelaunch
 
-def prelaunch(request, *args, **kwargs):
-    context = getGlobalContext(request)
+def prelaunch(request, context, *args, **kwargs):
+    context['show_small_title'] = False
     context['page_definers'] = context.get('page_definers', []) + ['homepage']
     context['about_site_sentence'] = _('About {thing}').format(thing=context['t_site_name'])
     context['about_game_sentence'] = _('About {thing}').format(thing=context['t_game_name'])
@@ -279,9 +316,8 @@ def prelaunch(request, *args, **kwargs):
         if logo_per_language:
             context['site_logo'] = staticImageURL(logo_per_language)
     if not context.get('launch_date', None):
-        return redirect('signup')
+        raise Http404()
     context['twitter'] = TWITTER_HANDLE
-    return render(request, 'pages/prelaunch.html', context)
 
 ############################################################
 # Profile
@@ -292,8 +328,8 @@ def user(request, pk=None, username=None):
 ############################################################
 # About
 
-def aboutDefaultContext(request):
-    context = getGlobalContext(request)
+def about(request, context):
+    context['disqus_identifier'] = 'contact'
     context['about_description_template'] = 'include/about_description'
     context['about_photo'] = ABOUT_PHOTO
     context['site_long_description'] = SITE_LONG_DESCRIPTION
@@ -384,23 +420,11 @@ def aboutDefaultContext(request):
         context['other_sites_per_line'] = 4
     context['other_sites_col_size'] = getColSize(context['other_sites_per_line'])
 
-    context['extends'] = 'base.html' if not context['ajax'] else 'ajax.html'
-    return context
-
-def about(request):
-    return render(request, 'pages/about.html', aboutDefaultContext(request))
-
-def about_game(request):
-    ajax = request.path_info.startswith('/ajax/')
-    context = ajaxContext(request) if ajax else getGlobalContext(request)
-    context['ajax'] = ajax
+def about_game(request, context):
     context['game_description'] = GAME_DESCRIPTION
     context['game_url'] = GAME_URL
     context['button_sentence'] = _('Learn more')
     context['extends'] = 'ajax.html' if context['ajax'] else 'base.html'
-    if not ajax:
-        context['h1_page_title'] = _('About {thing}').format(thing=context['t_game_name'])
-    return render(request, 'ajax/about_game.html', context)
 
 ############################################################
 # Settings
@@ -413,12 +437,10 @@ def _settingsOnSuccess(form, added=False):
     )
     form.beforefields = mark_safe(form.beforefields)
 
-def settingsContext(request):
-    context = getGlobalContext(request)
-    redirectWhenNotAuthenticated(request, context, next_title=_('Settings'))
+def settings(request, context):
     context['preferences'] = request.user.preferences
     context['accounts'] = request.user.accounts.all()
-    context['page_title'] = _('Settings')
+    context['hide_prefixes'] = True
 
     preferences_form_class = (
         forms_module.UserPreferencesForm
@@ -616,19 +638,30 @@ def settingsContext(request):
             'type': CuteFormType.HTML,
         },
     }, context, context['forms']['security'])
-    return context
-
-def settings(request):
-    context = settingsContext(request)
-    return render(request, 'pages/settings.html', context)
 
 ############################################################
 # Help / Wiki
 
-def custom_wiki(wiki, wiki_name, request, wiki_url):
-    context = getGlobalContext(request)
+def custom_wiki(wiki, wiki_base_url, wiki_name, request, context, wiki_url):
     context['wiki_url'] = wiki_url
-    context['page_title'] = wiki_name if wiki_url in ['Home', '_Sidebar'] else u'{} - {}'.format(wiki_url.replace('_', ' ').replace('-', ' '), wiki_name)
+    if wiki_url not in ['Home', '_Sidebar']:
+        if 'title_prefixes' not in context:
+            context['title_prefixes'] = []
+        if (wiki_base_url in ENABLED_PAGES
+            and isinstance(ENABLED_PAGES[wiki_base_url], list)):
+            navbar_link_list = ENABLED_PAGES[wiki_base_url][0].get('navbar_link_list', None)
+            navbar_prefix = getNavbarPrefix(navbar_link_list, request, context, append_to=context['title_prefixes'])
+        context['title_prefixes'].append({
+            'title': wiki_name,
+            'url': u'/{}/'.format(wiki_base_url),
+        })
+        verbose_wiki_url = wiki_url.replace('_', ' ').replace('-', ' ')
+        context['page_title'] = u'{} - {}'.format(verbose_wiki_url, wiki_name)
+        context['h1_page_title'] = verbose_wiki_url
+    else:
+        context['page_title'] = wiki_name
+
+    context['h1_page_title_attributes'] = { 'data-url': wiki_url, 'id': 'wiki-title' }
     context['hide_side_bar'] = wiki_url == '_Sidebar'
     context['small_container'] = True
     context['wiki'] = wiki
@@ -637,19 +670,25 @@ def custom_wiki(wiki, wiki_name, request, wiki_url):
     context['back_to_home_sentence'] = _('Back to {page_name}').format(
         page_name=_('Wiki home').lower(),
     )
-    return render(request, 'pages/wiki.html', context)
+    if 'js_variables' not in context:
+        context['js_variables'] = {}
+    context['js_variables'].update({
+        'site_url': context['site_url'],
+        'current': context['current'],
+        'github_repository_username': wiki[0],
+        'github_repository_name': wiki[1],
+    })
 
-def help(request, wiki_url='_Sidebar'):
-    return custom_wiki(HELP_WIKI, _('Help'), request, wiki_url)
+def help(request, context, wiki_url='_Sidebar'):
+    return custom_wiki(HELP_WIKI, 'help', _('Help'), request, context, wiki_url)
 
-def wiki(request, wiki_url='Home'):
-    return custom_wiki(WIKI, _('Wiki'), request, wiki_url)
+def wiki(request, context, wiki_url='Home'):
+    return custom_wiki(WIKI, 'wiki', _('Wiki'), request, context, wiki_url)
 
 ############################################################
 # Map
 
-def mapDefaultContext(request):
-    context = getGlobalContext(request)
+def map(request, context):
     context['js_files'] = [
         'https://maps.googleapis.com/maps/api/js?key=AIzaSyDHtAPFTmOCQZrKSjZlIeoZrZYLJjKLupE',
         'oms.min',
@@ -670,30 +709,21 @@ def mapDefaultContext(request):
         except IndexError: pass
     if 'zoom' in request.GET:
         context['zoom'] = request.GET['zoom']
-    return context
-
-def map(request):
-    return render(request, 'pages/map.html', mapDefaultContext(request))
 
 ############################################################
 # Block
 
-def block(request, pk, unblock=False):
-    context = getGlobalContext(request)
-    redirectWhenNotAuthenticated(request, context, next_title=_('Settings'))
+def block(request, context, pk, unblock=False):
     user = get_object_or_404(models.User.objects.select_related('preferences'), pk=pk)
+    if user == request.user:
+        raise PermissionDenied()
     block = True
     if request.user.preferences.blocked.filter(pk=user.pk).exists():
         block = False
-        context['info_message'] = _(u'You blocked {username}.').format(username=user.username)
-    context['blocking'] = block
     title = _(u'Block {username}').format(username=user.username) if block else _(u'Unblock {username}').format(username=user.username)
     context['page_title'] = title
     context['extends'] = 'base.html'
     context['form'] = Confirm()
-    context['alert_message'] = (_(u'Are you sure you want to block {username}? You will not be able to see any content created by {username}.') if block else _(u'Are you sure you want to unblock {username}?')).format(username=user.username)
-    context['alert_type'] = 'danger'
-    context['alert_flaticon'] = 'block'
     if request.method == 'POST':
         context['form'] = Confirm(request.POST)
         if context['form'].is_valid():
@@ -713,7 +743,20 @@ def block(request, pk, unblock=False):
             user.preferences.save()
             raise HttpRedirectException(redirect_url)
     context['form'].submit_title = title
-    return render(request, 'pages/block.html', context)
+    if not block:
+        context['form'].beforeform = mark_safe(
+            """
+            <div class=\"blocked-info\">
+            <h1><i class=\"flaticon-block\"></i></h1>
+            <p>{}</p>
+            </div>
+            """.format(_(u'You blocked {username}.').format(username=user.username)))
+    context['form'].beforefields = mark_safe(HTMLAlert(
+        type='danger', flaticon='block',
+        message=(_(u'Are you sure you want to block {username}? You will not be able to see any content created by {username}.')
+                 if block
+                 else _(u'Are you sure you want to unblock {username}?')).format(username=user.username)
+    ))
 
 ############################################################
 # Avatar redirection for gravatar + twitter
@@ -724,11 +767,9 @@ def twitter_avatar(request, twitter):
 ############################################################
 # Ajax
 
-def deletelink(request, pk):
-    if not request.user.is_authenticated():
-        raise PermissionDenied()
+def deletelink(request, context, pk):
     models.UserLink.objects.filter(owner=request.user, pk=pk).delete()
-    return HttpResponse('')
+    return None
 
 def _getInstanceFromThingId(thing, thing_id, collection=None):
     if not collection:
@@ -748,16 +789,15 @@ def _deleteCascadeWarnings(thing, instance):
         _('You can\'t cancel this action afterwards.'),
     )
 
-def whatwillbedeleted(request, thing, thing_id):
-    context = ajaxContext(request)
+def whatwillbedeleted(request, context, thing, thing_id):
     collection = getMagiCollection(thing)
     instance = _getInstanceFromThingId(thing, thing_id, collection=collection)
     context['to_delete'] = _cascadeDeleteInstances(instance)
     context['warnings'] = _deleteCascadeWarnings(thing=collection.title.lower(), instance=instance)
-    return render(request, 'ajax/whatwillbedeleted.html', context)
+    context['show_small_title'] = False
 
 def moderatereport(request, report, action):
-    if not request.user.is_authenticated() or not hasPermission(request.user, 'moderate_reports') or request.method != 'POST':
+    if request.method != 'POST':
         raise PermissionDenied()
     queryset = models.Report.objects.select_related('owner', 'owner__preferences')
     if not request.user.is_superuser:
@@ -884,10 +924,7 @@ def moderatereport(request, report, action):
         'action': action,
     })
 
-def reportwhatwillbedeleted(request, report):
-    if not request.user.is_authenticated() or not hasPermission(request.user, 'moderate_reports'):
-        raise PermissionDenied()
-    context = ajaxContext(request)
+def reportwhatwillbedeleted(request, context, report):
     # Get the report
     report = get_object_or_404(models.Report, pk=report, i_status=models.Report.get_i('status', 'Pending'))
     # Get the reported thing
@@ -895,19 +932,15 @@ def reportwhatwillbedeleted(request, report):
 
     context['to_delete'] = _cascadeDeleteInstances(instance)
     context['warnings'] = _deleteCascadeWarnings(thing=report.reported_thing, instance=instance)
-    return render(request, 'ajax/whatwillbedeleted.html', context)
+    context['show_small_title'] = False
 
 def changelanguage(request):
-    if not request.user.is_authenticated():
-        raise PermissionDenied()
     form = LanguagePreferencesForm(request.POST, instance=request.user.preferences, request=request)
     if form.is_valid():
         form.save()
     return redirect(request.POST.get('next', '/'))
 
 def markallnotificationsread(request):
-    if not request.user.is_authenticated():
-        raise PermissionDenied()
     read = request.user.notifications.filter(seen=False).update(seen=True)
     request.user.preferences.force_update_cache('unread_notifications')
     return redirect(u'/notifications/?marked_read={}'.format(read))
@@ -944,9 +977,8 @@ def _shouldBumpActivity(activity, request):
         return True
     return False
 
-def likeactivity(request, pk):
-    context = ajaxContext(request)
-    if not request.user.is_authenticated() or request.method != 'POST':
+def likeactivity(request, context, pk):
+    if request.method != 'POST':
         raise PermissionDenied()
     activity = get_object_or_404(models.Activity.objects.extra(select={
         'liked': 'SELECT COUNT(*) FROM magi_activity_likes WHERE activity_id = magi_activity.id AND user_id={}'.format(request.user.id),
@@ -963,25 +995,24 @@ def likeactivity(request, pk):
         activity.update_cache('total_likes')
         activity.save()
         pushNotification(activity.owner, 'like-archive' if activity.archived_by_owner else 'like', [unicode(request.user), unicode(activity)], url_values=[str(activity.id), tourldash(unicode(activity))], image=activity.image)
-        return JsonResponse({
+        return {
             'total_likes': activity.total_likes + 2,
             'result': 'liked',
-        })
+        }
     if 'unlike' in request.POST and activity.liked:
         activity.likes.remove(request.user)
         activity.update_cache('total_likes')
         activity.save()
-        return JsonResponse({
+        return {
             'total_likes': activity.total_likes,
             'result': 'unliked',
-        })
-    return JsonResponse({
+        }
+    return {
         'total_likes': activity.total_likes + 1,
-    })
+    }
 
-def archiveactivity(request, pk):
-    context = ajaxContext(request)
-    if not request.user.is_authenticated() or request.method != 'POST':
+def archiveactivity(request, context, pk):
+    if request.method != 'POST':
         raise PermissionDenied()
     activity = get_object_or_404(models.Activity.objects.select_related('archived_by_staff'), pk=pk)
     if activity.is_owner(request.user):
@@ -994,21 +1025,20 @@ def archiveactivity(request, pk):
         activity.archived_by_staff = request.user
     activity.save()
     if activity.archived_by_staff:
-        return JsonResponse({
+        return {
             'result': {
                 'archived': activity.archived_by_owner,
                 'archived_by_staff': activity.archived_by_staff.username if activity.archived_by_staff else None,
             },
-        })
+        }
     # We don't want to reveal users if the activity is ghost archived if they check the request
-    return JsonResponse({
+    return {
         'result': {
             'archived': activity.archived_by_owner,
         },
-    })
+    }
 
-def unarchiveactivity(request, pk):
-    context = ajaxContext(request)
+def unarchiveactivity(request, context, pk):
     by_staff = False
     if not request.user.is_authenticated() or request.method != 'POST':
         raise PermissionDenied()
@@ -1024,33 +1054,31 @@ def unarchiveactivity(request, pk):
         by_staff = True
     activity.save()
     if by_staff:
-        return JsonResponse({
+        return {
             'result': {
                 'archived': activity.archived_by_owner,
                 'archived_by_staff': activity.archived_by_staff.username if activity.archived_by_staff else None,
             },
-        })
+        }
     # We don't want to reveal users if the activity is ghost archived if they check the request
-    return JsonResponse({
+    return {
         'result': {
             'archived': activity.archived_by_owner,
         },
-    })
+    }
 
-def bumpactivity(request, pk):
-    context = ajaxContext(request)
+def bumpactivity(request, context, pk):
     if (not request.user.is_authenticated() or request.method != 'POST'
         or not request.user.hasPermission('manipulate_activities')):
         raise PermissionDenied()
     activity = get_object_or_404(models.Activity, pk=pk)
     activity.last_bump = timezone.now()
     activity.save()
-    return JsonResponse({
+    return {
         'result': 'bumped',
-    })
+    }
 
-def drownactivity(request, pk):
-    context = ajaxContext(request)
+def drownactivity(request, context, pk):
     if (not request.user.is_authenticated() or request.method != 'POST'
         or not request.user.hasPermission('manipulate_activities')):
         raise PermissionDenied()
@@ -1059,12 +1087,11 @@ def drownactivity(request, pk):
     a_month_ago = now - datetime.timedelta(days=30)
     activity.last_bump = a_month_ago
     activity.save()
-    return JsonResponse({
+    return {
         'result': 'drowned',
-    })
+    }
 
-def markactivitystaffpick(request, pk):
-    context = ajaxContext(request)
+def markactivitystaffpick(request, context, pk):
     if (not request.user.is_authenticated() or request.method != 'POST'
         or 'staff' not in models.ACTIVITY_TAGS_DICT.keys()
         or not request.user.hasPermission('mark_activities_as_staff_pick')):
@@ -1072,7 +1099,7 @@ def markactivitystaffpick(request, pk):
     activity = get_object_or_404(models.Activity, pk=pk)
     activity.add_c('tags', ['staff'])
     activity.save()
-    return JsonResponse({
+    return {
         'result': {
             'staff-picks': True,
             'tags': {
@@ -1080,10 +1107,9 @@ def markactivitystaffpick(request, pk):
                 for k, v in activity.t_tags.items()
             },
         },
-    })
+    }
 
-def removeactivitystaffpick(request, pk):
-    context = ajaxContext(request)
+def removeactivitystaffpick(request, context, pk):
     if (not request.user.is_authenticated() or request.method != 'POST'
         or 'staff' not in models.ACTIVITY_TAGS_DICT.keys()
         or not request.user.hasPermission('mark_activities_as_staff_pick')):
@@ -1091,7 +1117,7 @@ def removeactivitystaffpick(request, pk):
     activity = get_object_or_404(models.Activity, pk=pk)
     activity.remove_c('tags', ['staff'])
     activity.save()
-    return JsonResponse({
+    return {
         'result': {
             'staff-picks': False,
             'tags': {
@@ -1099,10 +1125,9 @@ def removeactivitystaffpick(request, pk):
                 for k, v in activity.t_tags.items()
             },
         },
-    })
+    }
 
-def follow(request, username):
-    context = ajaxContext(request)
+def follow(request, context, username):
     if not request.user.is_authenticated() or request.method != 'POST' or request.user.username == username:
         raise PermissionDenied()
     user = get_object_or_404(models.User.objects.extra(select={
@@ -1121,48 +1146,37 @@ def follow(request, username):
             url_values=[str(request.user.id), unicode(request.user)],
             image=request.user.image_url,
         )
-        return JsonResponse({
+        return {
             'total_followers': user.total_followers + 1,
             'result': 'followed',
-        })
+        }
     if 'unfollow' in request.POST and user.followed:
         request.user.preferences.following.remove(user)
         request.user.preferences.save()
-        return JsonResponse({
+        return {
             'total_followers': user.total_followers - 1,
             'result': 'unfollowed',
-        })
-    return JsonResponse({
+        }
+    return {
         'total_followers': user.total_followers,
-    })
+    }
 
-def successedit(request):
-    ajax = request.path_info.startswith('/ajax/')
-    context = ajaxContext(request) if ajax else getGlobalContext(request)
+def successedit(request, context):
     context['success_sentence'] = _('Successfully edited!')
-    return render(request, 'pages/ajax/success.html' if ajax else 'pages/success.html', context)
+    context['show_small_title'] = False
 
-def successadd(request):
-    ajax = request.path_info.startswith('/ajax/')
-    context = ajaxContext(request) if ajax else getGlobalContext(request)
+def successadd(request, context):
     context['success_sentence'] = _('Successfully added!')
-    return render(request, 'pages/ajax/success.html' if ajax else 'pages/success.html', context)
+    context['show_small_title'] = False
 
-def successdelete(request):
-    ajax = request.path_info.startswith('/ajax/')
-    context = ajaxContext(request) if ajax else getGlobalContext(request)
+def successdelete(request, context):
     context['success_sentence'] = _('Successfully deleted!')
-    return render(request, 'pages/ajax/success.html' if ajax else 'pages/success.html', context)
+    context['show_small_title'] = False
 
 ############################################################
 # Staff / Contributors
 
-def translations(request):
-    context = getGlobalContext(request)
-    redirectWhenNotAuthenticated(request, context, next_title='Translations')
-    if not hasPermission(request.user, 'translate_items'):
-        raise PermissionDenied()
-    context['page_title'] = 'Translations'
+def translations(request, context):
     context['collections'] = []
     context['guide'] = models.UserPreferences.GROUPS.get('translator', {}).get('guide', None)
     context['poeditor'] = models.UserPreferences.GROUPS.get('translator', {}).get('outside_permissions', {}).get('POEditor', None)
@@ -1281,13 +1295,8 @@ def translations(request):
     for language, details in context['total_per_languages'].items():
         details['total_translated'] = details['total'] - details['total_need_translations']
         details['percent_translated'] = int(details['total_translated'] / details['total'] * 100)
-    return render(request, 'pages/staff/translations.html', context)
 
-def translations_duplicator(request, collection_name, field_name, language=None):
-    context = getGlobalContext(request)
-    redirectWhenNotAuthenticated(request, context, next_title='Translations duplicator')
-    if not hasPermission(request.user, 'translate_items'):
-        raise PermissionDenied()
+def translations_duplicator(request, context, collection_name, field_name, language=None):
     collection = getMagiCollection(collection_name)
     if not collection or not collection.translated_fields or field_name not in collection.translated_fields:
         raise Http404
@@ -1300,6 +1309,9 @@ def translations_duplicator(request, collection_name, field_name, language=None)
         collection.plural_title,
         context['verbose_field_name'],
     )
+    if language:
+        context['h1_page_title_icon'] = None
+        context['h1_page_title_image'] = staticImageURL(language, folder='language')
     if request.method == 'POST' and 'term' in request.POST:
         context['logs'] = duplicate_translation(
             collection.queryset.model, field_name, request.POST['term'],
@@ -1309,33 +1321,41 @@ def translations_duplicator(request, collection_name, field_name, language=None)
     context['terms'] = find_all_translations(collection.queryset.model, field_name, only_for_language=language)
     return render(request, 'pages/staff/translations_duplicator.html', context)
 
-def collections(request):
-    context = getGlobalContext(request)
-    redirectWhenNotAuthenticated(request, context, next_title='Collections details')
-    if not hasPermission(request.user, 'see_collections_details'):
-        raise PermissionDenied()
-    context['page_title'] = 'Collections'
+def collections(request, context):
     context['collections'] = getMagiCollections()
     context['groups_per_permissions'] = groupsForAllPermissions(request.user.preferences.GROUPS)
-    return render(request, 'pages/staff/collections.html', context)
 
-def translations_check(request):
-    context = getGlobalContext(request)
+def translations_check(request, context):
+    terms = []
     if request.method == 'POST':
         form = TranslationCheckForm(request.POST)
         if form.is_valid():
-            context['terms'] = []
             old_lang = get_language()
             for lang, verbose in django_settings.LANGUAGES:
                 translation_activate(lang)
-                context['terms'].append((lang, verbose, unicode(_(form.cleaned_data['term']))))
+                terms.append((lang, verbose, unicode(_(form.cleaned_data['term']))))
                 translation_activate(old_lang)
     else:
         form = TranslationCheckForm()
     context['form'] = form
-    context['page_title'] = 'POEditor translations term checker'
-    return render(request, 'pages/staff/translations_check.html', context)
-
+    if terms:
+        context['form'].belowform = mark_safe(u'<br><br><ul class="list-group list-group-striped">{}</ul>'.format(
+            u''.join([
+                u"""
+                <li class="list-group-item">
+                <img src="{image}" height="30" />
+                &nbsp;&nbsp;&nbsp;
+                {term}
+                <span class="pull-right text-muted">{verbose}</span>
+                </li>
+                """.format(
+                    image=staticImageURL(language, folder='language'),
+                    term=term,
+                    verbose=verbose,
+                )
+                for language, verbose, term in terms
+            ])
+        ))
 
 ############################################################
 # Errors

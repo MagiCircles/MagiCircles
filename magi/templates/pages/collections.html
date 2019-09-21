@@ -1,8 +1,5 @@
-{% extends "base.html" %}
 {% load tools %}
-{% block content %}
 <div class="container">
-  <h1 class="padding20 text-center">Collections</h1>
   {% for collection_name, collection in collections.items %}
   <h2>
     {% if collection.icon %}
@@ -109,4 +106,3 @@
   </table>
   {% endfor %}
 </div>
-{% endblock %}

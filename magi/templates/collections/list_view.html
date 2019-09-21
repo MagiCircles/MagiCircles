@@ -83,14 +83,7 @@
       {% if staff_only_view %}
       <br><div class="alert alert-warning"><i class="flaticon-warning"></i> Staff only <small> - <i>Do not share</i></small></div>
       {% endif %}
-      <h1 class="padding50 text-center list-page-title list-page-title-{{ collection.name }}{% if not show_title %} hidden{% endif %}">
-        {% if h1_page_title_icon %}
-        <i class="flaticon-{{ h1_page_title_icon }}"></i>
-        {% elif h1_page_title_image %}
-        <img src="{{ h1_page_title_image }}" height="{% if h1_page_title_image_size %}{{ h1_page_title_image_size }}{% else %}39{% endif %}" class="h1-page-title-image" />
-        {% endif %}
-        {{ h1_page_title }}
-      </h1>
+      {% if not show_homepage %}{% include 'include/page_title.html' %}{% endif %}
       {% if before_template %}
       {% include before_template|add:'.html' %}
       {% endif %}

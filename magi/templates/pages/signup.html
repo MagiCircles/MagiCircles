@@ -1,9 +1,0 @@
-{% extends "form.html" %}
-{% load i18n %}
-
-{% block title %}{% trans 'Sign Up' %}{% endblock %}
-
-{% block submit %}{% trans 'Sign Up' %}{% endblock %}
-{% block otherbuttons %}
-<a href="/login/{% if next %}?next={{ next|urlencode }}{% if next_title %}&next_title={{ next_title }}{% endif %}{% endif %}" class="btn btn-lg btn-link">{% trans 'Login' %}</a>
-{% endblock %}

@@ -1,0 +1,32 @@
+{% load magi_tags %}
+<div class="list-group">
+  {% for link_name, link in sitemap.items %}
+  {% if link.divider_before %}
+</div>
+<div class="list-group">
+  {% endif %}
+  {% if link.is_header %}
+  <{% if link.small %}h4{% else %}h3{% endif %} class="list-group-item">
+    {% if link.icon %}
+    <i class="flaticon-{{ link.icon }}"></i>
+    {% elif link.image %}
+    <img src="{{ static_url }}img/{{ link.image }}.png?{{ static_files_version }}" height="16" />
+    {% endif %}
+    {% navbarTitle link=link %}
+  </{% if link.small %}h4{% else %}h3{% endif %}>
+  {% else %}
+  <a href="{% navbarGetURL link=link %}"{% if link.new_tab %} target="_blank"{% endif %} class="list-group-item {% if current == link_name %}active{% endif %}" data-link-name="{{ link_name }}">
+    {% if link.icon %}
+    <i class="flaticon-{{ link.icon }}"></i>
+    {% elif link.image %}
+    <img src="{{ static_url }}img/{{ link.image }}.png?{{ static_files_version }}" height="16" />
+    {% endif %}
+    {% navbarTitle link=link %}
+  </a>
+  {% endif %}
+  {% if link.divider_after %}
+</div>
+<div class="list-group">
+  {% endif %}
+  {% endfor %}
+</div>

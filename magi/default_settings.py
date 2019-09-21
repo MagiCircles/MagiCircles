@@ -380,12 +380,10 @@ DEFAULT_ENABLED_NAVBAR_LISTS = OrderedDict([
         'title': lambda context: context['request'].user.username if context['request'].user.is_authenticated() else _('You'),
         'icon': 'profile',
         'order': ['user', 'privatemessage_list', 'settings', 'logout', 'login', 'signup'],
-        'url': '/settings/',
     }),
     ('staff', {
         'title': 'Staff',
         'icon': 'staff',
-        'url': '/settings/',
     }),
     ('more', {
         'title': '',
@@ -402,7 +400,6 @@ DEFAULT_ENABLED_NAVBAR_LISTS = OrderedDict([
             'staffconfiguration_list',
             'collections',
         ],
-        'url': '/about/',
     }),
 ])
 
@@ -454,18 +451,21 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'custom': False,
         'enabled': False,
         'navbar_link': False,
+        'boilerplate': False,
     }),
     ('login', {
         'custom': False,
         'title': _('Login'),
         'navbar_link_list': 'you',
         'logout_required': True,
+        'boilerplate': False,
     }),
     ('signup', {
         'custom': False,
         'title': _('Sign Up'),
         'navbar_link_list': 'you',
         'logout_required': True,
+        'as_form': True,
     }),
     ('user', {
         'custom': False,
@@ -484,6 +484,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'icon': 'settings',
         'navbar_link_list': 'you',
         'authentication_required': True,
+        'full_template': True,
     }),
     ('logout', {
         'custom': False,
@@ -491,6 +492,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'icon': 'logout',
         'navbar_link_list': 'you',
         'authentication_required': True,
+        'boilerplate': False,
     }),
     ('about', [
         {
@@ -498,13 +500,13 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
             'custom': False,
             'icon': 'about',
             'navbar_link_list': 'more',
+            'comments_enabled': True,
         },
         {
             'ajax': True,
             'title': lambda _c: _('About {thing}').format(thing=_c['t_site_name']),
             'custom': False,
             'icon': 'about',
-            'navbar_link_list': 'more',
         },
     ]),
     ('prelaunch', {
@@ -532,6 +534,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'custom': False,
         'icon': 'map',
         'navbar_link_list': 'more',
+        'full_template': True,
     }),
     ('help', [
         {
@@ -539,6 +542,10 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
             'title': _('Help'),
             'icon': 'help',
             'navbar_link_list': 'more',
+            'template': 'wiki',
+            'sidebar_template': 'wiki_sidebar',
+            'as_sidebar': True,
+            'show_title': True,
         },
         {
             'custom': False,
@@ -547,6 +554,10 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
                 ('wiki_url', '[^/]+'),
             ],
             'navbar_link': False,
+            'template': 'wiki',
+            'sidebar_template': 'wiki_sidebar',
+            'as_sidebar': True,
+            'show_title': True,
         },
     ]),
     ('wiki', [
@@ -556,6 +567,8 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
             'title': _('Wiki'),
             'icon': 'wiki',
             'check_permissions': lambda c: c['request'].LANGUAGE_CODE not in DEFAULT_LANGUAGES_CANT_SPEAK_ENGLISH,
+            'as_sidebar': True,
+            'show_title': True,
         },
         {
             'enabled': False,
@@ -567,6 +580,8 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
             ],
             'navbar_link': False,
             'check_permissions': lambda c: c['request'].LANGUAGE_CODE not in DEFAULT_LANGUAGES_CANT_SPEAK_ENGLISH,
+            'as_sidebar': True,
+            'show_title': True,
         },
     ]),
     ('block', {
@@ -575,6 +590,8 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'url_variables': [
             ('pk', '\d+'),
         ],
+        'authentication_required': True,
+        'as_form': True,
     }),
     ('check_activities_in_wrong_language', {
         'title': 'Check activities in wrong language',
@@ -591,6 +608,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'navbar_link_list': 'staff',
         'icon': 'translate',
         'permissions_required': ['translate_items'],
+        'show_title': True,
     }),
     ('translations_duplicator', [
         {
@@ -604,6 +622,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
                 ('field_name', '[a-z_]+'),
                 ('language', '[a-z]+'),
             ],
+            'show_title': True,
         },
         {
             'title': 'Translations duplicator',
@@ -615,6 +634,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
                 ('collection_name', '[a-z]+'),
                 ('field_name', '[a-z_]+'),
             ],
+            'show_title': True,
         },
     ]),
     ('collections', {
@@ -623,6 +643,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'navbar_link_list': 'staff',
         'icon': 'developer',
         'permissions_required': ['see_collections_details'],
+        'show_title': True,
     }),
     ('translations_check', {
         'title': 'POEditor translations term checker',
@@ -630,6 +651,13 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'navbar_link_list': 'staff',
         'icon': 'developer',
         'permissions_required': ['translate_items'],
+        'as_form': True,
+    }),
+    ('sitemap', {
+        'title': _('Sitemap'),
+        'custom': False,
+        'navbar_link': False,
+        'icon': 'category',
     }),
     ('deletelink', {
         'ajax': True,
@@ -637,6 +665,8 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'url_variables': [
             ('pk', '\d+'),
         ],
+        'as_json': True,
+        'authentication_required': True,
     }),
     ('likeactivity', {
         'ajax': True,
@@ -644,6 +674,8 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'url_variables': [
             ('pk', '\d+'),
         ],
+        'authentication_required': True,
+        'as_json': True,
     }),
     ('archiveactivity', {
         'ajax': True,
@@ -651,6 +683,8 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'url_variables': [
             ('pk', '\d+'),
         ],
+        'authentication_required': True,
+        'as_json': True,
     }),
     ('unarchiveactivity', {
         'ajax': True,
@@ -658,6 +692,8 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'url_variables': [
             ('pk', '\d+'),
         ],
+        'authentication_required': True,
+        'as_json': True,
     }),
     ('bumpactivity', {
         'ajax': True,
@@ -665,6 +701,8 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'url_variables': [
             ('pk', '\d+'),
         ],
+        'authentication_required': True,
+        'as_json': True,
     }),
     ('drownactivity', {
         'ajax': True,
@@ -672,6 +710,8 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'url_variables': [
             ('pk', '\d+'),
         ],
+        'authentication_required': True,
+        'as_json': True,
     }),
     ('markactivitystaffpick', {
         'ajax': True,
@@ -679,6 +719,8 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'url_variables': [
             ('pk', '\d+'),
         ],
+        'authentication_required': True,
+        'as_json': True,
     }),
     ('removeactivitystaffpick', {
         'ajax': True,
@@ -686,6 +728,8 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'url_variables': [
             ('pk', '\d+'),
         ],
+        'authentication_required': True,
+        'as_json': True,
     }),
     ('follow', {
         'ajax': True,
@@ -693,6 +737,8 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'url_variables': [
             ('username', _usernameRegexp),
         ],
+        'authentication_required': True,
+        'as_json': True,
     }),
     ('twitter_avatar', {
         'custom': False,
@@ -700,15 +746,20 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'url_variables': [
             ('twitter', '[^/]+'),
         ],
+        'boilerplate': False,
     }),
     ('changelanguage', {
         'ajax': True,
         'custom': False,
         'navbar_link': False,
+        'boilerplate': False,
+        'authentication_required': True,
     }),
     ('markallnotificationsread', {
         'custom': False,
         'navbar_link': False,
+        'boilerplate': False,
+        'authentication_required': True,
     }),
     ('moderatereport', {
         'ajax': True,
@@ -718,6 +769,8 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
             ('report', '\d+'),
             ('action', '\w+'),
         ],
+        'boilerplate': False,
+        'permissions_required': ['moderate_reports'],
     }),
     ('whatwillbedeleted', {
         'ajax': True,
@@ -735,38 +788,46 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'url_variables': [
             ('report', '\d+'),
         ],
+        'permissions_required': ['moderate_reports'],
+        'template': 'whatwillbedeleted',
     }),
     ('successedit', [
         {
             'custom': False,
             'navbar_link': False,
+            'template': 'success',
         },
         {
             'ajax': True,
             'custom': False,
             'navbar_link': False,
+            'template': 'success',
         },
     ]),
     ('successadd', [
         {
             'custom': False,
             'navbar_link': False,
+            'template': 'success',
         },
         {
             'ajax': True,
             'custom': False,
             'navbar_link': False,
+            'template': 'success',
         },
     ]),
     ('successdelete', [
         {
             'custom': False,
             'navbar_link': False,
+            'template': 'success',
         },
         {
             'ajax': True,
             'custom': False,
             'navbar_link': False,
+            'template': 'success',
         },
     ]),
 ])

@@ -1,27 +1,7 @@
 {% extends "form.html" %}
 
-{% block imagetitle %}
-{% if icontitle %}
-<i class="flaticon-{{ icontitle }} form-icontitle"></i>
-{% elif imagetitle %}
-<img src="{% if '//' not in imagetitle %}{{ static_url }}img/{% endif %}{{ imagetitle }}{% if '//' not in imagetitle %}.png?{{ static_files_version }}{% endif %}" height="{% if imagetitle_size %}{{ imagetitle_size }}{% else %}39{% endif %}" class="modification-view-image-title form-imagetitle" />
-{% endif %}
-{% endblock %}
-
-{% block submit %}{{ form.action_sentence }}{% endblock %}
-
-{% block beforefields %}
-{% if form_name|first == 'd' %}{# delete form #}
-{% include 'include/alert.html' with alert_type='danger' alert_message=form.alert_message %}
-{% elif alert_message %}
-{% include 'include/alert.html' %}
-{% endif %}
-{% if next %}
-<input class="hidden" name="next" value="{{ next }}">
-{% if next_title %}
-<input class="hidden" name="next_title" value="{{ next_title }}">
-{% endif %}
-{% endif %}
+{% block formtitle %}
+{% include 'include/page_title.html' with h1_page_title=form.form_title|default_if_none:h1_page_title|default_if_none:page_title h1_page_title_icon=form.form_icon|default_if_none:h1_page_title_icon h1_page_title_image=form.form_image|default_if_none:h1_page_title_image h1_page_title_classes='form-title'|add:h1_page_title_classes forloop_counter=forloop.counter0 id=form_name %}
 {% endblock %}
 
 {% block otherbuttons %}

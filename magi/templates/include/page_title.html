@@ -1,0 +1,24 @@
+{# variables: show_title, show_small_title, current, title_prefixes (list of dicts of url, title), h1_page_title, h1_page_title_icon, h1_page_title_image, hide_prefixes, id, h1_page_title_classes, h1_page_title_attributes, h1_page_title_image_size #}
+<h1 class="page-title {% if not show_title and show_small_title %}page-title-small{% endif %} page-title-{{ current }}{% if not show_title and not show_small_title %} hidden{% endif %} {{ h1_page_title_classes }}"{% for key, value in h1_page_title_attributes.items %} {{ key }}="{{ value }}"{% endfor %}{% if id %} id="{{ id }}"{% endif %}>
+  {% if not hide_prefixes and not forloop_counter %}<span class="text-muted page-title-prefixes">{% for prefix in title_prefixes %}
+    {% if prefix.url %}<a href="{{ prefix.url }}">{% endif %}
+      {{ prefix.title }}
+      {% if prefix.url %}</a>{% endif %}
+    {% if not forloop.last or not show_title %}<span class="separator">/</span>{% endif %}
+    {% endfor %}
+    {% if show_title and title_prefixes|length == 1 %}
+    <span class="separator">/</span>
+    {% if h1_page_title %}{{ h1_page_title }}
+    {% else %}{{ page_title }}{% endif %}
+    {% endif %}
+  </span>{% endif %}
+  {% if show_title %}<div class="padding50 text-center">{% endif %}
+    {% if h1_page_title_icon %}
+    <i class="flaticon-{{ h1_page_title_icon }}"></i>
+    {% elif h1_page_title_image %}
+    <img src="{% if '//' in h1_page_title_image %}{{ h1_page_title_image }}{% else %}{{ static_url }}img/{{ h1_page_title_image }}{% if '.' not in h1_page_title_image %}.png{% endif %}?{{ static_files_version }}{% endif %}" height="{% if h1_page_title_image_size %}{{ h1_page_title_image_size }}{% else %}39{% endif %}" class="h1-page-title-image" />
+    {% endif %}
+    {% if h1_page_title %}{{ h1_page_title }}
+    {% else %}{{ page_title }}{% endif %}
+    {% if show_title %}</div>{% endif %}
+</h1>

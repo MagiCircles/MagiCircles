@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 import string, inspect
 from collections import OrderedDict
-from django.conf.urls import include, patterns, url
 from django.conf import settings
+from django.conf.urls import include, patterns, url
 from django.core.exceptions import PermissionDenied
-from django.utils.translation import string_concat, ugettext_lazy as _
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import render
 from django.utils import timezone
+from django.utils.translation import string_concat, ugettext_lazy as _
 from django.views.generic.base import RedirectView
 #from magi import bouncy # unused, only to force load the feedback process
 from magi import views_collections, magicollections
@@ -56,7 +58,19 @@ from magi.settings import (
     CORNER_POPUP_IMAGE_OVERFLOW,
 )
 from magi.models import UserPreferences
-from magi.utils import redirectWhenNotAuthenticated, hasPermissions, hasOneOfPermissions, tourldash, groupsWithPermissions, groupsWithOneOfPermissions, staticImageURL
+from magi.utils import (
+    getGlobalContext,
+    getNavbarPrefix,
+    pageTitleFromPrefixes,
+    h1ToContext,
+    redirectWhenNotAuthenticated,
+    hasPermissions,
+    hasOneOfPermissions,
+    tourldash,
+    groupsWithPermissions,
+    groupsWithOneOfPermissions,
+    staticImageURL,
+)
 from raw import other_sites
 
 ############################################################
@@ -114,7 +128,7 @@ def navbarAddLink(link_name, link, list_name=None):
             }
             navbar_links[list_name].update(ENABLED_NAVBAR_LISTS.get(list_name, OrderedDict()))
             if 'title' not in navbar_links[list_name]:
-                navbar_links[list_name]['title'] = _(string.capwords(list_name))
+                navbar_links[list_name]['title'] = string.capwords(list_name)
             if 'links' not in navbar_links[list_name]:
                 navbar_links[list_name]['links'] = OrderedDict()
         navbar_links[list_name]['links'][link_name] = link
@@ -355,22 +369,94 @@ def getPageShowLinkLambda(page):
     return _showLink
 
 def page_view(name, page):
-    function = (
-        getattr(views_module, name)
-        if page.get('custom', True)
-        else getattr(magi_views, name)
-    )
-    def _f(request, *args, **kwargs):
-        if request.user.is_authenticated():
-            if (page.get('logout_required', False)
-                or (page.get('staff_required', False) and not request.user.is_staff)):
+    function_name = page.get('function_name', name)
+    try:
+        function = (
+            getattr(views_module, function_name)
+            if page.get('custom', True)
+            else getattr(magi_views, function_name)
+        )
+    except AttributeError:
+        function = None
+    boilerplate = page.get('boilerplate', True)
+    if not boilerplate and not function:
+        raise NotImplementedError(u'Function of enabled page {} not found.'.format(name))
+
+    def _view(request, *args, **kwargs):
+        # Check permissions
+        permissions_context = { 'current_url': request.get_full_path() }
+        if page.get('logout_required', False) and request.user.is_authenticated():
+            raise PermissionDenied()
+        if page.get('authentication_required'):
+            redirectWhenNotAuthenticated(request, permissions_context, next_title=page.get('title', ''))
+        if page.get('staff_required', False):
+            redirectWhenNotAuthenticated(request, permissions_context, next_title=page.get('title', ''))
+            if not request.user.is_staff and not request.user.is_superuser:
                 raise PermissionDenied()
-        elif page.get('authentication_required', False) or page.get('staff_required', False):
-            redirectWhenNotAuthenticated(request, {
-                'current_url': request.get_full_path() + ('?' if request.get_full_path()[-1] == '/' else '&'),
-            }, next_title=page.get('title', ''))
-        return function(request, *args, **kwargs)
-    return _f
+        if page.get('prelaunch_staff_required', False):
+            redirectWhenNotAuthenticated(request, permissions_context, next_title=page.get('title', ''))
+            if not request.user.hasPermission('access_site_before_launch'):
+                raise PermissionDenied()
+        if page.get('permissions_required', []):
+            redirectWhenNotAuthenticated(request, permissions_context, next_title=page.get('title', ''))
+            if not hasPermissions(request.user, page['permissions_required']):
+                raise PermissionDenied()
+        if page.get('one_of_permissions_required', []):
+            redirectWhenNotAuthenticated(request, permissions_context, next_title=page.get('title', ''))
+            if not hasOneOfPermissions(request.user, page['one_of_permissions_required']):
+                raise PermissionDenied()
+
+        if boilerplate:
+            # Context
+            context = getGlobalContext(request=request)
+            context['extends'] = 'base.html' if not context['ajax'] else 'ajax.html'
+            context['show_small_title'] = True
+            context['disqus_identifier'] = context['current']
+            # Settings from page
+            context['show_title'] = page.get('show_title', False)
+            context['share_image'] = page.get('share_image', None)
+            context['page_description'] = page.get('page_description', None)
+            context['comments_enabled'] = page.get('comments_enabled', False)
+            context['template'] = page.get('template', name)
+            # Set title and prefixes
+            context['title_prefixes'] = []
+            if 'navbar_link_list' in page:
+                getNavbarPrefix(page['navbar_link_list'], request, context, append_to=context['title_prefixes'])
+            default_page_title = page['title']
+            if callable(default_page_title):
+                default_page_title = default_page_title(context)
+            h1 = {
+                'title': default_page_title,
+                'icon': page.get('icon', None),
+                'image': page.get('image', None),
+            }
+            h1ToContext(h1, context)
+            context['page_title'] = pageTitleFromPrefixes(context['title_prefixes'], default_page_title)
+            # Call function
+            if function:
+                result = function(request, context, *args, **kwargs)
+            # Render with full template
+            if page.get('full_template', False):
+                return render(request, u'pages/{}.html'.format(
+                    name if page['full_template'] == True else page['full_template']), context)
+            # Render with boilerplate
+            if page.get('as_json', False):
+                if result is None:
+                    return HttpResponse('')
+                return JsonResponse(result)
+            elif page.get('as_form', False):
+                return render(request, 'form.html', context)
+            elif page.get('as_sidebar', False):
+                context['sidebar_show_title'] = True
+                context['sidebar_template'] = 'include/{}.html'.format(
+                    page.get('sidebar_template', '{}_sidebar'.format(name)))
+                context['template'] = 'pages/{}.html'.format(context['template'])
+                return render(request, 'sidebar.html', context)
+            return render(request, 'pages/boilerplate.html', context)
+        else:
+            # Render expected to be called by function
+            return function(request, *args, **kwargs)
+    return _view
 
 for (name, pages) in ENABLED_PAGES.items():
     if not isinstance(pages, list):
@@ -568,6 +654,8 @@ RAW_CONTEXT['navbar_links'] = OrderedDict((key, navbar_links[key]) for key in or
 
 for link_name, link in RAW_CONTEXT['navbar_links'].items():
     if link['is_list']:
+        if 'url' not in link:
+            link['url'] = u'/{}/'.format(link_name)
         if link['links'] and 'order' in link:
             if 'headers' in link:
                 for header_name, header in link['headers']:

@@ -16,7 +16,7 @@ from magi.default_settings import (
     DEFAULT_HOMEPAGE_ART_POSITION,
 )
 from magi.utils import globalContext, toHumanReadable
-from django.utils.translation import ugettext_lazy as _, get_language
+from django.utils.translation import ugettext_lazy as _, string_concat, get_language
 
 settings_module = __import__(django_settings.SITE + '.settings', globals(), locals(), ['*'])
 
@@ -556,3 +556,19 @@ if WIKI:
         'icon': 'wiki',
         'url': 'https://github.com/{}/{}/wiki'.format(WIKI[0], WIKI[1]),
     }
+
+# Sitemap pages for navbar
+
+for _navbar_link_name, _navbar_link in ENABLED_NAVBAR_LISTS.items():
+    if _navbar_link_name not in ENABLED_PAGES:
+        ENABLED_PAGES[_navbar_link_name] = {
+            'custom': False,
+            'title': _navbar_link['title'],
+            'icon': _navbar_link.get('icon', None),
+            'image': _navbar_link.get('image', None),
+            'navbar_link': False,
+            'template': 'sitemap',
+            'function_name': 'sitemap',
+        }
+        if not ENABLED_PAGES[_navbar_link_name]['icon'] and not ENABLED_PAGES[_navbar_link_name]['image']:
+            ENABLED_PAGES[_navbar_link_name]['icon'] = 'category'

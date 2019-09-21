@@ -1,8 +1,24 @@
 {% load tools %}
-{% block content %}
-{% include include_template|add:'.html' %}
-{% if include_below_item %}{% include 'include/below_item.html' %}{% endif %}
+{% load magi_tags %}
+
+{% block page_title %}
+<div class="head-for-modal hidden">
+  <span class="head-for-modal-title">{% block title %}{% if page_title %}{{ page_title }}{% else %}{{ game_name }}{% endif %}{% endblock %} | {{ t_site_name }}{% if page_title %} - {{ game_name }}{% endif %}</span>
+  <span class="head-for-modal-description">{% if page_description %}{{ page_description }} -- {% endif %}{{ site_description }}</span>
+</div>
+{% if ajax_include_title %}
+<div class="hidden page-title-wrapper">{% if not show_homepage %}{% include 'include/page_title.html' %}{% endif %}</div>
+{% endif %}
 {% endblock %}
+
+{% block content %}
+
+{% include include_template|add:'.html' %}
+
+{% if include_below_item %}{% include 'include/below_item.html' %}{% endif %}
+
+{% endblock %}
+
 {% block js %}{% endblock %}
 {% block js2 %}{% endblock %}
 {% for js_file in js_files %}
@@ -11,7 +27,7 @@
 {% if js_variables %}
 <script>
   {% for key, variable in js_variables.items %}
-  var {{ key }} = {{ variable }};
+  var {{ key }} = {{ variable|jsv }};
   {% endfor %}
 </script>
 {% endif %}
@@ -22,7 +38,27 @@
 </script>
 {% block afterjs %}{% if ajax_callback %}
 <script>
+  {% if ajax_callback %}
   {{ ajax_callback }}();
+  {% endif %}
+      {% if modal_cuteform_separators %}
+      {% for form_selector, modal_cuteform_separators_per_form in modal_cuteform_separators.items %}
+      {% if form_selector %}if (!$({{ form_selector|jsv }}).data('loaded-modal-separators')) {{% endif %}
+        {% for modal_cuteform_separators_settings in modal_cuteform_separators_per_form %}
+        modalCuteFormSeparators({{ modal_cuteform_separators_settings|jsv }});
+        {% endfor %}
+        {% if form_selector %}$({{ form_selector|jsv }}).attr('data-loaded-modal-separators', true);
+      }{% endif %}
+      {% endfor %}{% endif %}
+      {% if form_show_more %}
+      {% for form_selector, form_show_more_list in form_show_more.items %}
+      if (!$({{ form_selector|jsv }}).data('loaded-show-more')) {
+      {% for s in form_show_more_list %}
+        formShowMore($({{ form_selector|jsv }}), {{ s.cutoff|jsv }}, {{ s.including_cutoff|jsv }}, {{ s.until|default_if_none:'undefined'|jsv }}, {{ s.including_until|jsv }}, "{{ s.message_more }}", "{{ s.message_less }}", {{ s.check_values|jsv }});
+      {% endfor %}
+        $({{ form_selector|jsv }}).attr('data-loaded-show-more', true);
+      }
+      {% endfor %}{% endif %}
 </script>
 {% endif %}
 {% endblock %}

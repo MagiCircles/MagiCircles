@@ -134,6 +134,10 @@ class AttrDict(dict):
         super(AttrDict, self).__init__(*args, **kwargs)
         self.__dict__ = self
 
+    def __unicode__(self):
+        return self.__dict__.get('unicode', u', '.join([
+            u'{}: {}'.format(k, v) for k, v in self.__dict__.items()]))
+
 ############################################################
 # Permissions and groups utils
 
@@ -330,25 +334,59 @@ custom_item_template = property(lambda view: '{}Item'.format(view.collection.nam
 ############################################################
 # Context for django requests
 
-def globalContext(request):
+def globalContext(request=None, email=False):
+    if not request and not email:
+        raise NotImplementedError('Request is required to get context.')
+
     context = RAW_CONTEXT.copy()
-    context['current'] = resolve(request.path_info).url_name
-    context['current_url'] = request.get_full_path() + ('?' if request.get_full_path()[-1] == '/' else '&')
-    context['t_site_name'] = context['site_name_per_language'].get(request.LANGUAGE_CODE, context['site_name'])
-    context['t_site_image'] = context['site_image_per_language'].get(request.LANGUAGE_CODE, context['site_image'])
-    context['t_game_name'] = context['game_name_per_language'].get(request.LANGUAGE_CODE, context['game_name'])
-    context['t_full_site_image'] = context['full_site_image_per_language'].get(request.LANGUAGE_CODE, context['full_site_image'])
-    context['t_email_image'] = context['email_image_per_language'].get(request.LANGUAGE_CODE, context['email_image'])
-    context['t_full_email_image'] = context['full_email_image_per_language'].get(request.LANGUAGE_CODE, context['full_email_image'])
-    context['hidenavbar'] = 'hidenavbar' in request.GET
-    context['request'] = request
-    context['javascript_translated_terms_json'] = simplejson.dumps({ term: unicode(_(term)) for term in context['javascript_translated_terms']})
-    context['localized_language'] = LANGUAGES_DICT.get(request.LANGUAGE_CODE, '')
-    context['current_language'] = get_language()
-    context['ajax'] = True
-    # Not Ajax
-    if '/ajax/' not in context['current_url']:
-        context['ajax'] = False
+    context['ajax'] = request.path_info.startswith('/ajax/') if request else False
+
+    if request:
+        context['request'] = request
+        context['current'] = resolve(request.path_info).url_name
+        context['current_url'] = request.get_full_path() + ('?' if request.get_full_path()[-1] == '/' else '&')
+        language = request.LANGUAGE_CODE
+    else:
+        language = get_language()
+
+    context['page_title'] = None
+    context['current_language'] = language
+    context['localized_language'] = LANGUAGES_DICT.get(language, '')
+    context['t_site_name'] = context['site_name_per_language'].get(language, context['site_name'])
+    context['t_site_image'] = context['site_image_per_language'].get(language, context['site_image'])
+    context['t_game_name'] = context['game_name_per_language'].get(language, context['game_name'])
+    context['t_full_site_image'] = context['full_site_image_per_language'].get(language, context['full_site_image'])
+    context['t_email_image'] = context['email_image_per_language'].get(language, context['email_image'])
+    context['t_full_email_image'] = context['full_email_image_per_language'].get(
+        language, context['full_email_image'])
+
+    ############################################################
+    # Debug
+
+    if django_settings.DEBUG:
+        # Ensures that static assets are always reloaded
+        context['static_files_version'] = randomString(20)
+
+    ############################################################
+    # Only email pages
+
+    if email:
+        if context['site_url'].startswith('//'):
+            context['site_url'] = 'http:' + context['site_url']
+
+    ############################################################
+    # Only ajax pages
+
+    elif context['ajax']:
+        pass
+
+    ############################################################
+    # Only non-ajax pages / non-email
+
+    else:
+        context['hidenavbar'] = 'hidenavbar' in request.GET
+        context['javascript_translated_terms_json'] = simplejson.dumps({ term: unicode(_(term)) for term in context['javascript_translated_terms']})
+
         cuteFormFieldsForContext({
             'language': {
                 'selector': '#switchLanguage',
@@ -356,45 +394,36 @@ def globalContext(request):
             },
         }, context)
 
-    # Authenticated
-    context['corner_popups'] = OrderedDict()
-    if request.user.is_authenticated():
-        if isBirthdayToday(request.user.preferences.birthdate):
-            context['corner_popups'][u'happy_birthday{}'.format(datetime.datetime.today().year)] = {
-                'title': mark_safe(u'<span class="fontx1-5">{} 🎉</span>'.format(_('Happy Birthday'))),
-                'content': mark_safe(u'<p class="fontx1-5">🗓 {}<br>🎂 {}</p>'.format(
-                    request.user.preferences.formatted_birthday_date,
-                    request.user.preferences.formatted_age,
-                )),
-                'image': context['corner_popup_image'],
-                'image_overflow': context['corner_popup_image_overflow'],
-                'allow_close_once': True,
-                'allow_close_forever': True,
-            }
-        if not context['ajax'] and request.user.preferences.invalid_email and context['current'] != 'settings':
-            context['corner_popups']['invalid_email'] = {
-                'title': _('Your email address is invalid.'),
-                'content': _('Some features might not work properly.'),
-                'buttons': {
-                    'settings': {
-                        'title': _('Open {thing}').format(thing=_('Settings').lower()),
-                        'url': '/settings/#form',
+        # Corner popups
+        context['corner_popups'] = OrderedDict()
+        if request.user.is_authenticated():
+            if isBirthdayToday(request.user.preferences.birthdate):
+                context['corner_popups'][u'happy_birthday{}'.format(datetime.datetime.today().year)] = {
+                    'title': mark_safe(u'<span class="fontx1-5">{} 🎉</span>'.format(_('Happy Birthday'))),
+                    'content': mark_safe(u'<p class="fontx1-5">🗓 {}<br>🎂 {}</p>'.format(
+                        request.user.preferences.formatted_birthday_date,
+                        request.user.preferences.formatted_age,
+                    )),
+                    'image': context['corner_popup_image'],
+                    'image_overflow': context['corner_popup_image_overflow'],
+                    'allow_close_once': True,
+                    'allow_close_forever': True,
+                }
+            if request.user.preferences.invalid_email and context['current'] != 'settings':
+                context['corner_popups']['invalid_email'] = {
+                    'title': _('Your email address is invalid.'),
+                    'content': _('Some features might not work properly.'),
+                    'buttons': {
+                        'settings': {
+                            'title': _('Open {thing}').format(thing=_('Settings').lower()),
+                            'url': '/settings/#form',
+                        },
                     },
-                },
-                'image': context['corner_popup_image'],
-                'image_overflow': context['corner_popup_image_overflow'],
-                'allow_close_once': True,
-                'allow_close_remind': 2,
-            }
-
-    # Not authenticated
-    else:
-        pass
-
-    # Debug
-    if django_settings.DEBUG:
-        # Ensures that static assets are always reloaded
-        context['static_files_version'] = randomString(20)
+                    'image': context['corner_popup_image'],
+                    'image_overflow': context['corner_popup_image_overflow'],
+                    'allow_close_once': True,
+                    'allow_close_remind': 2,
+                }
 
     return context
 
@@ -403,21 +432,8 @@ def getGlobalContext(request):
         return django_settings.GET_GLOBAL_CONTEXT(request)
     return globalContext(request)
 
-def ajaxContext(request):
-    context = RAW_CONTEXT.copy()
-    context['request'] = request
-    return context
-
 def emailContext():
-    context = RAW_CONTEXT.copy()
-    context['t_site_name'] = context['site_name_per_language'].get(get_language(), context['site_name'])
-    context['t_site_image'] = context['site_image_per_language'].get(get_language(), context['site_image'])
-    context['t_full_site_image'] = context['full_site_image_per_language'].get(get_language(), context['full_site_image'])
-    context['t_email_image'] = context['email_image_per_language'].get(get_language(), context['email_image'])
-    context['t_full_email_image'] = context['full_email_image_per_language'].get(get_language(), context['full_email_image'])
-    if context['site_url'].startswith('//'):
-        context['site_url'] = 'http:' + context['site_url']
-    return context
+    return globalContext(email=True)
 
 def getAccountIdsFromSession(request):
     if not request.user.is_authenticated():
@@ -577,6 +593,26 @@ def mergedFieldCuteForm(cuteform, settings, merged_fields, merged_field_name=Non
                 return _callToCuteForm(to_cuteform or default_to_cuteform, k, v)
     cuteform[merged_field_name] = settings
     cuteform[merged_field_name]['to_cuteform'] = _to_cuteform
+
+class FormShowMore:
+    def __init__(
+            self,
+            cutoff,
+            including_cutoff=False,
+            until=None,
+            including_until=False,
+            message_more=_('More'),
+            message_less=_('Less'),
+            check_values=True,
+    ):
+        self.cutoff = cutoff
+        self.until = until
+        self.including_cutoff = including_cutoff
+        self.including_until = including_until
+        self.message_more = message_more
+        self.message_less = message_less
+        self.check_values = check_values
+
 
 ############################################################
 # Database upload to
@@ -914,6 +950,12 @@ def templateVariables(string):
 def snakeToCamelCase(string):
     return ''.join(x.capitalize() or '_' for x in string.split('_'))
 
+def hexToRGB(hex_color):
+    """
+    Converts an hex color string (ex: #FFFFFF) to a RGB color tuple (ex: (255, 255, 255))
+    """
+    return tuple(int(hex_color[1:][i:i+2], 16) for i in (0, 2, 4))
+
 def listUnique(list):
     return OrderedDict([(item, None) for item in list]).keys()
 
@@ -948,12 +990,49 @@ def simplifyMarkdown(markdown_string, max_length=None):
         markdown_string = markdown_string.replace(c, ' ')
     return markdown_string
 
-def addParametersToURL(url, parameters={}):
-    return u'{}{}{}'.format(
+def addParametersToURL(url, parameters={}, anchor=None):
+    return u'{}{}{}{}'.format(
         url,
         '?' if '?' not in url else ('&' if not url.endswith('&') else ''),
         '&'.join([u'{}={}'.format(k, v) for k, v in parameters.items() if v is not None]),
+        u'#{}'.format(anchor) if anchor else '',
     )
+
+############################################################
+# Page titles and prefixes utils
+
+def pageTitleFromPrefixes(title_prefixes, page_title):
+    return u' | '.join([
+        unicode(page_title)
+    ] + [
+        unicode(prefix['title'])
+        for prefix in reversed(title_prefixes or [])
+        if prefix.get('include_in_title', True)
+    ])
+
+def h1ToContext(h1, context):
+    for h1_key in ['title', 'icon', 'image', 'classes', 'attributes', 'image_size']:
+        value = h1.get(h1_key, None)
+        if h1_key == 'title':
+            context[u'h1_page_title'] = value
+        else:
+            context[u'h1_page_title_{}'.format(h1_key)] = value
+
+def getNavbarPrefix(navbar_link_list, request, context, append_to=None):
+    if navbar_link_list:
+        if navbar_link_list == 'staff' and not request.user.is_staff:
+            return None
+        title = (_('More') if navbar_link_list == 'more'
+                 else context['navbar_links'].get(navbar_link_list, {}).get(
+                         'title', string.capwords(navbar_link_list)))
+        prefix = {
+            'title': title(context) if callable(title) else title,
+            'url': u'/{}/'.format(navbar_link_list),
+        }
+        if append_to is not None:
+            append_to.append(prefix)
+        return prefix
+    return None
 
 ############################################################
 # Redirections
@@ -1462,6 +1541,8 @@ def staticImageURL(path, folder=None, extension=None, versionned=True, full=Fals
     if not path and not folder and not extension:
         return None
     path = unicode(path)
+    if not extension and '.' not in path:
+        extension = 'png'
     if path.startswith('//') or path.startswith('http://') or path.startswith('https://'):
         return path
     if not static_url:
@@ -1513,6 +1594,39 @@ def getColSize(per_line):
         return 'special-9'
     return int(math.ceil(12 / (per_line or 1)))
 
+def HTMLAlert(type='warning', flaticon='about', title=None, message=None, button=None):
+    """
+    button is a dict that contains url and verbose
+    """
+    return """
+<div class="alert alert-{type}">
+  <div class="row">
+    <div class="col-sm-2 text-center hidden-xs">
+      <i class="flaticon-{flaticon} fontx2"></i>
+    </div>
+    <div class="col-sm-{col_size}">
+      {title}
+      {message}
+    </div>
+    {button}
+  </div>
+</div><br>
+""".format(
+    type=type,
+    flaticon=flaticon,
+    title=u'<h4>{title}</h4>'.format(title) if title else '',
+    message=message or '',
+    col_size=7 if button else 10,
+    button="""
+    <div class="col-sm-3 hidden-xs">
+      <a href="{url}" class="btn btn-main btn-lg btn-block" target="_blank">
+	{verbose}
+	<i class="flaticon-link"></i>
+      </a>
+    </div>
+    """.format(**button) if button else '',
+)
+
 ############################################################
 # Form labels and help texts
 
@@ -1558,10 +1672,12 @@ def getSearchFieldHelpText(search_fields, model_class, labels, translated_fields
 # Async update function
 
 def locationOnChange(user_preferences):
-    # This function is only called by the async script so to avoid loading Nominatim when the site is running,
+    # This function is only called by the async script so to avoid loading includes when the site is running,
     # it's included within the function
     import sys
     from geopy.geocoders import Nominatim
+    from tools import generateMap
+
     geolocator = Nominatim()
     try:
         location = geolocator.geocode(user_preferences.location)
@@ -1571,6 +1687,7 @@ def locationOnChange(user_preferences):
             user_preferences.location_changed = False
             user_preferences.save()
             print user_preferences.user, user_preferences.location, user_preferences.latitude, user_preferences.longitude
+            generateMap()
         else:
             user_preferences.location_changed = False
             user_preferences.save()

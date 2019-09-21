@@ -1,34 +1,3 @@
-{% extends "sidebar.html" %}
-
-{% block js %}
-<script>
-  var site_url = '{{ site_url }}';
-  var current = '{{ current }}';
-  var github_repository_username = '{{ wiki.0 }}';
-  var github_repository_name = '{{ wiki.1 }}';
-</script>
-{% endblock %}
-
-{% block sidebar %}
-{% load tools %}
-      <div id="wiki-sidebar"></div>
-      <br><br><br>
-      {% if user.is_staff %}
-      <div class="staff-only">
-        <a href="{{ full_wiki_url }}_new" target="_blank">Create a new wiki page</a><br>
-        <a href="{{ full_wiki_url }}_Sidebar/_edit" target="_blank">Edit the sidebar</a><br>
-        <small class="text-muted"><i>Note: You need an account on GitHub to add/edit wiki pages</i></small>
-      </div>
-      {% endif %}
-{% endblock %}
-
-{% block sidebar_content %}
-      <h1 class="text-center padding50">
-        <span id="wiki-title" data-url="{{ wiki_url }}">{{ page_title }}</span>
-        {% if wiki_url != 'Home' and wiki_url != '_Sidebar' %}
-        <br><a href="/{{ current }}/"><small>{{ back_to_home_sentence }}</small></a>
-        {% endif %}
-      </h1>
       <div id="wiki-content"></div>
       <div class="text-right">
         <br><br><br>
@@ -39,4 +8,3 @@
         </div>
         {% endif %}
       </div>
-{% endblock %}

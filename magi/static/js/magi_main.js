@@ -281,6 +281,7 @@ function ajaxModals() {
             $.ajax({
                 'url': button.data('ajax-url'),
                 'success': function(data) {
+                    // If it's a full page, redirect to page because it can't be included in a modal
                     if (data && data.indexOf('<!DOCTYPE html>') !== -1) {
                         window.location.href = button.data('ajax-url').replace('/ajax/', '/');
                         return false;
@@ -289,6 +290,11 @@ function ajaxModals() {
                     button.html(button_content);
                     var title = button.data('ajax-title');
                     title = typeof title == 'undefined' ? button_content : title;
+                    if (data && data.indexOf('<h1 class="page-title ') !== -1) {
+                        data = $('<div>' + data + '</div>');
+                        title = data.find('h1.page-title').first().html();
+                        data.find('h1.page-title').first().remove();
+                    }
                     modal_size = button.data('ajax-modal-size');
                     freeModal(title, data, modalButtons, modal_size, $('#ajaxModal'));
                     if (typeof button.attr('href') != 'undefined') {
@@ -312,6 +318,13 @@ function ajaxModals() {
                                             && typeof button.data('ajax-modal-after-form-size') != 'undefined') {
                                             form_modal_size = button.data('ajax-modal-after-form-size');
                                         }
+
+                                        if (data && data.indexOf('<h1 class="page-title ') !== -1) {
+                                            data = $('<div>' + data + '</div>');
+                                            title = data.find('h1.page-title').first().html();
+                                            data.find('h1.page-title').first().remove();
+                                        }
+
                                         freeModal(title, data, modalButtons, form_modal_size, $('#ajaxModal'));
                                         if (typeof form_name != 'undefined'
                                             && $('#ajaxModal form .generic-form-submit-button[name="' + form_name + '"]').length > 0
@@ -387,7 +400,7 @@ function loadHDImages() {
             let hd = image.data('hd-src');
             if (hd && hd != '' && hd != 'None' && image.attr('src') != hd) {
                 image.prop('src', hd);
-                console.log('Loading', hd);
+                console.log('Loading HD image', hd);
             }
         });
     }
@@ -510,6 +523,8 @@ var realBack = false;
 var calledBack = false;
 
 function onBackButtonCloseModal() {
+    let originalHeadTitle = $('head title').text();
+    let originalHeadDescription = $('head meta[name="description"]').first().prop('content');
     $('#ajaxModal').on('shown.bs.modal', function()  {
         var urlReplace;
         var original_url = $(this).data('original-url');
@@ -519,6 +534,14 @@ function onBackButtonCloseModal() {
             urlReplace = '#' + $(this).attr('id');
         }
         history.pushState(null, null, urlReplace);
+        let headTitleInModal = $('#ajaxModal .head-for-modal .head-for-modal-title').text();
+        let headDescriptionInModal = $('#ajaxModal .head-for-modal head-for-modal-description').text();
+        if (typeof headTitleInModal != 'undefined') {
+            $('head title').text(headTitleInModal);
+        }
+        if (typeof headDescriptionInModal) {
+            $('head meta[name="description"]').prop('content', headTitleInModal);
+        }
     });
 
     $('#ajaxModal').on('hidden.bs.modal', function()  {
@@ -528,6 +551,8 @@ function onBackButtonCloseModal() {
         } else {
             realBack = false;
         }
+        $('head title').text(originalHeadTitle);
+        $('head meta[name="description"]').prop('content', originalHeadDescription);
     });
     $(window).on('popstate', function() {
         if (calledBack == false) {
@@ -607,7 +632,7 @@ function directAddCollectible(buttons, uniquePerOwner) {
                         form.ajaxSubmit({
                             success: function(data) {
                                 button.html(button_content);
-                                if ($(data).hasClass('success')) {
+                                if ($(data).find('.success').length > 0) {
                                     button.find('.badge').text(parseInt(button.find('.badge').text()) + 1);
                                     var alt_message = button.data('alt-message');
                                     if (alt_message) {
@@ -646,7 +671,7 @@ function directAddCollectible(buttons, uniquePerOwner) {
                         form.ajaxSubmit({
                             success: function(data) {
                                 button.html(button_content);
-                                if ($(data).hasClass('success')) {
+                                if ($(data).find('.success').length > 0) {
                                     button.find('.badge').text(parseInt(button.find('.badge').text()) - 1);
                                     var alt_message = button.data('alt-message');
                                     if (alt_message) {
@@ -978,7 +1003,7 @@ function freeModal(title, body, buttons /* optional */, modal_size /* optional *
             modal.find('.modal-dialog').addClass('modal-lg');
         }
     }
-    modal.find('.modal-header h4').html(title);
+    modal.find('.modal-header h1, .modal-header h4').html(title);
     modal.find('.modal-body').html(body);
     modal.find('.modal-footer').html('<button type="button" class="btn btn-main" data-dismiss="modal">OK</button>');
     if (buttons === 0) {
@@ -1598,12 +1623,6 @@ function loadRandomFilters(button) {
 // Index
 
 function loadIndex() {
-    // Load filters more
-    let form = $('[id="filter-form-activity"]');
-    if (!form.data('loaded-separators')) {
-        form.data('loaded-separators', true);
-        formShowMore(form, 'is_popular', false, 'ordering', false);
-    }
     // Load HD background image when provided
     let home = $('.home-wrapper[data-hd-art]');
     if (home.length > 0 && $(document).width() > 992) {

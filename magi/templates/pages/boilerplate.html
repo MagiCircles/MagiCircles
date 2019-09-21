@@ -1,0 +1,14 @@
+{% extends extends %}
+{% block content %}
+{% if not ajax %}
+<div class="container">
+  {% endif %}
+  <div class="padding15">
+    {% include 'include/page_title.html' %}
+    {% include 'pages/'|add:template|add:'.html' %}
+    {% if comments_enabled and not ajax %}{% include 'include/disqus.html' %}{% endif %}
+  </div>
+  {% if not ajax %}
+</div>
+{% endif %}
+{% endblock %}
