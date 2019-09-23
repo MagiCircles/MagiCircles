@@ -245,7 +245,15 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     View function for any page that lists data, such as cards. Handles pagination and context variables.
     name: The string that corresponds to the view (for instance 'cards' for the '/cards/' view)
     """
+
     context = collection.list_view.get_global_context(request)
+
+    if (shortcut_url == ''
+        and context.get('launch_date', None)
+        and (not request.user.is_authenticated()
+             or not request.user.hasPermission('access_site_before_launch'))):
+        raise HttpRedirectException('/prelaunch/')
+
     collection.list_view.check_permissions(request, context)
     context['plural_name'] = collection.plural_name
     page = 0
