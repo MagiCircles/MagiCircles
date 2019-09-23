@@ -1750,7 +1750,7 @@ class CreateUserForm(_UserCheckEmailUsernameForm):
                 'next': self.request.GET.get('next', None),
                 'next_title': self.request.GET.get('next_title', None),
             }.items() if v }),
-            verbose=_('Sign Up'),
+            verbose=_('Login'),
         ))
 
     class Meta(_UserCheckEmailUsernameForm.Meta):

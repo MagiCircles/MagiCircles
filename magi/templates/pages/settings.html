@@ -28,7 +28,9 @@
     {% endif %}
     {% endif %}
     {% endfor %}
+    {% if not no_accounts %}
     <a href="#accounts" class="list-group-item page-scroll"><i class="flaticon-album"></i> {{ accounts_title_sentence }} <span class="glyphicon glyphicon-chevron-down pull-right"></span></a>
+    {% endif %}
     {% if user.preferences.groups %}
     <a href="#groups" class="list-group-item page-scroll"><i class="flaticon-about"></i> Your groups <span class="glyphicon glyphicon-chevron-down pull-right"></span></a>
     {% endif %}
@@ -151,6 +153,7 @@
 {% endblock %}
 
 {% block belowforms %}
+{% if not no_accounts %}
 <h1 id="accounts" class="text-center padding50"><i class="flaticon-album"></i> {{ accounts_title_sentence }}</h1>
 <br>
 <form class="container_form" data-form-name="accounts">
@@ -168,6 +171,7 @@
     <a href="/accounts/add/" class="btn btn-lg btn-main"><i class="flaticon-add"></i> {{ add_account_sentence }}</a>
   </div>
 </form>
+{% endif %}
 
 {% if user.preferences.groups %}
 <h1 id="groups" class="text-center padding50"><i class="flaticon-about"></i> Your groups</h1>

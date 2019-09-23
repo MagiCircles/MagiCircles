@@ -163,6 +163,7 @@ DEFAULT_GROUPS = [
         'translation': _('Community manager'),
         'description': 'We got you covered with all the game news on the website! Thanks to our active team, you know that by following our latest activities, you\'ll never miss anything!',
         'permissions': [
+            'post_news',
             'edit_staff_configurations',
             'access_site_before_launch',
             'beta_test_features',

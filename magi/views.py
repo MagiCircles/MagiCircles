@@ -449,10 +449,13 @@ def settings(request, context):
     )
 
     account_collection = getMagiCollection('account')
-    context['add_account_sentence'] = account_collection.add_sentence
+    if account_collection:
+        context['add_account_sentence'] = account_collection.add_sentence
+        context['accounts_title_sentence'] = account_collection.plural_title
+    else:
+        context['no_accounts'] = True
     context['add_link_sentence'] = _(u'Add {thing}').format(thing=_('Link'))
     context['delete_link_sentence'] = _(u'Delete {thing}').format(thing=_('Link'))
-    context['accounts_title_sentence'] = account_collection.plural_title
     context['back_to_profile_sentence'] = _('Back to {page_name}').format(page_name=_('Profile').lower())
 
     context['t_english'] = t['English']

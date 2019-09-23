@@ -352,7 +352,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     if 'filter_form' in context and not ajax:
         _set_javascript_form_details(
             form=context['filter_form'],
-            form_selector='#filter-form-{}'.format(collection.name),
+            form_selector='[id="filter-form-{}"]'.format(collection.name),
             context=context,
             cuteforms=[getattr(context['filter_form'], 'cuteform', None), collection.list_view.filter_cuteform],
             ajax=ajax,
