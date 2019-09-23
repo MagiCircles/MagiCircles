@@ -35,24 +35,18 @@ GET_PARAMETERS_NOT_IN_FORM = [
 
 other_sites = [
     {
-        'name': 'School Idol Tomodachi',
+        'name': 'Idol Story',
         'names': {
-            'ja': u'スクールアイドル友達',
-            'kr': u'스쿨 아이돌 토모다치',
-            'zh-hans': u'学园偶像朋友',
-            'zh-hant': u'學園偶像朋友',
+            'ja': u'アイドルストーリー',
         },
-        'game_name': 'LoveLive! School Idol Festival',
+        'game_name': 'Love Live! SIF All Stars',
         'game_names': {
-            'ja': u'ラブライブ',
-            'kr': u'러브라이브! 스쿨아이돌 페스티벌',
-            'zh-hans': u'LoveLive! 学园偶像祭',
-            'zh-hant': u'LoveLive! 學園偶像祭',
+            'ja': u'ラブライブ！スクフェス All Stars',
         },
-        'image': 'schoolidolu',
-        'url': 'https://schoolido.lu/',
-        'profile_url': 'https://schoolido.lu/user/{}/',
-        'shortname': 'schoolidolu',
+        'image': 'idolstory',
+        'url': 'https://idol.st/',
+        'profile_url': 'https://idol.st/user/{}/',
+        'shortname': 'idolstory',
     },
     {
         'name': 'Bandori Party',
@@ -109,6 +103,26 @@ other_sites = [
         'url': 'https://cinderella.pro/',
         'profile_url': 'https://cinderella.pro/user/{}/',
         'shortname': 'cpro',
+    },
+    {
+        'name': 'School Idol Tomodachi',
+        'names': {
+            'ja': u'スクールアイドル友達',
+            'kr': u'스쿨 아이돌 토모다치',
+            'zh-hans': u'学园偶像朋友',
+            'zh-hant': u'學園偶像朋友',
+        },
+        'game_name': 'LoveLive! School Idol Festival',
+        'game_names': {
+            'ja': u'ラブライブ',
+            'kr': u'러브라이브! 스쿨아이돌 페스티벌',
+            'zh-hans': u'LoveLive! 学园偶像祭',
+            'zh-hant': u'LoveLive! 學園偶像祭',
+        },
+        'image': 'schoolidolu',
+        'url': 'https://schoolido.lu/',
+        'profile_url': 'https://schoolido.lu/user/{}/',
+        'shortname': 'schoolidolu',
     },
     {
         'name': 'Maji Love',
