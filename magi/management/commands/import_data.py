@@ -7,7 +7,7 @@ import_data_module = __import__(settings.SITE + '.import_data', fromlist=[''])
 
 class Command(BaseCommand):
     def handle(self, *args, **options):
-        options = ['verbose', 'local']
+        options = ['verbose', 'local', 'force_reload_images']
         kwargs = { 'to_import': [] }
         for arg in args:
             if arg in options:

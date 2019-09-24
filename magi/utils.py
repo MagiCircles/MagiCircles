@@ -1179,6 +1179,7 @@ def filterByTranslatedValue(
 
     if isinstance(value, basestring):
         d_value = u'{}'.format(value.encode('unicode-escape'))
+        d_value = d_value.replace('"', '\\"')
 
     if mode == FilterByMode.Exact:
         if isinstance(value, basestring):
@@ -1501,6 +1502,8 @@ def saveLocalImageToModel(item, field_name, path, return_data=False):
 def imageURLToImageFile(url, return_data=False, request_options={}):
     if not url:
         return None
+    if url.startswith('//'):
+        url = u'https:' + url
     img_temp = NamedTemporaryFile(delete=True)
     r = requests.get(url, **request_options)
     if r.status_code != 200:
