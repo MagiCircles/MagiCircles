@@ -339,6 +339,7 @@ def about(request, context):
     if not context['ajax']:
         context['feedback_form'] = FEEDBACK_FORM
         context['contact_email'] = CONTACT_EMAIL
+        context['bug_tracker_url'] = BUG_TRACKER_URL
         context['contact_methods'] = [
             ('Discord', 'discord', CONTACT_DISCORD),
             ('Twitter', 'twitter', u'https://twitter.com/{}/'.format(
