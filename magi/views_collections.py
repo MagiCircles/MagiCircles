@@ -91,6 +91,14 @@ def _set_javascript_form_details(form, form_selector, context, cuteforms, ajax):
         context['form_show_more'][form_selector] += (
             [form_show_more] if not isinstance(form_show_more, list) else form_show_more
         )
+    # On change value show
+    on_change_value_show = getattr(form, 'on_change_value_show', None)
+    if on_change_value_show:
+        if 'form_on_change_value_show' not in context:
+            context['form_on_change_value_show'] = {}
+        if form_selector not in context['form_on_change_value_show']:
+            context['form_on_change_value_show'][form_selector] = {}
+        context['form_on_change_value_show'][form_selector].update(on_change_value_show)
 
 def _add_h1_and_prefixes_to_context(view, context, title_prefixes, h1, item=None, get_page_title_parameters={}):
     context['show_title'] = view.show_title

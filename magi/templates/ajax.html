@@ -59,6 +59,15 @@
         $({{ form_selector|jsv }}).attr('data-loaded-show-more', true);
       }
       {% endfor %}{% endif %}
+      {% if form_on_change_value_show %}
+      {% for form_selector, form_on_change_value_show_fields in form_on_change_value_show.items %}
+      if (!$({{ form_selector|jsv }}).data('loaded-on-change-value-show')) {
+      {% for field_name, options in form_on_change_value_show_fields.items %}
+      formOnChangeValueShow($({{ form_selector|jsv }}), {{ field_name|jsv }}, {{ options|jsv }});
+      {% endfor %}
+        $({{ form_selector|jsv }}).attr('data-loaded-on-change-value-show', true);
+      }
+      {% endfor %}{% endif %}
 </script>
 {% endif %}
 {% endblock %}
