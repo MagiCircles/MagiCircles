@@ -778,7 +778,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'custom': False,
         'navbar_link': False,
         'url_variables': [
-            ('thing', '\w+'),
+            ('thing', '.+'),
             ('thing_id', '\d+'),
         ],
     }),
