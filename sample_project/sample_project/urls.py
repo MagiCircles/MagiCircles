@@ -1,5 +1,9 @@
 from django.conf.urls import patterns, include, url
 from django.contrib import admin
+from django.conf.urls import handler500, handler403
+
+handler500 = 'magi.views.handler500'
+handler403 = 'magi.views.handler403'
 
 urlpatterns = patterns('',
     # Examples:
