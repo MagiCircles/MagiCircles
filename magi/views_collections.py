@@ -360,7 +360,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     if 'filter_form' in context and not ajax:
         _set_javascript_form_details(
             form=context['filter_form'],
-            form_selector='[id="filter-form-{}"]'.format(collection.name),
+            form_selector='[id=\\"filter-form-{}\\"]'.format(collection.name),
             context=context,
             cuteforms=[getattr(context['filter_form'], 'cuteform', None), collection.list_view.filter_cuteform],
             ajax=ajax,
@@ -627,7 +627,7 @@ def add_view(request, name, collection, type=None, ajax=False, shortcut_url=None
 
     _set_javascript_form_details(
         form=form,
-        form_selector=u'[data-form-name="add_{}"]'.format(collection.name),
+        form_selector=u'[data-form-name=\\"add_{}\\"]'.format(collection.name),
         context=context,
         cuteforms=[getattr(form, 'cuteform', None), collection.add_view.filter_cuteform],
         ajax=ajax,
@@ -724,7 +724,7 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
                 } if next_value else {}))
     _set_javascript_form_details(
         form=form,
-        form_selector=u'[data-form-name="edit_{}"]'.format(collection.name),
+        form_selector=u'[data-form-name=\\"edit_{}\\"]'.format(collection.name),
         context=context,
         cuteforms=[getattr(form, 'cuteform', None), collection.edit_view.filter_cuteform],
         ajax=ajax,
