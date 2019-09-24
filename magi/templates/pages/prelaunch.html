@@ -11,7 +11,7 @@
 </style>
 <div class="container">
   <div class="text-center padding50">
-    <h1 class="home-site-logo"><img src="{{ site_logo }}" class="img-responsive" alt="{{ t_site_name }}"></h1>
+    <h1 class="home-site-logo"><img src="{{ site_logo }}" class="img-responsive" style="max-height: 500px;" alt="{{ t_site_name }}"></h1>
     <h2 class="home-site-description">{{ site_description|orcallable }}</h2>
     <a href="/about_game/" data-ajax-url="/ajax/about_game/" class="btn btn-link btn-lg btn-lines home-about-game-button">
       {{ about_game_sentence }}
@@ -23,6 +23,8 @@
     <br><br><br>
     <a href="/signup/" class="btn btn-xl btn-secondary btn-lines">{% trans 'Pre-register' %}</a>
     <br><br><br>
+    {% else %}
+    <br><br><span class="alert alert-success">{% trans 'Thank you for pre-registering!' %}</span><br><br>
     {% endif %}
     <h1><a href="http://twitter.com/{{ twitter }}" target="_blank" class="fontx1-5">{% trans 'Coming soon' %}</a></h1>
     {% if launch_date != True %}

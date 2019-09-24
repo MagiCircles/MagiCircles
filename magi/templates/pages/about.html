@@ -3,13 +3,13 @@
 {% load magi_tags %}
     <div class="row">
       <div class="col-md-8">
-	<p class="padding50">
+	<div class="padding50">
           {% if staff_configurations.about_the_website and staff_configurations.about_the_website|getattribute:LANGUAGE_CODE %}
           <span class="to-markdown">{{ staff_configurations.about_the_website|getattribute:LANGUAGE_CODE }}</span>
           {% else %}
           <span class="to-markdown">{{ site_long_description|orcallable }}</span>
           {% endif %}
-	</p>
+	</div>
       </div>
       {% if staff_configurations.about_image %}
       <div class="col-md-4">
@@ -26,15 +26,21 @@
     <h2 class="text-main">{% trans 'About us' %}</h2>
     <div class="row">
       <div class="col-md-8">
-	<p class="padding50">
+	<div class="padding50">
           {% if staff_configurations.about_us and staff_configurations.about_us|getattribute:LANGUAGE_CODE %}
           <div class="to-markdown">{{ staff_configurations.about_us|getattribute:LANGUAGE_CODE }}</div>
           {% else %}
 	  {% include about_description_template|add:'.html' %}
           {% endif %}
-	</p>
+	</div>
 	<p class="text-right">
-	  <a class="btn btn-main btn-lg page-scroll" href="#contact">{% trans 'Contact us' %}</a>
+      {% if user.is_authenticated %}
+	  <a class="btn btn-main{% if not ajax %} btn-lg page-scroll{% endif %}"
+         href="{% if ajax %}/about/?open{% endif %}#contact"{% if ajax %} target="_blank"{% endif %}>
+        {% trans 'Contact us' %}</a>
+      {% else %}
+	  <br><a class="btn btn-main btn-lg" href="/signup/">{{ call_to_action }}</a>
+      {% endif %}
 	</p>
       </div>
       <div class="col-md-4">
@@ -60,6 +66,18 @@
       {% endif %}
     </div>
     {% endif %}
+
+    {% if ajax %}
+    <hr>
+    <br><br>
+    <div class="text-center">
+      <a href="/about/?open#staff" class="btn btn-xl btn-link-main" target="_blank">{% trans 'Staff members' %}</a>
+      <a href="/about/?open#contact" class="btn btn-xl btn-link-main" target="_blank">{% trans 'Contact us' %}</a>
+      <a href="/about/?open#aftermodal" class="btn btn-xl btn-link-main" target="_blank">{% trans 'More' %}</a>
+    </div>
+    {% else %}
+
+    <div id="aftermodal"></div>
 
     <div id="staff"></div>
     <hr>
@@ -485,3 +503,4 @@
       </div>
       {% endif %}
     </div>
+    {% endif %}

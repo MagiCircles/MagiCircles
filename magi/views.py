@@ -1,7 +1,7 @@
 from __future__ import division
 import math, datetime, random, string
 from collections import OrderedDict
-from django.shortcuts import render, get_object_or_404, redirect
+from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, JsonResponse, Http404
 from django.conf import settings as django_settings
 from django.contrib.auth.views import login as login_view
@@ -190,13 +190,13 @@ def signup(request, context):
             preferences.save()
             login_action(request, user)
             if context.get('launch_date', None):
-                return redirect('/prelaunch/')
+                raise HttpRedirectException('/prelaunch/')
             if REDIRECT_AFTER_SIGNUP:
-                return redirect(REDIRECT_AFTER_SIGNUP(user))
+                raise HttpRedirectException(REDIRECT_AFTER_SIGNUP(user))
             url = u'/accounts/add/{}{}'.format(
                 (u'?next={}'.format(urlquote(request.GET['next'])) if 'next' in request.GET else ''),
                 (u'&next_title={}'.format(request.GET['next_title']) if 'next' in request.GET and 'next_title' in request.GET else ''))
-            return redirect(url)
+            raise HttpRedirectException(url)
     else:
         form = CreateUserForm(request=request)
     context['form'] = form
@@ -297,7 +297,7 @@ def index(request):
     if (context.get('launch_date', None)
         and not request.user.is_authenticated()
         or not request.user.hasPermission('access_site_before_launch')):
-        return redirect('/prelaunch/')
+        raise HttpRedirectException('/prelaunch/')
     indexExtraContext(context)
     context['ajax_callback'] = 'loadIndex'
     return render(request, 'pages/index.html', context)
@@ -334,91 +334,111 @@ def about(request, context):
     context['about_photo'] = ABOUT_PHOTO
     context['site_long_description'] = SITE_LONG_DESCRIPTION
     context['about_site_sentence'] = _('About {thing}').format(thing=context['t_site_name'])
-    context['feedback_form'] = FEEDBACK_FORM
-    context['contact_email'] = CONTACT_EMAIL
-    context['contact_methods'] = [
-        ('Discord', 'discord', CONTACT_DISCORD),
-        ('Twitter', 'twitter', u'https://twitter.com/{}/'.format(TWITTER_HANDLE) if TWITTER_HANDLE else None),
-        ('Reddit', 'reddit', u'https://www.reddit.com/user/{}/'.format(CONTACT_REDDIT) if CONTACT_REDDIT else None),
-        ('Facebook', 'facebook', u'https://facebook.com/{}/'.format(CONTACT_FACEBOOK) if CONTACT_FACEBOOK else None),
-        (_('Email'), 'flaticon-contact', u'mailto:{}'.format(CONTACT_EMAIL if CONTACT_EMAIL else None)),
-        ('GitHub', 'github', u'https://github.com/{}/{}/'.format(GITHUB_REPOSITORY[0], GITHUB_REPOSITORY[1]) if GITHUB_REPOSITORY else None),
-        ('Bug tracker', 'flaticon-album', BUG_TRACKER_URL if BUG_TRACKER_URL and not FEEDBACK_FORM else None),
-    ]
-    context['franchise'] = _('{site} is not a representative and is not associated with {game}. Its logos and images are Trademarks of {company}.').format(
-        site=SITE_NAME_PER_LANGUAGE.get(get_language(), SITE_NAME),
-        game=GAME_NAME, company=_('the company that owns {game}').format(game=GAME_NAME))
-    context['staff'] = list(models.User.objects.filter(is_staff=True).select_related('preferences', 'staff_details').prefetch_related(
-        Prefetch('links', queryset=models.UserLink.objects.order_by('-i_relevance'), to_attr='all_links'),
-    ).extra(select={
-        'length_of_groups': 'Length(c_groups)',
-        'is_manager': 'CASE WHEN c_groups LIKE \'%%\"manager\"%%\' THEN 1 ELSE 0 END',
-        'is_management': 'CASE WHEN c_groups LIKE "%%manager%%" THEN 1 ELSE 0 END',
-    }).order_by('-is_manager', '-is_management', '-length_of_groups'))
-    context['contributors'] = [
-        user for user in models.User.objects.filter(
-            is_staff=False, preferences__c_groups__isnull=False).exclude(
-                preferences__c_groups='').select_related(
-                    'preferences').prefetch_related(
-                        Prefetch('links', queryset=models.UserLink.objects.order_by(
-                            '-i_relevance'), to_attr='all_links'),
-                    ).extra(select={
-                        'length_of_groups': 'Length(c_groups)',
-                    })
-    ]
+    context['call_to_action'] = _('Pre-register') if context.get('launch_date', None)  else CALL_TO_ACTION
 
-    try:
-        my_timezone = request.user.staff_details.timezone if request.user.is_staff else None
-    except ObjectDoesNotExist:
-        my_timezone = None
-    for staff_member in context['staff'] + context['contributors']:
+    if not context['ajax']:
+        context['feedback_form'] = FEEDBACK_FORM
+        context['contact_email'] = CONTACT_EMAIL
+        context['contact_methods'] = [
+            ('Discord', 'discord', CONTACT_DISCORD),
+            ('Twitter', 'twitter', u'https://twitter.com/{}/'.format(
+                TWITTER_HANDLE) if TWITTER_HANDLE else None),
+            ('Reddit', 'reddit', u'https://www.reddit.com/user/{}/'.format(
+                CONTACT_REDDIT) if CONTACT_REDDIT else None),
+            ('Facebook', 'facebook', u'https://facebook.com/{}/'.format(
+                CONTACT_FACEBOOK) if CONTACT_FACEBOOK else None),
+            (_('Email'), 'flaticon-contact', u'mailto:{}'.format(
+                CONTACT_EMAIL if CONTACT_EMAIL else None)),
+            ('GitHub', 'github', u'https://github.com/{}/{}/'.format(
+                GITHUB_REPOSITORY[0], GITHUB_REPOSITORY[1]) if GITHUB_REPOSITORY else None),
+            ('Bug tracker', 'flaticon-album', BUG_TRACKER_URL if BUG_TRACKER_URL and not FEEDBACK_FORM else None),
+        ]
+        context['franchise'] = _('{site} is not a representative and is not associated with {game}. Its logos and images are Trademarks of {company}.').format(
+            site=SITE_NAME_PER_LANGUAGE.get(get_language(), SITE_NAME),
+            game=GAME_NAME, company=_('the company that owns {game}').format(game=GAME_NAME))
+        context['staff'] = list(models.User.objects.filter(is_staff=True).select_related(
+            'preferences', 'staff_details').prefetch_related(
+            Prefetch('links', queryset=models.UserLink.objects.order_by('-i_relevance'), to_attr='all_links'),
+        ).extra(select={
+            'length_of_groups': 'Length(c_groups)',
+            'is_manager': 'CASE WHEN c_groups LIKE \'%%\"manager\"%%\' THEN 1 ELSE 0 END',
+            'is_management': 'CASE WHEN c_groups LIKE "%%manager%%" THEN 1 ELSE 0 END',
+        }).order_by('-is_manager', '-is_management', '-length_of_groups'))
+        context['contributors'] = [
+            user for user in models.User.objects.filter(
+                is_staff=False, preferences__c_groups__isnull=False).exclude(
+                    preferences__c_groups='').select_related(
+                        'preferences').prefetch_related(
+                            Prefetch('links', queryset=models.UserLink.objects.order_by(
+                                '-i_relevance'), to_attr='all_links'),
+                        ).extra(select={
+                            'length_of_groups': 'Length(c_groups)',
+                        })
+        ]
 
-        # Stats & Details
-        staff_member.stats = {}
-        for group, details in staff_member.preferences.groups_and_details.items():
-            stats = details.get('stats', [])
-            staff_member.stats[group] = []
-            if stats:
-                for stat in stats:
-                    model = getattr(models, stat['model'])
-                    total = model.objects.filter(**{ stat.get('selector_to_owner', model.selector_to_owner()): staff_member }).filter(**(stat.get('filters', {}))).count()
-                    if total:
-                        staff_member.stats[group].append(mark_safe(unicode(stat['template']).format(total=u'<strong>{}</strong>'.format(total))))
-            settings = staff_member.preferences.t_settings_per_groups.get(group, None)
-            if settings:
-                for setting, value in settings.items():
-                    staff_member.stats[group].append(u'<strong>{}</strong>: {}'.format(
-                        setting, value))
-
-        if not staff_member.is_staff:
-            continue
-
-        # Availability calendar
         try:
-            staff_member.has_staff_details = bool(staff_member.staff_details.id) if staff_member.is_staff else None
-        except models.StaffDetails.DoesNotExist:
-            staff_member.has_staff_details = False
-            staff_member.staff_details = models.StaffDetails()
-        if request.user.is_staff and staff_member.has_staff_details and (staff_member.staff_details.d_availability or staff_member.staff_details.d_weekend_availability):
-            staff_member.show_calendar = True
-            if my_timezone and staff_member.staff_details.timezone:
-                staff_member.availability_calendar = staff_member.staff_details.availability_calendar_timezone(my_timezone)
-                staff_member.calendar_with_timezone = True
-            else:
-                staff_member.availability_calendar = staff_member.staff_details.availability_calendar
-                staff_member.calendar_with_timezone = False
+            my_timezone = request.user.staff_details.timezone if request.user.is_staff else None
+        except ObjectDoesNotExist:
+            my_timezone = None
+        for staff_member in context['staff'] + context['contributors']:
 
-    context['now'] = timezone.now()
-    context['api_enabled'] = False
-    context['contribute_url'] = CONTRIBUTE_URL
-    total = len(context['other_sites'])
-    if total <= 4:
-        context['other_sites_per_line'] = total
-    elif (total % 4) == 1:
-        context['other_sites_per_line'] = 3
-    else:
-        context['other_sites_per_line'] = 4
-    context['other_sites_col_size'] = getColSize(context['other_sites_per_line'])
+            # Stats & Details
+            staff_member.stats = {}
+            for group, details in staff_member.preferences.groups_and_details.items():
+                stats = details.get('stats', [])
+                staff_member.stats[group] = []
+                if stats:
+                    for stat in stats:
+                        model = getattr(models, stat['model'])
+                        total = model.objects.filter(**{
+                            stat.get('selector_to_owner', model.selector_to_owner()):
+                            staff_member,
+                        }).filter(**(stat.get('filters', {}))).count()
+                        if total:
+                            staff_member.stats[group].append(mark_safe(
+                                unicode(stat['template']).format(total=u'<strong>{}</strong>'.format(total))))
+                settings = staff_member.preferences.t_settings_per_groups.get(group, None)
+                if settings:
+                    for setting, value in settings.items():
+                        staff_member.stats[group].append(u'<strong>{}</strong>: {}'.format(
+                            setting, value))
+
+            if not staff_member.is_staff:
+                continue
+
+            # Availability calendar
+            try:
+                staff_member.has_staff_details = (
+                    bool(staff_member.staff_details.id)
+                    if staff_member.is_staff else None
+                )
+            except models.StaffDetails.DoesNotExist:
+                staff_member.has_staff_details = False
+                staff_member.staff_details = models.StaffDetails()
+            if (request.user.is_staff
+                and staff_member.has_staff_details
+                and (staff_member.staff_details.d_availability
+                     or staff_member.staff_details.d_weekend_availability)):
+                staff_member.show_calendar = True
+                if my_timezone and staff_member.staff_details.timezone:
+                    staff_member.availability_calendar = staff_member.staff_details.availability_calendar_timezone(
+                        my_timezone)
+                    staff_member.calendar_with_timezone = True
+                else:
+                    staff_member.availability_calendar = staff_member.staff_details.availability_calendar
+                    staff_member.calendar_with_timezone = False
+
+        context['now'] = timezone.now()
+        context['api_enabled'] = False
+        context['contribute_url'] = CONTRIBUTE_URL
+        total = len(context['other_sites'])
+        if total <= 4:
+            context['other_sites_per_line'] = total
+        elif (total % 4) == 1:
+            context['other_sites_per_line'] = 3
+        else:
+            context['other_sites_per_line'] = 4
+        context['other_sites_col_size'] = getColSize(context['other_sites_per_line'])
 
 def about_game(request, context):
     context['game_description'] = GAME_DESCRIPTION
@@ -765,7 +785,7 @@ def block(request, context, pk, unblock=False):
 # Avatar redirection for gravatar + twitter
 
 def twitter_avatar(request, twitter):
-    return redirect('https://twitter.com/{}/profile_image?size=original'.format(twitter))
+    raise HttpRedirectException('https://twitter.com/{}/profile_image?size=original'.format(twitter))
 
 ############################################################
 # Ajax
@@ -941,12 +961,12 @@ def changelanguage(request):
     form = LanguagePreferencesForm(request.POST, instance=request.user.preferences, request=request)
     if form.is_valid():
         form.save()
-    return redirect(request.POST.get('next', '/'))
+    raise HttpRedirectException(request.POST.get('next', '/'))
 
 def markallnotificationsread(request):
     read = request.user.notifications.filter(seen=False).update(seen=True)
     request.user.preferences.force_update_cache('unread_notifications')
-    return redirect(u'/notifications/?marked_read={}'.format(read))
+    raise HttpRedirectException(u'/notifications/?marked_read={}'.format(read))
 
 def _shouldBumpActivity(activity, request):
     # Archived activities can't be bumped
