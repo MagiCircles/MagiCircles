@@ -213,6 +213,9 @@ for name, cls in enabled.items():
 for collection in main_collections:
     collection.sub_collections = sub_collections.get(collection.name, {})
 
+def _get_navbar_title_lambda(collection):
+    return lambda _c: collection.navbar_link_title
+
 # Add collection URLs to router
 for collection in collections.values():
     parameters = {
@@ -245,7 +248,7 @@ for collection in collections.values():
             link = {
                 'url_name': url_name,
                 'url': '/{}/'.format(collection.plural_name),
-                'title': collection.navbar_link_title,
+                'title': _get_navbar_title_lambda(collection),
                 'icon': collection.icon,
                 'image': collection.image,
                 'auth': (True, False) if collection.list_view.authentication_required else (True, True),
