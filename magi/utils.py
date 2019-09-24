@@ -1598,7 +1598,7 @@ def HTMLAlert(type='warning', flaticon='about', title=None, message=None, button
     """
     button is a dict that contains url and verbose
     """
-    return """
+    return u"""
 <div class="alert alert-{type}">
   <div class="row">
     <div class="col-sm-2 text-center hidden-xs">
@@ -1617,7 +1617,7 @@ def HTMLAlert(type='warning', flaticon='about', title=None, message=None, button
     title=u'<h4>{title}</h4>'.format(title) if title else '',
     message=message or '',
     col_size=7 if button else 10,
-    button="""
+    button=u"""
     <div class="col-sm-3 hidden-xs">
       <a href="{url}" class="btn btn-main btn-lg btn-block" target="_blank">
 	{verbose}
