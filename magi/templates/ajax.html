@@ -36,7 +36,7 @@
   cuteform($('{{ selector|safe }}'), {{ json|safe }});
   {% endfor %}{% endif %}
 </script>
-{% block afterjs %}{% if ajax_callback %}
+{% block afterjs %}
 <script>
   {% if ajax_callback %}
   {{ ajax_callback }}();
@@ -69,5 +69,4 @@
       }
       {% endfor %}{% endif %}
 </script>
-{% endif %}
 {% endblock %}
