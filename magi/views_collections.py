@@ -336,6 +336,9 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     else:
         queryset = filter_ids(queryset, request)
 
+    if preset and 'filter_form' in context:
+        context['filter_form'].action = collection.list_view.get_clear_url(request)
+
     if not ordering:
         if ('filter_form' in context
             and 'ordering' in context['filter_form'].fields
@@ -522,7 +525,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
 
     context['show_item_buttons'] = collection.list_view.show_item_buttons
 
-    if not filled_filter_form and collection.list_view.show_section_header_on_change:
+    if not filled_filter_form and not preset and collection.list_view.show_section_header_on_change:
         if page > 0:
             try:
                 previous_section_header = getattr(
@@ -567,7 +570,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
                 item.unblock_button = _(u'Unblock {username}').format(username=username)
             elif item.owner_id in request.user.preferences.cached_blocked_by_ids:
                 item.blocked_by_owner = True
-        if not filled_filter_form and collection.list_view.show_section_header_on_change:
+        if not filled_filter_form and not preset and collection.list_view.show_section_header_on_change:
             if getattr(item, collection.list_view.show_section_header_on_change) != previous_section_header:
                 item.show_section_header = getattr(item, collection.list_view.show_section_header_on_change)
                 previous_section_header = item.show_section_header

@@ -1011,20 +1011,20 @@ class MagiFiltersForm(AutoForm):
             )
             image = self.get_preset_image(preset, details=preset_details)
             if image:
-                image = u'<img src="{}" alt="{}" height="27px" style="display: block; margin: -5px 0;">'.format(
+                image = u'<img src="{}" alt="{}" width="27px" style="display: block; margin: -5px 0;">'.format(
                     image, label)
             icon = self.get_preset_icon(preset, details=preset_details)
             if icon:
                 icon = u'<i class="flaticon-{}" ></i>'.format(icon)
-            links.append(u'<a href="{}" class="list-group-item">{}<span class="pull-right">{}</span></a>'.format(
+            links.append(u'<a href="{}" class="list-group-item"><span class="pull-right">{}</span>{}</a>'.format(
                 self.collection.get_list_url(preset=preset, parameters={
                     'view': self.request.GET['view'],
                 } if self.request and self.request.GET.get('view', None) else None),
+                image or icon or '',
                 u'<span{}>{}</span>'.format(
                     u' style="display: inline-block; width: 140px;"' if image else '',
                     label,
                 ),
-                image or icon or '',
             ))
         return links
 
@@ -1069,9 +1069,7 @@ class MagiFiltersForm(AutoForm):
             buttons['clear'] = {
                 'icon': 'clear',
                 'verbose_name': t['Clear'],
-                'url': self.collection.get_list_url(parameters={
-                    'view': self.request.GET['view'],
-                } if self.request and self.request.GET.get('view', None) else None),
+                'url': self.collection.list_view.get_clear_url(self.request),
             }
         return buttons
 

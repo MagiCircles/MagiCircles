@@ -1290,6 +1290,31 @@ class YouTubeVideoField(models.URLField):
         defaults.update(kwargs)
         return super(YouTubeVideoField, self).formfield(**defaults)
 
+def presetsFromChoices(model, field_name, get_label=None, get_image=None, get_field_value=None, auto_image=False):
+    return [
+        (value, {
+            'label': get_label(i, value, verbose) if get_label else None,
+            'verbose_name': verbose,
+            'fields': {
+                u'i_{}'.format(field_name): get_field_value(i, value, verbose) if get_field_value else i,
+            },
+            'image': get_image(i, value, verbose) if get_image else (
+                u'{}/{}.png'.format(u'i_{}'.format(field_name), i) if auto_image else None),
+        }) for i, (value, verbose) in model.get_choices(field_name)
+    ]
+
+def presetsFromCharacters(field_name, get_label=None, get_field_value=None):
+    return [
+        (_name, {
+            'label': get_label(_id, _name, _name) if get_label else None,
+            'verbose_name': _name,
+            'fields': {
+                field_name: get_field_value(_id, _name, _name) if get_field_value else _id,
+            },
+            'image': _image,
+        }) for (_id, _name, _image) in getattr(django_settings, 'FAVORITE_CHARACTERS', [])
+    ]
+
 ############################################################
 # Set a field in a sub dictionary
 

@@ -38,6 +38,7 @@ from magi.utils import (
     isTranslationField,
     FAVORITE_CHARACTERS_IMAGES,
     addParametersToURL,
+    tourldash,
 )
 from magi.raw import please_understand_template_sentence, unrealistic_template_sentence
 from magi.django_translated import t
@@ -814,7 +815,16 @@ class MagiCollection(object):
     def after_save(self, request, instance, type=None):
         return instance
 
-    def to_fields(self, view, item, to_dict=True, only_fields=None, icons=None, images=None, force_all_fields=False, order=None, extra_fields=None, exclude_fields=None, request=None, preselected=None, prefetched_together=None, prefetched=None):
+    def _get_more_url(self, url, filter_field_name, item, to_preset):
+        preset = to_preset(item) if to_preset else None
+        return u'/{}/{}'.format(
+            url, (
+                u'{}/'.format(tourldash(preset))
+                if preset
+                else u'?{}={}'.format(filter_field_name, item.pk)
+            ))
+
+    def to_fields(self, view, item, to_dict=True, only_fields=None, icons=None, images=None, force_all_fields=False, order=None, extra_fields=None, exclude_fields=None, request=None, preselected=None, prefetched_together=None, prefetched=None, images_as_gallery=None):
         if extra_fields is None: extra_fields = []
         if exclude_fields is None: exclude_fields = []
         if only_fields is None: only_fields = []
@@ -867,6 +877,7 @@ class MagiCollection(object):
                 max_per_line = details.get('max_per_line', 5)
                 allow_ajax_per_item = details.get('allow_ajax_per_item', True)
                 allow_ajax_for_more = details.get('allow_ajax_for_more', True)
+                to_preset = details.get('to_preset', None)
             else: # old style
                 if len(details) == 4:
                     field_name, url, verbose_name, filter_field_name = details
@@ -879,6 +890,7 @@ class MagiCollection(object):
                 plural_verbose_name = verbose_name
                 allow_ajax_per_item = True
                 allow_ajax_for_more = True
+                to_preset = None
             if only_fields and field_name not in only_fields:
                 continue
             if field_name in exclude_fields:
@@ -984,13 +996,14 @@ class MagiCollection(object):
                     else:
                         d['type'] = 'list_links' if item_url else 'list'
                         d['links'] = l_links
-                if and_more and url:
+                if url:
                     verbose_name = (
-                        u'{total} {items}'.format(total=and_more, items=plural_verbose_name.lower())
+                        u'{total} {items}'.format(total=and_more or 0, items=plural_verbose_name.lower())
                         if '{total}' not in unicode(plural_verbose_name)
-                        else unicode(plural_verbose_name).format(total=and_more))
+                        else unicode(plural_verbose_name).format(total=and_more or 0))
                     d['and_more'] = {
-                        'link': u'/{}/?{}={}'.format(url, filter_field_name, item.pk),
+                        'hide': not and_more,
+                        'link': self._get_more_url(url, filter_field_name, item, to_preset=to_preset),
                         'verbose_name': u'+ {} - {}'.format(verbose_name, _('View all')),
                     }
                     if allow_ajax_for_more:
@@ -1731,6 +1744,13 @@ class MagiCollection(object):
         def to_filter_form_class(self):
             if self.auto_filter_form:
                 self.filter_form = forms.to_auto_filter_form(self)
+
+        def get_clear_url(self, request):
+            return self.collection.get_list_url(
+                parameters={
+                    'view': request.GET['view'],
+                } if request and request.GET.get('view', None) else None,
+            )
 
         #######################
         # Tools - not meant to be overriden
