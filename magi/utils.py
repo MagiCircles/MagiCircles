@@ -448,6 +448,24 @@ def getAccountIdsFromSession(request):
         ]
     return request.session['account_ids']
 
+def addCornerPopupToContext(
+        context, name, title, content=None, image=None, image_overflow=None, buttons=None,
+        allow_close_once=False, allow_close_remind=None, allow_close_forever=False,
+):
+    """
+    buttons is a dict with url, classes, ajax_url, ajax_title, title
+    """
+    context['corner_popups'][name] = {
+        'title': title,
+        'content': content,
+        'image': image or context['corner_popup_image'],
+        'image_overflow': image or context['corner_popup_image_overflow'],
+        'allow_close_once': allow_close_once,
+        'allow_close_remind': allow_close_remind,
+        'allow_close_forever': allow_close_forever,
+        'buttons': buttons,
+    }
+
 class CuteFormType:
     Images, HTML, YesNo, OnlyNone = range(4)
     to_string = ['images', 'html', 'html', 'html']

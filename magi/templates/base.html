@@ -231,7 +231,7 @@
     {% endif %}
     {% if corner_popups %}
     {% for corner_popup_name, corner_popup in corner_popups.items %}
-    <div class="corner-popup" data-name="{{ corner_popup_name }}" style="display: none;">
+    <div class="corner-popup{% if corner_popup.image %} with-image {% endif%}" data-name="{{ corner_popup_name }}" style="display: none;">
       {% if corner_popup.image %}
       <img src="{% if '//' in corner_popup.image %}{{ corner_popup.image }}{% else %}{{ static_url }}img/{{ corner_popup.image }}?{{ static_files_version }}{% endif %}"{% if corner_popup.image_overflow %} class="overflow"{% endif %}>
       {% endif %}
