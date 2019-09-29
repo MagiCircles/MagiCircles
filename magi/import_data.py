@@ -10,6 +10,7 @@ from magi.utils import (
     matchesTemplate,
     saveImageURLToModel,
 )
+from magi.tools import get_default_owner
 
 def import_map(maps, field_name, value):
     if not isinstance(maps, list):
@@ -170,7 +171,7 @@ def save_item(
                 log_function(u'Updated {} #{}'.format(model.__name__, item.pk))
         else:
             if modelHasField(model, 'owner') and 'owner' not in data and 'owner_id' not in data:
-                data['owner_id'] = 1
+                data['owner'] = get_default_owner()
             item = model.objects.create(**data)
             log_function(u'Created {} #{}'.format(model.__name__, item.pk))
 
