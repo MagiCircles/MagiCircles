@@ -1538,6 +1538,11 @@ def localImageToImageFile(path, return_data=False):
 def saveLocalImageToModel(item, field_name, path, return_data=False):
     data, image = localImageToImageFile(path, return_data=True)
     setattr(item, field_name, image)
+    # Remove any cached processed image
+    setattr(item, u'_tthumbnail_{}'.format(field_name), None)
+    setattr(item, u'_thumbnail_{}'.format(field_name), None)
+    setattr(item, u'_original_{}'.format(field_name), None)
+    setattr(item, u'_2x_{}'.format(field_name), None)
     if return_data:
         return (data, image)
     return image
@@ -1576,6 +1581,11 @@ def saveImageURLToModel(item, field_name, url, return_data=False, request_option
     filename = url.split('/')[-1].split('\\')[-1]
     image.name = item._meta.model._meta.get_field(field_name).upload_to(item, filename)
     setattr(item, field_name, image)
+    # Remove any cached processed image
+    setattr(item, u'_tthumbnail_{}'.format(field_name), None)
+    setattr(item, u'_thumbnail_{}'.format(field_name), None)
+    setattr(item, u'_original_{}'.format(field_name), None)
+    setattr(item, u'_2x_{}'.format(field_name), None)
     if return_data:
         return (data, image)
     return image
