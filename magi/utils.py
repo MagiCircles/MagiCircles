@@ -1845,7 +1845,7 @@ def translationSentence(from_language, to_language):
 def translationURL(value, from_language='en', to_language=None, with_wrapper=True, markdown=False, one_line=False):
     if not to_language:
         to_language = get_language()
-    url = 'https://translate.google.com/#{from_language}/{to_language}/{value}'.format(
+    url = u'https://translate.google.com/#view=home&op=translate&sl={from_language}&tl={to_language}&text={value}'.format(
         to_language=to_language,
         from_language=from_language,
         value=urlquote(value),
@@ -1862,6 +1862,17 @@ def translationURL(value, from_language='en', to_language=None, with_wrapper=Tru
             translate=translationSentence(from_language=from_language, to_language=to_language),
         )
     return url
+
+def openGoogleTranslateURL(url, from_language='en', to_language=None):
+    if not to_language: to_language = get_language()
+    return u'https://translate.google.com/translate?js=n&sl={from_language}&tl={to_language}&u={url}'.format(
+        from_language=from_language, to_language=to_language, url=url)
+
+def openGoogleTranslateHTMLLink(url, from_language='en', to_language=None):
+    return u'<small><a href="{url}" class="text-muted">{sentence}</a></small>'.format(
+        url=openGoogleTranslateURL(url, from_language=from_language, to_language=to_language),
+        sentence=translationSentence(from_language, to_language),
+    )
 
 def isTranslationField(field_name, translated_fields):
     field_name = field_name.split('__')[-1]
