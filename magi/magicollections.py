@@ -815,14 +815,18 @@ class MagiCollection(object):
     def after_save(self, request, instance, type=None):
         return instance
 
-    def _get_more_url(self, url, filter_field_name, item, to_preset):
+    def _get_more_url(self, url, filter_field_name, item, to_preset, ajax=False):
         preset = to_preset(item) if to_preset else None
-        return u'/{}/{}'.format(
+        return u'{}/{}/{}{}{}'.format(
+            '/ajax' if ajax else '',
             url, (
                 u'{}/'.format(tourldash(preset))
                 if preset
                 else u'?{}={}'.format(filter_field_name, item.pk)
-            ))
+            ),
+            ('?' if preset else '&') if ajax else '',
+            'ajax_modal_only' if ajax else '',
+        )
 
     def to_fields(self, view, item, to_dict=True, only_fields=None, icons=None, images=None, force_all_fields=False, order=None, extra_fields=None, exclude_fields=None, request=None, preselected=None, prefetched_together=None, prefetched=None, images_as_gallery=None):
         if extra_fields is None: extra_fields = []
@@ -1007,8 +1011,8 @@ class MagiCollection(object):
                         'verbose_name': u'+ {} - {}'.format(verbose_name, _('View all')),
                     }
                     if allow_ajax_for_more:
-                        d['and_more']['ajax_link'] = u'/ajax/{}/?{}={}&ajax_modal_only'.format(
-                            url, filter_field_name, item.pk)
+                        d['and_more']['ajax_link'] = self._get_more_url(
+                            url, filter_field_name, item, to_preset=to_preset, ajax=True)
                 if d['images'] or d['links'] or d['items']:
                     if 'icon' in d:
                         if callable(d['icon']):
