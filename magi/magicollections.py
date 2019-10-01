@@ -1060,7 +1060,9 @@ class MagiCollection(object):
                 continue
             if (field_name.startswith('_')
                 or field_name in ['id']
-                or (field_name == 'image' and 'image' not in only_fields)):
+                or (field_name == 'image'
+                    and 'image' not in only_fields
+                    and not getattr(item, u'{}_2x_url'.format(field_name), None))):
                 continue
             if only_fields and field_name not in only_fields:
                 continue
@@ -1172,10 +1174,26 @@ class MagiCollection(object):
                 image_url = getattr(item, u'{}_url'.format(field_name, None))
                 if not image_url:
                     continue
-                d['type'] = 'image_link'
                 d['value'] = getattr(item, u'{}_thumbnail_url'.format(field_name))
-                d['link'] = getattr(item, u'{}_2x_url'.format(field_name), None) or getattr(item, u'{}_original_url'.format(field_name))
-                d['link_text'] = d['verbose_name']
+                hd = getattr(item, u'{}_2x_url'.format(field_name), None)
+                if hd:
+                    d['type'] = 'image_with_multiple_links'
+                    d['popover_title'] = _('Download')
+                    d['links'] = [
+                        {
+                            'verbose': _('Original'),
+                            'value': getattr(item, u'{}_original_url'.format(field_name)),
+                        },
+                        {
+                            'verbose': _('High quality'),
+                            'value': hd,
+                        },
+                    ]
+                else:
+                    d['link_text'] = d['verbose_name']
+                    d['type'] = 'image_link'
+                    d['link'] = getattr(item, u'{}_original_url'.format(field_name))
+                    d['link_text'] = d['verbose_name']
 
             elif (isinstance(field, models.models.BooleanField)
                   or isinstance(field, models.models.NullBooleanField)):

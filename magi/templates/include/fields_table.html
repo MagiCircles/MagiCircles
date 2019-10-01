@@ -44,6 +44,15 @@
         <a href="{{ field.link }}" target="_blank"{% if field.ajax_link %} data-ajax-url="{{ field.ajax_link }}" data-ajax-title="{{ field.link_text }}"{% endif %}>
 	  <img src="{{ field.value }}" alt="{% if field.image_text %}{{ field.image_text }}{% else %}{{ field.link_text }}{% endif %}">
         </a>
+	    {% elif field.type == 'image_with_multiple_links'  %}
+        <div class="image-with-links" data-thumbnail="{{ field.value }}">
+          <h4>{{ field.popover_title }}</h4>
+          <ul class="list-group inline-block">
+            {% for link in field.links %}
+            <li class="list-group-item"><a href="{{ link.value }}" target="_blank">{{ link.verbose }} <i class="flaticon-link"></i></a></li>
+            {% endfor %}
+          </ul>
+        </div>
 	{% elif field.type == 'images_links'  %}
         {% for image in field.images %}
         <a href="{{ image.link }}" class="a-nodifference" target="_blank"{% if image.ajax_link %} data-ajax-url="{{ image.ajax_link }}" data-ajax-title="{{ image.link_text }}"{% endif %}>

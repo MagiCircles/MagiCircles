@@ -407,6 +407,36 @@ function loadHDImages() {
 }
 
 // *****************************************
+// Load images with links
+
+function loadImagesWithLinks() {
+    $('.image-with-links:not(.loaded)').each(function() {
+        let div = $(this);
+        div.addClass('loaded');
+        let title = div.find('h4').remove();
+        let content = div.html();
+        div.empty();
+        div.css('background-image', 'url(' + div.data('thumbnail') + ')');
+        div.css('cursor', 'pointer');
+        div.css('height', 190);
+        div.css('width', 190);
+        div.css('max-width', '100%');
+        div.popover({
+            html: true,
+            placement: 'left',
+            title: title,
+            content: content,
+            trigger: 'manual',
+        });
+        div.click(function(e) {
+            e.preventDefault();
+            div.popover('show');
+            return false;
+        });
+    });
+}
+
+// *****************************************
 // Load ranges
 
 function loadRanges() {
@@ -937,6 +967,7 @@ function loadCommons(onPageLoad /* optional = false */) {
     ajaxModals();
     ajaxPopovers();
     loadHDImages();
+    loadImagesWithLinks();
     loadCountdowns();
     loadRanges();
     loadTimezones();
@@ -1123,6 +1154,7 @@ function hidePopovers() {
     $('[data-ajax-popover]').popover('hide');
     $('[data-toggle="popover"]').popover('hide');
     $('a[href="/notifications/"]').popover('destroy');
+    $('.image-with-links').popover('hide');
 }
 
 // *****************************************

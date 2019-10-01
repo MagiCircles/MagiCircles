@@ -431,6 +431,33 @@ table.text-center th {
     text-align: center;
 }
 
+.image-with-links {
+    display: inline-block;
+    background-position: center center;
+    background-size: cover;
+    border-radius: 5px;
+}
+.image-with-links + .popover {
+    text-align: center;
+    .list-group {
+        display: block;
+        border: 0px;
+        .list-group-item {
+            border-right-width: 0;
+            border-left-width: 0;
+            border-radius: 0;
+            &:first-child {
+                border-top-width: 0;
+            }
+        }
+        &:last-child {
+            .list-group-item:last-child {
+                border-bottom-width: 0;
+            }
+        }
+    }
+}
+
 .cuteform-elt {
     display: inline-block;
     border-radius: 50%;
