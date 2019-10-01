@@ -18,10 +18,10 @@
 
     <link rel="stylesheet" href="{{ static_url }}bower/bootstrap/dist/css/bootstrap.min.css">
     {% if debug %}
-    <link rel="stylesheet/less" type="text/css" href="{{ static_url }}less/style.less?{{ static_files_version }}" />
+    <link rel="stylesheet/less" type="text/css" href="{{ static_url }}less/{% if stylesheet %}{{ stylesheet }}{% else %}style{% endif %}.less?{{ static_files_version }}" />
     <script src="{{ static_url }}bower/less/dist/less.min.js"></script>
     {% else %}
-    <link rel="stylesheet" href="{{ static_url }}css/style.css?{{ static_files_version }}">
+    <link rel="stylesheet" href="{{ static_url }}css/{% if stylesheet %}{{ stylesheet }}{% else %}style{% endif %}.css?{{ static_files_version }}">
     {% endif %}
     {% block extracss %}{% endblock %}{% if extracss %}<style>{{ extracss|safe }}</style>{% endif %}{% if extracss_template %}<style>{% include extracss_template %}</style>{% endif %}
 
