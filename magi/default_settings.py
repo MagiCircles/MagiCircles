@@ -496,6 +496,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'boilerplate': False,
     }),
     ('about', [
+        # page_description set in settings.py
         {
             'title': lambda _c: _('About {thing}').format(thing=_c['t_site_name']),
             'custom': False,
@@ -516,6 +517,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'navbar_link': False,
     }),
     ('about_game', [
+        # page_description set in settings.py
         {
             'title': lambda _c: _('About {thing}').format(thing=_c['t_game_name']),
             'custom': False,
@@ -536,8 +538,10 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'icon': 'map',
         'navbar_link_list': 'more',
         'full_template': True,
+        # page_description set in settings.py
     }),
     ('help', [
+        # page_description set in settings.py
         {
             'custom': False,
             'title': _('Help'),
@@ -562,6 +566,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         },
     ]),
     ('wiki', [
+        # page_description set in settings.py
         {
             'enabled': False,
             'custom': False,

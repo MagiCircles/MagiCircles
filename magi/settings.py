@@ -557,6 +557,31 @@ if WIKI:
         'url': 'https://github.com/{}/{}/wiki'.format(WIKI[0], WIKI[1]),
     }
 
+# Enabled pages defaults
+
+def _set_default_for_page(page_name, setting, value):
+    if page_name in ENABLED_PAGES:
+        for page in (
+                ENABLED_PAGES[page_name]
+                if isinstance(ENABLED_PAGES[page_name], list)
+                else [ENABLED_PAGES[page_name]]):
+            if setting not in page:
+                page[setting] = value
+
+_wiki_page_description = lambda: u'{} - {}'.format(
+    _('Help'), _('Learn a few tips and tricks to help you easily use {site}.'.format(
+        site=SITE_NAME_PER_LANGUAGE.get(get_language(), SITE_NAME))))
+
+for _args in [
+        ('about', 'page_description', SITE_LONG_DESCRIPTION),
+        ('about_game', 'page_description', GAME_DESCRIPTION),
+        ('map', 'page_description', lambda: _('Map of all {license} fans around the world.').format(
+            license=GAME_NAME_PER_LANGUAGE.get(get_language(), GAME_NAME))),
+        ('help', 'page_description', _wiki_page_description),
+        ('wiki', 'page_description', _wiki_page_description),
+]:
+    _set_default_for_page(*_args)
+
 # Sitemap pages for navbar
 
 for _navbar_link_name, _navbar_link in ENABLED_NAVBAR_LISTS.items():

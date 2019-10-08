@@ -417,7 +417,7 @@ def page_view(name, page):
             context['disqus_identifier'] = context['current']
             # Settings from page
             context['show_title'] = page.get('show_title', False)
-            context['share_image'] = page.get('share_image', None)
+            context['share_image'] = staticImageURL(page.get('share_image', None))
             context['page_description'] = page.get('page_description', None)
             context['comments_enabled'] = page.get('comments_enabled', False)
             context['template'] = page.get('template', name)
