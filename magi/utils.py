@@ -1911,12 +1911,14 @@ def artPreviewButtons(view, buttons, request, item, images, get_parameter='url',
         or not request.user.hasPermission('manage_main_items')):
         return
     for field_name, in_use in (images if isinstance(images, dict) else { k: None for k in images }).items():
-        image = getattr(item, field_name, None)
+        image = getattr(item, u'{}_url'.format(field_name), None)
         if not image:
             continue
         parameters = { get_parameter: image }
         if settings:
             parameters.update(artSettingsToGetParameters(settings))
+        if get_parameter == 'preview':
+            parameters['hd_url_preview'] = getattr(item, u'{}_force_2x_url'.format(field_name), None)
         buttons[u'preview_{}'.format(field_name)] = {
             'classes': view.item_buttons_classes + ['staff-only'],
             'show': True,

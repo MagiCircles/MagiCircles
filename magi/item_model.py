@@ -446,10 +446,13 @@ class BaseMagiModel(models.Model):
         return thumbnail
 
     def get_original(self, field_name):
-        return getattr(self, u'_original_{}'.format(field_name), getattr(self, field_name)) or getattr(self, field_name)
+        return getattr(self, u'_original_{}'.format(field_name), None) or getattr(self, field_name)
 
-    def get_2x(self, field_name):
-        return getattr(self, u'_2x_{}'.format(field_name))
+    def get_2x(self, field_name, force=False):
+        return (
+            getattr(self, u'_2x_{}'.format(field_name), None)
+            or (None if not force else getattr(self, u'{}_original'.format(field_name), None))
+        )
 
     @classmethod
     def get_field_translation_sources(self, field_name):
@@ -603,6 +606,11 @@ class BaseMagiModel(models.Model):
         elif name.endswith('_original'):
             field_name = name[:-9]
             return self.get_original(field_name)
+
+        # When accessing "something_force_2x"
+        elif name.endswith('_force_2x'):
+            field_name = name[:-9]
+            return self.get_2x(field_name, force=True)
 
         # When accessing "something_2x"
         elif name.endswith('_2x'):

@@ -250,6 +250,7 @@ def indexExtraContext(context):
                     ('side_preview', 'side'),
                     ('ribbon_preview', 'ribbon'),
                     ('gradient_preview', 'gradient'),
+                    ('hd_url_preview', 'hd_url'),
             ]:
                 value = context['request'].GET.get(get_parameter, None)
                 if value:
