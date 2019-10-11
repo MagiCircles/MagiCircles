@@ -162,7 +162,10 @@
         {% if button.icon %}<i class="flaticon-{{ button.icon }}"></i>
         {% elif button.image %}<img src="{{ static_url }}img/{{ button.image }}.png?{{ static_files_version }}" height="39" />{% endif %}
       </td>
-      <th>{{ button.title }}</th>
+      <th>
+        {{ button.title }}
+        {% if button.subtitle %}<br><small class="text-muted verbose-name-subtitle">{{ button.subtitle }}</small>{% endif %}
+      </th>
       <td>
         <a href="{{ button.url }}" data-btn-name="{{ name }}"
            class="{% for class in button.classes %}{% if class != 'staff-only' %}{{ class }} {% endif %}{% endfor %}"
