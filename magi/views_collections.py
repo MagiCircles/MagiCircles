@@ -337,7 +337,10 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
         queryset = filter_ids(queryset, request)
 
     if preset and 'filter_form' in context:
-        context['filter_form'].action = collection.list_view.get_clear_url(request)
+        try:
+            context['filter_form'].action_url = collection.list_view.get_clear_url(request)
+        except AttributeError:
+            pass
 
     if not ordering:
         if ('filter_form' in context

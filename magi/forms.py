@@ -1085,7 +1085,10 @@ class MagiFiltersForm(AutoForm):
         # Set action when using a preset
 
         if self.preset and self.collection:
-            self.action_url = self.collection.get_list_url()
+            try:
+                self.action_url = self.collection.get_list_url()
+            except AttributeError:
+                pass
 
         # Add/delete fields
 
@@ -2259,7 +2262,7 @@ class UserFilterForm(MagiFiltersForm):
 # User links
 
 class AddLinkForm(MagiForm):
-    action = '#links'
+    action_url = '#links'
     form_icon = 'add'
 
     @property
@@ -2664,7 +2667,7 @@ class FilterActivities(MagiFiltersForm):
         return queryset
 
     @property
-    def action(self):
+    def action_url(self):
         if self.request_tab:
             return '/'
         return self.request.path
