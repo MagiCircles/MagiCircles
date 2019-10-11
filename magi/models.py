@@ -123,7 +123,7 @@ ACTIVITIES_TAGS_HIDDEN_BY_DEFAULT = [
 # Utility Models
 
 class UserImage(BaseMagiModel):
-    image = models.ImageField(upload_to=uploadToRandom('user_images/'))
+    image = models.ImageField(upload_to=uploadToRandom('user_images'))
 
     def __unicode__(self):
         return unicode(self.image_url)
@@ -647,7 +647,7 @@ class StaffDetails(MagiModel):
     preferred_name = models.CharField('What would you prefer to be called?', max_length=100, null=True)
     pronouns = models.CharField('Preferred pronouns', max_length=32, null=True)
 
-    image = models.ImageField(_('Image'), upload_to=uploadToRandom('staff_photos/'), null=True, help_text='Photograph of yourself. Real life photos look friendlier when we introduce the team. If you really don\'t want to show your face, you can use an avatar, but we prefer photos :)')
+    image = models.ImageField(_('Image'), upload_to=uploadToRandom('staff_photos'), null=True, help_text='Photograph of yourself. Real life photos look friendlier when we introduce the team. If you really don\'t want to show your face, you can use an avatar, but we prefer photos :)')
     description = models.TextField('Self introduction', help_text='You can use markdown to add links.', null=True)
 
     favorite_food = models.CharField(max_length=100, null=True)
@@ -823,8 +823,8 @@ class Activity(MagiModel):
     TAGS_CHOICES = ACTIVITY_TAGS_CHOICES
     c_tags = models.TextField(_('Tags'), blank=True, null=True)
 
-    _original_image = models.ImageField(null=True, upload_to=uploadTiny('activities/'))
-    image = models.ImageField(_('Image'), upload_to=uploadToRandom('activities/'), null=True, blank=True, help_text=_('Only post official artworks, artworks you own, or fan artworks that are approved by the artist and credited.'))
+    _original_image = models.ImageField(null=True, upload_to=uploadTiny('activities'))
+    image = models.ImageField(_('Image'), upload_to=uploadToRandom('activities'), null=True, blank=True, help_text=_('Only post official artworks, artworks you own, or fan artworks that are approved by the artist and credited.'))
 
     archived_by_owner = models.BooleanField(default=False)
     archived_by_staff = models.ForeignKey(User, related_name='archived_activities', null=True, on_delete=models.SET_NULL)
@@ -864,6 +864,7 @@ class Activity(MagiModel):
         'image': {
             'resize': 'scale',
             'width': 890,
+            'use_tinypng': False,
         }
     }
 
@@ -1045,7 +1046,7 @@ class Notification(MagiModel):
     c_url_data = models.TextField(blank=True, null=True)
     email_sent = models.BooleanField(default=False)
     seen = models.BooleanField(default=False)
-    image = models.ImageField(upload_to=uploadItem('notifications/'), null=True, blank=True, max_length=1200)
+    image = models.ImageField(upload_to=uploadItem('notifications'), null=True, blank=True, max_length=1200)
 
     def message_value(self, key):
         """
@@ -1172,7 +1173,7 @@ class DonationMonth(MagiModel):
     cost = models.FloatField(default=250)
     goal = DONATORS_GOAL
     donations = models.FloatField(default=0)
-    image = models.ImageField(_('Image'), upload_to=uploadItem('badges/'))
+    image = models.ImageField(_('Image'), upload_to=uploadItem('badges'))
 
     tinypng_settings = {
         'image': BADGE_IMAGE_TINYPNG_SETTINGS,
@@ -1299,10 +1300,10 @@ class Prize(MagiModel):
 
     owner = models.ForeignKey(User, related_name='added_prizes')
     name = models.CharField('Prize name', max_length=100)
-    image = models.ImageField('Prize image', upload_to=uploadItem('prize/'))
-    image2 = models.ImageField('2nd image', upload_to=uploadItem('prize/'), null=True)
-    image3 = models.ImageField('3rd image', upload_to=uploadItem('prize/'), null=True)
-    image4 = models.ImageField('4th image', upload_to=uploadItem('prize/'), null=True)
+    image = models.ImageField('Prize image', upload_to=uploadItem('prize'))
+    image2 = models.ImageField('2nd image', upload_to=uploadItem('prize'), null=True)
+    image3 = models.ImageField('3rd image', upload_to=uploadItem('prize'), null=True)
+    image4 = models.ImageField('4th image', upload_to=uploadItem('prize'), null=True)
     value = models.DecimalField('Value', null=True, help_text='in USD', max_digits=6, decimal_places=2)
 
     CHARACTERS = OrderedDict([(unicode(_c[0]), _c) for _c in FAVORITE_CHARACTERS or []])

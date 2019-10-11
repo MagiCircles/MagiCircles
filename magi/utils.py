@@ -1434,11 +1434,11 @@ def dataToImageFile(data):
     image.flush()
     return ImageFile(image)
 
-def imageThumbnailFromData(data, filename, width=200, height=200, return_data=False):
+def _imageProcessing(data, filename, processing, return_data=False):
     _, extension = os.path.splitext(filename)
     extension = extension.lower()
     image = Image.open(cStringIO.StringIO(data))
-    image.thumbnail((width, height))
+    processing(image)
     output = io.BytesIO()
     image.save(output, format={
         'png': 'PNG',
@@ -1451,6 +1451,20 @@ def imageThumbnailFromData(data, filename, width=200, height=200, return_data=Fa
     if return_data:
         return data, image
     return image
+
+def imageThumbnailFromData(data, filename, width=200, height=200, return_data=False):
+    return _imageProcessing(data, filename, lambda image: image.thumbnail((width, height)), return_data=return_data)
+
+def getHeightFromWidth(image, width):
+    return int(math.ceil((width / image.width) * image.height))
+
+def getWidthFromHeight(image, height):
+    return int(math.ceil((height / image.height) * image.width))
+
+def imageResizeScaleFromData(data, filename, width=None, height=None, return_data=False):
+    return _imageProcessing(data, filename, lambda image: image.thumbnail(
+        (width or getWidthFromHeight(image, height), height or getHeightFromWidth(image, width))
+    ), return_data=return_data)
 
 def shrinkImageFromData(data, filename, settings={}):
     """

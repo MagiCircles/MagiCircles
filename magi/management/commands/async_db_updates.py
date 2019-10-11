@@ -7,7 +7,12 @@ from django.db.models import Q
 from magi import urls # Unused, ensures RAW_CONTEXT to be filled
 from magi.item_model import BaseMagiModel
 from magi.models import uploadItem
-from magi.utils import modelHasField, shrinkImageFromData, imageThumbnailFromData
+from magi.utils import (
+    modelHasField,
+    shrinkImageFromData,
+    imageThumbnailFromData,
+    imageResizeScaleFromData,
+)
 from magi import models as magi_models
 
 def get_next_item(model, field, modified_field_name, boolean_on_change=None):
@@ -80,19 +85,35 @@ def tinypng_compress(model, field):
     item = get_next_item(model, field, original_field_name)
     if not item:
         return False
-    print '[Info] Compressing on TinyPNG {} for {} #{}...'.format(
-        field.name, model.__name__, item.pk
-    )
+    settings = getattr(item, 'tinypng_settings', {}).get(field.name, {})
+    use_tinypng = settings.get('use_tinypng', True)
+    if use_tinypng:
+        print '[Info] Compressing on TinyPNG {} for {} #{}...'.format(
+            field.name, model.__name__, item.pk
+        )
+    else:
+        print '[Info] Resizing {} for {} #{}...'.format(
+            field.name, model.__name__, item.pk
+        )
     value = getattr(item, field.name)
     filename = value.name
+    prefix = field.upload_to.prefix + ('tiny' if field.upload_to.prefix.endswith('/') else '/tiny')
+    image_name = uploadItem(prefix)(item, filename)
     content = value.read()
     if not content:
         save_item(model, item, { original_field_name: unicode(value) })
         print '[Warning] Empty file, discarded.'
         return True
-    image = shrinkImageFromData(content, filename, settings=getattr(item, 'tinypng_settings', {}).get(field.name, {}))
-    prefix = field.upload_to.prefix + ('tiny' if field.upload_to.prefix.endswith('/') else '/tiny')
-    image.name = uploadItem(prefix)(item, filename)
+    if use_tinypng:
+        image = shrinkImageFromData(content, filename, settings=settings)
+    else:
+        resize = settings.get('resize', 'fit')
+        if resize == 'fit':
+            image = imageThumbnailFromData(content, image_name, width=settings['width'], height=settings['height'])
+        elif resize == 'scale':
+            image = imageResizeScaleFromData(
+                content, image_name, width=settings.get('width', None), height=settings.get('height', None))
+    image.name = image_name
     save_item(model, item, {
         original_field_name: unicode(value),
         field.name: image,
