@@ -1434,7 +1434,7 @@ def dataToImageFile(data):
     image.flush()
     return ImageFile(image)
 
-def imageThumbnailFromData(data, filename, width=200, height=200):
+def imageThumbnailFromData(data, filename, width=200, height=200, return_data=False):
     _, extension = os.path.splitext(filename)
     extension = extension.lower()
     image = Image.open(cStringIO.StringIO(data))
@@ -1446,7 +1446,11 @@ def imageThumbnailFromData(data, filename, width=200, height=200):
         'jpeg': 'JPEG',
         'gif': 'GIF',
     }.get(extension.lower(), 'PNG'))
-    return dataToImageFile(output.getvalue())
+    data = output.getvalue()
+    image = dataToImageFile(data)
+    if return_data:
+        return data, image
+    return image
 
 def shrinkImageFromData(data, filename, settings={}):
     """

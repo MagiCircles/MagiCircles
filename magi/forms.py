@@ -466,6 +466,7 @@ class MagiForm(forms.ModelForm):
             and self.instance.owner != self.request.user
         )
 
+        # Add buttons to add/edit sub items
         if (not self.is_reported
             and not getattr(self, 'is_translate_form', False)
             and self.collection
@@ -613,10 +614,11 @@ class MagiForm(forms.ModelForm):
                         if image_data is None:
                             image_data = image.read()
                         thumbnail_size = getattr(instance._meta.model, 'thumbnail_size', {}).get(field, {})
-                        image_data = imageThumbnailFromData(
+                        image_data, thumbnail_image = imageThumbnailFromData(
                             image_data, filename,
                             width=thumbnail_size.get('width', 200),
                             height=thumbnail_size.get('height', 200),
+                            return_data=True,
                         )
 
                     # Shrink images with TinyPNG
