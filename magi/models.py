@@ -1233,7 +1233,7 @@ class Badge(MagiModel):
     donation_month = models.ForeignKey(DonationMonth, related_name='badges', null=True)
     name = models.CharField(_('Title'), max_length=50, null=True)
     description = models.CharField(_('Description'), max_length=300)
-    image = models.ImageField(_('Image'), upload_to=uploadItem('badges/'))
+    image = models.ImageField(_('Image'), upload_to=uploadItem('badges'))
     url = models.CharField(max_length=200, null=True)
     show_on_top_profile = models.BooleanField(default=False)
     show_on_profile = models.BooleanField(default=False)

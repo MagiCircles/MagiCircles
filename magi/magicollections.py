@@ -2177,14 +2177,14 @@ class SubItemCollection(MainItemCollection):
     main_related = property(lambda _s: _s.plural_name)
     main_many2many = False
 
+    # Defaults
+    navbar_link_list = 'staff'
+
     def get_add_url(self, ajax=False, type=None, item=None):
         return addParametersToURL(
             super(SubItemCollection, self).get_add_url(ajax=ajax, type=type),
             { self.main_fk: item.pk } if item else {},
         )
-
-    # Defaults
-    navbar_link_list = 'staff'
 
     def to_form_class(self):
         class _Form(forms.AutoForm):
