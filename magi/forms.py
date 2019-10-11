@@ -402,8 +402,10 @@ class MagiForm(forms.ModelForm):
             elif name.startswith('m_') and not isinstance(self, MagiFiltersForm):
                 if not self.is_creating:
                     self.m_previous_values[name] = getattr(self.instance, name)
-                if not self.fields[name].help_text:
-                    self.fields[name].help_text = markdownHelpText(request=self.request)
+                self.fields[name].help_text = mark_safe(u'<br>'.join([
+                    getattr(self.fields[name], 'help_text', ''),
+                    markdownHelpText(request=self.request),
+                ]))
 
             elif name.startswith('_'):
 
