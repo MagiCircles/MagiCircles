@@ -882,6 +882,7 @@ class MagiCollection(object):
                 allow_ajax_per_item = details.get('allow_ajax_per_item', True)
                 allow_ajax_for_more = details.get('allow_ajax_for_more', True)
                 to_preset = details.get('to_preset', None)
+                show_first = details.get('show_first', False)
             else: # old style
                 if len(details) == 4:
                     field_name, url, verbose_name, filter_field_name = details
@@ -895,6 +896,7 @@ class MagiCollection(object):
                 allow_ajax_per_item = True
                 allow_ajax_for_more = True
                 to_preset = None
+                show_first = False
             if only_fields and field_name not in only_fields:
                 continue
             if field_name in exclude_fields:
@@ -937,7 +939,8 @@ class MagiCollection(object):
                         if callable(d['image']):
                             d['image'] = d['image'](item)
                         d['image'] = staticImageURL(d['image'])
-                    many_fields_galleries.append((u'{}{}'.format(field_name, related_item.pk), d))
+                    (many_fields if show_first else many_fields_galleries).append(
+                        (u'{}{}'.format(field_name, related_item.pk), d))
             elif field_name in prefetched_together:
                 d = {
                     'verbose_name': unicode(verbose_name).capitalize(),
@@ -1021,7 +1024,7 @@ class MagiCollection(object):
                         if callable(d['image']):
                             d['image'] = d['image'](item)
                         d['image'] = staticImageURL(d['image'])
-                    many_fields_galleries.append((field_name, d))
+                    (many_fields if show_first else many_fields_galleries).append((field_name, d))
             else:
                 try:
                     total = getattr(item, 'cached_total_{}'.format(field_name))
