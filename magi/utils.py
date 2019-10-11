@@ -1890,3 +1890,40 @@ def isTranslationField(field_name, translated_fields):
                     or field_name == u'{}_{}'.format(language, translated_field)):
                     return True
     return False
+
+############################################################
+# Homepage previews
+
+def artSettingsToGetParameters(settings):
+    parameters = {}
+    for k, v in settings.items():
+        if k in ['gradient', 'ribbon']:
+            v = int(v)
+        if k == 'position':
+            for pk, pv in v.items():
+                parameters['position_{}_preview'.format(pk)] = pv
+        else:
+            parameters[u'{}_preview'.format(k)] = v
+    return parameters
+
+def artPreviewButtons(view, buttons, request, item, images, get_parameter='url', settings=None):
+    if (not request.user.is_authenticated()
+        or not request.user.hasPermission('manage_main_items')):
+        return
+    for field_name, in_use in (images if isinstance(images, dict) else { k: None for k in images }).items():
+        image = getattr(item, field_name, None)
+        if not image:
+            continue
+        parameters = { get_parameter: image }
+        if settings:
+            parameters.update(artSettingsToGetParameters(settings))
+        buttons[u'preview_{}'.format(field_name)] = {
+            'classes': view.item_buttons_classes + ['staff-only'],
+            'show': True,
+            'url': addParametersToURL('/', parameters),
+            'icon': 'home',
+            'title': u'Preview {} on homepage'.format(toHumanReadable(field_name)),
+            'subtitle': None if in_use is None else u'Currently {}abled'.format('en' if in_use else 'dis'),
+            'has_permissions': True,
+            'open_in_new_window': True,
+        }

@@ -236,22 +236,35 @@ def indexExtraContext(context):
     if HOMEPAGE_ARTS:
         context['full_width'] = True
 
-        # Staff can preview art and/or foreground
-        if (context['request'].user.is_authenticated()
-            and context['request'].user.hasPermission('manage_main_items')
-            and (context['request'].GET.get('preview', None)
-                 or context['request'].GET.get('foreground_preview', None))):
-            context['art'] = {
-                k: v for k, v in (
-                    ('url', context['request'].GET.get('preview', None)),
-                    ('foreground_url', context['request'].GET.get('foreground_preview', None)),
-                ) if v
-            }
-        # Staff can preview foreground
-        elif (context['request'].user.is_authenticated()
-            and context['request'].user.hasPermission('manage_main_items')
-            and 'foreground_preview' in context['request'].GET):
-            context['art']['foreground_url'] = context['request'].GET['foreground_preview']
+        can_preview = (context['request'].user.is_authenticated()
+                       and context['request'].user.hasPermission('manage_main_items'))
+
+        if can_preview:
+            preview = {}
+            for get_parameter, art_key in [
+                    ('preview', 'url'),
+                    ('foreground_preview', 'foreground_url'),
+                    ('position_x_preview', 'position_x'),
+                    ('position_y_preview', 'position_y'),
+                    ('position_size_preview', 'position_size'),
+                    ('side_preview', 'side'),
+                    ('ribbon_preview', 'ribbon'),
+                    ('gradient_preview', 'gradient'),
+            ]:
+                value = context['request'].GET.get(get_parameter, None)
+                if value:
+                    if art_key.startswith('position_'):
+                        if 'position' not in preview:
+                            preview['position'] = {}
+                        preview['position'][art_key[9:]] = value
+                    else:
+                        preview[art_key] = value
+            if not preview.get('url', None) and not preview.get('foreground_url', None):
+                preview = None
+
+        # Staff preview
+        if (can_preview and preview):
+            context['art'] = preview
         # 1 chance out of 5 to get a random art of 1 of your favorite characters
         elif (RANDOM_ART_FOR_CHARACTER
               and context['request'].user.is_authenticated()
