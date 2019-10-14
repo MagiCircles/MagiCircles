@@ -93,7 +93,7 @@ collectible_collections = {}
 main_collections = []
 sub_collections = {}
 
-_verbose_re = '[\w.@+-]+'
+_verbose_re = '[\w.@+\-_]+'
 
 ############################################################
 # Default enabled URLs (outside of collections + pages)

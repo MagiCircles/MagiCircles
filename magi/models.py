@@ -489,7 +489,7 @@ class UserPreferences(BaseMagiModel):
 # User links
 
 class UserLink(BaseMagiModel):
-    alphanumeric = validators.RegexValidator(r'^[0-9a-zA-Z-_\. ]*$', 'Only alphanumeric and - _ characters are allowed.')
+    alphanumeric = validators.RegexValidator(r'^[0-9a-zA-Z\-_\. /]*$', 'Only alphanumeric and - _ characters are allowed.')
     owner = models.ForeignKey(User, related_name='links')
     value = models.CharField(_('Username/ID'), max_length=64, help_text=_('Write your username only, no URL.'), validators=[alphanumeric])
 
