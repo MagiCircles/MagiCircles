@@ -294,13 +294,13 @@ for collection in collections.values():
         url_name = '{}_item'.format(collection.name)
         urls.append(url(r'^{}/(?P<pk>\d+)[/]*$'.format(collection.name), views_collections.item_view, parameters, name=url_name))
         urls.append(url(r'^{}/(?P<pk>\d+)[/]*$'.format(collection.plural_name), views_collections.item_view, parameters, name=url_name))
-        urls.append(url(r'^{}/(?P<pk>\d+)/[\w-]+[/]*$'.format(collection.name), views_collections.item_view, parameters, name=url_name))
-        urls.append(url(r'^{}/(?P<pk>\d+)/[\w-]+[/]*$'.format(collection.plural_name), views_collections.item_view, parameters, name=url_name))
+        urls.append(url(r'^{}/(?P<pk>\d+)/[\w.@+-_]+[/]*$'.format(collection.name), views_collections.item_view, parameters, name=url_name))
+        urls.append(url(r'^{}/(?P<pk>\d+)/[\w.@+-_]+[/]*$'.format(collection.plural_name), views_collections.item_view, parameters, name=url_name))
         if collection.item_view.ajax:
             urls.append(url(r'^ajax/{}/(?P<pk>\d+)/$'.format(collection.name), views_collections.item_view, ajax_parameters, name='{}_ajax'.format(url_name)))
         if collection.item_view.reverse_url:
-            urls.append(url(r'^{}/(?P<reverse>[\w-]+)[/]*$'.format(collection.name), views_collections.item_view, parameters, name=url_name))
-            urls.append(url(r'^{}/(?P<reverse>[\w-]+)[/]*$'.format(collection.plural_name), views_collections.item_view, parameters, name=url_name))
+            urls.append(url(r'^{}/(?P<reverse>[\w.@+-_]+)[/]*$'.format(collection.name), views_collections.item_view, parameters, name=url_name))
+            urls.append(url(r'^{}/(?P<reverse>[\w.@+-_]+)[/]*$'.format(collection.plural_name), views_collections.item_view, parameters, name=url_name))
         for shortcut_url in collection.item_view.shortcut_urls:
             if isinstance(shortcut_url, tuple):
                 shortcut_url, pk = shortcut_url
@@ -310,15 +310,15 @@ for collection in collections.values():
                 urls.append(url(r'^{}[/]*$'.format(shortcut_url), views_collections.item_view, shortcut_parameters, name=url_name))
             else:
                 urls.append(url(r'^{}/(?P<pk>\d+)[/]*$'.format(shortcut_url), views_collections.item_view, parameters, name=url_name))
-                urls.append(url(r'^{}/(?P<pk>\d+)/[\w-]+[/]*$'.format(shortcut_url), views_collections.item_view, parameters, name=url_name))
+                urls.append(url(r'^{}/(?P<pk>\d+)/[\w.@+-_]+[/]*$'.format(shortcut_url), views_collections.item_view, parameters, name=url_name))
     if collection.add_view.enabled:
         url_name = '{}_add'.format(collection.name)
         if collection.types:
-            urls.append(url(r'^{}/add/(?P<type>[\w_]+)[/]*$'.format(collection.name), views_collections.add_view, parameters, name=url_name))
-            urls.append(url(r'^{}/add/(?P<type>[\w_]+)[/]*$'.format(collection.plural_name), views_collections.add_view, parameters, name=url_name))
+            urls.append(url(r'^{}/add/(?P<type>[\w.@+-_]+)[/]*$'.format(collection.name), views_collections.add_view, parameters, name=url_name))
+            urls.append(url(r'^{}/add/(?P<type>[\w.@+-_]+)[/]*$'.format(collection.plural_name), views_collections.add_view, parameters, name=url_name))
             if collection.add_view.ajax:
-                urls.append(url(r'^ajax/{}/add/(?P<type>[\w_]+)[/]*$'.format(collection.name), views_collections.add_view, ajax_parameters, name='{}_ajax'.format(url_name)))
-                urls.append(url(r'^ajax/{}/add/(?P<type>[\w_]+)[/]*$'.format(collection.plural_name), views_collections.add_view, ajax_parameters, name='{}_ajax'.format(url_name)))
+                urls.append(url(r'^ajax/{}/add/(?P<type>[\w.@+-_]+)[/]*$'.format(collection.name), views_collections.add_view, ajax_parameters, name='{}_ajax'.format(url_name)))
+                urls.append(url(r'^ajax/{}/add/(?P<type>[\w.@+-_]+)[/]*$'.format(collection.plural_name), views_collections.add_view, ajax_parameters, name='{}_ajax'.format(url_name)))
             for shortcut_url, _type in collection.add_view.shortcut_urls:
                 shortcut_parameters = parameters.copy()
                 shortcut_parameters['shortcut_url'] = shortcut_url
