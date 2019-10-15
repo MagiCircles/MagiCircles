@@ -1329,15 +1329,18 @@ class MagiCollection(object):
                 continue
             extra_attributes = {}
             quick_add_to_collection = collectible_collection.add_view.quick_add_to_collection(request) if request.user.is_authenticated() else False
-            url_to_collectible_add_with_item = lambda url: u'{url}?{item_name}_id={item_id}&{variables}'.format(
-                url=url, item_name=self.name, item_id=item.pk,
-                variables=u'&'.join([
-                    u'{}_{}={}'.format(
-                        self.name, variable,
-                        unicode(item) if variable == 'unicode' else getattr(item, variable),
-                    ) for variable in collectible_collection.add_view.add_to_collection_variables
-                    if hasattr(item, variable) or variable == 'unicode']),
-                )
+            url_to_collectible_add_with_item = lambda url: (
+                u'{url}?{item_name}_{item_pk_name}={item_pk}&{variables}'.format(
+                    url=url, item_name=self.name,
+                    item_pk_name=self.queryset.model._meta.pk.column,
+                    item_pk=item.pk,
+                    variables=u'&'.join([
+                        u'{}_{}={}'.format(
+                            self.name, variable,
+                            unicode(item) if variable == 'unicode' else getattr(item, variable),
+                        ) for variable in collectible_collection.add_view.add_to_collection_variables
+                        if hasattr(item, variable) or variable == 'unicode']),
+                ))
             buttons[name]['show'] = (
                 request.show_collect_button[name]
                 if isinstance(request.show_collect_button, dict) else request.show_collect_button)

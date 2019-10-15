@@ -231,6 +231,7 @@ class MagiForm(forms.ModelForm):
             existing = self.collection.edit_view.get_queryset(self.collection.queryset, {}, self.request).filter(**self.collection.edit_view.get_item(self.request, 'unique'))
             try: raise HttpRedirectException(existing[0].ajax_edit_url if self.ajax else existing[0].edit_url) # Redirect to edit
             except IndexError: pass # Can add!
+
         # Hidden foreign keys fields
         if hasattr(self.Meta, 'hidden_foreign_keys'):
             for field in self.Meta.hidden_foreign_keys:

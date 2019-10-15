@@ -83,7 +83,7 @@
       {% if staff_only_view %}
       <br><div class="alert alert-warning"><i class="flaticon-warning"></i> Staff only <small> - <i>Do not share</i></small></div>
       {% endif %}
-      {% if not show_homepage %}{% include 'include/page_title.html' %}{% endif %}
+      {% if not show_homepage or force_show_title %}{% include 'include/page_title.html' %}{% endif %}
       {% if before_template %}
       {% include before_template|add:'.html' %}
       {% endif %}

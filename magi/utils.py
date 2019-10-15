@@ -1308,9 +1308,14 @@ class YouTubeVideoField(models.URLField):
         defaults.update(kwargs)
         return super(YouTubeVideoField, self).formfield(**defaults)
 
-def presetsFromChoices(model, field_name, get_label=None, get_image=None, get_field_value=None, auto_image=False):
+def presetsFromChoices(
+        model, field_name,
+        get_label=None, get_image=None, get_field_value=None,
+        get_key=None, auto_image=False,
+        should_include=None,
+):
     return [
-        (value, {
+        (value if not get_key else get_key(i, value, verbose), {
             'label': get_label(i, value, verbose) if get_label else None,
             'verbose_name': verbose,
             'fields': {
@@ -1319,6 +1324,7 @@ def presetsFromChoices(model, field_name, get_label=None, get_image=None, get_fi
             'image': get_image(i, value, verbose) if get_image else (
                 u'{}/{}.png'.format(u'i_{}'.format(field_name), i) if auto_image else None),
         }) for i, (value, verbose) in model.get_choices(field_name)
+        if (True if not should_include else should_include(i, value, verbose))
     ]
 
 def presetsFromCharacters(field_name, get_label=None, get_field_value=None):

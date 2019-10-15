@@ -7,9 +7,9 @@
     {% if not forloop.last or not show_title %}<span class="separator">/</span>{% endif %}
     {% endfor %}
     {% if show_title and title_prefixes|length == 1 %}
-    <span class="separator">/</span>
-    {% if h1_page_title %}{{ h1_page_title }}
-    {% else %}{{ page_title }}{% endif %}
+    <span class="page-title-duplicate-title"><span class="separator">/</span>
+      {% if h1_page_title %}{{ h1_page_title }}
+    {% else %}{{ page_title }}{% endif %}</span>
     {% endif %}
   </span>{% endif %}
   {% if show_title %}<div class="padding50 text-center">{% endif %}
