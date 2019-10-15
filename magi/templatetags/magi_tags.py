@@ -59,5 +59,4 @@ def translationURL(*args, **kwargs):
 
 @register.simple_tag(takes_context=True)
 def translatedName(context, d, field_name='name', language=None):
-    print context['LANGUAGE_CODE']
     return getTranslatedName(d, field_name=field_name, language=language or context['LANGUAGE_CODE'])
