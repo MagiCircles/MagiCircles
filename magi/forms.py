@@ -404,7 +404,7 @@ class MagiForm(forms.ModelForm):
                     self.m_previous_values[name] = getattr(self.instance, name)
                 self.fields[name].help_text = mark_safe(u'<br>'.join([
                     getattr(self.fields[name], 'help_text', ''),
-                    markdownHelpText(request=self.request),
+                    unicode(markdownHelpText(request=self.request)),
                 ]))
 
             elif name.startswith('_'):
