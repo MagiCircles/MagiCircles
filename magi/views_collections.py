@@ -92,7 +92,7 @@ def _set_javascript_form_details(form, form_selector, context, cuteforms, ajax):
             [form_show_more] if not isinstance(form_show_more, list) else form_show_more
         )
     # On change value show
-    on_change_value_show = getattr(form, 'on_change_value_show', None)
+    on_change_value_show = form.get_on_change_value_show()
     if on_change_value_show:
         if 'form_on_change_value_show' not in context:
             context['form_on_change_value_show'] = {}

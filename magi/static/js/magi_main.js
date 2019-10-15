@@ -1800,9 +1800,21 @@ function playSongButtons() {
 // *****************************************
 // Dynamic forms
 
+function isNullBool(input) {
+    if (input.is('select')) {
+        let values = $.map(input.find('option'), function(elt, i) { return $(elt).val();})
+        let values_of_nullbool = ['1', '2', '3'];
+        if (values.length == values_of_nullbool.length
+            && values.every(function(element, index) { return element === values_of_nullbool[index]; })) {
+            return true;
+        }
+    }
+    return false;
+}
+
 function hasValue(input) {
     // Multiple choice checkboxes
-    if (input.is('ul') && input.filter('[type="checkbox"]:checked').length > 0) {
+    if (input.is('ul') && input.find('[type="checkbox"]:checked').length > 0) {
         return true;
     }
     // Checkbox
@@ -1810,15 +1822,34 @@ function hasValue(input) {
         return input.prop('checked');
     }
     // Null boolean
-    else if (input.is('select')) {
-        let values = $.map(input.find('option'), function(elt, i) { return $(elt).val();})
-        let values_of_nullbool = ['1', '2', '3'];
-        if (values.length == values_of_nullbool.length
-            && values.every(function(element, index) { return element === values_of_nullbool[index]; })) {
-            return input.val() != '1';
-        }
+    else if (isNullBool(input)) {
+        return input.val() != '1';
     }
     return input.val() != '';
+}
+
+function getValue(input) {
+    // Multiple choice checkboxes
+    if (input.is('ul')) {
+        let result = [];
+        $.each(input.find('[type="checkbox"]:checked'), function() {
+            result.push($(this).prop('value'));
+        });
+        return result;
+    }
+    // Checkbox
+    if (input.is('[type="checkbox"]')) {
+        return input.prop('checked');
+    }
+    // Null boolean
+    else if (isNullBool(input)) {
+        return {
+            '1': null,
+            '2': true,
+            '3': false,
+        }[input.val()];
+    }
+    return input.val();
 }
 
 function formShowMore(form, cutOff, includingCutOff, until, includingUntil, messageMore, messageLess, checkValues) {
@@ -1919,6 +1950,7 @@ function formOnChangeValueShow(form, changingFieldName, valuesToShow) {
     // valuesToShow can be an array of field names
     // or an object { value: array of field names }
     let changingField = form.find('#id_' + changingFieldName);
+    let allFields = [];
     function onChange(animation) {
         if (Array.isArray(valuesToShow)) {
             $.each(valuesToShow, function(i, fieldName) {
@@ -1932,20 +1964,35 @@ function formOnChangeValueShow(form, changingFieldName, valuesToShow) {
                 }
             });
         } else {
+            let to_show = [];
             $.each(valuesToShow, function(value, fields) {
-                $.each(fields, function(i, fieldName) {
-                    let input = form.find('#id_' + fieldName);
-                    let field = input.closest('.form-group');
-                    if (changingField.val() == value) {
-                        field.show(animation);
-                    } else {
-                        input.val('');
-                        field.hide(animation);
-                    }
-                });
+                if (String(getValue(changingField)) == String(value)) {
+                    $.each(fields, function(i, fieldName) {
+                        if (!to_show.includes(fieldName)) {
+                            to_show.push(fieldName);
+                        }
+                    });
+                }
+            });
+            $.each(allFields, function(i, fieldName) {
+                let input = form.find('#id_' + fieldName);
+                let field = input.closest('.form-group');
+                if (to_show.includes(fieldName)) {
+                    field.show(animation);
+                } else {
+                    input.val('');
+                    field.hide(animation);
+                }
             });
         }
     }
+    $.each(valuesToShow, function(value, fields) {
+        $.each(fields, function(i, fieldName) {
+            if (!allFields.includes(fieldName)) {
+                allFields.push(fieldName);
+            }
+        });
+    });
     onChange();
     changingField.change(function() {
         onChange('fast');

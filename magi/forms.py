@@ -648,6 +648,23 @@ class MagiForm(forms.ModelForm):
             instance.save()
         return instance
 
+    def get_on_change_value_show(self):
+        on_change_value_show = getattr(self, 'on_change_value_show', None)
+        if not on_change_value_show:
+            return None
+        return OrderedDict([
+            (
+                (field_name, fields)
+                if not field_name.startswith('i') or not isinstance(fields, dict)
+                else (field_name, {
+                        (self.Meta.model.get_i(field_name[2:], value)
+                         if not isinstance(value, int)
+                         else value): value_fields
+                        for value, value_fields in fields.items()
+                })
+            ) for field_name, fields in on_change_value_show.items()
+        ])
+
     def reorder_fields(self, order):
         """
         Reorder form fields by order.
