@@ -1216,6 +1216,7 @@ class MagiFiltersForm(AutoForm):
                                 filter=field_details.get(
                                     'filter', getattr(self, u'{}_filter'.format(field_name), None)),
                             )
+                    return queryset
                 return _merged_field_to_queryset
             for new_field_name, fields in (
                     self.merge_fields.items()
