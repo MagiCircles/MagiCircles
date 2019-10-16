@@ -1314,8 +1314,15 @@ function updateActivities() {
         return false;
     });
 
+    // Only activities that have a cached HTML
+
     $('.activity').each(function () {
+
         let activity = $(this);
+        if (activity.find('.to-markdown').length > 0) {
+            return;
+        }
+
         if (!activity.data('updated-activity')) {
             activity.data('updated-activity', true);
 
@@ -1353,6 +1360,7 @@ function updateActivities() {
                     });
                 }
             }
+
             // YouTube videos
             activity.find('.message a[href*="youtube.com"], .message a[href*="youtu.be"]').each(function() {
                 let a = $(this);
@@ -1362,9 +1370,11 @@ function updateActivities() {
                     cropActivityWhenTooLong(activity);
                 }
             });
+
+            // Colors
+            applyMarkdownColors(activity.find('.message'));
+
         }
-
-
     });
 
 
@@ -1561,9 +1571,39 @@ function escapeHtml(string) {
     });
 }
 
+function isColor(strColor) {
+    const s = new Option().style;
+    s.color = strColor;
+    return s.color !== '';
+}
+
+function applyMarkdownColors(elt) {
+    elt.find("*:contains('[color='):contains('[/color]'):not(:has(*))").each(function() {
+        let elt = $(this);
+        let text = elt.text();
+        let html = '';
+        $.each(text.split('[color='), function(i, text) {
+            if (i == 0) {
+                html = text;
+            } else {
+                let color = text.split(']')[0];
+                let content = text.split(']')[1].split('[/color')[0];
+                let remaining = text.split('[/color]')[1];
+                if (isColor(color)) {
+                    html += '<span style="color: ' + color + ';">' + escapeHtml(content) + '</span>' + escapeHtml(remaining);
+                } else {
+                    html += escapeHtml('[color=' + text);
+                }
+            }
+        });
+        elt.html(html);
+    });
+}
+
 function applyMarkdown(elt) {
     if (elt.hasClass('allow-html')) {
         elt.html(Autolinker.link(marked(elt.text()), { newWindow: true, stripPrefix: true } ));
+        applyMarkdownColors(elt);
     } else if (elt.hasClass('with-github')) {
         let content = elt.text();
         elt.css('opacity', 0.1);
@@ -1578,6 +1618,7 @@ function applyMarkdown(elt) {
             'success': function(data) {
                 loader.remove();
                 elt.html(data);
+                applyMarkdownColors(elt);
                 elt.css('white-space', 'normal');
                 elt.css('opacity', 1);
             },
@@ -1591,6 +1632,7 @@ function applyMarkdown(elt) {
         });
     } else {
         elt.html(Autolinker.link(marked(escapeHtml(elt.text())), { newWindow: true, stripPrefix: true } ));
+        applyMarkdownColors(elt);
     }
 }
 
