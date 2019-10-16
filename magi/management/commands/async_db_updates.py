@@ -182,10 +182,15 @@ def update_markdown(model, field):
         if not item:
             return False
         print u'[Info] Updating markdown {} for {} #{}...'.format(field.name, model.__name__, item.pk)
+        headers = {
+            'content-type': u'text/plain',
+        }
+        if getattr(django_settings, 'GITHUB_API_TOKEN', None):
+            headers['Authorization'] = u'token {}'.format(django_settings.GITHUB_API_TOKEN)
         r = requests.post(
             u'https://api.github.com/markdown/raw',
             data=getattr(item, field.name).encode('utf-8'),
-            headers={ 'content-type': u'text/plain' },
+            headers=headers,
         )
         r.raise_for_status()
         save_item(model, item, {
