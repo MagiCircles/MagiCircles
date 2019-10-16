@@ -1256,7 +1256,7 @@ function cropActivityWhenTooLong(activity) {
     }
 }
 
-function _isActivityElementAloneOnLine(elt) {
+function isElementAloneOnLine(elt) {
     return elt.has('*').length == 0 && $.trim(elt.parent().text()) == $.trim(elt.text());
 }
 
@@ -1271,6 +1271,69 @@ function getYouTubeCode(url) {
         video_code = video_code.slice(0,-1);
     }
     return video_code;
+}
+
+function afterMarkdownApplied(elt) {
+    let activity = elt.closest('.activity');
+
+    if (activity.length > 0) {
+
+        if (!activity.data('updated-activity')) {
+            activity.data('updated-activity', true);
+
+            // Activities that are too long
+
+            cropActivityWhenTooLong(activity);
+
+            // Dynamic loaded items in activities
+
+            if ($(document).width() > 768) {
+                if (activity.data('dynamically-load-items')) {
+                    $.each(main_collections, function (collection, callback) {
+                        activity.find('.message a[href^="' + site_url + collection + '/"]').each(function() {
+                            let a = $(this);
+                            if (isElementAloneOnLine(a)) {
+                                let url_parts = a.prop('href').replace(
+                                    '/' + collection + '/', '/ajax/' + collection + '/').split('/');
+                                url_parts = url_parts.splice(0, url_parts.length - 2)
+                                let url = url_parts.join('/') + '/';
+                                $.ajax({
+                                    type: 'GET',
+                                    url: url,
+                                    success: function(data) {
+                                        a.replaceWith('<div class="well fontx0-8">' + data + '</div>');
+                                        if (callback) {
+                                            window[callback]();
+                                        }
+                                        loadCommons();
+                                        cropActivityWhenTooLong(activity);
+                                    },
+                                    // Fails silently
+                                });
+                            }
+                        });
+                    });
+                }
+            }
+        }
+    }
+
+    // YouTube videos
+
+    elt.find('a[href*="youtube.com"], a[href*="youtu.be"]').each(function() {
+        let a = $(this);
+        let video_code = getYouTubeCode(a.prop('href'));
+        if (video_code && isElementAloneOnLine(a)) {
+            a.replaceWith('<div class="youtube-embed-container"><iframe src="https://www.youtube.com/embed/' + video_code + '" frameborder="0" allowfullscreen></iframe></div>');
+            if (activity.length > 0) {
+                cropActivityWhenTooLong(activity);
+            }
+        }
+    });
+
+    // Colors
+
+    applyMarkdownColors(elt);
 }
 
 function updateActivities() {
@@ -1313,70 +1376,6 @@ function updateActivities() {
         });
         return false;
     });
-
-    // Only activities that have a cached HTML
-
-    $('.activity').each(function () {
-
-        let activity = $(this);
-        if (activity.find('.to-markdown').length > 0) {
-            return;
-        }
-
-        if (!activity.data('updated-activity')) {
-            activity.data('updated-activity', true);
-
-
-            // Activities that are too long
-            cropActivityWhenTooLong(activity);
-
-            // Dynamic loaded items in activities
-            if ($(document).width() > 768) {
-                // Dynamic items
-                if (activity.data('dynamically-load-items')) {
-                    $.each(main_collections, function (collection, callback) {
-                        activity.find('.message a[href^="' + site_url + collection + '/"]').each(function() {
-                            let a = $(this);
-                            if (_isActivityElementAloneOnLine(a)) {
-                                let url_parts = a.prop('href').replace(
-                                    '/' + collection + '/', '/ajax/' + collection + '/').split('/');
-                                url_parts = url_parts.splice(0, url_parts.length - 2)
-                                let url = url_parts.join('/') + '/';
-                                $.ajax({
-                                    type: 'GET',
-                                    url: url,
-                                    success: function(data) {
-                                        a.replaceWith('<div class="well fontx0-8">' + data + '</div>');
-                                        if (callback) {
-                                            window[callback]();
-                                        }
-                                        loadCommons();
-                                        cropActivityWhenTooLong(activity);
-                                    },
-                                    // Fails silently
-                                });
-                            }
-                        });
-                    });
-                }
-            }
-
-            // YouTube videos
-            activity.find('.message a[href*="youtube.com"], .message a[href*="youtu.be"]').each(function() {
-                let a = $(this);
-                let video_code = getYouTubeCode(a.prop('href'));
-                if (video_code && _isActivityElementAloneOnLine(a)) {
-                    a.replaceWith('<div class="youtube-embed-container"><iframe src="https://www.youtube.com/embed/' + video_code + '" frameborder="0" allowfullscreen></iframe></div>');
-                    cropActivityWhenTooLong(activity);
-                }
-            });
-
-            // Colors
-            applyMarkdownColors(activity.find('.message'));
-
-        }
-    });
-
 
     // Archive/Unarchive, Bump, Drown activity
 
@@ -1603,7 +1602,7 @@ function applyMarkdownColors(elt) {
 function applyMarkdown(elt) {
     if (elt.hasClass('allow-html')) {
         elt.html(Autolinker.link(marked(elt.text()), { newWindow: true, stripPrefix: true } ));
-        applyMarkdownColors(elt);
+        afterMarkdownApplied(elt);
     } else if (elt.hasClass('with-github')) {
         let content = elt.text();
         elt.css('opacity', 0.1);
@@ -1618,7 +1617,7 @@ function applyMarkdown(elt) {
             'success': function(data) {
                 loader.remove();
                 elt.html(data);
-                applyMarkdownColors(elt);
+                afterMarkdownApplied(elt);
                 elt.css('white-space', 'normal');
                 elt.css('opacity', 1);
             },
@@ -1626,13 +1625,14 @@ function applyMarkdown(elt) {
                 console.log('Couldn\'t use GitHub to convert Markdown!');
                 loader.remove();
                 elt.html(Autolinker.link(marked(escapeHtml(elt.text())), { newWindow: true, stripPrefix: true } ));
+                afterMarkdownApplied(elt);
                 elt.css('white-space', 'normal');
                 elt.css('opacity', 1);
             },
         });
     } else {
         elt.html(Autolinker.link(marked(escapeHtml(elt.text())), { newWindow: true, stripPrefix: true } ));
-        applyMarkdownColors(elt);
+        afterMarkdownApplied(elt);
     }
 }
 
@@ -1651,6 +1651,9 @@ function loadMarkdown() {
             _loadMarkdown();
         }
     }
+    $('.was-markdown').each(function() {
+        afterMarkdownApplied($(this));
+    });
 }
 
 function loadCopyToClipboard() {

@@ -64,7 +64,7 @@
 	{% elif field.type == 'html' %}
 	{{ field.value|safe }}
 	{% elif field.type == 'markdown' %}
-        <div class="long-text-value">
+        <div class="long-text-value{% if field.value.0 %} was-markdown{% endif %}">
           {% if field.value.0 %}
           {{ field.value.1|safe }}
           {% else %}

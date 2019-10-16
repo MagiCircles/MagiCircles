@@ -58,12 +58,12 @@
             </a>
             {% endif %}
             <br>
-            <div class="description">
+            <div class="description{% if profile_user.preferences.description.0 %} was-markdown{% endif %}">
               {% if profile_user.preferences.m_description %}
               {% if profile_user.preferences.description.0 %}
               {{ profile_user.preferences.description.1|safe }}
               {% else %}
-              <div class="to-markdown">{{ profile_user.preferences.description.1 }}</div>
+              <div class="to-markdown with-github">{{ profile_user.preferences.description.1 }}</div>
               {% endif %}
               {% endif %}
             </div>

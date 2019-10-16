@@ -74,15 +74,15 @@
           <img src="{{ activity.image_url }}" alt="{{ activity }}"><i class="flaticon-link"></i>
         </a>
         {% endif %}
-        <div class="message">
-          {% with message_details=activity.message %}
+        {% with message_details=activity.message %}
+        <div class="message{% if message_details.0 %} was-markdown{% endif %}">
           {% if message_details.0 %}
           {{ message_details.1|safe }}
           {% else %}
           <div class="to-markdown with-github">{{ message_details.1 }}</div>
           {% endif %}
-          {% endwith %}
         </div>
+        {% endwith %}
         {% if activity.language != LANGUAGE_CODE %}
         <a href="https://translate.google.com/translate?js=n&sl={{ activity.language }}&tl={{ LANGUAGE_CODE }}&u={{ activity.http_item_url }}" class="language fontx0-8 text-muted" target="_blank">
           <img src="{{ activity.language_image_url }}" alt="{{ activity.language }}">
