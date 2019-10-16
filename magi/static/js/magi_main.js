@@ -1289,6 +1289,7 @@ function afterMarkdownApplied(elt) {
 
             if ($(document).width() > 768) {
                 if (activity.data('dynamically-load-items')) {
+
                     $.each(main_collections, function (collection, callback) {
                         activity.find('.message a[href^="' + site_url + collection + '/"]').each(function() {
                             let a = $(this);

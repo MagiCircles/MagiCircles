@@ -1016,6 +1016,14 @@ def addParametersToURL(url, parameters={}, anchor=None):
         u'#{}'.format(anchor) if anchor else '',
     )
 
+def getEmojis(how_many=1):
+    if len(RAW_CONTEXT['site_emojis'] or []) == 0:
+        return [''] * how_many
+    elif len(RAW_CONTEXT['site_emojis']) < how_many:
+        return (RAW_CONTEXT['site_emojis'] + (RAW_CONTEXT['site_emojis'] * (
+            how_many / len(RAW_CONTEXT['site_emojis']))))[:how_many]
+    return RAW_CONTEXT['site_emojis'][:how_many]
+
 ############################################################
 # Page titles and prefixes utils
 

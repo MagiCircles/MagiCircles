@@ -313,6 +313,11 @@ if hasattr(settings_module, 'GAME_NAME_PER_LANGUAGE'):
 else:
     GAME_NAME_PER_LANGUAGE = {}
 
+if hasattr(settings_module, 'SITE_EMOJIS'):
+    SITE_EMOJIS = getattr(settings_module, 'SITE_EMOJIS')
+else:
+    SITE_EMOJIS = None
+
 if hasattr(settings_module, 'FAVORITE_CHARACTERS'):
     FAVORITE_CHARACTERS = getattr(settings_module, 'FAVORITE_CHARACTERS')
     if hasattr(settings_module, 'FAVORITE_CHARACTER_TO_URL'):

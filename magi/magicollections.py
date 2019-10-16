@@ -39,6 +39,7 @@ from magi.utils import (
     FAVORITE_CHARACTERS_IMAGES,
     addParametersToURL,
     tourldash,
+    getEmojis,
 )
 from magi.raw import please_understand_template_sentence, unrealistic_template_sentence
 from magi.django_translated import t
@@ -2896,7 +2897,15 @@ class UserCollection(MagiCollection):
             if account_collection and account_collection.add_view.has_permissions(request, context):
                 context['can_add_account'] = True
                 context['add_account_sentence'] = account_collection.add_sentence
-            context['share_sentence'] = _('Check out {username}\'s awesome collection!').format(username=context['item'].username)
+            if context['is_me']:
+                emojis = getEmojis(2)
+                context['share_sentence'] = _(u'Hey, look! I\'m on {site}! Follow me ♥︎').format(
+                    site=u'{}{}{}'.format(emojis[0], context['t_site_name'], emojis[1]))
+                context['hashtags'] = context['hashtags'] + ['My{}Collection'.format(
+                    context['site_name'].replace(' ', ''))]
+            else:
+                context['share_sentence'] = _('Check out {username}\'s awesome collection!').format(
+                    username=context['item'].username)
             context['share_url'] = context['item'].http_item_url
 
             # Show birthday popup
