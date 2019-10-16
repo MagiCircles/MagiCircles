@@ -1,7 +1,7 @@
 {% load i18n %}
 {% load magi_tags %}
 {% with activity=item %}
-<div class="activity" data-id="{{ activity.id }}">
+<div class="activity" data-id="{{ activity.id }}"{% if activity.can_dynamically_load_items %} data-dynamically-load-items="true"{% endif %}>
   <div class="row">
     <div class="col-xs-2">
       {% include 'include/avatar.html' with av_user=activity.cached_owner av_image_size=200 av_size=38 av_link=True %}

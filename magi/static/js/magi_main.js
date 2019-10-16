@@ -1256,8 +1256,26 @@ function cropActivityWhenTooLong(activity) {
     }
 }
 
+function _isActivityElementAloneOnLine(elt) {
+    return elt.has('*').length == 0 && $.trim(elt.parent().text()) == $.trim(elt.text());
+}
+
+function getYouTubeCode(url) {
+    const youtube_regex = /^.*((m\.)?youtu\.be\/|vi?\/|u\/\w\/|embed\/|\?vi?=|\&vi?=)([^#\&\?]*).*/;
+    let parsed = url.match(youtube_regex);
+    if (!parsed || !parsed[3]) {
+        return null;
+    }
+    let video_code = parsed[3];
+    if (video_code.endsWith('/')) {
+        video_code = video_code.slice(0,-1);
+    }
+    return video_code;
+}
+
 function updateActivities() {
     // Like activities
+
     $('.likeactivity').unbind('submit');
     $('.likeactivity').submit(function(e) {
         e.preventDefault();
@@ -1296,15 +1314,59 @@ function updateActivities() {
         return false;
     });
 
-    // Activities that are too long
-
     $('.activity').each(function () {
         let activity = $(this);
         if (!activity.data('updated-activity')) {
             activity.data('updated-activity', true);
+
+
+            // Activities that are too long
             cropActivityWhenTooLong(activity);
+
+            // Dynamic loaded items in activities
+            if ($(document).width() > 768) {
+                // Dynamic items
+                if (activity.data('dynamically-load-items')) {
+                    $.each(main_collections, function (collection, callback) {
+                        activity.find('.message a[href^="' + site_url + collection + '/"]').each(function() {
+                            let a = $(this);
+                            if (_isActivityElementAloneOnLine(a)) {
+                                let url_parts = a.prop('href').replace(
+                                    '/' + collection + '/', '/ajax/' + collection + '/').split('/');
+                                url_parts = url_parts.splice(0, url_parts.length - 2)
+                                let url = url_parts.join('/') + '/';
+                                $.ajax({
+                                    type: 'GET',
+                                    url: url,
+                                    success: function(data) {
+                                        a.replaceWith('<div class="well fontx0-8">' + data + '</div>');
+                                        if (callback) {
+                                            window[callback]();
+                                        }
+                                        loadCommons();
+                                        cropActivityWhenTooLong(activity);
+                                    },
+                                    // Fails silently
+                                });
+                            }
+                        });
+                    });
+                }
+            }
+            // YouTube videos
+            activity.find('.message a[href*="youtube.com"], .message a[href*="youtu.be"]').each(function() {
+                let a = $(this);
+                let video_code = getYouTubeCode(a.prop('href'));
+                if (video_code && _isActivityElementAloneOnLine(a)) {
+                    a.replaceWith('<div class="youtube-embed-container"><iframe src="https://www.youtube.com/embed/' + video_code + '" frameborder="0" allowfullscreen></iframe></div>');
+                    cropActivityWhenTooLong(activity);
+                }
+            });
         }
+
+
     });
+
 
     // Archive/Unarchive, Bump, Drown activity
 

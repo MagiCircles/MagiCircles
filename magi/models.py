@@ -860,6 +860,13 @@ class Activity(MagiModel):
     def is_staff_picks(self):
         return 'staff' in self.tags
 
+    @property
+    def can_dynamically_load_items(self):
+        for tag in self.tags:
+            if tag in ['news', 'staff']:
+                return True
+        return False
+
     tinypng_settings = {
         'image': {
             'resize': 'scale',

@@ -3276,6 +3276,15 @@ class ActivityCollection(MagiCollection):
         buttons.update(js_buttons)
         return buttons
 
+    def _item_and_list_extra_context(self, context):
+        if 'js_variables' not in context:
+            context['js_variables'] = {}
+        context['js_variables']['main_collections'] = {
+            collection_name: getMagiCollection(collection_name).item_view.ajax_callback
+            for collection_name in context['main_collections']
+        }
+        context['js_variables']['site_url'] = context['site_url']
+
     class ListView(MagiCollection.ListView):
         item_template = custom_item_template
         per_line = 1
@@ -3337,10 +3346,16 @@ class ActivityCollection(MagiCollection):
 
         def extra_context(self, context):
             super(ActivityCollection.ListView, self).extra_context(context)
+
+            # Show homepage / hide sidebar
+
             if self.show_homepage(context):
                 indexExtraContext(context)
                 if not self.show_sidebar_on_homepage(context):
                     context['hide_sidebar'] = True
+
+            # Activities tabs
+
             if context['request'].user.is_authenticated():
                 context['activity_tabs'] = HOME_ACTIVITY_TABS
                 context['active_activity_tab_name'] = context['filter_form'].active_tab
@@ -3356,6 +3371,10 @@ class ActivityCollection(MagiCollection):
                     context['no_result_template'] = 'include/activityFollowMessage'
             else:
                 context['show_bump'] = True
+
+            # Dyanmic loaded content in activities
+
+            self.collection._item_and_list_extra_context(context)
 
     class ItemView(MagiCollection.ItemView):
         template = custom_item_template
@@ -3380,7 +3399,12 @@ class ActivityCollection(MagiCollection):
         def extra_context(self, context):
             super(ActivityCollection.ItemView, self).extra_context(context)
 
+            # Dyanmic loaded content in activities
+
+            self.collection._item_and_list_extra_context(context)
+
             # Show warning on hidden tags
+
             context['item'].hidden_reasons = []
             tags = context['item'].tags
             error_message = _(u'You are not allowed to see activities with the tag "{tag}".')
