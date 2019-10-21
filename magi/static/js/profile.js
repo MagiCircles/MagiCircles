@@ -35,24 +35,10 @@ function handlefollow() {
     });
 }
 
-function profileLoadActivities(tab_name, user_id, onDone) {
-    $.get('/ajax/activities/?owner_id=' + user_id, function(html) {
-        let add_activity_button = show_add_activity_button ? '<br><a class="btn btn-main btn-lg btn-lines btn-block btn-add-activity" href="/activities/add/"><h4>' + add_activity_sentence + '</h4><small>' + add_activity_subtitle + '</small></a><br>' : '';
-        if ($.trim(html) == '') {
-            onDone('<div class="padding20">' + add_activity_button + '<div class="alert alert-warning">' + gettext('No result.') + '</div></div>');
-        } else {
-            onDone(add_activity_button + html, function() {
-                updateActivities();
-                pagination('/ajax/activities/', '&owner_id=' + user_id, updateActivities);
-            });
-        }
-    });
-}
-
 function loadCollectionForOwner(load_url, callback) {
     return function(tab_name, user_id, onDone) {
-        $.get(load_url + '?owner=' + user_id, function(data) {
-            onDone($(data).find('.items').length == 0 && !$(data).hasClass('items') ? '<div class="padding20"><div class="alert alert-warning">' + gettext('No result.') + '</div></div>' : data, function() {
+        $.get(load_url + (load_url.includes('?') ? '&' : '?') + 'owner=' + user_id, function(data) {
+            onDone(data, function() {
                 if (callback) {
                     callback();
                 }
@@ -84,7 +70,7 @@ function onProfileTabOpened() {
 
 function loadCollectionForAccount(load_url, callback) {
     return function(tab_name, user_id, account_id, onDone) {
-        $.get(load_url + '&ajax_modal_only&ajax_show_top_buttons&color=' + $('[data-account-id="' + account_id + '"]').data('color'), function(data) {
+        $.get(load_url + '&ajax_modal_only&ajax_show_top_buttons&buttons_color=' + $('[data-account-id="' + account_id + '"]').data('color'), function(data) {
             onDone(data, function() {
                 if (callback) {
                     callback();

@@ -1,5 +1,12 @@
 
 // *****************************************
+// Variables
+
+let no_result_div = (
+    '<div class="padding50 no-result-wrapper"><h4 class="padding50 alert alert-info no-result-alert">'
+        + gettext('No result.') + '</h4></div>');
+
+// *****************************************
 // *****************************************
 // Always called
 
@@ -1706,13 +1713,9 @@ function afterLoadBadges(user_id) {
 
 function loadBadges(tab_name, user_id, onDone) {
     $.ajax({
-        'url': '/ajax/badges/?of_user=' + user_id,
+        'url': '/ajax/badges/?of_user=' + user_id + '&ajax_show_top_buttons&ajax_show_no_result&buttons_color=' + $('#profile').data('color'),
         'success': function(data) {
-            if ($(data).find('.items').length == 0 && !$(data).hasClass('items')) {
-                onDone('<div class="padding20"><div class="alert alert-warning">' + gettext('No result.') + '</div></div>');
-            } else {
-                onDone(data, afterLoadBadges);
-            }
+            onDone(data, afterLoadBadges);
         },
         'error': genericAjaxError,
     });

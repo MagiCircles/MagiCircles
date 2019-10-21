@@ -846,11 +846,6 @@ DEFAULT_PROFILE_TABS = OrderedDict([
         'name': _('Accounts'),
         'icon': 'game',
     }),
-    ('activity', {
-        'name': _('Activities'),
-        'icon': 'comments',
-        'callback': 'profileLoadActivities',
-    }),
     ('badge', {
         'name': _('Badges'),
         'icon': 'badge',

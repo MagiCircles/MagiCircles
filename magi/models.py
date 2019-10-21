@@ -57,6 +57,7 @@ from magi.settings import (
 from magi.raw import other_sites
 from magi.item_model import MagiModel, BaseMagiModel, get_image_url, i_choices, addMagiModelProperties, getInfoFromChoices
 from magi.abstract_models import CacheOwner
+from magi.default_settings import RAW_CONTEXT
 
 Account = ACCOUNT_MODEL
 
@@ -407,6 +408,45 @@ class UserPreferences(BaseMagiModel):
         Will completely replace any existing list of turned off email notifications.
         """
         self.email_notifications_turned_off_string = ','.join([str(i) for i in turned_off])
+
+    # Cache tabs
+    _cache_j_tabs_with_content = models.TextField(null=True)
+    _cache_tabs_with_content_update_on_none = True
+
+    def to_cache_tabs_with_content(self):
+        tabs_with_content = {}
+
+        # Badges
+        badge_collection = getMagiCollection('badge')
+        if badge_collection:
+            tabs_with_content['badge'] = bool(badge_collection.queryset.filter(user_id=self.user_id).count())
+            tabs_with_content['badge_top_profile'] = bool(badge_collection.queryset.filter(
+                user_id=self.user_id, show_on_top_profile=True).count())
+
+        # Accounts and tabs per accounts
+        account_ids = list(ACCOUNT_MODEL.objects.filter(owner=self.user_id).values_list('id', flat=True))
+        tabs_with_content['account'] = {
+            'has_content': bool(len(account_ids)),
+            'tabs_per_account': {
+                account_id: {
+                    collection_name: bool(collection.queryset.filter(account_id=account_id).count())
+                    for collection_name, collection in RAW_CONTEXT['collectible_collections'].get(
+                            'account', {}).items()
+                } for account_id in account_ids
+            },
+        }
+
+        # Collections as_profile_tab + collectibles per owner
+        tabs_with_content.update({
+            collection_name: bool(collection.queryset.filter(**{
+                collection.queryset.model.selector_to_owner(): self.user_id,
+            }).count()) for collection_name, collection in [
+                (collection_name, getMagiCollection(collection_name))
+                for collection_name in RAW_CONTEXT['collections_in_profile_tabs']
+            ] + RAW_CONTEXT['collectible_collections'].get('owner', {}).items()
+        })
+
+        return tabs_with_content
 
     # Cache twitter
     _cache_twitter = models.CharField(max_length=32, null=True, blank=True) # changed when links are modified

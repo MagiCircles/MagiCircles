@@ -91,6 +91,7 @@ enabled = {}
 all_enabled = []
 urls = []
 collectible_collections = {}
+collections_in_profile_tabs = []
 main_collections = []
 sub_collections = {}
 
@@ -162,6 +163,9 @@ def _addToCollections(name, cls): # Class of the collection
             sub_collections[main_collection][collection.name] = collection
     elif issubclass(cls, magicollections.MainItemCollection):
         main_collections.append(collection)
+
+    if collection.list_view.as_profile_tab:
+        collections_in_profile_tabs.append(collection.name)
 
     collection.to_form_class()
     collection.list_view.to_filter_form_class()
@@ -691,6 +695,7 @@ if 'report' not in all_enabled:
 RAW_CONTEXT['all_enabled'] = all_enabled
 RAW_CONTEXT['magicollections'] = collections
 RAW_CONTEXT['collectible_collections'] = collectible_collections
+RAW_CONTEXT['collections_in_profile_tabs'] = collections_in_profile_tabs
 RAW_CONTEXT['main_collections'] = [ _c.name for _c in main_collections ]
 RAW_CONTEXT['account_model'] = ACCOUNT_MODEL
 RAW_CONTEXT['site_name'] = SITE_NAME

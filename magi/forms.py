@@ -1143,6 +1143,7 @@ class MagiFiltersForm(AutoForm):
                                     queryset=queryset, required=True,
                                     initial=initial, label=label, help_text=help_text,
                                 ))] + self.fields.items())
+                if collection.add_view.enabled:
                     # Add added_{} for fields that are collectible
                     field_name = u'added_{}'.format(collection_name)
                     if field_name in self.request.GET:
@@ -1170,6 +1171,12 @@ class MagiFiltersForm(AutoForm):
                     self.fields[filter_field_name] = forms.CharField(
                         widget=forms.HiddenInput
                     )
+
+        # Filter by owner
+        if self.request and 'owner' in self.request.GET:
+            self.owner_filter = MagiFilter(selector=self.Meta.model.selector_to_owner())
+            self.fields['owner'] = forms.CharField(widget=forms.HiddenInput)
+
         if 'search' in self.fields:
             # Remove search from field if search_fields is not specified
             if not getattr(self, 'search_fields', None) and not getattr(self, 'search_fields_exact', None):
@@ -1908,6 +1915,9 @@ class UserPreferencesForm(MagiForm):
                 (tab_name, tab['name'])
                 for tab_name, tab in PROFILE_TABS.items()
             ] + [
+                (collection_name, getMagiCollection(collection_name).list_view.profile_tab_name)
+                for collection_name in RAW_CONTEXT['collections_in_profile_tabs']
+            ] + [
                 (collection_name, collection.collectible_tab_name)
                 for collection_name, collection
                 in RAW_CONTEXT.get('collectible_collections', {}).get('owner', {}).items()
@@ -2587,11 +2597,9 @@ class FilterActivities(MagiFiltersForm):
     with_image = forms.NullBooleanField(label=_('Image'))
     with_image_filter = MagiFilter(selector='image__isnull')
 
-    owner_id = forms.IntegerField(widget=forms.HiddenInput)
-
     def _is_popular_to_queryset(self, queryset, request, value):
-        # Skil the filter if owner_id is selected
-        if 'owner_id' in self.data and self.data['owner_id']:
+        # Skip the filter if owner is selected
+        if self.data.get('owner', None):
             return queryset
         value = self.to_nullbool(value)
         if value is None:
@@ -2809,6 +2817,8 @@ class _BadgeForm(MagiForm):
         super(_BadgeForm, self).__init__(*args, **kwargs)
         if not self.is_creating:
             self.fields['username'].initial = self.instance.user.username
+            # this is set for after_save
+            self.request._previous_show_on_top_profile = self.instance.show_on_profile
 
     def clean_username(self):
         username = self.cleaned_data['username']

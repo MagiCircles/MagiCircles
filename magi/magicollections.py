@@ -150,7 +150,7 @@ class _View(object):
                     raise PermissionDenied()
 
     #######################
-    # Tools - not meant to be overriden
+    # Tools - not meant to be overridden
 
     def has_permissions(self, request, context, item=None):
         try:
@@ -613,12 +613,17 @@ class MagiCollection(object):
                 def top_buttons(self, request, context):
                     buttons = super(_CollectibleCollection.ListView, self).top_buttons(request, context)
                     if (context['ajax']
-                        and 'account' in request.GET
-                        and int(request.GET['account']) in getAccountIdsFromSession(request)):
-                        account_id = int(request.GET['account'])
-                        color = request.GET.get('color', 'main')
-                        classes = [cls for cls in self.top_buttons_classes if cls != 'btn-main'] + [
-                            u'btn-{}'.format(color)]
+                        and (('account' in request.GET
+                              and int(request.GET['account']) in getAccountIdsFromSession(request))
+                             or ('owner' in request.GET and request.user.is_authenticated()
+                                 and int(request.GET['owner']) == request.user.id))):
+                        if 'account' in request.GET:
+                            account_id = int(request.GET['account'])
+                            owner_id = None
+                        else:
+                            owner_id = int(request.GET['owner'])
+                            account_id = None
+                        classes = self.get_top_buttons_classes(request)
                         if context['total_results']:
                             buttons['search_and_filter'] = {
                                 'show': True, 'has_permissions': True,
@@ -628,15 +633,14 @@ class MagiCollection(object):
                                 'title': _('Search and filter'),
                                 'icon': 'search',
                             }
+                        parameters = {}
+                        if account_id:
+                            parameters[u'add_to_{}'.format(self.collection.name)] = account_id
+                        if parent_collection.list_view.quick_add_view:
+                            parameters['view'] = parent_collection.list_view.quick_add_view
                         buttons['add_to_collected'] = {
                             'show': True, 'has_permissions': True,
-                            'url': addParametersToURL(parent_collection.get_list_url(
-                                parameters={
-                                    'view': parent_collection.list_view.quick_add_view
-                                } if parent_collection.list_view.quick_add_view else None,
-                            ), {
-                                u'add_to_{}'.format(self.collection.name): account_id,
-                            }),
+                            'url': parent_collection.get_list_url(parameters=parameters),
                             'classes': classes,
                             'title': self.collection.add_sentence,
                             'icon': 'add',
@@ -648,7 +652,7 @@ class MagiCollection(object):
                                     parent_collection.get_list_url(
                                         parameters={
                                             'view': parent_collection.list_view.quick_add_view,
-                                            u'added_{}'.format(self.collection.name): account_id,
+                                            u'added_{}'.format(self.collection.name): account_id or owner_id,
                                         })
                                     if parent_collection.list_view.quick_add_view
                                     else self.collection.get_list_url_for_authenticated_owner(
@@ -1302,7 +1306,7 @@ class MagiCollection(object):
         """
         Used to display buttons below item, only for ItemView and ListView.
         You may override this function, but you're not really supposed to call it yourself.
-        Can be overriden per view.
+        Can be overridden per view.
         """
         buttons = OrderedDict([
             (button_name, {
@@ -1315,9 +1319,7 @@ class MagiCollection(object):
                 'open_in_new_window': False,
                 'ajax_url': False,
                 'ajax_title': False, # By default will use title
-                'classes': ((context.get('alt_view', {}) or {}).get(
-                    'item_buttons_classes', view.item_buttons_classes
-                ) + (['btn-block'] if not view.show_item_buttons_in_one_line else [])),
+                'classes': view.get_item_buttons_classes(request, context),
             }) for button_name in self.collectible_collections.keys() + ['edit', 'translate', 'report']
         ])
         # Collectible buttons
@@ -1493,7 +1495,7 @@ class MagiCollection(object):
         }
 
     #######################
-    # Tools - not meant to be overriden
+    # Tools - not meant to be overridden
 
     def get_list_url(self, ajax=False, modal_only=False, parameters=None, preset=None, random=False):
         return u'{}/{}/{}{}{}{}'.format(
@@ -1537,6 +1539,29 @@ class MagiCollection(object):
     def all_views(self):
         return [self.list_view, self.item_view, self.add_view, self.edit_view]
 
+    def get_buttons_classes(self, buttons_classes, request, size=None, block=None, color=None):
+        new_buttons_classes = []
+        color = color or request.GET.get('buttons_color', None) or getattr(request, 'force_buttons_color', None)
+        has_size = False
+        for cls in buttons_classes:
+            if color:
+                if '-main' in cls:
+                    cls = cls.replace('-main', u'-{}'.format(color))
+                elif '-secondary' in cls:
+                    cls = cls.replace('-secondary', u'-{}'.format(color))
+                elif cls == 'btn-link':
+                    cls = u'btn-link-{}'.format(color)
+            if size:
+                if cls in ['btn-xs', 'btn-sm', 'btn-md', 'btn-lg', 'btn-xl']:
+                    cls = u'btn-{}'.format(size)
+                    has_size = True
+            new_buttons_classes.append(cls)
+        if block:
+            new_buttons_classes.append('btn-block')
+        if size and not has_size:
+            new_buttons_classes.append(u'btn-{}'.format(size))
+        return new_buttons_classes
+
     def __unicode__(self):
         return u'MagiCollection {}'.format(self.name)
 
@@ -1570,6 +1595,8 @@ class MagiCollection(object):
         ajax_item_popover = False
         hide_icons = False
         allow_random = True
+        as_profile_tab = False
+        profile_tab_name = property(lambda _s: _s.get_page_title())
 
         auto_filter_form = False
 
@@ -1662,6 +1689,7 @@ class MagiCollection(object):
             You may override this function, but you're not really supposed to call it yourself.
             """
             buttons = OrderedDict()
+            top_buttons_classes = self.get_top_buttons_classes(request)
             # Add buttons
             if self.collection.add_view.enabled:
                 for_all_buttons = {
@@ -1670,7 +1698,7 @@ class MagiCollection(object):
                     'ajax_url': False, # Top add buttons should always open a full page
                     'open_in_new_window': False,
                     'classes': (
-                        self.collection.list_view.top_buttons_classes
+                        top_buttons_classes
                         + (['staff-only'] if self.collection.add_view.staff_required and not self.staff_required else [])
                     ),
                     'title': self.collection.add_sentence,
@@ -1782,7 +1810,7 @@ class MagiCollection(object):
             )
 
         #######################
-        # Tools - not meant to be overriden
+        # Tools - not meant to be overridden
 
         @property
         def plain_default_ordering_list(self):
@@ -1791,6 +1819,19 @@ class MagiCollection(object):
         @property
         def plain_default_ordering(self):
             return self.plain_default_ordering_list[0]
+
+        def get_top_buttons_classes(self, request, size=None, block=None, color=None):
+            return self.collection.get_buttons_classes(
+                self.top_buttons_classes, request, size=size, block=block, color=color)
+
+        def get_item_buttons_classes(self, request, context, size=None, block=None, color=None):
+            return self.collection.get_buttons_classes(
+                (context.get('alt_view', {}) or {}).get('item_buttons_classes', self.item_buttons_classes),
+                request,
+                size=size,
+                block=(block or not self.show_item_buttons_in_one_line),
+                color=color,
+            )
 
     class ItemView(_View):
         view = 'item_view'
@@ -1830,9 +1871,7 @@ class MagiCollection(object):
         @property
         def show_item_buttons(self):
             return False if self.template == 'default' else self.collection.show_item_buttons
-        @property
-        def item_buttons_classes(self):
-            return self.collection.item_buttons_classes + (['btn-lg'] if self.template == 'default' else [])
+        item_buttons_classes = property(propertyFromCollection('item_buttons_classes'))
         @property
         def show_item_buttons_as_icons(self):
             return True if self.template == 'default' else self.collection.show_item_buttons_as_icons
@@ -1904,6 +1943,17 @@ class MagiCollection(object):
 
         def get_page_title(self, item=None):
             return unicode(item) if item else self.collection.title
+
+        #######################
+        # Tools - not meant to be overridden
+
+        def get_item_buttons_classes(self, request, context, size=None, block=None, color=None):
+            return self.collection.get_buttons_classes(
+                self.item_buttons_classes, request,
+                size=(size or ('lg' if self.template == 'default' else None)),
+                block=(block or not self.show_item_buttons_in_one_line),
+                color=color,
+            )
 
     class AddView(_View):
         view = 'add_view'
@@ -1999,7 +2049,7 @@ class MagiCollection(object):
             return self.collection.add_sentence
 
         #######################
-        # Tools - not meant to be overriden
+        # Tools - not meant to be overridden
 
         def has_type_permissions(self, request, context, type=None):
             try:
@@ -2071,6 +2121,9 @@ class MagiCollection(object):
         def before_delete(self, request, item, ajax):
             pass
 
+        def after_delete(self, request):
+            pass
+
         def redirect_after_delete(self, request, item, ajax):
             return self.collection.get_list_url(ajax, modal_only=ajax)
 
@@ -2128,7 +2181,7 @@ class MagiCollection(object):
             return self.collection.edit_sentence
 
         #######################
-        # Tools - not meant to be overriden
+        # Tools - not meant to be overridden
 
         def has_translate_permissions(self, request, context):
             try:
@@ -2449,8 +2502,16 @@ class AccountCollection(MagiCollection):
             return '{}#{}'.format(request.user.item_url, instance.pk)
 
         def before_save(self, request, instance, type=None):
+            super(AccountCollection.AddView, self).before_save(request, instance, type=type)
             if 'account_ids' in request.session:
                 del request.session['account_ids']
+            return instance
+
+        def after_save(self, request, instance, type=None):
+            super(AccountCollection.AddView, self).after_save(request, instance, type=type)
+            # If the user had no account before, update cache to say that they have accounts now
+            if not instance.owner.preferences.cached_tabs_with_content.get('account', {}).get('has_content', False):
+                instance.owner.preferences.force_update_cache('tabs_with_content')
             return instance
 
     class EditView(MagiCollection.EditView):
@@ -2465,8 +2526,14 @@ class AccountCollection(MagiCollection):
             return '{}#{}'.format(request.user.item_url, instance.pk)
 
         def before_delete(self, request, item, ajax):
+            super(AccountCollection.EditView, self).before_delete(request, item, ajax)
             if 'account_ids' in request.session:
                 del request.session['account_ids']
+            request._account_owner = item.owner
+
+        def after_delete(self, request):
+            super(AccountCollection.EditView, self).after_delete(request)
+            request._account_owner.preferences.force_update_cache('tabs_with_content')
 
         def redirect_after_delete(self, request, item, ajax=False):
             if ajax:
@@ -2537,15 +2604,15 @@ class UserCollection(MagiCollection):
         if 'privatemessage' in context['all_enabled']:
             buttons = OrderedDict([
                 ('privatemessage', {
-                    'classes': (
-                        ['btn', u'btn-{}'.format(user.preferences.css_color)]
-                        if view.view == 'item_view'
-                        else view.item_buttons_classes
-                    ),
+                    'classes': [
+                        cls for cls in view.get_item_buttons_classes(request, context)
+                        if not cls.startswith('btn-link')
+                    ] + [u'btn-{}'.format(user.preferences.css_color)],
                     'show': True,
                     'url': '/privatemessages/?to_user={id}'.format(id=user.id),
-                    'ajax_url': '/ajax/privatemessages/?to_user={id}&ajax_modal_only&ajax_show_top_buttons'.format(
+                    'ajax_url': '/ajax/privatemessages/?to_user={id}&ajax_modal_only&ajax_show_top_buttons&buttons_color={color}'.format(
                         id=user.id,
+                        color=user.preferences.css_color,
                     ),
                     'icon': 'contact',
                     'title': _('Private messages'),
@@ -2561,7 +2628,7 @@ class UserCollection(MagiCollection):
         # Block button
         if request.user.is_authenticated() and user.id != request.user.id:
             buttons['block'] = {
-                'classes': view.item_buttons_classes,
+                'classes': view.get_item_buttons_classes(request, context),
                 'show': True,
                 'url': u'/block/{}/'.format(user.id),
                 'icon': 'block',
@@ -2595,11 +2662,12 @@ class UserCollection(MagiCollection):
         def buttons_per_item(self, request, context, item):
             buttons = super(UserCollection.ListView, self).buttons_per_item(request, context, item)
             buttons = self.collection._buttons_per_item(self, buttons, request, context, item)
+            classes = self.get_item_buttons_classes(request, context)
             if 'block' in buttons:
                 buttons['block']['open_in_new_window'] = True
             if item.id == request.user.id:
                 buttons['settings'] = {
-                    'classes': self.item_buttons_classes,
+                    'classes': classes,
                     'show': True,
                     'url': '/settings/',
                     'open_in_new_window': True,
@@ -2611,7 +2679,7 @@ class UserCollection(MagiCollection):
                 followed = False if not request.user.is_authenticated() else item.followed
                 buttons = OrderedDict([
                     ('follow', {
-                        'classes': self.item_buttons_classes,
+                        'classes': classes,
                         'show': True,
                         'url': item.item_url,
                         'open_in_new_window': True,
@@ -2623,7 +2691,7 @@ class UserCollection(MagiCollection):
             if not request.GET.get('view', None):
                 buttons = OrderedDict([
                     ('profile', {
-                        'classes': self.item_buttons_classes,
+                        'classes': classes,
                         'show': True,
                         'url': item.item_url,
                         'open_in_new_window': True,
@@ -2654,6 +2722,7 @@ class UserCollection(MagiCollection):
         def buttons_per_item(self, request, context, item):
             buttons = super(UserCollection.ItemView, self).buttons_per_item(request, context, item)
             buttons = self.collection._buttons_per_item(self, buttons, request, context, item)
+            classes = self.get_item_buttons_classes(request, context)
 
             # Make sure reputation is calculated every day for all users
             reputation = item.preferences.cached_reputation
@@ -2661,7 +2730,7 @@ class UserCollection(MagiCollection):
             # Reputation info button
             if request.user.is_authenticated() and request.user.hasPermission('see_reputation'):
                 buttons['reputation'] = {
-                    'classes': self.item_buttons_classes + ['staff-only', 'disabled'],
+                    'classes': classes + ['staff-only', 'disabled'],
                     'show': True,
                     'url': '#',
                     'icon': 'leaderboard',
@@ -2796,6 +2865,9 @@ class UserCollection(MagiCollection):
                 context['js_variables'] = {}
             afterjs = u'<script>'
 
+            # Retrieve cached tabs with content
+            tabs_with_content = user.preferences.cached_tabs_with_content
+
             # Account fields, buttons and tabs
             afterjs += u'var account_tab_callbacks = {'
             if account_collection:
@@ -2803,6 +2875,11 @@ class UserCollection(MagiCollection):
                     # Fields
                     account.fields = account_collection.item_view.to_fields(account)
                     # Buttons
+                    request.force_buttons_color = (
+                        account.center.color
+                        if account.center and account.center.color
+                        else account.cached_owner.preferences.css_color
+                    )
                     account.buttons_to_show = account_collection.item_view.buttons_per_item(request, context, account)
                     account.show_item_buttons_justified = account_collection.item_view.show_item_buttons_justified
                     account.show_item_buttons_as_icons = account_collection.item_view.show_item_buttons_as_icons
@@ -2816,6 +2893,13 @@ class UserCollection(MagiCollection):
                         account.opened_tab = account.default_tab
                     if open_tab_key in request.GET and request.GET[open_tab_key] in account.tabs:
                         account.opened_tab = request.GET[open_tab_key]
+                    # Hide tabs with no values
+                    if not context['is_me']:
+                        for collection_name in context['collectible_collections'].get('account', {}):
+                            if (collection_name not in [account.opened_tab, account.default_tab]
+                                and not tabs_with_content.get('account', {}).get(
+                                    'tabs_per_account', {}).get(str(account.id), {}).get(collection_name, False)):
+                                del(account.tabs[collection_name])
                     afterjs += u'\'{account_id}\': {{'.format(account_id=account.id)
                     for tab_name, tab in account.tabs.items():
                         if 'callback' in tab and tab['callback']:
@@ -2823,11 +2907,13 @@ class UserCollection(MagiCollection):
                                 tab_name=tab_name, callback=tab['callback'],
                             )
                     afterjs += u'},'
+                request.force_buttons_color = None
             afterjs += u'};'
 
             # Badges
-            if 'badge' in context['all_enabled']:
-                context['item'].latest_badges = list(context['item'].badges.filter(show_on_top_profile=True).order_by('-date', '-id')[:6])
+            if 'badge' in context['all_enabled'] and tabs_with_content.get('badge_top_profile'):
+                context['item'].latest_badges = list(context['item'].badges.filter(
+                    show_on_top_profile=True).order_by('-date', '-id')[:6])
                 if len(context['item'].latest_badges) == 6:
                     context['more_badges'] = True
                 context['item'].latest_badges = context['item'].latest_badges[:5]
@@ -2835,16 +2921,36 @@ class UserCollection(MagiCollection):
             # Profile tabs
             context['show_total_accounts'] = SHOW_TOTAL_ACCOUNTS
             context['profile_tabs'] = PROFILE_TABS.copy()
+
+            parameters = {
+                'ajax_show_no_result': '',
+                'buttons_color': user.preferences.css_color,
+            }
+            if context['is_me']:
+                parameters['ajax_show_top_buttons'] = ''
+
+            for collection_name in context['collections_in_profile_tabs']:
+                collection = getMagiCollection(collection_name)
+                context['profile_tabs'][collection_name] = {
+                    'name': collection.list_view.profile_tab_name,
+                    'icon': collection.icon,
+                    'image': collection.image,
+                    'callback': mark_safe(u'loadCollectionForOwner(\'{load_url}\', {callback})'.format(
+                        load_url=collection.get_list_url(ajax=True, parameters=parameters),
+                        callback=collection.list_view.ajax_pagination_callback or 'undefined',
+                    )),
+                }
+
             if context['collectible_collections'] and 'owner' in context['collectible_collections']:
                 for collection_name, collection in context['collectible_collections']['owner'].items():
                     if collection_name in context['profile_tabs']:
                         continue
                     context['profile_tabs'][collection_name] = {
-                        'name': collection.plural_title,
+                        'name': collection.collectible_tab_name,
                         'icon': collection.icon,
                         'image': collection.image,
                         'callback': mark_safe(u'loadCollectionForOwner(\'{load_url}\', {callback})'.format(
-                            load_url=collection.get_list_url(ajax=True),
+                            load_url=collection.get_list_url(ajax=True, parameters=parameters),
                             callback=collection.list_view.ajax_pagination_callback or 'undefined',
                         )),
                     }
@@ -2858,12 +2964,32 @@ class UserCollection(MagiCollection):
                 )
                 context['profile_tabs']['account']['icon'] = account_collection.icon
 
-            context['profile_tabs_size'] = 100 / len(context['profile_tabs']) if context['profile_tabs'] else 100
+            # Set opened tab
             context['opened_tab'] = context['profile_tabs'].keys()[0] if context['profile_tabs'] else None
             if user.preferences.default_tab and user.preferences.default_tab in context['profile_tabs']:
                 context['opened_tab'] = user.preferences.default_tab
             if 'open' in request.GET and request.GET['open'] in context['profile_tabs']:
                 context['opened_tab'] = request.GET['open']
+
+            # Hide tabs with no values
+            if not context['is_me']:
+                def must_stay(collection_name):
+                    return collection_name in [context['opened_tab'], user.preferences.default_tab]
+                for collection_name in (
+                        context['collections_in_profile_tabs']
+                        + context['collectible_collections'].get('owner', {}).keys()):
+                    if (not must_stay(collection_name) and not tabs_with_content.get(collection_name, False)):
+                        del(context['profile_tabs'][collection_name])
+                if ('account' in context['profile_tabs'] and not must_stay('account')
+                    and not tabs_with_content.get('account', {}).get('has_content', False)):
+                    del(context['profile_tabs']['account'])
+                if ('badge' in context['profile_tabs'] and not must_stay('badge')
+                    and not tabs_with_content.get('badge', False)):
+                    del(context['profile_tabs']['badge'])
+
+            # Tab size
+            context['profile_tabs_size'] = 100 / len(context['profile_tabs']) if context['profile_tabs'] else 100
+
             afterjs += u'var tab_callbacks = {'
             for tab_name, tab in context['profile_tabs'].items():
                 if 'callback' in tab and tab['callback']:
@@ -2886,17 +3012,13 @@ class UserCollection(MagiCollection):
                     context['per_line'] = i
 
             # Sentences
-            activity_collection = getMagiCollection('activity')
-            if activity_collection:
-                if activity_collection.add_view.has_permissions(request, context):
-                    context['js_variables']['show_add_activity_button'] = context['is_me']
-                    context['js_variables']['add_activity_sentence'] = activity_collection.add_sentence
-                    context['js_variables']['add_activity_subtitle'] = unicode(activity_collection.list_view.add_button_subtitle)
-                else:
-                    context['js_variables']['show_add_activity_button'] = False
             if account_collection and account_collection.add_view.has_permissions(request, context):
                 context['can_add_account'] = True
                 context['add_account_sentence'] = account_collection.add_sentence
+                context['add_account_subtitle'] = account_collection.list_view.add_button_subtitle
+                context['add_account_icon'] = account_collection.icon
+                context['add_account_buttons_classes'] = u' '.join(
+                    account_collection.list_view.get_top_buttons_classes(request, color=user.preferences.css_color))
             if context['is_me']:
                 emojis = getEmojis(2)
                 context['share_sentence'] = _(u'Hey, look! I\'m on {site}! Follow me ♥︎').format(
@@ -3190,6 +3312,7 @@ class ActivityCollection(MagiCollection):
 
     def buttons_per_item(self, view, request, context, item):
         buttons = super(ActivityCollection, self).buttons_per_item(view, request, context, item)
+        classes = view.get_item_buttons_classes(request, context)
         js_buttons = []
         if request.user.is_authenticated():
 
@@ -3207,7 +3330,7 @@ class ActivityCollection(MagiCollection):
                         'title': _('Unarchive'),
                         'url': u'/ajax/unarchiveactivity/{}/'.format(item.id),
                         'icon': icon,
-                        'classes': view.item_buttons_classes + (['staff-only'] if staff_only else []),
+                        'classes': classes + (['staff-only'] if staff_only else []),
                     }))
                 else:
                     # Archive
@@ -3223,7 +3346,7 @@ class ActivityCollection(MagiCollection):
                         )),
                         'url': u'/ajax/archiveactivity/{}/'.format(item.id),
                         'icon': icon,
-                        'classes': view.item_buttons_classes + (['staff-only'] if staff_only else []),
+                        'classes': classes + (['staff-only'] if staff_only else []),
                     }))
 
             if request.user.hasPermission('edit_activities_post_language'):
@@ -3234,7 +3357,7 @@ class ActivityCollection(MagiCollection):
                     'url': u'{}?fix_language'.format(item.edit_url),
                     'ajax_url': u'{}?fix_language'.format(item.ajax_edit_url),
                     'image': item.language_image_url,
-                    'classes': view.item_buttons_classes + (
+                    'classes': classes + (
                         ['staff-only'] if 'fix_language' not in request.GET else []
                     ),
                 }))
@@ -3246,7 +3369,7 @@ class ActivityCollection(MagiCollection):
                     'title': 'Bump',
                     'url': u'/ajax/bumpactivity/{}/'.format(item.id),
                     'icon': 'sort-up',
-                    'classes': view.item_buttons_classes + ['staff-only'],
+                    'classes': classes + ['staff-only'],
                 }))
                 # Drown
                 js_buttons.append(('drown', {
@@ -3254,7 +3377,7 @@ class ActivityCollection(MagiCollection):
                     'title': 'Drown',
                     'url': u'/ajax/drownactivity/{}/'.format(item.id),
                     'icon': 'sort-down',
-                    'classes': view.item_buttons_classes + ['staff-only'],
+                    'classes': classes + ['staff-only'],
                 }))
             if ('staff' in models.ACTIVITY_TAGS_DICT.keys()
                 and request.user.hasPermission('mark_activities_as_staff_pick')):
@@ -3264,7 +3387,7 @@ class ActivityCollection(MagiCollection):
                         'has_permissions': True, 'title': 'Remove from staff picks',
                         'url': u'/ajax/removeactivitystaffpick/{}/'.format(item.id),
                         'icon': 'staff',
-                        'classes': view.item_buttons_classes + ['staff-only'],
+                        'classes': classes + ['staff-only'],
                     }))
                 else:
                     # Mark as staff pick
@@ -3272,7 +3395,7 @@ class ActivityCollection(MagiCollection):
                         'has_permissions': True, 'title': 'Mark as staff pick',
                         'url': u'/ajax/markactivitystaffpick/{}/'.format(item.id),
                         'icon': 'staff',
-                        'classes': view.item_buttons_classes + ['staff-only'],
+                        'classes': classes + ['staff-only'],
                     }))
         # Add show, csrf token to Js buttons
         for button_name, button in js_buttons:
@@ -3285,7 +3408,7 @@ class ActivityCollection(MagiCollection):
         buttons.update(js_buttons)
         return buttons
 
-    def _item_and_list_extra_context(self, context):
+    def _item_and_list_extra_context(self, request, context, view):
         if 'js_variables' not in context:
             context['js_variables'] = {}
         context['js_variables']['main_collections'] = {
@@ -3293,6 +3416,7 @@ class ActivityCollection(MagiCollection):
             for collection_name in context['main_collections']
         }
         context['js_variables']['site_url'] = context['site_url']
+        context['buttons_classes'] = u' '.join(view.get_item_buttons_classes(request, context))
 
     class ListView(MagiCollection.ListView):
         item_template = custom_item_template
@@ -3307,6 +3431,8 @@ class ActivityCollection(MagiCollection):
         show_item_buttons = False
         show_item_buttons_justified = False
         ajax_callback = 'loadIndex'
+        as_profile_tab = True
+        profile_tab_name = property(lambda _s: _s.collection.plural_title)
 
         def get_page_title(self):
             return _('Feed')
@@ -3383,7 +3509,7 @@ class ActivityCollection(MagiCollection):
 
             # Dyanmic loaded content in activities
 
-            self.collection._item_and_list_extra_context(context)
+            self.collection._item_and_list_extra_context(context['request'], context, self)
 
     class ItemView(MagiCollection.ItemView):
         template = custom_item_template
@@ -3410,7 +3536,7 @@ class ActivityCollection(MagiCollection):
 
             # Dyanmic loaded content in activities
 
-            self.collection._item_and_list_extra_context(context)
+            self.collection._item_and_list_extra_context(context['request'], context, self)
 
             # Show warning on hidden tags
 
@@ -3598,10 +3724,8 @@ class BadgeCollection(MagiCollection):
                     url=self.get_add_url(type='copy'),
                     badge_id=item.id,
                 ),
-                'classes': (
-                    view.item_buttons_classes
-                    + (['btn-block'] if not view.show_item_buttons_in_one_line else [])
-                    + (['staff-only'] if self.add_view.staff_required else [])
+                'classes': view.get_item_buttons_classes(request, context, block=True) + (
+                    ['staff-only'] if self.add_view.staff_required else []
                 ),
             }
         if not context['ajax']:
@@ -3632,6 +3756,21 @@ class BadgeCollection(MagiCollection):
             buttons = super(BadgeCollection.ListView, self).top_buttons(request, context)
             for button in buttons.values():
                 button['classes'] = [cls for cls in button['classes'] if cls != 'staff-only']
+            of_user = request.GET.get('of_user', None)
+            if of_user:
+                if (context['request'].LANGUAGE_CODE not in LANGUAGES_CANT_SPEAK_ENGLISH
+                    and 'help' in context['all_enabled']
+                    and request.user.is_authenticated()
+                    and unicode(request.user.id) == of_user):
+                    buttons['get_badges'] = {
+                        'show': True, 'has_permissions': True,
+                        'url': '/help/Badges',
+                        'icon': self.collection.icon,
+                        'classes': self.get_top_buttons_classes(request),
+                        'title': _('How to get badges?'),
+                        'subtitle': _('Collect them all!'),
+                        'open_in_new_window': True,
+                    }
             return buttons
 
         def check_permissions(self, request, context):
@@ -3683,6 +3822,15 @@ class BadgeCollection(MagiCollection):
                 context['alert_button_string'] = context['forms'][form_name].badge.open_sentence
                 context['alert_button_link'] = context['forms'][form_name].badge.item_url
 
+        def after_save(self, request, instance, type=None):
+            super(BadgeCollection.AddView, self).after_save(request, instance, type=type)
+            # If the user had no badge before, update cache to say that they have badges now
+            if (not instance.user.preferences.cached_tabs_with_content.get('badge', False)
+                or (instance.show_on_profile
+                    and not instance.user.preferences.cached_tabs_with_content.get('badge_top_profile', False))):
+                instance.user.preferences.force_update_cache('tabs_with_content')
+            return instance
+
     class EditView(MagiCollection.EditView):
         staff_required = True
         one_of_permissions_required = ['add_donation_badges', 'add_badges']
@@ -3691,6 +3839,26 @@ class BadgeCollection(MagiCollection):
         def check_type_permissions(self, request, context, type=None, item=None):
             if type == 'donator' and not hasPermission(request.user, 'add_donation_badges'):
                 raise PermissionDenied()
+
+        # If the badge wasn't shown on top profile and is now shown, update cache
+
+        def after_save(self, request, instance):
+            super(BadgeCollection.EditView, self).after_save(request, instance)
+            # _previous_show_on_top_profile is set in form init
+            if (instance.show_on_profile != request._previous_show_on_top_profile):
+                instance.user.preferences.force_update_cache('tabs_with_content')
+            return instance
+
+        # After deleting, update cache
+
+        def before_delete(self, request, instance, ajax=False):
+            super(BadgeCollection.EditView, self).before_delete(request, instance, ajax=ajax)
+            request._badge_user = instance.user
+            return instance
+
+        def after_delete(self, request):
+            super(BadgeCollection.EditView, self).after_delete(request)
+            request._badge_user.preferences.force_update_cache('tabs_with_content')
 
 ############################################################
 # Report Collection

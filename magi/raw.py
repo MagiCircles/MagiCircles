@@ -26,11 +26,12 @@ GET_PARAMETERS_IN_FORM_HANDLED_OUTSIDE = [
 GET_PARAMETERS_NOT_IN_FORM = [
     'ids',
     'page', 'page_size',
-    'ajax_modal_only', 'ajax_show_top_buttons',
+    'ajax_modal_only', 'ajax_show_top_buttons', 'ajax_show_top_buttons',
     'show_owner', 'get_started'
     'max_per_line',
     'only_show_buttons',
     'open',
+    'buttons_color',
 ]
 
 other_sites = [

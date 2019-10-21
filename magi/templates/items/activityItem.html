@@ -100,24 +100,24 @@
             <div class="btn-group">
               {% if user.is_authenticated %}
               {% if activity.cached_owner.username == user.username %}
-              <button class="btn btn-link" disabled><i class="flaticon-heart"></i> {% trans 'Liked' %}</button>
+              <button class="{{ buttons_classes }}" disabled><i class="flaticon-heart"></i> {% trans 'Liked' %}</button>
               {% else %}
-              <button type="submit" class="btn btn-link" data-reverse="{% if activity.liked %}<i class='flaticon-heart-empty'></i> {% trans 'Like' %}{% else %}<i class='flaticon-heart'></i> {% trans 'Liked' %}{% endif %}">{% if activity.liked %}<i class='flaticon-heart'></i> {% trans 'Liked' %}{% else %}<i class='flaticon-heart-empty'></i> {% trans 'Like' %}{% endif %}</button>
+              <button type="submit" class="{{ buttons_classes }}" data-reverse="{% if activity.liked %}<i class='flaticon-heart-empty'></i> {% trans 'Like' %}{% else %}<i class='flaticon-heart'></i> {% trans 'Liked' %}{% endif %}">{% if activity.liked %}<i class='flaticon-heart'></i> {% trans 'Liked' %}{% else %}<i class='flaticon-heart-empty'></i> {% trans 'Like' %}{% endif %}</button>
               {% endif %}
               {% else %}
-              <a href="/signup/?next={{ current_url }}" class="btn btn-link"><i class="flaticon-heart-empty"></i> {% trans 'Like' %}</a>
+              <a href="/signup/?next={{ current_url }}" class="{{ buttons_classes }}"><i class="flaticon-heart-empty"></i> {% trans 'Like' %}</a>
               {% endif %}
-              <div class="btn btn-link hidden-loader" style="display: none;"><i class="flaticon-loading"></i></div>
+              <div class="{{ buttons_classes }} hidden-loader" style="display: none;"><i class="flaticon-loading"></i></div>
               <a href="/users/?liked_activity={{ activity.id }}"
-                 class="btn btn-link"
+                 class="{{ buttons_classes }}"
                  data-ajax-url="/ajax/users/?ajax_modal_only&liked_activity={{ activity.id }}"
                  data-ajax-title="{% trans 'Liked this activity' %}"
                  >{{ activity.cached_total_likes|add:1 }}</a>
             </div>
             {% if current != 'activity_item' %}
             <div class="btn-group writecomments">
-              <a href="{{ activity.item_url }}" target="_blank" class="btn btn-link"><i class="flaticon-comments"></i> {% trans 'Write Comment' %}</a>
-              <a href="{{ activity.item_url }}/#disqus_thread" target="_blank" class="btn btn-link disqus-comment-count" data-disqus-identifier="activity-{{ activity.id }}">{% trans 'Comments' %}</a>
+              <a href="{{ activity.item_url }}" target="_blank" class="{{ buttons_classes }}"><i class="flaticon-comments"></i> {% trans 'Write Comment' %}</a>
+              <a href="{{ activity.item_url }}/#disqus_thread" target="_blank" class="{{ buttons_classes }} disqus-comment-count" data-disqus-identifier="activity-{{ activity.id }}">{% trans 'Comments' %}</a>
             </div>
             {% endif %}
             {% include 'include/below_item.html' with buttons_only=True show_item_buttons=True %}

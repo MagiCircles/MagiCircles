@@ -4,7 +4,7 @@
 {% with profile_user=item %}
 <div>
   <br><br>
-  <div class="jumbotron jumbotron-{{ profile_user.preferences.css_color }}{% if profile_user.preferences.background_image_url %} with-background{% endif %}"{% if profile_user.preferences.background_image_url %} style="background-image: url('{{ profile_user.preferences.background_image_url }}');"{% endif %} id="profile">
+  <div class="jumbotron jumbotron-{{ profile_user.preferences.css_color }}{% if profile_user.preferences.background_image_url %} with-background{% endif %}"{% if profile_user.preferences.background_image_url %} style="background-image: url('{{ profile_user.preferences.background_image_url }}');"{% endif %} id="profile" data-color="{{ profile_user.preferences.css_color }}">
     <div class="topprofile">
       <div class="row">
         <div class="col-sm-2">
@@ -30,7 +30,7 @@
               {% elif not user.is_authenticated %}
               <a href="/signup/?next={{ current_url }}&next_title={% trans 'Profile' %}: {{ profile_user }}" class="btn btn-lg btn-{{ profile_user.preferences.css_color }}">{% trans 'Follow' %}</a><br>
               {% elif is_me %}
-              <a href="/settings/" class="btn btn-lg btn-{{ profile_user.preferences.css_color }}"><i class="flaticon-edit"></i> {% trans 'Settings' %}</a><br>
+              <a href="/settings/" class="btn btn-lg btn-{{ profile_user.preferences.css_color }}"><i class="flaticon-settings"></i> {% trans 'Settings' %}</a><br>
               {% endif %}
               <div class="follow-buttons">
                 <br>
@@ -104,7 +104,7 @@
   <div>
 
     <!-- Nav tabs -->
-    <ul class="nav nav-tabs" id="profiletabs">
+    <ul class="nav nav-tabs nav-tabs-{{ profile_user.preferences.css_color }}" id="profiletabs">
       {% for tab_name, tab in profile_tabs.items %}
       <li{% if opened_tab == tab_name %} class="active"{% endif %} style="width: {% localize off %}{{ profile_tabs_size }}{% endlocalize %}%;"><a href="#profile{{ tab_name }}" data-toggle="tab">
           {% if tab.icon %}<i class="flaticon-{{ tab.icon }}"></i><span class="hidden-xs hidden-sm">{% endif %}
@@ -117,23 +117,34 @@
     <div class="tab-content">
       {% for tab_name, tab in profile_tabs.items %}
       <div role="tabpanel" class="tab-pane{% if opened_tab == tab_name %} active{% endif %}" id="profile{{ tab_name }}" data-tab-name="{{ tab_name }}">{% if tab_name == 'account' %}
-        {% if profile_user.all_accounts|length == 0 %}
-        <h2>
-          {% if is_me and can_add_account %}
-          <div class="pull-right">
-            <a href="/accounts/add/" class="btn btn-{{ profile_user.preferences.css_color }} btn-lg">
-              {{ add_account_sentence }}
-            </a>
-          </div>
-          {% endif %}
-          {% trans 'No result.' %}</h2>
-        {% else %}
+        {% if profile_user.all_accounts|length > 0 %}
         {% if show_total_accounts %}
         {% with length=profile_user.all_accounts|length %}
         <h2>{% blocktrans count counter=length %}{{ length }} account:{% plural %}{{ length }} accounts:{% endblocktrans %}</h2>
         {% endwith %}
         {% endif %}
         {% include accounts_template|add:'.html' %}
+        {% endif %}
+        {% if is_me and can_add_account %}
+        <div class="top_buttons">
+          <div class="row">
+            <div class="col-md-12">
+              <a href="/accounts/add/" data-top-btn-name="add" class="{{ add_account_buttons_classes }}" title="{{ add_account_sentence }}">
+                <i class="flaticon-{{ add_account_icon }}"></i>
+                {{ add_account_sentence }}
+                {% if profile_user.all_accounts|length == 0 and add_account_subtitle %}
+                <br><small>{{ add_account_subtitle }}</small>{% endif %}
+              </a>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        {% if profile_user.all_accounts|length == 0 %}
+        <div class="padding50 no-result-wrapper">
+          <h4 class="padding50 alert alert-info no-result-alert">
+            {% trans 'No result.' %}
+          </h4>
+        </div>
         {% endif %}
         <br><br>
         {% include 'include/disqus.html' with disqus_identifier='user-'|addint:profile_user.id %}

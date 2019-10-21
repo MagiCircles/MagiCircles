@@ -456,7 +456,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
 
     context['is_last_page'] = context['page'] == context['total_pages']
     context['page_size'] = page_size
-    context['show_no_result'] = not ajax or context['ajax_modal_only']
+    context['show_no_result'] = not ajax or context['ajax_modal_only'] or 'ajax_show_no_result' in request.GET
     context['show_search_results'] = collection.list_view.show_search_results and filled_filter_form
     context['show_owner'] = 'show_owner' in request.GET
     context['get_started'] = 'get_started' in request.GET
@@ -623,6 +623,17 @@ def add_view(request, name, collection, type=None, ajax=False, shortcut_url=None
             instance.save()
             if collection.add_view.savem2m:
                 form.save_m2m()
+
+            # For collectibles per owner or account + as_profile_tabs, update cache
+            if (collection.name != 'account'
+                and (((collection.name in context['collectible_collections'].get('owner', {})
+                       or collection.name in context['collections_in_profile_tabs'])
+                      and not instance.real_owner.preferences.cached_tabs_with_content.get(collection.name, False))
+                     or (collection.name in context['collectible_collections'].get('account', {})
+                         and not instance.real_owner.preferences.cached_tabs_with_content.get(
+                             'account', {}).get('tabs_per_account', {}).get(collection.name, False)))):
+                instance.real_owner.preferences.force_update_cache('tabs_with_content')
+
             instance = collection.add_view.after_save(request, instance, type=type)
             next_value = form.cleaned_data.get('next', None)
             if collection.add_view.allow_next and next_value:
@@ -716,7 +727,17 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
         if formDelete.is_valid():
             collection.edit_view.before_delete(request, instance, ajax)
             redirectURL = collection.edit_view.redirect_after_delete(request, instance, ajax)
+            instance_owner = request.user if instance.owner_id == request.user.id else instance.real_owner
             instance.delete()
+
+            # For collectibles per owner or account + as_profile_tabs, update cache
+            if (collection.name != 'account'
+                and (collection.name in context['collectible_collections'].get('owner', {})
+                     or collection.name in context['collectible_collections'].get('account', {})
+                     or collection.name in context['collections_in_profile_tabs'])):
+                instance_owner.preferences.force_update_cache('tabs_with_content')
+
+            collection.edit_view.after_delete(request)
             raise HttpRedirectException(redirectURL)
     elif request.method == 'POST':
         form = formClass(request.POST, request.FILES, instance=instance, request=request, ajax=ajax, collection=collection, allow_next=collection.edit_view.allow_next)

@@ -3,6 +3,7 @@
 @import "simple-sidebar.less";
 @import "mixins/navbar-variant.less";
 @import "mixins/panel.less";
+@import "mixins/nav-tabs.less";
 @import "mixins/buttons.less";
 @import "mixins/well.less";
 @import "mixins/ribbon.less";
@@ -2048,9 +2049,6 @@ nav {
 }
 
 .magicircles(@mainColor, @secondaryColor, @accentColor: @secondaryColor) {
-    .table-main { .table-color(@mainColor, #fff); }
-    .table-dark { .table-color(darken(@mainColor, 15%), #fff); }
-
     a {
         color: @mainColor;
         &:hover, &:focus {
@@ -2058,28 +2056,33 @@ nav {
         }
     }
 
+    .table-main { .table-color(@mainColor, #fff); }
+    .table-dark { .table-color(darken(@mainColor, 15%), #fff); }
+    .text-main { color: @mainColor; }
+    .a-main { .a-variant(@mainColor); }
     .panel-main { .panel-simple-variant(@mainColor); }
     .alert-main { .alert-simple-variant(@mainColor); }
-    .btn-main { .button-variant(white, @mainColor, darken(@mainColor, 2%)); }
+    .btn-main, a.btn-main { .button-variant(white, @mainColor, darken(@mainColor, 2%)); }
     .btn-link-main { .button-variant(@mainColor, @transparent, @transparent); }
-    .a-main { .a-variant(@mainColor); }
     .progress-bar-main { .progress-bar-variant(@mainColor); }
     .jumbotron-main { .jumbotron_per_color(@mainColor); }
+    .nav-tabs-main { .nav_tabs_per_color(@mainColor); }
     .well-main { .well_per_color(@mainColor); }
+    .label-main { .label-variant(@mainColor); }
 
     .table-secondary { .table-color(@accentColor, #fff); }
+    .text-secondary { color: @secondaryColor; }
+    .a-secondary { .a-variant(@secondaryColor); }
     .panel-secondary { .panel-simple-variant(@accentColor); }
     .alert-secondary { .alert-simple-variant(@secondaryColor); }
-    .btn-secondary { .button-variant(white, @secondaryColor, darken(@secondaryColor, 2%)); }
+    .btn-secondary, a.btn-secondary { .button-variant(white, @secondaryColor, darken(@secondaryColor, 2%)); }
     .btn-link-secondary { .button-variant(@secondaryColor, @transparent, @transparent); }
-    .a-secondary { .a-variant(@secondaryColor); }
     .progress-bar-secondary { .progress-bar-variant(@secondaryColor); }
     .progress-bar-accent { .progress-bar-variant(@accentColor); }
     .jumbotron-secondary { .jumbotron_per_color(@accentColor); }
+    .nav-tabs-secondary { .nav_tabs_per_color(@secondaryColor); }
     .well-secondary { .well_per_color(@accentColor); }
-
-    .text-main { color: @mainColor; }
-    .text-secondary { color: @secondaryColor; }
+    .label-secondary { .label-variant(@secondaryColor); }
 
     .btn-link-primary { .button-variant(@brand-primary, @transparent, @transparent); }
     .btn-link-success { .button-variant(@brand-success, @transparent, @transparent); }
