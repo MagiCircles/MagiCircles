@@ -673,6 +673,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         ],
         'as_json': True,
         'authentication_required': True,
+        # always returns None
     }),
     ('likeactivity', {
         'ajax': True,
@@ -753,6 +754,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
             ('twitter', '[^/]+'),
         ],
         'boilerplate': False,
+        # always redirects
     }),
     ('changelanguage', {
         'ajax': True,
@@ -766,6 +768,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'navbar_link': False,
         'boilerplate': False,
         'authentication_required': True,
+        # always redirects
     }),
     ('moderatereport', {
         'ajax': True,
@@ -779,6 +782,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'permissions_required': ['moderate_reports'],
     }),
     ('whatwillbedeleted', {
+        'title': _('Confirm'),
         'ajax': True,
         'custom': False,
         'navbar_link': False,
@@ -788,6 +792,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         ],
     }),
     ('reportwhatwillbedeleted', {
+        'title': _('Confirm'),
         'ajax': True,
         'custom': False,
         'navbar_link': False,
@@ -799,41 +804,53 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
     }),
     ('successedit', [
         {
+            'title': _('Successfully edited!'),
             'custom': False,
             'navbar_link': False,
             'template': 'success',
+            'show_small_title': False,
         },
         {
+            'title': _('Successfully edited!'),
             'ajax': True,
             'custom': False,
             'navbar_link': False,
             'template': 'success',
+            'show_small_title': False,
         },
     ]),
     ('successadd', [
         {
+            'title': _('Successfully added!'),
             'custom': False,
             'navbar_link': False,
             'template': 'success',
+            'show_small_title': False,
         },
         {
+            'title': _('Successfully added!'),
             'ajax': True,
             'custom': False,
             'navbar_link': False,
             'template': 'success',
+            'show_small_title': False,
         },
     ]),
     ('successdelete', [
         {
+            'title': _('Successfully deleted!'),
             'custom': False,
             'navbar_link': False,
             'template': 'success',
+            'show_small_title': False,
         },
         {
+            'title': _('Successfully deleted!'),
             'ajax': True,
             'custom': False,
             'navbar_link': False,
             'template': 'success',
+            'show_small_title': False,
         },
     ]),
 ])

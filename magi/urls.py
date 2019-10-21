@@ -420,9 +420,9 @@ def page_view(name, page):
             # Context
             context = getGlobalContext(request=request)
             context['extends'] = 'base.html' if not context['ajax'] else 'ajax.html'
-            context['show_small_title'] = True
             context['disqus_identifier'] = context['current']
             # Settings from page
+            context['show_small_title'] = page.get('show_small_title', True)
             context['show_title'] = page.get('show_title', False)
             context['share_image'] = staticImageURL(page.get('share_image', None))
             context['page_description'] = page.get('page_description', None)
@@ -432,7 +432,7 @@ def page_view(name, page):
             context['title_prefixes'] = []
             if 'navbar_link_list' in page:
                 getNavbarPrefix(page['navbar_link_list'], request, context, append_to=context['title_prefixes'])
-            default_page_title = page['title']
+            default_page_title = page.get('title', None)
             if callable(default_page_title):
                 default_page_title = default_page_title(context)
             h1 = {

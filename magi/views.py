@@ -1199,18 +1199,6 @@ def follow(request, context, username):
         'total_followers': user.total_followers,
     }
 
-def successedit(request, context):
-    context['success_sentence'] = _('Successfully edited!')
-    context['show_small_title'] = False
-
-def successadd(request, context):
-    context['success_sentence'] = _('Successfully added!')
-    context['show_small_title'] = False
-
-def successdelete(request, context):
-    context['success_sentence'] = _('Successfully deleted!')
-    context['show_small_title'] = False
-
 ############################################################
 # Staff / Contributors
 
