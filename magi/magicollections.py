@@ -646,14 +646,16 @@ class MagiCollection(object):
                             'icon': 'add',
                         }
                         if context['total_results']:
+                            parameters = {
+                                'view': parent_collection.list_view.quick_add_view,
+                                u'added_{}'.format(self.collection.name): account_id or owner_id,
+                            }
+                            if account_id:
+                                parameters[u'add_to_{}'.format(self.collection.name)] = account_id
                             buttons['delete_collected'] = {
                                 'show': True, 'has_permissions': True,
                                 'url': (
-                                    parent_collection.get_list_url(
-                                        parameters={
-                                            'view': parent_collection.list_view.quick_add_view,
-                                            u'added_{}'.format(self.collection.name): account_id or owner_id,
-                                        })
+                                    parent_collection.get_list_url(parameters=parameters)
                                     if parent_collection.list_view.quick_add_view
                                     else self.collection.get_list_url_for_authenticated_owner(
                                             request, fk_as_owner=account_id, parameters={
