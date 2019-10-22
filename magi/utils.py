@@ -1004,6 +1004,7 @@ def summarize(string, max_length=100):
 def simplifyMarkdown(markdown_string, max_length=None):
     if string is None or not string: return None
     markdown_string = summarize(markdown_string, max_length=max_length)
+    if not markdown_string: return ''
     for c in ['*', '>', '#', '-', '+', '![', '[', ']', '(', ')', 'https://', 'http://', '//']:
         markdown_string = markdown_string.replace(c, ' ')
     return markdown_string
