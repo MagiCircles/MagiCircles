@@ -24,7 +24,7 @@ function initialize() {
 google.maps.event.addDomListener(window, 'load', initialize);
 
 function addMarker(map, address, oms) {
-    var contentString = '<div id="content"><h4 id="firstHeading" class="firstHeading"><a href="/user/' + address.username + '/" target="_blank"><img alt="' + address.username + '" src="' + address.avatar + '" width="50" height="50" style="corner-radius: 10px"><br>' + address.username + '</a></h4><div id="bodyContent"><p>' + address.location + '</p></div></div>';
+    var contentString = '<div id="content"><h4 id="firstHeading" class="firstHeading"><a href="/user/' + address.user_id + '/' + address.username + '/" target="_blank"><img alt="' + address.username + '" src="' + address.avatar + '" width="50" height="50" style="corner-radius: 10px"><br>' + address.username + '</a></h4><div id="bodyContent"><p>' + address.location + '</p></div></div>';
     var marker = new google.maps.Marker({
 	position: address.latlong,
 	map: map,
