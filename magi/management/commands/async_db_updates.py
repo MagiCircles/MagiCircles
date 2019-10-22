@@ -105,7 +105,7 @@ def tinypng_compress(model, field):
         save_item(model, item, { original_field_name: unicode(value) })
         print '[Warning] Empty file, discarded.'
         return True
-    if use_tinypng:
+    if use_tinypng or image_name.endswith('.gif'):
         image = shrinkImageFromData(content, filename, settings=settings)
     else:
         resize = settings.get('resize', 'thumb')
