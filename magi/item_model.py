@@ -176,6 +176,13 @@ class BaseMagiModel(models.Model):
     real_owner = property(get_real_owner)
 
     @classmethod
+    def get_int_choices(self, field_name):
+        """
+        Return a list of integers that correspond to valid choices
+        """
+        return range(0, len(getattr(self, '{name}_CHOICES'.format(name=field_name.upper()))) + 1)
+
+    @classmethod
     def get_choices(self, field_name):
         """
         Return value is a list of tuples with:
