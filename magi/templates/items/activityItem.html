@@ -74,6 +74,7 @@
           <img src="{{ activity.image_url }}" alt="{{ activity }}"><i class="flaticon-link"></i>
         </a>
         {% endif %}
+        {% if activity.m_message %}
         {% with message_details=activity.message %}
         <div class="message{% if message_details.0 %} was-markdown{% endif %}">
           {% if message_details.0 %}
@@ -88,6 +89,8 @@
           <img src="{{ activity.language_image_url }}" alt="{{ activity.language }}">
           {% with from_language=activity.t_language to_language=localized_language %}{% blocktrans %}Translate from {{ from_language }} to {{ to_language }}{% endblocktrans %}{% endwith %}
         </a>
+        {% endif %}
+        {% else %}<br>
         {% endif %}
         <div class="tags text-muted fontx0-8">{% for tag, t_tag in activity.t_tags.items %}<a href="/activities/?c_tags={{ tag }}" target="_blank" class="text-muted">#{{ t_tag }}</a> {% endfor %}</div>
         <div class="socialbar">
