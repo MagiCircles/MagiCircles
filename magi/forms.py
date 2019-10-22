@@ -581,7 +581,7 @@ class MagiForm(forms.ModelForm):
                 and isinstance(self.fields[field], forms.Field)
                 and has_field(instance, field)
                 and (isinstance(getattr(instance, field), unicode) or isinstance(getattr(instance, field), str))
-                and getattr(instance, field) == ''):
+                and getattr(instance, field).strip() == ''):
                 setattr(instance, field, None)
             # Remove cached HTML for markdown fields
             if (field.startswith('m_') and field in self.m_previous_values
@@ -2564,6 +2564,16 @@ class ActivityForm(MagiForm):
         self.previous_m_message = None
         if 'm_message' in self.fields and not self.is_creating:
             self.previous_m_message = self.instance.m_message
+
+    def clean(self):
+        self.cleaned_data = super(ActivityForm, self).clean()
+        # Needs either an image or a message
+        image = self.cleaned_data.get('image', self.instance.image if not self.is_creating else None)
+        m_message = self.cleaned_data.get('m_message', self.instance.m_message if not self.is_creating else None)
+        if not image and not m_message:
+            raise forms.ValidationError(_('{thing} required.').format(
+                thing=u' {} '.format(t['or']).join([unicode(_('Message')), unicode(_('Image'))])))
+        return self.cleaned_data
 
     def save(self, commit=False):
         instance = super(ActivityForm, self).save(commit=False)

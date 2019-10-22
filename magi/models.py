@@ -849,7 +849,7 @@ class Activity(MagiModel):
     creation = models.DateTimeField(auto_now_add=True)
     last_bump = models.DateTimeField(db_index=True, null=True)
     owner = models.ForeignKey(User, related_name='activities', db_index=True)
-    m_message = models.TextField(_('Message'), max_length=15000)
+    m_message = models.TextField(_('Message'), max_length=15000, null=True)
 
     likes = models.ManyToManyField(User, related_name="liked_activities")
 

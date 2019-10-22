@@ -16,6 +16,7 @@ t = {
     'Home': _('Home'),
     'Language': _('Language'),
     'No': _('No'),
+    'or': _('or'),
     'Other': _('Other'),
     'Password': _('Password'),
     'Search': _('Search'),
