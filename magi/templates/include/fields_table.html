@@ -45,7 +45,7 @@
 	  <img src="{{ field.value }}" alt="{% if field.image_text %}{{ field.image_text }}{% else %}{{ field.link_text }}{% endif %}">
         </a>
 	    {% elif field.type == 'image_with_multiple_links'  %}
-        <div class="image-with-links" data-thumbnail="{{ field.value }}">
+        <div class="image-with-links" data-thumbnail="{{ field.value }}" style="{% if field.background_size %}background-size: {{ field.background_size }};{% endif %}">
           <h4>{{ field.popover_title }}</h4>
           <ul class="list-group inline-block">
             {% for link in field.links %}
@@ -53,12 +53,14 @@
             {% endfor %}
           </ul>
         </div>
-	{% elif field.type == 'images_links'  %}
+	    {% elif field.type == 'images_links'  %}
+        <div class="images">
         {% for image in field.images %}
         <a href="{{ image.link }}" class="a-nodifference" target="_blank"{% if image.ajax_link %} data-ajax-url="{{ image.ajax_link }}" data-ajax-title="{{ image.link_text }}"{% endif %}>
-	      <img src="{{ image.value }}" alt="{{ image.link_text }}"{% if image.tooltip %} data-toggle="tooltip" title="{{ image.tooltip }}"{% endif %}>
+	      <img src="{{ image.value }}" alt="{{ image.link_text }}"{% if image.tooltip %} data-toggle="tooltip" title="{{ image.tooltip }}"{% endif %}{% if field.images_width %} style="width: {{ field.images_width }};"{% endif %}>
         </a>
         {% endfor %}
+        </div>
         {% if field.and_more %}
         <br><a href="{{ field.and_more.link }}" class="btn-link-secondary padding10{% if field.and_more.hide %} hidden{% endif %}"
                {% if field.and_more.ajax_link %} data-ajax-url="{{ field.and_more.ajax_link }}" data-ajax-title="{{ item }} - {{ field.verbose_name }}"{% endif %}>

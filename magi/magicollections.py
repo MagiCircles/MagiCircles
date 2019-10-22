@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import division
 import string
 from collections import OrderedDict
 from django.utils.translation import ugettext_lazy as _, string_concat, get_language
@@ -1016,6 +1017,7 @@ class MagiCollection(object):
                         d['type'] = 'images_links'
                         d['images'] = l_images
                         d['spread_across'] = True
+                        d['images_width'] = u'{}%'.format(100 / max_shown)
                     else:
                         d['type'] = 'list_links' if item_url else 'list'
                         d['links'] = l_links
