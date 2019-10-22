@@ -1448,13 +1448,13 @@ def dataToImageFile(data):
     image.flush()
     return ImageFile(image)
 
-def _imageProcessing(data, filename, processing, return_data=False):
+def _imageProcessing(data, filename, processing, return_data=False, return_pil_image=False):
     _, extension = os.path.splitext(filename)
     extension = extension.lower()
-    image = Image.open(cStringIO.StringIO(data))
-    processing(image)
+    pil_image = Image.open(cStringIO.StringIO(data))
+    pil_image = processing(pil_image)
     output = io.BytesIO()
-    image.save(output, format={
+    pil_image.save(output, format={
         'png': 'PNG',
         'jpg': 'JPEG',
         'jpeg': 'JPEG',
@@ -1462,18 +1462,51 @@ def _imageProcessing(data, filename, processing, return_data=False):
     }.get(extension.lower(), 'PNG'))
     data = output.getvalue()
     image = dataToImageFile(data)
-    if return_data:
+    if return_pil_image and return_data:
+        return data, pil_image, image
+    elif return_pil_image:
+        return pil_image, image
+    elif return_data:
         return data, image
     return image
 
-def imageThumbnailFromData(data, filename, width=200, height=200, return_data=False):
-    return _imageProcessing(data, filename, lambda image: image.thumbnail((width, height)), return_data=return_data)
+def imageThumbnailFromData(data, filename, width=200, height=200, return_data=False, return_pil_image=False):
+    return _imageProcessing(
+        data, filename,
+        lambda image: image.thumbnail((width, height)),
+        return_data=return_data, return_pil_image=return_pil_image,
+    )
+
+def imageSquareThumbnailFromData(data, filename, size=200, return_data=False, return_pil_image=False):
+    def _toSquareThumbnail(image):
+        width, height = image.size
+        if width > height:
+            new_height = size
+            new_width = getWidthFromHeight(image, new_height)
+            top = 0
+            left = (new_width / 2) - (size / 2)
+            bottom = size
+            right = new_width - left
+        else:
+            new_width = size
+            new_height = getHeightFromWidth(image, new_width)
+            top = (new_height / 2) - (size / 2)
+            left = 0
+            bottom = new_height - top
+            right = size
+        image = image.resize((int(new_width), int(new_height)), Image.ANTIALIAS)
+        image = image.crop((int(left), int(top), int(right), int(bottom)))
+        return image
+    return _imageProcessing(
+        data, filename, _toSquareThumbnail, return_data=return_data, return_pil_image=return_pil_image)
 
 def getHeightFromWidth(image, width):
-    return int(math.ceil((width / image.width) * image.height))
+    image_width, image_height = image.size
+    return int(math.ceil((width / image_width) * image_height))
 
 def getWidthFromHeight(image, height):
-    return int(math.ceil((height / image.height) * image.width))
+    image_width, image_height = image.size
+    return int(math.ceil((height / image_height) * image_width))
 
 def imageResizeScaleFromData(data, filename, width=None, height=None, return_data=False):
     return _imageProcessing(data, filename, lambda image: image.thumbnail(
@@ -1583,7 +1616,7 @@ def imageURLToImageFile(url, return_data=False, request_options={}):
     if not url:
         return None
     if url.startswith('//'):
-        url = u'https:' + url
+        url = (u'http:' if 'localhost:' in url else u'https:') + url
     img_temp = NamedTemporaryFile(delete=True)
     r = requests.get(url, **request_options)
     if r.status_code != 200:

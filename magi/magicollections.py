@@ -9,6 +9,7 @@ from django.middleware import csrf
 from django.http import Http404
 from django.db.models import Q, Prefetch, FieldDoesNotExist
 from django.shortcuts import get_object_or_404
+from django.conf import settings as django_settings
 from magi.views import indexExtraContext
 from magi.utils import (
     AttrDict,
@@ -45,6 +46,7 @@ from magi.raw import please_understand_template_sentence, unrealistic_template_s
 from magi.django_translated import t
 from magi.notifications import pushNotification
 from magi.middleware.httpredirect import HttpRedirectException
+from magi.item_model import get_http_image_url_from_path
 from magi.settings import (
     ACCOUNT_MODEL,
     SHOW_TOTAL_ACCOUNTS,
@@ -186,6 +188,8 @@ class MagiCollection(object):
     collectible_collections = {}
 
     # Optional variables with default values
+    auto_share_image = False
+
     @property
     def name(self):
         return self.__class__.__name__.lower().replace('collection', '')
@@ -813,8 +817,13 @@ class MagiCollection(object):
     def plural_title(self):
         return string.capwords(self.plural_name)
 
-    def share_image(self, context, item):
-        return self.image
+
+    def share_image(self, context, item=None):
+        return (
+            (get_http_image_url_from_path(getattr(django_settings, 'GENERATED_SHARE_IMAGES', {}).get(
+                self.name, None)) if self.auto_share_image else None)
+            or self.image
+        )
 
     def before_save(self, request, instance, type=None):
         return instance
@@ -1908,8 +1917,10 @@ class MagiCollection(object):
             return self.collection.buttons_per_item(self, *args, **kwargs)
 
         def share_image(self, context, item):
-            if hasattr(item, 'http_image_url'):
-                return item.http_image_url
+            for field_name in ['http_share_image_url', 'http_top_image_item_url',
+                               'http_top_image_url', 'http_image_url']:
+                if hasattr(item, field_name):
+                    return getattr(item, field_name)
             return self.collection.share_image(context, item)
 
         def get_item(self, request, pk):
@@ -2208,6 +2219,7 @@ class MainItemCollection(MagiCollection):
     blockable = False
     reportable = False
     allow_html_in_markdown = True
+    auto_share_image = True
 
     class ListView(MagiCollection.ListView):
         add_button_subtitle = None
@@ -2243,6 +2255,7 @@ class SubItemCollection(MainItemCollection):
 
     # Defaults
     navbar_link_list = 'staff'
+    auto_share_image = False
 
     def get_add_url(self, ajax=False, type=None, item=None):
         return addParametersToURL(
@@ -3971,6 +3984,9 @@ class DonateCollection(MagiCollection):
         before_template = 'include/donate'
         add_button_subtitle = ''
         allow_random = False
+
+        def share_image(self, context, item=None):
+            return DONATE_IMAGE
 
         def get_page_title(self):
             return _('Donate')

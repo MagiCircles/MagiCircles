@@ -346,6 +346,8 @@ def about(request, context):
     context['disqus_identifier'] = 'contact'
     context['about_description_template'] = 'include/about_description'
     context['about_photo'] = ABOUT_PHOTO
+    context['share_image'] = staticImageURL(context.get('staff_configurations', {}).get(
+        'about_image', None) or ABOUT_PHOTO)
     context['site_long_description'] = SITE_LONG_DESCRIPTION
     context['about_site_sentence'] = _('About {thing}').format(thing=context['t_site_name'])
     context['call_to_action'] = _('Pre-register') if context.get('launch_date', None)  else CALL_TO_ACTION

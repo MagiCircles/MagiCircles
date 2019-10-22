@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-import datetime, time, sys
+import datetime, time, sys, os, math, pytz
+from PIL import Image
 from django.utils import timezone
 from django.utils.translation import activate as translation_activate, ugettext_lazy as _, get_language
 from django.utils.formats import date_format
@@ -7,7 +8,13 @@ from django.utils.html import escape
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings as django_settings
 from django.db.models import Count
-from magi.utils import birthdays_within
+from magi.utils import (
+    birthdays_within,
+    getMagiCollections,
+    imageSquareThumbnailFromData,
+    imageURLToImageFile,
+    saveLocalImageToModel,
+)
 from magi.settings import SITE_STATIC_URL, STATIC_FILES_VERSION
 from magi import models
 
@@ -181,16 +188,114 @@ def getUsersBirthdaysToday(image, latest_news=None, max_usernames=4):
     return latest_news
 
 ############################################################
+# Generate share images for list views
+
+# Can be changed:
+IMAGES_PER_SHARE_IMAGE = 9
+SHARE_IMAGE_PER_LINE = 3
+SHARE_IMAGES_SIZE = 200
+
+# Auto:
+SHARE_IMAGE_TOTAL_LINES = math.ceil(IMAGES_PER_SHARE_IMAGE / SHARE_IMAGE_PER_LINE)
+SHARE_IMAGE_WIDTH = int(SHARE_IMAGES_SIZE * SHARE_IMAGE_PER_LINE)
+SHARE_IMAGE_HEIGHT = int(SHARE_IMAGES_SIZE * SHARE_IMAGE_TOTAL_LINES)
+BASE_DIR = os.path.dirname(os.path.dirname(__file__)) + u'/'
+
+def generateShareImageForMainCollections(collection):
+    # Get queryset to get items in list view
+    try:
+        queryset = collection.list_view.get_queryset(collection.queryset, {}, None)
+    except:
+        queryset = collection.queryset
+    queryset = queryset.order_by(*collection.list_view.default_ordering.split(','))[:100]
+    # Get images for each item
+    images = []
+    for item in queryset:
+        for field_name in ['share_image', 'top_image_list', 'top_image', 'image']:
+            image = getattr(item, field_name, None)
+            if image:
+                images.append(image)
+                break
+        if len(images) == IMAGES_PER_SHARE_IMAGE:
+            break
+    if len(images) != IMAGES_PER_SHARE_IMAGE:
+        print '!! Warning: Not enough images to generate share image for', collection.plural_name
+        return None
+    # Create share image from images
+    share_image = Image.new('RGBA', (SHARE_IMAGE_WIDTH, SHARE_IMAGE_HEIGHT))
+    line = 0
+    position = 0
+    for image in images:
+        if isinstance(image, basestring):
+            data, imagefile = imageURLToImageFile(image, return_data=True)
+            name = imagefile.name
+        else:
+            data = image.read()
+            name = image.name
+        if not data:
+            print '!! Warning: Couldn\'t generate share image for', collection.plural_name, ': invalid image', image
+            return None
+        pil_image, _imagefile = imageSquareThumbnailFromData(
+            data, filename=name, size=SHARE_IMAGES_SIZE, return_pil_image=True)
+        top = SHARE_IMAGES_SIZE * line
+        left = SHARE_IMAGES_SIZE * position
+        share_image.paste(pil_image, box=(left, top))
+        if position == (SHARE_IMAGE_PER_LINE - 1):
+            line += 1
+            position = 0
+        else:
+            position += 1
+    path = BASE_DIR + 'tmp.png'
+    share_image.save(path)
+    # Retrieve existing share_image
+    current_share_image = getattr(django_settings, 'GENERATED_SHARE_IMAGES', {}).get(collection.name, None)
+    image_model = None
+    if current_share_image:
+        try: image_model = models.UserImage.objects.filter(image=current_share_image)[0]
+        except IndexError: pass
+    if not image_model:
+        image_model = models.UserImage.objects.create(image='')
+    saveLocalImageToModel(image_model, 'image', path)
+    image_model.save()
+    return unicode(image_model.image)
+
+############################################################
 # Generate settings (for generated settings)
 
+def magiCirclesGeneratedSettings():
+    now = timezone.now()
+    one_week_ago = now - datetime.timedelta(days=10)
+
+    # Generate share images once a week
+    generated_share_images_last_date = getattr(django_settings, 'GENERATED_SHARE_IMAGES_LAST_DATE', None)
+    if generated_share_images_last_date and generated_share_images_last_date.replace(tzinfo=pytz.utc) > one_week_ago:
+        generated_share_images = getattr(django_settings, 'GENERATED_SHARE_IMAGES', {})
+    else:
+        generated_share_images_last_date = now
+        generated_share_images = {}
+        print 'Generate auto share images'
+        for collection_name, collection in getMagiCollections().items():
+            if collection.auto_share_image:
+                generated_share_images[collection.name] = generateShareImageForMainCollections(collection)
+
+    return {
+        'GENERATED_SHARE_IMAGES_LAST_DATE': 'datetime.datetime.fromtimestamp(' + unicode(
+            time.mktime(generated_share_images_last_date.timetuple())
+        ) + ')',
+        'GENERATED_SHARE_IMAGES': generated_share_images,
+    }, []
+
 def generateSettings(values, imports=[]):
+    m_values, m_imports = magiCirclesGeneratedSettings()
+    m_values.update(values)
+    imports = m_imports + imports
     s = u'\
 # -*- coding: utf-8 -*-\n\
 import datetime\n\
 ' + u'\n'.join(imports) + '\n\
 ' + u'\n'.join([
     u'{key} = {value}'.format(key=key, value=unicode(value))
-    for key, value in values.items()
+    for key, value in m_values.items()
 ]) + '\n\
 GENERATED_DATE = datetime.datetime.fromtimestamp(' + unicode(time.time()) + u')\n\
 '

@@ -12,6 +12,7 @@ from magi.utils import (
     shrinkImageFromData,
     imageThumbnailFromData,
     imageResizeScaleFromData,
+    imageSquareThumbnailFromData,
 )
 from magi import models as magi_models
 
@@ -107,9 +108,12 @@ def tinypng_compress(model, field):
     if use_tinypng:
         image = shrinkImageFromData(content, filename, settings=settings)
     else:
-        resize = settings.get('resize', 'fit')
-        if resize == 'fit':
-            image = imageThumbnailFromData(content, image_name, width=settings['width'], height=settings['height'])
+        resize = settings.get('resize', 'thumb')
+        if resize in ['thumb', 'cover']:
+            image = imageSquareThumbnailFromData(content, image_name, size=settings['width'])
+        elif resize == 'fit':
+            image = imageThumbnailFromData(
+                content, image_name, width=settings['width'], height=settings['height'])
         elif resize == 'scale':
             image = imageResizeScaleFromData(
                 content, image_name, width=settings.get('width', None), height=settings.get('height', None))
@@ -170,7 +174,15 @@ def thumbnail(model, field):
         print '[Warning] Empty file, discarded.'
         return True
     thumbnail_size = getattr(model, 'thumbnail_size', {}).get(field.name, {}).copy()
-    image = imageThumbnailFromData(content, image_name, width=thumbnail_size.get('width', 200), height=thumbnail_size.get('height', 200))
+    resize = thumbnail_size.get('resize', 'thumb')
+    if resize in ['thumb', 'cover']:
+        image = imageSquareThumbnailFromData(content, image_name, size=thumbnail_size.get('width', 200))
+    elif resize == 'fit':
+        image = imageThumbnailFromData(
+            content, image_name, width=thumbnail_size.get('width', 200), height=thumbnail_size.get('height', 200))
+    elif resize == 'scale':
+        image = imageResizeScaleFromData(
+            content, image_name, width=thumbnail_size.get('width', 200), height=thumbnail_size.get('height', 200))
     image.name = image_name
     save_item(model, item, { thumbnail_field_name: image }, in_item=True)
     print '[Info] Done.'
