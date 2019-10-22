@@ -1017,7 +1017,8 @@ class MagiCollection(object):
                         d['type'] = 'images_links'
                         d['images'] = l_images
                         d['spread_across'] = True
-                        d['images_width'] = u'{}%'.format(100 / max_shown)
+                        if max_shown:
+                            d['images_width'] = u'{}%'.format(100 / max_shown)
                     else:
                         d['type'] = 'list_links' if item_url else 'list'
                         d['links'] = l_links
