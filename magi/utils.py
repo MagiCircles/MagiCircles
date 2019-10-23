@@ -1472,11 +1472,10 @@ def _imageProcessing(data, filename, processing, return_data=False, return_pil_i
     return image
 
 def imageThumbnailFromData(data, filename, width=200, height=200, return_data=False, return_pil_image=False):
-    return _imageProcessing(
-        data, filename,
-        lambda image: image.thumbnail((width, height)),
-        return_data=return_data, return_pil_image=return_pil_image,
-    )
+    def _toThumbnail(image):
+        image.thumbnail((width, height))
+        return image
+    return _imageProcessing(data, filename, _toThumbnail, return_data=return_data, return_pil_image=return_pil_image)
 
 def imageSquareThumbnailFromData(data, filename, size=200, return_data=False, return_pil_image=False):
     def _toSquareThumbnail(image):
@@ -1510,9 +1509,12 @@ def getWidthFromHeight(image, height):
     return int(math.ceil((height / image_height) * image_width))
 
 def imageResizeScaleFromData(data, filename, width=None, height=None, return_data=False):
-    return _imageProcessing(data, filename, lambda image: image.thumbnail(
-        (width or getWidthFromHeight(image, height), height or getHeightFromWidth(image, width))
-    ), return_data=return_data)
+    def _toThumbnail(image):
+        new_width = width or getWidthFromHeight(image, height)
+        new_height = height or getHeightFromWidth(image, width)
+        image.thumbnail((new_width, new_height))
+        return image
+    return _imageProcessing(data, filename, _toThumbnail, return_data=return_data)
 
 def shrinkImageFromData(data, filename, settings={}):
     """
