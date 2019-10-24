@@ -109,14 +109,17 @@ def tinypng_compress(model, field):
         image = shrinkImageFromData(content, filename, settings=settings)
     else:
         resize = settings.get('resize', 'thumb')
-        if resize in ['thumb', 'cover']:
+        if resize in ['thumb', 'cover'] and 'width' in settings:
             image = imageSquareThumbnailFromData(content, image_name, size=settings['width'])
-        elif resize == 'fit':
+            # Else: don't modify image
+        elif resize == 'fit' and 'width' in settings and 'height' in settings:
             image = imageThumbnailFromData(
                 content, image_name, width=settings['width'], height=settings['height'])
         elif resize == 'scale':
             image = imageResizeScaleFromData(
                 content, image_name, width=settings.get('width', None), height=settings.get('height', None))
+        else:
+            image = value
     image.name = image_name
     save_item(model, item, {
         original_field_name: unicode(value),
