@@ -1398,14 +1398,16 @@ class MagiFiltersForm(AutoForm):
                     elif (isinstance(field, forms.fields.MultipleChoiceField)
                           or filter.multiple):
                         values = value if isinstance(value, list) else [value]
+                        if field_name.startswith('c_'):
+                            values = [u'"{}"'.format(value) for value in values]
                         if operator_for_multiple == MagiFilterOperator.OrContains:
                             for value in values:
-                                condition = condition | Q(**{ u'{}__icontains'.format(selector): value })
+                                condition = condition | Q(**{ u'{}__contains'.format(selector): value })
                         elif operator_for_multiple == MagiFilterOperator.OrExact:
                             filters = { u'{}__in'.format(selector): values }
                         elif operator_for_multiple == MagiFilterOperator.And:
                             for value in values:
-                                condition = condition & Q(**{ u'{}__icontains'.format(selector): value })
+                                condition = condition & Q(**{ u'{}__contains'.format(selector): value })
                         else:
                             raise NotImplementedError('Unknown operator for multiple condition')
                     # Generic
