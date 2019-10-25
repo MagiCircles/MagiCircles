@@ -42,6 +42,7 @@ from magi.settings import (
     MAX_LEVEL_UP_STEP_BEFORE_SCREENSHOT_REQUIRED,
     FIRST_COLLECTION,
     TRANSLATION_HELP_URL,
+    PROFILE_BACKGROUNDS_NAMES,
 )
 from magi.utils import (
     addParametersToURL,
@@ -59,7 +60,6 @@ from magi.utils import (
     LANGUAGES_DICT,
     LANGUAGES_NAMES,
     LANGUAGES_NAMES_TO_CODES,
-    BACKGROUNDS_NAMES,
     getSearchFieldHelpText,
     tourldash,
     jsv,
@@ -656,7 +656,7 @@ class MagiForm(forms.ModelForm):
         def _get_i(field_name, value):
             if not isinstance(value, int):
                 try: return self.Meta.model.get_i(field_name[2:], value)
-                except FieldDoesNotExist: pass
+                except (FieldDoesNotExist, KeyError): pass
             return value
         return OrderedDict([
             (
@@ -1942,7 +1942,7 @@ class UserPreferencesForm(MagiForm):
 
         # Backgrounds
         if 'd_extra-background' in self.fields:
-            if not BACKGROUNDS_NAMES:
+            if not PROFILE_BACKGROUNDS_NAMES:
                 del(self.fields['d_extra-background'])
                 self.d_choices['extra'] = [
                     (k, v) for k, v in self.d_choices['extra']
@@ -1953,7 +1953,7 @@ class UserPreferencesForm(MagiForm):
                     required=False,
                     label=self.fields['d_extra-background'].label,
                     initial=self.fields['d_extra-background'].initial,
-                    choices=BLANK_CHOICE_DASH + [(k, v()) for k, v in BACKGROUNDS_NAMES.items()],
+                    choices=BLANK_CHOICE_DASH + [(k, v()) for k, v in PROFILE_BACKGROUNDS_NAMES.items()],
                 )
 
         # Location

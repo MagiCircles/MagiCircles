@@ -50,7 +50,6 @@ from magi.utils import (
     cuteFormFieldsForContext,
     CuteFormType,
     FAVORITE_CHARACTERS_IMAGES,
-    BACKGROUNDS_THUMBNAILS,
     groupsForAllPermissions,
     hasPermission,
     staticImageURL,
@@ -69,7 +68,6 @@ from magi.settings import (
     SITE_NAME_PER_LANGUAGE,
     GAME_NAME,
     FAVORITE_CHARACTERS,
-    BACKGROUNDS,
     TWITTER_HANDLE,
     BUG_TRACKER_URL,
     GITHUB_REPOSITORY,
@@ -96,13 +94,15 @@ from magi.settings import (
     SITE_LOGO_PER_LANGUAGE,
     GLOBAL_OUTSIDE_PERMISSIONS,
     CUSTOM_PREFERENCES_FORM,
-    HOMEPAGE_BACKGROUND,
     HOMEPAGE_ARTS,
     RANDOM_ART_FOR_CHARACTER,
     HOMEPAGE_ART_POSITION,
     HOMEPAGE_ART_SIDE,
     HOMEPAGE_ART_GRADIENT,
     HOMEPAGE_RIBBON,
+    HOMEPAGE_BACKGROUNDS,
+    HOMEPAGE_BACKGROUND,
+    PROFILE_BACKGROUNDS_THUMBNAILS,
     LANGUAGES_CANT_SPEAK_ENGLISH,
 )
 from magi.views_collections import item_view
@@ -287,9 +287,9 @@ def indexExtraContext(context):
                 if key not in context['art_position']:
                     context['art_position'][key] = value
 
-        # When a foreground is provided but no background, use a random background in BACKGROUNDS
-        if context['art'].has_key('foreground_url') and not context['art'].has_key('url') and BACKGROUNDS:
-            background = random.choice(BACKGROUNDS)
+        # When a foreground is provided but no background, use a random background in HOMEPAGE_BACKGROUNDS
+        if context['art'].has_key('foreground_url') and not context['art'].has_key('url') and HOMEPAGE_BACKGROUNDS:
+            background = random.choice(HOMEPAGE_BACKGROUNDS)
             if background.has_key('thumbnail'):
                 context['art']['url'] = background['thumbnail']
                 context['art']['hd_url'] = background['image']
@@ -623,6 +623,7 @@ def settings(request, context):
             }))
 
     context['js_files'] = ['settings']
+
     filter_cuteform = {
         'i_language': {
             'type': CuteFormType.Images,
@@ -632,7 +633,7 @@ def settings(request, context):
             'type': CuteFormType.Images,
         },
         'd_extra-background': {
-            'to_cuteform': lambda k, v: BACKGROUNDS_THUMBNAILS[k],
+            'to_cuteform': lambda k, v: PROFILE_BACKGROUNDS_THUMBNAILS[k],
             'title': _('Background'),
             'extra_settings': {
                 'modal': 'true',

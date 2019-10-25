@@ -22,7 +22,6 @@ from magi.utils import (
     hasPermissions,
     toHumanReadable,
     LANGUAGES_DICT,
-    BACKGROUNDS_IMAGES,
     locationOnChange,
     staticImageURL,
     birthdayURL,
@@ -53,6 +52,7 @@ from magi.settings import (
     EXTRA_PREFERENCES,
     USERS_REPUTATION_CALCULATOR,
     GOOD_REPUTATION_THRESHOLD,
+    PROFILE_BACKGROUNDS_IMAGES,
 )
 from magi.raw import other_sites
 from magi.item_model import MagiModel, BaseMagiModel, get_image_url, i_choices, addMagiModelProperties, getInfoFromChoices
@@ -321,7 +321,7 @@ class UserPreferences(BaseMagiModel):
 
     @property
     def background_image_url(self):
-        return BACKGROUNDS_IMAGES.get(self.background_id, None)
+        return PROFILE_BACKGROUNDS_IMAGES.get(self.background_id, None)
 
     @classmethod
     def get_localized_color(self, color):

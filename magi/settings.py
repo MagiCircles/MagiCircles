@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from django.conf import settings as django_settings
 from magi.default_settings import (
     RAW_CONTEXT,
@@ -338,6 +339,16 @@ if hasattr(settings_module, 'BACKGROUNDS'):
 else:
     BACKGROUNDS = None
 
+if hasattr(settings_module, 'HOMEPAGE_BACKGROUNDS'):
+    HOMEPAGE_BACKGROUNDS = getattr(settings_module, 'HOMEPAGE_BACKGROUNDS')
+else:
+    HOMEPAGE_BACKGROUNDS = BACKGROUNDS
+
+if hasattr(settings_module, 'PROFILE_BACKGROUNDS'):
+    PROFILE_BACKGROUNDS = getattr(settings_module, 'PROFILE_BACKGROUNDS')
+else:
+    PROFILE_BACKGROUNDS = BACKGROUNDS
+
 if hasattr(django_settings, 'STAFF_CONFIGURATIONS') and 'donate_image' in django_settings.STAFF_CONFIGURATIONS:
     DONATE_IMAGE = django_settings.STAFF_CONFIGURATIONS['donate_image']
 elif hasattr(settings_module, 'DONATE_IMAGE'):
@@ -476,6 +487,38 @@ STATIC_UPLOADED_FILES_PREFIX = django_settings.STATIC_UPLOADED_FILES_PREFIX
 django_settings.SITE_URL = SITE_URL
 django_settings.SITE_STATIC_URL = SITE_STATIC_URL
 django_settings.GET_GLOBAL_CONTEXT = GET_GLOBAL_CONTEXT
+
+############################################################
+# Utils
+
+def _to_background_name_lambda(_b):
+    return lambda: _b.get('d_names', {}).get(get_language(), _b['name'])
+
+HOMEPAGE_BACKGROUNDS_IMAGES = OrderedDict([
+    (_b['id'], _b['image'])
+    for _b in HOMEPAGE_BACKGROUNDS
+])
+HOMEPAGE_BACKGROUNDS_THUMBNAILS = OrderedDict([
+    (_b['id'], _b.get('thumbnail', _b['image']))
+    for _b in HOMEPAGE_BACKGROUNDS
+])
+HOMEPAGE_BACKGROUNDS_NAMES = OrderedDict([
+    (_b['id'], _to_background_name_lambda(_b))
+    for _b in HOMEPAGE_BACKGROUNDS
+])
+
+PROFILE_BACKGROUNDS_IMAGES = OrderedDict([
+    (_b['id'], _b['image'])
+    for _b in PROFILE_BACKGROUNDS
+])
+PROFILE_BACKGROUNDS_THUMBNAILS = OrderedDict([
+    (_b['id'], _b.get('thumbnail', _b['image']))
+    for _b in PROFILE_BACKGROUNDS
+])
+PROFILE_BACKGROUNDS_NAMES = OrderedDict([
+    (_b['id'], _to_background_name_lambda(_b))
+    for _b in PROFILE_BACKGROUNDS
+])
 
 ############################################################
 # Post processing of settings
