@@ -1585,21 +1585,18 @@ function isColor(strColor) {
 }
 
 function applyMarkdownColors(elt) {
-    elt.find("*:contains('[color='):contains('[/color]'):not(:has(*))").each(function() {
+    elt.find("*:contains('[color='):contains('[/color]')").each(function() {
         let elt = $(this);
         let text = elt.text();
-        let html = '';
+        let html = elt.html();
         $.each(text.split('[color='), function(i, text) {
-            if (i == 0) {
-                html = text;
-            } else {
+            if (i > 0) { // anything before the colors is left as is
                 let color = text.split(']')[0];
                 let content = text.split(']')[1].split('[/color')[0];
                 let remaining = text.split('[/color]')[1];
                 if (isColor(color)) {
-                    html += '<span style="color: ' + color + ';">' + escapeHtml(content) + '</span>' + escapeHtml(remaining);
-                } else {
-                    html += escapeHtml('[color=' + text);
+                    html = html.replace('[color=' + color + ']', '<span style="color: ' + color + ';">');
+                    html = html.replace('[/color]', '</span>');
                 }
             }
         });
