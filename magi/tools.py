@@ -44,6 +44,21 @@ def get_default_owner():
         return create_user('db0', is_superuser=True)
 
 ############################################################
+# Get user from link
+
+def getUserFromLink(value, type=None):
+    if type:
+        try:
+            return models.UserLink.objects.select_related('owner', 'owner__preferences').filter(
+                i_type=models.UserLink.get_i('type', type), value__iexact=value)[0].owner
+        except IndexError:
+            return None
+    try:
+        return models.User.objects.select_related('preferences').filter(links__value__iexact=value)[0]
+    except IndexError:
+        return None
+
+############################################################
 # Get total donators (for generated settings)
 
 def totalDonatorsThisMonth():
