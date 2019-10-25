@@ -12,6 +12,40 @@ from magi.utils import (
 )
 from magi.tools import get_default_owner
 
+############################################################
+# Utils
+
+def loadJsonAPIPage(url, local=False, local_file_name='tmp', request_options={}, page_number=0, log_function=print, load_on_not_found_local=False, verbose=False):
+    if local:
+        if load_on_not_found_local:
+            try: f = open('{}.json'.format(local_file_name), 'r')
+            except IOError: f = None
+        else:
+            f = open('{}.json'.format(local_file_name), 'r')
+        if f:
+            if verbose:
+                log_function('Loading from local file ' + local_file_name + '.json')
+            result = json.loads(f.read())
+            f.close()
+            return result
+    if verbose:
+        log_function('Loading ' + url)
+    r = requests.get(url, **request_options)
+    if r.status_code != 200:
+        log_function('ERROR: unable to load {}'.format(url))
+        log_function(r.status_code)
+        log_function(r.text)
+        log_function('')
+        return None
+    if page_number == 0:
+        f = open('{}.json'.format(local_file_name), 'w')
+        f.write(r.text.encode('utf-8'))
+        f.close()
+    return r.json()
+
+############################################################
+# Import data utils
+
 def import_map(maps, field_name, value):
     if not isinstance(maps, list):
         maps = [maps]
@@ -226,26 +260,13 @@ def api_pages(
         details.get('url_parameters', {}),
     )
     total = 0
+    page_number = 0
     request_options = request_options.copy()
     request_options.update(details.get('request_options', {}))
     while url:
-        if local:
-            f = open('{}.json'.format(name), 'r')
-            result = json.loads(f.read())
-            f.close()
-        else:
-            r = requests.get(url, **request_options)
-            if r.status_code != 200:
-                log_function('ERROR: unable to load {}'.format(url))
-                log_function(r.status_code)
-                log_function(r.text)
-                log_function('')
-                return
-            if total == 0:
-                f = open('{}.json'.format(name), 'w')
-                f.write(r.text.encode('utf-8'))
-                f.close()
-            result = r.json()
+        result = loadAPIPage(
+            url, local_file_name=name, request_options=request_options,
+            page_number=page_number, log_function=log_function)
         if 'callback_before_page' in details:
             result = details['callback_before_page'](result)
         results = result
@@ -271,6 +292,7 @@ def api_pages(
                 log_function('- Ignored:')
                 log_function(not_in_fields)
             total += 1
+        page_number += 1
         if local:
             url = None
         else:
@@ -281,6 +303,9 @@ def api_pages(
     details.get('callback_end', lambda: None)()
     log_function('Total {}'.format(total))
     log_function('Done.')
+
+############################################################
+# Import data
 
 def import_data(
         url, import_configuration, results_location=None,
