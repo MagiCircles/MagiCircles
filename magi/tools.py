@@ -13,6 +13,7 @@ from magi.utils import (
     getMagiCollections,
     imageSquareThumbnailFromData,
     imageURLToImageFile,
+    makeImageGrid,
     saveLocalImageToModel,
 )
 from magi.settings import SITE_STATIC_URL, STATIC_FILES_VERSION
@@ -195,12 +196,6 @@ IMAGES_PER_SHARE_IMAGE = 9
 SHARE_IMAGE_PER_LINE = 3
 SHARE_IMAGES_SIZE = 200
 
-# Auto:
-SHARE_IMAGE_TOTAL_LINES = math.ceil(IMAGES_PER_SHARE_IMAGE / SHARE_IMAGE_PER_LINE)
-SHARE_IMAGE_WIDTH = int(SHARE_IMAGES_SIZE * SHARE_IMAGE_PER_LINE)
-SHARE_IMAGE_HEIGHT = int(SHARE_IMAGES_SIZE * SHARE_IMAGE_TOTAL_LINES)
-BASE_DIR = os.path.dirname(os.path.dirname(__file__)) + u'/'
-
 def generateShareImageForMainCollections(collection):
     # Get queryset to get items in list view
     try:
@@ -222,42 +217,14 @@ def generateShareImageForMainCollections(collection):
         print '!! Warning: Not enough images to generate share image for', collection.plural_name
         return None
     # Create share image from images
-    share_image = Image.new('RGBA', (SHARE_IMAGE_WIDTH, SHARE_IMAGE_HEIGHT))
-    line = 0
-    position = 0
-    for image in images:
-        if isinstance(image, basestring):
-            data, imagefile = imageURLToImageFile(image, return_data=True)
-            name = imagefile.name
-        else:
-            data = image.read()
-            name = image.name
-        if not data:
-            print '!! Warning: Couldn\'t generate share image for', collection.plural_name, ': invalid image', image
-            return None
-        pil_image, _imagefile = imageSquareThumbnailFromData(
-            data, filename=name, size=SHARE_IMAGES_SIZE, return_pil_image=True)
-        top = SHARE_IMAGES_SIZE * line
-        left = SHARE_IMAGES_SIZE * position
-        share_image.paste(pil_image, box=(left, top))
-        if position == (SHARE_IMAGE_PER_LINE - 1):
-            line += 1
-            position = 0
-        else:
-            position += 1
-    path = BASE_DIR + 'tmp.png'
-    share_image.save(path)
-    # Retrieve existing share_image
-    current_share_image = getattr(django_settings, 'GENERATED_SHARE_IMAGES', {}).get(collection.name, None)
-    image_model = None
-    if current_share_image:
-        try: image_model = models.UserImage.objects.filter(image=current_share_image)[0]
-        except IndexError: pass
-    if not image_model:
-        image_model = models.UserImage.objects.create(image='')
-    saveLocalImageToModel(image_model, 'image', path)
-    image_model.save()
-    return unicode(image_model.image)
+    return unicode(makeImageGrid(
+        images,
+        per_line=SHARE_IMAGE_PER_LINE,
+        size_per_tile=SHARE_IMAGES_SIZE,
+        upload=True,
+        model=models.UserImage,
+        previous_url=getattr(django_settings, 'GENERATED_SHARE_IMAGES', {}).get(collection.name, None),
+    ).image)
 
 ############################################################
 # Generate settings (for generated settings)

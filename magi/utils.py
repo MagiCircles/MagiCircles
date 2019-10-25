@@ -1641,6 +1641,63 @@ def saveImageURLToModel(item, field_name, url, return_data=False, request_option
         return (data, image)
     return image
 
+def makeImageGrid(
+        images, per_line=3, size_per_tile=200, width=None, path=None,
+        # Upload options:
+        upload=False,
+        model=None,
+        field_name='image',
+        instance=None,
+        previous_url=None,
+):
+    # Create grid
+    if width:
+        size_per_tile = width / per_line
+    total_lines = math.ceil(len(images) / per_line)
+    grid_width = int(size_per_tile * per_line)
+    grid_height = int(size_per_tile * total_lines)
+    grid_image = Image.new('RGBA', (grid_width, grid_height))
+    line = 0
+    position = 0
+    for image in images:
+        if isinstance(image, basestring):
+            data, imagefile = imageURLToImageFile(image, return_data=True)
+            name = imagefile.name
+        else:
+            data = image.read()
+            name = image.name
+        if not data:
+            return None
+        pil_image, _imagefile = imageSquareThumbnailFromData(
+            data, filename=name, size=size_per_tile, return_pil_image=True)
+        top = int(size_per_tile * line)
+        left = int(size_per_tile * position)
+        grid_image.paste(pil_image, box=(left, top))
+        if position == (per_line - 1):
+            line += 1
+            position = 0
+        else:
+            position += 1
+    # Save image locally
+    if not path or not path.startswith('/'):
+        path = os.path.dirname(os.path.dirname(__file__)) + u'/' + (path or 'tmp.png')
+    grid_image.save(path)
+    # Return local image path or upload
+    if not upload:
+        return path
+    # Retrieve existing uploaded image
+    if (not instance and not model) or (instance and model):
+        raise NotImplementedError('Make grid image: instance OR model required.')
+    if not instance:
+        if previous_url:
+            try: instance = model.objects.filter(**{ field_name: previous_url })[0]
+            except IndexError: pass
+        if not instance:
+            instance = model.objects.create(**{ field_name: '' })
+    saveLocalImageToModel(instance, field_name, path)
+    instance.save()
+    return instance
+
 ############################################################
 # Image URLs
 
