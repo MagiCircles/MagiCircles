@@ -2556,7 +2556,12 @@ class ActivityForm(MagiForm):
             del(self.fields['save_activities_language'])
 
         if 'm_message' in self.fields:
-            self.fields['m_message'].help_text = markdownHelpText(self.request)
+            # Community managers are allowed to post activities with no character limit
+            if (not self.request
+                or not self.request.user.is_authenticated()
+                or not self.request.user.hasPermission('post_news')):
+                self.fields['m_message'].validators += [MaxLengthValidator(15000)]
+            #self.fields['m_message'].help_text = markdownHelpText(self.request)
         # Only allow users to add tags they are allowed to add or already had before
         if 'c_tags' in self.fields:
             self.fields['c_tags'].choices = models.getAllowedTags(
