@@ -43,7 +43,7 @@ def get_http_file_url_from_path(filePath):
     if not fileURL:
         return None
     if 'http' not in fileURL:
-        fileURL = u'https:' + fileURL
+        fileURL = (u'http:' if 'localhost:' in fileURL else u'https:') + fileURL
     return fileURL
 
 def get_http_file_url(instance, file_name='file'):
