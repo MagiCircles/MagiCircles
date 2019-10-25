@@ -991,6 +991,14 @@ class Activity(MagiModel):
         """
         return simplifyMarkdown(self.m_message, max_length=length)
 
+    def get_first_image(self):
+        if self.image:
+            return self.http_image_url
+        try:
+            return self.m_message.split('![')[1].split('](')[1].split(')')[0] or None
+        except IndexError:
+            return None
+
     def __unicode__(self):
         return self.summarize()
 
