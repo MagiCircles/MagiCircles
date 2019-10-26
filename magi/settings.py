@@ -492,7 +492,7 @@ django_settings.GET_GLOBAL_CONTEXT = GET_GLOBAL_CONTEXT
 # Utils
 
 def _to_background_name_lambda(_b):
-    return lambda: _b.get('d_names', {}).get(get_language(), _b['name'])
+    return lambda: _b.get('d_names', {}).get(get_language(), _b.get('name', None))
 
 HOMEPAGE_BACKGROUNDS_IMAGES = OrderedDict([
     (_b['id'], _b['image'])
