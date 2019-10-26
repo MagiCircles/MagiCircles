@@ -3,6 +3,7 @@ from collections import OrderedDict
 from dateutil.relativedelta import relativedelta
 from multiupload.fields import MultiFileField
 from django import forms
+from django.core.validators import MaxLengthValidator
 from django.http.request import QueryDict
 from django.db import models as django_models
 from django.db.models.fields import BLANK_CHOICE_DASH, FieldDoesNotExist, TextField, CharField
