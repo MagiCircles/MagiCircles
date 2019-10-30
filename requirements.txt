@@ -25,7 +25,7 @@ geopy==1.9.1
 pycrypto==2.6.1
 python-dateutil==2.4.0
 pytz==2015.2
-requests==2.7.0
+requests==2.20.0
 s3==3.0.0
 simplejson==3.8.0
 six==1.9.0
