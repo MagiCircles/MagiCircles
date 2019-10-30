@@ -535,6 +535,7 @@ class BaseMagiModel(models.Model):
                 'image_for_prefetched',
                 'template_for_prefetched',
                 'display_item_url',
+                'display_ajax_item_url',
                 'show_section_header',
                 'selector_to_collected_item',
         ]:
