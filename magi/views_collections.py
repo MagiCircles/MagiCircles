@@ -473,9 +473,13 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     if context['alt_view'] and 'template' in context['alt_view']:
         context['item_template'] = context['alt_view']['template']
     context['item_padding'] = collection.list_view.item_padding
+    if context['alt_view'] and 'item_padding' in context['alt_view']:
+        context['item_padding'] = context['alt_view']['item_padding']
     context['item_max_height'] = collection.list_view.item_max_height
     context['plural_title'] = collection.plural_title
     context['show_items_names'] = collection.list_view.show_items_names
+    if context['alt_view'] and 'show_items_names' in context['alt_view']:
+        context['show_items_names'] = context['alt_view']['show_items_names']
     context['lowercase_plural_title'] = collection.plural_title.lower()
     context['ajax_pagination'] = collection.list_view.ajax
     context['ajax_pagination_callback'] = collection.list_view.ajax_pagination_callback
