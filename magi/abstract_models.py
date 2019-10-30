@@ -5,7 +5,10 @@ from django.db import models
 from django.conf import settings as django_settings
 from django.utils import timezone
 from magi.item_model import MagiModel, get_image_url_from_path
-from magi.utils import AttrDict
+from magi.utils import (
+    AttrDict,
+    PastOnlyValidator,
+)
 from magi.default_settings import RAW_CONTEXT
 
 ############################################################
@@ -128,7 +131,7 @@ class BaseAccount(CacheOwner):
     owner = models.ForeignKey(User, related_name='accounts')
     creation = models.DateTimeField(_('Join date'), auto_now_add=True)
     nickname = models.CharField(_('Nickname'), max_length=200, null=True, help_text=_('Give a nickname to your account to easily differentiate it from your other accounts when you\'re managing them.'))
-    start_date = models.DateField(_('Start date'), null=True)
+    start_date = models.DateField(_('Start date'), null=True, validators=[PastOnlyValidator])
     level = models.PositiveIntegerField(_('Level'), null=True)
 
     default_tab = models.CharField(_('Default tab'), max_length=100, null=True)

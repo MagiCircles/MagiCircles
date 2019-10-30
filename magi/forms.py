@@ -3,7 +3,7 @@ from collections import OrderedDict
 from dateutil.relativedelta import relativedelta
 from multiupload.fields import MultiFileField
 from django import forms
-from django.core.validators import MaxLengthValidator
+from django.core.validators import MaxLengthValidator, MaxValueValidator
 from django.http.request import QueryDict
 from django.db import models as django_models
 from django.db.models.fields import BLANK_CHOICE_DASH, FieldDoesNotExist, TextField, CharField
@@ -44,6 +44,7 @@ from magi.settings import (
     FIRST_COLLECTION,
     TRANSLATION_HELP_URL,
     PROFILE_BACKGROUNDS_NAMES,
+    MAX_LEVEL,
 )
 from magi.utils import (
     addParametersToURL,
@@ -1592,8 +1593,11 @@ class AccountForm(AutoForm):
                 if len(self.fields['default_tab'].choices) <= 2:
                     self.fields['default_tab'].widget = self.fields['default_tab'].hidden_widget()
         self.previous_level = None
-        if 'level' in self.fields and not self.is_creating:
-            self.previous_level = self.instance.level
+        if 'level' in self.fields:
+            if MAX_LEVEL:
+                self.fields['level'].validators += [MaxValueValidator(MAX_LEVEL)]
+            if not self.is_creating:
+                self.previous_level = self.instance.level
         self.previous_screenshot = ''
         if 'screenshot' in self.fields and not self.is_creating:
             self.previous_screenshot = unicode(self.instance.screenshot) or ''

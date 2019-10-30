@@ -476,6 +476,11 @@ if hasattr(settings_module, 'USERS_REPUTATION_CALCULATOR'):
 else:
     USERS_REPUTATION_CALCULATOR = None
 
+if hasattr(settings_module, 'MAX_LEVEL'):
+    MAX_LEVEL = getattr(settings_module, 'MAX_LEVEL')
+else:
+    MAX_LEVEL = None
+
 ############################################################
 # Specified in django settings
 
