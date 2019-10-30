@@ -1293,12 +1293,16 @@ class MagiFiltersForm(AutoForm):
 
         # Set default ordering initial value
         if 'ordering' in self.fields:
+            initial = ','.join(self.collection.list_view.plain_default_ordering_list)
+            if initial not in dict(self.ordering_fields):
+                self.ordering_fields = [(initial, _('Default'))] + self.ordering_fields
             self.fields['ordering'].choices = [
                 (k, v() if callable(v) else v)
                 for k, v in self.ordering_fields
             ]
             if self.collection:
-                self.fields['ordering'].initial = ','.join(self.collection.list_view.plain_default_ordering_list)
+                self.fields['ordering'].initial = initial
+                print initial, self.collection.list_view.default_ordering.startswith('-')
                 self.fields['reverse_order'].initial = self.collection.list_view.default_ordering.startswith('-')
 
         # Set view selector
