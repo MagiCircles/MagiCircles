@@ -2907,7 +2907,7 @@ class UserCollection(MagiCollection):
                     # Buttons
                     request.force_buttons_color = (
                         account.center.color
-                        if account.center and account.center.color
+                        if getattr(account, 'center', None) and account.center.color
                         else account.cached_owner.preferences.css_color
                     )
                     account.buttons_to_show = account_collection.item_view.buttons_per_item(request, context, account)
