@@ -701,7 +701,7 @@ function directAddCollectible(buttons, uniquePerOwner) {
                 // Delete
                 button.html('<i class="flaticon-loading"></i>');
                 $.ajax({
-                    'url': '/ajax/' + button.data('btn-name') + '/edit/unique/?' + button.data('parent-item') + '_id=' + button.data('parent-item-id') + (fk_as_owner ? ('&' + fk_as_owner + '=' + add_to_id) : ''),
+                    'url': '/ajax/' + button.data('btn-name') + '/edit/unique/?' + button.data('parent-item-field-name-id') + '=' + button.data('parent-item-id') + (fk_as_owner ? ('&' + fk_as_owner + '=' + add_to_id) : ''),
                     'success': function(data) {
                         var form = $(data).find('form[data-form-name^="delete_"]');
                         form.find('#id_confirm').prop('checked', true);

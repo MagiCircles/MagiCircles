@@ -371,6 +371,8 @@ class MagiCollection(object):
                     missing = False
                     # add variables from GET parameters
                     for variable in self.collection.add_view.add_to_collection_variables:
+                        if variable == 'unicode' or not hasattr(item_field_model_class, variable):
+                            continue
                         get = u'{}_{}'.format(parent_collection.name, variable)
                         if get not in self.request.GET:
                             missing = True
@@ -387,6 +389,8 @@ class MagiCollection(object):
                             if variable == 'unicode':
                                 self.collectible_variables[variable] = unicode(item)
                             else:
+                                if not hasattr(item, variable):
+                                    continue
                                 self.collectible_variables[variable] = unicode(getattr(item, variable))
 
             class Meta:
@@ -410,7 +414,7 @@ class MagiCollection(object):
                     for _f in getattr(parent_collection.list_view.filter_form, 'search_fields', [])
                 ] if v is not None }
                 ordering_fields = [
-                    (u'{}__{}'.format(item_field_name, _o), _t)
+                    (u','.join([u'{}__{}'.format(item_field_name, _os) for _os in _o.split(',')]), _t)
                     for _o, _t in getattr(parent_collection.list_view.filter_form, 'ordering_fields', [])
                 ]
 
@@ -444,6 +448,9 @@ class MagiCollection(object):
             def __init__(self, *args, **kwargs):
                 super(_CollectibleCollection, self).__init__(*args, **kwargs)
                 self.parent_collection = parent_collection
+                self.item_field_name = item_field_name
+                self.item_field_model_class = item_field_model_class
+                self.item_field_name_id = item_field_name_id
 
             def get_list_url_for_authenticated_owner(
                     self, request, ajax=False, item=None, fk_as_owner=None, parameters=None):
@@ -1348,13 +1355,12 @@ class MagiCollection(object):
             extra_attributes = {}
             quick_add_to_collection = collectible_collection.add_view.quick_add_to_collection(request) if request.user.is_authenticated() else False
             url_to_collectible_add_with_item = lambda url: (
-                u'{url}?{item_name}_{item_pk_name}={item_pk}&{variables}'.format(
-                    url=url, item_name=self.name,
-                    item_pk_name=self.queryset.model._meta.pk.column,
+                u'{url}?{item_field_name_id}={item_pk}&{variables}'.format(
+                    url=url, item_field_name_id=collectible_collection.item_field_name_id,
                     item_pk=item.pk,
                     variables=u'&'.join([
                         u'{}_{}={}'.format(
-                            self.name, variable,
+                            collectible_collection.item_field_name, variable,
                             unicode(item) if variable == 'unicode' else getattr(item, variable),
                         ) for variable in collectible_collection.add_view.add_to_collection_variables
                         if hasattr(item, variable) or variable == 'unicode']),
@@ -1379,7 +1385,7 @@ class MagiCollection(object):
                 extra_attributes['unique-per-owner'] = 'true'
             if quick_add_to_collection:
                 extra_attributes['quick-add-to-collection'] = 'true'
-                extra_attributes['parent-item'] = self.name
+                extra_attributes['parent-item-field-name-id'] = collectible_collection.item_field_name_id
                 extra_attributes['parent-item-id'] = item.pk
                 if collectible_collection.queryset.model.fk_as_owner:
                     add_to_id_from_request = getattr(request, u'add_to_{}'.format(collectible_collection.name), None)
