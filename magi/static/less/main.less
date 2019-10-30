@@ -2088,6 +2088,15 @@ nav {
     .well-secondary { .well_per_color(@accentColor); }
     .label-secondary { .label-variant(@secondaryColor); }
 
+    .text-accent { color: @accentColor; }
+    .a-accent { .a-variant(@accentColor); }
+    .alert-accent { .alert-simple-variant(@accentColor); }
+    .btn-accent, a.btn-accent { .button-variant(white, @accentColor, darken(@accentColor, 2%)); }
+    .btn-link-accent { .button-variant(@accentColor, @transparent, @transparent); }
+    .progress-bar-accent { .progress-bar-variant(@accentColor); }
+    .nav-tabs-accent { .nav_tabs_per_color(@accentColor); }
+    .label-accent { .label-variant(@accentColor); }
+
     .btn-link-primary { .button-variant(@brand-primary, @transparent, @transparent); }
     .btn-link-success { .button-variant(@brand-success, @transparent, @transparent); }
     .btn-link-info { .button-variant(@brand-info, @transparent, @transparent); }
@@ -2594,4 +2603,10 @@ nav {
     text-align: left;
     padding: 20px;
     opacity: 0.6;
+}
+
+[class^="btn-link-"], [class*=" btn-link-"] {
+    .badge {
+        color: white!important;
+    }
 }
