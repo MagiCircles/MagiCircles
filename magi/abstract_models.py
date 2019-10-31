@@ -1,13 +1,21 @@
 import datetime
+from collections import OrderedDict
 from django.contrib.auth.models import User
 from django.utils.translation import ugettext_lazy as _
 from django.db import models
 from django.conf import settings as django_settings
 from django.utils import timezone
-from magi.item_model import MagiModel, get_image_url_from_path
+from magi.item_model import (
+    MagiModel,
+    get_image_url_from_path,
+    i_choices,
+    getInfoFromChoices,
+)
 from magi.utils import (
     AttrDict,
     PastOnlyValidator,
+    uploadItem,
+    uploadThumb,
 )
 from magi.default_settings import RAW_CONTEXT
 
@@ -178,6 +186,72 @@ class BaseAccount(CacheOwner):
                 self.nickname if self.nickname else self.cached_owner.username,
                 u' {}'.format(_(u'Level {level}').format(level=self.level)) if self.level else u'')
         return u'Level {}'.format(self.level) if self.level else u''
+
+    class Meta:
+        abstract = True
+
+
+class MobileGameAccount(BaseAccount):
+
+    # Friend ID
+
+    friend_id = models.PositiveIntegerField(_('Friend ID'), null=True)
+    show_friend_id = models.BooleanField(_('Should your friend ID be visible to other players?'), default=True)
+    accept_friend_requests = models.NullBooleanField(_('Accept friend requests'), null=True)
+
+    # How do you play?
+
+    PLAY_WITH = OrderedDict([
+        ('Thumbs', {
+            'translation': _('Thumbs'),
+            'icon': 'thumbs'
+        }),
+        ('Fingers', {
+            'translation': _('All fingers'),
+            'icon': 'fingers'
+        }),
+        ('Index', {
+            'translation': _('Index fingers'),
+            'icon': 'index'
+        }),
+        ('Hand', {
+            'translation': _('One hand'),
+            'icon': 'fingers'
+        }),
+        ('Other', {
+            'translation': _('Other'),
+            'icon': 'sausage'
+        }),
+    ])
+    PLAY_WITH_CHOICES = [(name, info['translation']) for name, info in PLAY_WITH.items()]
+
+    i_play_with = models.PositiveIntegerField(_('Play with'), choices=i_choices(PLAY_WITH_CHOICES), null=True)
+    play_with_icon = property(getInfoFromChoices('play_with', PLAY_WITH, 'icon'))
+
+    OSES = OrderedDict([
+        ('android', 'Android'),
+        ('ios', 'iOS'),
+    ])
+    OS_CHOICES = list(OSES.items())
+    i_os = models.PositiveIntegerField(_('Operating System'), choices=i_choices(OS_CHOICES), null=True)
+
+    device = models.CharField(
+        _('Device'), max_length=150, null=True,
+        help_text=_('The model of your device. Example: Nexus 5, iPhone 4, iPad 2, ...'),
+    )
+
+    # Verifications
+
+    screenshot = models.ImageField(
+        _('Screenshot'), help_text=_('In-game profile screenshot'),
+        upload_to=uploadItem('account_screenshot'), null=True)
+    _thumbnail_screenshot = models.ImageField(null=True, upload_to=uploadThumb('account_screenshot'))
+    level_on_screenshot_upload = models.PositiveIntegerField(null=True)
+    is_hidden_from_leaderboard = models.BooleanField('Hide from leaderboard', default=False, db_index=True)
+    is_playground = models.BooleanField(
+        _('Playground'), default=False, db_index=True,
+        help_text=_('Check this box if this account doesn\'t exist in the game.'),
+    )
 
     class Meta:
         abstract = True

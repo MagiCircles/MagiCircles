@@ -2337,6 +2337,9 @@ class AccountCollection(MagiCollection):
         'has_friend_id': {
             'type': CuteFormType.OnlyNone,
         },
+        'accept_friend_requests': {
+            'type': CuteFormType.YesNo,
+        },
         'color': {
             'type': CuteFormType.Images,
         },
@@ -2347,6 +2350,36 @@ class AccountCollection(MagiCollection):
 	        'modal-text': 'true',
             },
         },
+        'i_os': {
+            'to_cuteform': lambda k, v: ACCOUNT_MODEL.get_reverse_i('os', k),
+            'transform': CuteFormTransform.FlaticonWithText,
+        },
+        'i_play_with': {
+            'to_cuteform': lambda k, v: ACCOUNT_MODEL.PLAY_WITH[ACCOUNT_MODEL.get_reverse_i('play_with', k)]['icon'],
+            'transform': CuteFormTransform.FlaticonWithText,
+        },
+        'center': {
+            'to_cuteform': lambda _k, _v: _v.image_url,
+            'title': _('Center'),
+            'extra_settings': {
+                'modal': 'true',
+                'modal-text': 'true',
+            },
+        },
+    }
+
+    fields_icons = {
+        'creation': 'date',
+        'start_date': 'date',
+        'level': 'max-level',
+        'friend_id': 'id',
+        'screenshot': 'screenshot',
+        'is_playground': 'hobbies',
+        'os': lambda _i: _i.os,
+        'play_with': lambda _i: _i.play_with_icon,
+        'center': 'center',
+        'accept_friend_requests': 'users',
+        'device': lambda _i: _i.os,
     }
 
     def get_profile_account_tabs(self, request, context, account=None):
@@ -2409,18 +2442,6 @@ class AccountCollection(MagiCollection):
                         thing=name)
         return templates
 
-    def to_fields(self, view, item, icons=None, *args, **kwargs):
-        if icons is None: icons = {}
-        icons.update({
-            'creation': 'date',
-            'start_date': 'date',
-            'level': 'max-level',
-            'friend_id': 'id',
-            'screenshot': 'screenshot',
-            'is_playground': 'hobbies',
-        })
-        return super(AccountCollection, self).to_fields(view, item, *args, icons=icons, **kwargs)
-
     class ListView(MagiCollection.ListView):
         item_template = 'defaultAccountItem'
         show_edit_button_superuser_only = True
@@ -2461,12 +2482,19 @@ class AccountCollection(MagiCollection):
         comments_enabled = False
         show_edit_button_superuser_only = True
 
+        if modelHasField(ACCOUNT_MODEL, 'center'):
+            fields_preselected = ['center']
+
         def to_fields(self, item, exclude_fields=None, *args, **kwargs):
             if not exclude_fields: exclude_fields = []
             exclude_fields += [
                 'owner', 'level_on_screenshot_upload',
                 'is_hidden_from_leaderboard', 'show_friend_id',
+                'nickname', 'default_tab',
             ]
+            if not item.is_playground:
+                exclude_fields.append('is_playground')
+
             fields = super(AccountCollection.ItemView, self).to_fields(item, *args, exclude_fields=exclude_fields, **kwargs)
             if hasattr(item, 'cached_leaderboard') and item.cached_leaderboard:
                 fields['leaderboard'] = {
@@ -2481,12 +2509,6 @@ class AccountCollection(MagiCollection):
                     fields['leaderboard']['link'] = '/accounts/'
                     fields['leaderboard']['link_text'] = u'#{}'.format(item.cached_leaderboard)
                     fields['leaderboard']['value'] = item.leaderboard_image_url
-            if 'nickname' in fields:
-                del(fields['nickname'])
-            if 'default_tab' in fields:
-                del(fields['default_tab'])
-            if 'is_playground' in fields and not item.is_playground:
-                del(fields['is_playground'])
             return fields
 
     class AddView(MagiCollection.AddView):
@@ -2798,10 +2820,6 @@ class UserCollection(MagiCollection):
             except FieldDoesNotExist:
                 has_level = False
             account_queryset = models.Account.objects.order_by('-level' if has_level else '-id')
-            try:
-                models.Account._meta.get_field('center')
-                account_queryset = account_queryset.select_related('center')
-            except FieldDoesNotExist: pass
             queryset = queryset.prefetch_related(Prefetch('accounts', queryset=account_queryset, to_attr='all_accounts'), Prefetch('links', queryset=models.UserLink.objects.order_by('-i_relevance'), to_attr='all_links'))
             return queryset
 
