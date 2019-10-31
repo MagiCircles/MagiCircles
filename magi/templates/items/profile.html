@@ -107,8 +107,8 @@
     <ul class="nav nav-tabs nav-tabs-{{ profile_user.preferences.css_color }}" id="profiletabs">
       {% for tab_name, tab in profile_tabs.items %}
       <li{% if opened_tab == tab_name %} class="active"{% endif %} style="width: {% localize off %}{{ profile_tabs_size }}{% endlocalize %}%;"><a href="#profile{{ tab_name }}" data-toggle="tab">
-          {% if tab.icon %}<i class="flaticon-{{ tab.icon }}"></i><span class="hidden-xs hidden-sm">{% endif %}
-            {{ tab.name }}{% if tab.icon %}</span>{% endif %}
+          <span>{% if tab.icon %}<i class="flaticon-{{ tab.icon }}"></i><span class="hidden-xs hidden-sm">{% endif %}
+            {{ tab.name }}{% if tab.icon %}</span>{% endif %}</span>
                                                                                </a></li>
       {% endfor %}
     </ul>

@@ -103,9 +103,21 @@ function onProfileAccountTabOpened(account_elt) {
     }
 }
 
+function resizeTabs() {
+    let maxHeight = 0;
+    $('#profiletabs li a').each(function() {
+        let tab = $(this);
+        if (tab.outerHeight() > maxHeight) {
+            maxHeight = tab.outerHeight();
+        }
+    });
+    $('#profiletabs li a').css('height', maxHeight);
+}
+
 $(document).ready(function() {
     handlefollow();
     onProfileTabOpened();
+    resizeTabs();
     $('#profiletabs li a').on('shown.bs.tab', function (e) {
         onProfileTabOpened();
     });
