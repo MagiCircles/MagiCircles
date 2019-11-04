@@ -930,6 +930,10 @@ def getAllTranslations(term, unique=False):
         }
     return translations
 
+def spaceOutCode(code, block_size=2):
+    code = unicode(code).replace(' ', '')
+    return ' '.join(code[i:i + block_size] for i in range(0, len(code), block_size))
+
 def getAllTranslationsOfModelField(item, field_name='name', unique=False):
     return getAllTranslations(
         lambda language: item.get_translation_from_dict(field_name, language=language),
