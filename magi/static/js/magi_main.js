@@ -1347,7 +1347,7 @@ function afterMarkdownApplied(elt) {
 
     // Colors
 
-    applyMarkdownColors(elt);
+    applyMarkdownCustomTags(elt);
 }
 
 function updateActivities() {
@@ -1590,23 +1590,75 @@ function isColor(strColor) {
     return s.color !== '';
 }
 
-function applyMarkdownColors(elt) {
-    elt.find("*:contains('[color='):contains('[/color]')").each(function() {
-        let elt = $(this);
-        let text = elt.text();
-        let html = elt.html();
-        $.each(text.split('[color='), function(i, text) {
-            if (i > 0) { // anything before the colors is left as is
-                let color = text.split(']')[0];
-                let content = text.split(']')[1].split('[/color')[0];
-                let remaining = text.split('[/color]')[1];
-                if (isColor(color)) {
-                    html = html.replace('[color=' + color + ']', '<span style="color: ' + color + ';">');
-                    html = html.replace('[/color]', '</span>');
-                }
+function isValidDate(strDate) {
+    let date = new Date(strDate);
+    return date instanceof Date && !isNaN(date);
+}
+
+let CUSTOM_TAGS = {
+    'color': {
+        'is_valid': isColor,
+        'to_html_open': function(tag, value) {
+            return '<span style="' + tag + ': ' + value + ';">';
+        },
+    },
+    'countdown': {
+        'is_valid': isValidDate,
+        'to_html_open': function(tag, value) {
+            return '<span class="countdown" data-date="' + value + '" data-format="{time}">';
+        },
+        'after': loadCountdowns,
+    },
+    'utcdate': {
+        'is_valid': isValidDate,
+        'to_html_open': function(tag, value) {
+            return '<span class="timezone"><span class="datetime">' + value + '</span> (<span class="current_timezone">UTC</span>)';
+        },
+        'after': loadTimezones,
+    },
+    'timeago': {
+        'is_valid': isValidDate,
+        'to_html_open': function(tag, value) {
+            return '<span class="timezone" data-timeago="true"><span class="datetime">' + value + '</span> (<span class="current_timezone">UTC</span>)';
+        },
+        'after': loadTimezones,
+    },
+};
+
+function applyMarkdownCustomTags(elt) {
+    $.each(CUSTOM_TAGS, function(tag, options) {
+        elt.find("*:contains('[" + tag + "='):contains('[/" + tag + "]')").each(function() {
+            let elt = $(this);
+            if (elt.is('pre') || elt.closest('pre').length > 0) { // Don't do ``` blocks
+                return;
             }
+            let text = elt.text();
+            let html = elt.html();
+            $.each(text.split('[' + tag + '='), function(i, text) {
+                if (i > 0) { // anything before the tag is left as is
+                    let value = text.split(']')[0];
+                    let content = text.split(']')[1].split('[/' + tag + '')[0];
+                    let remaining = text.split('[/' + tag + ']')[1];
+                    if (options.is_valid(value)) {
+                        let opening_tag = options.to_html_open(tag, value);
+                        let closing_tag;
+                        if (options.to_html_close) {
+                            closing_tag = options.to_html_close(tag, value);
+                        } else {
+                            closing_tag = '</' + opening_tag.split('<')[1].split(' ')[0].split('>')[0] + '>';
+                        }
+                        html = html.replace('[' + tag + '=' + value + ']', opening_tag);
+                        html = html.replace('[/' + tag + ']', closing_tag);
+                    }
+                }
+            });
+            elt.html(html);
         });
-        elt.html(html);
+    });
+    $.each(CUSTOM_TAGS, function(tag, options) {
+        if (options.after) {
+            options.after();
+        }
     });
 }
 
