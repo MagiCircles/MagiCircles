@@ -770,6 +770,13 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'authentication_required': True,
         # always redirects
     }),
+    ('me', {
+        'custom': False,
+        'navbar_link': False,
+        'boilerplate': False,
+        'authentication_required': True,
+        # always redirects
+    }),
     ('moderatereport', {
         'ajax': True,
         'custom': False,

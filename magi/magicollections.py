@@ -2763,9 +2763,6 @@ class UserCollection(MagiCollection):
         item_buttons_classes = ['btn', 'btn-link']
         show_edit_button_permissions_only = ['see_profile_edit_button']
         ajax = False
-        shortcut_urls = [
-            ('me', 'me'),
-        ]
         accounts_template = 'include/defaultAccountsForProfile'
         profile_accounts_top_template = None
         show_small_title = False
@@ -2789,14 +2786,6 @@ class UserCollection(MagiCollection):
                     'has_permissions': True,
                 }
             return buttons
-
-        def get_item(self, request, pk):
-            if pk == 'me':
-                if request.user.is_authenticated():
-                    pk = request.user.id
-                else:
-                    raise HttpRedirectException('/signup/')
-            return { 'pk': pk }
 
         def reverse_url(self, text):
             return {

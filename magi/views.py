@@ -986,6 +986,11 @@ def markallnotificationsread(request):
     request.user.preferences.force_update_cache('unread_notifications')
     raise HttpRedirectException(u'/notifications/?marked_read={}'.format(read))
 
+def me(request):
+    if request.user.is_authenticated():
+        raise HttpRedirectException(request.user.http_item_url)
+    raise HttpRedirectException('/signup/')
+
 def _shouldBumpActivity(activity, request):
     # Archived activities can't be bumped
     if activity.archived:
