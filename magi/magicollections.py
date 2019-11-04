@@ -2335,7 +2335,7 @@ class AccountCollection(MagiCollection):
 
     filter_cuteform = {
         'has_friend_id': {
-            'type': CuteFormType.OnlyNone,
+            'type': CuteFormType.YesNo,
         },
         'accept_friend_requests': {
             'type': CuteFormType.YesNo,
@@ -2449,7 +2449,6 @@ class AccountCollection(MagiCollection):
         per_line = 1
         add_button_subtitle = _('Create your account to join the community and be in the leaderboard!')
         filter_form = forms.AccountFilterForm
-        ajax_callback = 'loadAccounts'
         allow_random = False
 
         show_item_buttons_as_icons = True

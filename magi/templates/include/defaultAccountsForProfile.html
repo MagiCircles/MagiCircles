@@ -24,7 +24,7 @@
       </div>
       <div class="col-md-2">
         <h3 class="level">{{ account.level|default_if_none:"??" }}</h3>
-        {% if account.friend_id and account.show_friend_id %}<div class="friend_id"><small>{{ account.friend_id }}</small></div>{% endif %}
+        {% if account.friend_id and account.show_friend_id %}<div class="friend_id"><small>{% if account.display_friend_id %}{{ account.display_friend_id }}{% else %}{{ account.friend_id }}{% endif %}</small></div>{% endif %}
       </div>
     </div>
     {% endif %}

@@ -4,7 +4,9 @@ from django.contrib.auth.models import User
 from django.utils.translation import ugettext_lazy as _
 from django.db import models
 from django.conf import settings as django_settings
+from django.core.validators import RegexValidator
 from django.utils import timezone
+from magi.django_translated import t
 from magi.item_model import (
     MagiModel,
     get_image_url_from_path,
@@ -195,7 +197,9 @@ class MobileGameAccount(BaseAccount):
 
     # Friend ID
 
-    friend_id = models.PositiveIntegerField(_('Friend ID'), null=True)
+    friend_id = models.CharField(_('Friend ID'), null=True, max_length=100, validators=[
+        RegexValidator(r'^[0-9 ]+$', t['Enter a number.']),
+    ])
     show_friend_id = models.BooleanField(_('Should your friend ID be visible to other players?'), default=True)
     accept_friend_requests = models.NullBooleanField(_('Accept friend requests'), null=True)
 

@@ -1687,13 +1687,7 @@ function loadCopyToClipboard() {
 // Accounts
 
 function loadAccounts() {
-    let form = $('[id="filter-form-account"]');
-    if (!form.data('loaded-changers')) {
-        formOnChangeValueShow(form, 'has_friend_id', {
-            2: ['friend_id', 'accept_friend_requests'],
-        });
-        form.attr('data-loaded-changers', true);
-    }
+    // Kept for retrocompabibility reasons
 }
 
 // *****************************************

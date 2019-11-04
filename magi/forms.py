@@ -1688,6 +1688,13 @@ class AccountFilterForm(MagiFiltersForm):
         ('owner__preferences___cache_reputation', _('Most popular')),
     ]
 
+    on_change_value_show = {
+        'has_friend_id': {
+            True: ['friend_id'],
+        },
+    }
+    show_more = FormShowMore(cutoff='i_os', including_cutoff=True, until='ordering')
+
     if has_field(models.Account, 'friend_id'):
         has_friend_id = forms.NullBooleanField(
             required=False, initial=None,
@@ -1708,17 +1715,28 @@ class AccountFilterForm(MagiFiltersForm):
 
     def __init__(self, *args, **kwargs):
         super(AccountFilterForm, self).__init__(*args, **kwargs)
+        # Remove favorite character and color if users list is in navbar
+        user_collection = getMagiCollection('user')
+        if user_collection and user_collection.navbar_link:
+            for field_name in ['favorite_character', 'color']:
+                if field_name in self.fields:
+                    del(self.fields[field_name])
         if 'favorite_character' in self.fields:
             self.fields['favorite_character'].choices = BLANK_CHOICE_DASH + getFavoriteCharacterChoices()
             self.fields['favorite_character'].label = models.UserPreferences.favorite_character_label()
 
     class Meta(MagiFiltersForm.Meta):
         model = models.Account
-        fields = ['search'] + (
+        top_fields = ['search'] + (
             ['has_friend_id', 'friend_id'] if has_field(models.Account, 'friend_id') else []
-        ) + ['favorite_character'] + (
+        )
+        middle_fields = ['favorite_character'] + (
             ['color'] if USER_COLORS else []
-        ) + ['ordering', 'reverse_order']
+        ) + (
+            ['i_os', 'i_play_with']
+            if has_field(models.Account, 'i_os') or has_field(models.Account, 'i_play_with') else []
+        )
+        fields = top_fields + middle_fields
 
 ############################################################
 # Users forms

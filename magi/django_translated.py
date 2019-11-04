@@ -12,6 +12,7 @@ t = {
     'Download': _('Download'),
     'Email': _('Email'),
     'English': _('English'),
+    'Enter a number.': _('Enter a number.'),
     'Go': _('Go'),
     'Home': _('Home'),
     'Language': _('Language'),
