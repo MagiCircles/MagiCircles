@@ -528,7 +528,11 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
         context['top_buttons'] = collection.list_view.top_buttons(request, context)
         context['top_buttons_total'] = len([True for b in context['top_buttons'].values() if b['show'] and b['has_permissions']])
         if context['top_buttons_total']:
-            context['top_buttons_col_size'] = getColSize(context['top_buttons_total'])
+            context['top_buttons_per_line'] = (
+                collection.list_view.top_buttons_per_line or context['top_buttons_total'])
+            if context['top_buttons_total'] < context['top_buttons_per_line']:
+                context['top_buttons_per_line'] = context['top_buttons_total']
+            context['top_buttons_col_size'] = getColSize(context['top_buttons_per_line'])
 
     context['show_item_buttons'] = collection.list_view.show_item_buttons
 

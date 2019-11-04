@@ -1,5 +1,6 @@
-{# Required: top_buttons, top_buttons_col_size #}
-      <div class="top_buttons">
+{% load tools %}
+{# Required: top_buttons, top_buttons_col_size, top_buttons_per_line #}
+      <div class="top_buttons top-buttons-{{ collection.name }}">
         <div class="row">
           {% for name, button in top_buttons.items %}
           {% if button.show and button.has_permissions %}
@@ -15,11 +16,14 @@
                data-ajax-handle-form="true"
                {% endif %}>
               {% if button.icon %}<i class="flaticon-{{ button.icon }}"></i>
-              {% elif button.image %}<img src="{{ static_url }}img/{{ button.image }}.png?{{ static_files_version }}" height="39" />{% endif %}
+              {% elif button.image %}<img src="{{ static_url }}img/{{ button.image }}.png?{{ static_files_version }}" height="{% if button.image_size %}{{ button.image_size }}{% else %}39{% endif %}" />{% endif %}
               {{ button.title }}
               {% if button.subtitle %}<br /><small>{{ button.subtitle }}</small>{% endif %}
             </a>
           </div>
+          {% if forloop.counter0 != 0 and forloop.counter0|mod:top_buttons_per_line %}
+        </div><div style="height: 5px"></div><div class="row">
+          {% endif %}
           {% endif %}
           {% endfor %}
         </div>

@@ -1639,6 +1639,7 @@ class MagiCollection(object):
         show_collect_total = property(propertyFromCollection('show_collect_total'))
 
         top_buttons_classes = ['btn', 'btn-lg', 'btn-block', 'btn-main']
+        top_buttons_per_line = None
         show_add_button_superuser_only = False
         show_add_button_permission_only = False
         show_search_results = True
