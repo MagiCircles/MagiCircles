@@ -164,6 +164,24 @@ class _View(object):
             return False
         return True
 
+    def requires_permissions(self):
+        """
+        Does this view require specific permissions, or anyone authenticated has permissions?
+        Can be useful to show/hide buttons that redirect to sign up to encourage people to click and sign up.
+        Example: buttons to add to collection should show up when unauthenticated, but only
+                 if requires_permissions is False.
+        """
+        return (
+            self.staff_required
+            or self.prelaunch_staff_required
+            or self.permissions_required
+            or self.one_of_permissions_required
+            or getattr(self, 'owner_only', False)
+            or getattr(self, 'owner_or_staff_only', False)
+            or getattr(self, 'owner_only_or_permissions_required', [])
+            or getattr(self, 'owner_only_or_one_of_permissions_required', [])
+        )
+
     def view_title(self):
         return self.view.replace('_', ' ').capitalize()
 
@@ -616,11 +634,12 @@ class MagiCollection(object):
 
                 def check_permissions(self, request, context):
                     super(_CollectibleCollection.ListView, self).check_permissions(request, context)
-                    # At least owner filter or item filter required
-                    if (not request.GET.get(model_class.fk_as_owner or 'owner', None)
-                        and not request.GET.get(item_field_name, None)
-                        and not request.GET.get('owner', None)):
-                        raise PermissionDenied()
+                    if context['current'] == u'{}_list'.format(self.collection.name):
+                        # At least owner filter or item filter required
+                        if (not request.GET.get(model_class.fk_as_owner or 'owner', None)
+                            and not request.GET.get(item_field_name, None)
+                            and not request.GET.get('owner', None)):
+                            raise PermissionDenied()
 
                 def top_buttons(self, request, context):
                     buttons = super(_CollectibleCollection.ListView, self).top_buttons(request, context)
@@ -1418,7 +1437,7 @@ class MagiCollection(object):
                 else:
                     extra_attributes['alt-message'] = delete_sentence
             if (collectible_collection.add_view.authentication_required
-                and not collectible_collection.add_view.staff_required
+                and not collectible_collection.add_view.requires_permissions()
                 and not request.user.is_authenticated()):
                 buttons[name]['has_permissions'] = True
                 buttons[name]['url'] = u'/signup/?next={url}&next_title={title}'.format(
@@ -1439,13 +1458,7 @@ class MagiCollection(object):
             buttons['edit']['title'] = item.edit_sentence
             buttons['edit']['icon'] = 'edit'
             if (self.edit_view.authentication_required
-                and not self.edit_view.owner_only
-                and not self.edit_view.owner_or_staff_only
-                and not self.edit_view.owner_only_or_permissions_required
-                and not self.edit_view.owner_only_or_one_of_permissions_required
-                and not self.edit_view.staff_required
-                and not self.edit_view.permissions_required
-                and not self.edit_view.one_of_permissions_required
+                and not self.edit_view.requires_permissions()
                 and not request.user.is_authenticated()):
                 buttons['edit']['has_permissions'] = True
                 buttons['edit']['url'] = u'/signup/?next={url}&next_title={title}'.format(
@@ -2897,6 +2910,7 @@ class UserCollection(MagiCollection):
             user = context['item']
             request = context['request']
             context['is_me'] = user.id == request.user.id
+            context['profile_tabs'] = PROFILE_TABS.copy()
             context['accounts_template'] = self.accounts_template
             context['profile_accounts_top_template'] = self.profile_accounts_top_template
             account_collection = getMagiCollection('account')
@@ -2909,7 +2923,10 @@ class UserCollection(MagiCollection):
 
             # Account fields, buttons and tabs
             afterjs += u'var account_tab_callbacks = {'
-            if account_collection:
+            if not account_collection or not account_collection.list_view.has_permissions(request, context):
+                if 'account' in context['profile_tabs']:
+                    del(context['profile_tabs']['account'])
+            else:
                 for account in user.all_accounts:
                     # Fields
                     account.fields = account_collection.item_view.to_fields(account)
@@ -2959,7 +2976,6 @@ class UserCollection(MagiCollection):
 
             # Profile tabs
             context['show_total_accounts'] = SHOW_TOTAL_ACCOUNTS
-            context['profile_tabs'] = PROFILE_TABS.copy()
 
             parameters = {
                 'ajax_show_no_result': '',
@@ -2970,6 +2986,8 @@ class UserCollection(MagiCollection):
 
             for collection_name in context['collections_in_profile_tabs']:
                 collection = getMagiCollection(collection_name)
+                if not collection.list_view.has_permissions(request, context):
+                    continue
                 context['profile_tabs'][collection_name] = {
                     'name': collection.list_view.profile_tab_name,
                     'icon': collection.icon,
@@ -2982,6 +3000,8 @@ class UserCollection(MagiCollection):
 
             if context['collectible_collections'] and 'owner' in context['collectible_collections']:
                 for collection_name, collection in context['collectible_collections']['owner'].items():
+                    if not collection.list_view.has_permissions(request, context):
+                        continue
                     if collection_name in context['profile_tabs']:
                         continue
                     context['profile_tabs'][collection_name] = {
@@ -3815,10 +3835,12 @@ class BadgeCollection(MagiCollection):
 
         def check_permissions(self, request, context):
             super(BadgeCollection.ListView, self).check_permissions(request, context)
-            if (hasattr(request, 'GET') and 'of_user' not in request.GET
-                and (not request.user.is_authenticated()
-                     or not hasOneOfPermissions(request.user, self.collection.AddView.one_of_permissions_required))):
-                raise PermissionDenied()
+            if context['current'] == u'{}_list'.format(self.collection.name):
+                if (hasattr(request, 'GET') and 'of_user' not in request.GET
+                    and (not request.user.is_authenticated()
+                         or not hasOneOfPermissions(
+                             request.user, self.collection.AddView.one_of_permissions_required))):
+                    raise PermissionDenied()
 
     class ItemView(MagiCollection.ItemView):
         template = 'badgeInfo'
