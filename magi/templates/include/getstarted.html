@@ -7,8 +7,8 @@
     <div class="col-md-{% if get_started_video %}6{% else %}12{% endif %}">
       <div class="get-started">
         {% if staff_configurations.get_started and staff_configurations.get_started|getattribute:LANGUAGE_CODE %}<div class="to-markdown">{{ staff_configurations.get_started|getattribute:LANGUAGE_CODE }}</div>{% endif %}
-	      <div class="text-right">
-	        <a href="#{{ collection.name }}-page-1" class="btn btn-main btn-xl page-scroll">
+	      <div class="text-center">
+	        <a href="#below-get-started" class="btn btn-main btn-lg page-scroll">
 	          {% trans 'Get Started' %}
 	        </a>
 	      </div>
@@ -23,4 +23,5 @@
     {% endif %}
   </div>
 </div>
+<div id="below-get-started"></div>
 {% endif %}

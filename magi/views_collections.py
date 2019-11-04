@@ -522,6 +522,11 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
         request, context, view=context['view'], preset=preset)
     _add_h1_and_prefixes_to_context(collection.list_view, context, title_prefixes, h1)
 
+    context['get_started'] = 'get_started' in request.GET
+    if context['get_started']:
+        context['show_small_title'] = False
+        context['show_search_results'] = False
+
     # Top buttons
 
     if not ajax or context['ajax_show_top_buttons']:
