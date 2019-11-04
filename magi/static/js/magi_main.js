@@ -99,9 +99,15 @@ function colorPicker() {
 function loadPageScroll() {
     $('a.page-scroll').unbind('click');
     $('a.page-scroll').bind('click', function(event) {
-        var $anchor = $(this);
+        let anchor = $(this);
+        let destination;
+        if (anchor.data('destination')) {
+            destination = $('[id="' + anchor.data('destination') + '"]');
+        } else {
+            destination = $(anchor.attr('href'));
+        }
         $('html, body').stop().animate({
-            scrollTop: $($anchor.attr('href')).offset().top
+            scrollTop: destination.offset().top
         }, 1500, 'easeInOutExpo');
         event.preventDefault();
     });
