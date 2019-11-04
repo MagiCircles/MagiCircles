@@ -908,6 +908,7 @@ class MagiCollection(object):
                 allow_ajax_for_more = details.get('allow_ajax_for_more', True)
                 to_preset = details.get('to_preset', None)
                 show_first = details.get('show_first', False)
+                show_last = details.get('show_last', False)
             else: # old style
                 if len(details) == 4:
                     field_name, url, verbose_name, filter_field_name = details
@@ -923,6 +924,7 @@ class MagiCollection(object):
                 allow_ajax_for_more = True
                 to_preset = None
                 show_first = False
+                show_last = False
             if only_fields and field_name not in only_fields:
                 continue
             if field_name in exclude_fields:
@@ -1070,7 +1072,7 @@ class MagiCollection(object):
                         image = image(item)
                     if image:
                         image = staticImageURL(image)
-                    many_fields.append((field_name, {
+                    (many_fields_galleries if show_last else many_fields).append((field_name, {
                         'verbose_name': unicode(verbose_name).replace('{total}', ''),
                         'type': 'text_with_link' if url else 'text',
                         'value': value,
