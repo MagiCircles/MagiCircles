@@ -1413,7 +1413,7 @@ class MagiCollection(object):
                     if not add_to_id_from_request:
                         quick_add_to_collection = False
                         del(extra_attributes['quick-add-to-collection'])
-                        del(extra_attributes['parent-item'])
+                        del(extra_attributes['parent-item-field-name-id'])
                         del(extra_attributes['parent-item-id'])
                     else:
                         extra_attributes['quick-add-to-id'] = add_to_id_from_request
