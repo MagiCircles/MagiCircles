@@ -371,6 +371,14 @@ DEFAULT_GROUPS = [
             'beta_test_features',
         ],
     }),
+    ('betatester_donator', {
+        'translation': string_concat(_(u'β-tester'), ' (', _('Donators'), ')'),
+        'description': 'Beta testers have access to features before everybody else!',
+        'permissions': [
+            'access_site_before_launch',
+            'beta_test_features',
+        ],
+    }),
 ]
 
 ############################################################

@@ -390,13 +390,14 @@ def about(request, context):
         context['contributors'] = [
             user for user in models.User.objects.filter(
                 is_staff=False, preferences__c_groups__isnull=False).exclude(
-                    preferences__c_groups='').select_related(
-                        'preferences').prefetch_related(
-                            Prefetch('links', queryset=models.UserLink.objects.order_by(
-                                '-i_relevance'), to_attr='all_links'),
-                        ).extra(select={
-                            'length_of_groups': 'Length(c_groups)',
-                        })
+                    preferences__c_groups='').exclude(
+                        preferences__c_groups='"betatester_donator"').select_related(
+                            'preferences').prefetch_related(
+                                Prefetch('links', queryset=models.UserLink.objects.order_by(
+                                    '-i_relevance'), to_attr='all_links'),
+                            ).extra(select={
+                                'length_of_groups': 'Length(c_groups)',
+                            })
         ]
 
         try:
