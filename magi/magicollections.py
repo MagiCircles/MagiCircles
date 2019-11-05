@@ -3037,7 +3037,8 @@ class UserCollection(MagiCollection):
                 for collection_name in (
                         context['collections_in_profile_tabs']
                         + context['collectible_collections'].get('owner', {}).keys()):
-                    if (not must_stay(collection_name) and not tabs_with_content.get(collection_name, False)):
+                    if (collection_name in context['profile_tabs']
+                        and not must_stay(collection_name) and not tabs_with_content.get(collection_name, False)):
                         del(context['profile_tabs'][collection_name])
                 if ('account' in context['profile_tabs'] and not must_stay('account')
                     and not tabs_with_content.get('account', {}).get('has_content', False)):
