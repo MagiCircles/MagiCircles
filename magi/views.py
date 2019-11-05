@@ -193,9 +193,15 @@ def signup(request, context):
                 raise HttpRedirectException('/prelaunch/')
             if REDIRECT_AFTER_SIGNUP:
                 raise HttpRedirectException(REDIRECT_AFTER_SIGNUP(user))
-            url = u'/accounts/add/{}{}'.format(
-                (u'?next={}'.format(urlquote(request.GET['next'])) if 'next' in request.GET else ''),
-                (u'&next_title={}'.format(request.GET['next_title']) if 'next' in request.GET and 'next_title' in request.GET else ''))
+            account_collection = getMagiCollection('account')
+            if account_collection and account_collection.add_view.has_permissions(request, context):
+                url = u'/accounts/add/{}{}'.format(
+                    (u'?next={}'.format(urlquote(request.GET['next'])) if 'next' in request.GET else ''),
+                    (u'&next_title={}'.format(request.GET['next_title'])
+                     if 'next' in request.GET and 'next_title' in request.GET
+                     else ''))
+            else:
+                url = '/'
             raise HttpRedirectException(url)
     else:
         form = CreateUserForm(request=request)
