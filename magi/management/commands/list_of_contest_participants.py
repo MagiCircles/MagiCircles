@@ -55,6 +55,10 @@ class Command(BaseCommand):
             help='ID of badge to add to all participants',
         ),
         make_option(
+            '--list-missing-badges',
+            action='store_true',
+            help='Show the list of users who didn\'t get their badge because we couldn\'t find their username on ' + settings.SITE_NAME),
+        make_option(
             '--one-chance-per-user',
             action='store_true',
             help='By default, all entries have the same chance to win. With this, entries are reduced to one per user bfore picking a random winner.',
@@ -358,12 +362,14 @@ class Command(BaseCommand):
     def add_badges(self, all_entries, winners):
         print '# ADD BADGES'
         badge = models.Badge.objects.get(id=self.options['add_badges'])
-        cant_get = []
+        cant_get = {}
         for platform in all_entries:
             for entry in all_entries[platform]:
                 username = entry.get(u'{}_username'.format(django_settings.SITE), None)
                 if not username:
-                    cant_get.append(u'{} ({})'.format(entry[u'{}_username'.format(platform)], platform))
+                    if platform not in cant_get:
+                        cant_get[platform] = []
+                    cant_get[platform].append(entry[u'{}_username'.format(platform)])
                 else:
                     try:
                         existing_badge = models.Badge.objects.filter(user__username=username, name=badge.name)[0]
@@ -384,7 +390,9 @@ class Command(BaseCommand):
                             show_on_profile=badge.show_on_profile,
                             rank=rank,
                         )
-        # print '!! Can\'t add badge to:', cant_get
+            '--list-missing-badges',
+        if self.options.get('list_missing_badges'):
+            print json.dumps(cant_get, indent=4)
 
     def handle(self, *args, **options):
         self.options = options
