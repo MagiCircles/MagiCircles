@@ -369,7 +369,9 @@ class Command(BaseCommand):
                 if not username:
                     if platform not in cant_get:
                         cant_get[platform] = []
-                    cant_get[platform].append(entry[u'{}_username'.format(platform)])
+                    username = entry[u'{}_username'.format(platform)]
+                    if username not in cant_get[platform]:
+                        cant_get[platform].append(username)
                 else:
                     try:
                         existing_badge = models.Badge.objects.filter(user__username=username, name=badge.name)[0]
