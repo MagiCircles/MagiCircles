@@ -3,7 +3,11 @@ import requests, json, random
 from optparse import make_option
 from django.core.management.base import BaseCommand
 from django.conf import settings as django_settings
-from magi.import_data import loadJsonAPIPage
+from magi.import_data import (
+    loadJsonAPIPage,
+    twitterAPICall,
+    TWITTER_API_SEARCH_URL,
+)
 from magi.urls import RAW_CONTEXT
 from magi.utils import (
     addParametersToURL,
@@ -147,11 +151,74 @@ class Command(BaseCommand):
             page_number +=1
         return entries
 
+    TWEET_URL = 'https://twitter.com/{username}/status/{id}'
+    TWITTER_PROFILE_URL = 'https://twitter.com/{username}'
+
     def get_twitter_entries(self):
         local = self.options.get('local', False)
         hashtag = self.options['twitter']
         entries = []
-        # todo
+        platform_username_to_site_user = {}
+
+        data = {
+            'query': '#{}'.format(hashtag),
+            'maxResults': 100,
+        }
+        page_number = 0
+        has_next = True
+
+        while has_next:
+            # Get tweets
+            result = twitterAPICall(TWITTER_API_SEARCH_URL, data, load_json_api_options={
+                'local': local, 'load_on_not_found_local': True, 'verbose': True,
+                'local_file_name': 'twitter-{}'.format(page_number),
+            })
+            if not result:
+                break
+
+            # Go through tweets
+            for tweet in result['results']:
+
+                if tweet['text'].startswith('RT @'):
+                    continue
+
+                username = tweet['user']['screen_name']
+                if username == settings.TWITTER_HANDLE:
+                    continue
+
+                tweet_id = tweet['id_str']
+                tweet_url = self.TWEET_URL.format(username=username, id=tweet_id)
+                profile_url = self.TWITTER_PROFILE_URL.format(username=username)
+                image = getSubField(tweet, ['extended_tweet', 'extended_entities', 'media', 0, 'media_url_https'])
+
+                if username not in platform_username_to_site_user:
+                    site_user = getUserFromLink(username, type='twitter')
+                    if site_user:
+                        platform_username_to_site_user[username] = site_user
+                    else:
+                        platform_username_to_site_user[username] = None
+
+                site_user = platform_username_to_site_user[username]
+
+                entries.append({
+                    'platform': 'twitter',
+                    'twitter_username': username,
+                    'twitter_profile_url': profile_url,
+                    'url': tweet_url,
+                    'image': image,
+                    u'{}_username'.format(django_settings.SITE): site_user.username if site_user else None,
+                    u'{}_profile_url'.format(django_settings.SITE): site_user.http_item_url if site_user else None,
+                })
+
+            # Get next page
+            next_page = result.get('next', None)
+            if next_page:
+                data['next'] = next_page
+            else:
+                has_next = False
+            page_number += 1
+
+        return entries
 
     def get_site_entries(self):
         tag = self.options[django_settings.SITE]
@@ -325,11 +392,21 @@ class Command(BaseCommand):
         winners = []
         if options.get('instagram', None):
             all_entries['instagram'] = self.get_instagram_entries()
+        if options.get('twitter', None):
+            all_entries['twitter'] = self.get_twitter_entries()
         if options.get(django_settings.SITE, None):
             all_entries[django_settings.SITE] = self.get_site_entries()
 
+        totals = {
+            platform: len(all_entries[platform])
+            for platform in all_entries
+        }
+        totals['all'] = sum(totals.values())
         print '# ALL ENTRIES'
         print json.dumps(all_entries, indent=4)
+        print ''
+        print 'TOTAL'
+        print json.dumps(totals, indent=4)
         print '  ---  '
         print ''
 

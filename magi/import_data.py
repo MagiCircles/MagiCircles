@@ -1,5 +1,6 @@
 from __future__ import print_function
 import requests, json
+from django.conf import settings as django_settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q, ImageField
 from magi.utils import (
@@ -10,12 +11,100 @@ from magi.utils import (
     matchesTemplate,
     saveImageURLToModel,
 )
+from magi.models import StaffConfiguration
 from magi.tools import get_default_owner
+
+############################################################
+# Twitter API
+
+TWITTER_TOKEN_URL = 'https://api.twitter.com/oauth2/token'
+
+def getTwitterBearerToken(log_function=print, verbose=False, force_reload=False):
+    token = None
+
+    if not force_reload:
+        try:
+            token = StaffConfiguration.objects.filter(key='_twitter_bearer_token')[0].value
+            if verbose:
+                log_function('Twitter: Using existing token')
+        except IndexError:
+            pass
+
+    if not token:
+        api_key = getattr(django_settings, 'TWITTER_API_KEY', None)
+        api_secret = getattr(django_settings, 'TWITTER_API_SECRET', None)
+        if not api_key or not api_secret:
+            log_function('Twitter: Missing API key or secret')
+            return None
+        result = loadJsonAPIPage(TWITTER_TOKEN_URL, post=True, request_options={
+            'auth': (api_key, api_secret),
+            'data': { 'grant_type': 'client_credentials' },
+        }, verbose=True)
+        if result.get('errors', []):
+            log_function(result['errors'])
+            return None
+        token = result['access_token']
+        StaffConfiguration.objects.filter(key='_twitter_bearer_token').delete()
+        StaffConfiguration.objects.create(
+            key='_twitter_bearer_token',
+            owner=get_default_owner(),
+            verbose_key='Twitter bearer token',
+            value=token,
+        )
+        if verbose:
+            log_function('Twitter: Creating new token')
+
+    return token
+
+TWITTER_API_SEARCH_URL = 'https://api.twitter.com/1.1/tweets/search/fullarchive/{env}.json'
+
+def twitterAPICall(url, data, load_json_api_options={}, verbose=False, log_function=print):
+    token = getTwitterBearerToken()
+    if not token:
+        log_function('Twitter: Missing TWITTER_API_KEY and TWITTER_API_SECRET in settings.')
+        return None
+
+    request_options = {
+        'headers': {
+            'authorization': u'Bearer {}'.format(token),
+            'content-type': 'application/json',
+        },
+    }
+    request_options['data'] = json.dumps(data)
+
+    new_load_json_api_options = {
+        'url': url.format(env=getattr(django_settings, 'TWITTER_API_ENV', 'env')),
+        'post': True,
+        'request_options': request_options,
+        'verbose': verbose,
+        'log_function': log_function,
+    }
+    new_load_json_api_options.update(load_json_api_options)
+
+    result = loadJsonAPIPage(**new_load_json_api_options)
+    errors = result.get('errors', [])
+
+    # Retry when invalid token
+    if errors and len(errors) == 1 and errors[0]['code'] == 89: # "Invalid or expired token"
+        if verbose:
+            log_function('Twitter: Bearer token was invalid, retrieving a new one')
+        token = getTwitterBearerToken(force_reload=True)
+        if not token:
+            log_function('Twitter: Couldn\'t retrieve Bearer token. Check TWITTER_API_KEY and TWITTER_API_SECRET')
+            return None
+        result = loadJsonAPIPage(**new_load_json_api_options)
+        errors = result.get('errors', [])
+
+    if errors:
+        log_function('Twitter: Error(s) ' + errors)
+        return None
+
+    return result
 
 ############################################################
 # Utils
 
-def loadJsonAPIPage(url, local=False, local_file_name='tmp', request_options={}, page_number=0, log_function=print, load_on_not_found_local=False, verbose=False):
+def loadJsonAPIPage(url, parameters=None, local=False, local_file_name='tmp', request_options={}, page_number=0, log_function=print, load_on_not_found_local=False, verbose=False, post=False, request_call=None):
     if local:
         if load_on_not_found_local:
             try: f = open('{}.json'.format(local_file_name), 'r')
@@ -30,7 +119,8 @@ def loadJsonAPIPage(url, local=False, local_file_name='tmp', request_options={},
             return result
     if verbose:
         log_function('Loading ' + url)
-    r = requests.get(url, **request_options)
+    r = (request_call or (requests.post if post else requests.get))(
+        addParametersToURL(url, parameters or {}), **request_options)
     if r.status_code != 200:
         log_function('ERROR: unable to load {}'.format(url))
         log_function(r.status_code)

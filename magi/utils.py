@@ -1362,6 +1362,11 @@ def getSubField(fields, l, default=None):
                 ret = ret[i]
             except KeyError:
                 return default
+        elif isinstance(ret, list):
+            try:
+                ret = ret[i]
+            except IndexError:
+                return default
         else:
             try:
                 ret = getattr(ret, i)
