@@ -1733,8 +1733,9 @@ class AccountFilterForm(MagiFiltersForm):
         middle_fields = ['favorite_character'] + (
             ['color'] if USER_COLORS else []
         ) + (
-            ['i_os', 'i_play_with']
-            if has_field(models.Account, 'i_os') or has_field(models.Account, 'i_play_with') else []
+            ['i_os'] if has_field(models.Account, 'i_os') else []
+        ) + (
+            ['i_play_with'] if has_field(models.Account, 'i_play_with') else []
         )
         fields = top_fields + middle_fields
 
