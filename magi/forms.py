@@ -45,6 +45,7 @@ from magi.settings import (
     TRANSLATION_HELP_URL,
     PROFILE_BACKGROUNDS_NAMES,
     MAX_LEVEL,
+    GOOD_REPUTATION_THRESHOLD,
 )
 from magi.utils import (
     addParametersToURL,
@@ -58,7 +59,6 @@ from magi.utils import (
     usersWithPermission,
     staticImageURL,
     markdownHelpText,
-    hasGoodReputation,
     LANGUAGES_DICT,
     LANGUAGES_NAMES,
     LANGUAGES_NAMES_TO_CODES,
@@ -2225,6 +2225,7 @@ class UserFilterForm(MagiFiltersForm):
         ('id', _('Join Date')),
         ('username', t['Username']),
         ('preferences___cache_reputation', _('Most popular')),
+        ('followed,id', _('Following')),
     )
 
     followers_of = HiddenModelChoiceField(queryset=models.User.objects.all())
@@ -2279,31 +2280,51 @@ class UserFilterForm(MagiFiltersForm):
         super(UserFilterForm, self).__init__(*args, **kwargs)
         if 'favorite_character' in self.fields:
             self.fields['favorite_character'].label = models.UserPreferences.favorite_character_label()
+        # Hide following ordering option unless selected
+        if ('ordering' in self.fields
+            and self.request
+            and self.request.GET.get('ordering', None) != 'followed,id'):
+            self.fields['ordering'].choices = [
+                (k, v)
+                for k, v in self.fields['ordering'].choices
+                if k != 'followed,id'
+            ]
 
     def filter_queryset(self, queryset, parameters, request):
         queryset = super(UserFilterForm, self).filter_queryset(queryset, parameters, request)
 
         # Filter by who the user can private messages to
+        # Should follow the logic of utils.hasPermissionToMessage
         if (request.GET.get('view', None) == 'send_private_message'
             and request.user.is_authenticated()):
-            # If setting is nobody, don't return any result
+
+            # Can't send message to self
+            queryset = queryset.exclude(id=request.user.id)
+
+            # Can't use private messages if reputation is not good enough
+            if not request.user.preferences.has_good_reputation:
+                queryset = queryset.filter(id=-1)
+            queryset = queryset.filter(preferences___cache_reputation__gte=GOOD_REPUTATION_THRESHOLD)
+
+            # Do not allow if blocked or blocked by
+            queryset = queryset.exclude(blocked_by=request.user.preferences)
+            queryset = queryset.exclude(preferences__blocked=request.user)
+
+            # If messages are closed
             if request.user.preferences.private_message_settings == 'nobody':
-                return queryset.filter(id=-1)
-            # If follow, restrict to followers
-            if request.user.preferences.private_message_settings == 'follow':
-                queryset = queryset.filter(followers__user=request.user)
-            # Filter out users who allow nobody to message them
+                queryset = queryset.filter(id=-1)
             queryset = queryset.exclude(
                 preferences__i_private_message_settings=models.UserPreferences.get_i(
                     'private_message_settings', 'nobody'),
             )
-            # Filter out users who allow only followers and don't follow user
+
+            # If messages are only open to followed and not followed
+            # Following is already filtered by "followed_by" in GET
             queryset = queryset.exclude(
                 Q(preferences__i_private_message_settings=models.UserPreferences.get_i(
                     'private_message_settings', 'follow'))
                 & ~Q(preferences__following=request.user),
             )
-
         return queryset
 
     class Meta(MagiFiltersForm.Meta):
@@ -3014,19 +3035,6 @@ class PrivateMessageForm(MagiForm):
     def __init__(self, *args, **kwargs):
         super(PrivateMessageForm, self).__init__(*args, **kwargs)
         self.fields['to_user'].initial = self.request.GET.get('to_user', None)
-
-        # For permissions checking
-        self.fields['to_user'].queryset = self.fields['to_user'].queryset.select_related(
-            'preferences').extra(select={
-                'is_followed_by': 'SELECT COUNT(*) FROM {table}_following WHERE userpreferences_id = (SELECT id FROM {table} WHERE user_id = auth_user.id) AND user_id = {id}'.format(
-                    table=models.UserPreferences._meta.db_table,
-                    id=self.request.user.id,
-                ),
-                'followed': 'SELECT COUNT(*) FROM {table}_following WHERE userpreferences_id = {id} AND user_id = auth_user.id'.format(
-                    table=models.UserPreferences._meta.db_table,
-                    id=self.request.user.preferences.id,
-                ),
-            })
         self.fields['message'].validators.append(MinLengthValidator(2))
 
     class Meta(MagiForm.Meta):

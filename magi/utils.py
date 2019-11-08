@@ -265,14 +265,28 @@ def usersWithOneOfPermissions(queryset, groups, permissions):
     groups = groupsWithOneOfPermissions(groups, permissions)
     return usersWithOneOfGroups(queryset, groups) if groups else []
 
+def receivedMessageFromStaffBefore(from_user, to_user):
+    return bool(from_user.sent_messages.model.objects.filter(owner=to_user, to_user=from_user).count())
+
 def hasPermissionToMessage(from_user, to_user):
     """
-    Requires is_followed_by and followed to be added in queryset of to_user
+    to_user requires is_followed_by and followed to be added in queryset of to_user.
+    The filtering logic for users who can be messaged is in UserFilterForm.filter_queryset.
     """
     # Can't send message to self
     if from_user == to_user:
         return False
-    # Do not allow if blocked
+    from_user_is_allowed = from_user.hasPermission('message_almost_anyone')
+    to_user_is_allowed = to_user.hasPermission('message_almost_anyone')
+    # Can't use private messages if reputation is not good enough
+    if (not from_user.preferences.has_good_reputation
+        or not to_user.preferences.has_good_reputation):
+        # Staff can message people without reputation
+        # Users can reply to staff who already messaged them
+        if (not (from_user_is_allowed
+                 or (to_user_is_allowed and receivedMessageFromStaffBefore(from_user, to_user)))):
+            return False
+    # Do not allow if blocked or blocked by
     if (to_user.id in from_user.preferences.cached_blocked_ids
         or to_user.id in from_user.preferences.cached_blocked_by_ids):
         return False
@@ -285,17 +299,12 @@ def hasPermissionToMessage(from_user, to_user):
          and not to_user.followed)
         or ((to_user.preferences.private_message_settings == 'follow'
              and not to_user.is_followed_by))):
-        return False
+        # Staff can message users who don't follow them
+        # Users can reply to staff who already messaged them
+        if (not (from_user_is_allowed
+                 or (to_user_is_allowed and receivedMessageFromStaffBefore(from_user, to_user)))):
+            return False
     return True
-
-def hasGoodReputation(request):
-    if not request.user.is_authenticated():
-        return False
-    return request.user.preferences.has_good_reputation
-
-def isInboxClosed(request):
-    return (not hasGoodReputation(request)
-            or request.user.preferences.private_message_settings == 'nobody')
 
 ############################################################
 # Helpers for MagiCollections

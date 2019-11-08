@@ -1,22 +1,27 @@
-{% if item.buttons_to_show.privatemessage.has_permissions %}
 {% with user=item %}
-<a href="{{ item.buttons_to_show.privatemessage.url }}"
-   {% if ajax and item.buttons_to_show.privatemessage.ajax_url %}
-   data-ajax-url="{{ item.buttons_to_show.privatemessage.ajax_url }}"
-   data-ajax-handle-form="true"
-   data-ajax-title="{{ item.buttons_to_show.privatemessage.title }}: {{ user.username }}"
-   {% endif %}
-   class="user-item">
-  <div class="avatar-section">
-    {% include 'include/avatar.html' with av_user=user av_size=18 av_image_size=42 av_fixed=True %}
-  </div>
-  <div class="details-section">
-    {{ user.username }}
-  </div>
-  <div class="buttons-section pull-right">
-    {{ item.buttons_to_show.privatemessage.title }}
-    <i class="flaticon-toggler fontx2"></i>
-  </div>
-</a>
+<div class="user-item">
+  <a href="/privatemessages/?to_user={{ item.id }}"
+     {% if ajax %}
+     data-ajax-url="/ajax/privatemessages/?to_user={{ item.id }}&ajax_modal_only&ajax_show_top_buttons"
+     data-ajax-handle-form="true"
+     {% endif %}
+     class="a-nodifference">
+    <div class="avatar-section">
+      {% include 'include/avatar.html' with av_user=user av_size=18 av_image_size=42 av_fixed=True %}
+    </div>
+    <div class="details-section">
+      {{ user.username }}
+    </div>
+  </a>
+  <a href="/privatemessages/?to_user={{ item.id }}"
+     {% if ajax %}
+     data-ajax-url="/ajax/privatemessages/?to_user={{ item.id }}&ajax_modal_only&ajax_show_top_buttons"
+     data-ajax-handle-form="true"
+     {% endif %}
+     class="a-nodifference">
+    <div class="buttons-section fontx3 padding20 padding-novertical">
+      <i class="flaticon-contact"></i><i class="flaticon-toggler"></i>
+    </div>
+  </a>
+</div>
 {% endwith %}
-{% endif %}

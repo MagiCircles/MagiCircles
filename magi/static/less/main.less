@@ -2307,10 +2307,14 @@ nav {
 }
 
 .user-item {
-    display: block;
+    display: flex;
     padding: 20px 0;
     border-bottom: 1px #eee solid;
     .a-nodifference();
+    & > a:first-child {
+        display: block;
+        width: 100%;
+    }
     .flaticon-toggler {
         vertical-align: middle;
         padding: 30px;

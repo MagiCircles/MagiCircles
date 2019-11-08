@@ -152,6 +152,14 @@
 {% endif %}
 {% endblock %}
 
+{% block afterfields %}
+{% if form_name == 'security' %}
+{% if not user.preferences.has_good_reputation %}
+{% include 'include/alert.html' with alert_title=alert_reputation_title alert_message=alert_reputation_message %}
+{% endif %}
+{% endif %}
+{% endblock %}
+
 {% block belowforms %}
 {% if not no_accounts %}
 <h1 id="accounts" class="text-center padding50"><i class="flaticon-album"></i> {{ accounts_title_sentence }}</h1>

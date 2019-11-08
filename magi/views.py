@@ -55,7 +55,6 @@ from magi.utils import (
     staticImageURL,
     find_all_translations,
     duplicate_translation,
-    hasGoodReputation,
     getColSize,
     LANGUAGES_NAMES,
     h1ToContext,
@@ -501,6 +500,8 @@ def settings(request, context):
     context['add_link_sentence'] = _(u'Add {thing}').format(thing=_('Link'))
     context['delete_link_sentence'] = _(u'Delete {thing}').format(thing=_('Link'))
     context['back_to_profile_sentence'] = _('Back to {page_name}').format(page_name=_('Profile').lower())
+    context['alert_reputation_title'] = _('You are not allowed to send private messages.')
+    context['alert_reputation_message'] = _('Take some time to play around {site_name} to unlock this feature!').format(site_name=context['t_site_name'])
 
     context['t_english'] = t['English']
     context['global_outside_permissions'] = GLOBAL_OUTSIDE_PERMISSIONS
@@ -1012,7 +1013,7 @@ def _shouldBumpActivity(activity, request):
         return False
 
     # Only users with enough "reputation" can bump
-    if not hasGoodReputation(request):
+    if not request.user.preferences.has_good_reputation:
         return False
 
     # A given user can only bump up to 5 activities older than 1 day per hour

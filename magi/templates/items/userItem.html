@@ -1,11 +1,13 @@
 {% with user=item %}
 <div class="user-item">
-  <div class="avatar-section">
-    {% include 'include/avatar.html' with av_user=user av_size=18 av_image_size=42 av_fixed=True av_link=True av_external=True %}
-  </div>
-  <div class="details-section">
-    {{ user.username }}
-  </div>
+  <a href="{{ user.item_url }}" class="a-nodifference">
+    <div class="avatar-section">
+      {% include 'include/avatar.html' with av_user=user av_size=18 av_image_size=42 av_fixed=True %}
+    </div>
+    <div class="details-section">
+      {{ user.username }}
+    </div>
+  </a>
   <div class="buttons-section pull-right">
     {% include 'include/below_item.html' with buttons_only=True show_item_buttons=True %}
   </div>

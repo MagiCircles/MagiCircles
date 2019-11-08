@@ -64,6 +64,7 @@ DEFAULT_GROUPS = [
             'manage_main_items', 'view_items_history',
             'edit_staff_details', 'moderate_reports', 'edit_reported_things', 'post_community_event_activities',
             'apply_suggestions',
+            'message_almost_anyone',
             'manage_prizes', 'manipulate_activities', 'mark_activities_as_staff_pick',
             'edit_activities_post_language', 'order_by_any_field',
             'access_site_before_launch',
@@ -109,7 +110,12 @@ DEFAULT_GROUPS = [
     ('finance', {
         'translation': _('Finance manager'),
         'description': 'Keeps track of our monthly spending and donations, makes sure donators get their rewards, and we have enough funds every month to cover the server and other expenses.',
-        'permissions': ['add_donation_badges', 'manage_donation_months', 'edit_donator_status'],
+        'permissions': [
+            'add_donation_badges',
+            'manage_donation_months',
+            'edit_donator_status',
+            'message_almost_anyone',
+        ],
         'requires_staff': True,
         'requires_staff': True,
         'outside_permissions': {
@@ -167,6 +173,7 @@ DEFAULT_GROUPS = [
             'edit_staff_configurations',
             'access_site_before_launch',
             'beta_test_features',
+            'message_almost_anyone',
         ],
         'requires_staff': True,
         'stats': [
@@ -208,6 +215,7 @@ DEFAULT_GROUPS = [
         'permissions': [
             'access_site_before_launch',
             'beta_test_features',
+            'message_almost_anyone',
         ],
         'outside_permissions': {
             'Tweetdeck': { 'image': 'links/twitter', 'url': 'https://tweetdeck.twitter.com/' },
@@ -266,6 +274,8 @@ DEFAULT_GROUPS = [
         'translation': _('Community entertainer'),
         'description': 'We keep the community active and happy by organizing fun stuff: contests, giveaways, games, etc. We\'re open to feedback and ideas!',
         'permissions': [
+            'post_news',
+            'message_almost_anyone',
             'edit_staff_configurations',
             'add_badges',
             'post_community_event_activities',

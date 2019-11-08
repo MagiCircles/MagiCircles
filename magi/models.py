@@ -99,7 +99,6 @@ User.hasPermissions = lambda u, permissions: hasPermissions(u, permissions)
 
 User.birthday_url = property(lambda u: birthdayURL(u))
 User.hasPermissionToMessage = hasPermissionToMessage
-User.hasPermissionToBeMessagedBy = lambda u, from_user: hasPermissionToMessage(from_user, u)
 
 ############################################################
 
