@@ -179,13 +179,26 @@ def signup(request, context):
             for field_name in form.preferences_fields:
                 if field_name in form.fields and field_name in form.cleaned_data:
                     setattr(preferences, field_name, form.cleaned_data[field_name])
-            if preferences.age > 18:
+            age = preferences.age
+            if age is None: # unknown
                 if 'hot' in models.UserPreferences.DEFAULT_ACTIVITIES_TABS:
                     preferences.i_default_activities_tab = models.UserPreferences.get_i(
                         'default_activities_tab', 'hot')
-            else:
+                # hidden tags default to hiding only nsfw
+                # private message settings defaults to anyone
+            elif age < 18: # minor
+                if 'popular' in models.UserPreferences.DEFAULT_ACTIVITIES_TABS:
+                    preferences.i_default_activities_tab = models.UserPreferences.get_i(
+                        'default_activities_tab', 'popular')
                 preferences.d_hidden_tags = '{"swearing": true, "questionable": true, "nsfw": true}'
-                preferences.i_private_message_settings = models.UserPreferences.get_i('private_message_settings', 'follow')
+                preferences.i_private_message_settings = models.UserPreferences.get_i(
+                    'private_message_settings', 'follow')
+            else: # adult
+                if 'hot' in models.UserPreferences.DEFAULT_ACTIVITIES_TABS:
+                    preferences.i_default_activities_tab = models.UserPreferences.get_i(
+                        'default_activities_tab', 'hot')
+                # hidden tags default to hiding only nsfw
+                # private message settings defaults to anyone
             preferences.save()
             login_action(request, user)
             if context.get('launch_date', None):
