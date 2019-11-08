@@ -50,7 +50,7 @@ class AccountAsOwnerModel(MagiModel):
     def to_cache_account(self):
         return {
             'id': self.account_id,
-            'unicode': unicode(self),
+            'unicode': unicode(self.account),
             'owner': {
                 'id': self.account.owner_id,
             },
