@@ -10,6 +10,7 @@ from magi.models import uploadItem
 from magi.utils import (
     modelHasField,
     shrinkImageFromData,
+    dataToImageFile,
     imageThumbnailFromData,
     imageResizeScaleFromData,
     imageSquareThumbnailFromData,
@@ -111,7 +112,6 @@ def tinypng_compress(model, field):
         resize = settings.get('resize', 'thumb')
         if resize in ['thumb', 'cover'] and 'width' in settings:
             image = imageSquareThumbnailFromData(content, image_name, size=settings['width'])
-            # Else: don't modify image
         elif resize == 'fit' and 'width' in settings and 'height' in settings:
             image = imageThumbnailFromData(
                 content, image_name, width=settings['width'], height=settings['height'])
@@ -119,7 +119,8 @@ def tinypng_compress(model, field):
             image = imageResizeScaleFromData(
                 content, image_name, width=settings.get('width', None), height=settings.get('height', None))
         else:
-            image = value
+            # Else: don't modify image
+            image = dataToImageFile(content)
     image.name = image_name
     save_item(model, item, {
         original_field_name: unicode(value),
