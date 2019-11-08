@@ -18,6 +18,7 @@ from django.db.models import Count, Prefetch
 from magi.middleware.httpredirect import HttpRedirectException
 from magi.forms import (
     CreateUserForm,
+    LoginForm,
     UserForm,
     UserPreferencesForm,
     AddLinkForm,
@@ -152,7 +153,12 @@ def login(request):
             'title': title(context) if callable(title) else title,
             'url': u'/you/',
         }]
-    return login_view(request, template_name='pages/login.html', extra_context=context)
+    return login_view(
+        request,
+        authentication_form=LoginForm,
+        template_name='pages/login.html',
+        extra_context=context,
+    )
 
 def logout(request):
     return logout_view(request, next_page='/')

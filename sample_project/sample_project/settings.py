@@ -38,6 +38,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'corsheaders',
     'bootstrapform',
+    'snowpenguin.django.recaptcha3',
     'rest_framework',
     'storages',
     'magi',

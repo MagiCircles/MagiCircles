@@ -2,6 +2,8 @@ import re, datetime
 from collections import OrderedDict
 from dateutil.relativedelta import relativedelta
 from multiupload.fields import MultiFileField
+from snowpenguin.django.recaptcha3.widgets import ReCaptchaHiddenInput as _ReCaptchaHiddenInput
+from snowpenguin.django.recaptcha3.fields import ReCaptchaField as _ReCaptchaField
 from django import forms
 from django.core.validators import MaxLengthValidator, MaxValueValidator
 from django.http.request import QueryDict
@@ -12,6 +14,7 @@ from django.db.models import Q
 from django.forms.models import model_to_dict, fields_for_model
 from django.conf import settings as django_settings
 from django.contrib.auth import authenticate, login as login_action
+from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.admin.utils import NestedObjects
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _, string_concat, get_language, activate as translation_activate
@@ -166,6 +169,23 @@ def get_missing_translations(queryset, field_name, destination_languages, limit_
                 queryset = queryset.exclude(**{
                     u'd_{}s__contains'.format(field_name): u'"{}"'.format(language) })
     return queryset
+
+CAPTCHA_CREDITS = u"""
+<div class="row"><div class="col-sm-8 col-sm-offset-4"><p class="text-muted fontx0-8">
+  This site is protected by reCAPTCHA and the Google
+  <a href="https://policies.google.com/privacy">Privacy Policy</a> and
+  <a href="https://policies.google.com/terms">Terms of Service</a> apply.
+</p></div></div>
+"""
+
+class ReCaptchaHiddenInput(_ReCaptchaHiddenInput):
+    def render(self, *args, **kwargs):
+        return mark_safe('<input type="hidden" class="django-recaptcha-hidden-field" name="g-recaptcha-response">')
+
+class ReCaptchaField(_ReCaptchaField):
+    def __init__(self, *args, **kwargs):
+        kwargs['widget'] = ReCaptchaHiddenInput()
+        super(ReCaptchaField, self).__init__(*args, **kwargs)
 
 ############################################################
 # HiddenModelChoiceField is a form field type that will not retrieve
@@ -494,6 +514,12 @@ class MagiForm(forms.ModelForm):
                         ))
                 elif not self.is_creating:
                     self.sub_collections.append(self.get_sub_collections_details(sub_collection))
+
+        # ReCaptcha credit
+        if ('captcha' in self.fields
+            and isinstance(self.fields['captcha'], ReCaptchaField)
+            and not getattr(self, 'afterfields', None)):
+            self.afterfields = mark_safe(CAPTCHA_CREDITS)
 
     def get_sub_collections_details(self, sub_collection):
         return {
@@ -1794,7 +1820,11 @@ class _UserCheckEmailUsernameForm(MagiForm):
             instance.save()
         return instance
 
+class LoginForm(AuthenticationForm):
+    captcha = ReCaptchaField()
+
 class CreateUserForm(_UserCheckEmailUsernameForm):
+    captcha = ReCaptchaField()
     submit_title = _('Sign Up')
     preferences_fields = ('birthdate', 'show_birthdate_year')
     password = forms.CharField(widget=forms.PasswordInput(), min_length=6, label=t['Password'])
