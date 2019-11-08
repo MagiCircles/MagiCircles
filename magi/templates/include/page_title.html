@@ -16,7 +16,7 @@
     {% if h1_page_title_icon %}
     <i class="flaticon-{{ h1_page_title_icon }}"></i>
     {% elif h1_page_title_image %}
-    <img src="{% if '//' in h1_page_title_image %}{{ h1_page_title_image }}{% else %}{{ static_url }}img/{{ h1_page_title_image }}{% if '.' not in h1_page_title_image %}.png{% endif %}?{{ static_files_version }}{% endif %}" height="{% if h1_page_title_image_size %}{{ h1_page_title_image_size }}{% else %}39{% endif %}" class="h1-page-title-image" />
+    <img src="{% if '//' in h1_page_title_image %}{{ h1_page_title_image }}{% else %}{{ static_url }}img/{{ h1_page_title_image }}{% if '.' not in h1_page_title_image %}.png{% endif %}?{{ static_files_version }}{% endif %}" height="{% if h1_page_title_image_size %}{{ h1_page_title_image_size }}{% else %}39{% endif %}" class="h1-page-title-image h1-page-title-image-{{ current }}" />
     {% endif %}
     {% if h1_page_title %}{{ h1_page_title }}
     {% else %}{{ page_title }}{% endif %}

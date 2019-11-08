@@ -2017,6 +2017,7 @@ function getValue(input) {
     // Null boolean
     else if (isNullBool(input)) {
         return {
+            null: null,
             '1': null,
             '2': true,
             '3': false,
@@ -2133,6 +2134,7 @@ function formOnChangeValueShow(form, changingFieldName, valuesToShow) {
                     field.show(animation);
                 } else {
                     input.val('');
+                    input.trigger('change');
                     field.hide(animation);
                 }
             });
@@ -2154,6 +2156,7 @@ function formOnChangeValueShow(form, changingFieldName, valuesToShow) {
                     field.show(animation);
                 } else {
                     input.val('');
+                    input.trigger('change');
                     field.hide(animation);
                 }
             });
@@ -2166,6 +2169,34 @@ function formOnChangeValueShow(form, changingFieldName, valuesToShow) {
             }
         });
     });
+    onChange();
+    changingField.change(function() {
+        onChange('fast');
+    })
+}
+
+function formOnChangeValueTrigger(form, changingFieldName, valuesThatTrigger) {
+    // valuesThatTrigger can be a callback name name or a callback
+    // or an object { value: callback name name or callback }
+    let changingField = form.find('#id_' + changingFieldName);
+    function onChange(animation) {
+        console.log('called', typeof valuesThatTrigger);
+        if (typeof valuesThatTrigger == 'string') {
+            window[valuesThatTrigger]();
+        } else if ($.isFunction(valuesThatTrigger)) {
+            valuesThatTrigger();
+        } else {
+            $.each(valuesThatTrigger, function(value, callback) {
+                if (String(getValue(changingField)) == String(value)) {
+                    if (typeof callback == 'string') {
+                        window[callback]();
+                    } else if ($.isFunction(callback)) {
+                        callback();
+                    }
+                }
+            });
+        }
+    }
     onChange();
     changingField.change(function() {
         onChange('fast');

@@ -68,5 +68,14 @@
         $({{ form_selector|jsv }}).attr('data-loaded-on-change-value-show', true);
       }
       {% endfor %}{% endif %}
+      {% if form_on_change_value_trigger %}
+      {% for form_selector, form_on_change_value_trigger_fields in form_on_change_value_trigger.items %}
+      if (!$({{ form_selector|jsv }}).data('loaded-on-change-value-trigger')) {
+      {% for field_name, options in form_on_change_value_trigger_fields.items %}
+      formOnChangeValueTrigger($({{ form_selector|jsv }}), {{ field_name|jsv }}, {{ options|jsv }});
+      {% endfor %}
+        $({{ form_selector|jsv }}).attr('data-loaded-on-change-value-trigger', true);
+      }
+      {% endfor %}{% endif %}
 </script>
 {% endblock %}

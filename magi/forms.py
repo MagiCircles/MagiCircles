@@ -677,10 +677,7 @@ class MagiForm(forms.ModelForm):
             instance.save()
         return instance
 
-    def get_on_change_value_show(self):
-        on_change_value_show = getattr(self, 'on_change_value_show', None)
-        if not on_change_value_show:
-            return None
+    def _transform_on_change_value(self, values):
         def _get_i(field_name, value):
             if not isinstance(value, int):
                 try: return self.Meta.model.get_i(field_name[2:], value)
@@ -694,8 +691,20 @@ class MagiForm(forms.ModelForm):
                         _get_i(field_name, value): value_fields
                         for value, value_fields in fields.items()
                 })
-            ) for field_name, fields in on_change_value_show.items()
+            ) for field_name, fields in values.items()
         ])
+
+    def get_on_change_value_show(self):
+        on_change_value_show = getattr(self, 'on_change_value_show', None)
+        if not on_change_value_show:
+            return None
+        return self._transform_on_change_value(on_change_value_show)
+
+    def get_on_change_value_trigger(self):
+        on_change_value_trigger = getattr(self, 'on_change_value_trigger', None)
+        if not on_change_value_trigger:
+            return None
+        return self._transform_on_change_value(on_change_value_trigger)
 
     def reorder_fields(self, order):
         """

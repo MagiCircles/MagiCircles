@@ -99,6 +99,20 @@ def _set_javascript_form_details(form, form_selector, context, cuteforms, ajax):
         if form_selector not in context['form_on_change_value_show']:
             context['form_on_change_value_show'][form_selector] = {}
         context['form_on_change_value_show'][form_selector].update(on_change_value_show)
+    # On change value trigger
+    on_change_value_trigger = form.get_on_change_value_trigger()
+    if on_change_value_trigger:
+        if 'form_on_change_value_trigger' not in context:
+            context['form_on_change_value_trigger'] = {}
+        if form_selector not in context['form_on_change_value_trigger']:
+            context['form_on_change_value_trigger'][form_selector] = {}
+        context['form_on_change_value_trigger'][form_selector].update(on_change_value_trigger)
+    # Collectible variables
+    collectible_variables = getattr(form, 'collectible_variables', {})
+    if collectible_variables:
+        if 'js_variables' not in context:
+            context['js_variables'] = {}
+        context['js_variables']['collectible_variables'] = collectible_variables
 
 def _add_h1_and_prefixes_to_context(view, context, title_prefixes, h1, item=None, get_page_title_parameters={}):
     context['show_title'] = view.show_title
