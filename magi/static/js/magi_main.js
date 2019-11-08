@@ -1590,9 +1590,15 @@ function isColor(strColor) {
     return s.color !== '';
 }
 
+let valid_date_regexp = new RegExp(/^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d)$/);
+
 function isValidDate(strDate) {
     let date = new Date(strDate);
-    return date instanceof Date && !isNaN(date);
+    return valid_date_regexp.test(strDate) && date instanceof Date && !isNaN(date);
+}
+
+function toUTCDate(strDate) {
+    return strDate + '+0000';
 }
 
 let CUSTOM_TAGS = {
@@ -1604,6 +1610,7 @@ let CUSTOM_TAGS = {
     },
     'countdown': {
         'is_valid': isValidDate,
+        'to_value': toUTCDate,
         'to_html_open': function(tag, value) {
             return '<span class="countdown" data-date="' + value + '" data-format="{time}">';
         },
@@ -1611,6 +1618,7 @@ let CUSTOM_TAGS = {
     },
     'utcdate': {
         'is_valid': isValidDate,
+        'to_value': toUTCDate,
         'to_html_open': function(tag, value) {
             return '<span class="timezone"><span class="datetime">' + value + '</span> (<span class="current_timezone">UTC</span>)';
         },
@@ -1618,6 +1626,7 @@ let CUSTOM_TAGS = {
     },
     'timeago': {
         'is_valid': isValidDate,
+        'to_value': toUTCDate,
         'to_html_open': function(tag, value) {
             return '<span class="timezone" data-timeago="true"><span class="datetime">' + value + '</span> (<span class="current_timezone">UTC</span>)';
         },
@@ -1640,10 +1649,14 @@ function applyMarkdownCustomTags(elt) {
                     let content = text.split(']')[1].split('[/' + tag + '')[0];
                     let remaining = text.split('[/' + tag + ']')[1];
                     if (options.is_valid(value)) {
-                        let opening_tag = options.to_html_open(tag, value);
+                        let displayed_value = value;
+                        if (options.to_value) {
+                            displayed_value = options.to_value(value);
+                        }
+                        let opening_tag = options.to_html_open(tag, displayed_value);
                         let closing_tag;
                         if (options.to_html_close) {
-                            closing_tag = options.to_html_close(tag, value);
+                            closing_tag = options.to_html_close(tag, displayed_value);
                         } else {
                             closing_tag = '</' + opening_tag.split('<')[1].split(' ')[0].split('>')[0] + '>';
                         }
