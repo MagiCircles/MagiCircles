@@ -354,7 +354,7 @@ def api_pages(
     request_options = request_options.copy()
     request_options.update(details.get('request_options', {}))
     while url:
-        result = loadAPIPage(
+        result = loadJsonAPIPage(
             url, local_file_name=name, request_options=request_options,
             page_number=page_number, log_function=log_function)
         if 'callback_before_page' in details:
