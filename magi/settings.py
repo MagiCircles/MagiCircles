@@ -501,28 +501,28 @@ def _to_background_name_lambda(_b):
 
 HOMEPAGE_BACKGROUNDS_IMAGES = OrderedDict([
     (_b['id'], _b['image'])
-    for _b in HOMEPAGE_BACKGROUNDS
+    for _b in HOMEPAGE_BACKGROUNDS or []
 ])
 HOMEPAGE_BACKGROUNDS_THUMBNAILS = OrderedDict([
     (_b['id'], _b.get('thumbnail', _b['image']))
-    for _b in HOMEPAGE_BACKGROUNDS
+    for _b in HOMEPAGE_BACKGROUNDS or []
 ])
 HOMEPAGE_BACKGROUNDS_NAMES = OrderedDict([
     (_b['id'], _to_background_name_lambda(_b))
-    for _b in HOMEPAGE_BACKGROUNDS
+    for _b in HOMEPAGE_BACKGROUNDS or []
 ])
 
 PROFILE_BACKGROUNDS_IMAGES = OrderedDict([
     (_b['id'], _b['image'])
-    for _b in PROFILE_BACKGROUNDS
+    for _b in PROFILE_BACKGROUNDS or []
 ])
 PROFILE_BACKGROUNDS_THUMBNAILS = OrderedDict([
     (_b['id'], _b.get('thumbnail', _b['image']))
-    for _b in PROFILE_BACKGROUNDS
+    for _b in PROFILE_BACKGROUNDS or []
 ])
 PROFILE_BACKGROUNDS_NAMES = OrderedDict([
     (_b['id'], _to_background_name_lambda(_b))
-    for _b in PROFILE_BACKGROUNDS
+    for _b in PROFILE_BACKGROUNDS or []
 ])
 
 ############################################################
