@@ -387,7 +387,7 @@ class MagiCollection(object):
                     missing = False
                     # add variables from GET parameters
                     for variable in self.collection.add_view.add_to_collection_variables:
-                        if variable == 'unicode' or not hasattr(item_field_model_class, variable):
+                        if variable != 'unicode' and not hasattr(item_field_model_class(), variable):
                             continue
                         get = u'{}_{}'.format(parent_collection.name, variable)
                         if get not in self.request.GET:
