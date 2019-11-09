@@ -23,12 +23,10 @@ from magi import models
 # Create user
 
 def create_user(username, email=None, password=None, language='en', is_superuser=False):
-    new_user = models.User.objects.create_user(
+    new_user = getattr(models.User.objects, 'create_user' if not is_superuser else 'create_superuser')(
         username=username,
         email=email or u'{}@yopmail.com'.format(username),
         password=username * 2,
-        is_superuser=is_superuser,
-        is_staff=is_superuser,
     )
     preferences = models.UserPreferences.objects.create(
         user=new_user,
