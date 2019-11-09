@@ -36,9 +36,11 @@
         <script src="http://html5shim.googlecode.com/svn/trunk/html5.js">
         </script>
         <![endif]-->
+    {% if not disable_recaptcha %}
     {% load recaptcha3 %}
     {% recaptcha_init %}
     {% recaptcha_ready action_name=current %}
+    {% endif %}
   </head>
   <body class="current-{% if current %}{{ current }}{% else %}error{% endif %}{% if shortcut_url != None %} shortcut-{{ shortcut_url }}{% endif %}{% for page_definer in page_definers %} {{ page_definer }}{% endfor %}">
     {% if not hidenavbar %}

@@ -358,6 +358,9 @@ def globalContext(request=None, email=False):
     if django_settings.DEBUG:
         # Ensures that static assets are always reloaded
         context['static_files_version'] = randomString(20)
+        # Don't enforce recaptcha
+        if not django_settings.RECAPTCHA_PUBLIC_KEY:
+            context['disable_recaptcha'] = True
 
     ############################################################
     # Only email pages

@@ -517,9 +517,13 @@ class MagiForm(forms.ModelForm):
 
         # ReCaptcha credit
         if ('captcha' in self.fields
-            and isinstance(self.fields['captcha'], ReCaptchaField)
-            and not getattr(self, 'afterfields', None)):
-            self.afterfields = mark_safe(CAPTCHA_CREDITS)
+            and isinstance(self.fields['captcha'], ReCaptchaField)):
+            if (getattr(django_settings, 'DEBUG', False)
+                and not getattr(django_settings, 'RECAPTCHA_PUBLIC_KEY', None)):
+                del(self.fields['captcha'])
+            else:
+                if not getattr(self, 'afterfields', None):
+                    self.afterfields = mark_safe(CAPTCHA_CREDITS)
 
     def get_sub_collections_details(self, sub_collection):
         return {
