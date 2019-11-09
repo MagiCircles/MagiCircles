@@ -163,6 +163,7 @@ class BaseMagiModel(models.Model):
       - save_c: replace the full list of existing strings
     """
     tinypng_settings = {}
+    request = None
 
     fk_as_owner = None
     selector_to_owner = classmethod(get_selector_to_owner)
@@ -795,6 +796,7 @@ def addMagiModelProperties(modelClass, collection_name):
     modelClass.delete_sentence = property(get_delete_sentence)
     modelClass.report_sentence = property(get_report_sentence)
     modelClass.tinypng_settings = {}
+    modelClass.request = None
 
     modelClass.fk_as_owner = None
     modelClass.selector_to_owner = classmethod(get_selector_to_owner)

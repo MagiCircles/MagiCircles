@@ -1836,6 +1836,12 @@ class _UserCheckEmailUsernameForm(MagiForm):
 class LoginForm(AuthenticationForm):
     captcha = ReCaptchaField()
 
+    def __init__(self, *args, **kwargs):
+        super(LoginForm, self).__init__(*args, **kwargs)
+        if (getattr(django_settings, 'DEBUG', False)
+            and not getattr(django_settings, 'RECAPTCHA_PUBLIC_KEY', None)):
+            del(self.fields['captcha'])
+
 class CreateUserForm(_UserCheckEmailUsernameForm):
     captcha = ReCaptchaField()
     submit_title = _('Sign Up')

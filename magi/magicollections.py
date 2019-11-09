@@ -387,9 +387,7 @@ class MagiCollection(object):
                     missing = False
                     # add variables from GET parameters
                     for variable in self.collection.add_view.add_to_collection_variables:
-                        if variable != 'unicode' and not hasattr(item_field_model_class(), variable):
-                            continue
-                        get = u'{}_{}'.format(parent_collection.name, variable)
+                        get = u'{}_{}'.format(self.collection.item_field_name, variable)
                         if get not in self.request.GET:
                             missing = True
                             break
@@ -405,8 +403,6 @@ class MagiCollection(object):
                             if variable == 'unicode':
                                 self.collectible_variables[variable] = unicode(item)
                             else:
-                                if not hasattr(item, variable):
-                                    continue
                                 self.collectible_variables[variable] = unicode(getattr(item, variable))
 
             class Meta:
