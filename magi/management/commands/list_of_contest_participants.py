@@ -238,35 +238,56 @@ class Command(BaseCommand):
             } for activity in activities
         ]
 
-    def pick_random_winners(self, all_entries):
+    def get_unique_entries(self, all_entries):
+        unique_entries_per_site = {} # dict of username -> entry
+        unique_entries_per_platform = {} # dict of platform -> (dict of username -> entry)
+        for platform in all_entries:
+            for entry in all_entries[platform]:
+                site_username = entry.get(u'{}_username'.format(django_settings.SITE))
+                platform_username = entry.get(u'{}_username'.format(platform))
+                if site_username:
+                    unique_entries_per_site[site_username.lower()] = entry
+                else:
+                    if platform not in unique_entries_per_platform:
+                        unique_entries_per_platform[platform] = {}
+                    unique_entries_per_platform[platform][platform_username.lower()] = entry
+        all_unique_entries = unique_entries_per_site.values()
+        for platform, entries in unique_entries_per_platform.items():
+            all_unique_entries += entries.values()
+        return all_unique_entries
+
+    def get_all_flat_entries(self, all_entries):
+        return [
+            entry
+            for platform in all_entries
+            for entry in all_entries[platform]
+        ]
+
+    def get_flat_entries(self, all_entries):
         # Make entries unique per user if needed
         one_chance_per_user = self.options.get('one_chance_per_user', False)
         if one_chance_per_user:
-            unique_entries_per_site = {} # dict of username -> entry
-            unique_entries_per_platform = {} # dict of platform -> (dict of username -> entry)
-            for platform in all_entries:
-                for entry in all_entries[platform]:
-                    site_username = entry.get(u'{}_username'.format(django_settings.SITE))
-                    platform_username = entry.get(u'{}_username'.format(platform))
-                    if site_username:
-                        unique_entries_per_site[site_username.lower()] = entry
-                    else:
-                        if platform not in unique_entries_per_platform:
-                            unique_entries_per_platform[platform] = {}
-                        unique_entries_per_platform[platform][platform_username.lower()] = entry
-            all_unique_entries = unique_entries_per_site.values()
-            for platform, entries in unique_entries_per_platform.items():
-                all_unique_entries += entries.values()
-        else:
-            all_unique_entries = [
-                entry
-                for platform in all_entries
-                for entry in all_entries[platform]
-            ]
-        # Pick random entries
-        return random.sample(all_unique_entries, self.options['pick_random_winners'])
+            return self.get_unique_entries(all_entries)
+        return self.get_all_flat_entries(all_entries)
+
+    def pick_random_winners(self, all_entries):
+        return random.sample(self.get_flat_entries, self.options['pick_random_winners'])
 
     def make_markdown_post(self, all_entries, winners):
+        grid_instance = None
+        if self.options.get('grid_per_line', None):
+            images = [
+                entry['image']
+                for entry in self.get_flat_entries(all_entries)
+                if entry.get('image', None)
+            ]
+            random.shuffle(images)
+            grid_instance = makeImageGrid(
+                images, per_line=int(self.options['grid_per_line']),
+                width=800,
+                upload=True,
+                model=models.UserImage,
+            )
         print '# MARKDOWN POST'
         print ''
         print ''
@@ -300,23 +321,9 @@ class Command(BaseCommand):
             print ''
             print '***'
             print ''
-        if self.options.get('grid_per_line', None):
-            images = [
-                entry['image']
-                for platform in all_entries
-                for entry in all_entries[platform]
-                if entry.get('image', None)
-            ]
-            random.shuffle(images)
-            grid_instance = makeImageGrid(
-                images, per_line=int(self.options['grid_per_line']),
-                width=800,
-                upload=True,
-                model=models.UserImage,
-            )
-            if grid_instance:
-                print u'![All participants]({})'.format(grid_instance.http_image_url)
-                print ''
+        if grid_instance:
+            print u'![All participants]({})'.format(grid_instance.http_image_url)
+            print ''
 
         print 'Thanks to everyone who participated and helped make this contest a success! We loved your entries!'
         print ''
@@ -376,10 +383,12 @@ class Command(BaseCommand):
                     try:
                         existing_badge = models.Badge.objects.filter(user__username=username, name=badge.name)[0]
                     except IndexError:
+                        name = badge.name
                         rank = None
                         for winner in winners:
                             if winner == entry:
                                 rank = models.Badge.RANK_GOLD
+                                name = name.replace(' - Participant', ' - Winner')
                         print 'Adding badge to {}'.format(username)
                         models.Badge.objects.create(
                             owner=badge.owner,
