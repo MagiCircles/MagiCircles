@@ -74,7 +74,7 @@ class Command(BaseCommand):
             })
             create({
                 'key': 'banner_{}_image'.format(i),
-                'verbose_key': '{} homepage banner: Image URL'.format(ordinalNumber(i)),
+                'verbose_key': '{} homepage banner: Image URL (840x280)'.format(ordinalNumber(i)),
             })
             create({
                 'key': 'banner_{}_hide_title'.format(i),
