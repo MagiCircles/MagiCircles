@@ -1729,7 +1729,7 @@ class AccountFilterForm(MagiFiltersForm):
 
     on_change_value_show = {
         'has_friend_id': {
-            True: ['friend_id'],
+            True: ['friend_id', 'accept_friend_requests'],
         },
     }
     show_more = FormShowMore(cutoff='i_os', including_cutoff=True, until='ordering')
@@ -1763,11 +1763,15 @@ class AccountFilterForm(MagiFiltersForm):
         if 'favorite_character' in self.fields:
             self.fields['favorite_character'].choices = BLANK_CHOICE_DASH + getFavoriteCharacterChoices()
             self.fields['favorite_character'].label = models.UserPreferences.favorite_character_label()
+        if 'friend_id' in self.fields:
+            self.fields['friend_id'].widget.attrs['placeholder'] = _('Optional')
 
     class Meta(MagiFiltersForm.Meta):
         model = models.Account
         top_fields = ['search'] + (
-            ['has_friend_id', 'friend_id'] if has_field(models.Account, 'friend_id') else []
+            (['has_friend_id', 'friend_id']
+             + ['accept_friend_requests'] if has_field(models.Account, 'accept_friend_requests') else [])
+            if has_field(models.Account, 'friend_id') else []
         )
         middle_fields = ['favorite_character'] + (
             ['color'] if USER_COLORS else []
