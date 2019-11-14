@@ -18,7 +18,7 @@
 
     <link rel="stylesheet" href="{{ static_url }}bower/bootstrap/dist/css/bootstrap.min.css">
     {% if debug %}
-    <link rel="stylesheet/less" type="text/css" href="{{ static_url }}less/{% if stylesheet %}{{ stylesheet }}{% else %}style{% endif %}.less?{{ static_files_version }}" />
+    <link rel="stylesheet/less" type="text/css" href="{{ static_url }}less/{% if stylesheet %}{{ stylesheet }}_theme{% else %}local{% endif %}.less?{{ static_files_version }}" />
     <script src="{{ static_url }}bower/less/dist/less.min.js"></script>
     {% else %}
     <link rel="stylesheet" href="{{ static_url }}css/{% if stylesheet %}{{ stylesheet }}{% else %}style{% endif %}.css?{{ static_files_version }}">
@@ -326,6 +326,13 @@
       {% if ajax_callback %}
       $(document).ready(function() {
       {{ ajax_callback }}();
+      });
+      {% endif %}
+      {% if ajax_callbacks %}
+      $(document).ready(function() {
+      {% for m_callback in ajax_callbacks %}
+      {{ m_callback }}();
+      {% endfor %}
       });
       {% endif %}
       {% if modal_cuteform_separators %}

@@ -973,6 +973,30 @@ def hexToRGB(hex_color):
     """
     return tuple(int(hex_color[1:][i:i+2], 16) for i in (0, 2, 4))
 
+def RGBToHex(rgb):
+    """
+    Converts a RGB color tuple (ex: (255, 255, 255)) to an hex color string (ex: #FFFFFF)
+    """
+    return '#%02x%02x%02x' % rgb
+
+def hilo(a, b, c):
+    # Sum of the min & max of (a, b, c)
+    if c < b: b, c = c, b
+    if b < a: a, b = b, a
+    if c < b: b, c = c, b
+    return a + c
+
+def complementaryColor(hex_color=None, rgb=None):
+    if hex_color:
+        r, g, b = hexToRGB(hex_color)
+    else:
+        r, g, b = rgb
+    k = hilo(r, g, b)
+    new_rgb = tuple(k - u for u in (r, g, b))
+    if hex_color:
+        return RGBToHex(new_rgb)
+    return new_rgb
+
 def listUnique(list):
     return OrderedDict([(item, None) for item in list]).keys()
 

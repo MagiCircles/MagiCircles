@@ -15,8 +15,13 @@ from magi.default_settings import (
     DEFAULT_LANGUAGES_CANT_SPEAK_ENGLISH,
     DEFAULT_EXTRA_PREFERENCES,
     DEFAULT_HOMEPAGE_ART_POSITION,
+    DEFAULT_SEASONS,
 )
-from magi.utils import globalContext, toHumanReadable
+from magi.utils import (
+    complementaryColor,
+    globalContext,
+    toHumanReadable,
+)
 from django.utils.translation import ugettext_lazy as _, string_concat, get_language
 
 settings_module = __import__(django_settings.SITE + '.settings', globals(), locals(), ['*'])
@@ -37,6 +42,11 @@ DISQUS_SHORTNAME = getattr(settings_module, 'DISQUS_SHORTNAME', None)
 
 ############################################################
 # Optional settings with default values
+
+if hasattr(settings_module, 'SECONDARY_COLOR'):
+    SECONDARY_COLOR = getattr(settings_module, 'SECONDARY_COLOR')
+else:
+    SECONDARY_COLOR = complementaryColor(hex_color=COLOR)
 
 if hasattr(settings_module, 'COMMENTS_ENGINE'):
     COMMENTS_ENGINE = getattr(settings_module, 'COMMENTS_ENGINE')
@@ -283,6 +293,11 @@ else:
 
 ############################################################
 # Optional settings without default values (= None)
+
+if hasattr(settings_module, 'ACCENT_COLOR'):
+    ACCENT_COLOR = getattr(settings_module, 'ACCENT_COLOR')
+else:
+    ACCENT_COLOR = complementaryColor(hex_color=COLOR)
 
 if hasattr(settings_module, 'SITE_NAV_LOGO'):
     SITE_NAV_LOGO = getattr(settings_module, 'SITE_NAV_LOGO')

@@ -41,6 +41,13 @@
   {% if ajax_callback %}
   {{ ajax_callback }}();
   {% endif %}
+  {% if ajax_callbacks %}
+  $(document).ready(function() {
+  {% for m_callback in ajax_callbacks %}
+  {{ m_callback }}();
+  {% endfor %}
+  });
+  {% endif %}
       {% if modal_cuteform_separators %}
       {% for form_selector, modal_cuteform_separators_per_form in modal_cuteform_separators.items %}
       {% if form_selector %}if (!$({{ form_selector|jsv }}).data('loaded-modal-separators')) {{% endif %}
