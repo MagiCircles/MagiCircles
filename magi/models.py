@@ -658,6 +658,8 @@ class StaffConfiguration(MagiModel):
             if self.value == 'False':
                 return u'<i class="flaticon-delete"></i>'
             return ''
+        elif self.field_type == 'image':
+            return staticImageURL(self.value)
         return self.value or ''
 
     @property
