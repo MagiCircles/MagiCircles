@@ -1,5 +1,5 @@
 from __future__ import division
-import math, datetime, random, string
+import math, datetime, random, string, simplejson
 from collections import OrderedDict
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, JsonResponse, Http404
@@ -59,6 +59,7 @@ from magi.utils import (
     getColSize,
     LANGUAGES_NAMES,
     h1ToContext,
+    get_default_owner,
 )
 from magi.notifications import pushNotification
 from magi.settings import (
@@ -1434,3 +1435,61 @@ def handler403(request):
         'page_title': 'Permission denied',
         'error_details': 'You are not allowed to access this page.',
     })
+
+############################################################
+# Seasonal
+
+def adventcalendar(request, context, day=None):
+    today = datetime.date.today()
+    days_opened = request.user.preferences.extra.get('advent_calendar{}'.format(today.year), '').split(',')
+    context['calendar'] = OrderedDict([
+        (unicode(i_day), unicode(i_day) in days_opened)
+        for i_day in range(1, 25)
+    ])
+    if day and day in context['calendar']:
+        if day not in days_opened:
+
+            # Open day
+            if today.month != 12 or int(day) not in [today.day - 1, today.day, today.day + 1]:
+                raise PermissionDenied()
+            days_opened.append(day)
+            context['calendar'][day] = True
+            request.user.preferences.add_d('extra', 'advent_calendar{}'.format(today.year), u','.join(days_opened))
+            request.user.preferences.save()
+
+            # Add badge when all opened
+            if day == '24' and 'badge' in context['all_enabled']:
+                badge = django_settings.STAFF_CONFIGURATIONS.get('season_advent_calendar_badge_image', None)
+                if badge:
+                    all_opened = True
+                    for _day, opened in context['calendar'].items():
+                        if not opened:
+                            all_opened = False
+                            break
+                    if all_opened:
+                        name = u'{} {}'.format(_('Merry christmas!'), today.year)
+                        try:
+                            models.Badge.objects.filter(user=request.user, name=name)[0]
+                        except IndexError:
+                            badge = models.Badge.objects.create(
+                                date=today,
+                                owner=get_default_owner(models.User),
+                                user=request.user,
+                                name=name,
+                                description='Opened all 24 days of the advent calendar {}'.format(today.year),
+                                image=staticImageURL(badge),
+                                url='/adventcalendar/',
+                                show_on_top_profile=False,
+                                show_on_profile=True,
+                            )
+                            request.user.preferences.force_update_cache('tabs_with_content')
+                            context['badge'] = badge
+
+        context['day'] = day
+        try:
+            context['image'] = staticImageURL(
+                simplejson.loads(django_settings.STAFF_CONFIGURATIONS.get(
+                    'season_advent_calendar_images', {})).get(day, None)
+            )
+        except simplejson.JSONDecodeError:
+            context['image'] = None

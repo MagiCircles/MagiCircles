@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings as django_settings
 from magi.utils import ordinalNumber, LANGUAGES_DICT
-from magi import models
+from magi import models, seasons
 
 def create(d):
     try:
@@ -102,6 +102,17 @@ class Command(BaseCommand):
             'key': 'donate_image',
             'verbose_key': 'Donations: Illustration next to button on donation page',
         })
+
+        # Seasons
+        for season_name, season in seasons.SEASONS.items():
+            for variable in seasons.STAFF_CONFIGURATIONS_SETTINGS + season.get('staff_configurations_settings', []):
+                create({
+                    'key': u'season_{}_{}'.format(season_name, variable),
+                    'verbose_key': 'When it\'s the {} season, change "{}" setting to:'.format(
+                        season_name.title(), variable
+                    ),
+                    'value': None,
+                })
         # create({
         #     'key': '',
         #     'verbose_key': '',

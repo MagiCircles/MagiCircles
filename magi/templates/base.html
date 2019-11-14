@@ -322,6 +322,7 @@
     {% for js_file in js_files %}
     <script src="{% if js_file|startswith:'http' %}{{ js_file }}{% else %}{{ static_url }}{% if not js_file|startswith:'bower' %}js/{% endif %}{{ js_file }}.js?{{ static_files_version }}{% endif %}"></script>
     {% endfor %}
+    {% block extrajavascript %}{% endblock %}{% if extrajavascript %}<script>{{ extrajavascript|safe }}</script>{% endif %}{% if extrajavascript_template %}<script>{% include extrajavascript_template %}</script>{% endif %}
     <script>
       {% if ajax_callback %}
       $(document).ready(function() {

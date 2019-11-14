@@ -3,6 +3,7 @@ from collections import OrderedDict
 from django.conf import settings as django_settings
 from django.utils.translation import ugettext_lazy as _, string_concat
 from magi.django_translated import t
+from magi.seasons import DEFAULT_SEASONS
 from django.conf import settings
 
 RAW_CONTEXT = {
@@ -44,6 +45,8 @@ DEFAULT_CONTACT_DISCORD = 'https://discord.gg/mehDTsv'
 DEFAULT_POEDITOR_URL = 'https://poeditor.com/join/project/h6kGEpdnmM'
 
 DEFAULT_LANGUAGES_CANT_SPEAK_ENGLISH = ['ja', 'zh-hans', 'zh-hant', 'kr']
+
+DEFAULT_SEASONS = DEFAULT_SEASONS
 
 ############################################################
 # Groups
@@ -876,6 +879,39 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
             'navbar_link': False,
             'template': 'success',
             'show_small_title': False,
+        },
+    ]),
+
+    # Seasonal
+    ('adventcalendar', [
+        {
+            'title': _('Advent calendar'),
+            'custom': False,
+            'authentication_required': True,
+            'navbar_link': False,
+        },
+        {
+            'title': _('Advent calendar'),
+            'custom': False,
+            'authentication_required': True,
+            'url_variables': [
+                ('day', '\d+'),
+            ],
+        },
+        {
+            'title': _('Advent calendar'),
+            'ajax': True,
+            'custom': False,
+            'authentication_required': True,
+        },
+        {
+            'title': _('Advent calendar'),
+            'ajax': True,
+            'custom': False,
+            'authentication_required': True,
+            'url_variables': [
+                ('day', '\d+'),
+            ],
         },
     ]),
 ])

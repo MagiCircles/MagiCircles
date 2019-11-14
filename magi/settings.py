@@ -151,6 +151,11 @@ if hasattr(settings_module, 'ENABLED_PAGES'):
 else:
     ENABLED_PAGES = DEFAULT_ENABLED_PAGES
 
+if hasattr(settings_module, 'SEASONS'):
+    SEASONS = getattr(settings_module, 'SEASONS')
+else:
+    SEASONS = DEFAULT_SEASONS
+
 if hasattr(settings_module, 'TWITTER_HANDLE'):
     TWITTER_HANDLE = getattr(settings_module, 'TWITTER_HANDLE')
 else:

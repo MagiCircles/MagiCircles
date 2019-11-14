@@ -2289,3 +2289,18 @@ function modalCuteFormSeparators(settings) {
         }
     });
 }
+
+// *****************************************
+// Seasonal
+
+function adventCalendar() {
+    let today = new Date();
+    let day = today.getDate().toString();
+    if (!advent_calendar_days_opened.includes(day)) {
+        let button = $('.corner-popup [data-btn-name="open_calendar"]');
+        button.html(button.text() + ' <span class="label label-success">' + day + '</span>');
+        button.prop('href', button.prop('href') + day + '/');
+        button.data('ajax-url', button.data('ajax-url') + day + '/');
+        ajaxModals();
+    }
+}

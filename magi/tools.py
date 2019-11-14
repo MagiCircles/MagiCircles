@@ -15,31 +15,25 @@ from magi.utils import (
     imageURLToImageFile,
     makeImageGrid,
     saveLocalImageToModel,
+    getEventStatus,
+    create_user as utils_create_user,
+    get_default_owner as utils_get_default_owner,
 )
-from magi.settings import SITE_STATIC_URL, STATIC_FILES_VERSION
-from magi import models
+from magi.settings import (
+    SITE_STATIC_URL,
+    STATIC_FILES_VERSION,
+    SEASONS,
+)
+from magi import models, seasons
 
 ############################################################
 # Create user
 
-def create_user(username, email=None, password=None, language='en', is_superuser=False):
-    new_user = getattr(models.User.objects, 'create_user' if not is_superuser else 'create_superuser')(
-        username=username,
-        email=email or u'{}@yopmail.com'.format(username),
-        password=username * 2,
-    )
-    preferences = models.UserPreferences.objects.create(
-        user=new_user,
-        i_language=language,
-    )
-    new_user.preferences = preferences
-    return new_user
+def create_user(*args, **kwargs):
+    return utils_create_user(models.User, *args, **kwargs)
 
-def get_default_owner():
-    try:
-        return models.User.objects.filter(is_superuser=True).order_by('-id')[0]
-    except IndexError:
-        return create_user('db0', is_superuser=True)
+def get_default_owner(*args, **kwargs):
+    return utils_get_default_owner(models.User, *args, **kwargs)
 
 ############################################################
 # Get user from link
@@ -242,31 +236,61 @@ def generateShareImageForMainCollections(collection):
 ############################################################
 # Generate settings (for generated settings)
 
-def magiCirclesGeneratedSettings():
+def magiCirclesGeneratedSettings(existing_values):
     now = timezone.now()
     one_week_ago = now - datetime.timedelta(days=10)
 
+    # Get staff configurations if missing
+    staff_configurations = existing_values.get('STAFF_CONFIGURATIONS', None)
+    latest_news = existing_values.get('LATEST_NEWS', [])
+
+    if not staff_configurations:
+        staff_configurations, more_latest_news = getStaffConfigurations()
+        latest_news += more_latest_news
+
     # Generate share images once a week
-    generated_share_images_last_date = getattr(django_settings, 'GENERATED_SHARE_IMAGES_LAST_DATE', None)
-    if generated_share_images_last_date and generated_share_images_last_date.replace(tzinfo=pytz.utc) > one_week_ago:
-        generated_share_images = getattr(django_settings, 'GENERATED_SHARE_IMAGES', {})
-    else:
+    if django_settings.DEBUG and False:
         generated_share_images_last_date = now
         generated_share_images = {}
-        print 'Generate auto share images'
-        for collection_name, collection in getMagiCollections().items():
-            if collection.auto_share_image:
-                generated_share_images[collection.name] = generateShareImageForMainCollections(collection)
+    else:
+        generated_share_images_last_date = getattr(django_settings, 'GENERATED_SHARE_IMAGES_LAST_DATE', None)
+        if (generated_share_images_last_date
+            and generated_share_images_last_date.replace(tzinfo=pytz.utc) > one_week_ago):
+            generated_share_images = getattr(django_settings, 'GENERATED_SHARE_IMAGES', {})
+        else:
+            generated_share_images_last_date = now
+            generated_share_images = {}
+            print 'Generate auto share images'
+            for collection_name, collection in getMagiCollections().items():
+                if collection.auto_share_image:
+                    generated_share_images[collection.name] = generateShareImageForMainCollections(collection)
+
+    seasonal_settings = {}
+
+    # Set seasonal settings
+    for season_name, season in SEASONS.items():
+        if getEventStatus(season['start_date'], season['end_date'], ends_within=1) in ['current', 'ended_recently']:
+            seasonal_settings[season_name] = {}
+            for variable in seasons.AVAILABLE_SETTINGS:
+                if variable in season:
+                    seasonal_settings[season_name][variable] = season[variable]
+            for variable in seasons.STAFF_CONFIGURATIONS_SETTINGS + season.get('staff_configurations_settings', []):
+                value = staff_configurations.get(u'season_{}_{}'.format(season_name, variable), None)
+                if value is not None:
+                    seasonal_settings[season_name][variable] = value
 
     return {
+        'STAFF_CONFIGURATIONS': staff_configurations,
+        'LATEST_NEWS': latest_news,
         'GENERATED_SHARE_IMAGES_LAST_DATE': 'datetime.datetime.fromtimestamp(' + unicode(
             time.mktime(generated_share_images_last_date.timetuple())
         ) + ')',
         'GENERATED_SHARE_IMAGES': generated_share_images,
+        'SEASONAL_SETTINGS': seasonal_settings,
     }, []
 
 def generateSettings(values, imports=[]):
-    m_values, m_imports = magiCirclesGeneratedSettings()
+    m_values, m_imports = magiCirclesGeneratedSettings(values)
     m_values.update(values)
     imports = m_imports + imports
     s = u'\

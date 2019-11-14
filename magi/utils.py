@@ -35,8 +35,14 @@ from django.forms import (
 from django.core.mail import EmailMultiAlternatives
 from django.core.files.images import ImageFile
 from django_translated import t
+from magi import seasons
 from magi.middleware.httpredirect import HttpRedirectException
 from magi.default_settings import RAW_CONTEXT
+
+try:
+    custom_seasonal_module = __import__(django_settings.SITE + '.seasons', fromlist=['']).__dict__
+except ImportError:
+    custom_seasonal_module = None
 
 ############################################################
 # Favorite characters
@@ -379,8 +385,11 @@ def globalContext(request=None, email=False):
     # Only non-ajax pages / non-email
 
     else:
+        context['corner_popups'] = OrderedDict()
+
         context['hidenavbar'] = 'hidenavbar' in request.GET
-        context['javascript_translated_terms_json'] = simplejson.dumps({ term: unicode(_(term)) for term in context['javascript_translated_terms']})
+        context['javascript_translated_terms_json'] = simplejson.dumps(
+            { term: unicode(_(term)) for term in context['javascript_translated_terms'] })
 
         cuteFormFieldsForContext({
             'language': {
@@ -389,8 +398,39 @@ def globalContext(request=None, email=False):
             },
         }, context)
 
+        # Seasonal
+        for season_name, settings in django_settings.SEASONAL_SETTINGS.items():
+            for variable, value in settings.items():
+                # Context variables to set
+                if variable in seasons.CONTEXT_SETTINGS:
+                    context[variable] = value
+                # When colors are changed, use a different stylesheet
+                elif variable in seasons.CSS_SETTINGS:
+                    context['stylesheet'] = season_name
+                else:
+                    # Add to context manually
+                    if variable == 'ajax_callback':
+                        if 'ajax_callbacks' not in context:
+                            context['ajax_callbacks'] = []
+                        context['ajax_callbacks'].append(value)
+                    elif variable == 'js_variables':
+                        if 'js_variables' not in context:
+                            context['js_variables'] = {}
+                        context['js_variables'].update(value)
+                    # Call function to add more to context
+                    elif variable == 'to_context':
+                        f = None
+                        if custom_seasonal_module:
+                            f = getattr(custom_seasonal_module, value, None)
+                        if not f:
+                            try:
+                                f = globals()[value]
+                            except KeyError:
+                                raise NotImplementedError(
+                                    u'Seasonal to_context function {} not found.'.format(value))
+                        f(request, context)
+
         # Corner popups
-        context['corner_popups'] = OrderedDict()
         if request.user.is_authenticated():
             if isBirthdayToday(request.user.preferences.birthdate):
                 context['corner_popups'][u'happy_birthday{}'.format(datetime.datetime.today().year)] = {
@@ -843,11 +883,22 @@ def getAstrologicalSign(month, day):
 # Event status using start and end date
 
 def getEventStatus(start_date, end_date, ends_within=0, starts_within=0):
+    """
+    start_date and end_date need to be a datetime object or a tuple (month, day)
+    """
     if not end_date or not start_date:
         return None
+    now = timezone.now()
+
+    if isinstance(start_date, tuple):
+        start_date = datetime.datetime(now.year, start_date[0], start_date[1], tzinfo=timezone.utc)
+    if isinstance(end_date, tuple):
+        end_date = datetime.datetime(now.year, end_date[0], end_date[1], tzinfo=timezone.utc)
+        if start_date > end_date:
+            end_date = end_date.replace(now.year + 1)
+
     if start_date > end_date:
         return 'invalid'
-    now = timezone.now()
     if now < (start_date - relativedelta(days=starts_within)):
         return 'future'
     elif now < start_date:
@@ -2081,3 +2132,66 @@ def artPreviewButtons(view, buttons, request, item, images, get_parameter='url',
             'has_permissions': True,
             'open_in_new_window': True,
         }
+
+############################################################
+# Create user
+
+def create_user(user_model, username, email=None, password=None, language='en', is_superuser=False):
+    new_user = getattr(user_model.objects, 'create_user' if not is_superuser else 'create_superuser')(
+        username=username,
+        email=email or u'{}@yopmail.com'.format(username),
+        password=username * 2,
+    )
+    preferences = user_model.preferences.related.model.objects.create(
+        user=new_user,
+        i_language=language,
+    )
+    new_user.preferences = preferences
+    return new_user
+
+def get_default_owner(user_model):
+    try:
+        return user_model.objects.filter(is_superuser=True).order_by('-id')[0]
+    except IndexError:
+        return create_user(user_model, 'db0', is_superuser=True)
+
+############################################################
+# Seasonal
+
+def adventCalendar(request, context):
+    """
+    In python:
+    - add list of open days to js_variables
+    - add list of images to js_variables
+    - add corner popup for advent calendar
+    In js:
+    - check if today is in the calendar
+    - yes: do nothing
+    - no: show button to open
+    - button to open is ajax call to open calendar with GET parameter for today's day
+    If 25th:
+    - add badge
+    """
+    if not request.user.is_authenticated():
+        return
+    today = datetime.date.today()
+    if 'js_variables' not in context:
+        context['js_variables'] = {}
+    context['js_variables']['advent_calendar_days_opened'] = request.user.preferences.extra.get(
+        'advent_calendar{}'.format(today.year), '').split(',')
+    context['corner_popups']['advent_calendar'] = {
+        'title': _('Merry christmas!'),
+        'image': staticImageURL(django_settings.STAFF_CONFIGURATIONS.get(
+            'season_advent_calendar_corner_popup_image', None)),
+        'image_overflow': context['corner_popup_image_overflow'],
+        'buttons': {
+            'open_calendar': {
+                'url': '/adventcalendar/',
+                'title': _('Open {thing}').format(thing=_('Advent calendar').lower()),
+                'ajax_url': '/ajax/adventcalendar/',
+            },
+        },
+        'allow_close_once': True,
+        'allow_close_remind': 1,
+        'allow_close_forever': True,
+    }
