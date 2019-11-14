@@ -522,6 +522,7 @@ class BaseMagiModel(models.Model):
                 'top_image_list',
                 'top_image_item',
                 'share_image',
+                'share_image_in_list',
                 'display_name',
                 'display_name_in_list',
                 'blocked',

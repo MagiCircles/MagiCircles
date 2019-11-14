@@ -213,7 +213,7 @@ def generateShareImageForMainCollections(collection):
     # Get images for each item
     images = []
     for item in queryset:
-        for field_name in ['share_image', 'top_image_list', 'top_image', 'image']:
+        for field_name in ['share_image_in_list', 'share_image', 'top_image_list', 'top_image', 'image']:
             image = getattr(item, field_name, None)
             if image:
                 images.append(image)
