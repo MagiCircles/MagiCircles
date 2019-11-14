@@ -390,9 +390,10 @@ class Command(BaseCommand):
                                 rank = models.Badge.RANK_GOLD
                                 name = name.replace(' - Participant', ' - Winner')
                         print 'Adding badge to {}'.format(username)
+                        user = models.User.objects.select_related('preferences').get(username=username)
                         models.Badge.objects.create(
                             owner=badge.owner,
-                            user=models.User.objects.get(username=username),
+                            user=user,
                             name=badge.name,
                             description=badge.description,
                             image=badge.image,
@@ -401,6 +402,7 @@ class Command(BaseCommand):
                             show_on_profile=badge.show_on_profile,
                             rank=rank,
                         )
+                        user.preferences.force_update_cache('tabs_with_content')
             '--list-missing-badges',
         if self.options.get('list_missing_badges'):
             print json.dumps(cant_get, indent=4)
