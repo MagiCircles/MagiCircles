@@ -410,10 +410,13 @@ function loadHDImages() {
     if ($(document).width() > 992) {
         $('img[data-hd-src]').each(function() {
             let image = $(this);
-            let hd = image.data('hd-src');
-            if (hd && hd != '' && hd != 'None' && image.attr('src') != hd) {
-                image.prop('src', hd);
-                console.log('Loading HD image', hd);
+            // Don't load HD images for items included in activities
+            if (image.closest('.activity').length < 1) {
+                let hd = image.data('hd-src');
+                if (hd && hd != '' && hd != 'None' && image.attr('src') != hd) {
+                    image.prop('src', hd);
+                    console.log('Loading HD image', hd);
+                }
             }
         });
     }
@@ -2180,7 +2183,6 @@ function formOnChangeValueTrigger(form, changingFieldName, valuesThatTrigger) {
     // or an object { value: callback name name or callback }
     let changingField = form.find('#id_' + changingFieldName);
     function onChange(animation) {
-        console.log('called', typeof valuesThatTrigger);
         if (typeof valuesThatTrigger == 'string') {
             window[valuesThatTrigger]();
         } else if ($.isFunction(valuesThatTrigger)) {
