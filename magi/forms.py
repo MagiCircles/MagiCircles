@@ -1342,7 +1342,6 @@ class MagiFiltersForm(AutoForm):
             ]
             if self.collection:
                 self.fields['ordering'].initial = initial
-                print initial, self.collection.list_view.default_ordering.startswith('-')
                 self.fields['reverse_order'].initial = self.collection.list_view.default_ordering.startswith('-')
 
         # Set view selector
