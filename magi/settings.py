@@ -302,7 +302,7 @@ else:
 if hasattr(settings_module, 'ACCENT_COLOR'):
     ACCENT_COLOR = getattr(settings_module, 'ACCENT_COLOR')
 else:
-    ACCENT_COLOR = complementaryColor(hex_color=COLOR)
+    ACCENT_COLOR = None
 
 if hasattr(settings_module, 'SITE_NAV_LOGO'):
     SITE_NAV_LOGO = getattr(settings_module, 'SITE_NAV_LOGO')

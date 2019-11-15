@@ -399,7 +399,7 @@ def globalContext(request=None, email=False):
         }, context)
 
         # Seasonal
-        for season_name, settings in django_settings.SEASONAL_SETTINGS.items():
+        for season_name, settings in getattr(django_settings, 'SEASONAL_SETTINGS', {}).items():
             for variable, value in settings.items():
                 # Context variables to set
                 if variable in seasons.CONTEXT_SETTINGS:

@@ -249,7 +249,7 @@ def magiCirclesGeneratedSettings(existing_values):
         latest_news += more_latest_news
 
     # Generate share images once a week
-    if django_settings.DEBUG and False:
+    if django_settings.DEBUG:
         generated_share_images_last_date = now
         generated_share_images = {}
     else:
