@@ -1,0 +1,18 @@
+{% if user.is_authenticated and not favorite_of %}
+{% load i18n %}
+<div class="padding50 text-center cards-share">
+  <h1>{% trans 'Share your cards!' %}</h1>
+
+  <a href="{{ user.item_url }}" target="_blank" class="btn btn-main btn-xl btn-lines">
+    {% trans 'Check out your own profile' %}
+  </a><br>
+  <a href="/settings/" target="_blank" class="btn btn-link btn-lg">
+    <i class="flaticon-edit"></i>
+    {% trans 'Customize it' %}
+  </a>
+  <div class="cards-share-buttons">
+    <p>{% trans 'Share it on:' %}</p>
+    {% include 'include/share.html' with share_url=user.http_item_url share_btn_class='secondary btn-xl' %}
+  </div>
+</div>
+{% endif %}

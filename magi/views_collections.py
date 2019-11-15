@@ -541,6 +541,8 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     if context['get_started']:
         context['show_small_title'] = False
         context['show_search_results'] = False
+        context['before_template'] = 'include/getstarted'
+        context['after_template'] = 'include/afterGetStarted'
 
     # Top buttons
 

@@ -188,9 +188,6 @@ def _addToCollections(name, cls): # Class of the collection
                     if fk_as_owner not in collectible_collections:
                         collectible_collections[fk_as_owner] = {}
                     collectible_collections[fk_as_owner][collectible_collection.name] = collectible_collection
-                    if (collectible_collection.name == FIRST_COLLECTION and not collection.list_view.before_template
-                        and 'get_started' in STAFF_CONFIGURATIONS):
-                        collection.list_view.before_template = 'include/getstarted'
     return collection
 
 def _addToEnabledCollections(name, cls, is_custom):
