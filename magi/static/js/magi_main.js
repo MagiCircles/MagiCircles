@@ -1598,7 +1598,7 @@ function isValidDate(strDate) {
 }
 
 function toUTCDate(strDate) {
-    return strDate + '+0000';
+    return strDate + 'Z';
 }
 
 let CUSTOM_TAGS = {
