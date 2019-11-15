@@ -894,6 +894,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
             'title': _('Advent calendar'),
             'custom': False,
             'authentication_required': True,
+            'navbar_link': False,
             'url_variables': [
                 ('day', '\d+'),
             ],

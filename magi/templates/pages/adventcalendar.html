@@ -1,0 +1,47 @@
+{% load tools %}
+{% if day %}
+<a href="/adventcalendar/"
+   {% if ajax %}
+   data-ajax-url="/ajax/adventcalendar/"
+   {% endif %}>
+  {% if image %}
+  <img src="{{ image }}" class="img-responsive">
+  {% else %}
+  <h1 class="fontx3 text-center">
+    <i class="flaticon-idolized"></i>
+    {{ day }}
+    <i class="flaticon-idolized"></i>
+  </h1>
+  {% endif %}
+</a>
+{% if badge %}
+{% include 'items/badgeItem.html' with item=badge %}
+{% endif %}
+{% else %}
+<div class="row">
+{% for day, opened in calendar.items %}
+  {% if forloop.counter0 != 0 and forloop.counter0|mod:7 %}
+</div><br><div class="row">
+  {% endif %}
+  <div class="col-sm-special-7">
+    <div style="border: 1px solid #ccc; border-radius: 10px; padding: 5px 10px;">
+      <small class="text-muted">{{ day }}:</small><br>
+      {% if opened %}
+      <div class="text-center">
+        <a href="/adventcalendar/{{ day }}/" class="text-success fontx3"
+           {% if ajax %}
+           data-ajax-url="/ajax/adventcalendar/{{ day }}/"
+           {% endif %}>
+          <i class="flaticon-{% if day == '24' %}idolized{% else %}checked{% endif %}"></i>
+        </a>
+      </div>
+      {% else %}
+      <span class="text-success fontx3" style="opacity: 0;">
+        <i class="flaticon-checked"></i>
+      </span>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
