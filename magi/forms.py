@@ -3081,6 +3081,24 @@ class PrizeFilterForm(MagiFiltersForm):
         model = models.Prize
         fields = ('search', 'has_giveaway', 'i_character', 'ordering', 'reverse_order')
 
+class PrizeViewingFilterForm(MagiFiltersForm):
+    max_value = forms.IntegerField(widget=forms.HiddenInput)
+    max_value_filter = MagiFilter(selector='value__lte', multiple=False)
+
+    min_value = forms.IntegerField(widget=forms.HiddenInput)
+    min_value_filter = MagiFilter(selector='value__gt', multiple=False)
+
+    presets = OrderedDict([
+        ('tier1', { 'fields': { 'min_value': 0, 'max_value': 5 }, 'verbose_name': 'Tier 1' }),
+        ('tier2', { 'fields': { 'min_value': 5, 'max_value': 10 }, 'verbose_name': 'Tier 2' }),
+        ('tier3', { 'fields': { 'min_value': 10, 'max_value': 15 }, 'verbose_name': 'Tier 3' }),
+    ])
+    show_presets_in_navbar = False
+
+    class Meta:
+        model = models.Prize
+        fields = ['i_character']
+
 ############################################################
 # Private Message form
 

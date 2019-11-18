@@ -4104,6 +4104,31 @@ class PrizeCollection(MagiCollection):
         owner_only_or_permissions_required = ['manage_prizes']
         allow_delete = True
 
+class PrizeViewingCollection(PrizeCollection):
+    enabled = True
+    navbar_link = False
+    navbar_link_list = False
+    queryset = models.Prize.objects.filter(Q(giveaway_url__isnull=True) | Q(giveaway_url=''))
+    plural_title = _('Prizes')
+
+    filter_cuteform = PrizeCollection.filter_cuteform.copy()
+    filter_cuteform['i_character']['extra_settings'] = {}
+
+    class ListView(PrizeCollection.ListView):
+        staff_required = False
+        one_of_permissions_required = []
+        filter_form = forms.PrizeViewingFilterForm
+        item_template = custom_item_template
+
+    class ItemView(PrizeCollection.ItemView):
+        enabled = False
+
+    class AddView(PrizeCollection.AddView):
+        enabled = False
+
+    class EditView(PrizeCollection.EditView):
+        enabled = False
+
 ############################################################
 # Private Message Collection
 

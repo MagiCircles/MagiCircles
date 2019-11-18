@@ -1367,6 +1367,7 @@ class Prize(MagiModel):
     CHARACTER_WITHOUT_I_CHOICES = True
     CHARACTER_SOFT_CHOICES = True
     i_character = models.CharField('Character', null=True, max_length=200)
+    character_name = property(getInfoFromChoices('character', CHARACTERS, 1))
     character_image = property(getInfoFromChoices('character', CHARACTERS, 2))
     character_url = property(lambda _s: FAVORITE_CHARACTER_TO_URL(AttrDict({
         'value': _s.t_character,
@@ -1377,6 +1378,10 @@ class Prize(MagiModel):
     m_details = models.TextField('Details', null=True)
 
     giveaway_url = models.CharField('Giveaway URL', null=True, max_length=100, help_text='If you specify a giveaway URL, the prize will be considered unavailable for future giveaways')
+
+    @property
+    def images_urls(self):
+        return [ i for i in [self.image_url, self.image2_url, self.image3_url, self.image4_url] if i ]
 
     def __unicode__(self):
         return self.name

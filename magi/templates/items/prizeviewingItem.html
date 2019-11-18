@@ -1,0 +1,24 @@
+{% if item.images_urls|length > 1 %}
+<div class="row">
+  {% endif %}
+  {% for image in item.images_urls %}
+  {% if item.images_urls|length > 1 %}
+  <div class="col-md-6">
+    {% endif %}
+    <img src="{{ image }}" class="img-responsive" alt="{{ item }}">
+  {% if item.images_urls|length > 1 %}
+  </div>
+  {% endif %}
+  {% endfor %}
+{% if item.images_urls|length > 1 %}
+</div>
+{% endif %}
+<h3 class="text-center">
+  <small class="text-muted">
+  {% if item.character_name %}
+  {{ item.character_name }}
+  {% endif %}
+  </small><br>
+  {{ item }}
+</h3>
+<br><br><br>
