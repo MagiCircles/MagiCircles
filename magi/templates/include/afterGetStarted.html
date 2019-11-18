@@ -1,4 +1,3 @@
-{% if user.is_authenticated and not favorite_of %}
 {% load i18n %}
 <div class="padding50 text-center cards-share">
   <h1>{% trans 'Share your cards!' %}</h1>
@@ -15,4 +14,3 @@
     {% include 'include/share.html' with share_url=user.http_item_url share_btn_class='secondary btn-xl' %}
   </div>
 </div>
-{% endif %}
