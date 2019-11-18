@@ -271,7 +271,7 @@ class Command(BaseCommand):
         return self.get_all_flat_entries(all_entries)
 
     def pick_random_winners(self, all_entries):
-        return random.sample(self.get_flat_entries, self.options['pick_random_winners'])
+        return random.sample(self.get_flat_entries(all_entries), self.options['pick_random_winners'])
 
     def make_markdown_post(self, all_entries, winners):
         grid_instance = None
