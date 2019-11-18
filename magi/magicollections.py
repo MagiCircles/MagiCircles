@@ -4090,6 +4090,7 @@ class PrizeCollection(MagiCollection):
         staff_required = True
         one_of_permissions_required = ['add_prizes', 'manage_prizes']
         filter_form = forms.PrizeFilterForm
+        show_items_names = True
 
     class ItemView(MagiCollection.ItemView):
         staff_required = True
@@ -4118,7 +4119,7 @@ class PrizeViewingCollection(PrizeCollection):
         staff_required = False
         one_of_permissions_required = []
         filter_form = forms.PrizeViewingFilterForm
-        item_template = custom_item_template
+        default_ordering = 'value,-id'
 
     class ItemView(PrizeCollection.ItemView):
         enabled = False

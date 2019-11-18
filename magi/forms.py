@@ -3089,9 +3089,13 @@ class PrizeViewingFilterForm(MagiFiltersForm):
     min_value_filter = MagiFilter(selector='value__gt', multiple=False)
 
     presets = OrderedDict([
-        ('tier1', { 'fields': { 'min_value': 0, 'max_value': 5 }, 'verbose_name': 'Tier 1' }),
-        ('tier2', { 'fields': { 'min_value': 5, 'max_value': 10 }, 'verbose_name': 'Tier 2' }),
-        ('tier3', { 'fields': { 'min_value': 10, 'max_value': 15 }, 'verbose_name': 'Tier 3' }),
+        ('tier1', { 'fields': { 'min_value': 0, 'max_value': 5 }, 'verbose_name': 'tier 1' }),
+        ('tier2', { 'fields': { 'min_value': 5, 'max_value': 10 }, 'verbose_name': 'tier 2' }),
+        ('tier3', { 'fields': { 'min_value': 10, 'max_value': 15 }, 'verbose_name': 'tier 3' }),
+        ('tier4', { 'fields': { 'min_value': 10, 'max_value': 15 }, 'verbose_name': 'tier 4' }),
+        ('tier1-2', { 'fields': { 'max_value': 10 }, 'verbose_name': 'tier 1 and 2' }),
+        ('tier1-3', { 'fields': { 'max_value': 15 }, 'verbose_name': 'tier 1, 2 and 3' }),
+        ('tier1-4', { 'fields': { }, 'verbose_name': 'tier 1 to 4' }),
     ])
     show_presets_in_navbar = False
 

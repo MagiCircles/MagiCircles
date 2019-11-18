@@ -5,6 +5,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core import validators
 from django.utils.translation import ugettext_lazy as _, string_concat, get_language
+from django.utils.safestring import mark_safe
 from django.utils import timezone
 from django.utils.formats import date_format
 from django.forms.models import model_to_dict
@@ -1378,6 +1379,27 @@ class Prize(MagiModel):
     m_details = models.TextField('Details', null=True)
 
     giveaway_url = models.CharField('Giveaway URL', null=True, max_length=100, help_text='If you specify a giveaway URL, the prize will be considered unavailable for future giveaways')
+
+    @property
+    def top_html_list(self):
+        if len(self.images_urls) > 1:
+            return u"""
+<div class="row">
+  {images}
+</div>
+""".format(images=u''.join([
+    u'<div class="col-md-6"><img src="{image}" class="img-responsive" alt="{item}"></div>'.format(
+        image=image, item=self,
+    ) for image in self.images_urls ]))
+        return u'<img src="{image}" class="img-responsive" alt="{item}">'.format(
+            image=self.images_urls[0], item=self)
+
+    @property
+    def display_name_in_list(self):
+        return mark_safe(u"""
+<small class="text-muted">{character_name}&nbsp;&nbsp;&nbsp;&nbsp;[#{id}]</small>
+<br>{item}""".format(
+    character_name=self.character_name or '', item=self, id=self.id))
 
     @property
     def images_urls(self):
