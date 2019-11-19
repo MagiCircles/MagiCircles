@@ -629,7 +629,7 @@ class MagiCollection(object):
 
                 def check_permissions(self, request, context):
                     super(_CollectibleCollection.ListView, self).check_permissions(request, context)
-                    if context['current'] == u'{}_list'.format(self.collection.name):
+                    if context['current'].startswith(u'{}_list'.format(self.collection.name)):
                         # At least owner filter or item filter required
                         if (not request.GET.get(model_class.fk_as_owner or 'owner', None)
                             and not request.GET.get(item_field_name, None)
@@ -3818,7 +3818,7 @@ class BadgeCollection(MagiCollection):
 
         def check_permissions(self, request, context):
             super(BadgeCollection.ListView, self).check_permissions(request, context)
-            if context['current'] == u'{}_list'.format(self.collection.name):
+            if context['current'].startswith(u'{}_list'.format(self.collection.name)):
                 if (hasattr(request, 'GET') and 'of_user' not in request.GET
                     and (not request.user.is_authenticated()
                          or not hasOneOfPermissions(
