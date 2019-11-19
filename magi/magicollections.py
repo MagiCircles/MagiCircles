@@ -2444,7 +2444,10 @@ class AccountCollection(MagiCollection):
         templates = OrderedDict([
             ('Unrealistic Level', unrealistic_template_sentence.format(thing='level')),
             ('Unrealistic Level (recidivist)', 'After multiple warnings, you have failed to provide a valid screenshot proving your level, so you have been removed from the leaderboard completely. You may still use this account normally and it is still accessible from your profile, with a visual indication that it cannot be trusted. If this was a mistake, you may contact us with a valid screenshot and we will change it back. Thank you for your understanding.'),
-        ])
+            ] + [
+                ('Fake screenshot', 'The screenshot you uploaded does feature a valid, existing in-game account. Please upload a screenshot of your account in-game that features your level{} clearly.'.format(' and friend ID' if modelHasField(models.Account, 'friend_id') else '')),
+                ] if modelHasField(models.Account, 'screenshot') else []
+        )
         for field in self.queryset.model._meta.fields:
             if not field.name.startswith('_') and field.name not in [
                     'id', 'owner', 'creation', 'level', 'default_tab', 'level_on_screenshot_upload',
