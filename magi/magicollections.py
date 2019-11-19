@@ -40,6 +40,7 @@ from magi.utils import (
     addParametersToURL,
     tourldash,
     getEmojis,
+    filterRealAccounts,
     filterRealCollectiblesPerAccount,
 )
 from magi.raw import please_understand_template_sentence, unrealistic_template_sentence
@@ -2482,10 +2483,7 @@ class AccountCollection(MagiCollection):
 
         def get_queryset(self, queryset, parameters, request):
             queryset = super(AccountCollection.ListView, self).get_queryset(queryset, parameters, request)
-            if modelHasField(models.Account, 'is_hidden_from_leaderboard'):
-                queryset = queryset.exclude(is_hidden_from_leaderboard=True)
-            if modelHasField(models.Account, 'is_playground'):
-                queryset = queryset.exclude(is_playground=True)
+            queryset = filterRealAccounts(queryset)
             return queryset
 
         @property
