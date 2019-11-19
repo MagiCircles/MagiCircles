@@ -661,7 +661,7 @@ class MagiForm(forms.ModelForm):
                             image_data = image.read()
                         image_data = shrinkImageFromData(
                             image_data, filename,
-                            settings=getattr(instance._meta.model, 'tinypng_settings', {}).get(field, {}),
+                            settings=getattr(instance, 'tinypng_settings', {}).get(field, {}),
                         )
 
                     if image_data is not None:
