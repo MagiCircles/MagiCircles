@@ -517,6 +517,8 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     if context['alt_view'] and 'display_style_table_fields' in context['alt_view']:
         context['display_style_table_fields'] = context['alt_view']['display_style_table_fields']
     context['col_break'] = collection.list_view.col_break
+    if context['alt_view'] and 'col_break' in context['alt_view']:
+        context['col_break'] = context['alt_view']['col_break']
     context['per_line'] = int(request.GET['max_per_line']) if 'max_per_line' in request.GET and int(request.GET['max_per_line']) < collection.list_view.per_line else collection.list_view.per_line
     if context['alt_view'] and 'per_line' in context['alt_view']:
         context['per_line'] = context['alt_view']['per_line']
