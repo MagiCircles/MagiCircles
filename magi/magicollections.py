@@ -40,6 +40,7 @@ from magi.utils import (
     addParametersToURL,
     tourldash,
     getEmojis,
+    filterRealCollectiblesPerAccount,
 )
 from magi.raw import please_understand_template_sentence, unrealistic_template_sentence
 from magi.django_translated import t
@@ -634,6 +635,18 @@ class MagiCollection(object):
                             and not request.GET.get(item_field_name, None)
                             and not request.GET.get('owner', None)):
                             raise PermissionDenied()
+
+                def get_queryset(self, queryset, parameters, request):
+                    queryset = super(_CollectibleCollection.ListView, self).get_queryset(
+                        queryset, parameters, request)
+                    # For collectibles per account:
+                    # If we're listing per item and not per account or owner, hide collected from fake accounts
+                    if (model_class.fk_as_owner == 'account'
+                        and request.GET.get(item_field_name, None)
+                        and not request.GET.get('account', None)
+                        and not request.GET.get('owner', None)):
+                        queryset = filterRealCollectiblesPerAccount(queryset)
+                    return queryset
 
                 def top_buttons(self, request, context):
                     buttons = super(_CollectibleCollection.ListView, self).top_buttons(request, context)

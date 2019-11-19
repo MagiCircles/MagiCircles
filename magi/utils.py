@@ -666,6 +666,19 @@ class FormShowMore:
         self.message_less = message_less
         self.check_values = check_values
 
+def filterRealAccounts(queryset):
+    if modelHasField(queryset.model, 'is_playground'):
+        queryset = queryset.exclude(is_playground=True)
+    if modelHasField(queryset.model, 'is_hidden_from_leaderboard'):
+        queryset = queryset.exclude(is_hidden_from_leaderboard=True)
+    return queryset
+
+def filterRealCollectiblesPerAccount(queryset):
+    if modelHasField(queryset.model.account.field.rel.to, 'is_playground'):
+        queryset = queryset.exclude(account__is_playground=True)
+    if modelHasField(queryset.model.account.field.rel.to, 'is_hidden_from_leaderboard'):
+        queryset = queryset.exclude(account__is_hidden_from_leaderboard=True)
+    return queryset
 
 ############################################################
 # Database upload to

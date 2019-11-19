@@ -18,6 +18,8 @@ from magi.utils import (
     PastOnlyValidator,
     uploadItem,
     uploadThumb,
+    modelHasField,
+    filterRealAccounts,
 )
 from magi.default_settings import RAW_CONTEXT
 
@@ -160,7 +162,8 @@ class BaseAccount(CacheOwner):
     _cache_leaderboard = models.PositiveIntegerField(null=True)
 
     def to_cache_leaderboard(self):
-        return type(self).objects.filter(level__gt=self.level).values('level').distinct().count() + 1
+        return filterRealAccounts(type(self).objects.all()).filter(
+            level__gt=self.level).values('level').distinct().count() + 1
 
     def update_cache_leaderboards(self):
         self._cache_leaderboards_last_update = timezone.now()
