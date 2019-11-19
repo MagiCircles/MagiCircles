@@ -251,7 +251,7 @@ class MobileGameAccount(BaseAccount):
 
     screenshot = models.ImageField(
         _('Screenshot'), help_text=_('In-game profile screenshot'),
-        upload_to=uploadItem('account_screenshot'), null=True)
+        upload_to=uploadItem('account_screenshot'), null=True, blank=True)
     _thumbnail_screenshot = models.ImageField(null=True, upload_to=uploadThumb('account_screenshot'))
     level_on_screenshot_upload = models.PositiveIntegerField(null=True)
     is_hidden_from_leaderboard = models.BooleanField('Hide from leaderboard', default=False, db_index=True)

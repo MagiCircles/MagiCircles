@@ -638,6 +638,15 @@ class MagiForm(forms.ModelForm):
                 and has_field(instance, field)
                 and type(self.Meta.model._meta.get_field(field)) == django_models.ImageField):
                 image = self.cleaned_data[field]
+
+                # If image has been cleared
+                if image is False:
+                    # Remove any cached processed image
+                    setattr(instance, u'_tthumbnail_{}'.format(field), None)
+                    setattr(instance, u'_thumbnail_{}'.format(field), None)
+                    setattr(instance, u'_original_{}'.format(field), None)
+                    setattr(instance, u'_2x_{}'.format(field), None)
+
                 if image and (isinstance(image, InMemoryUploadedFile) or isinstance(image, TemporaryUploadedFile)):
                     filename = image.name
                     image_data = None
@@ -668,7 +677,7 @@ class MagiForm(forms.ModelForm):
                         image.name = instance._meta.model._meta.get_field(field).upload_to(instance, filename)
                         setattr(instance, field, image_data)
                     else:
-                        # Remove any cached processed image
+                        # Remove any cached processed image from previously uploaded image
                         setattr(instance, u'_tthumbnail_{}'.format(field), None)
                         setattr(instance, u'_thumbnail_{}'.format(field), None)
                         setattr(instance, u'_original_{}'.format(field), None)

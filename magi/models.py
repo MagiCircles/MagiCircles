@@ -689,7 +689,10 @@ class StaffDetails(MagiModel):
     preferred_name = models.CharField('What would you prefer to be called?', max_length=100, null=True)
     pronouns = models.CharField('Preferred pronouns', max_length=32, null=True)
 
-    image = models.ImageField(_('Image'), upload_to=uploadToRandom('staff_photos'), null=True, help_text='Photograph of yourself. Real life photos look friendlier when we introduce the team. If you really don\'t want to show your face, you can use an avatar, but we prefer photos :)')
+    image = models.ImageField(
+        _('Image'), upload_to=uploadToRandom('staff_photos'), null=True, blank=True,
+        help_text='Photograph of yourself. Real life photos look friendlier when we introduce the team. If you really don\'t want to show your face, you can use an avatar, but we prefer photos :)',
+    )
     description = models.TextField('Self introduction', help_text='You can use markdown to add links.', null=True)
 
     favorite_food = models.CharField(max_length=100, null=True)
@@ -1358,9 +1361,9 @@ class Prize(MagiModel):
     owner = models.ForeignKey(User, related_name='added_prizes')
     name = models.CharField('Prize name', max_length=100)
     image = models.ImageField('Prize image', upload_to=uploadItem('prize'))
-    image2 = models.ImageField('2nd image', upload_to=uploadItem('prize'), null=True)
-    image3 = models.ImageField('3rd image', upload_to=uploadItem('prize'), null=True)
-    image4 = models.ImageField('4th image', upload_to=uploadItem('prize'), null=True)
+    image2 = models.ImageField('2nd image', upload_to=uploadItem('prize'), null=True, blank=True)
+    image3 = models.ImageField('3rd image', upload_to=uploadItem('prize'), null=True, blank=True)
+    image4 = models.ImageField('4th image', upload_to=uploadItem('prize'), null=True, blank=True)
     value = models.DecimalField('Value', null=True, help_text='in USD', max_digits=6, decimal_places=2)
 
     CHARACTERS = OrderedDict([(unicode(_c[0]), _c) for _c in FAVORITE_CHARACTERS or []])
