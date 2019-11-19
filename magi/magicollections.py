@@ -2490,12 +2490,18 @@ class AccountCollection(MagiCollection):
             return queryset
 
         @property
+        def profile_default_ordering(self):
+            if (modelHasField(self.collection.queryset.model, 'level')
+                and modelHasField(self.collection.queryset.model, 'is_playground')
+                and modelHasField(self.collection.queryset.model, 'is_hidden_from_leaderboard')):
+                return 'is_playground,is_hidden_from_leaderboard,-level'
+            return self.default_ordering
+
+        @property
         def default_ordering(self):
-            try:
-                self.collection.queryset.model._meta.get_field('level')
+            if modelHasField(self.collection.queryset.model, 'level'):
                 return '-level'
-            except FieldDoesNotExist:
-                return MagiCollection.ListView.default_ordering.__get__(self)
+            return MagiCollection.ListView.default_ordering.__get__(self)
 
         def get_page_title(self):
             return _('Leaderboard')
@@ -2731,14 +2737,18 @@ class UserCollection(MagiCollection):
                     table=models.UserPreferences._meta.db_table,
                 ),
             })
-            try:
-                models.Account._meta.get_field('level')
-                has_level = True
-            except FieldDoesNotExist:
-                has_level = False
-            account_queryset = models.Account.objects.order_by('-level' if has_level else '-id')
+
+            # Prefetch accounts
+            account_collection = getMagiCollection('account')
+            if account_collection:
+                account_queryset = models.Account.objects.order_by(
+                    *account_collection.list_view.profile_default_ordering.split(','))
+                queryset = queryset.prefetch_related(
+                    Prefetch('accounts', queryset=account_queryset, to_attr='all_accounts'),
+                )
+
+            # Prefetch links
             queryset = queryset.prefetch_related(
-                Prefetch('accounts', queryset=account_queryset, to_attr='all_accounts'),
                 Prefetch('links', queryset=models.UserLink.objects.order_by('-i_relevance'), to_attr='all_links'),
             )
 
