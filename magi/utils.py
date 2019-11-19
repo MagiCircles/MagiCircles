@@ -1196,6 +1196,12 @@ def modelHasField(model, field_name):
     except FieldDoesNotExist:
         return False
 
+def modelGetField(model, field_name):
+    try:
+        return model._meta.get_field(field_name)
+    except FieldDoesNotExist:
+        return None
+
 def modelFieldVerbose(model, field_name):
     return model._meta.get_field(field_name).verbose_name
 

@@ -22,6 +22,7 @@ from magi.utils import (
     matchesTemplate,
     HTMLAlert,
     addParametersToURL,
+    modelGetField,
 )
 from magi.raw import (
     GET_PARAMETERS_NOT_IN_FORM,
@@ -317,6 +318,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
         prefix = '-' if reverse else ''
         ordering = [prefix + ordering for ordering in request.GET['ordering'].split(',')]
         ordering = [order[2:] if order.startswith('--') else order for order in ordering]
+
         if (show_relevant_fields_on_ordering
             and request.GET['ordering'] != ','.join(collection.list_view.plain_default_ordering_list)):
             context['show_relevant_fields_on_ordering'] = True
@@ -372,6 +374,16 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
             ]
         else:
             ordering = collection.list_view.default_ordering.split(',')
+
+    # Hide items without value when order is not reversed (lower values first)
+    # because it would otherwise show them first which can be confusing
+    if len(ordering) == 1 and filled_filter_form:
+        field_name = ordering[0][1:] if ordering[0].startswith('-') else ordering[0]
+        field = modelGetField(collection.queryset.model, field_name)
+        if (field and field.null
+            and not ordering[0].startswith('-')):
+            queryset = queryset.exclude(**{ u'{}__isnull'.format(field_name): True })
+
     queryset = queryset.order_by(*ordering)
 
     if collection.list_view.distinct:
