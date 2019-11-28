@@ -318,6 +318,9 @@ def hasPermissionToMessage(from_user, to_user):
 def justReturn(string):
     return lambda *args, **kwargs: string
 
+def lambdaClosure(f, *args, **kwargs):
+    return lambda: f(*args, **kwargs)
+
 def propertyFromCollection(property_name):
     def _propertyFromCollection(view):
         return getattr(view.collection, property_name)
