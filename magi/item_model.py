@@ -470,7 +470,7 @@ class BaseMagiModel(models.Model):
         return listUnique(getattr(self, u'{}_SOURCE_LANGUAGES'.format(
             field_name.upper()), []) + ['en'])
 
-    def get_translation_from_dict(
+    def get_translation(
             self, field_name, language=None, fallback_to_english=True, fallback_to_other_sources=True,
             return_language=False,
     ):
@@ -506,6 +506,8 @@ class BaseMagiModel(models.Model):
         if return_language:
             return result_language, value
         return value
+
+    get_translation_from_dict = get_translation # for retro-compatibility
 
     def _attr_error(self, name):
         raise AttributeError("%r object has no attribute %r" % (self.__class__, name))
@@ -561,7 +563,7 @@ class BaseMagiModel(models.Model):
                 return type(self).get_dict_values(name, getattr(self, u'd_{name}'.format(name=name)), translated=True)
             # For a dict, if no _s exists: return value for language
             elif hasattr(self, u'd_{}s'.format(name)) and hasattr(self, name):
-                return self.get_translation_from_dict(name)
+                return self.get_translation(name)
             return self._attr_error(original_name)
 
         # When accessing "has_something" and "i_something" exists
