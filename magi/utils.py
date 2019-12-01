@@ -406,7 +406,11 @@ def globalContext(request=None, email=False):
             for variable, value in settings.items():
                 # Context variables to set
                 if variable in seasons.CONTEXT_SETTINGS:
-                    context[variable] = value
+                    if variable == 'site_logo':
+                        context['site_logo'] = staticImageURL(value)
+                        context['full_site_logo'] = staticImageURL(value, full=True)
+                    else:
+                        context[variable] = value
                 # When colors are changed, use a different stylesheet
                 elif variable in seasons.CSS_SETTINGS:
                     context['stylesheet'] = season_name

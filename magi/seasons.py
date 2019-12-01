@@ -7,6 +7,9 @@ CONTEXT_SETTINGS = [
     # Logo in the navbar. Can be a full URL or partial.
     'site_nav_logo',
 
+    # Logo on the homepage. Can be a full URL or partial.
+    'site_logo',
+
     # Javascript that will be included within the HTML.
     'extrajavascript',
 ]
@@ -32,6 +35,7 @@ AVAILABLE_SETTINGS = CONTEXT_SETTINGS + CSS_SETTINGS + [
 # More can be added via "staff_configurations_settings"
 STAFF_CONFIGURATIONS_SETTINGS = [
     'site_nav_logo',
+    'site_logo',
     'extracss',
     'extrajavascript',
 ]
