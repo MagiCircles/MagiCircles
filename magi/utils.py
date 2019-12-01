@@ -2218,6 +2218,4 @@ def adventCalendar(request, context):
             },
         },
         'allow_close_once': True,
-        'allow_close_remind': 1,
-        'allow_close_forever': True,
     }

@@ -2304,5 +2304,13 @@ function adventCalendar() {
         button.prop('href', button.prop('href') + day + '/');
         button.data('ajax-url', button.data('ajax-url') + day + '/');
         ajaxModals();
+    } else {
+        $('.corner-popup > img').remove();
+        $('.corner-popup > h3').remove();
+        $('.corner-popup > a').prop('class', '');
+        $('.corner-popup > a').prependTo('.corner-popup > small');
+        $('.corner-popup').width('auto');
+        $('.corner-popup').css('padding', '5px 10px');
+        $('.corner-popup > small').css('padding', '0');
     }
 }
