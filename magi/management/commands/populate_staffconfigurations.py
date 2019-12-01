@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings as django_settings
 from magi.utils import ordinalNumber, LANGUAGES_DICT
+from magi.settings import SEASONS
 from magi import models, seasons
 
 def create(d):
@@ -104,7 +105,7 @@ class Command(BaseCommand):
         })
 
         # Seasons
-        for season_name, season in seasons.SEASONS.items():
+        for season_name, season in SEASONS.items():
             for variable in seasons.STAFF_CONFIGURATIONS_SETTINGS + season.get('staff_configurations_settings', []):
                 create({
                     'key': u'season_{}_{}'.format(season_name, variable),
