@@ -70,6 +70,7 @@ DEFAULT_GROUPS = [
             'message_almost_anyone',
             'manage_prizes', 'manipulate_activities', 'mark_activities_as_staff_pick',
             'edit_activities_post_language', 'order_by_any_field',
+            'list_homepage_arts',
             'access_site_before_launch',
             'beta_test_features',
         ],
@@ -144,6 +145,7 @@ DEFAULT_GROUPS = [
         'permissions': [
             'manage_main_items', 'translate_items',
             'order_by_any_field',
+            'list_homepage_arts',
             'access_site_before_launch',
             'beta_test_features',
         ],
@@ -156,6 +158,7 @@ DEFAULT_GROUPS = [
         'permissions': [
             'manage_main_items',
             'order_by_any_field',
+            'list_homepage_arts',
             'access_site_before_launch',
             'beta_test_features',
         ],
@@ -355,6 +358,7 @@ DEFAULT_GROUPS = [
             'advanced_staff_configurations',
             'see_collections_details',
             'order_by_any_field',
+            'list_homepage_arts',
             'access_site_before_launch',
             'beta_test_features',
         ],
@@ -679,6 +683,13 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'icon': 'developer',
         'permissions_required': ['translate_items'],
         'as_form': True,
+    }),
+    ('homepage_arts', {
+        'title': 'Homepage previews',
+        'custom': False,
+        'navbar_link_list': 'staff',
+        'icon': 'home',
+        'one_of_permissions_required': ['list_homepage_arts'],
     }),
     ('sitemap', {
         'title': _('Sitemap'),

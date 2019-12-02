@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
-import os, string, random, csv, tinify, cStringIO, pytz, simplejson, datetime, io, operator, re, math, requests
+import os, string, random, csv, tinify, cStringIO, pytz, simplejson, datetime, io, operator, re, math, requests, urllib
 from PIL import Image
 from collections import OrderedDict
 from dateutil.relativedelta import relativedelta
@@ -2131,6 +2131,10 @@ def artSettingsToGetParameters(settings):
         if k == 'position':
             for pk, pv in v.items():
                 parameters['position_{}_preview'.format(pk)] = pv
+        elif k == 'url':
+            parameters['preview'] = urllib.quote(staticImageURL(v).encode('utf8'))
+        elif k == 'foreground_url':
+            parameters['foreground_preview'] = urllib.quote(staticImageURL(v).encode('utf8'))
         else:
             parameters[u'{}_preview'.format(k)] = v
     return parameters

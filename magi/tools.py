@@ -236,17 +236,56 @@ def generateShareImageForMainCollections(collection):
 ############################################################
 # Generate settings (for generated settings)
 
+def seasonalGeneratedSettings(staff_configurations):
+    seasonal_settings = {}
+    for season_name, season in SEASONS.items():
+        if getEventStatus(season['start_date'], season['end_date'], ends_within=1) in ['current', 'ended_recently']:
+            seasonal_settings[season_name] = {}
+            for variable in seasons.AVAILABLE_SETTINGS:
+                if variable in season:
+                    seasonal_settings[season_name][variable] = season[variable]
+            for variable in seasons.STAFF_CONFIGURATIONS_SETTINGS + season.get('staff_configurations_settings', []):
+                value = staff_configurations.get(u'season_{}_{}'.format(season_name, variable), None)
+                if value is not None:
+                    seasonal_settings[season_name][variable] = value
+    return seasonal_settings
+
 def magiCirclesGeneratedSettings(existing_values):
     now = timezone.now()
     one_week_ago = now - datetime.timedelta(days=10)
 
-    # Get staff configurations if missing
+    ############################################################
+    # Get settings only when missing:
+
+    # Get staff configurations
     staff_configurations = existing_values.get('STAFF_CONFIGURATIONS', None)
     latest_news = existing_values.get('LATEST_NEWS', [])
 
     if not staff_configurations:
+        print 'Get staff configurations and latest news'
         staff_configurations, more_latest_news = getStaffConfigurations()
         latest_news += more_latest_news
+
+    # Get total donators
+    total_donators = existing_values.get('TOTAL_DONATORS', None)
+    if not total_donators:
+        print 'Get total donators'
+        total_donators = totalDonatorsThisMonth() or '\'\''
+
+    # Get latest donation month
+    donation_month = existing_values.get('DONATION_MONTH', None)
+    if not donation_month:
+        print 'Get latest donation month'
+        donation_month = latestDonationMonth(failsafe=True)
+
+    # Get seasonal settings
+    seasonal_settings = existing_values.get('SEASONAL_SETTINGS', None)
+    if not seasonal_settings:
+        print 'Get seasonal settings'
+        seasonal_settings = seasonalGeneratedSettings(staff_configurations)
+
+    ############################################################
+    # Always get:
 
     # Generate share images once a week
     if django_settings.DEBUG:
@@ -265,22 +304,13 @@ def magiCirclesGeneratedSettings(existing_values):
                 if collection.auto_share_image:
                     generated_share_images[collection.name] = generateShareImageForMainCollections(collection)
 
-    seasonal_settings = {}
-
-    # Set seasonal settings
-    for season_name, season in SEASONS.items():
-        if getEventStatus(season['start_date'], season['end_date'], ends_within=1) in ['current', 'ended_recently']:
-            seasonal_settings[season_name] = {}
-            for variable in seasons.AVAILABLE_SETTINGS:
-                if variable in season:
-                    seasonal_settings[season_name][variable] = season[variable]
-            for variable in seasons.STAFF_CONFIGURATIONS_SETTINGS + season.get('staff_configurations_settings', []):
-                value = staff_configurations.get(u'season_{}_{}'.format(season_name, variable), None)
-                if value is not None:
-                    seasonal_settings[season_name][variable] = value
+    ############################################################
+    # Save
 
     return {
         'STAFF_CONFIGURATIONS': staff_configurations,
+        'TOTAL_DONATORS': total_donators,
+        'DONATION_MONTH': donation_month,
         'LATEST_NEWS': latest_news,
         'GENERATED_SHARE_IMAGES_LAST_DATE': 'datetime.datetime.fromtimestamp(' + unicode(
             time.mktime(generated_share_images_last_date.timetuple())

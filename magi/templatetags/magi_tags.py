@@ -2,12 +2,23 @@ from django.utils.translation import ugettext_lazy as _
 from django import template
 from magi import models
 from magi.settings import RAW_CONTEXT
-from magi.utils import AttrDict, torfc2822, translationURL as _translationURL, getTranslatedName, jsv
+from magi.utils import (
+    AttrDict,
+    torfc2822,
+    translationURL as _translationURL,
+    getTranslatedName,
+    jsv,
+    staticImageURL,
+)
 
 register = template.Library()
 
 register.filter('torfc2822', torfc2822)
 register.filter('jsv', jsv)
+
+@register.simple_tag()
+def static_image_url(*args, **kwargs):
+    return staticImageURL(**kwargs)
 
 @register.filter
 def avatar(user, size=200):

@@ -36,6 +36,8 @@ from magi.forms import (
 from magi import models
 from magi.raw import donators_adjectives
 from magi.utils import (
+    addParametersToURL,
+    artSettingsToGetParameters,
     getGlobalContext,
     getNavbarPrefix,
     HTMLAlert,
@@ -1418,6 +1420,28 @@ def translations_check(request, context):
                 for language, verbose, term in terms
             ])
         ))
+
+def homepage_arts(request, context):
+    context['art_position'] = HOMEPAGE_ART_POSITION
+    context['homepage_art_gradient'] = HOMEPAGE_ART_GRADIENT
+    if HOMEPAGE_BACKGROUNDS:
+        context['backgrounds'] = [
+            background.get('thumbnail', background['image'])
+            for background in HOMEPAGE_BACKGROUNDS
+        ]
+    elif HOMEPAGE_BACKGROUND:
+        context['background'] = staticImageURL(HOMEPAGE_BACKGROUND)
+    else:
+        context['backgrounds'] = []
+
+    context['can_show_random_for_character'] = bool(RANDOM_ART_FOR_CHARACTER)
+    context['homepage_arts'] = []
+    for art in HOMEPAGE_ARTS:
+        sides = art.get('side', HOMEPAGE_ART_SIDE)
+        for side in ([sides] if not isinstance(sides, list) else sides):
+            context['homepage_arts'].append(
+                (side, art, addParametersToURL(u'/', artSettingsToGetParameters(art)))
+            )
 
 ############################################################
 # Errors
