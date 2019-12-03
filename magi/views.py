@@ -1485,12 +1485,11 @@ def adventcalendar(request, context, day=None):
             if day == '24' and 'badge' in context['all_enabled']:
                 badge = django_settings.STAFF_CONFIGURATIONS.get('season_advent_calendar_badge_image', None)
                 if badge:
-                    all_opened = True
+                    total_opened = 0
                     for _day, opened in context['calendar'].items():
-                        if not opened:
-                            all_opened = False
-                            break
-                    if all_opened:
+                        if opened:
+                            total_opened += 1
+                    if total_opened >= 21:
                         name = u'{} {}'.format(_('Merry christmas!'), today.year)
                         try:
                             models.Badge.objects.filter(user=request.user, name=name)[0]
@@ -1500,7 +1499,7 @@ def adventcalendar(request, context, day=None):
                                 owner=get_default_owner(models.User),
                                 user=request.user,
                                 name=name,
-                                description='Opened all 24 days of the advent calendar {}'.format(today.year),
+                                description='Opened {} days of the advent calendar {}'.format(total_opened, today.year),
                                 image=staticImageURL(badge),
                                 url='/adventcalendar/',
                                 show_on_top_profile=False,

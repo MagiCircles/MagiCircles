@@ -8,11 +8,13 @@ def create(d):
     try:
         if not d.get('i_language', None) and models.StaffConfiguration.objects.filter(key=d['key']).count():
             print 'Failed to create {} with error: {}'.format(d['key'], 'Already exists')
-            return
+            return False
         models.StaffConfiguration.objects.create(owner_id=1, **d)
         print u'Created {}{}'.format(d['key'], u' for language {}'.format(d['i_language']) if 'i_language' in d else '')
+        return True
     except Exception as e:
         print 'Failed to create {} with error: {}'.format(d['key'], e)
+    return False
 
 class Command(BaseCommand):
     can_import_settings = True

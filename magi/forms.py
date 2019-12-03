@@ -606,7 +606,13 @@ class MagiForm(forms.ModelForm):
                 if (self.cleaned_data[field]
                     or key in getattr(self.Meta, 'd_save_falsy_values_for_keys', {}).get(dfield, [])):
                     d[key] = self.cleaned_data[field]
+            # Keep unknown keys
+            if dfield in getattr(self.Meta, 'keep_unknwon_keys_for_d', []):
+                for key, value in getattr(instance, dfield).items():
+                    if key not in d:
+                        d[key] = value
             instance.save_d(dfield, d)
+
         for field in self.fields.keys():
             # Fix empty strings to None
             if (hasattr(instance, field)
@@ -2083,6 +2089,7 @@ class UserPreferencesForm(MagiForm):
     class Meta(MagiForm.Meta):
         model = models.UserPreferences
         fields = ('m_description', 'location', 'favorite_character1', 'favorite_character2', 'favorite_character3', 'color', 'birthdate', 'show_birthdate_year', 'default_tab', 'd_extra')
+        keep_unknwon_keys_for_d = ['extra']
 
 class StaffEditUser(_UserCheckEmailUsernameForm):
     force_remove_avatar = forms.BooleanField(required=False)
