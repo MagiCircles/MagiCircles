@@ -902,21 +902,44 @@ def getAstrologicalSign(month, day):
 ############################################################
 # Event status using start and end date
 
-def getEventStatus(start_date, end_date, ends_within=0, starts_within=0):
+def getEventStatus(start_date=None, end_date=None, ends_within=0, starts_within=0):
     """
-    start_date and end_date need to be a datetime object or a tuple (month, day)
+    start_date and end_date need to be a datetime object or a tuple (month, day) or (year, month, day)
+
+    Possible values:
+    - If all parameters specified: [invalid, future, starts_soon, current, ended_recently, ended]
+    - If all but end_date specified: All except current and invalid
+    - If start_date and end_date specified: [invalid, future, current, ended]
+    - If only start_date: [future, ended]
     """
-    if not end_date or not start_date:
-        return None
+    if not start_date and not end_date:
+        return 'invalid'
+    elif not start_date:
+        start_date = end_date
+    elif not end_date:
+        end_date = start_date
+
+    # Transform tuple dates to datetime
     now = timezone.now()
+    tuples_have_year = [True, True]
 
     if isinstance(start_date, tuple):
-        start_date = datetime.datetime(now.year, start_date[0], start_date[1], tzinfo=timezone.utc)
+        if len(start_date) == 3:
+            start_date = datetime.datetime(start_date[0], start_date[1], start_date[2], tzinfo=timezone.utc)
+        else:
+            tuples_have_year[0] = False
+            start_date = datetime.datetime(now.year, start_date[0], start_date[1], tzinfo=timezone.utc)
     if isinstance(end_date, tuple):
-        end_date = datetime.datetime(now.year, end_date[0], end_date[1], tzinfo=timezone.utc)
-        if start_date > end_date:
+        if len(end_date) == 3:
+            end_date = datetime.datetime(end_date[0], end_date[1], end_date[2], tzinfo=timezone.utc)
+        else:
+            tuples_have_year[1] = False
+            end_date = datetime.datetime(now.year, end_date[0], end_date[1], tzinfo=timezone.utc)
+        # If no year specified, auto fix order
+        if tuples_have_year == [False, False] and start_date > end_date:
             end_date = end_date.replace(now.year + 1)
 
+    # Return status
     if start_date > end_date:
         return 'invalid'
     if now < (start_date - relativedelta(days=starts_within)):

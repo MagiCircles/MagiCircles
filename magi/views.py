@@ -1169,7 +1169,7 @@ def drownactivity(request, context, pk):
 
 def markactivitystaffpick(request, context, pk):
     if (not request.user.is_authenticated() or request.method != 'POST'
-        or 'staff' not in models.ACTIVITY_TAGS_DICT.keys()
+        or 'staff' not in models.NORMALIZED_ACTIVITY_TAGS.keys()
         or not request.user.hasPermission('mark_activities_as_staff_pick')):
         raise PermissionDenied()
     activity = get_object_or_404(models.Activity, pk=pk)
@@ -1187,7 +1187,7 @@ def markactivitystaffpick(request, context, pk):
 
 def removeactivitystaffpick(request, context, pk):
     if (not request.user.is_authenticated() or request.method != 'POST'
-        or 'staff' not in models.ACTIVITY_TAGS_DICT.keys()
+        or 'staff' not in models.NORMALIZED_ACTIVITY_TAGS.keys()
         or not request.user.hasPermission('mark_activities_as_staff_pick')):
         raise PermissionDenied()
     activity = get_object_or_404(models.Activity, pk=pk)

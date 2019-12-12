@@ -3432,7 +3432,7 @@ class ActivityCollection(MagiCollection):
                     'icon': 'sort-down',
                     'classes': classes + ['staff-only'],
                 }))
-            if ('staff' in models.ACTIVITY_TAGS_DICT.keys()
+            if ('staff' in models.NORMALIZED_ACTIVITY_TAGS.keys()
                 and request.user.hasPermission('mark_activities_as_staff_pick')):
                 if 'staff' in item.tags:
                     # Remove from staff picks
@@ -3502,8 +3502,9 @@ class ActivityCollection(MagiCollection):
             queryset = self.collection._get_queryset_for_list_and_item(queryset, parameters, request)
             # Exclude hidden tags
             if request.user.is_authenticated() and request.user.preferences.hidden_tags:
-                for tag in models.getHiddenTags(request):
-                    queryset = queryset.exclude(c_tags__contains=u'"{}"'.format(tag))
+                for tag, hidden in request.user.preferences.hidden_tags.items():
+                    if hidden:
+                        queryset = queryset.exclude(c_tags__contains=u'"{}"'.format(tag))
             else:
                 queryset = queryset.exclude(_cache_hidden_by_default=True)
             # Get who archived if staff
@@ -3593,29 +3594,13 @@ class ActivityCollection(MagiCollection):
 
             # Show warning on hidden tags
 
-            context['item'].hidden_reasons = []
             tags = context['item'].tags
-            error_message = _(u'You are not allowed to see activities with the tag "{tag}".')
-
-            for tag in models.getHiddenTags(context['request']):
-                if tag in tags:
-                    details = models.ACTIVITY_TAGS_DICT.get(tag, {})
-                    if not isinstance(details, dict):
-                        details = {}
-                    has_permission = details.get('has_permission_to_show', lambda r: True)(context['request'])
-                    label = details.get('translation', tag)
-                    if callable(label):
-                        label = label()
-                    if has_permission != True:
-                        context['item'].hidden_reasons.append(u'{} {}'.format(
-                            error_message.format(tag=label),
-                            has_permission,
-                        ))
-                    else:
-                        context['item'].hidden_reasons.append(u'{} {}'.format(
-                            error_message.format(tag=label),
-                            _('You can change which tags you would like to see or hide in your settings.'),
-                        ))
+            context['item'].hidden_reasons = [
+                verbose_reason
+                for tag_name, (_tag, verbose_reason, _reason) in models.getForbiddenTags(
+                        context['request']).items()
+                if tag_name in tags
+            ]
             if context['item'].hidden_reasons:
                 context['page_title'] = None
                 context['h1_page_title'] = None

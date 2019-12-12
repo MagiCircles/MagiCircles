@@ -55,6 +55,7 @@ from magi.utils import (
     randomString,
     shrinkImageFromData,
     imageThumbnailFromData,
+    getEventStatus,
     getMagiCollection,
     getAccountIdsFromSession,
     hasPermission,
@@ -603,6 +604,8 @@ class MagiForm(forms.ModelForm):
         for dfield, choices in self.d_choices.items():
             d = {}
             for field, key in choices:
+                if field not in self.fields:
+                    continue
                 if (self.cleaned_data[field]
                     or key in getattr(self.Meta, 'd_save_falsy_values_for_keys', {}).get(dfield, [])):
                     d[key] = self.cleaned_data[field]
@@ -1929,6 +1932,16 @@ class ActivitiesPreferencesForm(MagiForm):
 
     def __init__(self, *args, **kwargs):
         super(ActivitiesPreferencesForm, self).__init__(*args, **kwargs)
+
+        # Get allowed tags
+        # Should only disallow tags from the future
+        allowed_tags = models.getAllowedTags(
+            self.request, check_hidden_by_user=False,
+            as_dict=True, check_permissions_to_show=False,
+        )
+
+        # Set initial values
+        # and initialize dict if it's the first time a user changes their settings
         new_d = self.instance.hidden_tags.copy()
         for default_hidden in models.ACTIVITIES_TAGS_HIDDEN_BY_DEFAULT:
             if default_hidden not in new_d:
@@ -1937,11 +1950,16 @@ class ActivitiesPreferencesForm(MagiForm):
         self.old_hidden_tags = self.instance.hidden_tags
         for field_name in self.fields.keys():
             if field_name.startswith('d_hidden_tags'):
-                self.fields[field_name] = forms.BooleanField(
-                    label=self.fields[field_name].label,
-                    help_text=self.fields[field_name].help_text,
-                    required=False,
-                    initial=self.instance.hidden_tags.get(field_name.replace('d_hidden_tags-', ''), False),
+                tag_name = field_name.replace('d_hidden_tags-', '')
+                if tag_name not in allowed_tags:
+                    del(self.fields[field_name])
+                else:
+                    self.fields[field_name] = forms.BooleanField(
+                        label=self.fields[field_name].label,
+                        help_text=self.fields[field_name].help_text,
+                        required=False,
+                        initial=self.instance.hidden_tags.get(
+                            field_name.replace('d_hidden_tags-', ''), False),
                 )
         if 'view_activities_language_only' in self.fields:
             self.fields['view_activities_language_only'].label = u'{} ({})'.format(
@@ -1961,17 +1979,15 @@ class ActivitiesPreferencesForm(MagiForm):
     def clean(self):
         super(ActivitiesPreferencesForm, self).clean()
         # Check permission to show tags
+        not_allowed_tags_and_reasons = models.getForbiddenTags(
+            self.request, check_hidden_by_user=False)
         for field_name in self.fields.keys():
             if field_name.startswith('d_hidden_tags'):
-                tag = field_name.replace('d_hidden_tags-', '')
-                if (self.old_hidden_tags.get(tag, False)
+                tag_name = field_name.replace('d_hidden_tags-', '')
+                if (self.old_hidden_tags.get(tag_name, False)
                     and not self.cleaned_data.get(field_name, False)):
-                    r = models.checkTagPermission(tag, self.request)
-                    if r != True:
-                        raise forms.ValidationError(u'{} {}'.format(
-                            _(u'You are not allowed to see activities with the tag "{tag}".').format(
-                                tag=self.fields[field_name].label,
-                            ), r))
+                    if tag_name in not_allowed_tags_and_reasons:
+                        raise forms.ValidationError(not_allowed_tags_and_reasons[tag_name][1])
 
     class Meta(MagiForm.Meta):
         model = models.UserPreferences
@@ -2678,11 +2694,11 @@ class ActivityForm(MagiForm):
                 or not self.request.user.is_authenticated()
                 or not self.request.user.hasPermission('post_news')):
                 self.fields['m_message'].validators += [MaxLengthValidator(15000)]
-            #self.fields['m_message'].help_text = markdownHelpText(self.request)
         # Only allow users to add tags they are allowed to add or already had before
         if 'c_tags' in self.fields:
             self.fields['c_tags'].choices = models.getAllowedTags(
                 self.request, is_creating=True,
+                # Ensure previously added tags don't get deleted
                 force_allow=self.instance.c_tags if not self.is_creating else None,
             )
         self.previous_m_message = None
@@ -2731,6 +2747,8 @@ class FilterActivities(MagiFiltersForm):
 
     show_more = FormShowMore(cutoff='is_popular', until='ordering')
 
+    past_tags = forms.MultipleChoiceField(required=False, widget=forms.CheckboxSelectMultiple, label=_('Past tags'))
+
     with_image = forms.NullBooleanField(label=_('Image'))
     with_image_filter = MagiFilter(selector='image__isnull')
 
@@ -2778,8 +2796,24 @@ class FilterActivities(MagiFiltersForm):
     def __init__(self, *args, **kwargs):
         super(FilterActivities, self).__init__(*args, **kwargs)
         # Only allow users to filter by tags they are allowed to see
-        if 'c_tags' in self.fields:
-            self.fields['c_tags'].choices = models.getAllowedTags(self.request)
+        # Place past tags in past_tags
+        if 'c_tags' in self.fields and 'past_tags' in self.fields:
+            tags_choices = []
+            past_tags_choices = []
+            for tag_name, tag in models.getAllowedTags(self.request, full_tags=True):
+                tag_choice = (tag_name, tag['translation'])
+                if tag['status'] == 'ended':
+                    past_tags_choices.append(tag_choice)
+                else:
+                    tags_choices.append(tag_choice)
+            if tags_choices:
+                self.fields['c_tags'].choices = tags_choices
+            else:
+                del(self.fields['c_tags'])
+            if past_tags_choices:
+                self.fields['past_tags'].choices = past_tags_choices
+            else:
+                del(self.fields['past_tags'])
         # Default selected language
         if 'i_language' in self.fields:
             self.default_to_current_language = False
@@ -2838,7 +2872,16 @@ class FilterActivities(MagiFiltersForm):
 
     class Meta(MagiFiltersForm.Meta):
         model = models.Activity
-        fields = ('search', 'c_tags', 'is_popular', 'is_following', 'liked', 'hide_archived', 'with_image', 'i_language')
+        fields = [
+            'search',
+            'c_tags', 'is_popular',
+            'is_following', 'liked',
+            'hide_archived', 'with_image',
+            'past_tags',
+            'i_language',
+        ]
+
+ActivityFilterForm = FilterActivities
 
 ############################################################
 # Notifications
@@ -2853,6 +2896,8 @@ class FilterNotification(MagiFiltersForm):
     class Meta(MagiFiltersForm.Meta):
         model = models.Notification
         fields = ('search', 'i_message')
+
+NotificationFilterForm = FilterNotification
 
 ############################################################
 # Add/Edit reports

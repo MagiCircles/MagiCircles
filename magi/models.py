@@ -13,6 +13,7 @@ from django.conf import settings as django_settings
 from magi.utils import (
     AttrDict,
     getMagiCollection,
+    getEventStatus,
     uploadToRandom,
     uploadItem,
     uploadTiny,
@@ -103,22 +104,31 @@ User.hasPermissionToMessage = hasPermissionToMessage
 
 ############################################################
 
-ACTIVITY_TAGS_DICT = dict(ACTIVITY_TAGS or {})
+NORMALIZED_ACTIVITY_TAGS = OrderedDict()
+for _tag in ACTIVITY_TAGS:
+    if isinstance(_tag, tuple) and isinstance(_tag[1], dict):
+        NORMALIZED_ACTIVITY_TAGS[_tag[0]] = _tag[1]
+        if not NORMALIZED_ACTIVITY_TAGS[_tag[0]].get('translation', None):
+            NORMALIZED_ACTIVITY_TAGS[_tag[0]]['translation'] = _tag[0]
+    elif isinstance(_tag, tuple):
+        NORMALIZED_ACTIVITY_TAGS[_tag[0]] = {
+            'translation': _tag[1],
+        }
+    else:
+        NORMALIZED_ACTIVITY_TAGS[_tag] = {
+            'translation': _tag,
+        }
 
 ACTIVITY_TAGS_CHOICES = [
-    (_tag,
-     _details.get('translation', _tag)
-     if isinstance(_details, dict)
-     else _details)
-    for (_tag, _details) in ACTIVITY_TAGS
-] if ACTIVITY_TAGS else []
+    (_tag_name, _tag['translation'])
+    for _tag_name, _tag in NORMALIZED_ACTIVITY_TAGS.items()
+]
 
 ACTIVITIES_TAGS_HIDDEN_BY_DEFAULT = [
-    (tag[0] if isinstance(tag, tuple) else tag) for tag in (ACTIVITY_TAGS or [])
-    if (isinstance(tag, tuple)
-        and isinstance(tag[1], dict)
-        and tag[1].get('hidden_by_default', False)
-    )]
+    _tag_name
+    for _tag_name, _tag in NORMALIZED_ACTIVITY_TAGS.items()
+    if _tag.get('hidden_by_default', False)
+]
 
 ############################################################
 # Utility Models
@@ -1013,38 +1023,110 @@ class Activity(MagiModel):
 ############################################################
 # Activities utilities
 
-def getTagsWithPermissionToAdd(request):
-    return [
-        (tag[0] if isinstance(tag, tuple) else tag)
-        for tag in (ACTIVITY_TAGS or [])
-        if (not isinstance(tag, tuple)
-            or not isinstance(tag[1], dict)
-            or tag[1].get('has_permission_to_add', lambda r: True)(request)
-        )]
+_CHOOSE_HIDDEN_TAGS_MESSAGE = _('You can change which tags you would like to see or hide in your settings.')
 
-def checkTagPermission(tag, request):
-    details = ACTIVITY_TAGS_DICT[tag]
-    return True if not isinstance(details, dict) else details.get('has_permission_to_show', lambda r: True)(request)
+def getAllowedTags(
+        request,
+        is_creating=False, force_allow=None, check_hidden_by_user=True,
+        check_permissions_to_show=True,
+        return_allowed=True, return_not_allowed=False,
+        as_dict=False, full_tags=False,
+):
+    """
+    By default, returns a list of tuples that can be used as models/forms choices.
+    Full tags can be returned with full_tags=True.
+    A dict instead of list of tuples can be returned with as_dict=True.
 
-def getHiddenTags(request):
-    return ([tag for tag, hidden in request.user.preferences.hidden_tags.items() if hidden]
-            if request.user.is_authenticated() and request.user.preferences.hidden_tags
-            else ACTIVITIES_TAGS_HIDDEN_BY_DEFAULT)
+    By default, checks everything except permissions related to adding a tag.
+    is_creating=True will additionally check permissions to be added + if the tag is current.
+    Some permissions can be disabled:
+    - check_hidden_by_user=False
+    - check_permissions_to_show=False
+    It's not possible to disable check for Future tags.
 
-def getAllowedTags(request, is_creating=False, force_allow=None):
-    hidden = getHiddenTags(request)
-    can_add = getTagsWithPermissionToAdd(request) if is_creating else None
-    return [
-        (_tag,
-         (_details.get('translation', _tag)()
-          if callable(_details.get('translation', _tag))
-          else _details.get('translation', _tag))
-         if isinstance(_details, dict)
-         else (_details() if callable(_details) else _details))
-        for (_tag, _details) in ACTIVITY_TAGS
-        if (_tag in (force_allow or [])
-            or (_tag not in hidden and (not is_creating or _tag in can_add)))
+    By default, returns the list of allowed tags.
+    Tags not allowed alongside reasons can be returned with return_not_allowed=True.
+    If you only want the tags not allowed, you can also add return_allowed=False.
+
+    Tags can be forcefully allowed with force_allow (a list of strings).
+    """
+    not_allowed_tags_and_reasons = {}
+    tag_statuses = {}
+    def notAllowedReason(tag_name, tag, reason, verbose_reason=None):
+        not_allowed_tags_and_reasons[tag_name] = (tag, u'{} {}'.format(
+            _(u'You are not allowed to see activities with the tag "{tag}".').format(
+                tag=tag['translation']() if callable(tag['translation']) else tag['translation'],
+            ), verbose_reason or ''), reason)
+    def isTagAllowed(tag_name, tag):
+        tag_statuses[tag_name] = getEventStatus(
+            tag.get('start_date', None),
+            tag.get('end_date', None),
+        )
+        # Force allowed will bypass checks
+        if tag_name in (force_allow or []):
+            return True
+        # Hide tags that are not allowed to be shown
+        if check_permissions_to_show:
+            has_permission_to_show = tag.get('has_permission_to_show', lambda r: True)(request)
+            if has_permission_to_show != True:
+                notAllowedReason(tag_name, tag, 'permission', has_permission_to_show)
+                return False
+        # Hidden by user
+        if check_hidden_by_user:
+            if request.user.is_authenticated():
+                if request.user.preferences.hidden_tags:
+                    if request.user.preferences.hidden_tags.get(tag_name, False):
+                        notAllowedReason(tag_name, tag, 'user', _CHOOSE_HIDDEN_TAGS_MESSAGE)
+                        return False
+                else: # If the user didn't set their preferences, use default hidden tags
+                    if tag_name in ACTIVITIES_TAGS_HIDDEN_BY_DEFAULT:
+                        notAllowedReason(tag_name, tag, 'user', _CHOOSE_HIDDEN_TAGS_MESSAGE)
+                        return False
+            else:
+                if tag_name in ACTIVITIES_TAGS_HIDDEN_BY_DEFAULT:
+                    notAllowedReason(tag_name, tag, 'user', _CHOOSE_HIDDEN_TAGS_MESSAGE)
+                    return False
+        # Hide tags that will happen in the future
+        if tag_statuses[tag_name] == 'future':
+            notAllowedReason(tag_name, tag, 'future')
+            return False
+        # When creating:
+        if is_creating:
+            # Don't allow tags that are not current
+            if tag_statuses[tag_name] not in ['invalid', 'current']:
+                notAllowedReason(tag_name, tag, 'past')
+                return False
+            # Don't allow tags that are not allowed to be added
+            if not tag.get('has_permission_to_add', lambda r: True)(request):
+                notAllowedReason(tag_name, tag, 'permission')
+                return False
+        return True
+    def getTag(tag_name, tag):
+        translation = tag['translation']() if callable(tag['translation']) else tag['translation']
+        if full_tags:
+            new_tag = tag.copy()
+            new_tag.update({
+                'translation': translation,
+                'status': tag_statuses[tag_name],
+            })
+            return new_tag
+        return translation
+    allowed_tags = [
+        (tag_name, getTag(tag_name, tag)) for tag_name, tag in NORMALIZED_ACTIVITY_TAGS.items()
+        if isTagAllowed(tag_name, tag)
     ]
+    if as_dict:
+        allowed_tags = OrderedDict(allowed_tags)
+    if return_not_allowed and return_allowed:
+        return allowed_tags, not_allowed_tags_and_reasons
+    elif return_not_allowed:
+        return not_allowed_tags_and_reasons
+    elif return_allowed:
+        return allowed_tags
+    return None
+
+def getForbiddenTags(request, *args, **kwargs):
+    return getAllowedTags(request, *args, return_allowed=False, return_not_allowed=True, **kwargs)
 
 def saveActivityCacheOwnerWithoutChangingModification(activity):
     Activity.objects.filter(id=activity.id).update(**{
