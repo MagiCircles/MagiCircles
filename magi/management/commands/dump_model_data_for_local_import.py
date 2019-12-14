@@ -4,6 +4,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth.models import User, Group
 from django.db.models import Prefetch
 from django.db.models.fields import FieldDoesNotExist, related
+from django.db.models.fields.files import ImageField
 from magi.utils import modelHasField
 from magi import models as magi_models
 
@@ -61,6 +62,14 @@ def dump_dependencies_getters(fileds, foreign_key_model, dependency_item, unique
     ))
     return fk_var_name
 
+def get_value(item, field):
+    try:
+        if isinstance(type(item)._meta.get_field(field), ImageField):
+            return getattr(item, u'http_{}_url'.format(field))
+    except FieldDoesNotExist:
+        pass
+    return getattr(item, field)
+
 def dump_item(fileds, model, item, unique_fields, fields, foreign_keys, many_to_many, foreign_keys_unique_fields, m2m_can_be_created):
     data = { 'owner_id': 1 } if modelHasField(model, 'owner') else {}
     raw_data = {}
@@ -79,11 +88,11 @@ def dump_item(fileds, model, item, unique_fields, fields, foreign_keys, many_to_
         if fk_var_names:
             m2m_update[m2m] = u'[{}]'.format(u', '.join(fk_var_names))
     for field in unique_fields:
-        value = getattr(item, field)
+        value = get_value(item, field)
         if value is not None:
             unique_data[field] = unicode(value)
     for field in fields:
-        value = getattr(item, field)
+        value = get_value(item, field)
         if value is not None:
             data[field] = unicode(value)
     fk_var_name = 'fk_{}_{}'.format(model.__name__, item.pk)
@@ -156,8 +165,9 @@ def dump_item(fileds, model, item, unique_fields, fields, foreign_keys, many_to_
 def print_file_headers(filed):
     print_to_files([filed], u'from django.core.exceptions import ObjectDoesNotExist\n')
     print_to_files([filed], u'from django.db.models import Q\n')
+    print_to_files([filed], u'from magi.tools import get_default_owner\n')
     print_to_files([filed], u'import magi, {}\n\n'.format(django_settings.SITE))
-    print_to_files([filed], u'owner, created = magi.models.User.objects.update_or_create(id=1)\nif created:\n  magi.models.UserPreferences.objects.create(user=owner)\n\n')
+    print_to_files([filed], u'owner = get_default_owner()\n\n')
     print_to_files([filed], u'total_created = 0\ntotal_updated = 0\n\n')
 
 class Command(BaseCommand):
