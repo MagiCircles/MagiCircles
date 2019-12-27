@@ -661,7 +661,7 @@ for _navbar_link_name, _navbar_link in ENABLED_NAVBAR_LISTS.items():
     if _navbar_link_name not in ENABLED_PAGES:
         ENABLED_PAGES[_navbar_link_name] = {
             'custom': False,
-            'title': _navbar_link['title'],
+            'title': _navbar_link.get('title', _navbar_link_name.title()),
             'icon': _navbar_link.get('icon', None),
             'image': _navbar_link.get('image', None),
             'navbar_link': False,

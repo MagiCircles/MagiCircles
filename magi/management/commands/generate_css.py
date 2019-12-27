@@ -38,7 +38,7 @@ html {{
     for color in (USER_COLORS or []):
         raw_color, verbose_color, css_class, hex_code = [unicode(v) for v in color]
         less += template.replace('HEX_COLOR', hex_code).replace(
-            'COLOR_NAME', raw_color).replace('COLOR', css_class)
+            'COLOR_NAME', css_class).replace('COLOR', css_class)
     return less
 
 def generateStylesheets(name=None, settings={}):
