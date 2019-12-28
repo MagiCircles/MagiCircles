@@ -218,7 +218,7 @@ def prepare_data(data, model, unique, download_images):
     dictionaries = {}
     images = {}
     for k, v in data.items():
-        if isinstance(model._meta.get_field(k), ImageField):
+        if modelHasField(model, k) and isinstance(model._meta.get_field(k), ImageField):
             if download_images:
                 images[k] = v
         elif k.startswith('d_') and isinstance(v, dict):
@@ -349,6 +349,8 @@ def api_pages(
         ),
         details.get('url_parameters', {}),
     )
+    if verbose:
+        log_function(url)
     total = 0
     page_number = 0
     request_options = request_options.copy()
