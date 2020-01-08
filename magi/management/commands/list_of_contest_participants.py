@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-import requests, json, random
+import requests, json, random, csv
 from optparse import make_option
 from django.core.management.base import BaseCommand
 from django.conf import settings as django_settings
+from django.db.models import Prefetch
 from magi.import_data import (
     loadJsonAPIPage,
     twitterAPICall,
@@ -11,8 +12,12 @@ from magi.import_data import (
 from magi.urls import RAW_CONTEXT
 from magi.utils import (
     addParametersToURL,
+    csvToDict,
     getSubField,
+    listUnique,
     makeImageGrid,
+    makeBadgeImage,
+    titleToSnakeCase,
 )
 from magi.tools import (
     getUserFromLink,
@@ -36,6 +41,10 @@ class Command(BaseCommand):
             '--' + django_settings.SITE,
             action='store',
             help=settings.SITE_NAME + ' hashtag'),
+        make_option(
+            '--csv',
+            action='store',
+            help='CSV file with list of entries'),
         make_option(
             '--local',
             action='store_true',
@@ -227,34 +236,95 @@ class Command(BaseCommand):
     def get_site_entries(self):
         tag = self.options[django_settings.SITE]
         activities = models.Activity.objects.filter(c_tags__contains='"{}"'.format(tag)).select_related(
-            'owner', 'owner__preferences')
-        return [
-            {
+            'owner', 'owner__preferences').prefetch_related(
+                Prefetch('owner__links', queryset=models.UserLink.objects.filter(
+                    i_type__in=self.platforms), to_attr='all_links'),
+            )
+        entries = []
+        for activity in activities:
+            entry = {
                 'platform': django_settings.SITE,
                 u'{}_username'.format(django_settings.SITE): activity.owner.username,
                 u'{}_profile_url'.format(django_settings.SITE): activity.owner.http_item_url,
                 'url': activity.http_item_url,
                 'image': activity.get_first_image(),
-            } for activity in activities
-        ]
+            }
+            # Add username/profile for other platforms that could be in user links
+            for platform in self.platforms:
+                for link in activity.owner.all_links:
+                    if platform == link.type:
+                        if u'{}_username'.format(platform) not in entry:
+                            entry[u'{}_username'.format(platform)] = []
+                        entry[u'{}_username'.format(platform)].append(link.value)
+                        if u'{}_profile_url'.format(platform) not in entry:
+                            entry[u'{}_profile_url'.format(platform)] = []
+                        entry[u'{}_profile_url'.format(platform)].append(link.url)
+            entries.append(entry)
+        return entries
+
+    def get_csv_rows(self):
+        if not getattr(self, '_csv_rows', None):
+            csv_file = open(self.options['csv'])
+            csv_reader = csv.reader(csv_file)
+            csv_titles = []
+            entries = {}
+            for i, row in enumerate(csv_reader):
+                if i == 0:
+                    csv_titles = row
+                    continue
+                entry = csvToDict(row, csv_titles, snake_case=True)
+                platform = titleToSnakeCase(entry['platform'])
+                entry['platform'] = platform
+                if platform not in entries:
+                    entries[platform] = []
+                entries[platform].append(entry)
+            csv_file.close()
+            self._csv_rows = entries
+        return self._csv_rows
+
+    def get_platforms_from_csv(self):
+        return self.get_csv_rows().keys()
+
+    def get_csv_entries(self, all_entries):
+        for platform, entries in self.get_csv_rows().items():
+            if platform not in all_entries:
+                all_entries[platform] = []
+            all_entries[platform] += entries
+
+    def get_entries_per_unique_user(self, all_entries):
+        entries_per_user = [] # list of list of entry. each sub-list is a single user
+
+        def add_to_entries_per_user(platform, entry):
+            for other_entries_per_user in entries_per_user:
+                for other_entry in other_entries_per_user:
+                    for other_platform in self.platforms:
+                        usernames = entry.get(u'{}_username'.format(other_platform), None)
+                        if not usernames:
+                            continue
+                        other_usernames = other_entry.get(u'{}_username'.format(other_platform), None)
+                        if not other_usernames:
+                            continue
+                        if not isinstance(usernames, list):
+                            usernames = [usernames]
+                        if not isinstance(other_usernames, list):
+                            other_usernames = [other_usernames]
+                        for username in usernames:
+                            for other_username in other_usernames:
+                                if username == other_username:
+                                    other_entries_per_user.append(entry)
+                                    return
+            entries_per_user.append([entry])
+
+        for platform, entries in all_entries.items():
+            for entry in entries:
+                add_to_entries_per_user(platform, entry)
+        return entries_per_user
 
     def get_unique_entries(self, all_entries):
-        unique_entries_per_site = {} # dict of username -> entry
-        unique_entries_per_platform = {} # dict of platform -> (dict of username -> entry)
-        for platform in all_entries:
-            for entry in all_entries[platform]:
-                site_username = entry.get(u'{}_username'.format(django_settings.SITE))
-                platform_username = entry.get(u'{}_username'.format(platform))
-                if site_username:
-                    unique_entries_per_site[site_username.lower()] = entry
-                else:
-                    if platform not in unique_entries_per_platform:
-                        unique_entries_per_platform[platform] = {}
-                    unique_entries_per_platform[platform][platform_username.lower()] = entry
-        all_unique_entries = unique_entries_per_site.values()
-        for platform, entries in unique_entries_per_platform.items():
-            all_unique_entries += entries.values()
-        return all_unique_entries
+        return [
+            random.choice(entries_per_user)
+            for entries_per_user in self.get_entries_per_unique_user(all_entries)
+        ]
 
     def get_all_flat_entries(self, all_entries):
         return [
@@ -273,6 +343,11 @@ class Command(BaseCommand):
     def pick_random_winners(self, all_entries):
         return random.sample(self.get_flat_entries(all_entries), self.options['pick_random_winners'])
 
+    def list_first(self, l):
+        if isinstance(l, list):
+            return l[0] if l else None
+        return l
+
     def make_markdown_post(self, all_entries, winners):
         grid_instance = None
         if self.options.get('grid_per_line', None):
@@ -288,6 +363,19 @@ class Command(BaseCommand):
                 upload=True,
                 model=models.UserImage,
             )
+
+        # Make badge image
+        badge_instance = None
+        if self.options.get('add_badges', None):
+            badge_instance = makeBadgeImage(
+                self.badge,
+                upload=True,
+                model=models.UserImage,
+                with_padding=200,
+                width=200,
+            )
+
+        print ''
         print '# MARKDOWN POST'
         print ''
         print ''
@@ -295,16 +383,33 @@ class Command(BaseCommand):
         if name:
             print '# {}'.format(name)
             print ''
+        print '### **Thanks to everyone who participated and helped make this contest a success! We loved your entries!**'
+        print ''
+
+        if grid_instance:
+            print u'![All participants]({})'.format(grid_instance.http_image_url)
+            print ''
+
+        print '***'
+        print ''
+        if badge_instance:
+            print 'As promised, you all received a badge on your profile, as a thank you for participating.'
+            print ''
+            print u'![Badge]({})'.format(badge_instance.http_image_url)
+            print ''
+            print '***'
+            print ''
+
         if winners:
             print 'And the winner{}...'.format('s are' if len(winners) > 1 else ' is')
             print ''
             for entry in winners:
                 print u'## **[{username}]({url})**'.format(**({
-                    'username': entry[u'{}_username'.format(django_settings.SITE)],
-                    'url': entry[u'{}_profile_url'.format(django_settings.SITE)],
+                    'username': self.list_first(entry[u'{}_username'.format(django_settings.SITE)]),
+                    'url': self.list_first(entry[u'{}_profile_url'.format(django_settings.SITE)]),
                 } if entry.get(u'{}_username'.format(django_settings.SITE), None) else {
-                    'username': entry[u'{}_username'.format(entry['platform'])],
-                    'url': entry[u'{}_profile_url'.format(entry['platform'])],
+                    'username': self.list_first(entry[u'{}_username'.format(entry['platform'])]),
+                    'url': self.list_first(entry[u'{}_profile_url'.format(entry['platform'])]),
                 }))
                 print ''
                 print '*Selected randomly, one chance per {}*'.format(
@@ -317,15 +422,8 @@ class Command(BaseCommand):
                     print ''
             print ''
             print '## **Congratulations to our winners!**'
-            print 'They will receive a prize of their choice among the prizes we offer. You can see the list of prizes with pictures in the original details post.'
             print ''
-            print '***'
-            print ''
-        if grid_instance:
-            print u'![All participants]({})'.format(grid_instance.http_image_url)
-            print ''
-
-        print 'Thanks to everyone who participated and helped make this contest a success! We loved your entries!'
+            print 'They will receive a prize of their choice among the prizes we offer.'
         print ''
         print '***'
         print ''
@@ -353,22 +451,28 @@ class Command(BaseCommand):
         print ''
         print '# **All participants**'
         print ''
-        for platform, platform_name in [
-                (django_settings.SITE, settings.SITE_NAME),
-                ('instagram', 'Instagram'),
-                ('twitter', 'Twitter'),
-        ]:
-            entries = all_entries.get(platform, [])
-            if entries:
-                print 'On {}:'.format(platform_name)
-                print u', '.join([u'[{}]({})'.format(
-                    entry['{}_username'.format(platform)], entry['url']) for entry in entries]
-                )
+        for platform, entries in all_entries.items():
+            if len(self.platforms) > 1:
+                platform_name = {
+                    django_settings.SITE: settings.SITE_NAME,
+                    'instagram': 'Instagram',
+                    'twitter': 'Twitter',
+                }.get(platform, None)
+                if not platform_name:
+                    try:
+                        platform_name = models.UserLink.get_verbose_i('type', platform)
+                    except KeyError:
+                        platform_name = platform
+                print u'On {}:'.format(platform_name)
+            print u', '.join([u'[{}]({})'.format(
+                entry[u'{}_username'.format(platform)], entry['url']) for entry in entries]
+            )
             print ''
 
     def add_badges(self, all_entries, winners):
         print '# ADD BADGES'
         badge = models.Badge.objects.get(id=self.options['add_badges'])
+        self.badge = badge
         cant_get = {}
         for platform in all_entries:
             for entry in all_entries[platform]:
@@ -411,18 +515,36 @@ class Command(BaseCommand):
         self.options = options
         all_entries = {}
         winners = []
+
+        # Get the list of platforms
+        self.platforms = []
+        if options.get('instagram', None):
+            self.platforms.append('instagram')
+        if options.get('twitter', None):
+            self.platforms.append('twitter')
+        if options.get(django_settings.SITE, None):
+            self.platforms.append(django_settings.SITE)
+        if options.get('csv', None):
+            self.platforms += self.get_platforms_from_csv()
+
+        # Get entries for each platform
         if options.get('instagram', None):
             all_entries['instagram'] = self.get_instagram_entries()
         if options.get('twitter', None):
             all_entries['twitter'] = self.get_twitter_entries()
         if options.get(django_settings.SITE, None):
             all_entries[django_settings.SITE] = self.get_site_entries()
+        if options.get('csv', None):
+            self.get_csv_entries(all_entries)
 
+        # Totals
         totals = {
             platform: len(all_entries[platform])
             for platform in all_entries
         }
         totals['all'] = sum(totals.values())
+
+        # Print entries
         print '# ALL ENTRIES'
         print json.dumps(all_entries, indent=4)
         print ''
@@ -431,16 +553,19 @@ class Command(BaseCommand):
         print '  ---  '
         print ''
 
+        # Pick random winners
         if options.get('pick_random_winners', None):
             winners = self.pick_random_winners(all_entries)
-
-        if options.get('add_badges', None):
-            self.add_badges(all_entries, winners)
 
             print '# WINNERS'
             print json.dumps(winners, indent=4)
             print '  ---  '
             print ''
 
+        # Add badges
+        if options.get('add_badges', None):
+            self.add_badges(all_entries, winners)
+
+        # Make markdown post
         if options.get('make_markdown_post', False):
             self.make_markdown_post(all_entries, winners)

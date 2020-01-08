@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
-import os, string, random, csv, tinify, cStringIO, pytz, simplejson, datetime, io, operator, re, math, requests, urllib
+import os, string, random, csv, tinify, cStringIO, pytz, simplejson, datetime, io, operator, re, math, requests, urllib, urllib2
 from PIL import Image
+from wand.image import Image as WandImage
 from collections import OrderedDict
 from dateutil.relativedelta import relativedelta
 from django.conf import settings as django_settings
@@ -1061,6 +1062,16 @@ def templateVariables(string):
 def snakeToCamelCase(string):
     return ''.join(x.capitalize() or '_' for x in string.split('_'))
 
+def titleToSnakeCase(string):
+    return string.lower().replace(' ', '_')
+
+def camelToSnakeCase(string, upper=False):
+    string = re.sub(
+        '([a-z0-9])([A-Z])', r'\1_\2',
+        re.sub('(.)([A-Z][a-z]+)', r'\1_\2', string)
+    )
+    return string.upper() if upper else string.lower()
+
 def hexToRGB(hex_color):
     """
     Converts an hex color string (ex: #FFFFFF) to a RGB color tuple (ex: (255, 255, 255))
@@ -1560,6 +1571,12 @@ def join_data(*args):
     data = u'\"' + u'","'.join([unicode(value).replace('\n', ' ').replace('\r', ' ').replace('"','\"') for value in args]) + u'\"'
     return data if data != '""' else None
 
+def csvToDict(row, titles_row, snake_case=False):
+    return {
+        (titleToSnakeCase(title) if snake_case else title).decode('utf-8'): row[i].decode('utf-8')
+        for i, title in enumerate(titles_row)
+    }
+
 ############################################################
 # Validators
 
@@ -1601,6 +1618,9 @@ def _imageProcessing(data, filename, processing, return_data=False, return_pil_i
     elif return_data:
         return data, image
     return image
+
+def imageDataToPilImage(data, filename):
+    return _imageProcessing(data, filename, lambda i: i, return_data=False, return_pil_image=True)[0]
 
 def imageThumbnailFromData(data, filename, width=200, height=200, return_data=False, return_pil_image=False):
     def _toThumbnail(image):
@@ -1789,6 +1809,32 @@ def saveImageURLToModel(item, field_name, url, return_data=False, request_option
         return (data, image)
     return image
 
+def saveGeneratedImage(image, path=None, upload=False, instance=None, model=None, field_name='image', previous_url=None):
+    # Save image locally
+    if not path or not path.startswith('/'):
+        path = os.path.dirname(os.path.dirname(__file__)) + u'/' + (path or 'tmp.png')
+    if isinstance(image, WandImage):
+        image.save(filename=path)
+    elif isinstance(image, Image.Image):
+        image.save(path)
+    else:
+        raise NotImplementedError(u'Can\'t save image, unknwon type ' + unicode(type(image)))
+    # Return local image path or upload
+    if not upload:
+        return path
+    # Retrieve existing uploaded image
+    if (not instance and not model) or (instance and model):
+        raise NotImplementedError('Save image: instance OR model required.')
+    if not instance:
+        if previous_url:
+            try: instance = model.objects.filter(**{ field_name: previous_url })[0]
+            except IndexError: pass
+        if not instance:
+            instance = model.objects.create(**{ field_name: '' })
+    saveLocalImageToModel(instance, field_name, path)
+    instance.save()
+    return instance
+
 def makeImageGrid(
         images, per_line=3, size_per_tile=200, width=None, path=None,
         # Upload options:
@@ -1826,25 +1872,34 @@ def makeImageGrid(
             position = 0
         else:
             position += 1
-    # Save image locally
-    if not path or not path.startswith('/'):
-        path = os.path.dirname(os.path.dirname(__file__)) + u'/' + (path or 'tmp.png')
-    grid_image.save(path)
-    # Return local image path or upload
-    if not upload:
-        return path
-    # Retrieve existing uploaded image
-    if (not instance and not model) or (instance and model):
-        raise NotImplementedError('Make grid image: instance OR model required.')
-    if not instance:
-        if previous_url:
-            try: instance = model.objects.filter(**{ field_name: previous_url })[0]
-            except IndexError: pass
-        if not instance:
-            instance = model.objects.create(**{ field_name: '' })
-    saveLocalImageToModel(instance, field_name, path)
-    instance.save()
-    return instance
+    # Save
+    return saveGeneratedImage(
+        grid_image, path=path, upload=upload, instance=instance,
+        model=model, field_name=field_name, previous_url=previous_url,
+    )
+
+def makeBadgeImage(badge, width=None, path=None, upload=False, instance=None, model=None, field_name='image', previous_url=None, with_padding=0):
+    # Get border
+    filename = 'badge{}'.format(badge.rank or '')
+    border_image_url = staticImageURL(filename, folder='badges', full=True)
+    border_image = WandImage(file=urllib2.urlopen(border_image_url))
+    width = width or border_image.width
+    if width != border_image.width:
+        border_image.resize(width=width, height=width)
+    # Get badge image
+    badge_image_data = badge.image.read()
+    badge_image = WandImage(blob=badge_image_data)
+    badge_image.resize(width=width, height=width)
+    # Initialize image
+    image = WandImage(width=width + (with_padding * 2), height=width)
+    # Add badge image + border to image
+    image.composite(badge_image, left=with_padding, top=0)
+    image.composite(border_image, left=with_padding, top=0)
+    # Save
+    return saveGeneratedImage(
+        image, upload=upload, instance=instance,
+        model=model, field_name=field_name, previous_url=previous_url,
+    )
 
 ############################################################
 # Image URLs
