@@ -31,7 +31,11 @@ from magi.utils import (
     ordinalNumber,
     getAge,
     simplifyMarkdown,
-    getFavoriteCharacterNameFromPk,
+    getCharactersChoices,
+    getCharacterNameFromPk,
+    getCharacterImageFromPk,
+    getCharacterURLFromPk,
+    getCharactersFavoriteFields,
 )
 from magi.settings import (
     ACCOUNT_MODEL,
@@ -39,9 +43,6 @@ from magi.settings import (
     SITE_STATIC_URL,
     DONATORS_STATUS_CHOICES,
     USER_COLORS,
-    FAVORITE_CHARACTERS,
-    FAVORITE_CHARACTER_TO_URL,
-    FAVORITE_CHARACTER_NAME,
     SITE_URL,
     SITE_NAME,
     SITE_NAME_PER_LANGUAGE,
@@ -104,29 +105,14 @@ User.hasPermissionToMessage = hasPermissionToMessage
 
 ############################################################
 
-NORMALIZED_ACTIVITY_TAGS = OrderedDict()
-for _tag in ACTIVITY_TAGS:
-    if isinstance(_tag, tuple) and isinstance(_tag[1], dict):
-        NORMALIZED_ACTIVITY_TAGS[_tag[0]] = _tag[1]
-        if not NORMALIZED_ACTIVITY_TAGS[_tag[0]].get('translation', None):
-            NORMALIZED_ACTIVITY_TAGS[_tag[0]]['translation'] = _tag[0]
-    elif isinstance(_tag, tuple):
-        NORMALIZED_ACTIVITY_TAGS[_tag[0]] = {
-            'translation': _tag[1],
-        }
-    else:
-        NORMALIZED_ACTIVITY_TAGS[_tag] = {
-            'translation': _tag,
-        }
-
 ACTIVITY_TAGS_CHOICES = [
     (_tag_name, _tag['translation'])
-    for _tag_name, _tag in NORMALIZED_ACTIVITY_TAGS.items()
+    for _tag_name, _tag in ACTIVITY_TAGS.items()
 ]
 
 ACTIVITIES_TAGS_HIDDEN_BY_DEFAULT = [
     _tag_name
-    for _tag_name, _tag in NORMALIZED_ACTIVITY_TAGS.items()
+    for _tag_name, _tag in ACTIVITY_TAGS.items()
     if _tag.get('hidden_by_default', False)
 ]
 
@@ -281,50 +267,6 @@ class UserPreferences(BaseMagiModel):
             self.favorite_character2,
             self.favorite_character3,
         ] if c]
-
-    def localized_favorite_character(self, number):
-        return getFavoriteCharacterNameFromPk(getattr(self, 'favorite_character{}'.format(number)))
-
-    @property
-    def localized_favorite_character1(self): return self.localized_favorite_character(1)
-    @property
-    def localized_favorite_character2(self): return self.localized_favorite_character(2)
-    @property
-    def localized_favorite_character3(self): return self.localized_favorite_character(3)
-
-    def favorite_character_image(self, number):
-        if getattr(self, 'favorite_character{}'.format(number)) and FAVORITE_CHARACTERS:
-            try:
-                imagePath = (image for (name, __, image) in FAVORITE_CHARACTERS if unicode(name) == getattr(self, 'favorite_character{}'.format(number))).next()
-            except StopIteration:
-                return None
-            if '//' in (imagePath or ''):
-                return imagePath
-            if not imagePath:
-                return None
-            return get_image_url(imagePath)
-        return None
-
-    @property
-    def favorite_character1_image(self): return self.favorite_character_image(1)
-    @property
-    def favorite_character2_image(self): return self.favorite_character_image(2)
-    @property
-    def favorite_character3_image(self): return self.favorite_character_image(3)
-
-    @classmethod
-    def favorite_character_label(self, nth=None):
-        character_label = FAVORITE_CHARACTER_NAME or _('Character')
-        if callable(character_label):
-            character_label = character_label()
-        if nth is None:
-            return _(u'Favorite {thing}').format(
-                thing=character_label.lower(),
-            )
-        return _('{nth} Favorite {thing}').format(
-            nth=_(ordinalNumber(nth)),
-            thing=character_label.lower(),
-        )
 
     @property
     def background_id(self): return int(self.extra.get('background', '0')) or None
@@ -1112,7 +1054,7 @@ def getAllowedTags(
             return new_tag
         return translation
     allowed_tags = [
-        (tag_name, getTag(tag_name, tag)) for tag_name, tag in NORMALIZED_ACTIVITY_TAGS.items()
+        (tag_name, getTag(tag_name, tag)) for tag_name, tag in ACTIVITY_TAGS.items()
         if isTagAllowed(tag_name, tag)
     ]
     if as_dict:
@@ -1447,19 +1389,16 @@ class Prize(MagiModel):
     image3 = models.ImageField('3rd image', upload_to=uploadItem('prize'), null=True, blank=True)
     image4 = models.ImageField('4th image', upload_to=uploadItem('prize'), null=True, blank=True)
     value = models.DecimalField('Value', null=True, help_text='in USD', max_digits=6, decimal_places=2)
+    display_value = property(lambda _s: u'US ${}'.format(_s.value))
 
-    CHARACTERS = OrderedDict([(unicode(_c[0]), _c) for _c in FAVORITE_CHARACTERS or []])
-    CHARACTER_CHOICES = [(_id, _details[1]) for _id, _details in CHARACTERS.items()]
+    CHARACTER_CHOICES = getCharactersChoices()
     CHARACTER_WITHOUT_I_CHOICES = True
     CHARACTER_SOFT_CHOICES = True
     i_character = models.CharField('Character', null=True, max_length=200)
-    character_name = property(getInfoFromChoices('character', CHARACTERS, 1))
-    character_image = property(getInfoFromChoices('character', CHARACTERS, 2))
-    character_url = property(lambda _s: FAVORITE_CHARACTER_TO_URL(AttrDict({
-        'value': _s.t_character,
-        'raw_value': _s.i_character,
-        'image': _s.character_image,
-    })))
+    character_name = property(lambda _s: getCharacterNameFromPk(_s.i_character))
+    t_character = character_name
+    character_image = property(lambda _s: getCharacterImageFromPk(_s.i_character))
+    character_url = property(lambda _s: getCharacterURLFromPk(_s.i_character))
 
     m_details = models.TextField('Details', null=True)
 

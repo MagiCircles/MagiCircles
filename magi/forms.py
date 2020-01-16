@@ -32,7 +32,6 @@ from magi.raw import (
 from magi import models
 from magi.default_settings import RAW_CONTEXT
 from magi.settings import (
-    FAVORITE_CHARACTERS,
     USER_COLORS,
     GAME_NAME,
     ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT,
@@ -70,10 +69,15 @@ from magi.utils import (
     tourldash,
     jsv,
     CuteFormType,
-    getFavoriteCharacterChoices,
     FilterByMode,
     filterByTranslatedValue,
     FormShowMore,
+    hasCharacters,
+    getCharacterLabel,
+    getCharactersFavoriteFields,
+    getCharactersFavoriteFilter,
+    getCharactersChoices,
+    getCharactersFavoriteCuteForm,
 )
 
 ############################################################
@@ -314,13 +318,20 @@ class MagiForm(forms.ModelForm):
 
             # Show languages on translatable fields
             if self.collection and self.collection.translated_fields and name in self.collection.translated_fields:
-                choices = getattr(self.Meta.model, u'{name}S_CHOICES'.format(name=name.upper()), [])
+                choices = self.Meta.model.get_field_translation_languages(name, as_choices=True)
                 self.fields[name].below_field = mark_safe(
                     u'<div class="text-right"><i class="flaticon-translate text-muted"></i> {}</div>'.format(
                         u' '.join([
-                            u'<a href="{url}"><img src="{image}" alt="{language}" height="15"></a>'.format(
-                                language=language,
-                                image=staticImageURL(language, folder='language', extension='png'),
+                            (u'{content}'
+                             if (getattr(self, 'is_translate_form', False)
+                                 or not self.request
+                                 or not self.request.user.is_authenticated()
+                                 or not self.request.user.hasPermission('translate_items'))
+                             else u'<a href="{url}">{content}</a>').format(
+                                content=u'<img src="{image}" alt="{language}" height="15">'.format(
+                                    language=language,
+                                    image=staticImageURL(language, folder='language', extension='png'),
+                                ),
                                 url=(self.collection.get_list_url(parameters={
                                     'missing_{}_translations'.format(name): language,
                                 }) if self.is_creating
@@ -332,8 +343,7 @@ class MagiForm(forms.ModelForm):
                                 ) if self.allow_translate else TRANSLATION_HELP_URL,
                             ) for language, language_verbose in choices
                         ]),
-                    )
-                )
+                    ))
             # Fix dates fields
             if (not name.startswith('_cache_')
                 and (isinstance(field, forms.DateField)
@@ -1758,10 +1768,6 @@ class AccountFilterForm(MagiFiltersForm):
         )
         has_friend_id_filter = MagiFilter(selector='friend_id__isnull')
 
-    favorite_character = forms.ChoiceField(choices=BLANK_CHOICE_DASH + getFavoriteCharacterChoices(), required=False)
-    favorite_character_filter = MagiFilter(selectors=[
-        'owner__preferences__favorite_character{}'.format(i) for i in range(1, 4)])
-
     if USER_COLORS:
         color = forms.ChoiceField(label=_('Color'), choices=BLANK_CHOICE_DASH + [
             (_color_name, _color_verbose_name)
@@ -1771,17 +1777,43 @@ class AccountFilterForm(MagiFiltersForm):
 
     def __init__(self, *args, **kwargs):
         super(AccountFilterForm, self).__init__(*args, **kwargs)
-        # Remove favorite character and color if users list is in navbar
-        user_collection = getMagiCollection('user')
-        if user_collection and user_collection.navbar_link:
-            for field_name in ['favorite_character', 'color']:
-                if field_name in self.fields:
-                    del(self.fields[field_name])
-        if 'favorite_character' in self.fields:
-            self.fields['favorite_character'].choices = BLANK_CHOICE_DASH + getFavoriteCharacterChoices()
-            self.fields['favorite_character'].label = models.UserPreferences.favorite_character_label()
+
+        # Friend ID placeholder
         if 'friend_id' in self.fields:
             self.fields['friend_id'].widget.attrs['placeholder'] = _('Optional')
+
+        # Remove fields relevant for users list if users list in navbar
+        user_collection = getMagiCollection('user')
+        if user_collection and user_collection.navbar_link:
+            for field_name in ['color']:
+                if field_name in self.fields:
+                    del(self.fields[field_name])
+        else:
+
+            # Add favorite characters fields
+
+            characters_fields = getCharactersFavoriteFields(only_one=True)
+            for key, fields in characters_fields.items():
+                for (field_name, field_verbose_name) in fields:
+                    if hasCharacters(key=key):
+                        self.fields[field_name] = forms.ChoiceField(
+                            label=field_verbose_name,
+                            choices=BLANK_CHOICE_DASH + getCharactersChoices(key=key),
+                            required=False,
+                        )
+                        setattr(
+                            self, u'{}_filter'.format(field_name),
+                            MagiFilter(**getCharactersFavoriteFilter(key=key, prefix='owner')))
+            # Re-order
+            self.reorder_fields(self.Meta.top_fields + [
+                field_name
+                for fields in characters_fields.values()
+                for field_name, _verbose in fields
+            ] + self.Meta.middle_fields)
+            # CuteForm
+            if not getattr(self, 'cuteform', None):
+                self.cuteform = {}
+            self.cuteform.update(getCharactersFavoriteCuteForm(only_one=True))
 
     class Meta(MagiFiltersForm.Meta):
         model = models.Account
@@ -1790,7 +1822,7 @@ class AccountFilterForm(MagiFiltersForm):
              + ['accept_friend_requests'] if has_field(models.Account, 'accept_friend_requests') else [])
             if has_field(models.Account, 'friend_id') else []
         )
-        middle_fields = ['favorite_character'] + (
+        middle_fields = (
             ['color'] if USER_COLORS else []
         ) + (
             ['i_os'] if has_field(models.Account, 'i_os') else []
@@ -2026,6 +2058,8 @@ class UserPreferencesForm(MagiForm):
     def __init__(self, *args, **kwargs):
         super(UserPreferencesForm, self).__init__(*args, **kwargs)
 
+        order = ['m_description', 'location']
+
         # Default tab
         if 'default_tab' in self.fields:
             self.fields['default_tab'].choices = BLANK_CHOICE_DASH + [
@@ -2040,17 +2074,20 @@ class UserPreferencesForm(MagiForm):
                 in RAW_CONTEXT.get('collectible_collections', {}).get('owner', {}).items()
             ]
 
-        # Favorite characters
-        if not FAVORITE_CHARACTERS:
-            for i in range(1, 4):
-                self.fields.pop('favorite_character{}'.format(i))
-        else:
-            for i in range(1, 4):
-                self.fields['favorite_character{}'.format(i)] = forms.ChoiceField(
-                    required=False,
-                    choices=BLANK_CHOICE_DASH + getFavoriteCharacterChoices(),
-                    label=models.UserPreferences.favorite_character_label(i),
-                )
+        # Make favorite characters fields a selection
+        for key, fields in getCharactersFavoriteFields(only_one=False).items():
+            for field_name, verbose_name in fields:
+                if field_name in self.fields:
+                    if not hasCharacters(key=key):
+                        self.fields.pop(field_name)
+                    else:
+                        self.fields[field_name] = forms.ChoiceField(
+                            required=False,
+                            choices=BLANK_CHOICE_DASH + getCharactersChoices(key=key),
+                            label=verbose_name,
+                            initial=self.fields[field_name].initial,
+                        )
+                        order.append(field_name)
 
         # Backgrounds
         if 'd_extra-background' in self.fields:
@@ -2080,6 +2117,8 @@ class UserPreferencesForm(MagiForm):
         if 'm_description' in self.fields:
             self.fields['m_description'].help_text = markdownHelpText(self.request)
 
+        self.reorder_fields(order)
+
     def clean_birthdate(self):
         if 'birthdate' in self.cleaned_data:
             if self.cleaned_data['birthdate'] and self.cleaned_data['birthdate'] > datetime.date.today():
@@ -2088,9 +2127,14 @@ class UserPreferencesForm(MagiForm):
 
     def clean(self):
         super(UserPreferencesForm, self).clean()
-        favs = [v for (k, v) in self.cleaned_data.items() if k.startswith('favorite_character') and v]
-        if favs and len(favs) != len(set(favs)):
-            raise forms.ValidationError(_('All your favorites must be unique'))
+        # All favorites must be unique
+        for key, fields in getCharactersFavoriteFields(only_one=False).items():
+            favorites = [value for value in [
+                self.cleaned_data.get(field_name, None)
+                for field_name, _verbose_name in fields
+            ] if value]
+            if len(favorites) != len(set(favorites)):
+                raise forms.ValidationError(_('All your favorites must be unique'))
         return self.cleaned_data
 
     def save(self, commit=True):
@@ -2314,37 +2358,7 @@ class UserFilterForm(MagiFiltersForm):
         ('followed,id', _('Following')),
     )
 
-    followers_of = HiddenModelChoiceField(queryset=models.User.objects.all())
-    followers_of_filter = MagiFilter(selector='preferences__following')
-
-    followed_by = HiddenModelChoiceField(queryset=models.User.objects.all())
-    followed_by_filter = MagiFilter(selector='followers__user')
-
-    liked_activity = HiddenModelChoiceField(queryset=models.Activity.objects.all())
-    liked_activity_filter = MagiFilter(
-        selectors=['activities', 'liked_activities'],
-        distinct=True,
-    )
-
-    favorite_character = forms.ChoiceField(choices=BLANK_CHOICE_DASH + [
-        (id, full_name)
-        for (id, full_name, image) in getattr(django_settings, 'FAVORITE_CHARACTERS', [])
-    ], required=False)
-    favorite_character_filter = MagiFilter(selectors=[
-        'preferences__favorite_character{}'.format(i) for i in range(1, 4)])
-
-    if USER_COLORS:
-        color = forms.ChoiceField(label=_('Color'), choices=BLANK_CHOICE_DASH + [
-            (c[0], c[1]) for c in USER_COLORS
-        ])
-        color_filter = MagiFilter(selector='preferences__color')
-
-    location = forms.CharField(label=_('Location'))
-    location_filter = MagiFilter(selector='preferences__location__icontains', multiple=False)
-
-    i_language = forms.ChoiceField(label=_('Language'), choices=(
-        BLANK_CHOICE_DASH + list(models.UserPreferences.LANGUAGE_CHOICES)))
-    i_language_filter = MagiFilter(selector='preferences__i_language')
+    show_more = FormShowMore(cutoff='color' if USER_COLORS else 'location', including_cutoff=True, until='ordering')
 
     def _get_preset_language_label(verbose_language):
         return lambda: _('Users who can speak {language}').format(language=verbose_language)
@@ -2362,10 +2376,59 @@ class UserFilterForm(MagiFiltersForm):
         }) for _language, _verbose_language in models.UserPreferences.LANGUAGE_CHOICES
     ])
 
+    followers_of = HiddenModelChoiceField(queryset=models.User.objects.all())
+    followers_of_filter = MagiFilter(selector='preferences__following')
+
+    followed_by = HiddenModelChoiceField(queryset=models.User.objects.all())
+    followed_by_filter = MagiFilter(selector='followers__user')
+
+    liked_activity = HiddenModelChoiceField(queryset=models.Activity.objects.all())
+    liked_activity_filter = MagiFilter(
+        selectors=['activities', 'liked_activities'],
+        distinct=True,
+    )
+
+    if USER_COLORS:
+        color = forms.ChoiceField(label=_('Color'), choices=BLANK_CHOICE_DASH + [
+            (c[0], c[1]) for c in USER_COLORS
+        ])
+        color_filter = MagiFilter(selector='preferences__color')
+
+    location = forms.CharField(label=_('Location'))
+    location_filter = MagiFilter(selector='preferences__location__icontains', multiple=False)
+
+    i_language = forms.ChoiceField(label=_('Language'), choices=(
+        BLANK_CHOICE_DASH + list(models.UserPreferences.LANGUAGE_CHOICES)))
+    i_language_filter = MagiFilter(selector='preferences__i_language')
+
     def __init__(self, *args, **kwargs):
         super(UserFilterForm, self).__init__(*args, **kwargs)
-        if 'favorite_character' in self.fields:
-            self.fields['favorite_character'].label = models.UserPreferences.favorite_character_label()
+
+        # Favorite characters
+        characters_fields = getCharactersFavoriteFields(only_one=True)
+        for key, fields in characters_fields.items():
+            for (field_name, field_verbose_name) in fields:
+                if hasCharacters(key=key):
+                    self.fields[field_name] = forms.ChoiceField(
+                        label=field_verbose_name,
+                        choices=BLANK_CHOICE_DASH + getCharactersChoices(key=key),
+                        required=False,
+                    )
+                    setattr(
+                        self, u'{}_filter'.format(field_name),
+                        MagiFilter(**getCharactersFavoriteFilter(key=key)),
+                    )
+            # Re-order
+            self.reorder_fields(self.Meta.top_fields + [
+                field_name
+                for fields in characters_fields.values()
+                for field_name, _verbose in fields
+            ] + self.Meta.middle_fields)
+            # CuteForm
+            if not getattr(self, 'cuteform', None):
+                self.cuteform = {}
+            self.cuteform.update(getCharactersFavoriteCuteForm(only_one=True))
+
         # Hide following ordering option unless selected
         if ('ordering' in self.fields
             and self.request
@@ -2415,16 +2478,16 @@ class UserFilterForm(MagiFiltersForm):
 
     class Meta(MagiFiltersForm.Meta):
         model = models.User
-        fields = [
+        top_fields = [
             'search',
-            'ordering', 'reverse_order',
-            'favorite_character',
-        ] + (
+        ]
+        middle_fields = (
             ['color'] if USER_COLORS else []
         ) + [
             'location',
             'i_language',
         ]
+        fields = top_fields + middle_fields
 
 ############################################################
 # User links
@@ -3129,21 +3192,31 @@ class PrizeForm(AutoForm):
         fields = '__all__'
         save_owner_on_creation = True
 
-class PrizeFilterForm(MagiFiltersForm):
+class BasePrizeFilterForm(MagiFiltersForm):
+    def __init__(self, *args, **kwargs):
+        super(BasePrizeFilterForm, self).__init__(*args, **kwargs)
+        if 'i_character' in self.fields:
+            if not hasCharacters():
+                del(self.fields['i_character'])
+            else:
+                self.fields['i_character'].label = getCharacterLabel()
+                self.fields['i_character'].choices = BLANK_CHOICE_DASH + getCharactersChoices()
+
+class PrizeFilterForm(BasePrizeFilterForm):
     search_fields = ['name', 'm_details']
     ordering_fields = [
         ('id', 'Creation'),
         ('value', 'Value'),
     ]
 
-    has_giveaway = forms.NullBooleanField(label='Assigned to a giveaway or already given away')
+    has_giveaway = forms.NullBooleanField(label='Assigned to a giveaway or already given away', initial=False)
     has_giveaway_filter = MagiFilter(selector='giveaway_url__isnull')
 
     class Meta:
         model = models.Prize
         fields = ('search', 'has_giveaway', 'i_character', 'ordering', 'reverse_order')
 
-class PrizeViewingFilterForm(MagiFiltersForm):
+class PrizeViewingFilterForm(BasePrizeFilterForm):
     max_value = forms.IntegerField(widget=forms.HiddenInput)
     max_value_filter = MagiFilter(selector='value__lte', multiple=False)
 

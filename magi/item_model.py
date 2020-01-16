@@ -16,6 +16,7 @@ from magi.utils import (
     getSubField,
     LANGUAGES_NAMES,
     listUnique,
+    modelHasField,
 )
 
 ############################################################
@@ -470,6 +471,28 @@ class BaseMagiModel(models.Model):
         return listUnique(getattr(self, u'{}_SOURCE_LANGUAGES'.format(
             field_name.upper()), []) + ['en'])
 
+    @classmethod
+    def get_field_translation_languages(self, field_name, include_english=True, as_choices=False):
+        return ([('en', LANGUAGES_NAMES['en']) if as_choices else 'en'] if include_english else []) + [
+            (language, verbose_language) if as_choices else language
+            for language, verbose_language in LANGUAGES_NAMES.items()
+            if (language in self._dict_choices(field_name + 's')
+                or modelHasField(self, u'{}_{}'.format(LANGUAGES_NAMES.get(language, None), field_name))
+                or modelHasField(self, u'{}_{}'.format(language, field_name)))
+        ]
+
+    def get_all_translations_of_field(self, field_name, include_english=True):
+        return OrderedDict([(l, t) for l, t in [
+            (language, self.get_translation(
+                field_name, language=language,
+                fallback_to_english=False,
+                fallback_to_other_sources=False,
+                return_language=False,
+            ))
+            for language in self.get_field_translation_languages(
+                    field_name, include_english=include_english)
+        ] if t])
+
     def get_translation(
             self, field_name, language=None, fallback_to_english=True, fallback_to_other_sources=True,
             return_language=False,
@@ -523,6 +546,7 @@ class BaseMagiModel(models.Model):
                 'top_image',
                 'top_image_list',
                 'top_image_item',
+                'birthday_banner',
                 'share_image',
                 'share_image_in_list',
                 'display_name',
@@ -538,6 +562,7 @@ class BaseMagiModel(models.Model):
                 'icon_for_prefetched',
                 'image_for_prefetched',
                 'template_for_prefetched',
+                'image_for_favorite_character',
                 'display_item_url',
                 'display_ajax_item_url',
                 'show_section_header',

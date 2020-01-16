@@ -102,29 +102,34 @@
         {% if latest_news %}
         <div id="carousel-latest-news" class="carousel slide" data-ride="carousel">
           <ol class="carousel-indicators">
+            {% if latest_news|length > 1 %}
             {% for news in latest_news %}
             <li data-target="#carousel-latest-news" data-slide-to="{{ forloop.counter0 }}"{% if forloop.counter0 == 0 %} class="active"{% endif %}></li>
             {% endfor %}
+            {% endif %}
           </ol>
           <div class="carousel-inner" role="listbox">
             {% for news in latest_news %}
             <a href="{{ news.url }}" class="item{% if forloop.counter0 == 0 %} active{% endif %}{% if news.css_classes %} {{ news.css_classes }}{% endif %}"
                {% if news.ajax %} data-ajax-url="{{ news.ajax }}" data-ajax-title="{% if news.t_titles and news.t_titles|getattribute:LANGUAGE_CODE %}{{ news.t_titles|getattribute:LANGUAGE_CODE }}{% else %}{{ news.title }}{% endif %}"{% endif %}
-               {% if news.background %} style="background-image: url('{{ news.background }}'); height: 200px"{% endif %}
+               {% if news.background %} style="background-image: url('{{ news.background }}'); height: 200px;{% if news.color %} background-color: {{ news.color }}{% endif %}"{% endif %}
+               {% if not news.background and not news.image %} style="background: {% if news.color %}{{ news.color }}{% else %}{{ site_color }}{% endif %}; height: 200px"{% endif %}
                >
 	          {% if news.image %}<img src="{% if '//' in news.image %}{{ news.image }}{% else %}{{ static_url }}img/{{ news.image }}?{{ static_files_version }}{% endif %}" alt="{% if news.t_titles and news.t_titles|getattribute:LANGUAGE_CODE %}{{ news.t_titles|getattribute:LANGUAGE_CODE }}{% else %}{{ news.title }}{% endif %}">{% endif %}
-	          <div class="carousel-caption">
+	          <div class="carousel-caption"{% if not news.background and not news.image %} style="right: 20%; left: 20%"{% endif %}>
 	            {% if not news.hide_title %}<h2>{% if news.t_titles and news.t_titles|getattribute:LANGUAGE_CODE %}{{ news.t_titles|getattribute:LANGUAGE_CODE }}{% else %}{{ news.title }}{% endif %}</h2>{% endif %}
 	          </div>
             </a>
             {% endfor %}
           </div>
+          {% if latest_news|length > 1 %}
           <a class="left carousel-control" data-target="#carousel-latest-news" data-slide="prev">
             <span class="glyphicon glyphicon-chevron-left"></span>
           </a>
           <a class="right carousel-control" data-target="#carousel-latest-news" data-slide="next">
             <span class="glyphicon glyphicon-chevron-right"></span>
           </a>
+          {% endif %}
         </div>{# carousel-latest-news #}
         {% endif %}{# latest-news #}
 

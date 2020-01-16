@@ -16,6 +16,10 @@ from magi.settings import (
     RAW_CONTEXT,
     ENABLED_PAGES,
     ENABLED_NAVBAR_LISTS,
+    FAVORITE_CHARACTER_TO_URL,
+    FAVORITE_CHARACTER_NAME,
+    FAVORITE_CHARACTERS_MODEL,
+    OTHER_CHARACTERS_MODELS,
     SITE_NAME,
     SITE_NAME_PER_LANGUAGE,
     EMAIL_IMAGE,
@@ -738,6 +742,10 @@ RAW_CONTEXT['other_sites'] = [s for s in other_sites if s['name'] != SITE_NAME]
 RAW_CONTEXT['corner_popup_image'] = staticImageURL(CORNER_POPUP_IMAGE)
 RAW_CONTEXT['corner_popup_image_overflow'] = CORNER_POPUP_IMAGE_OVERFLOW
 RAW_CONTEXT['site_emojis'] = SITE_EMOJIS
+RAW_CONTEXT['favorite_character_to_url'] = FAVORITE_CHARACTER_TO_URL
+RAW_CONTEXT['favorite_character_name'] = FAVORITE_CHARACTER_NAME
+RAW_CONTEXT['favorite_characters_model'] = FAVORITE_CHARACTERS_MODEL
+RAW_CONTEXT['other_characters_models'] = OTHER_CHARACTERS_MODELS
 
 if not launched:
     RAW_CONTEXT['launch_date'] = LAUNCH_DATE

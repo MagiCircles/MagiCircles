@@ -40,7 +40,9 @@ from magi.utils import (
     artSettingsToGetParameters,
     getGlobalContext,
     getNavbarPrefix,
+    getRandomVariableInCurrentSeasons,
     HTMLAlert,
+    isVariableInAnyCurrentSeason,
     redirectToProfile,
     tourldash,
     toHumanReadable,
@@ -52,7 +54,8 @@ from magi.utils import (
     getMagiCollections,
     cuteFormFieldsForContext,
     CuteFormType,
-    FAVORITE_CHARACTERS_IMAGES,
+    getCharactersBirthdayToday,
+    getCharactersFavoriteCuteForm,
     groupsForAllPermissions,
     hasPermission,
     staticImageURL,
@@ -65,12 +68,12 @@ from magi.utils import (
 )
 from magi.notifications import pushNotification
 from magi.settings import (
+    ACTIVITY_TAGS,
     ENABLED_PAGES,
     ENABLED_NAVBAR_LISTS,
     SITE_NAME,
     SITE_NAME_PER_LANGUAGE,
     GAME_NAME,
-    FAVORITE_CHARACTERS,
     TWITTER_HANDLE,
     BUG_TRACKER_URL,
     GITHUB_REPOSITORY,
@@ -112,6 +115,11 @@ from magi.views_collections import item_view
 
 if CUSTOM_PREFERENCES_FORM:
     forms_module = __import__(django_settings.SITE + '.forms', fromlist=[''])
+
+try:
+    CUSTOM_SEASONAL_MODULE = __import__(django_settings.SITE + '.seasons', fromlist=[''])
+except ImportError:
+    CUSTOM_SEASONAL_MODULE = None
 
 ############################################################
 # Sitemap
@@ -293,16 +301,31 @@ def indexExtraContext(context):
         # Staff preview
         if (can_preview and preview):
             context['art'] = preview
+
+        # It's a character's birthday
+        elif (RANDOM_ART_FOR_CHARACTER
+              and getCharactersBirthdayToday()):
+            context['art'] = RANDOM_ART_FOR_CHARACTER(
+                random.choice(getCharactersBirthdayToday()),
+            )
+
         # 1 chance out of 5 to get a random art of 1 of your favorite characters
         elif (RANDOM_ART_FOR_CHARACTER
-              and context['request'].user.is_authenticated()
-              and context['request'].user.preferences.favorite_characters
-              and random.randint(0, 5) == 5):
+            and context['request'].user.is_authenticated()
+            and context['request'].user.preferences.favorite_characters
+            and random.randint(0, 5) == 5):
             character_id = random.choice(context['request'].user.preferences.favorite_characters)
             context['art'] = RANDOM_ART_FOR_CHARACTER(character_id)
             if not context['art']:
                 context['art'] = random.choice(HOMEPAGE_ARTS).copy()
-        else:
+
+        # 'Tis the season
+        elif isVariableInAnyCurrentSeason('to_random_homepage_art'):
+            context['art'] = getRandomVariableInCurrentSeasons(
+                'to_random_homepage_art', CUSTOM_SEASONAL_MODULE)()
+
+        # Random from the list
+        if not context.get('art', None):
             context['art'] = random.choice(HOMEPAGE_ARTS).copy()
 
         # Position of art with CSS
@@ -314,9 +337,22 @@ def indexExtraContext(context):
                 if key not in context['art_position']:
                     context['art_position'][key] = value
 
-        # When a foreground is provided but no background, use a random background in HOMEPAGE_BACKGROUNDS
-        if context['art'].has_key('foreground_url') and not context['art'].has_key('url') and HOMEPAGE_BACKGROUNDS:
-            background = random.choice(HOMEPAGE_BACKGROUNDS)
+        # When a foreground is provided but no background,
+        # use a random background in HOMEPAGE_BACKGROUNDS
+        if (context['art'].has_key('foreground_url')
+            and not context['art'].has_key('url')
+            and HOMEPAGE_BACKGROUNDS):
+
+            background = None
+
+            # 'Tis the season
+            if isVariableInAnyCurrentSeason('to_random_homepage_background'):
+                background = getRandomVariableInCurrentSeasons(
+                    'to_random_homepage_background', CUSTOM_SEASONAL_MODULE)()
+
+            if not background:
+                background = random.choice(HOMEPAGE_BACKGROUNDS)
+
             if background.has_key('thumbnail'):
                 context['art']['url'] = background['thumbnail']
                 context['art']['hd_url'] = background['image']
@@ -671,15 +707,10 @@ def settings(request, context):
             },
         },
     }
-    if FAVORITE_CHARACTERS:
-        for i in range(1, 4):
-            filter_cuteform['favorite_character{}'.format(i)] = {
-                'to_cuteform': lambda k, v: FAVORITE_CHARACTERS_IMAGES[k],
-                'extra_settings': {
-	            'modal': 'true',
-	            'modal-text': 'true',
-                },
-            }
+
+    # Favorite characters fields
+    filter_cuteform.update(getCharactersFavoriteCuteForm(only_one=False))
+
     cuteFormFieldsForContext(filter_cuteform, context, context['forms']['preferences'])
     cuteFormFieldsForContext({
         'i_type': {
@@ -1169,7 +1200,7 @@ def drownactivity(request, context, pk):
 
 def markactivitystaffpick(request, context, pk):
     if (not request.user.is_authenticated() or request.method != 'POST'
-        or 'staff' not in models.NORMALIZED_ACTIVITY_TAGS.keys()
+        or 'staff' not in ACTIVITY_TAGS.keys()
         or not request.user.hasPermission('mark_activities_as_staff_pick')):
         raise PermissionDenied()
     activity = get_object_or_404(models.Activity, pk=pk)
@@ -1187,7 +1218,7 @@ def markactivitystaffpick(request, context, pk):
 
 def removeactivitystaffpick(request, context, pk):
     if (not request.user.is_authenticated() or request.method != 'POST'
-        or 'staff' not in models.NORMALIZED_ACTIVITY_TAGS.keys()
+        or 'staff' not in ACTIVITY_TAGS.keys()
         or not request.user.hasPermission('mark_activities_as_staff_pick')):
         raise PermissionDenied()
     activity = get_object_or_404(models.Activity, pk=pk)
@@ -1422,26 +1453,71 @@ def translations_check(request, context):
         ))
 
 def homepage_arts(request, context):
+    context['tabs'] = OrderedDict()
     context['art_position'] = HOMEPAGE_ART_POSITION
     context['homepage_art_gradient'] = HOMEPAGE_ART_GRADIENT
     if HOMEPAGE_BACKGROUNDS:
+        available_backgrounds = []
+        # Seasonal backgrounds
+        if isVariableInAnyCurrentSeason('to_random_homepage_background'):
+            available_backgrounds = [b for b in [
+                getRandomVariableInCurrentSeasons(
+                    'to_random_homepage_background', CUSTOM_SEASONAL_MODULE)()
+                for _i in range(10)
+            ] if b]
+        if not available_backgrounds:
+            available_backgrounds = HOMEPAGE_BACKGROUNDS
         context['backgrounds'] = [
             background.get('thumbnail', background['image'])
-            for background in HOMEPAGE_BACKGROUNDS
+            for background in available_backgrounds
         ]
     elif HOMEPAGE_BACKGROUND:
         context['background'] = staticImageURL(HOMEPAGE_BACKGROUND)
     else:
         context['backgrounds'] = []
 
+    def transform_homepage_arts(arts_to_transform):
+        new_arts = []
+        for art in arts_to_transform:
+            if not art:
+                continue
+            sides = art.get('side', HOMEPAGE_ART_SIDE)
+            for side in ([sides] if not isinstance(sides, list) else sides):
+                new_arts.append(
+                    (side, art, addParametersToURL(u'/', artSettingsToGetParameters(art)))
+                )
+        return new_arts
+
     context['can_show_random_for_character'] = bool(RANDOM_ART_FOR_CHARACTER)
-    context['homepage_arts'] = []
-    for art in HOMEPAGE_ARTS:
-        sides = art.get('side', HOMEPAGE_ART_SIDE)
-        for side in ([sides] if not isinstance(sides, list) else sides):
-            context['homepage_arts'].append(
-                (side, art, addParametersToURL(u'/', artSettingsToGetParameters(art)))
-            )
+    arts = transform_homepage_arts(HOMEPAGE_ARTS)
+
+    # Show character's birthday examples
+    if (RANDOM_ART_FOR_CHARACTER
+        and getCharactersBirthdayToday()):
+        context['tabs']['birthday_arts'] = {
+            'name': 'Current birthday(s)',
+            'arts': transform_homepage_arts([
+                RANDOM_ART_FOR_CHARACTER(
+                    random.choice(getCharactersBirthdayToday()))
+                for _i in range(50)
+            ]),
+        }
+
+    # 'Tis the season
+    if isVariableInAnyCurrentSeason('to_random_homepage_art'):
+        context['tabs']['seasonal_arts'] = {
+            'name': 'Current season(s)',
+            'arts': transform_homepage_arts([
+                getRandomVariableInCurrentSeasons(
+                    'to_random_homepage_art', CUSTOM_SEASONAL_MODULE)()
+                for _i in range(50)
+            ]),
+        }
+
+    context['tabs']['homepage_arts'] = {
+        'name': 'Regular',
+        'arts': arts,
+    }
 
 ############################################################
 # Errors

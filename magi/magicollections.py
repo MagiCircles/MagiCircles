@@ -13,6 +13,11 @@ from django.shortcuts import get_object_or_404
 from django.conf import settings as django_settings
 from magi.views import indexExtraContext
 from magi.utils import (
+    getCharactersFavoriteFields,
+    getCharacterNameFromPk,
+    getCharacterImageFromPk,
+    getCharacterURLFromPk,
+    getCharacterLabel,
     AttrDict,
     justReturn,
     propertyFromCollection,
@@ -36,7 +41,6 @@ from magi.utils import (
     isBirthdayToday,
     getSearchSingleFieldLabel,
     isTranslationField,
-    FAVORITE_CHARACTERS_IMAGES,
     addParametersToURL,
     tourldash,
     getEmojis,
@@ -50,10 +54,9 @@ from magi.middleware.httpredirect import HttpRedirectException
 from magi.item_model import get_http_image_url_from_path
 from magi.settings import (
     ACCOUNT_MODEL,
+    ACTIVITY_TAGS,
     SHOW_TOTAL_ACCOUNTS,
     PROFILE_TABS,
-    FAVORITE_CHARACTERS,
-    FAVORITE_CHARACTER_TO_URL,
     GET_GLOBAL_CONTEXT,
     DONATE_IMAGE,
     ON_USER_EDITED,
@@ -2367,13 +2370,6 @@ class AccountCollection(MagiCollection):
         'color': {
             'type': CuteFormType.Images,
         },
-        'favorite_character': {
-            'to_cuteform': lambda k, v: FAVORITE_CHARACTERS_IMAGES[k],
-            'extra_settings': {
-	        'modal': 'true',
-	        'modal-text': 'true',
-            },
-        },
         'i_os': {
             'to_cuteform': lambda k, v: ACCOUNT_MODEL.get_reverse_i('os', k),
             'transform': CuteFormTransform.FlaticonWithText,
@@ -2642,13 +2638,6 @@ class UserCollection(MagiCollection):
     }
 
     filter_cuteform = {
-        'favorite_character': {
-            'to_cuteform': lambda k, v: FAVORITE_CHARACTERS_IMAGES[k],
-            'extra_settings': {
-	        'modal': 'true',
-	        'modal-text': 'true',
-            },
-        },
         'color': {
             'type': CuteFormType.Images,
         },
@@ -2824,6 +2813,8 @@ class UserCollection(MagiCollection):
             meta_links = []
             first_links = []
             already_linked = None
+
+            # Donation link
             if user.preferences.donation_link:
                 for link in context['item'].all_links:
                     if link.url == user.preferences.donation_link:
@@ -2846,19 +2837,26 @@ class UserCollection(MagiCollection):
                         'url': user.preferences.donation_link,
                         'flaticon': 'url',
                     }))
-            if FAVORITE_CHARACTERS:
-                for i in range(1, 4):
-                    field_name = 'favorite_character{}'.format(i)
-                    if getattr(user.preferences, field_name):
+
+            # Favorite characters
+            for key, fields in getCharactersFavoriteFields().items():
+                for (field_name, field_verbose_name) in fields:
+                    if field_name.startswith('d_extra-'):
+                        pk = user.preferences.extra.get(field_name[len('d_extra-'):], None)
+                    else:
+                        pk = getattr(user.preferences, field_name)
+                    if pk:
                         link = AttrDict({
                             'name': field_name,
-                            'verbose_name': models.UserPreferences.favorite_character_label(i),
-                            'value': user.preferences.localized_favorite_character(i),
-                            'image': user.preferences.favorite_character_image(i),
-                            'raw_value': getattr(user.preferences, field_name),
+                            'verbose_name': field_verbose_name,
+                            'raw_value': pk,
+                            'value': getCharacterNameFromPk(pk, key=key),
+                            'image': getCharacterImageFromPk(pk, key=key),
+                            'url': getCharacterURLFromPk(pk, key=key),
                         })
-                        link.url = FAVORITE_CHARACTER_TO_URL(link)
                         meta_links.append(AttrDict(link))
+
+            # Location
             if user.preferences.location:
                 latlong = '{},{}'.format(user.preferences.latitude, user.preferences.longitude) if user.preferences.latitude else None
                 link = AttrDict({
@@ -2869,6 +2867,8 @@ class UserCollection(MagiCollection):
                     'flaticon': 'pinpoint',
                 })
                 meta_links.append(link)
+
+            # Language
             if context['is_me'] or user.preferences.language != context['request'].LANGUAGE_CODE:
                 meta_links.append(AttrDict({
                     'name': 'language',
@@ -2878,6 +2878,8 @@ class UserCollection(MagiCollection):
                     'url': u'/users/{}/'.format(user.preferences.language),
                     'image': staticImageURL(user.preferences.language, folder='language', extension='png'),
                 }))
+
+            # Birthday
             if user.preferences.birthdate:
                 meta_links.append(AttrDict({
                     'name': 'birthdate',
@@ -2886,6 +2888,7 @@ class UserCollection(MagiCollection):
                     'url': user.birthday_url,
                     'flaticon': 'birthday',
                 }))
+
             return (
                 first_links, meta_links,
                 [link for link in [{
@@ -3432,7 +3435,7 @@ class ActivityCollection(MagiCollection):
                     'icon': 'sort-down',
                     'classes': classes + ['staff-only'],
                 }))
-            if ('staff' in models.NORMALIZED_ACTIVITY_TAGS.keys()
+            if ('staff' in ACTIVITY_TAGS.keys()
                 and request.user.hasPermission('mark_activities_as_staff_pick')):
                 if 'staff' in item.tags:
                     # Remove from staff picks
@@ -4066,7 +4069,7 @@ class DonateCollection(MagiCollection):
 
 PRIZE_CUTEFORM = {
     'i_character': {
-        'to_cuteform': lambda k, v: models.Prize.CHARACTERS[k][2],
+        'to_cuteform': lambda k, v: getCharacterImageFromPk(k),
         'extra_settings': {
 	    'modal': 'true',
 	    'modal-text': 'true',
@@ -4088,11 +4091,14 @@ class PrizeCollection(MagiCollection):
 
     def to_fields(self, view, item, *args, **kwargs):
         fields = super(PrizeCollection, self).to_fields(view, item, *args, **kwargs)
-        setSubField(fields, 'value', key='value', value=u'US ${}'.format(item.value))
-        setSubField(fields, 'character', key='type', value='text_with_link')
-        setSubField(fields, 'character', key='link', value=lambda f: item.character_url)
-        setSubField(fields, 'character', key='link_text', value=lambda f: item.character)
-        setSubField(fields, 'character', key='image', value=lambda f: item.character_image)
+        if item.i_character is not None:
+            setSubField(fields, 'character', key='verbose_name', value=getCharacterLabel())
+            setSubField(fields, 'character', key='type', value='text_with_link')
+            setSubField(fields, 'character', key='value', value=getCharacterNameFromPk(item.i_character))
+            setSubField(fields, 'character', key='link', value=item.character_url)
+            setSubField(fields, 'character', key='link_text', value=_(
+                'Open {thing}').format(thing=getCharacterLabel().lower()))
+            setSubField(fields, 'character', key='image', value=item.character_image)
         return fields
 
     class ListView(MagiCollection.ListView):

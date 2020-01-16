@@ -41,59 +41,302 @@ from magi.middleware.httpredirect import HttpRedirectException
 from magi.default_settings import RAW_CONTEXT
 
 try:
-    custom_seasonal_module = __import__(django_settings.SITE + '.seasons', fromlist=['']).__dict__
+    CUSTOM_SEASONAL_MODULE_FOR_CONTEXT = __import__(django_settings.SITE + '.seasons_context', fromlist=[''])
 except ImportError:
-    custom_seasonal_module = None
+    CUSTOM_SEASONAL_MODULE_FOR_CONTEXT = None
 
 ############################################################
-# Favorite characters
+# Characters
 
-FAVORITE_CHARACTERS_IMAGES = OrderedDict([
-    (_pk, _image)
-    for (_pk, _name, _image) in getattr(django_settings, 'FAVORITE_CHARACTERS', [])
-])
-FAVORITE_CHARACTERS_NAMES = OrderedDict([
-    (_pk, _name)
-    for (_pk, _name, _image) in getattr(django_settings, 'FAVORITE_CHARACTERS', [])
-])
-_FAVORITE_CHARACTERS_NAMES_UNICODE = OrderedDict([
-    (unicode(_pk), _name)
-    for (_pk, _name, _image) in getattr(django_settings, 'FAVORITE_CHARACTERS', [])
-])
-_FAVORITE_CHARACTERS_LOCALIZED_NAMES = OrderedDict([
-    (_pk, _names)
-    for (_pk, _names) in getattr(django_settings, 'FAVORITE_CHARACTERS_NAMES', {}).items()
-])
-_FAVORITE_CHARACTERS_LOCALIZED_NAMES_UNICODE = OrderedDict([
-    (unicode(_pk), _names)
-    for (_pk, _names) in getattr(django_settings, 'FAVORITE_CHARACTERS_NAMES', {}).items()
-])
+ALL_CHARACTERS_KEYS = ['FAVORITE_CHARACTERS'] + getattr(django_settings, 'OTHER_CHARACTERS_KEYS', [])
 
-def getFavoriteCharacterNamesFromPk(pk):
+_CHARACTERS_IMAGES = {
+    _key: OrderedDict([
+        (_pk, _image)
+        for (_pk, _name, _image) in getattr(django_settings, _key, [])
+    ]) for _key in ALL_CHARACTERS_KEYS
+}
+
+_CHARACTERS_IMAGES_UNICODE = {
+    _key: OrderedDict([
+        (unicode(_pk), _image)
+        for (_pk, _name, _image) in getattr(django_settings, _key, [])
+    ]) for _key in ALL_CHARACTERS_KEYS
+}
+
+_CHARACTERS_NAMES = {
+    _key: OrderedDict([
+        (_pk, _name)
+        for (_pk, _name, _image) in getattr(django_settings, _key, [])
+    ]) for _key in ALL_CHARACTERS_KEYS
+}
+
+_CHARACTERS_NAMES_UNICODE = {
+    _key: OrderedDict([
+        (unicode(_pk), _name)
+        for (_pk, _name, _image) in getattr(django_settings, _key, [])
+    ]) for _key in ALL_CHARACTERS_KEYS
+}
+
+_CHARACTERS_LOCALIZED_NAMES = {
+    _key: getattr(django_settings, '{}_NAMES'.format(_key), {})
+    for _key in ALL_CHARACTERS_KEYS
+}
+
+_CHARACTERS_LOCALIZED_NAMES_UNICODE = {
+    _key: OrderedDict([
+        (unicode(_pk), _names)
+        for (_pk, _names) in getattr(django_settings, '{}_NAMES'.format(_key), {}).items()
+    ]) for _key in ALL_CHARACTERS_KEYS
+}
+
+_CHARACTERS_BIRTHDAYS = {
+    _key: getattr(django_settings, '{}_BIRTHDAYS'.format(_key), {})
+    for _key in ALL_CHARACTERS_KEYS
+}
+
+_CHARACTERS_BIRTHDAYS_UNICODE = {
+    _key: OrderedDict([
+        (unicode(_pk), _birthday)
+        for (_pk, _birthday) in getattr(django_settings, '{}_BIRTHDAYS'.format(_key), {}).items()
+    ]) for _key in ALL_CHARACTERS_KEYS
+}
+
+def getCharacterSetting(detail, key='FAVORITE_CHARACTERS', default=None):
+    # /!\ Can't be called at global level
+    if key == 'FAVORITE_CHARACTERS':
+        if detail == 'model':
+            return RAW_CONTEXT.get('favorite_characters_model', default)
+        elif detail == 'how_many_favorites':
+            return 3
+        return default
+    character_details = RAW_CONTEXT.get('other_characters_models', {}).get(key, {})
+    if not isinstance(character_details, dict):
+        if detail == 'model':
+            return character_details
+        return default
+    return character_details.get(detail, default)
+
+def getCharacters(key='FAVORITE_CHARACTERS'):
+    return getattr(django_settings, key, [])
+
+def hasCharacters(key='FAVORITE_CHARACTERS'):
+    return bool(getCharacters(key=key))
+
+def getTotalCharacters(key='FAVORITE_CHARACTERS'):
+    return len(getCharacters(key=key))
+
+def getCharactersPks(key='FAVORITE_CHARACTERS'):
+    return _CHARACTERS_NAMES.keys()
+
+def getCharacterNamesFromPk(pk, key='FAVORITE_CHARACTERS'):
     return {
         'name': (
-            FAVORITE_CHARACTERS_NAMES.get(pk, None)
-            or _FAVORITE_CHARACTERS_NAMES_UNICODE.get(pk, None)
+            _CHARACTERS_NAMES.get(key, {}).get(pk, None)
+            or _CHARACTERS_NAMES_UNICODE.get(key, {}).get(pk, None)
         ),
         'names': (
-            _FAVORITE_CHARACTERS_LOCALIZED_NAMES.get(pk, {})
-            or _FAVORITE_CHARACTERS_LOCALIZED_NAMES_UNICODE.get(pk, {})
+            _CHARACTERS_LOCALIZED_NAMES.get(key, {}).get(pk, {})
+            or _CHARACTERS_LOCALIZED_NAMES_UNICODE.get(key, {}).get(pk, {})
         ),
     }
 
-def getFavoriteCharacterNameFromPk(pk):
-    return getTranslatedName(getFavoriteCharacterNamesFromPk(pk))
+def getCharacterNameFromPk(pk, key='FAVORITE_CHARACTERS'):
+    return getTranslatedName(getCharacterNamesFromPk(pk, key=key))
 
-def getFavoriteCharacterImageFromPk(pk, default=None):
-   return (
-       FAVORITE_CHARACTERS_IMAGES.get(pk, None)
-       or default
-   )
-def getFavoriteCharacterChoices():
+def getCharacterBirthdayFromPk(pk, failsafe=False, key='FAVORITE_CHARACTERS'):
+    return (
+        _CHARACTERS_BIRTHDAYS.get(key, {}).get(pk, None)
+        or _CHARACTERS_BIRTHDAYS_UNICODE.get(key, {}).get(pk, None)
+        or ((None, None) if failsafe else None)
+    )
+
+def getCharactersBirthdayToday(key='FAVORITE_CHARACTERS'):
+    return getattr(django_settings, 'FAVORITE_CHARACTERS_BIRTHDAY_TODAY', [])
+
+def getCharacterImageFromPk(pk, default=None, key='FAVORITE_CHARACTERS'):
+    return (
+        _CHARACTERS_IMAGES.get(key, {}).get(pk, None)
+        or _CHARACTERS_IMAGES_UNICODE.get(key, {}).get(pk, None)
+        or default
+    )
+
+def getCharacterURLFromPk(pk, key='FAVORITE_CHARACTERS', ajax=False):
+    # /!\ Can't be called at global level
+    if key == 'FAVORITE_CHARACTERS' and not getCharacterSetting('model', key=key):
+        return u'{}{}'.format(
+            '/ajax' if ajax else '',
+            RAW_CONTEXT.get('favorite_character_to_url', lambda _link: '#')({
+                'raw_value': pk,
+                'value': getCharacterNameFromPk(pk),
+            }),
+        )
+    return u'{}/{}/{}/{}/'.format(
+        '/ajax' if ajax else '',
+        getCharacterCollectionName(key=key),
+        pk, tourldash(getCharacterNameFromPk(pk, key=key)),
+    )
+
+def getCharactersChoices(key='FAVORITE_CHARACTERS'):
     return [
-        (pk, getFavoriteCharacterNameFromPk(pk))
-        for (pk, full_name, image) in getattr(django_settings, 'FAVORITE_CHARACTERS', [])
+        (pk, getCharacterNameFromPk(pk, key=key))
+        for pk, character_name, image in getattr(django_settings, key)
     ]
+
+def getCharacterCollectionName(key='FAVORITE_CHARACTERS'):
+    # /!\ Can't be called at global level
+    model = getCharacterSetting('model', key=key)
+    try:
+        return model.collection_name if model else None
+    except AttributeError:
+        return None
+
+def getCharacterCollection(key='FAVORITE_CHARACTERS'):
+    # /!\ Can't be called at global level
+    return getMagiCollection(getCharacterCollectionName(key=key))
+
+def getCharacterLabel(key='FAVORITE_CHARACTERS'):
+    # /!\ Can't be called at global level
+    if key == 'FAVORITE_CHARACTERS' and RAW_CONTEXT.get('favorite_character_name', None):
+        label = RAW_CONTEXT['favorite_character_name']
+    else:
+        try:
+            label = getCharacterCollection(key).title
+        except AttributeError:
+            label = _('Character')
+    if callable(label):
+        label = label()
+    return label
+
+# When used as favorites
+
+def getCharactersTotalFavoritable(key='FAVORITE_CHARACTERS'):
+    # /!\ Can't be called at global level
+    return getCharacterSetting('how_many_favorites', key=key, default=1)
+
+def getCharactersFavoriteFieldLabel(key='FAVORITE_CHARACTERS', nth=None):
+    # /!\ Can't be called at global level
+    label = getCharacterLabel(key=key)
+    if nth is None:
+        return _(u'Favorite {thing}').format(
+            thing=label.lower(),
+        )
+    return _('{nth} Favorite {thing}').format(
+        nth=_(ordinalNumber(nth)),
+        thing=label.lower(),
+    )
+
+def getCharactersFavoriteFields(only_one=False):
+    # /!\ Can't be called at global level
+    fields = OrderedDict()
+    for key in ALL_CHARACTERS_KEYS:
+        if hasCharacters(key):
+            collection_name = getCharacterCollectionName(key)
+            total = getCharactersTotalFavoritable(key)
+            fields[key] = []
+            if only_one:
+                if key == 'FAVORITE_CHARACTERS':
+                    field_name = 'favorite_character'
+                else:
+                    field_name = 'favorite_{}'.format(collection_name)
+                label = getCharactersFavoriteFieldLabel(key=key)
+                fields[key].append((field_name, label))
+            else:
+                for nth in range(1, total + 1):
+                    if key == 'FAVORITE_CHARACTERS':
+                        field_name = 'favorite_character{}'.format(nth)
+                    else:
+                        field_name = u'd_extra-favorite_{}{}'.format(
+                            collection_name, nth if total > 1 else '')
+                    label = getCharactersFavoriteFieldLabel(
+                        key=key, nth=nth if not only_one and total > 1 else None)
+                    fields[key].append((field_name, label))
+    return fields
+
+def getCharactersFavoriteCuteForm(only_one=True):
+    # /!\ Can't be called at global level
+    def to_cuteform_lambda(key):
+        return lambda k, v: getCharacterImageFromPk(k, key=key)
+    return {
+        field_name: {
+            'title': verbose_field_name,
+            'to_cuteform': to_cuteform_lambda(key),
+            'extra_settings': {
+	        'modal': 'true',
+	        'modal-text': 'true',
+            },
+        }
+        for key, fields in getCharactersFavoriteFields(only_one=only_one).items()
+        for field_name, verbose_field_name in fields
+    }
+
+def getCharactersFavoriteFilter(key='FAVORITE_CHARACTERS', field_name=None, prefix=''):
+    # /!\ Can't be called at global level
+    """
+    Returns the MagiFilter parameters for a field to filter by favorite character.
+    When field_name is specified, will only look for given field.
+    Otherwise, will look for all nth.
+    """
+    if prefix:
+        prefix = u'{}__preferences__'.format(prefix)
+    else:
+        prefix = 'preferences__'
+    total = getCharactersTotalFavoritable(key=key)
+    if key == 'FAVORITE_CHARACTERS':
+        if field_name:
+            return { 'selector': '{}{}'.format(prefix, field_name) }
+        elif total == 1: # shouldn't happen unless allowing configuration of total_favorite_character gets implemented
+            return { 'selector': '{}favorite_character1'.format(prefix, field_name) }
+        return {
+            'selectors': [
+                u'{}favorite_character{}'.format(prefix, nth)
+                for nth in range(1, total + 1)
+            ],
+            'multiple': False,
+        }
+    if field_name:
+        return {
+            'to_queryset': lambda form, queryset, request, value: queryset.filter(**{
+                u'{}d_extra__contains'.format(prefix): u'"{}": "{}"'.format(field_name, value)
+            }),
+        }
+    collection_name = getCharacterCollectionName(key)
+    if total == 1:
+        return {
+            'to_queryset': lambda form, queryset, request, value: queryset.filter(**{
+                u'{}d_extra__contains'.format(prefix): u'"favorite_{}": "{}"'.format(
+                    collection_name, value),
+            }),
+        }
+    def _to_queryset(form, queryset, request, value):
+        condition = Q()
+        for nth in range(1, total + 1):
+            condition |= Q(**{ u'{}d_extra__contains'.format(prefix): '"favorite_{}{}": "{}"'.format(
+                collection_name, nth, value) })
+        return queryset.filter(condition)
+    return {
+        'to_queryset': _to_queryset,
+    }
+
+def getCharactersFavoriteQueryset(queryset, value, key='FAVORITE_CHARACTERS', field_name=None, prefix=''):
+    # /!\ Can't be called at global level
+    magi_filter = getCharactersFavoriteFilter(key=key, field_name=field_name, prefix=prefix)
+    if magi_filter.get('to_queryset', None):
+        return magi_filter['to_queryset'](None, queryset, None, value)
+    elif magi_filter.get('selector', None):
+        return queryset.filter(**{ magi_filter['selector']: value })
+    elif magi_filter.get('selectors', None):
+        condition = Q()
+        for selector in magi_filter['selectors']:
+            condition |= Q(**{ selector: value })
+        return queryset.filter(condition)
+
+# getFavoriteCharacterNamesFromPk = getCharacterNamesFromPk
+# getFavoriteCharacterNameFromPk = getCharacterNameFromPk
+# getFavoriteCharacterBirthdayFromPk = getCharacterBirthdayFromPk
+# getFavoriteCharacterImageFromPk = getCharacterImageFromPk
+# getFavoriteCharacterChoices = getCharactersChoices
+# getFavoriteCharactersChoices = getCharactersChoices
 
 ############################################################
 # Languages
@@ -334,9 +577,47 @@ item_template = custom_item_template
 custom_item_template = property(lambda view: '{}Item'.format(view.collection.name))
 
 ############################################################
+# Seasonal helpers
+
+def isVariableInAnyCurrentSeason(key):
+    return any(
+        season.get(key, None)
+        for season in getattr(django_settings, 'SEASONAL_SETTINGS', {}).values()
+    )
+
+def getVariableFromSeasonalModule(key, variable_name, custom_seasonal_module):
+    variable = None
+    if custom_seasonal_module:
+        variable = getattr(custom_seasonal_module, variable_name, None)
+    if not variable:
+        try:
+            variable = globals()[variable_name]
+        except KeyError:
+            raise NotImplementedError(
+                u'Seasonal {} {} not found in {}/seasons{}.py'.format(
+                    key, variable_name, django_settings.SITE,
+                    '_context' if key == 'to_context' else ''))
+    return variable
+
+def getVariableInAllCurrentSeasons(key, custom_seasonal_module):
+    return {
+        season_name: getVariableFromSeasonalModule(key, season[key], custom_seasonal_module)
+        for season_name, season in django_settings.SEASONAL_SETTINGS.items()
+        if season.get(key, None)
+    }
+
+def getRandomVariableInCurrentSeasons(key, custom_seasonal_module):
+    return getVariableFromSeasonalModule(key, random.choice([
+        season
+        for season_name, season in django_settings.SEASONAL_SETTINGS.items()
+        if season.get(key, None)
+    ])[key], custom_seasonal_module)
+
+############################################################
 # Context for django requests
 
 def globalContext(request=None, email=False):
+    # /!\ Can't be called at global level
     if not request and not email:
         raise NotImplementedError('Request is required to get context.')
 
@@ -427,16 +708,10 @@ def globalContext(request=None, email=False):
                         context['js_variables'].update(value)
                     # Call function to add more to context
                     elif variable == 'to_context':
-                        f = None
-                        if custom_seasonal_module:
-                            f = getattr(custom_seasonal_module, value, None)
-                        if not f:
-                            try:
-                                f = globals()[value]
-                            except KeyError:
-                                raise NotImplementedError(
-                                    u'Seasonal to_context function {} not found.'.format(value))
-                        f(request, context)
+                        getVariableFromSeasonalModule(
+                            'to_context', value,
+                            CUSTOM_SEASONAL_MODULE_FOR_CONTEXT,
+                        )(request, context)
 
         # Corner popups
         if request.user.is_authenticated():
@@ -479,6 +754,7 @@ def emailContext():
     return globalContext(email=True)
 
 def getAccountIdsFromSession(request):
+    # /!\ Can't be called at global level
     if not request.user.is_authenticated():
         return []
     if 'account_ids' not in request.session:
@@ -774,12 +1050,14 @@ class upload2x(uploadItem):
 # Get MagiCollection(s)
 
 def getMagiCollections():
+    # /!\ Can't be called at global level
     try:
         return RAW_CONTEXT['magicollections']
     except KeyError:
         return []
 
 def getMagiCollection(collection_name):
+    # /!\ Can't be called at global level
     """
     May return None if called before the magicollections have been initialized
     """
@@ -864,8 +1142,8 @@ def getAge(birthdate, formatted=False):
         return _(u'{age} years old').format(age=age)
     return age
 
-def birthdayOrderingQueryset(queryset, field_name='birthday'):
-    return queryset.extra(select={
+def birthdayOrderingQueryset(queryset, field_name='birthday', order_by=True):
+    queryset = queryset.extra(select={
         '{field_name}_month'.format(field_name=field_name):
         'strftime("%m", {field_name})'.format(field_name=field_name),
         '{field_name}_day'.format(field_name=field_name):
@@ -876,6 +1154,9 @@ def birthdayOrderingQueryset(queryset, field_name='birthday'):
         '{field_name}_day'.format(field_name=field_name):
         'DAY({field_name})'.format(field_name=field_name),
     })
+    if order_by:
+        queryset = queryset.order_by('birthday_month', 'birthday_day')
+    return queryset
 
 ASTROLOGICAL_SIGNS = [
     ((12, 22), 'capricorn'),
@@ -939,7 +1220,6 @@ def getEventStatus(start_date=None, end_date=None, ends_within=0, starts_within=
         # If no year specified, auto fix order
         if tuples_have_year == [False, False] and start_date > end_date:
             end_date = end_date.replace(now.year + 1)
-
     # Return status
     if start_date > end_date:
         return 'invalid'
@@ -1065,6 +1345,9 @@ def snakeToCamelCase(string):
 def titleToSnakeCase(string):
     return string.lower().replace(' ', '_')
 
+def snakeCaseToTitle(string):
+    return string.replace('_', ' ').title()
+
 def camelToSnakeCase(string, upper=False):
     string = re.sub(
         '([a-z0-9])([A-Z])', r'\1_\2',
@@ -1146,6 +1429,7 @@ def addParametersToURL(url, parameters={}, anchor=None):
     )
 
 def getEmojis(how_many=1):
+    # /!\ Can't be called at global level
     if len(RAW_CONTEXT['site_emojis'] or []) == 0:
         return [''] * how_many
     elif len(RAW_CONTEXT['site_emojis']) < how_many:
@@ -1473,16 +1757,18 @@ def presetsFromChoices(
         if (True if not should_include else should_include(i, value, verbose))
     ]
 
-def presetsFromCharacters(field_name, get_label=None, get_field_value=None):
+def presetsFromCharacters(field_name, get_label=None, get_field_value=None, key='FAVORITE_CHARACTERS'):
+    def _lambda(pk):
+        return lambda: getCharacterNameFromPk(pk, key=key)
     return [
-        (_name, {
-            'label': get_label(_id, _name, _name) if get_label else None,
-            'verbose_name': _name,
+        (name, {
+            'label': get_label(pk, name, name) if get_label else None,
+            'verbose_name': _lambda(pk),
             'fields': {
-                field_name: get_field_value(_id, _name, _name) if get_field_value else _id,
+                field_name: get_field_value(pk, name, name) if get_field_value else pk,
             },
-            'image': _image,
-        }) for (_id, _name, _image) in getattr(django_settings, 'FAVORITE_CHARACTERS', [])
+            'image': getCharacterImageFromPk(pk, key=key),
+        }) for (pk, name, _image) in getattr(django_settings, key, [])
     ]
 
 ############################################################
@@ -1879,6 +2165,7 @@ def makeImageGrid(
     )
 
 def makeBadgeImage(badge, width=None, path=None, upload=False, instance=None, model=None, field_name='image', previous_url=None, with_padding=0):
+    # /!\ Can't be called at global level
     # Get border
     filename = 'badge{}'.format(badge.rank or '')
     border_image_url = staticImageURL(filename, folder='badges', full=True)
@@ -1905,6 +2192,7 @@ def makeBadgeImage(badge, width=None, path=None, upload=False, instance=None, mo
 # Image URLs
 
 def staticImageURL(path, folder=None, extension=None, versionned=True, full=False, static_url=None):
+    # /!\ Can't be called at global level
     if not path and not folder and not extension:
         return None
     path = unicode(path)
@@ -1926,6 +2214,7 @@ def staticImageURL(path, folder=None, extension=None, versionned=True, full=Fals
     )
 
 def linkToImageURL(link):
+    # /!\ Can't be called at global level
     return staticImageURL(u'links/{}'.format(link.i_type), extension=u'png')
 
 ############################################################
@@ -1998,6 +2287,7 @@ def HTMLAlert(type='warning', flaticon='about', title=None, message=None, button
 # Form labels and help texts
 
 def markdownHelpText(request=None):
+    # /!\ Can't be called at global level
     if ('help' in RAW_CONTEXT['all_enabled']
         and (not request or request.LANGUAGE_CODE not in RAW_CONTEXT['languages_cant_speak_english'])):
         return mark_safe(u'{} <a href="/help/Markdown" target="_blank">{}.</a>'.format(
@@ -2202,6 +2492,7 @@ def isTranslationField(field_name, translated_fields):
 # Homepage previews
 
 def artSettingsToGetParameters(settings):
+    # /!\ Can't be called at global level
     parameters = {}
     for k, v in settings.items():
         if k in ['gradient', 'ribbon']:
@@ -2267,6 +2558,7 @@ def get_default_owner(user_model):
 # Seasonal
 
 def adventCalendar(request, context):
+    # /!\ Can't be called at global level
     """
     In python:
     - add list of open days to js_variables

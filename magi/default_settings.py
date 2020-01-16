@@ -429,6 +429,9 @@ DEFAULT_ENABLED_NAVBAR_LISTS = OrderedDict([
     }),
 ])
 
+############################################################
+# Activities
+
 DEFAULT_HOME_ACTIVITY_TABS = OrderedDict([
     ('popular', {
         'title': _('Popular'),
@@ -468,6 +471,46 @@ DEFAULT_HOME_ACTIVITY_TABS = OrderedDict([
         },
     }),
 ])
+
+DEFAULT_ACTIVITY_TAGS = [
+    # Community
+    ('introduction', _('Introduce yourself')),
+    ('comedy', _('Comedy')),
+    ('meme', _('Meme')),
+    ('cosplay', _('Cosplay')),
+    ('fanart', _('Fanart')),
+    ('edit', _('Graphic edit')),
+    ('merch', _('Merchandise')),
+    ('community', _('Community')),
+    ('question', _('Question')),
+
+    # Restricted / meta
+    ('news', {
+        'translation': _('News'),
+        'has_permission_to_add': lambda r: (
+            r.user.is_staff and r.user.hasPermission('post_news')),
+    }),
+    ('staff', {
+        'translation': _('Staff picks'),
+        'has_permission_to_add': lambda r: (
+            r.user.is_staff and r.user.hasPermission('mark_activities_as_staff_pick')),
+    }),
+    ('unrelated', None), # set in settings.py
+    ('swearing', _('Swearing')),
+    ('questionable', {
+        'translation': _('Questionable'),
+    }),
+    ('nsfw', {
+        'translation': _('NSFW'),
+        'hidden_by_default': True,
+        'has_permission_to_show': lambda r: u'{} {}'.format(
+            _('You need to be over 18 years old.'),
+            (_('You can change your birthdate in your settings.')
+             if not r.user.preferences.age else u''),
+        ) if r.user.is_authenticated() and r.user.preferences.age < 18
+        else True,
+    }),
+]
 
 ############################################################
 # Enabled pages

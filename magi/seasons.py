@@ -29,6 +29,8 @@ AVAILABLE_SETTINGS = CONTEXT_SETTINGS + CSS_SETTINGS + [
     'ajax_callback',
     'js_variables',
     'to_context',
+    'to_random_homepage_art',
+    'to_random_homepage_background',
 ]
 
 # Can be changed from the Staff Configurations page

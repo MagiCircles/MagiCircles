@@ -1,26 +1,46 @@
 {% load magi_tags %}
 {% load tools %}
-<div class="alert alert-info">
-  <h3>List of options that can show up on the homepage.</h3>
-  <p>Please note:</p>
-  <ul>
-    <li>The list gets updated every 24 hours. New content may take up to 24 hours to be available.</li>
-    {% if can_show_random_for_character %}
-    <li>There is a 20% chance that the user's favorite character will show up. The favorite characters are retrieved from the database directly, and do not take into account this list.</li>
-    {% endif %}
-    {% if backgrounds %}
-    <li>When a foreground is provided (ex: cards transparents), the background that shows behind it in the previews are random.</li>
-    {% endif %}
-    <li>You can click on the previews to see them on the actual homepage.</li>
+<div>
+  <ul class="nav nav-tabs">
+    {% for tab_name, tab in tabs.items %}
+    <li class="{% if forloop.counter0 == 0 %}active{% endif %}">
+      <a href="#{{ tab_name }}" role="tab" data-toggle="tab">{{ tab.name }}</a></li>
+    {% endfor %}
   </ul>
-</div>
-<div class="row">
-  {% for side, art, url in homepage_arts %}
-  {% if forloop.counter0 != 0 and forloop.counter0|mod:3 %}
-</div><div style="height: 5px"></div><div class="row">
-  {% endif %}
-  <div class="col-md-4">
-    <a href="{{ url }}" class="home-wrapper{% if art.gradient|default_if_none:homepage_art_gradient %} with-gradient{% endif %} {{ side }}"
+
+  <div class="tab-content">
+    {% for tab_name, tab in tabs.items %}
+    <div class="tab-pane {% if forloop.counter0 == 0 %}active{% endif %}" id="{{ tab_name }}">
+
+      <br>
+      <div class="alert alert-info">
+        {% if tab_name == 'homepage_arts' %}
+        <h3>List of all the options that can show up on the homepage.</h3>
+        {% else %}
+        <h3>Randomly generated examples. More options may be available.</h3>
+        {% endif %}
+        <p>Please note:</p>
+        <ul>
+          {% if tab_name == 'homepage_arts' %}
+          <li>The list gets updated every 24 hours. New content may take up to 24 hours to be available.</li>
+          {% endif %}
+          {% if can_show_random_for_character %}
+          <li>There is a 20% chance that the user's favorite character will show up. The favorite characters are retrieved from the database directly, and do not take into account this list.</li>
+          {% endif %}
+          {% if backgrounds %}
+          <li>When a foreground is provided (ex: cards transparents), the background that shows behind it in the previews are random.</li>
+          {% endif %}
+          <li>You can click on the previews to see them on the actual homepage.</li>
+        </ul>
+      </div>
+
+      <div class="row">
+        {% for side, art, url in tab.arts %}
+        {% if forloop.counter0 != 0 and forloop.counter0|mod:3 %}
+      </div><div style="height: 5px"></div><div class="row">
+        {% endif %}
+        <div class="col-md-4">
+          <a href="{{ url }}" class="home-wrapper{% if art.gradient|default_if_none:homepage_art_gradient %} with-gradient{% endif %} {{ side }}"
        style="
               background-position: {% if art.position.position %}{{ art.position.position }}{% else %}{{ art_position.position }}{% endif %};
               background-size: {% if art.position.size %}{{ art.position.size }}{% else %}{{ art_position.size }}{% endif %};
@@ -34,19 +54,23 @@
               background: url('{{ background }}');
               {% endif %}
               "
-       >
+             >
 
-      {% if art and art.foreground_url %}
-      <div class="home-foreground">
-        <img src="{% if '//' in art.foreground_url %}{{ art.foreground_url }}{% else %}{{ static_url }}img/{{ art.foreground_url }}?{{ static_fles_version }}{% endif %}">
-      </div>
-      {% endif %}{# foreground_url #}
-      <div class="home">
-        <div class="home-inner">
-          <img src="{{ site_logo }}" class="img-responsive" alt="{{ t_site_name }}">
+            {% if art and art.foreground_url %}
+            <div class="home-foreground">
+              <img src="{% if '//' in art.foreground_url %}{{ art.foreground_url }}{% else %}{{ static_url }}img/{{ art.foreground_url }}?{{ static_fles_version }}{% endif %}">
+            </div>
+            {% endif %}{# foreground_url #}
+            <div class="home">
+              <div class="home-inner">
+                <img src="{{ site_logo }}" class="img-responsive" alt="{{ t_site_name }}">
+              </div>
+            </div>
+          </a>
         </div>
+        {% endfor %}
       </div>
-    </a>
+    </div>
+    {% endfor %}
   </div>
-  {% endfor %}
 </div>
