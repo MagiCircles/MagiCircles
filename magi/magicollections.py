@@ -4328,7 +4328,9 @@ class PrivateMessageCollection(MagiCollection):
         def extra_context(self, context):
             super(PrivateMessageCollection.ListView, self).extra_context(context)
 
-            if 'add' not in context['top_buttons'] or not context['top_buttons']['add']['has_permissions']:
+            if (not context['ajax']
+                and ('add' not in context['top_buttons']
+                     or not context['top_buttons']['add']['has_permissions'])):
                 # Show reputation not allowed warning
                 if not context['request'].user.preferences.has_good_reputation:
                     context['before_template'] = 'include/alert'
