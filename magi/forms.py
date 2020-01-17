@@ -2811,7 +2811,8 @@ class FilterActivities(MagiFiltersForm):
 
     show_more = FormShowMore(cutoff='is_popular', until='ordering')
 
-    past_tags = forms.MultipleChoiceField(required=False, widget=forms.CheckboxSelectMultiple, label=_('Past tags'))
+    c_past_tags = forms.MultipleChoiceField(required=False, widget=forms.CheckboxSelectMultiple, label=_('Past tags'))
+    c_past_tags_filter = MagiFilter(selector=u'c_tags')
 
     with_image = forms.NullBooleanField(label=_('Image'))
     with_image_filter = MagiFilter(selector='image__isnull')
@@ -2861,23 +2862,23 @@ class FilterActivities(MagiFiltersForm):
         super(FilterActivities, self).__init__(*args, **kwargs)
         # Only allow users to filter by tags they are allowed to see
         # Place past tags in past_tags
-        if 'c_tags' in self.fields and 'past_tags' in self.fields:
+        if 'c_tags' in self.fields and 'c_past_tags' in self.fields:
             tags_choices = []
-            past_tags_choices = []
+            c_past_tags_choices = []
             for tag_name, tag in models.getAllowedTags(self.request, full_tags=True):
                 tag_choice = (tag_name, tag['translation'])
                 if tag['status'] == 'ended':
-                    past_tags_choices.append(tag_choice)
+                    c_past_tags_choices.append(tag_choice)
                 else:
                     tags_choices.append(tag_choice)
             if tags_choices:
                 self.fields['c_tags'].choices = tags_choices
             else:
                 del(self.fields['c_tags'])
-            if past_tags_choices:
-                self.fields['past_tags'].choices = past_tags_choices
+            if c_past_tags_choices:
+                self.fields['c_past_tags'].choices = c_past_tags_choices
             else:
-                del(self.fields['past_tags'])
+                del(self.fields['c_past_tags'])
         # Default selected language
         if 'i_language' in self.fields:
             self.default_to_current_language = False
@@ -2941,7 +2942,7 @@ class FilterActivities(MagiFiltersForm):
             'c_tags', 'is_popular',
             'is_following', 'liked',
             'hide_archived', 'with_image',
-            'past_tags',
+            'c_past_tags',
             'i_language',
         ]
 
