@@ -1071,6 +1071,9 @@ def getMagiCollection(collection_name):
 def torfc2822(date):
     return date.strftime("%B %d, %Y %H:%M:%S %z")
 
+def dateToMarkdownCompatibleTag(date):
+    return date.strftime('%Y-%m-%dT%H:%M:%S')
+
 ############################################################
 # Birthday utils
 

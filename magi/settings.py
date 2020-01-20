@@ -716,6 +716,7 @@ def _birthday_tags_per_characters_key(key):
                     'translation': _birthday_tag_name(pk, year),
                     'start_date': start_date,
                     'end_date': end_date,
+                    'character_pk': pk,
                 })
             )
     return tags

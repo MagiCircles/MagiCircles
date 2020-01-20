@@ -5,6 +5,7 @@ from magi.settings import RAW_CONTEXT
 from magi.utils import (
     AttrDict,
     torfc2822,
+    dateToMarkdownCompatibleTag,
     translationURL as _translationURL,
     getTranslatedName,
     jsv,
@@ -14,6 +15,7 @@ from magi.utils import (
 register = template.Library()
 
 register.filter('torfc2822', torfc2822)
+register.filter('toMarkdownCompatibleTag', dateToMarkdownCompatibleTag)
 register.filter('jsv', jsv)
 
 @register.simple_tag()
