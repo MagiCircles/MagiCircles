@@ -161,9 +161,12 @@ class BaseAccount(CacheOwner):
     _cache_leaderboards_last_update = models.DateTimeField(null=True)
     _cache_leaderboard = models.PositiveIntegerField(null=True)
 
-    def to_cache_leaderboard(self):
+    def cache_leaderboard_accounts(self):
         return filterRealAccounts(type(self).objects.all()).filter(
-            level__gt=self.level).values('level').distinct().count() + 1
+            level__gt=self.level)
+
+    def to_cache_leaderboard(self):
+        return self.cache_leaderboard_accounts().values('level').distinct().count() + 1
 
     def update_cache_leaderboards(self):
         self._cache_leaderboards_last_update = timezone.now()
