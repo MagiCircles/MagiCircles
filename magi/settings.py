@@ -688,7 +688,7 @@ def _birthday_tags_per_characters_key(key):
         return lambda: u'{}, {}! {}'.format(
             _('Happy Birthday'), _getCharacterNameFromPk(key, pk), year)
     tags = []
-    for year in range(LAUNCH_DATE.year, LAST_SERVER_RESTART.year + 2):
+    for year in range((LAUNCH_DATE or LAST_SERVER_RESTART).year, LAST_SERVER_RESTART.year + 2):
         collection_name = (
             (FAVORITE_CHARACTERS_MODEL.collection_name
              if FAVORITE_CHARACTERS_MODEL
@@ -705,7 +705,7 @@ def _birthday_tags_per_characters_key(key):
                 birthday_month, birthday_day = birthday
             utc_birthday_this_year = datetime.datetime(year, birthday_month, birthday_day, tzinfo=timezone.utc)
             # Tag can be seen if it ended already, or starts within the next 30 days
-            if (utc_birthday_this_year < (LAUNCH_DATE - relativedelta(days=5))
+            if (utc_birthday_this_year < ((LAUNCH_DATE or LAST_SERVER_RESTART) - relativedelta(days=5))
                 or getEventStatus(utc_birthday_this_year, starts_within=30) not in ['ended', 'starts_soon']):
                 continue
             # Tag can be added to activities 5 days after the birthday

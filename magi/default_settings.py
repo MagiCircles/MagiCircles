@@ -484,7 +484,7 @@ DEFAULT_ACTIVITY_TAGS = [
     ('community', _('Community')),
     ('question', _('Question')),
 
-    # Restricted / meta
+    # Restricted
     ('news', {
         'translation': _('News'),
         'has_permission_to_add': lambda r: (
@@ -495,6 +495,8 @@ DEFAULT_ACTIVITY_TAGS = [
         'has_permission_to_add': lambda r: (
             r.user.is_staff and r.user.hasPermission('mark_activities_as_staff_pick')),
     }),
+
+    # Meta
     ('unrelated', None), # set in settings.py
     ('swearing', _('Swearing')),
     ('questionable', {
