@@ -628,6 +628,7 @@ class StaffConfiguration(MagiModel):
 
     class Meta:
         unique_together = (('key', 'i_language'),)
+        ordering = ['id']
 
 ############################################################
 # Staff details
@@ -960,7 +961,8 @@ class Activity(MagiModel):
         return self.summarize()
 
     class Meta:
-        verbose_name_plural = "activities"
+        verbose_name_plural = 'activities'
+        ordering = ['-last_bump']
 
 ############################################################
 # Activities utilities
@@ -1166,6 +1168,9 @@ class Notification(MagiModel):
     def __unicode__(self):
         return self.localized_message
 
+    class Meta:
+        ordering = ['-creation', '-id']
+
 ############################################################
 # Report
 
@@ -1240,6 +1245,9 @@ class Report(MagiModel):
             id=self.reported_thing_id,
         )
 
+    class Meta:
+        ordering = ['i_status']
+
 ############################################################
 # Badge
 
@@ -1309,6 +1317,9 @@ class DonationMonth(MagiModel):
     def __unicode__(self):
         return unicode(self.date)
 
+    class Meta:
+        ordering = ['-date']
+
 class Badge(MagiModel):
     collection_name = 'badge'
 
@@ -1375,6 +1386,9 @@ class Badge(MagiModel):
 
     def __unicode__(self):
         return self.translated_name
+
+    class Meta:
+        ordering = ['-date']
 
 ############################################################
 # Prize

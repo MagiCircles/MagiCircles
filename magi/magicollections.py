@@ -1727,6 +1727,8 @@ class MagiCollection(object):
 
         @property
         def default_ordering(self):
+            if self.collection.queryset.model._meta.ordering:
+                return u','.join(self.collection.queryset.model._meta.ordering)
             if hasattr(self.collection.queryset.model, 'creation'):
                 return '-creation'
             return '-id'
@@ -3210,7 +3212,6 @@ class StaffConfigurationCollection(MagiCollection):
         display_style_table_classes = MagiCollection.ListView.display_style_table_classes + ['table-striped']
         before_template = 'include/beforeStaffConfigurations'
         filter_form = forms.StaffConfigurationFilters
-        default_ordering = 'id'
         allow_random = False
 
         def get_queryset(self, queryset, parameters, request):
@@ -3481,7 +3482,6 @@ class ActivityCollection(MagiCollection):
         add_button_subtitle = _('Share your adventures!')
         ajax_pagination_callback = 'updateActivities'
         before_template = 'include/homePage'
-        default_ordering = '-last_bump'
         filter_form = forms.FilterActivities
         show_relevant_fields_on_ordering = False
         show_item_buttons = False
@@ -3659,7 +3659,6 @@ class NotificationCollection(MagiCollection):
         show_title = True
         per_line = 1
         page_size = 5
-        default_ordering = '-creation,-id'
         authentication_required = True
         allow_random = False
 
@@ -3776,7 +3775,6 @@ class BadgeCollection(MagiCollection):
 
     class ListView(MagiCollection.ListView):
         item_template = custom_item_template
-        default_ordering = '-date'
         filter_form = forms.FilterBadges
         allow_random = False
 
@@ -3948,7 +3946,6 @@ class ReportCollection(MagiCollection):
         ajax_pagination_callback = 'updateReport'
         filter_form = forms.FilterReports
         show_add_button = justReturn(False)
-        default_ordering = 'i_status'
         allow_random = False
 
     class ItemView(MagiCollection.ItemView):
@@ -4000,7 +3997,6 @@ class DonateCollection(MagiCollection):
         item_template = custom_item_template
         page_size = 1
         per_line = 1
-        default_ordering = '-date'
         show_title = False
         show_edit_button_superuser_only = True
         show_add_button_superuser_only = True
