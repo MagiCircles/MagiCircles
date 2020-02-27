@@ -960,6 +960,9 @@ class MagiCollection(object):
             if field_name in exclude_fields:
                 continue
             if field_name in prefetched:
+                # Ensure cached total gets updated
+                try: getattr(item, 'cached_total_{}'.format(field_name))
+                except AttributeError: pass
                 for related_item in getattr(item, field_name).all():
                     d = {
                         'verbose_name': unicode(verbose_name).capitalize(),
@@ -1000,6 +1003,9 @@ class MagiCollection(object):
                     (many_fields if show_first else many_fields_galleries).append(
                         (u'{}{}'.format(field_name, related_item.pk), d))
             elif field_name in prefetched_together:
+                # Ensure cached total gets updated
+                try: getattr(item, 'cached_total_{}'.format(field_name))
+                except AttributeError: pass
                 d = {
                     'verbose_name': unicode(verbose_name).capitalize(),
                     'icon': icons.get(field_name, None),
@@ -1303,7 +1309,7 @@ class MagiCollection(object):
 
             if d['type'] == 'text_with_link':
                 many_fields.append((field_name, d))
-            elif field_name.endswith('name'):
+            elif 'name' in field_name:
                 name_fields.append((field_name, d))
             else:
                 model_fields.append((field_name, d))
