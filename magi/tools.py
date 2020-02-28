@@ -158,7 +158,6 @@ def hasNewsOfCategory(latest_news, category):
 ############################################################
 # Get characters birthdays (for generated settings)
 
-
 def defaultGetNameImageURLFromCharacter(character):
     image = None
     for image_field in [
