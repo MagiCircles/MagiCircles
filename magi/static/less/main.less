@@ -233,6 +233,14 @@
     }
 }
 
+// Remove padding on xs items or they wont be visible at all
+@media (max-width: 768px) {
+    .col-xs-2 [data-item] {
+        padding-left: 1px;
+        padding-right: 1px;
+    }
+}
+
 .page-content-inner,
 .collection-page-wrapper {
     margin: 0 15px;
