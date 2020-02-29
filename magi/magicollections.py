@@ -240,7 +240,7 @@ class MagiCollection(object):
                     or not collection.add_view.has_permissions(request, {})):
                     continue
                 item_field_name = getattr(collection.queryset.model, 'selector_to_collected_item',
-                                          self.queryset.model.__name__.lower())
+                                          self.model_name)
                 fk_owner = collection.queryset.model.fk_as_owner if collection.queryset.model.fk_as_owner else 'owner'
                 if collection.add_view.enabled and collection.add_view.quick_add_to_collection(request):
                     # Quick add
@@ -307,7 +307,7 @@ class MagiCollection(object):
         You may override this function, but you're not really supposed to call it yourself.
         """
         parent_collection = self
-        item_field_name = parent_collection.queryset.model.__name__.lower()
+        item_field_name = parent_collection.model_name
         item_field_model_class = model_class._meta.get_field(item_field_name).rel.to
         item_field_name_id = u'{}_{}'.format(item_field_name, item_field_model_class._meta.pk.column)
 
@@ -1591,6 +1591,10 @@ class MagiCollection(object):
     @property
     def all_views(self):
         return [self.list_view, self.item_view, self.add_view, self.edit_view]
+
+    @property
+    def model_name(self):
+        return self.queryset.model.__name__.lower()
 
     def get_buttons_classes(self, buttons_classes, request, context, item=None, size=None, block=None, color=None):
         new_buttons_classes = []

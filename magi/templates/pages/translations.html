@@ -60,7 +60,7 @@
               <i class="flaticon-translate"></i> Translate missing terms <span class="badge">{{ field.total_need_translations }}</span></a>
           </li>
           {% if field.total_translated %}
-          <li><a href="/translations_duplicator/{{ collection.name }}/{{ field.name }}/{{ language }}/" target="_blank">
+          <li><a href="/translations_duplicator/{{ collection.model_name }}/{{ field.name }}/{{ language }}/" target="_blank">
               <i class="flaticon-deck"></i> Automatically duplicate identical translations
           </a></li>
           {% endif %}

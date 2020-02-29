@@ -1219,7 +1219,7 @@ class MagiFiltersForm(AutoForm):
                     # Add added_{} for fields that are collectible
                     field_name = u'added_{}'.format(collection_name)
                     if field_name in self.request.GET:
-                        parent_item_name = self.collection.queryset.model.__name__.lower()
+                        parent_item_name = self.collection.model_name
                         related_name = collection.queryset.model._meta.get_field(
                             parent_item_name).related_query_name()
                         setattr(self, u'{}_filter'.format(field_name), MagiFilter(

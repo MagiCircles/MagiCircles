@@ -1065,6 +1065,12 @@ def getMagiCollection(collection_name):
         return RAW_CONTEXT['magicollections'][collection_name]
     return None
 
+def getMagiCollectionFromModelName(model_name):
+    # /!\ Can't be called at global level
+    for collection in getMagiCollections().values():
+        if collection.model_name == model_name:
+            return collection
+
 ############################################################
 # Date to RFC 2822 format
 

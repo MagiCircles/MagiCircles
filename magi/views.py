@@ -52,6 +52,7 @@ from magi.utils import (
     emailContext,
     getMagiCollection,
     getMagiCollections,
+    getMagiCollectionFromModelName,
     cuteFormFieldsForContext,
     CuteFormType,
     getCharactersBirthdayToday,
@@ -1288,6 +1289,7 @@ def translations(request, context):
         if collection.translated_fields:
             c = {
                 'name': collection.name,
+                'model_name': collection.model_name,
                 'title': collection.title,
                 'icon': collection.icon,
                 'image': collection.image,
@@ -1391,8 +1393,8 @@ def translations(request, context):
         details['total_translated'] = details['total'] - details['total_need_translations']
         details['percent_translated'] = int(details['total_translated'] / details['total'] * 100)
 
-def translations_duplicator(request, context, collection_name, field_name, language=None):
-    collection = getMagiCollection(collection_name)
+def translations_duplicator(request, context, model_name, field_name, language=None):
+    collection = getMagiCollectionFromModelName(model_name)
     if not collection or not collection.translated_fields or field_name not in collection.translated_fields:
         raise Http404
     context['collection'] = collection
@@ -1414,7 +1416,6 @@ def translations_duplicator(request, context, collection_name, field_name, langu
         )
 
     context['terms'] = find_all_translations(collection.queryset.model, field_name, only_for_language=language)
-    return render(request, 'pages/staff/translations_duplicator.html', context)
 
 def collections(request, context):
     context['collections'] = getMagiCollections()
