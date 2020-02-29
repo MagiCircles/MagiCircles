@@ -571,6 +571,8 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
             context['top_buttons_col_size'] = getColSize(context['top_buttons_per_line'])
 
     context['show_item_buttons'] = collection.list_view.show_item_buttons
+    if context['alt_view'] and 'show_item_buttons' in context['alt_view']:
+        context['show_item_buttons'] = context['alt_view']['show_item_buttons']
 
     if not filled_filter_form and not preset and collection.list_view.show_section_header_on_change:
         if page > 0:
