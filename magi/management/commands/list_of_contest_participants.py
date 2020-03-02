@@ -469,6 +469,14 @@ class Command(BaseCommand):
             )
             print ''
 
+    def find_site_user_from_platform(self, platform, username):
+        try:
+            return models.UserLink.objects.filter(
+                i_type=platform, value=username,
+            ).select_related('owner', 'owner__preferences')[0].owner
+        except IndexError:
+            return None
+
     def add_badges(self, all_entries, winners):
         print '# ADD BADGES'
         badge = models.Badge.objects.get(id=self.options['add_badges'])
@@ -477,33 +485,57 @@ class Command(BaseCommand):
         for platform in all_entries:
             for entry in all_entries[platform]:
                 username = entry.get(u'{}_username'.format(django_settings.SITE), None)
+                user = None
+                # Try to get user from user links
+                if not username:
+                    user = self.find_site_user_from_platform(platform, entry.get(
+                        u'{}_username'.format(platform)))
+                    if user:
+                        username = user.username
+                # If couldn't find, add do cant_get
                 if not username:
                     if platform not in cant_get:
-                        cant_get[platform] = []
+                        cant_get[platform] = {}
                     username = entry[u'{}_username'.format(platform)]
                     if username not in cant_get[platform]:
-                        cant_get[platform].append(username)
+                        cant_get[platform][username] = entry['url']
                 else:
+                    name = badge.name
+                    # Check for existing badge
                     try:
-                        existing_badge = models.Badge.objects.filter(user__username=username, name=badge.name)[0]
+                        existing_badge = models.Badge.objects.filter(
+                            user__username=username,
+                            name__startswith=name.replace(' - Participant', '').replace(' - Winner', ''),
+                        )[0]
                     except IndexError:
-                        name = badge.name
-                        rank = None
-                        for winner in winners:
-                            if winner == entry:
-                                rank = models.Badge.RANK_GOLD
-                                name = name.replace(' - Participant', ' - Winner')
+                        existing_badge = None
+                    # Determine name and rank based on winning or not
+                    rank = None
+                    name = badge.name.replace(' - Winner', ' - Participant')
+                    for winner in winners:
+                        if winner == entry:
+                            rank = models.Badge.RANK_GOLD
+                            name = name.replace(' - Participant', ' - Winner')
+                    # Fix existing badge if winners changed
+                    if existing_badge:
+                        if (existing_badge.name != name
+                            or existing_badge.rank != rank):
+                            existing_badge.name = name
+                            existing_badge.rank = rank
+                            existing_badge.save()
+                    # Add badge
+                    else:
                         print 'Adding badge to {}'.format(username)
-                        try:
-                            user = models.User.objects.select_related('preferences').filter(username=username)[0]
-                        except IndexError:
-                            print '   User not found'
-                            user = None
+                        if not user:
+                            try:
+                                user = models.User.objects.select_related('preferences').filter(username=username)[0]
+                            except IndexError:
+                                print '   User not found'
                         if user:
                             models.Badge.objects.create(
                                 owner=badge.owner,
                                 user=user,
-                                name=badge.name,
+                                name=name,
                                 description=badge.description,
                                 image=badge.image,
                                 url=entry['url'],
@@ -513,6 +545,7 @@ class Command(BaseCommand):
                             )
                             user.preferences.force_update_cache('tabs_with_content')
         if self.options.get('list_missing_badges'):
+            print 'Couldn\'t add badges to:'
             print json.dumps(cant_get, indent=4)
 
     def handle(self, *args, **options):
@@ -540,6 +573,19 @@ class Command(BaseCommand):
             all_entries[django_settings.SITE] = self.get_site_entries()
         if options.get('csv', None):
             self.get_csv_entries(all_entries)
+
+        # Fix usernames starting with @
+        for platform, entries in all_entries.items():
+            for entry in entries:
+                for key, value in entry.items():
+                    if key.endswith('username'):
+                        if isinstance(value, list):
+                            entry[key] = [
+                                (u[1:] if u.startswith('@') else u)
+                                for u in value
+                            ]
+                        elif value.startswith('@'):
+                            entry[key] = value[1:]
 
         # Totals
         totals = {
