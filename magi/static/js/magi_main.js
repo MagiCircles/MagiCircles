@@ -2165,13 +2165,17 @@ function formOnChangeValueShow(form, changingFieldName, valuesToShow) {
             });
         }
     }
-    $.each(valuesToShow, function(value, fields) {
-        $.each(fields, function(i, fieldName) {
-            if (!allFields.includes(fieldName)) {
-                allFields.push(fieldName);
-            }
+    if (Array.isArray(valuesToShow)) {
+        allFields = valuesToShow;
+    } else {
+        $.each(valuesToShow, function(value, fields) {
+            $.each(fields, function(i, fieldName) {
+                if (!allFields.includes(fieldName)) {
+                    allFields.push(fieldName);
+                }
+            });
         });
-    });
+    }
     onChange();
     changingField.change(function() {
         onChange('fast');

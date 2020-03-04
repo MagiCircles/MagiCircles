@@ -255,6 +255,35 @@ def getUsersBirthdaysToday(image=None, latest_news=None, max_usernames=4):
     return latest_news
 
 ############################################################
+# Get seasonal activity tag banners
+
+def getSeasonalActivityTagBanners(latest_news=None, seasonal_settings=None):
+    print 'Get seasonal activity tag banners'
+    if latest_news is None:
+        latest_news = []
+    if not seasonal_settings:
+        return latest_news
+    for current_season_name, current_season in seasonal_settings.items():
+        season = SEASONS.get(current_season_name, {})
+        tag = season.get('activity_tag', None)
+        if tag:
+            image = current_season.get('activity_tag_banner', None) or None
+            t_titles = {}
+            old_lang = get_language()
+            for lang, _verbose in django_settings.LANGUAGES:
+                translation_activate(lang)
+                t_titles[lang] = unicode(tag)
+                translation_activate(old_lang)
+            latest_news.append({
+                'category': 'seasonal_activity_tag',
+                't_titles': t_titles,
+                'image': image,
+                'url': u'/activities/?search=&c_tags=season-{}&is_popular=1'.format(current_season_name),
+                'hide_title': bool(image),
+            })
+    return latest_news
+
+############################################################
 # Generate details per chatacters
 
 def generateCharactersSettings(
@@ -453,6 +482,13 @@ def magiCirclesGeneratedSettings(existing_values):
     if not existing_values.get('SEASONAL_SETTINGS', None):
         generated_settings['SEASONAL_SETTINGS'] = seasonalGeneratedSettings(staff_configurations)
 
+    # Add banners for seasonal hashtags
+    if not hasNewsOfCategory(latest_news, 'seasonal_activity_tag'):
+        latest_news = getSeasonalActivityTagBanners(
+            seasonal_settings=existing_values.get('SEASONAL_SETTINGS', None) or generated_settings['SEASONAL_SETTINGS'],
+            latest_news=latest_news,
+        )
+
     # Get users birthdays
     if not hasNewsOfCategory(latest_news, 'users_birthdays'):
         latest_news = getUsersBirthdaysToday(
@@ -497,6 +533,7 @@ def magiCirclesGeneratedSettings(existing_values):
         if getEventStatus(
                 tag.get('start_date', None),
                 tag.get('end_date', None),
+                without_year_return='ended',
         ) == 'ended':
             generated_settings['PAST_ACTIVITY_TAGS_COUNT'][tag_name] = models.Activity.objects.filter(
                 c_tags__contains='"{}"'.format(tag_name)).count()

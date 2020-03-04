@@ -54,7 +54,6 @@ from magi.utils import (
     randomString,
     shrinkImageFromData,
     imageThumbnailFromData,
-    getEventStatus,
     getMagiCollection,
     getAccountIdsFromSession,
     hasPermission,

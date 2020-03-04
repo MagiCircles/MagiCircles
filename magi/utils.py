@@ -1186,7 +1186,7 @@ def getAstrologicalSign(month, day):
 ############################################################
 # Event status using start and end date
 
-def getEventStatus(start_date=None, end_date=None, ends_within=0, starts_within=0):
+def getEventStatus(start_date=None, end_date=None, ends_within=0, starts_within=0, without_year_return=None):
     """
     start_date and end_date need to be a datetime object or a tuple (month, day) or (year, month, day)
 
@@ -1222,10 +1222,13 @@ def getEventStatus(start_date=None, end_date=None, ends_within=0, starts_within=
         # If no year specified, auto fix order
         if tuples_have_year == [False, False] and start_date > end_date:
             end_date = end_date.replace(now.year + 1)
+    without_year = tuples_have_year == [False, False]
     # Return status
     if start_date > end_date:
         return 'invalid'
     if now < (start_date - relativedelta(days=starts_within)):
+        if without_year and without_year_return is not None:
+            return without_year_return
         return 'future'
     elif now < start_date:
         return 'starts_soon'
@@ -1233,6 +1236,8 @@ def getEventStatus(start_date=None, end_date=None, ends_within=0, starts_within=
         return 'current'
     elif now < (end_date + relativedelta(days=ends_within)):
         return 'ended_recently'
+    if without_year and without_year_return is not None:
+        return without_year_return
     return 'ended'
 
 def filterEventsByStatus(queryset, status, prefix=''):

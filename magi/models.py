@@ -1005,6 +1005,7 @@ def getAllowedTags(
         tag_statuses[tag_name] = getEventStatus(
             tag.get('start_date', None),
             tag.get('end_date', None),
+            without_year_return='ended',
         )
         # Force allowed will bypass checks
         if tag_name in (force_allow or []):

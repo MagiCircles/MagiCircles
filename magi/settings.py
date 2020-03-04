@@ -734,6 +734,24 @@ def _birthday_tags():
 
 ACTIVITY_TAGS += _birthday_tags()
 
+# Add seasonal tags
+
+def _seasonal_tags():
+    tags = []
+    for season_name, season in SEASONS.items():
+        tag = season.get('activity_tag', None)
+        if tag:
+            tags.append((
+                u'season-{}'.format(season_name), {
+                    'translation': tag,
+                    'start_date': season.get('start_date', (01, 01)),
+                    'end_date': season.get('end_date', (12, 31)),
+                }
+            ))
+    return tags
+
+ACTIVITY_TAGS += _seasonal_tags()
+
 # Normalize activity tags format
 
 _new_activity_tags = OrderedDict()
