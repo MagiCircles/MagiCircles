@@ -331,13 +331,6 @@ def getCharactersFavoriteQueryset(queryset, value, key='FAVORITE_CHARACTERS', fi
             condition |= Q(**{ selector: value })
         return queryset.filter(condition)
 
-# getFavoriteCharacterNamesFromPk = getCharacterNamesFromPk
-# getFavoriteCharacterNameFromPk = getCharacterNameFromPk
-# getFavoriteCharacterBirthdayFromPk = getCharacterBirthdayFromPk
-# getFavoriteCharacterImageFromPk = getCharacterImageFromPk
-# getFavoriteCharacterChoices = getCharactersChoices
-# getFavoriteCharactersChoices = getCharactersChoices
-
 ############################################################
 # Languages
 

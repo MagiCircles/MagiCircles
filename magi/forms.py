@@ -1819,7 +1819,7 @@ class AccountFilterForm(MagiFiltersForm):
         model = models.Account
         top_fields = ['search'] + (
             (['has_friend_id', 'friend_id']
-             + ['accept_friend_requests'] if has_field(models.Account, 'accept_friend_requests') else [])
+             + (['accept_friend_requests'] if has_field(models.Account, 'accept_friend_requests') else []))
             if has_field(models.Account, 'friend_id') else []
         )
         middle_fields = (

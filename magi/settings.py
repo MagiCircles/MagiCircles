@@ -565,6 +565,11 @@ if hasattr(settings_module, 'BIRTHDAY_TAG'):
 else:
     BIRTHDAY_TAG = None
 
+if hasattr(settings_module, 'USERS_BIRTHDAYS_BANNER'):
+    USERS_BIRTHDAYS_BANNER = getattr(settings_module, 'USERS_BIRTHDAYS_BANNER')
+else:
+    USERS_BIRTHDAYS_BANNER = None
+
 ############################################################
 # Used by generated settings only
 

@@ -36,6 +36,7 @@ from magi.settings import (
     SITE_STATIC_URL,
     STATIC_FILES_VERSION,
     SEASONS,
+    USERS_BIRTHDAYS_BANNER,
 )
 from magi import models, seasons
 
@@ -121,12 +122,15 @@ def latestDonationMonth(failsafe=False):
 def getStaffConfigurations(generated_settings=None):
     print 'Get staff configurations and latest news'
     staff_configurations = {}
-    latest_news = { i: {} for i in range(1, 5) }
+    latest_news = {}
     for staffconfiguration in models.StaffConfiguration.objects.all():
         if staffconfiguration.value is None or staffconfiguration.value == '':
             continue
         if staffconfiguration.key.startswith('banner_'):
-            latest_news[int(staffconfiguration.key.split('_')[1])]['_'.join(staffconfiguration.key.split('_')[2:])] = staffconfiguration.boolean_value
+            number = int(staffconfiguration.key.split('_')[1])
+            if number not in latest_news:
+                latest_news[number] = {}
+            latest_news[number]['_'.join(staffconfiguration.key.split('_')[2:])] = staffconfiguration.boolean_value
             continue
         if staffconfiguration.i_language:
             if staffconfiguration.key not in staff_configurations:
@@ -134,14 +138,17 @@ def getStaffConfigurations(generated_settings=None):
             staff_configurations[staffconfiguration.key][staffconfiguration.language] = staffconfiguration.value
         else:
             staff_configurations[staffconfiguration.key] = staffconfiguration.value
+    latest_news = list(latest_news.items())
+    latest_news.sort(key=lambda (k, v): k)
     latest_news = [
-        latest_news[i] for i in range(1, 5)
-        if (latest_news[i]
-            and latest_news[i].get('image')
-            and latest_news[i].get('title')
-            and latest_news[i].get('url'))
+        news
+        for number, news in latest_news
+        if (news.get('image')
+            and news.get('title')
+            and news.get('url'))
     ]
-
+    for news in latest_news:
+        news['priority'] = 100
     if generated_settings is not None:
         generated_settings['STAFF_CONFIGURATIONS'] = staff_configurations
         if 'LATEST_NEWS' not in generated_settings:
@@ -236,7 +243,7 @@ def getUsersBirthdaysToday(image=None, latest_news=None, max_usernames=4):
         latest_news.append({
             'category': 'users_birthdays',
             't_titles': t_titles,
-            'image': image,
+            'image': image or USERS_BIRTHDAYS_BANNER,
             'url': (
                 users[0].item_url
                 if len(users) == 1
@@ -385,7 +392,7 @@ def magiCirclesGeneratedSettings(existing_values):
 
     # Get staff configurations and latest news
     staff_configurations = existing_values.get('STAFF_CONFIGURATIONS', None)
-    latest_news = existing_values.get('LATEST_NEWS', [])
+    latest_news = []
     if not staff_configurations:
         staff_configurations, more_latest_news = getStaffConfigurations()
         latest_news += more_latest_news
@@ -517,6 +524,11 @@ def generateSettings(values, imports=[]):
             m_values[key] = d
         else:
             m_values[key] = value
+
+    # Resort latest news if needed
+    if m_values.get('LATEST_NEWS', []):
+        m_values['LATEST_NEWS'].sort(key=lambda news: int(news.get('priority', 1)) * -1)
+
     imports = m_imports + imports
 
     s = u'\
