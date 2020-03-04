@@ -963,7 +963,7 @@ class MagiCollection(object):
                 # Ensure cached total gets updated
                 try: getattr(item, 'cached_total_{}'.format(field_name))
                 except AttributeError: pass
-                for related_item in getattr(item, field_name).all():
+                for related_item in getattr(item, field_name).all().distinct():
                     d = {
                         'verbose_name': unicode(verbose_name).capitalize(),
                         'value': unicode(related_item),
@@ -1021,7 +1021,7 @@ class MagiCollection(object):
                 l_images = []
                 l_links = []
                 with_template = False
-                for i, related_item in enumerate(getattr(item, field_name).all()):
+                for i, related_item in enumerate(getattr(item, field_name).all().distinct()):
                     if max_shown and i >= max_shown:
                         and_more = getattr(item, field_name).count() - max_shown
                         break
