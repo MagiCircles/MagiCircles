@@ -27,6 +27,7 @@ from magi.utils import (
     getCharacterImageFromPk,
 )
 from magi.settings import (
+    ACTIVITY_TAGS,
     FAVORITE_CHARACTERS_MODEL,
     FAVORITE_CHARACTERS_FILTER,
     GET_BACKGROUNDS,
@@ -483,6 +484,16 @@ def magiCirclesGeneratedSettings(existing_values):
     if GET_BACKGROUNDS:
         generated_settings['BACKGROUNDS'] = GET_BACKGROUNDS()
 
+    # Get past tags count
+    generated_settings['PAST_ACTIVITY_TAGS_COUNT'] = {}
+    for tag_name, tag in ACTIVITY_TAGS.items():
+        if getEventStatus(
+                tag.get('start_date', None),
+                tag.get('end_date', None),
+        ) == 'ended':
+            generated_settings['PAST_ACTIVITY_TAGS_COUNT'][tag_name] = models.Activity.objects.filter(
+                c_tags__contains='"{}"'.format(tag_name)).count()
+
     ############################################################
     # Save
 
@@ -507,6 +518,7 @@ def generateSettings(values, imports=[]):
         else:
             m_values[key] = value
     imports = m_imports + imports
+
     s = u'\
 # -*- coding: utf-8 -*-\n\
 import datetime\n\
@@ -514,7 +526,7 @@ import datetime\n\
 ' + u'\n'.join([
     u'{key} = {value}'.format(key=key, value=unicode(value))
     for key, value in m_values.items()
-]) + '\n\
+]) + u'\n\
 GENERATED_DATE = datetime.datetime.fromtimestamp(' + unicode(time.time()) + u')\n\
 '
     with open(django_settings.BASE_DIR + '/' + django_settings.SITE + '_project/generated_settings.py', 'w') as f:

@@ -1973,6 +1973,13 @@ class ActivitiesPreferencesForm(MagiForm):
             as_dict=True, check_permissions_to_show=False,
         )
 
+        # Remove past tags without any activity from tags choices
+        allowed_tags = OrderedDict([
+            (tag_name, tag_verbose)
+            for tag_name, tag_verbose in allowed_tags.items()
+            if getattr(django_settings, 'PAST_ACTIVITY_TAGS_COUNT', {}).get(tag_name, 1) != 0
+        ])
+
         # Set initial values
         # and initialize dict if it's the first time a user changes their settings
         new_d = self.instance.hidden_tags.copy()
@@ -2866,11 +2873,16 @@ class FilterActivities(MagiFiltersForm):
             tags_choices = []
             c_past_tags_choices = []
             for tag_name, tag in models.getAllowedTags(self.request, full_tags=True):
-                tag_choice = (tag_name, tag['translation'])
                 if tag['status'] == 'ended':
-                    c_past_tags_choices.append(tag_choice)
+                    count = getattr(django_settings, 'PAST_ACTIVITY_TAGS_COUNT', {}).get(tag_name, None)
+                    if count != 0:
+                        c_past_tags_choices.append((
+                            tag_name,
+                            u'{} ({})'.format(tag['translation'] , count)
+                            if count else tag['translation']
+                        ))
                 else:
-                    tags_choices.append(tag_choice)
+                    tags_choices.append((tag_name, tag['translation']))
             if tags_choices:
                 self.fields['c_tags'].choices = tags_choices
             else:

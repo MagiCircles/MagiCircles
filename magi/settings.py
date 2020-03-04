@@ -672,7 +672,6 @@ _CHARACTERS_LOCALIZED_NAMES_U = { _key: OrderedDict([
 
 def _getCharacterNameFromPk(key, pk):
     language = get_language()
-    print key, type(key)
     if language == 'en':
         return _CHARACTERS_NAMES_U[key].get(unicode(pk), None)
     return (_CHARACTERS_LOCALIZED_NAMES_U[key].get(unicode(pk), {}).get(language, None)

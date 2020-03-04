@@ -298,7 +298,7 @@ DEFAULT_GROUPS = [
         'stats': [
             {
                 'model': 'Activity',
-                'filters': { 'c_tags__icontains': '"communityevent"' },
+                'filters': { 'c_tags__icontains': '"news"' },
                 'template': _('Organized and posted about {total} community events'),
             },
         ],
