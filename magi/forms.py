@@ -3110,7 +3110,7 @@ class ExclusiveBadgeForm(_BadgeForm):
 
     class Meta(_BadgeForm.Meta):
         required_fields = ('name',)
-        fields = ('username', 'name', 'description', 'image', 'url', 'rank')
+        fields = ('username', 'name', 'm_description', 'image', 'url', 'rank')
 
 class CopyBadgeForm(_BadgeForm):
     def __init__(self, *args, **kwargs):
@@ -3120,7 +3120,7 @@ class CopyBadgeForm(_BadgeForm):
         if not self.is_creating or self.badge.type == 'donator':
             raise PermissionDenied()
         self.fields['name'].initial = self.badge.name
-        self.fields['description'].initial = self.badge.description
+        self.fields['m_description'].initial = self.badge.m_description
         self.fields['rank'].initial = self.badge.rank
         self.fields['url'].initial = self.badge.url
         if not self.badge.url:
@@ -3131,13 +3131,15 @@ class CopyBadgeForm(_BadgeForm):
         instance.show_on_profile = True
         instance.show_on_top_profile = False
         instance.image = self.badge.image
+        if instance.m_description == self.badge.m_description:
+            instance._cache_description = self.badge._cache_description
         if commit:
             instance.save()
         return instance
 
     class Meta(_BadgeForm.Meta):
         required_fields = ('name',)
-        fields = ('username', 'name', 'description', 'url', 'rank')
+        fields = ('username', 'name', 'm_description', 'url', 'rank')
 
 class DonatorBadgeForm(_BadgeForm):
     source = forms.ChoiceField(required=True, choices=[
@@ -3164,7 +3166,8 @@ class DonatorBadgeForm(_BadgeForm):
         instance.date = instance.donation_month.date
         instance.image = instance.donation_month.image
         instance.name = None
-        instance.description = self.cleaned_data['source']
+        instance.m_description = self.cleaned_data['source']
+        instance._cache_description = self.cleaned_data['source']
         instance.url = '/donate/'
         instance.show_on_top_profile = instance.show_on_profile
         if self.cleaned_data.get('is_special_offer', False):
@@ -3177,7 +3180,7 @@ class DonatorBadgeForm(_BadgeForm):
         fields = ('username', 'donation_month', 'source', 'show_on_profile', 'is_special_offer', 'rank')
 
 class FilterBadges(MagiFiltersForm):
-    search_fields = ['user__username', 'name', 'description']
+    search_fields = ['user__username', 'name', 'm_description']
     search_fields_labels = {
         'user__username': t['Username'],
     }

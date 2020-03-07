@@ -5,7 +5,20 @@
     {% include 'items/badgeItem.html' with item=badge %}
   </div>
   <div class="col-md-7">
-    <p>{{ badge.translated_description }}</p>
+    <h2 class="padding-novertical">{{ badge.translated_name }}</h2>
+    <div class="badge-description">
+      {% if badge.donation_month_id %}
+      <p>{{ badge.translated_description }}</p>
+      {% else %}
+      <div class="{% if badge.description.0 %} was-markdown{% endif %}">
+        {% if badge.description.0 %}
+        {{ badge.description.1|safe }}
+        {% else %}
+        <div class="to-markdown">{{ badge.description.1 }}</div>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
     <div class="subtitle">
       {% if badge.url %}<a href="{{ badge.url }}" target="_blank" class="pull-right btn btn-main btn-lg">{% trans 'More info' %}</a>{% endif %}
       <span class="text-muted">{{ badge.date }}</span><br>

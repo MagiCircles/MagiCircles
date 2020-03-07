@@ -1329,7 +1329,10 @@ class Badge(MagiModel):
     user = models.ForeignKey(User, related_name='badges', db_index=True)
     donation_month = models.ForeignKey(DonationMonth, related_name='badges', null=True)
     name = models.CharField(_('Title'), max_length=50, null=True)
-    description = models.CharField(_('Description'), max_length=300)
+
+    m_description = models.TextField(_('Description'), null=True)
+    _cache_description = models.TextField(null=True)
+
     image = models.ImageField(_('Image'), upload_to=uploadItem('badges'))
     url = models.CharField(max_length=200, null=True)
     show_on_top_profile = models.BooleanField(default=False)
@@ -1367,7 +1370,7 @@ class Badge(MagiModel):
     @property
     def donation_source(self):
         if self.type == 'donator':
-            return self.description.split(' ')[0]
+            return self.m_description.split(' ')[0]
         return None
 
     @property

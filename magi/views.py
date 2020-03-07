@@ -1571,12 +1571,21 @@ def adventcalendar(request, context, day=None):
                         try:
                             models.Badge.objects.filter(user=request.user, name=name)[0]
                         except IndexError:
+                            description = 'Opened {} days of the advent calendar {}'.format(total_opened, today.year)
+                            try:
+                                badge_with_same_description = models.Badge.objects.filter(m_description=description)[0]
+                            except IndexError:
+                                badge_with_same_description = None
                             badge = models.Badge.objects.create(
                                 date=today,
                                 owner=get_default_owner(models.User),
                                 user=request.user,
                                 name=name,
-                                description='Opened {} days of the advent calendar {}'.format(total_opened, today.year),
+                                m_description=description,
+                                _cache_description=(
+                                    badge_with_same_description._cache_description
+                                    if badge_with_same_description else None
+                                ),
                                 image=staticImageURL(badge),
                                 url='/adventcalendar/',
                                 show_on_top_profile=False,
