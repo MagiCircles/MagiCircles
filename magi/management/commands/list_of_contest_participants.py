@@ -239,7 +239,7 @@ class Command(BaseCommand):
             'owner', 'owner__preferences').prefetch_related(
                 Prefetch('owner__links', queryset=models.UserLink.objects.filter(
                     i_type__in=self.platforms), to_attr='all_links'),
-            )
+            ).exclude(c_tags__contains='"news"')
         entries = []
         for activity in activities:
             entry = {

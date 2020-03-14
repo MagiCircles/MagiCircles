@@ -1186,24 +1186,16 @@ def getAstrologicalSign(month, day):
 ############################################################
 # Event status using start and end date
 
-def getEventStatus(start_date=None, end_date=None, ends_within=0, starts_within=0, without_year_return=None):
-    """
-    start_date and end_date need to be a datetime object or a tuple (month, day) or (year, month, day)
-
-    Possible values:
-    - If all parameters specified: [invalid, future, starts_soon, current, ended_recently, ended]
-    - If all but end_date specified: All except current and invalid
-    - If start_date and end_date specified: [invalid, future, current, ended]
-    - If only start_date: [future, ended]
-    """
+def addYearToEventWithoutYear(start_date=None, end_date=None, return_have_year=False):
     if not start_date and not end_date:
-        return 'invalid'
+        if return_have_year:
+            return None, None, [False, False]
+        return None, None
     elif not start_date:
         start_date = end_date
     elif not end_date:
         end_date = start_date
 
-    # Transform tuple dates to datetime
     now = timezone.now()
     tuples_have_year = [True, True]
 
@@ -1222,8 +1214,29 @@ def getEventStatus(start_date=None, end_date=None, ends_within=0, starts_within=
         # If no year specified, auto fix order
         if tuples_have_year == [False, False] and start_date > end_date:
             end_date = end_date.replace(now.year + 1)
+
+    if return_have_year:
+        return start_date, end_date, tuples_have_year
+    return start_date, end_date
+
+def getEventStatus(start_date=None, end_date=None, ends_within=0, starts_within=0, without_year_return=None):
+    """
+    start_date and end_date need to be a datetime object or a tuple (month, day) or (year, month, day)
+
+    Possible values:
+    - If all parameters specified: [invalid, future, starts_soon, current, ended_recently, ended]
+    - If all but end_date specified: All except current and invalid
+    - If start_date and end_date specified: [invalid, future, current, ended]
+    - If only start_date: [future, ended]
+    """
+    start_date, end_date, tuples_have_year = addYearToEventWithoutYear(
+        start_date, end_date, return_have_year=True)
+    if not start_date and not end_date:
+        return 'invalid'
     without_year = tuples_have_year == [False, False]
+
     # Return status
+    now = timezone.now()
     if start_date > end_date:
         return 'invalid'
     if now < (start_date - relativedelta(days=starts_within)):
@@ -1395,7 +1408,25 @@ def complementaryColor(hex_color=None, rgb=None):
 def listUnique(list):
     return OrderedDict([(item, None) for item in list]).keys()
 
+NUMBER_AND_FLOAT_REGEX = '[-+]?[0-9]*\.?[0-9]+'
+
+def makeTemplateFromString(string, regexes, variable_name='value'):
+    """
+    Takes a string and a regex, and returns a template by replacing the matches with {v1} variables.
+    Ex:
+    makeTemplateFromString("For the next 5 seconds, score boosted by +3.5%.", [NUMBER_AND_FLOAT_REGEX])
+    -> "For the next {v1} seconds, score boosted by +{v1}%."
+    """
+    regex = re.compile(u'({})'.format(u'|'.join(regexes)))
+    string = re.sub(regex, u'{v}', string)
+    i = 1
+    while '{v}' in string:
+        string = string.replace('{v}', '{{{}{}}}'.format(variable_name, i), 1)
+        i += 1
+    return string
+
 def matchesTemplate(template, string):
+    template = re.escape(template).replace('\{', '{').replace('\}', '}')
     if '{}' in template:
         regex = re.compile(template.format(*['(.+)'] * template.count('{}')))
         match = regex.match(string)
@@ -2443,6 +2474,14 @@ def find_all_translations(model, field, only_for_language=None, with_count_has=T
 
     return translations
 
+def googleTranslateFixLanguage(language):
+    return {
+        'zh-hans': 'zh-CN',
+        'zh-hant': 'zh-TW',
+        'kr': 'ko',
+        'pt-br': 'pt',
+    }.get(language, language)
+
 def translationSentence(from_language, to_language):
     return unicode(_(u'Translate from %(from_language)s to %(to_language)s')).replace(
         '%(from_language)s', unicode(LANGUAGES_DICT.get(from_language, '')),
@@ -2454,8 +2493,8 @@ def translationURL(value, from_language='en', to_language=None, with_wrapper=Tru
     if not to_language:
         to_language = get_language()
     url = u'https://translate.google.com/#view=home&op=translate&sl={from_language}&tl={to_language}&text={value}'.format(
-        to_language=to_language,
-        from_language=from_language,
+        to_language=googleTranslateFixLanguage(to_language),
+        from_language=googleTranslateFixLanguage(from_language),
         value=urlquote(value),
     )
     if with_wrapper:
@@ -2474,7 +2513,7 @@ def translationURL(value, from_language='en', to_language=None, with_wrapper=Tru
 def openGoogleTranslateURL(url, from_language='en', to_language=None):
     if not to_language: to_language = get_language()
     return u'https://translate.google.com/translate?js=n&sl={from_language}&tl={to_language}&u={url}'.format(
-        from_language=from_language, to_language=to_language, url=url)
+        from_language=googleTranslateFixLanguage(from_language), to_language=googleTranslateFixLanguage(to_language), url=url)
 
 def openGoogleTranslateHTMLLink(url, from_language='en', to_language=None):
     return u'<small><a href="{url}" class="text-muted">{sentence}</a></small>'.format(

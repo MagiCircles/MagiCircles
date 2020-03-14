@@ -497,10 +497,10 @@ class BaseMagiModel(models.Model):
             self, field_name, language=None, fallback_to_english=True, fallback_to_other_sources=True,
             return_language=False,
     ):
-        result_language = language
         d = getattr(self, u'{name}s'.format(name=field_name[2:] if field_name.startswith('m_') else field_name))
         if not language:
             language = get_language()
+        result_language = language
         if language == 'en':
             value = getattr(self, field_name)
         else:

@@ -66,6 +66,11 @@ DEFAULT_SEASONS = {
         'end_date': (03, 01),
         'activity_tag': string_concat(_('Happy Leap Day!'), u' 🐸'),
     },
+    'whiteday': {
+        'start_date': (03, 13),
+        'end_date': (03, 16),
+        'activity_tag': string_concat(_('Happy White Day!'), u'🍬🎁')
+    },
     'stpatrick': {
         'start_date': (03, 17),
         'end_date': (03, 18),
