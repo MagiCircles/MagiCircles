@@ -425,7 +425,7 @@ class MagiForm(forms.ModelForm):
                 if choices is not None:
                     self.fields[name] = forms.ChoiceField(
                         required=field.required,
-                        choices=[
+                        choices=(BLANK_CHOICE_DASH if not field.required else []) + [
                             (c[0] if without_i else i, c[1]) if isinstance(c, tuple) else (c, c)
                             for i, c in enumerate(choices)
                         ],
