@@ -2489,10 +2489,14 @@ def translationSentence(from_language, to_language):
         '%(to_language)s', unicode(LANGUAGES_DICT.get(to_language, '')),
     )
 
-def translationURL(value, from_language='en', to_language=None, with_wrapper=True, markdown=False, one_line=False):
+def translationURL(
+        value, from_language='en', to_language=None,
+        with_wrapper=True, markdown=False, one_line=False,
+        show_value=True, sentence=None,
+):
     if not to_language:
         to_language = get_language()
-    url = u'https://translate.google.com/#view=home&op=translate&sl={from_language}&tl={to_language}&text={value}'.format(
+    url = u'https://translate.google.com/#{from_language}|{to_language}|{value}'.format(
         to_language=googleTranslateFixLanguage(to_language),
         from_language=googleTranslateFixLanguage(from_language),
         value=urlquote(value),
@@ -2503,10 +2507,10 @@ def translationURL(value, from_language='en', to_language=None, with_wrapper=Tru
             if markdown else
             u'{value}{newline}<a href="{url}" target="_blank"><small class="text-muted">{translate} <i class="flaticon-link"></i></small></a>'
         ).format(
-            newline=' ' if one_line else ('\n\n' if markdown else '<br>'),
+            newline=' ' if one_line or not show_value else ('\n\n' if markdown else '<br>'),
             url=url,
-            value=value,
-            translate=translationSentence(from_language=from_language, to_language=to_language),
+            value=value if show_value else '',
+            translate=sentence or translationSentence(from_language=from_language, to_language=to_language),
         )
     return url
 
