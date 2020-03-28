@@ -88,6 +88,22 @@ class Command(BaseCommand):
             action='store',
             help='When generating a markdown post, what should be the name of the contest?',
         ),
+        make_option(
+            '--stretch-goals',
+            action='store_true',
+            help='Were stretch goals reached?',
+        ),
+        make_option(
+            '--physical-prizes',
+            action='store_true',
+            help='Are there physical prizes offered to winners?',
+        ),
+        make_option(
+            '--prizes-image',
+            action='store',
+            help='Prizes image',
+        ),
+
     )
 
     INSTAGRAM_URL = u'https://www.instagram.com/explore/tags/{hashtag}/'
@@ -348,7 +364,7 @@ class Command(BaseCommand):
             return l[0] if l else None
         return l
 
-    def make_markdown_post(self, all_entries, winners):
+    def make_markdown_post(self, all_entries, winners, totals):
         grid_instance = None
         if self.options.get('grid_per_line', None):
             images = [
@@ -401,6 +417,15 @@ class Command(BaseCommand):
             print ''
 
         if winners:
+            if self.options.get('stretch_goals', False) and totals:
+                print u'## **Stretch goals reached!**'
+                print ''
+            print u'With a total of {}{} participants, we are proud to announce that there will be {} winners!'.format(
+                u'{} participating entries by '.format(totals['all']) if totals['all'] != totals['unique'] else '',
+                totals['unique'],
+                len(winners),
+            )
+            print ''
             print 'And the winner{}...'.format('s are' if len(winners) > 1 else ' is')
             print ''
             for entry in winners:
@@ -423,7 +448,18 @@ class Command(BaseCommand):
             print ''
             print '## **Congratulations to our winners!**'
             print ''
-            print 'They will receive a prize of their choice among the prizes we offer.'
+            print 'They will be able to pick their prize between:'
+            print ''
+            if self.options.get('prizes_image', None):
+                print '![Prizes]({})'.format(self.options['prizes_image'])
+                print ''
+            if self.options.get('physical_prizes', False):
+                print '- 1 {} physical prize (official merch)'.format(settings.GAME_NAME)
+            print '- 1 {} art commission'.format(settings.GAME_NAME)
+            print '- 1 {} graphic edit commission'.format(settings.GAME_NAME)
+            print ''
+            print '*Subject to availability*'
+            print ''
         print ''
         print '***'
         print ''
@@ -463,7 +499,7 @@ class Command(BaseCommand):
                         platform_name = models.UserLink.get_verbose_i('type', platform)
                     except KeyError:
                         platform_name = platform
-                print u'On {}:'.format(platform_name)
+                print u'On {}{}:'.format(platform_name, u' ({})'.format(totals[platform]) if platform in totals else '')
             print u', '.join([u'[{}]({})'.format(
                 entry[u'{}_username'.format(platform)], entry['url']) for entry in entries]
             )
@@ -518,6 +554,13 @@ class Command(BaseCommand):
                             name = name.replace(' - Participant', ' - Winner')
                     # Fix existing badge if winners changed
                     if existing_badge:
+                        if not existing_badge.url:
+                            existing_badge.url = entry['url']
+                            existing_badge.save()
+                        if not existing_badge.m_description:
+                            existing_badge.m_description = badge.m_description
+                            existing_badge._cache_description = badge._cache_description
+                            existing_badge.save()
                         if (existing_badge.name != name
                             or existing_badge.rank != rank):
                             existing_badge.name = name
@@ -579,13 +622,14 @@ class Command(BaseCommand):
         for platform, entries in all_entries.items():
             for entry in entries:
                 for key, value in entry.items():
-                    if key.endswith('username'):
+                    if key != u'{}_username'.format(django_settings.SITE) and key.endswith('username'):
                         if isinstance(value, list):
                             entry[key] = [
                                 (u[1:] if u.startswith('@') else u)
                                 for u in value
+                                if u
                             ]
-                        elif value.startswith('@'):
+                        elif value and value.startswith('@'):
                             entry[key] = value[1:]
 
         # Totals
@@ -594,6 +638,7 @@ class Command(BaseCommand):
             for platform in all_entries
         }
         totals['all'] = sum(totals.values())
+        totals['unique'] = len(self.get_entries_per_unique_user(all_entries))
 
         # Print entries
         print '# ALL ENTRIES'
@@ -619,4 +664,4 @@ class Command(BaseCommand):
 
         # Make markdown post
         if options.get('make_markdown_post', False):
-            self.make_markdown_post(all_entries, winners)
+            self.make_markdown_post(all_entries, winners, totals)
