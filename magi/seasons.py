@@ -66,6 +66,11 @@ DEFAULT_SEASONS = {
         'end_date': (03, 01),
         'activity_tag': string_concat(_('Happy Leap Day!'), u' 🐸'),
     },
+    'pieday': {
+        'start_date': (03, 14),
+        'end_date': (03, 15),
+        'activity_tag': string_concat(_('Happy Pi Day!'), u' π🥧'),
+    },
     'whiteday': {
         'start_date': (03, 13),
         'end_date': (03, 16),
@@ -90,6 +95,11 @@ DEFAULT_SEASONS = {
         'start_date': (05, 04),
         'end_date': (05, 06),
         'activity_tag': _('May the Fourth be with you!'),
+    },
+    'cincodemayo': {
+        'start_date': (05, 05),
+        'end_date': (05, 06),
+        'activity_tag': string_concat(_('Happy Cinco de Mayo!'), u' 🇲🇽'),
     },
     'pride': {
         'start_date': (06, 01),

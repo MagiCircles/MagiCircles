@@ -180,7 +180,7 @@ def getCharacterURLFromPk(pk, key='FAVORITE_CHARACTERS', ajax=False):
 def getCharactersChoices(key='FAVORITE_CHARACTERS'):
     return [
         (pk, getCharacterNameFromPk(pk, key=key))
-        for pk, character_name, image in getattr(django_settings, key)
+        for pk, character_name, image in getattr(django_settings, key, {})
     ]
 
 def getCharacterCollectionName(key='FAVORITE_CHARACTERS'):
@@ -1304,11 +1304,12 @@ def randomString(length, choice=(string.ascii_letters + string.digits)):
 def ordinalNumber(n):
     return "%d%s" % (n,"tsnrhtdd"[(n/10%10!=1)*(n%10<4)*n%10::4])
 
-def tourldash(string):
+def tourldash(string, separator=u'-'):
+    separator = unicode(separator)
     if not string:
         return ''
-    s =  u''.join(e if e.isalnum() else u'-' for e in string)
-    return u'-'.join([s for s in s.split(u'-') if s])
+    s =  u''.join(e if e.isalnum() else separator for e in string)
+    return separator.join([s for s in s.split(separator) if s])
 
 def toHumanReadable(string):
     return string.lower().replace('_', ' ').replace('-', ' ').capitalize()
@@ -2630,7 +2631,7 @@ def adventCalendar(request, context):
     context['js_variables']['advent_calendar_days_opened'] = request.user.preferences.extra.get(
         'advent_calendar{}'.format(today.year), '').split(',')
     context['corner_popups']['advent_calendar'] = {
-        'title': _('Merry christmas!'),
+        'title': _('Merry Christmas!'),
         'image': staticImageURL(django_settings.STAFF_CONFIGURATIONS.get(
             'season_advent_calendar_corner_popup_image', None)),
         'image_overflow': context['corner_popup_image_overflow'],

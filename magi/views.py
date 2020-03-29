@@ -1567,7 +1567,7 @@ def adventcalendar(request, context, day=None):
                         if opened:
                             total_opened += 1
                     if total_opened >= 21:
-                        name = u'{} {}'.format(_('Merry christmas!'), today.year)
+                        name = u'{} {}'.format(_('Merry Christmas!'), today.year)
                         try:
                             models.Badge.objects.filter(user=request.user, name=name)[0]
                         except IndexError:

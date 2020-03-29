@@ -61,7 +61,7 @@ DISQUS_SHORTNAME = getattr(settings_module, 'DISQUS_SHORTNAME', None)
 if hasattr(settings_module, 'SECONDARY_COLOR'):
     SECONDARY_COLOR = getattr(settings_module, 'SECONDARY_COLOR')
 else:
-    SECONDARY_COLOR = complementaryColor(hex_color=COLOR)
+    SECONDARY_COLOR = complementaryColor(hex_color=COLOR) if COLOR else None
 
 if hasattr(settings_module, 'COMMENTS_ENGINE'):
     COMMENTS_ENGINE = getattr(settings_module, 'COMMENTS_ENGINE')
