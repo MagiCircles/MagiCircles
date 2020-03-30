@@ -3,7 +3,7 @@
 {% load magi_tags %}
   <table class="table about-table">
     {% for field_name, field in fields.items %}
-    <tr data-field="{{ field_name }}"{% if field.type == 'long_text' or field.type == 'markdown' or field.spread_across %} class="long_text_field{% if field.spread_across %} spread_across{% endif %}"{% endif %}{% if field.attributes %}{% for attribute, value in field.attributes.items %} {{ attribute }}="{{ value }}"{% endfor %}{% endif %}>
+    <tr data-field="{{ field_name }}" class="{% if field.type == 'long_text' or field.type == 'markdown' or field.spread_across %}long_text_field{% if field.spread_across %} spread_across{% endif %}{% endif %}{% if field.classes %}{% for cls in field.classes %} {{ cls }}{% endfor %}{% endif %}"{% if field.attributes %}{% for attribute, value in field.attributes.items %} {{ attribute }}="{{ value }}"{% endfor %}{% endif %}>
       {% if not hide_icons %}<td>
 	{% if field.icon %}
 	<i class="flaticon-{{ field.icon }}"></i>

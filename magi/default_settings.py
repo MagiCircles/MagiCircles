@@ -86,6 +86,7 @@ DEFAULT_GROUPS = [
         'description': 'Supervises and helps the creation and growth of all the websites. Advises but generally doesn\'t interfere with the managers\' decisions.',
         'requires_staff': True,
         'permissions': [
+            'has_twitter_password',
             'access_site_before_launch',
             'beta_test_features',
         ],
@@ -196,11 +197,26 @@ DEFAULT_GROUPS = [
         'description': 'We got you covered with all the game news on Twitter! Thanks to our active team, you know that by following us on Twitter, you\'ll never miss anything!',
         'requires_staff': True,
         'permissions': [
+            'post_on_twitter',
             'access_site_before_launch',
             'beta_test_features',
         ],
         'outside_permissions': {
             'Tweetdeck': { 'image': 'links/twitter', 'url': 'https://tweetdeck.twitter.com/' },
+        },
+        'guide': '/help/Community%20managers%20guide',
+    }),
+    ('instagram_cm', {
+        'translation': string_concat(_('Community manager'), ' (Instagram)'),
+        'description': 'We got you covered with all the game news on Instagram! Thanks to our active team, you know that by following us on Instagram, you\'ll never miss anything!',
+        'requires_staff': True,
+        'permissions': [
+            'post_on_instagram',
+            'access_site_before_launch',
+            'beta_test_features',
+        ],
+        'outside_permissions': {
+            'Instagram account': { 'image': 'links/instagram', 'url': 'https://instagram.com/' },
         },
         'guide': '/help/Community%20managers%20guide',
     }),
