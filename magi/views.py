@@ -14,7 +14,7 @@ from django.utils.safestring import mark_safe
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.utils.http import urlquote
 from django.utils import timezone
-from django.db.models import Count, Prefetch
+from django.db.models import Count, Prefetch, Q
 from magi.middleware.httpredirect import HttpRedirectException
 from magi.forms import (
     CreateUserForm,
@@ -471,11 +471,20 @@ def about(request, context):
                 staff_member.stats[group] = []
                 if stats:
                     for stat in stats:
-                        model = getattr(models, stat['model'])
-                        total = model.objects.filter(**{
-                            stat.get('selector_to_owner', model.selector_to_owner()):
-                            staff_member,
-                        }).filter(**(stat.get('filters', {}))).count()
+                        if isinstance(stat['model'], basestring):
+                            model = getattr(models, stat['model'])
+                        else:
+                            model = stat['model']
+                        if stat.get('selectors_to_owner', None):
+                            owner_filter = Q()
+                            for selector in stat['selectors_to_owner']:
+                                owner_filter |= Q(**{ selector: staff_member })
+                        else:
+                            owner_filter = Q(**{
+                                stat.get('selector_to_owner', model.selector_to_owner()):
+                                staff_member
+                            })
+                        total = model.objects.filter(owner_filter).filter(**(stat.get('filters', {}))).count()
                         if total:
                             staff_member.stats[group].append(mark_safe(
                                 unicode(stat['template']).format(total=u'<strong>{}</strong>'.format(total))))

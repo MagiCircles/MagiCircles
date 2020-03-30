@@ -122,6 +122,11 @@
           {% if LANGUAGE_CODE == 'en' and staff_member.staff_details.description %}
           <blockquote class="text-muted fontx0-8 to-markdown">{{ staff_member.staff_details.description }}</blockquote>
           {% endif %}
+          {% for group, details in staff_member.preferences.groups_and_details.items %}
+          {% with stats=staff_member.stats|getattribute:group %}
+          {% if stats %}<ul class="list-unstyled fontx0-8">{% for stat in stats %}<li><i class="flaticon-statistics text-muted"></i> {{ stat|safe }}</li>{% endfor %}</ul>{% endif %}
+          {% endwith %}
+          {% endfor %}
           <div class="staff-trivia text-center">
             {% if staff_member.staff_details.preferred_name %}
             <span class="mini">{{ staff_member.staff_details.preferred_name }}</span>
@@ -335,6 +340,11 @@
           {% endwith %}
           {% endfor %}
         </div>
+        {% for group, details in contributor.preferences.groups_and_details.items %}
+        {% with stats=contributor.stats|getattribute:group %}
+        {% if stats %}<ul class="list-unstyled fontx0-8">{% for stat in stats %}<li><i class="flaticon-statistics text-muted"></i> {{ stat|safe }}</li>{% endfor %}</ul>{% endif %}
+        {% endwith %}
+        {% endfor %}
         {% if contributor.preferences.location %}
         <span class="mini">
           <span class="text-{{ contributor.preferences.css_color }}">
