@@ -121,26 +121,26 @@ def has_field(model, field_name):
 
 def get_total_translations(queryset, field_name, limit_sources_to=[], exclude_sources=[]):
     # Filter fields that have a value in the source language(s)
+    condition = Q()
     for language in queryset.model.get_field_translation_sources(field_name):
         if limit_sources_to and language not in limit_sources_to:
             continue
         if language in exclude_sources:
             continue
         if language == 'en':
-            queryset = queryset.filter(**{ u'{}__isnull'.format(field_name): False,
-            }).exclude(**{ field_name: '' })
+            condition |= Q(Q(**{ u'{}__isnull'.format(field_name): False }) & ~Q(**{ field_name: '' }))
         else:
             long_source_field_name = u'{}_{}'.format(LANGUAGES_NAMES.get(language, None), field_name)
             short_source_field_name = u'{}_{}'.format(language, field_name)
             if has_field(queryset.model, long_source_field_name):
-                queryset = queryset.filter(**{ u'{}__isnull'.format(long_source_field_name): False,
-                }).exclude(**{ long_source_field_name: '' })
+                condition |= Q(Q(**{ u'{}__isnull'.format(long_source_field_name): False }) & ~Q(**{ long_source_field_name: '' }))
             elif has_field(queryset.model, short_source_field_name):
-                queryset = queryset.filter(**{ u'{}__isnull'.format(short_source_field_name): False,
-                }).exclude(**{ short_source_field_name: '' })
+                condition |= Q(Q(**{ u'{}__isnull'.format(short_source_field_name): False }) & ~Q(**{ short_source_field_name: '' }))
             else: # dict
-                queryset = queryset.filter(**{
-                    u'd_{}s__contains'.format(field_name): u'"{}"'.format(language) })
+                condition |= Q(**{
+                    u'd_{}s__contains'.format(field_name): u'"{}"'.format(language)
+                })
+    queryset = queryset.filter(condition)
     return queryset
 
 def get_missing_translations(queryset, field_name, destination_languages, limit_sources_to=[]):
@@ -858,7 +858,8 @@ def to_translate_form_class(view):
                 source_languages = self.Meta.model.get_field_translation_sources(field_name)
                 sources = OrderedDict([
                     (language, self.instance.get_translation_from_dict(
-                        field_name, language=language, fallback_to_english=False) or None)
+                        field_name, language=language, fallback_to_english=False,
+                        fallback_to_other_sources=False) or None)
                     for language in source_languages
                 ])
 
