@@ -987,6 +987,12 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
             ],
         },
     ]),
+    ('endaprilfool', {
+        'ajax': True,
+        'authentication_required': True,
+        'custom': False,
+        'as_json': True,
+    }),
 ])
 
 ############################################################

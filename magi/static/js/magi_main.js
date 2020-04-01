@@ -1974,6 +1974,71 @@ function playSongButtons() {
 }
 
 // *****************************************
+// CSS
+
+function injectStyles(rule) {
+  var div = $("<div />", {
+    html: '&shy;<style>' + rule + '</style>'
+  }).appendTo("body");
+}
+
+function setHomepageArt(settings) {
+    if (settings.url) {
+        $('.home-wrapper').removeAttr('data-hd-art');
+        $('.home-wrapper').css('background-image', 'url(\'' + settings.url + '\')');
+        if (!settings.foreground_url) {
+            $('.home-wrapper').find('.home-foreground').remove();
+        }
+    }
+    if (settings.gradient) {
+        $('.home-wrapper').addClass('with-gradient');
+    } else {
+        $('.home-wrapper').removeClass('with-gradient');
+    }
+    if (settings.ribbon) {
+        $('.home-wrapper').addClass('with-ribbon');
+    } else {
+        $('.home-wrapper').removeClass('with-ribbon');
+    }
+    if (settings.side) {
+        $('.home-wrapper').removeClass('left');
+        $('.home-wrapper').removeClass('right');
+        $('.home-wrapper').removeClass('center');
+        $('.home-wrapper').addClass(settings.side);
+    }
+    if (settings.position && settings.position.position) {
+        $('.home-wrapper').css('background-position', settings.position.position);
+    }
+    if (settings.position && settings.position.size) {
+        $('.home-wrapper').css('background-size', settings.position.size);
+    }
+    if (settings.position && settings.position.y) {
+        $('.home-wrapper').css('background-position-y', settings.position.y);
+    }
+    if (settings.position && settings.position.x) {
+        $('.home-wrapper').css('background-position-x', settings.position.x);
+    }
+}
+
+// *****************************************
+// Ordinal suffix (English only), 1st, 2nd, 3rd, 4th, ...
+
+function ordinal_suffix_of(i) {
+    var j = i % 10,
+        k = i % 100;
+    if (j == 1 && k != 11) {
+        return i + "st";
+    }
+    if (j == 2 && k != 12) {
+        return i + "nd";
+    }
+    if (j == 3 && k != 13) {
+        return i + "rd";
+    }
+    return i + "th";
+}
+
+// *****************************************
 // Dynamic forms
 
 function isNullBool(input) {
@@ -2316,5 +2381,219 @@ function adventCalendar() {
         $('.corner-popup').width('auto');
         $('.corner-popup').css('padding', '5px 10px');
         $('.corner-popup > small').css('padding', '0');
+    }
+}
+
+function aprilFools() {
+    let today = new Date();
+    // Check it's april 1st
+    if ((today.getMonth() + 1) == 4 && today.getDate() == 1) {
+        if (window.location.pathname.indexOf('/login') !== -1) {
+            return;
+        }
+        $('.corner-popup').remove();
+        let conf = aprilfools_configuration;
+        let css = '.speech-bubble {\
+	position: relative;\
+	background: ' + conf.bubbleColor + ';\
+	border-radius: .4em;\
+    color: white;\
+    padding: 10px;\
+    text-align: center;\
+    font-size: 1.5em;\
+}\
+\
+.speech-bubble:after {\
+	content: \'\';\
+	position: absolute;\
+	right: 0;\
+	top: 50%;\
+	width: 0;\
+	height: 0;\
+	border: 47px solid transparent;\
+	border-left-color: ' + conf.bubbleColor + ';\
+	border-right: 0;\
+	border-bottom: 0;\
+	margin-top: -23.5px;\
+	margin-right: -47px;\
+}\
+.speech-bubble.end {\
+    background: ' + conf.bubbleColor + ';\
+    padding: 30px 10px;\
+}\
+.speech-bubble.end:after {\
+    border-left-color: ' + conf.bubbleColor + ';\
+}\
+.aprilFoolsPopup {\
+    position: fixed;\
+    z-index: 3000;\
+    bottom: 20px;\
+    left: 20px;\
+    max-width: 100%;\
+    background-color: rgba(255, 255, 255, 0.95);\
+    border-radius: 10px;\
+    padding: 20px 30px;\
+    border: 2px solid white;\
+    box-shadow: 0px 0px 30px 2px rgba(0, 0, 0, 0.2);\
+}\
+';
+        injectStyles(css);
+
+        let gameDismissed = localStorage['aprilFoolDismissed' + today.getYear()] || false;
+        let gameEnded = localStorage['aprilFoolEnded' + today.getYear()] || false;
+        if (gameDismissed || gameEnded) {
+            return;
+        }
+        if (typeof(aprilFoolsTakeOverDivs) != 'undefined') {
+            aprilFoolsTakeOverDivs();
+        }
+
+        function getItem(same, small) {
+            return '<img src="' + conf.items[(same ? 0 : Math.floor(Math.random() * conf.items.length))] + '" alt="item"' + (small ? ' style="height: 20px;"' : '') + (conf.itemSize ? ' style="height: ' + conf.itemSize + ';"' : '') + ' />';
+        }
+
+        function endGameModal() {
+            $.ajax({
+                url: '/ajax/endaprilfool/',
+                success: function(data) {
+                    if ('already_got' in data) {
+                        $('#freeModal .afterbadge').show();
+                        if ('added' in data) {
+                            $('#freeModal .afterbadge').after(
+                                '<br><p class="alert alert-info fontx0-8">\
+Congratulations, you\'re the <b>' + ordinal_suffix_of(data['already_got'] + 1)
+                                    + '</b> player who completed this challenge!</p>');
+                        }
+                    }
+                },
+            });
+            let modalEndContent = $('\
+<div class="row">\
+<div class="col-md-6 col-xs-8">\
+<div class="endText"><div class="speech-bubble end" style="background-color: ' + conf.bubbleColor + ';">' + conf.endBubbleText + '</div><br><div class="fontx1-5 text-center">' + conf.endText + '</div><div class="text-center afterbadge" style="display: none;"><br>' + conf.afterBadgeText + '<br><br><div class="text-center"><a href="/me/?open=badge" class="btn btn-main btn-lg btn-lines">Check it out <i class="flaticon-link fontx0-5"></i></a></div></div></div></div>\
+<div class="col-md-6 col-xs-4">\
+<img src="' + conf.endImage + '" alt="April fools" class="img-responsive" />\
+</div>\
+</div>\
+');
+            freeModal('April fools!', modalEndContent, 0, 'lg');
+            $('#freeModal').on('hidden.bs.modal', function() {
+                location.reload();
+            });
+        }
+
+        function gameStartedPop() {
+            let totalFound = 0;
+            let onPage = 0;
+            let hintable = [];
+            $.each(conf.hiddenAfterDivs, function(i, d) {
+                let wasFound = localStorage['aprilFoolFound' + today.getYear() + '' + i] || false;
+                if (wasFound) {
+                    totalFound += 1;
+                } else {
+                    if ($(d[0]).length > 0) {
+                        onPage += 1;
+                        let toClick = $('<a href="#" class="padding10">' + getItem() + '</a>');
+                    toClick.click(function(e) {
+                        e.preventDefault();
+                        toClick.remove();
+                        localStorage['aprilFoolFound' + today.getYear() + '' + i] = true;
+                        totalFound += 1;
+                        $('.aprilFoolsPopup .found').text(totalFound);
+                        onPage -= 1;
+                        $('.aprilFoolsPopup .hint').html(getHint());
+                        if (totalFound == totalToFind) {
+                            // End of game!
+                            localStorage['aprilFoolEnded' + today.getYear()] = true;
+                            endGameModal();
+                        }
+                        return false;
+                    });
+                        $(d[0]).first().after(toClick);
+                    } else { // not on page
+                        hintable.push(d[1])
+                    }
+                }
+            });
+
+            function getHint() {
+                let showHint = localStorage['aprilFoolShowHint' + today.getYear()] || false;
+                if (!showHint) {
+                    return '?';
+                } else {
+                    if (onPage > 0) {
+                        return (': I see ' + onPage + getItem(true, true) + '!');
+                    } else {
+                        let hintCounter = parseInt(localStorage['aprilFoolShowHint' + today.getYear()]) || 0;
+                        if (hintCounter >= 2) {
+                            localStorage['aprilFoolShowHint' + today.getYear()] = 0;
+                            return ': ' + hintable[Math.floor(Math.random() * hintable.length)];
+                        } else {
+                            localStorage['aprilFoolShowHint' + today.getYear()] = hintCounter + 1;
+                            return ': Nothing to see here...';
+                        }
+                    }
+                }
+            }
+
+            let totalToFind = conf.hiddenAfterDivs.length;
+
+            let popup = $('<div class="aprilFoolsPopup"><a href="#close" class="text-muted pull-right a-nodifference" style="padding-left: 20px;"><small>x</small></a>\
+You found <span class="found">' + totalFound + '</span> / <span>' + totalToFind + '</span> ' + getItem(true) + '<br>\
+<a href="#getHint" class="a-nodifference fontx0-8"><i class="flaticon-idea"></i> Hint<span class="hint">' + getHint() + '</span></a>\
+</div>');
+            popup.find('[href="#close"]').click(function(e) {
+                popup.hide('fast');
+            });
+            popup.find('[href="#getHint"]').click(function(e) {
+                e.preventDefault();
+                let showHint = localStorage['aprilFoolShowHint' + today.getYear()] || false;
+                if (showHint) {
+                    localStorage.removeItem('aprilFoolShowHint' + today.getYear());
+                    popup.find('.hint').html(getHint());
+                } else {
+                    localStorage['aprilFoolShowHint' + today.getYear()] = true;
+                    popup.find('.hint').html(getHint());
+                }
+                return false;
+            });
+            $('body').append(popup);
+        }
+
+        let gameStarted = localStorage['aprilFoolStarted' + today.getYear()] || false;
+        if (gameStarted) {
+            gameStartedPop();
+        } else {
+            let buttons = '<div class="text-center">\
+<a href="' + (is_authenticated ? '#play' : '/login/') + '" class="btn btn-main btn-xl btn-lines">' + conf.startButton + '</a><br>\
+<a href="#dismiss" class="btn btn-link-muted">Not interested</a></div>';
+            let modalContent = $('\
+<div class="row">\
+<div class="col-md-6 col-xs-8">\
+' + (conf.startBubbleText ? '<div class="speech-bubble">' + conf.startBubbleText.replace('{site_name}', site_name) + '</div><br>' : '') + '\
+<quote class="fontx1-5">' + conf.startText + '</quote>\
+<br><br><br>' + buttons + '</p>\
+</div>\
+<div class="col-md-6 col-xs-4">\
+<img src="' + conf.startImage + '" alt="April fools" class="img-responsive" />\
+</div>\
+</div>\
+');
+            modalContent.find('[href="#dismiss"]').click(function(e) {
+                e.preventDefault();
+                localStorage['aprilFoolDismissed' + today.getYear()] = true;
+                location.reload();
+                return false;
+            });
+            modalContent.find('[href="#play"]').click(function(e) {
+                e.preventDefault();
+                localStorage['aprilFoolStarted' + today.getYear()] = true;
+                gameStarted = true;
+                gameStartedPop();
+                $('#freeModal').modal('hide');
+                return false;
+            });
+            freeModal('April fools!', modalContent, 0, 'lg');
+        }
     }
 }

@@ -292,6 +292,7 @@
       var translated_terms = {{ javascript_translated_terms_json|safe }};
       var staff_buttons_hidden = true;
       var debug = {% if debug %}true{% else %}false{% endif %};
+      var site_name = '{{ t_site_name }}';
     </script>
 
     <script src="{{ static_url }}bower/jquery/jquery.min.js"></script>

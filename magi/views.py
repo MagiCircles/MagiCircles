@@ -66,6 +66,7 @@ from magi.utils import (
     LANGUAGES_NAMES,
     h1ToContext,
     get_default_owner,
+    getEventStatus,
 )
 from magi.notifications import pushNotification
 from magi.settings import (
@@ -1611,3 +1612,35 @@ def adventcalendar(request, context, day=None):
             )
         except simplejson.JSONDecodeError:
             context['image'] = None
+
+def endaprilfool(request, context):
+    if getEventStatus((03, 31), (04, 02)) != 'current':
+        raise PermissionDenied()
+    badge_image = getattr(django_settings, 'SEASONAL_SETTINGS', {}).get('aprilfools', {}).get('extra', {}).get('badge_image', None)
+    if not badge_image:
+        return {}
+    today = datetime.date.today()
+    name = u'Happy April Fool\'s Day! {}'.format(today.year)
+    description = 'Congratulations! You finished the event.'
+    existing_badge = models.Badge.objects.filter(name=name, user=request.user).count()
+    rank = None
+    already_got = models.Badge.objects.filter(name=name).count()
+    if existing_badge:
+        return {
+            'already_got': already_got,
+        }
+    if already_got < 3:
+        rank = 3 - already_got
+    models.Badge.objects.create(
+        owner=get_default_owner(models.User),
+        user=request.user,
+        name=name, m_description=description, _cache_description=description,
+        image=badge_image,
+        rank=rank,
+        show_on_profile=True,
+        show_on_top_profile=False,
+    )
+    return {
+        'already_got': already_got,
+        'added': True,
+    }
