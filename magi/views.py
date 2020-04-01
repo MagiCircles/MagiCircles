@@ -1640,6 +1640,7 @@ def endaprilfool(request, context):
         show_on_profile=True,
         show_on_top_profile=False,
     )
+    request.user.preferences.force_update_cache('tabs_with_content')
     return {
         'already_got': already_got,
         'added': True,
