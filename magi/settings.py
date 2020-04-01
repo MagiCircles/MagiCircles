@@ -867,8 +867,8 @@ def _set_default_for_page(page_name, setting, value):
                 page[setting] = value
 
 _wiki_page_description = lambda: u'{} - {}'.format(
-    _('Help'), _('Learn a few tips and tricks to help you easily use {site}.'.format(
-        site=SITE_NAME_PER_LANGUAGE.get(get_language(), SITE_NAME))))
+    _('Help'), _('Learn a few tips and tricks to help you easily use {site}.').format(
+        site=SITE_NAME_PER_LANGUAGE.get(get_language(), SITE_NAME)))
 
 for _args in [
         ('about', 'page_description', SITE_LONG_DESCRIPTION),
