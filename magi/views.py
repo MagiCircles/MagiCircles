@@ -1614,7 +1614,7 @@ def adventcalendar(request, context, day=None):
             context['image'] = None
 
 def endaprilfool(request, context):
-    if getEventStatus((03, 31), (04, 02)) != 'current':
+    if getEventStatus((03, 31), (04, 03)) != 'current':
         raise PermissionDenied()
     badge_image = getattr(django_settings, 'SEASONAL_SETTINGS', {}).get('aprilfools', {}).get('extra', {}).get('badge_image', None)
     if not badge_image:

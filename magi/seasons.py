@@ -84,7 +84,7 @@ DEFAULT_SEASONS = {
     },
     'aprilfools': {
         'start_date': (03, 31),
-        'end_date': (04, 02),
+        'end_date': (04, 03),
         'activity_tag': string_concat(_('Happy April Fool\'s Day!'), u' 🤪😜🤣'),
         'extrajavascript': 'aprilFools();',
         'extra': {
