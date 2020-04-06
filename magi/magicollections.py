@@ -2529,7 +2529,7 @@ class AccountCollection(MagiCollection):
                 'is_hidden_from_leaderboard', 'show_friend_id',
                 'nickname', 'default_tab',
             ]
-            if not item.is_playground:
+            if not getattr(item, 'is_playground', False):
                 exclude_fields.append('is_playground')
 
             fields = super(AccountCollection.ItemView, self).to_fields(item, *args, exclude_fields=exclude_fields, **kwargs)

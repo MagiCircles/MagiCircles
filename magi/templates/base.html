@@ -75,7 +75,7 @@
             {% callWithContext dict=link function='show_link_callback' %}
             {% if result_of_callwithcontext %}
             <li class="{% if current == link_name %}active{% endif %}{% if link.is_list %} dropdown{% endif %}" data-link-name="{{ link_name }}">
-              <a href="{% if link.url %}{{ link.url }}{% else %}#{% endif %}"{% if link.is_list %} class="dropdown-toggle" data-toggle="dropdown" id="navBarIDDropDown{{ link_name }}"{% endif %}{% if link.new_tab %} target="_blank"{% endif %}>
+              <a href="{% navbarGetURL link=link %}"{% if link.is_list %} class="dropdown-toggle" data-toggle="dropdown" id="navBarIDDropDown{{ link_name }}"{% endif %}{% if link.new_tab %} target="_blank"{% endif %}>
                 {% if link.icon %}
                 <i class="flaticon-{{ link.icon }}"></i>
                 {% elif link.image %}

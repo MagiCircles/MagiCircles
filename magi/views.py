@@ -100,6 +100,8 @@ from magi.settings import (
     ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES,
     REDIRECT_AFTER_SIGNUP,
     SITE_LOGO_PER_LANGUAGE,
+    SITE_LOGO_WHEN_LOGGED_IN,
+    SITE_LOGO_WHEN_LOGGED_IN_PER_LANGUAGE,
     GLOBAL_OUTSIDE_PERMISSIONS,
     CUSTOM_PREFERENCES_FORM,
     HOMEPAGE_ARTS,
@@ -268,6 +270,13 @@ def indexExtraContext(context):
         logo_per_language = SITE_LOGO_PER_LANGUAGE.get(get_language(), None)
         if logo_per_language:
             context['site_logo'] = staticImageURL(logo_per_language)
+
+    if context['request'].user.is_authenticated() and SITE_LOGO_WHEN_LOGGED_IN:
+        context['site_logo'] = staticImageURL(SITE_LOGO_WHEN_LOGGED_IN)
+        if SITE_LOGO_WHEN_LOGGED_IN_PER_LANGUAGE:
+            logo_per_language = SITE_LOGO_WHEN_LOGGED_IN_PER_LANGUAGE.get(get_language(), None)
+            if logo_per_language:
+                context['site_logo'] = staticImageURL(logo_per_language)
 
     # Homepage arts
     if HOMEPAGE_ARTS:
@@ -710,7 +719,7 @@ def settings(request, context):
             'type': CuteFormType.Images,
         },
         'd_extra-background': {
-            'to_cuteform': lambda k, v: PROFILE_BACKGROUNDS_THUMBNAILS[k],
+            'to_cuteform': lambda k, v: staticImageURL(PROFILE_BACKGROUNDS_THUMBNAILS[k]),
             'title': _('Background'),
             'extra_settings': {
                 'modal': 'true',

@@ -328,6 +328,11 @@ else:
 ############################################################
 # Optional settings without default values (= None)
 
+if hasattr(settings_module, 'SITE_LOGO_WHEN_LOGGED_IN'):
+    SITE_LOGO_WHEN_LOGGED_IN = getattr(settings_module, 'SITE_LOGO_WHEN_LOGGED_IN')
+else:
+    SITE_LOGO_WHEN_LOGGED_IN = None
+
 if hasattr(settings_module, 'ACCENT_COLOR'):
     ACCENT_COLOR = getattr(settings_module, 'ACCENT_COLOR')
 else:
@@ -342,6 +347,11 @@ if hasattr(settings_module, 'SITE_LOGO_PER_LANGUAGE'):
     SITE_LOGO_PER_LANGUAGE = getattr(settings_module, 'SITE_LOGO_PER_LANGUAGE')
 else:
     SITE_LOGO_PER_LANGUAGE = None
+
+if hasattr(settings_module, 'SITE_LOGO_WHEN_LOGGED_IN_PER_LANGUAGE'):
+    SITE_LOGO_WHEN_LOGGED_IN_PER_LANGUAGE = getattr(settings_module, 'SITE_LOGO_WHEN_LOGGED_IN_PER_LANGUAGE')
+else:
+    SITE_LOGO_WHEN_LOGGED_IN_PER_LANGUAGE = None
 
 if hasattr(settings_module, 'SITE_IMAGE_PER_LANGUAGE'):
     SITE_IMAGE_PER_LANGUAGE = getattr(settings_module, 'SITE_IMAGE_PER_LANGUAGE')

@@ -52,8 +52,8 @@ def getFormAsList(forms, form):
 @register.simple_tag(takes_context=True)
 def navbarGetURL(context, link):
     if link.get('get_url', None):
-        return link['get_url'](context)
-    return link['url']
+        return link['get_url'](context) or '#'
+    return link.get('url', None) or '#'
 
 @register.simple_tag(takes_context=True)
 def navbarTitle(context, link):

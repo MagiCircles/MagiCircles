@@ -1676,7 +1676,7 @@ class AccountForm(AutoForm):
         previous_level = 0
         if not self.is_creating:
             previous_level = getattr(self.instance, 'level_on_screenshot_upload', self.previous_level) or 0
-        is_playground = self.instance.is_playground if not self.is_creating else False
+        is_playground = getattr(self.instance, 'is_playground', False) if not self.is_creating else False
         if self.cleaned_data.get('is_playground'):
             is_playground = True
         if (new_level

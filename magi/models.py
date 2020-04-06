@@ -273,7 +273,7 @@ class UserPreferences(BaseMagiModel):
 
     @property
     def background_image_url(self):
-        return PROFILE_BACKGROUNDS_IMAGES.get(self.background_id, None)
+        return staticImageURL(PROFILE_BACKGROUNDS_IMAGES.get(self.background_id, None))
 
     @classmethod
     def get_localized_color(self, color):
