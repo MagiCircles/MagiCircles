@@ -142,6 +142,20 @@ other_sites = [
         'url': 'https://maji.love/',
     },
     {
+        'name': 'AC',
+        'game_name': 'Animal Crossing: New Horizons',
+        'game_names': {
+            'ja': u'あつまれ どうぶつの森',
+            'kr': u'모여봐요 동물의 숲',
+            'zh-hans': u'集合啦！動物森友會',
+            'zh-hant': u'集合啦！動物森友會',
+        },
+        'image': 'ac',
+        'url': 'https://ac.db0.company/',
+        'profile_url': 'https://ac.db0.company/user/{}/',
+        'shortname': 'ac',
+    },
+    {
         'name': 'Stardust Run',
         'names': {
             'ja': u'スターダストラン',

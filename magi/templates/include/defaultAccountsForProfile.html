@@ -23,7 +23,7 @@
         <h3 class="username">{% if account.display_nickname %}{{ account.display_nickname }}{% else %}{{ account.nickname|default_if_none:account.cached_owner.username }}{% endif %}</h3>
       </div>
       <div class="col-md-2">
-        <h3 class="level">{{ account.level|default_if_none:"??" }}</h3>
+        <h3 class="level">{% if account.display_level %}{{ account.display_level }}{% else %}{{ account.level|default_if_none:"??" }}{% endif %}</h3>
         {% if account.friend_id and account.show_friend_id %}<div class="friend_id"><small>{% if account.display_friend_id %}{{ account.display_friend_id }}{% else %}{{ account.friend_id }}{% endif %}</small></div>{% endif %}
       </div>
     </div>
