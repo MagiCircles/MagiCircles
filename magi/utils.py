@@ -2,7 +2,6 @@
 from __future__ import division
 import os, string, random, csv, tinify, cStringIO, pytz, simplejson, datetime, io, operator, re, math, requests, urllib, urllib2
 from PIL import Image
-from wand.image import Image as WandImage
 from collections import OrderedDict
 from dateutil.relativedelta import relativedelta
 from django.conf import settings as django_settings
@@ -2135,6 +2134,7 @@ def saveImageURLToModel(item, field_name, url, return_data=False, request_option
     return image
 
 def saveGeneratedImage(image, path=None, upload=False, instance=None, model=None, field_name='image', previous_url=None):
+    from wand.image import Image as WandImage
     # Save image locally
     if not path or not path.startswith('/'):
         path = os.path.dirname(os.path.dirname(__file__)) + u'/' + (path or 'tmp.png')
@@ -2204,6 +2204,7 @@ def makeImageGrid(
     )
 
 def makeBadgeImage(badge, width=None, path=None, upload=False, instance=None, model=None, field_name='image', previous_url=None, with_padding=0):
+    from wand.image import Image as WandImage
     # /!\ Can't be called at global level
     # Get border
     filename = 'badge{}'.format(badge.rank or '')
