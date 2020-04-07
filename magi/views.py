@@ -67,6 +67,7 @@ from magi.utils import (
     h1ToContext,
     get_default_owner,
     getEventStatus,
+    listUnique,
 )
 from magi.notifications import pushNotification
 from magi.settings import (
@@ -1299,7 +1300,9 @@ def translations(request, context):
     context['total'] = 0
     context['total_need_translations'] = 0
     context['see_all'] = 'see_all' in request.GET
-    only_languages = (request.user.preferences.settings_per_groups or {}).get('translator', {}).get('languages', {})
+    speaks_languages = listUnique((request.user.preferences.settings_per_groups or {}).get(
+        'translator', {}).get('languages', []) + ['en'])
+    only_languages = speaks_languages[:]
     if context['see_all']:
         only_languages = {}
     if 'language' in request.GET:
@@ -1347,7 +1350,7 @@ def translations(request, context):
 
                     _limit_sources_to = [
                         l for l in limit_sources_to if l != language
-                    ] if language == 'en' else []
+                    ] if language == 'en' else speaks_languages
                     items_with_something_to_translate = get_total_translations(
                         collection.queryset, field, limit_sources_to=_limit_sources_to)
                     count_total = items_with_something_to_translate.count()

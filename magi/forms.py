@@ -77,6 +77,7 @@ from magi.utils import (
     getCharactersFavoriteFilter,
     getCharactersChoices,
     getCharactersFavoriteCuteForm,
+    listUnique,
 )
 
 ############################################################
@@ -123,7 +124,7 @@ def get_total_translations(queryset, field_name, limit_sources_to=[], exclude_so
     # Filter fields that have a value in the source language(s)
     condition = Q()
     for language in queryset.model.get_field_translation_sources(field_name):
-        if limit_sources_to and language not in limit_sources_to:
+        if language not in (limit_sources_to or []):
             continue
         if language in exclude_sources:
             continue
@@ -1038,7 +1039,9 @@ class MagiFiltersForm(AutoForm):
 
     def _to_missing_translation_lambda(self, field_name):
         def _to_missing_translation(form, queryset, request, value=None):
-            return get_missing_translations(queryset, field_name, value.split(','))
+            limit_sources_to = listUnique((request.user.preferences.settings_per_groups or {}).get(
+                'translator', {}).get('languages', []) + ['en'])
+            return get_missing_translations(queryset, field_name, value.split(','), limit_sources_to=limit_sources_to)
         return _to_missing_translation
 
     presets = {}
