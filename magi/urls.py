@@ -234,24 +234,24 @@ for collection in collections.values():
     ajax_parameters['ajax'] = True
     if collection.list_view.enabled:
         url_name = '{}_list'.format(collection.name)
-        urls.append(url(r'^{}[/]*$'.format(collection.plural_name), views_collections.list_view, parameters, name=url_name))
+        urls.append(url(u'^{}[/]*$'.format(collection.plural_name), views_collections.list_view, parameters, name=url_name))
         if collection.list_view.ajax:
-            urls.append(url(r'^ajax/{}/$'.format(collection.plural_name), views_collections.list_view, ajax_parameters, name='{}_ajax'.format(url_name)))
+            urls.append(url(u'^ajax/{}/$'.format(collection.plural_name), views_collections.list_view, ajax_parameters, name='{}_ajax'.format(url_name)))
         for shortcut_url in collection.list_view.shortcut_urls:
             shortcut_parameters = parameters.copy()
             shortcut_parameters['shortcut_url'] = shortcut_url
             shortcut_ajax_parameters = ajax_parameters.copy()
             shortcut_ajax_parameters['shortcut_url'] = shortcut_url
-            urls.append(url(r'^{}[/]*$'.format(shortcut_url), views_collections.list_view, shortcut_parameters, name=url_name))
+            urls.append(url(u'^{}[/]*$'.format(shortcut_url), views_collections.list_view, shortcut_parameters, name=url_name))
             if collection.list_view.ajax:
-                urls.append(url(r'^ajax/{}/$'.format(shortcut_url), views_collections.list_view, shortcut_ajax_parameters, name='{}_ajax'.format(url_name)))
+                urls.append(url(u'^ajax/{}/$'.format(shortcut_url), views_collections.list_view, shortcut_ajax_parameters, name='{}_ajax'.format(url_name)))
         if collection.list_view.allow_random and collection.list_view.filter_form:
-            urls.append(url(r'^{}/random[/]*$'.format(collection.plural_name), views_collections.random_view, parameters, name=u'{}_random'.format(url_name)))
+            urls.append(url(u'^{}/random[/]*$'.format(collection.plural_name), views_collections.random_view, parameters, name=u'{}_random'.format(url_name)))
         if collection.list_view.filter_form and getattr(collection.list_view.filter_form, 'presets', None):
             for preset in collection.list_view.filter_form.get_presets().keys():
-                urls.append(url(r'^{}/{}[/]*$'.format(collection.plural_name, preset), views_collections.list_view, parameters, name=url_name))
+                urls.append(url(u'^{}/{}[/]*$'.format(collection.plural_name, preset), views_collections.list_view, parameters, name=url_name))
                 if collection.list_view.ajax:
-                    urls.append(url(r'^ajax/{}/{}/$'.format(collection.plural_name, preset), views_collections.list_view, ajax_parameters, name='{}_ajax'.format(url_name)))
+                    urls.append(url(u'^ajax/{}/{}/$'.format(collection.plural_name, preset), views_collections.list_view, ajax_parameters, name='{}_ajax'.format(url_name)))
         if collection.navbar_link:
             link = {
                 'url_name': url_name,
@@ -300,59 +300,59 @@ for collection in collections.values():
                     NAVBAR_ORDERING = new_ordering
     if collection.item_view.enabled:
         url_name = '{}_item'.format(collection.name)
-        urls.append(url(r'^{}/(?P<pk>\d+)[/]*$'.format(collection.name), views_collections.item_view, parameters, name=url_name))
-        urls.append(url(r'^{}/(?P<pk>\d+)[/]*$'.format(collection.plural_name), views_collections.item_view, parameters, name=url_name))
-        urls.append(url(r'^{}/(?P<pk>\d+)/{}[/]*$'.format(collection.name, _verbose_re), views_collections.item_view, parameters, name=url_name))
-        urls.append(url(r'^{}/(?P<pk>\d+)/{}[/]*$'.format(collection.plural_name, _verbose_re), views_collections.item_view, parameters, name=url_name))
+        urls.append(url(u'^{}/(?P<pk>\d+)[/]*$'.format(collection.name), views_collections.item_view, parameters, name=url_name))
+        urls.append(url(u'^{}/(?P<pk>\d+)[/]*$'.format(collection.plural_name), views_collections.item_view, parameters, name=url_name))
+        urls.append(url(u'^{}/(?P<pk>\d+)/{}[/]*$'.format(collection.name, _verbose_re), views_collections.item_view, parameters, name=url_name))
+        urls.append(url(u'^{}/(?P<pk>\d+)/{}[/]*$'.format(collection.plural_name, _verbose_re), views_collections.item_view, parameters, name=url_name))
         if collection.item_view.ajax:
-            urls.append(url(r'^ajax/{}/(?P<pk>\d+)/$'.format(collection.name), views_collections.item_view, ajax_parameters, name='{}_ajax'.format(url_name)))
+            urls.append(url(u'^ajax/{}/(?P<pk>\d+)/$'.format(collection.name), views_collections.item_view, ajax_parameters, name='{}_ajax'.format(url_name)))
         if collection.item_view.reverse_url:
-            urls.append(url(r'^{}/(?P<reverse>{})[/]*$'.format(collection.name, _verbose_re), views_collections.item_view, parameters, name=url_name))
-            urls.append(url(r'^{}/(?P<reverse>{})[/]*$'.format(collection.plural_name, _verbose_re), views_collections.item_view, parameters, name=url_name))
+            urls.append(url(u'^{}/(?P<reverse>{})[/]*$'.format(collection.name, _verbose_re), views_collections.item_view, parameters, name=url_name))
+            urls.append(url(u'^{}/(?P<reverse>{})[/]*$'.format(collection.plural_name, _verbose_re), views_collections.item_view, parameters, name=url_name))
         for shortcut_url in collection.item_view.shortcut_urls:
             if isinstance(shortcut_url, tuple):
                 shortcut_url, pk = shortcut_url
                 shortcut_parameters = parameters.copy()
                 shortcut_parameters['shortcut_url'] = shortcut_url
                 shortcut_parameters['pk'] = pk
-                urls.append(url(r'^{}[/]*$'.format(shortcut_url), views_collections.item_view, shortcut_parameters, name=url_name))
+                urls.append(url(u'^{}[/]*$'.format(shortcut_url), views_collections.item_view, shortcut_parameters, name=url_name))
             else:
-                urls.append(url(r'^{}/(?P<pk>\d+)[/]*$'.format(shortcut_url), views_collections.item_view, parameters, name=url_name))
-                urls.append(url(r'^{}/(?P<pk>\d+)/{}[/]*$'.format(shortcut_url, _verbose_re), views_collections.item_view, parameters, name=url_name))
+                urls.append(url(u'^{}/(?P<pk>\d+)[/]*$'.format(shortcut_url), views_collections.item_view, parameters, name=url_name))
+                urls.append(url(u'^{}/(?P<pk>\d+)/{}[/]*$'.format(shortcut_url, _verbose_re), views_collections.item_view, parameters, name=url_name))
     if collection.add_view.enabled:
         url_name = '{}_add'.format(collection.name)
         if collection.types:
-            urls.append(url(r'^{}/add/(?P<type>{})[/]*$'.format(collection.name, _verbose_re), views_collections.add_view, parameters, name=url_name))
-            urls.append(url(r'^{}/add/(?P<type>{})[/]*$'.format(collection.plural_name, _verbose_re), views_collections.add_view, parameters, name=url_name))
+            urls.append(url(u'^{}/add/(?P<type>{})[/]*$'.format(collection.name, _verbose_re), views_collections.add_view, parameters, name=url_name))
+            urls.append(url(u'^{}/add/(?P<type>{})[/]*$'.format(collection.plural_name, _verbose_re), views_collections.add_view, parameters, name=url_name))
             if collection.add_view.ajax:
-                urls.append(url(r'^ajax/{}/add/(?P<type>{})[/]*$'.format(collection.name, _verbose_re), views_collections.add_view, ajax_parameters, name='{}_ajax'.format(url_name)))
-                urls.append(url(r'^ajax/{}/add/(?P<type>{})[/]*$'.format(collection.plural_name, _verbose_re), views_collections.add_view, ajax_parameters, name='{}_ajax'.format(url_name)))
+                urls.append(url(u'^ajax/{}/add/(?P<type>{})[/]*$'.format(collection.name, _verbose_re), views_collections.add_view, ajax_parameters, name='{}_ajax'.format(url_name)))
+                urls.append(url(u'^ajax/{}/add/(?P<type>{})[/]*$'.format(collection.plural_name, _verbose_re), views_collections.add_view, ajax_parameters, name='{}_ajax'.format(url_name)))
             for shortcut_url, _type in collection.add_view.shortcut_urls:
                 shortcut_parameters = parameters.copy()
                 shortcut_parameters['shortcut_url'] = shortcut_url
                 shortcut_parameters['type'] = _type
-                urls.append(url(r'^{}[/]*$'.format(shortcut_url), views_collections.add_view, shortcut_parameters, name=url_name))
+                urls.append(url(u'^{}[/]*$'.format(shortcut_url), views_collections.add_view, shortcut_parameters, name=url_name))
         else:
-            urls.append(url(r'^{}/add[/]*$'.format(collection.name), views_collections.add_view, parameters, name=url_name))
-            urls.append(url(r'^{}/add[/]*$'.format(collection.plural_name), views_collections.add_view, parameters, name=url_name))
+            urls.append(url(u'^{}/add[/]*$'.format(collection.name), views_collections.add_view, parameters, name=url_name))
+            urls.append(url(u'^{}/add[/]*$'.format(collection.plural_name), views_collections.add_view, parameters, name=url_name))
             if collection.AddView.ajax:
-                urls.append(url(r'^ajax/{}/add[/]*$'.format(collection.plural_name), views_collections.add_view, ajax_parameters, name='{}_ajax'.format(url_name)))
+                urls.append(url(u'^ajax/{}/add[/]*$'.format(collection.plural_name), views_collections.add_view, ajax_parameters, name='{}_ajax'.format(url_name)))
             for shortcut_url in collection.add_view.shortcut_urls:
                 shortcut_parameters = parameters.copy()
                 shortcut_parameters['shortcut_url'] = shortcut_url
-                urls.append(url(r'^{}[/]*$'.format(shortcut_url), views_collections.add_view, shortcut_parameters, name=url_name))
+                urls.append(url(u'^{}[/]*$'.format(shortcut_url), views_collections.add_view, shortcut_parameters, name=url_name))
     if collection.edit_view.enabled:
         url_name = '{}_edit'.format(collection.name)
-        urls.append(url(r'^{}/edit/(?P<pk>\d+|unique)/$'.format(collection.name), views_collections.edit_view, parameters, name=url_name))
-        urls.append(url(r'^{}/edit/(?P<pk>\d+|unique)/$'.format(collection.plural_name), views_collections.edit_view, parameters, name=url_name))
+        urls.append(url(u'^{}/edit/(?P<pk>\d+|unique)/$'.format(collection.name), views_collections.edit_view, parameters, name=url_name))
+        urls.append(url(u'^{}/edit/(?P<pk>\d+|unique)/$'.format(collection.plural_name), views_collections.edit_view, parameters, name=url_name))
         if collection.edit_view.ajax:
-            urls.append(url(r'^ajax/{}/edit/(?P<pk>\d+|unique)/$'.format(collection.name), views_collections.edit_view, ajax_parameters, name='{}_ajax'.format(url_name)))
-            urls.append(url(r'^ajax/{}/edit/(?P<pk>\d+|unique)/$'.format(collection.plural_name), views_collections.edit_view, ajax_parameters, name='{}_ajax'.format(url_name)))
+            urls.append(url(u'^ajax/{}/edit/(?P<pk>\d+|unique)/$'.format(collection.name), views_collections.edit_view, ajax_parameters, name='{}_ajax'.format(url_name)))
+            urls.append(url(u'^ajax/{}/edit/(?P<pk>\d+|unique)/$'.format(collection.plural_name), views_collections.edit_view, ajax_parameters, name='{}_ajax'.format(url_name)))
         for shortcut_url, pk in collection.edit_view.shortcut_urls:
             shortcut_parameters = parameters.copy()
             shortcut_parameters['shortcut_url'] = shortcut_url
             shortcut_parameters['pk'] = pk
-            urls.append(url(r'^{}[/]*$'.format(shortcut_url), views_collections.item_view, shortcut_parameters, name=url_name))
+            urls.append(url(u'^{}[/]*$'.format(shortcut_url), views_collections.item_view, shortcut_parameters, name=url_name))
 
 ############################################################
 # URLs for pages
@@ -485,15 +485,15 @@ for (name, pages) in ENABLED_PAGES.items():
         ajax = page.get('ajax', False)
         redirect = page.get('redirect', None)
         if redirect:
-            urls.append(url(r'^{}{}{}[/]*$'.format(
+            urls.append(url(u'^{}{}{}[/]*$'.format(
                 'ajax/' if ajax else '', name, '/' + url_variables if url_variables else '',
             ), RedirectView.as_view(url=redirect, permanent=True)))
         else:
             if name == 'index':
-                urls.append(url(r'^$', page_view(name, page), name=name))
+                urls.append(url(u'^$', page_view(name, page), name=name))
             else:
                 url_variables = '/'.join(['(?P<{}>{})'.format(v[0], v[1]) for v in page.get('url_variables', [])])
-                urls.append(url(r'^{}{}{}[/]*$'.format('ajax/' if ajax else '', name, '/' + url_variables if url_variables else ''),
+                urls.append(url(u'^{}{}{}[/]*$'.format('ajax/' if ajax else '', name, '/' + url_variables if url_variables else ''),
                                 page_view(name, page), name=name if not ajax else '{}_ajax'.format(name)))
         if not ajax:
             navbar_link = page.get('navbar_link', True)
