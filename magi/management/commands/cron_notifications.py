@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
+import datetime
 from django.core.management.base import BaseCommand, CommandError
 from django.utils.translation import ugettext_lazy as _, string_concat, activate as translation_activate
+from django.utils import timezone
 from magi.urls import * # unused, just to make sure raw_context is updated
 from magi import models
 from magi.settings import SITE_NAME, SITE_NAME_PER_LANGUAGE
@@ -54,3 +56,10 @@ class Command(BaseCommand):
                     print 'No email'
             notification.email_sent = True
             notification.save()
+
+        now = timezone.now()
+        six_months_ago = now - datetime.timedelta(days=30*6)
+        get_old_notifications = lambda: models.Notification.objects.filter(seen=True, creation__lt=six_months_ago)
+        print 'Delete old notifications:', get_old_notifications().count()
+        while get_old_notifications().count() > 0:
+            models.Notification.objects.filter(id__in=[n.id for n in get_old_notifications()[:100]]).delete()
