@@ -5,7 +5,7 @@
 
 <style>
   {% if art %}
-  .home-wrapper {
+  .home-wrapper, .mobile-only-home-wrapper {
       background-position: {{ art_position.position }};
       background-size: {{ art_position.size }};
       background-position-y: {{ art_position.y }};
@@ -31,7 +31,17 @@
 </style>
 
 {% if art %}
-<div class="home-wrapper{% if homepage_background %} with-background{% endif %}{% if homepage_art_gradient %} with-gradient{% endif %}{% if homepage_ribbon %} with-ribbon{% endif %} {{ homepage_art_side }}"
+<div class="mobile-only-home-wrapper"
+     style="background-image: url('{% if '//' in art.url %}{{ art.url }}{% else %}{{ static_url }}img/{{ art.url }}?{{ static_fles_version }}{% endif %}');"
+>
+  {% if art.foreground_url %}
+  <div class="mobile-only-home-foreground"
+       style="background-image: url('{% if '//' in art.foreground_url %}{{ art.foreground_url }}{% else %}{{ static_url }}img/{{ art.foreground_url }}?{{ static_fles_version }}{% endif %}');"
+       >
+  </div>
+  {% endif %}{# foreground_url #}
+</div>
+<div class="home-wrapper{% if homepage_background %} with-background{% endif %}{% if homepage_art_gradient %} with-gradient{% endif %}{% if homepage_ribbon %} with-ribbon{% endif %} {{ homepage_art_side }} {% if user.is_authenticated %}home-wrapper-authenticated{% else %}home-wrapper-not-authenticated{% endif %}"
      style="background-image: url('{% if '//' in art.url %}{{ art.url }}{% else %}{{ static_url }}img/{{ art.url }}?{{ static_fles_version }}{% endif %}');"
      {% if art.hd_url %} data-hd-art="{% if '//' in art.hd_url %}{{ art.hd_url }}{% else %}{{ static_url }}img/{{ art.hd_url }}?{{ static_fles_version }}{% endif %}"{% endif %}>
   {% if art and art.foreground_url %}
@@ -110,10 +120,10 @@
           </ol>
           <div class="carousel-inner" role="listbox">
             {% for news in latest_news %}
-            <a href="{{ news.url }}" class="item{% if forloop.counter0 == 0 %} active{% endif %}{% if news.css_classes %} {{ news.css_classes }}{% endif %}"
+            <a href="{{ news.url }}" class="item{% if not news.image %} without-image{% endif %}{% if forloop.counter0 == 0 %} active{% endif %}{% if news.css_classes %} {{ news.css_classes }}{% endif %}"
                {% if news.ajax %} data-ajax-url="{{ news.ajax }}" data-ajax-title="{% if news.t_titles and news.t_titles|getattribute:LANGUAGE_CODE %}{{ news.t_titles|getattribute:LANGUAGE_CODE }}{% else %}{{ news.title }}{% endif %}"{% endif %}
-               {% if news.background %} style="background-image: url('{{ news.background }}'); height: 200px;{% if news.color %} background-color: {{ news.color }}{% endif %}"{% endif %}
-               {% if not news.background and not news.image %} style="background: {% if news.color %}{{ news.color }}{% else %}{{ site_color }}{% endif %}; height: 200px"{% endif %}
+               {% if news.background %} style="background-image: url('{{ news.background }}');{% if news.color %} background-color: {{ news.color }}{% endif %}"{% endif %}
+               {% if not news.background and not news.image %} style="background: {% if news.color %}{{ news.color }}{% else %}{{ site_color }}{% endif %}"{% endif %}
                >
 	          {% if news.image %}<img src="{% if '//' in news.image %}{{ news.image }}{% else %}{{ static_url }}img/{{ news.image }}?{{ static_files_version }}{% endif %}" alt="{% if news.t_titles and news.t_titles|getattribute:LANGUAGE_CODE %}{{ news.t_titles|getattribute:LANGUAGE_CODE }}{% else %}{{ news.title }}{% endif %}">{% endif %}
 	          <div class="carousel-caption"{% if not news.background and not news.image %} style="right: 20%; left: 20%"{% endif %}>

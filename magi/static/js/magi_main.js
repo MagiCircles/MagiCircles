@@ -1836,22 +1836,6 @@ function loadIndex() {
     if (home.length > 0 && $(document).width() > 992) {
         home.css('background-image', 'url(\'' + home.data('hd-art') + '\')');
     }
-    // Change width / height of all banners based on first image
-    $('#carousel-latest-news .item img').width('100%');
-    $('#carousel-latest-news .item img').height('auto');
-    let first_image = $('#carousel-latest-news .item img').first();
-    if (first_image.length > 0) {
-        first_image[0].onload = function() {
-            let height = first_image.closest('.item').height();
-            if (height) {
-                $('#carousel-latest-news .item').each(function() {
-                    if ($(this).find('img').length <= 0) {
-                        $(this).height(height);
-                    }
-                });
-            }
-        };
-    }
 }
 
 // *****************************************

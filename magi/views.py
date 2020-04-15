@@ -283,8 +283,9 @@ def indexExtraContext(context):
     if HOMEPAGE_ARTS:
         context['full_width'] = True
 
-        can_preview = (context['request'].user.is_authenticated()
-                       and context['request'].user.hasPermission('manage_main_items'))
+        can_preview = (django_settings.DEBUG
+                       or (context['request'].user.is_authenticated()
+                           and context['request'].user.hasPermission('manage_main_items')))
 
         if can_preview:
             preview = {}
@@ -365,11 +366,9 @@ def indexExtraContext(context):
             if not background:
                 background = random.choice(HOMEPAGE_BACKGROUNDS)
 
-            if background.has_key('thumbnail'):
-                context['art']['url'] = background['thumbnail']
-                context['art']['hd_url'] = background['image']
-            else:
-                context['art']['url'] = background['image']
+            context['art']['url'] = background['image']
+            if background.has_key('hd_image'):
+                context['art']['hd_url'] = background['hd_image']
 
         # Side of art
         context['homepage_art_side'] = context['art'].get('side', HOMEPAGE_ART_SIDE)
