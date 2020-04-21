@@ -420,10 +420,11 @@ class Command(BaseCommand):
             if self.options.get('stretch_goals', False) and totals:
                 print u'## **Stretch goals reached!**'
                 print ''
-            print u'With a total of {}{} participants, we are proud to announce that there will be {} winners!'.format(
+            print u'With a total of {}{} participants, we are proud to announce that there will be {} winner{}!'.format(
                 u'{} participating entries by '.format(totals['all']) if totals['all'] != totals['unique'] else '',
                 totals['unique'],
                 len(winners),
+                's' if len(winners) > 1 else '',
             )
             print ''
             print 'And the winner{}...'.format('s are' if len(winners) > 1 else ' is')
@@ -446,7 +447,7 @@ class Command(BaseCommand):
                     print '![winning entry image]({})'.format(entry['image'])
                     print ''
             print ''
-            print '## **Congratulations to our winners!**'
+            print '## **Congratulations to our winner{}!**'.format('s' if len(winners) > 1 else '')
             print ''
             print 'They will be able to pick their prize between:'
             print ''
@@ -454,9 +455,9 @@ class Command(BaseCommand):
                 print '![Prizes]({})'.format(self.options['prizes_image'])
                 print ''
             if self.options.get('physical_prizes', False):
-                print '- 1 {} physical prize (official merch)'.format(settings.GAME_NAME)
-            print '- 1 {} art commission'.format(settings.GAME_NAME)
-            print '- 1 {} graphic edit commission'.format(settings.GAME_NAME)
+                print '- 1 {} physical prize (official merch)'.format(unicode(settings.GAME_NAME))
+            print '- 1 {} art commission'.format(unicode(settings.GAME_NAME))
+            print '- 1 {} graphic edit commission'.format(unicode(settings.GAME_NAME))
             print ''
             print '*Subject to availability*'
             print ''
@@ -488,6 +489,8 @@ class Command(BaseCommand):
         print '# **All participants**'
         print ''
         for platform, entries in all_entries.items():
+            if totals[platform] < 1:
+                continue
             if len(self.platforms) > 1:
                 platform_name = {
                     django_settings.SITE: settings.SITE_NAME,
@@ -639,6 +642,10 @@ class Command(BaseCommand):
         }
         totals['all'] = sum(totals.values())
         totals['unique'] = len(self.get_entries_per_unique_user(all_entries))
+
+        one_chance_per_user = self.options.get('one_chance_per_user', False)
+        if one_chance_per_user:
+            totals['unique'] = len(self.get_unique_entries(all_entries))
 
         # Print entries
         print '# ALL ENTRIES'
