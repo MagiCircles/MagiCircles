@@ -98,6 +98,7 @@ class _View(object):
     permissions_required = property(propertyFromCollection('permissions_required'))
     one_of_permissions_required = property(propertyFromCollection('one_of_permissions_required'))
     ajax = True
+    disable_on_high_traffic = False
 
     def get_global_context(self, request):
         return GET_GLOBAL_CONTEXT(request)
@@ -1315,7 +1316,7 @@ class MagiCollection(object):
                 model_fields.append((field_name, d))
         fields = name_fields + many_fields + model_fields + extra_fields + many_fields_galleries
 
-       # Re-order fields
+        # Re-order fields
         if order or force_all_fields:
             dict_fields = dict(fields)
             sorted_fields = OrderedDict()
@@ -2485,6 +2486,7 @@ class AccountCollection(MagiCollection):
         add_button_subtitle = _('Create your account to join the community and be in the leaderboard!')
         filter_form = forms.AccountFilterForm
         allow_random = False
+        disable_on_high_traffic = True
 
         show_item_buttons_as_icons = True
         item_buttons_classes = ['btn', 'btn-link']
@@ -2675,6 +2677,7 @@ class UserCollection(MagiCollection):
         show_item_buttons_justified = False
         item_buttons_classes = ['btn', 'btn-link-secondary', 'btn-lg']
         show_edit_button_permissions_only = ['see_profile_edit_button']
+        disable_on_high_traffic = True
         page_size = 30
         per_line = 1
 

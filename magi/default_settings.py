@@ -758,6 +758,23 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'navbar_link': False,
         'icon': 'category',
     }),
+    ('hightraffic', [
+        {
+            'title': 'Temporarily unavailable',
+            'show_title': True,
+            'custom': False,
+            'navbar_link': False,
+            'icon': 'developer',
+        },
+        {
+            'ajax': True,
+            'title': 'Temporarily unavailable',
+            'show_title': True,
+            'custom': False,
+            'navbar_link': False,
+            'icon': 'developer',
+        },
+    ]),
     ('deletelink', {
         'ajax': True,
         'custom': False,

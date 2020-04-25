@@ -6,6 +6,7 @@ from django.utils.translation import ugettext_lazy as _
 from magi.middleware.httpredirect import HttpRedirectException
 from django.shortcuts import render
 from django.http import Http404
+from django.conf import settings as django_settings
 from django.core.exceptions import PermissionDenied
 from django.forms import HiddenInput, ChoiceField
 from magi.utils import (
@@ -32,6 +33,12 @@ from magi.forms import ConfirmDelete, filter_ids
 
 ############################################################
 # Internal utils
+
+def _redirect_on_high_traffic(view, request, ajax=False):
+    if (getattr(django_settings, 'HIGH_TRAFFIC', False)
+        and view.disable_on_high_traffic
+        and not request.user.is_authenticated()):
+        raise HttpRedirectException(u'{}/hightraffic/'.format('/ajax' if ajax else ''))
 
 def _get_filters(request_get, extra_filters={}):
     filters = request_get.copy()
@@ -135,6 +142,7 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
     """
     context = collection.item_view.get_global_context(request)
     collection.item_view.check_permissions(request, context)
+    _redirect_on_high_traffic(collection.item_view, request, ajax=ajax)
     request.show_collect_button = collection.item_view.show_collect_button
     queryset = collection.item_view.get_queryset(collection.queryset, _get_filters(request.GET, extra_filters), request)
     if not pk and reverse:
@@ -278,6 +286,8 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
         raise HttpRedirectException('/prelaunch/')
 
     collection.list_view.check_permissions(request, context)
+    _redirect_on_high_traffic(collection.list_view, request, ajax=ajax)
+
     context['plural_name'] = collection.plural_name
     page = 0
 
@@ -643,6 +653,8 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
 def add_view(request, name, collection, type=None, ajax=False, shortcut_url=None, **kwargs):
     context = collection.add_view.get_global_context(request)
     collection.add_view.check_permissions(request, context)
+    _redirect_on_high_traffic(collection.add_view, request, ajax=ajax)
+
     context = _modification_view(context, name, collection.add_view, ajax)
     with_types = False
     if shortcut_url is not None:
@@ -738,6 +750,9 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
         collection.edit_view.check_translate_permissions(request, context)
     else:
         collection.edit_view.check_permissions(request, context)
+
+    _redirect_on_high_traffic(collection.edit_view, request, ajax=ajax)
+
     context['is_reported'] = 'is_reported' in request.GET
     context = _modification_view(context, name, collection.edit_view, ajax)
     queryset = collection.edit_view.get_queryset(collection.queryset, _get_filters(request.GET, extra_filters), request)
