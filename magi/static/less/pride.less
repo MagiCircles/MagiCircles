@@ -1,0 +1,46 @@
+@red: #FA496E;
+@orange: #FF8522;
+@yellow: #FFDD00;
+@green: #00DCAB;
+@blue: #52DBFF;
+@purple: #A67EFF;
+
+.rainbow-stripe {
+    @fade: 90%;
+    background-size: 10px;
+    background-position: center right;
+    background-repeat: no-repeat;
+    background-image: linear-gradient(
+        to bottom,
+        fade(@red, @fade) 0%, fade(@red, @fade) 16.666%,
+        fade(@orange, @fade) 16.666%, fade(@orange, @fade) 33.333%,
+        fade(@yellow, @fade) 33.333%, fade(@yellow, @fade) 50%,
+        fade(@green, @fade) 50%, fade(@green, @fade) 66.666%,
+        fade(@blue, @fade) 66.666%, fade(@blue, @fade) 83.333%,
+        fade(@purple, @fade) 83.333%, fade(@purple, @fade) 100%,
+    );
+}
+
+.btn-main,
+.list-group-item.active,
+#filter-form-search-button button
+{
+    .rainbow-stripe();
+}
+
+.navbar-brand:before, .page-title:before, .modal-title:before {
+    content: '';
+    display: inline-block;
+    background-size: 50px;
+    margin: -14px -10px;
+    height: 52px;
+    width: 50px;
+}
+
+.navbar-brand:before {
+    height: 44px;
+    width: 42px;
+}
+.navbar-brand img.logo {
+    display: inline-block;
+}

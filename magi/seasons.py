@@ -163,6 +163,8 @@ DEFAULT_SEASONS = {
         'start_date': (06, 01),
         'end_date': (07, 01),
         'activity_tag': string_concat(_('Happy Pride Month!'), u' 🏳️‍🌈🏳️‍⚧️'),
+        'extracss_template': 'include/pride_css.css',
+        'theme': True,
     },
     'thanksgiving': {
         'start_date': (11, 22),
