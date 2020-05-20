@@ -12,6 +12,9 @@ CONTEXT_SETTINGS = [
     # Logo on the homepage. Can be a full URL or partial.
     'site_logo',
 
+    # Logo on the homepage when logged in. Can be a full URL or partial.
+    'site_logo_when_logged_in',
+
     # Javascript that will be included within the HTML.
     'extrajavascript',
 ]
@@ -41,6 +44,7 @@ AVAILABLE_SETTINGS = CONTEXT_SETTINGS + CSS_SETTINGS + [
 STAFF_CONFIGURATIONS_SETTINGS = [
     'site_nav_logo',
     'site_logo',
+    'site_logo_when_logged_in',
     'extracss',
     'extrajavascript',
     'activity_tag_banner',

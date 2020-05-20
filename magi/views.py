@@ -40,8 +40,10 @@ from magi.utils import (
     artSettingsToGetParameters,
     getGlobalContext,
     getNavbarPrefix,
+    getRandomValueInCurrentSeasons,
     getRandomVariableInCurrentSeasons,
     HTMLAlert,
+    isValueInAnyCurrentSeason,
     isVariableInAnyCurrentSeason,
     redirectToProfile,
     tourldash,
@@ -272,12 +274,17 @@ def indexExtraContext(context):
         if logo_per_language:
             context['site_logo'] = staticImageURL(logo_per_language)
 
-    if context['request'].user.is_authenticated() and SITE_LOGO_WHEN_LOGGED_IN:
-        context['site_logo'] = staticImageURL(SITE_LOGO_WHEN_LOGGED_IN)
-        if SITE_LOGO_WHEN_LOGGED_IN_PER_LANGUAGE:
-            logo_per_language = SITE_LOGO_WHEN_LOGGED_IN_PER_LANGUAGE.get(get_language(), None)
-            if logo_per_language:
-                context['site_logo'] = staticImageURL(logo_per_language)
+    if context['request'].user.is_authenticated():
+        # 'Tis the season
+        if isValueInAnyCurrentSeason('site_logo_when_logged_in'):
+            context['site_logo'] = staticImageURL(getRandomValueInCurrentSeasons(
+                'site_logo_when_logged_in'))
+        elif SITE_LOGO_WHEN_LOGGED_IN:
+            context['site_logo'] = staticImageURL(SITE_LOGO_WHEN_LOGGED_IN)
+            if SITE_LOGO_WHEN_LOGGED_IN_PER_LANGUAGE:
+                logo_per_language = SITE_LOGO_WHEN_LOGGED_IN_PER_LANGUAGE.get(get_language(), None)
+                if logo_per_language:
+                    context['site_logo'] = staticImageURL(logo_per_language)
 
     # Homepage arts
     if HOMEPAGE_ARTS:
