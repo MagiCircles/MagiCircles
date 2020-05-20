@@ -571,11 +571,27 @@ custom_item_template = property(lambda view: '{}Item'.format(view.collection.nam
 ############################################################
 # Seasonal helpers
 
-def isVariableInAnyCurrentSeason(key):
+# For direct values
+def isValueInAnyCurrentSeason(key):
     return any(
         season.get(key, None)
         for season in getattr(django_settings, 'SEASONAL_SETTINGS', {}).values()
     )
+
+def getValueInAllCurrentSeasons(key):
+    return {
+        season_name: season[key]
+        for season_name, season in django_settings.SEASONAL_SETTINGS.items()
+        if season.get(key, None)
+    }
+
+def getRandomValueInCurrentSeasons(key):
+    return random.choice(getValueInAllCurrentSeasons(key).values())
+
+# For variables in seasons.py module
+
+def isVariableInAnyCurrentSeason(key):
+    return isValueInAnyCurrentSeason(key)
 
 def getVariableFromSeasonalModule(key, variable_name, custom_seasonal_module):
     variable = None
