@@ -13,8 +13,9 @@ from django.http import Http404
 from django.utils.http import urlquote
 from django.utils.deconstruct import deconstructible
 from django.utils.translation import ugettext_lazy as _, get_language, activate as translation_activate
-from django.utils.formats import dateformat
-from django.utils.safestring import mark_safe
+from django.utils.formats import dateformat, date_format
+from django.utils.safestring import mark_safe, SafeText, SafeBytes
+from django.utils.html import escape
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.template import Context
@@ -799,8 +800,8 @@ class CuteFormType:
     default_to_cuteform = ['key', 'value', 'value', 'value']
 
 class CuteFormTransform:
-    No, ImagePath, Flaticon, FlaticonWithText = range(4)
-    default_field_type = [CuteFormType.Images, CuteFormType.Images, CuteFormType.HTML, CuteFormType.HTML]
+    No, ImagePath, Flaticon, FlaticonWithText, ImageWithText = range(5)
+    default_field_type = [CuteFormType.Images, CuteFormType.Images, CuteFormType.HTML, CuteFormType.HTML, CuteFormType.HTML]
 
 def _callToCuteForm(to_cuteform, key, value):
     if to_cuteform == 'key':
@@ -819,7 +820,7 @@ def cuteFormFieldsForContext(cuteform_fields, context, form=None, prefix=None, a
         to_cuteform: 'key' or 'value' or lambda that takes key and value, will be 'key' if not specified,
         choices: list of pair, if not specified will use form
         selector: will be #id_{field_name} if not specified,
-        transform: when to_cuteform is a lambda: CuteFormTransform.No, .ImagePath, .Flaticon, .FlaticonWithText
+        transform: when to_cuteform is a lambda: CuteFormTransform.No, .ImagePath, .Flaticon, .FlaticonWithText, .ImageWithText
         image_folder: only when to_cuteform = 'images' or transform = 'images', will specify the images path,
         extra_settings: dictionary of options passed to cuteform,
     }
@@ -901,7 +902,6 @@ def cuteFormFieldsForContext(cuteform_fields, context, form=None, prefix=None, a
                     cuteform = staticImageURL(
                         unicode(cuteform_value),
                         folder=field.get('image_folder', field_name),
-                        extension='png',
                     )
                 # Transform to flaticon
                 elif transform in [CuteFormTransform.Flaticon, CuteFormTransform.FlaticonWithText]:
@@ -911,6 +911,15 @@ def cuteFormFieldsForContext(cuteform_fields, context, form=None, prefix=None, a
                     )
                     if transform == CuteFormTransform.Flaticon:
                         cuteform = u'<div data-toggle="tooltip" data-placement="top" data-trigger="hover" data-html="true" title="{}">{}</div>'.format(value, cuteform)
+                # Transform to image with text
+                elif transform == CuteFormTransform.ImageWithText:
+                    cuteform = u'<img src="{img}"> {text}'.format(
+                        img=staticImageURL(
+                            unicode(cuteform_value),
+                            folder=field.get('image_folder', field_name),
+                        ),
+                        text=u' {}'.format(value) if transform == CuteFormTransform.FlaticonWithText else '',
+                    )
                 else:
                     cuteform = unicode(cuteform_value)
             # Add in key, value in context for field
@@ -1088,6 +1097,17 @@ def torfc2822(date):
 def dateToMarkdownCompatibleTag(date):
     return date.strftime('%Y-%m-%dT%H:%M:%S')
 
+def localizeTimeOnly(time):
+    """
+    Format: hh:mm:ss or hh:mm
+    Will not change the time but will display it differently based on localization.
+    Ex: ‘en’ will show ‘3 p.m’, ‘it’ will show ’15:00:00`, `ko` will show `오후 3:00:00`
+    """
+    parts = time.split(':')
+    return date_format(timezone.now().replace(
+        hour=int(parts[0]), minute=int(parts[1]), second=int(getIndex(parts, 2, 0)),
+    ), format='TIME_FORMAT', use_l10n=True)
+
 ############################################################
 # Birthday utils
 
@@ -1202,6 +1222,11 @@ def getAstrologicalSign(month, day):
 # Event status using start and end date
 
 def addYearToEventWithoutYear(start_date=None, end_date=None, return_have_year=False):
+    """
+    May raise ValueError on invalid dates formatting
+    Allowed formats for strings: YYYY-MM-DD or MM-DD
+    """
+    # Fix None dates
     if not start_date and not end_date:
         if return_have_year:
             return None, None, [False, False]
@@ -1211,9 +1236,24 @@ def addYearToEventWithoutYear(start_date=None, end_date=None, return_have_year=F
     elif not end_date:
         end_date = start_date
 
+    # Transform strings to dates
+    if isinstance(start_date, basestring):
+        try:
+            start_date = pytz.utc.localize(datetime.datetime.strptime(start_date, '%Y-%m-%d'))
+        except ValueError:
+            start_date = datetime.datetime.strptime(start_date, '%m-%d')
+            start_date = (start_date.month, start_date.day)
+    if isinstance(end_date, basestring):
+        try:
+            end_date = pytz.utc.localize(datetime.datetime.strptime(end_date, '%Y-%m-%d'))
+        except ValueError:
+            end_date = datetime.datetime.strptime(end_date, '%m-%d')
+            end_date = (end_date.month, end_date.day)
+
     now = timezone.now()
     tuples_have_year = [True, True]
 
+    # Transform tuples to dates
     if isinstance(start_date, tuple):
         if len(start_date) == 3:
             start_date = datetime.datetime(start_date[0], start_date[1], start_date[2], tzinfo=timezone.utc)
@@ -1424,6 +1464,12 @@ def complementaryColor(hex_color=None, rgb=None):
 def listUnique(list):
     return OrderedDict([(item, None) for item in list]).keys()
 
+def getIndex(list, index, default=None):
+    try:
+        return list[index]
+    except IndexError:
+        return default
+
 NUMBER_AND_FLOAT_REGEX = '[-+]?[0-9]*\.?[0-9]+'
 
 def makeTemplateFromString(string, regexes, variable_name='value'):
@@ -1490,6 +1536,12 @@ def getEmojis(how_many=1):
         return (RAW_CONTEXT['site_emojis'] + (RAW_CONTEXT['site_emojis'] * (
             how_many / len(RAW_CONTEXT['site_emojis']))))[:how_many]
     return RAW_CONTEXT['site_emojis'][:how_many]
+
+def couldSpeakEnglish(language=None, request=None):
+    # /!\ Can't be called at global level
+    if not language:
+        language = request.LANGUAGE_CODE if request else get_language()
+    return language not in RAW_CONTEXT.get('languages_cant_speak_english', [])
 
 ############################################################
 # Page titles and prefixes utils
@@ -1583,6 +1635,20 @@ def modelGetField(model, field_name):
 
 def modelFieldVerbose(model, field_name):
     return model._meta.get_field(field_name).verbose_name
+
+def modelFieldHelpText(model, field_name):
+    return model._meta.get_field(field_name).help_text
+
+def failSafe(f, exceptions=None, default=None):
+    if exceptions is not None:
+        try:
+            return f()
+        except tuple(exceptions):
+            return default
+    try:
+        return f()
+    except:
+        return default
 
 class ColorInput(TextInput):
     input_type = 'color'
@@ -1825,17 +1891,56 @@ def presetsFromCharacters(field_name, get_label=None, get_field_value=None, key=
         }) for (pk, name, _image) in getattr(django_settings, key, [])
     ]
 
+def formFieldFromOtherField(field, to_new_field, new_parameters={}):
+    parameters = {
+        'label': field.label,
+        'required': field.required,
+        'initial': field.initial,
+        'validators': field.validators,
+        'help_text': field.help_text,
+    }
+    parameters.update(new_parameters)
+    return to_new_field(**parameters)
+
+def changeFormField(form, field_name, to_new_field, new_parameters={}):
+    form.fields[field_name] = formFieldFromOtherField(form.fields[field_name], to_new_field, new_parameters)
+
+def newOrder(current_order, insert_after=None, insert_before=None, insert_instead=None,
+             insert_at=None, insert_at_instead=None):
+    """
+    All insert_ parameters are dictionaries with key = the name of the field to look at
+    and value = a list to insert
+    For insert_at_, key is the index (int)
+    """
+    new_order = []
+    if insert_after or insert_before:
+        for order_field_name in current_order:
+            if order_field_name in (insert_before or {}):
+                new_order += insert_before[order_field_name]
+            new_order.append(order_field_name)
+            if order_field_name in (insert_after or {}):
+                new_order += insert_after[order_field_name]
+    for position, to_insert in (insert_at or {}).items():
+        new_order = new_order[:position] + to_insert + new_order[position:]
+    return new_order
+
 ############################################################
 # Set a field in a sub dictionary
 
-def setSubField(fields, field_name, value, key='icon'):
+def setSubField(fields, field_name, value, key='icon', force_add=False):
     if isinstance(fields, list):
+        added = False
         for name, details in fields:
             if name == field_name:
                 details[key] = value(field_name) if callable(value) else value
+                added = True
+        if not added and force_add:
+            fields.append((name, { key: value(field_name) if callable(value) else value }))
     else:
         if field_name in fields:
             fields[field_name][key] = value(field_name) if callable(value) else value
+        elif force_add:
+            fields[field_name] = { key: value(field_name) if callable(value) else value }
 
 def getSubField(fields, l, default=None):
     """
@@ -2225,7 +2330,10 @@ def makeBadgeImage(badge, width=None, path=None, upload=False, instance=None, mo
     # Get border
     filename = 'badge{}'.format(badge.rank or '')
     border_image_url = staticImageURL(filename, folder='badges', full=True)
-    border_image = WandImage(file=urllib2.urlopen(border_image_url))
+    try:
+        border_image = WandImage(file=urllib2.urlopen(border_image_url))
+    except:
+        border_image = WandImage(file=urllib2.urlopen('https://i.imgur.com/g2bVQoS.png'))
     width = width or border_image.width
     if width != border_image.width:
         border_image.resize(width=width, height=width)
@@ -2293,8 +2401,30 @@ def toTimeZoneDateTime(date, timezones, ago=False):
 def toCountDown(date, sentence, classes=None):
     if not date or date < timezone.now():
         return u''
-    return u'<span class="countdown {classes}" data-date="{date}" data-format="{sentence}"></h4>'.format(
+    return u'<span class="countdown {classes}" data-date="{date}" data-format="{sentence}"></span>'.format(
         date=torfc2822(date), sentence=sentence, classes=u' '.join(classes or []),
+    )
+
+def toCountDownField(date, field_name=None, verbose_name=None, sentence=None, classes=None, icon=None, image=None):
+    return (field_name or 'countdown', {
+        'type': 'html',
+        'verbose_name': verbose_name or _('Countdown'),
+        'value': mark_safe(toCountDown(
+            date=date,
+            sentence=sentence or _('Starts in {time}'),
+            classes=classes if classes is not None else ['fontx1-5'],
+        )),
+        'icon': icon or 'times',
+        'image': image,
+    })
+
+def eventToCountDownField(start_date, end_date, field_name=None, verbose_name=None):
+    status = getEventStatus(start_date, end_date)
+    return toCountDownField(
+        date=end_date if status == 'current' else start_date,
+        field_name=field_name,
+        verbose_name=verbose_name,
+        sentence=_('{time} left') if status == 'current' else _('Starts in {time}'),
     )
 
 def getColSize(per_line):
@@ -2338,6 +2468,19 @@ def HTMLAlert(type='warning', flaticon='about', title=None, message=None, button
     </div>
     """.format(**button) if button else '',
 )
+
+def _markSafeFormatEscapeOrNot(string):
+    return unicode(string if (
+        isinstance(string, SafeText)
+        or isinstance(string, SafeBytes)
+    ) else escape(string))
+
+def markSafeFormat(string, *args, **kwargs):
+    return mark_safe(string.format(*[
+        _markSafeFormatEscapeOrNot(arg) for arg in args
+    ], **{
+        key: _markSafeFormatEscapeOrNot(value) for key, value in kwargs.items()
+    }))
 
 ############################################################
 # Form labels and help texts

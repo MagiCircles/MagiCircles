@@ -55,6 +55,6 @@
     </div>
   </div>
   {% endif %}
-  <br><br><br><br><br>
-  <h1 class="padding50">{% trans 'Donators' %}</h1>
+  {% if not hide_donators_title %}<br><br><br><br><br>
+  <h1 class="padding50">{% trans 'Donators' %}</h1>{% endif %}
 </div>

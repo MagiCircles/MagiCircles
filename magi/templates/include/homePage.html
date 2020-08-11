@@ -60,7 +60,7 @@
       {% endif %}{# if art #}
 
       <div class="default-index {% if user.is_authenticated %}index-authenticated{% else %}index-not-authenticated{% endif %}">
-        {% if not hide_header %}<header>
+        {% if not hide_header %}<header>{% if header_template %}{% include header_template|add:'.html' %}{% else %}
           <h1 class="home-site-logo"><img src="{{ site_logo }}" class="img-responsive" alt="{{ t_site_name }}"></h1>
 
           {% if user.is_authenticated %}
@@ -107,7 +107,7 @@
 
           {% endif %}{# logged in/out #}
 
-        </header>{% endif %}
+        {% endif %}</header>{% endif %}
 
         {% if latest_news %}
         <div id="carousel-latest-news" class="carousel slide" data-ride="carousel">

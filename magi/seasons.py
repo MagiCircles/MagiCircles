@@ -36,6 +36,7 @@ AVAILABLE_SETTINGS = CONTEXT_SETTINGS + CSS_SETTINGS + [
     'to_context',
     'to_random_homepage_art',
     'to_random_homepage_background',
+    'show_activity_tag_banner_on_homepage',
     'extra',
 ]
 

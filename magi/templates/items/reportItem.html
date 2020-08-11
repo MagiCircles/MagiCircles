@@ -39,7 +39,7 @@
       <div class="container_form">
 	{% for image in report.all_images %}
 	<a href="{{ image.image_url }}" target="_blank" class="a-nodifferences">
-	  <img src="{{ image.image_url }}" class="img-responsive" alt="{{ report.reported_thing_title }}" />
+	  <img src="{{ image.image_thumbnail_url }}" class="img-responsive inline-block" alt="{{ report.reported_thing_title }}" />
 	</a>
 	{% endfor %}
       </div>

@@ -1,4 +1,4 @@
-import re, datetime
+import re, datetime, pytz
 from collections import OrderedDict
 from dateutil.relativedelta import relativedelta
 from multiupload.fields import MultiFileField
@@ -78,6 +78,14 @@ from magi.utils import (
     getCharactersChoices,
     getCharactersFavoriteCuteForm,
     listUnique,
+    modelHasField,
+    changeFormField,
+    formFieldFromOtherField,
+    markSafeFormat,
+    localizeTimeOnly,
+    getIndex,
+    newOrder,
+    setSubField,
 )
 
 ############################################################
@@ -90,12 +98,7 @@ class DateInput(forms.DateInput):
     input_type = 'date'
 
 def date_input(field, value=None):
-    field = forms.DateField(
-        label=field.label,
-        required=field.required,
-        initial=field.initial,
-        validators=field.validators,
-    )
+    field = formFieldFromOtherField(field, forms.DateField)
     field.widget = DateInput()
     field.widget.attrs.update({
         'class': 'calendar-widget',
@@ -105,7 +108,11 @@ def date_input(field, value=None):
         field.validators += [
             MinValueValidator(datetime.date(1900, 1, 2)),
         ]
-    field.help_text = 'yyyy-mm-dd'
+    field.help_text = markSafeFormat(
+        u'{}<span class="format-help">{}yyyy-mm-dd</span>',
+        field.help_text or '',
+        mark_safe(u'<br>') if field.help_text else '',
+    )
     field.input_formats = [
         '%Y-%m-%d'
     ]
@@ -247,11 +254,13 @@ class MagiForm(forms.ModelForm):
         self.is_creating = not hasattr(self, 'instance') or not self.instance.pk
         self.c_choices = []
         self.d_choices = {}
+        self.userimages_fields = []
         self.date_fields = []
         self.m_previous_values = {}
         self.keep_underscore_fields = []
         self.force_tinypng_on_save = []
         self.generate_thumbnails_for = []
+        order_to_change = {}
 
         # If is creating and item is unique per owner, redirect to edit unique
         if self.is_creating and self.collection and not isinstance(self, MagiFiltersForm) and not self.Meta.model.fk_as_owner and self.collection.add_view.unique_per_owner:
@@ -263,11 +272,11 @@ class MagiForm(forms.ModelForm):
         if hasattr(self.Meta, 'hidden_foreign_keys'):
             for field in self.Meta.hidden_foreign_keys:
                 if field in self.fields:
-                    self.fields[field] = HiddenModelChoiceField(
-                        queryset=self.fields[field].queryset,
-                        widget=forms.HiddenInput,
-                        initial=(None if self.is_creating else getattr(self.instance, u'{}_id'.format(field))),
-                    )
+                    changeFormField(self, field, HiddenModelChoiceField, {
+                        'queryset': self.fields[field].queryset,
+                        'widget': forms.HiddenInput,
+                        'initial': (None if self.is_creating else getattr(self.instance, u'{}_id'.format(field))),
+                    })
         # Fix optional fields
         if hasattr(self.Meta, 'optional_fields'):
             for field in self.Meta.optional_fields:
@@ -353,6 +362,58 @@ class MagiForm(forms.ModelForm):
                 self.date_fields.append(name)
                 if value:
                     setattr(self.instance, name, value)
+                # Add time + timezone fields if needed
+                if name in getattr(self.Meta, 'date_fields_with_time', {}):
+                    minutes_interval = self.Meta.date_fields_with_time[name].get('minutes_interval', 60)
+                    current_timezone = (
+                        (getattr(self.instance, u'_{}_timezone'.format(name), None)
+                         if not self.is_creating else None)
+                        or self.Meta.date_fields_with_time[name].get('default_timezone', None)
+                        or getIndex(getattr(self.Meta.model, u'{}_DEFAULT_TIMEZONES'.format(name.upper()), []) or [], 0)
+                    )
+                    # Change displayed date and time from UTC to selected timezone
+                    initial_time = None
+                    if not self.is_creating:
+                        # Take value from db which is in UTC and has the right time
+                        in_db_value = getattr(self.instance._meta.model.objects.get(pk=self.instance.pk), name)
+                        if current_timezone:
+                            value_with_timezone = in_db_value.astimezone(pytz.timezone(current_timezone))
+                            setattr(self.instance, name, value_with_timezone.strftime('%Y-%m-%d'))
+                            initial_time = value_with_timezone.strftime('%H:%M:%S')
+                        else:
+                            initial_time = in_db_value.strftime('%H:%M:%S')
+                    else:
+                        times = getattr(self.Meta, 'date_times', {})
+                        if times and times.get(name, None):
+                            initial_time = u'{}:{}:00'.format(times[name][0], times[name][1])
+                    if not initial_time:
+                        initial_time = '15:00:00'
+                    choices = [
+                        u'{:02d}:{:02d}:00'.format(hour, minute)
+                        for hour in range(0, 24)
+                        for minute in range(0, 60, minutes_interval)
+                    ]
+                    self.fields[u'{}_time'.format(name)] = forms.ChoiceField(
+                        label='',
+                        required=field.required,
+                        choices=[(v, localizeTimeOnly(v)) for v in choices] + (
+                            [(initial_time, localizeTimeOnly(initial_time))]
+                            if initial_time not in choices else []
+                        ),
+                        initial=initial_time,
+                    )
+                    self.fields[u'{}_timezone'.format(name)] = forms.ChoiceField(
+                        label='',
+                        required=field.required,
+                        choices=[ (v, v) for v in pytz.all_timezones ],
+                        initial=current_timezone or 'UTC',
+                    )
+                    if self.is_creating and not current_timezone:
+                        self.fields[u'{}_timezone'.format(name)].widget.attrs.update({
+                            'data-auto-change-timezone': True,
+                    })
+                    setSubField(order_to_change, 'insert_after', key=name, value=[
+                        u'{}_time'.format(name), u'{}_timezone'.format(name)], force_add=True)
             # Make CSV values with choices use a CheckboxSelectMultiple widget
             elif name.startswith('c_'):
                 choices = getattr(self.Meta.model, '{name}_CHOICES'.format(name=name[2:].upper()), None)
@@ -361,12 +422,11 @@ class MagiForm(forms.ModelForm):
                     if not choices:
                         self.fields.pop(name)
                     else:
-                        self.fields[name] = forms.MultipleChoiceField(
-                            required=False,
-                            widget=forms.CheckboxSelectMultiple,
-                            choices=[(c[0], c[1]) if isinstance(c, tuple) else (c, c) for c in choices],
-                            label=field.label,
-                        )
+                        changeFormField(self, name, forms.MultipleChoiceField, {
+                            'required': False,
+                            'widget': forms.CheckboxSelectMultiple,
+                            'choices': [(c[0], c[1]) if isinstance(c, tuple) else (c, c) for c in choices],
+                        })
                         if not self.is_creating:
                             # Set the value in the object to the list to pre-select the right options
                             setattr(self.instance, name, getattr(self.instance, name[2:]))
@@ -399,10 +459,14 @@ class MagiForm(forms.ModelForm):
                                 help_text = self.fields[name].help_text
                                 label = verbose_name
                             else:
-                                help_text = mark_safe(u'{original}{key}'.format(
-                                    original=u'{}<br>'.format(self.fields[name].help_text) if self.fields[name].help_text else '',
-                                    key=verbose_name,
-                                ))
+                                if self.fields[name].help_text:
+                                    help_text = markSafeFormat(
+                                        u'{original}<br>{key}',
+                                        original=self.fields[name].help_text,
+                                        key=verbose_name,
+                                    )
+                                else:
+                                    help_text = verbose_name
                             if self.is_creating:
                                 initial = None
                             elif name.startswith('d_m_'):
@@ -424,22 +488,62 @@ class MagiForm(forms.ModelForm):
                 choices = getattr(self.Meta.model, '{name}_CHOICES'.format(name=name[2:].upper()), None)
                 without_i = getattr(self.Meta.model, '{name}_WITHOUT_I_CHOICES'.format(name=name[2:].upper()), None)
                 if choices is not None:
-                    self.fields[name] = forms.ChoiceField(
-                        required=field.required,
-                        choices=(BLANK_CHOICE_DASH if not field.required else []) + [
+                    changeFormField(self, name, forms.ChoiceField, {
+                        'choices': (BLANK_CHOICE_DASH if not field.required else []) + [
                             (c[0] if without_i else i, c[1]) if isinstance(c, tuple) else (c, c)
                             for i, c in enumerate(choices)
                         ],
-                        label=field.label,
-                    )
+                    })
             # Save previous values of markdown fields and set label
             elif name.startswith('m_') and not isinstance(self, MagiFiltersForm):
                 if not self.is_creating:
                     self.m_previous_values[name] = getattr(self.instance, name)
-                self.fields[name].help_text = mark_safe(u'<br>'.join([
-                    getattr(self.fields[name], 'help_text', ''),
-                    unicode(markdownHelpText(request=self.request)),
-                ]))
+                help_text = getattr(self.fields[name], 'help_text', '')
+                markdown_help_text = markdownHelpText(request=self.request)
+                if help_text:
+                    self.fields[name].help_text = markSafeFormat(
+                        u'{}<br><i class="text-muted fontx0-8">{}</i>',
+                        help_text, markdown_help_text,
+                    )
+                else:
+                    self.fields[name].help_text = markdown_help_text
+
+            # Images selector
+            elif (model_field
+                  and isinstance(model_field, django_models.ManyToManyField)
+                  and issubclass(model_field.rel.to, models.UserImage)):
+                self.userimages_fields.append(name)
+                max_images = getattr(self.Meta.model, u'{}_MAX'.format(name.upper()), 10)
+                if not self.is_creating:
+                    existing_images_choices = [
+                        (userimage.id, markSafeFormat(
+                            '<img src="{}" alt="user image" height="30">',
+                            userimage.image_thumbnail_url,
+                        )) for userimage in getattr(self.instance, name).all()
+                    ]
+                    if max_images is not None:
+                        max_images -= len(existing_images_choices)
+                # Change form field to image selector
+                changeFormField(self, name, MultiImageField, {
+                    'min_num': 0,
+                    'max_num': max_images,
+                    'help_text': model_field.help_text,
+                })
+                if max_images <= 0:
+                    self.fields[name].widget.attrs.update({
+                        'class': 'hidden',
+                    })
+                # Add field to allow to delete existing images
+                if not self.is_creating:
+                    self.fields[u'delete_{}'.format(name)] = forms.MultipleChoiceField(
+                        required=False,
+                        widget=forms.CheckboxSelectMultiple,
+                        choices=existing_images_choices,
+                        label='',
+                        help_text=_('Delete'),
+                    )
+                    setSubField(order_to_change, 'insert_after', key=name, value=[
+                        u'delete_{}'.format(name)])
 
             elif name.startswith('_'):
 
@@ -536,6 +640,10 @@ class MagiForm(forms.ModelForm):
                 if not getattr(self, 'afterfields', None):
                     self.afterfields = mark_safe(CAPTCHA_CREDITS)
 
+        # Reorder if needed
+        if order_to_change:
+            self.reorder_fields(newOrder(self.fields.keys(), **order_to_change))
+
     def get_sub_collections_details(self, sub_collection):
         return {
             'plural_title': sub_collection.plural_title,
@@ -589,6 +697,37 @@ class MagiForm(forms.ModelForm):
                         max=self.collection.add_view.max_per_user,
                         things=unicode(self.collection.plural_title).lower(),
                     ))
+
+        # Clean datetime times
+        # - From time field (date_fields_with_time in Meta)
+        for field_name in getattr(self.Meta, 'date_fields_with_time', {}):
+            date = self.cleaned_data.get(field_name, None)
+            if not isinstance(date, basestring):
+                date = date.strftime('%Y-%m-%d')
+            time = self.cleaned_data.get(u'{}_time'.format(field_name), None)
+            timezone_value = self.cleaned_data.get(u'{}_timezone'.format(field_name), None)
+            # If the timezone is not UTC, convert to UTC before saving
+            if date and time:
+                naive_value = datetime.datetime.strptime(date + u'T' + time, '%Y-%m-%dT%H:%M:%S')
+                if timezone_value:
+                    value = pytz.timezone(timezone_value).localize(naive_value).astimezone(pytz.utc)
+                    # Save timezone in database if field exists
+                    if modelHasField(self.Meta.model, u'_{}_timezone'.format(field_name)):
+                        self.cleaned_data[u'_{}_timezone'.format(field_name)] = timezone_value
+                else:
+                    value = pytz.utc.localize(naive_value)
+                self.cleaned_data[field_name] = value
+        # - From date_times in Meta
+        times = getattr(self.Meta, 'date_times', {})
+        if times:
+            for field_name in self.date_fields:
+                if (field_name not in getattr(self.Meta, 'date_fields_with_time', {})
+                    and field_name in times
+                    and getattr(instance, field_name, None)):
+                    setattr(
+                        instance, field_name,
+                        getattr(instance, field_name).replace(
+                            hour=times[field_name][0], minute=times[field_name][1]))
         return self.cleaned_data
 
     def save(self, commit=True):
@@ -601,15 +740,6 @@ class MagiForm(forms.ModelForm):
             else:
                 instance.owner = self.request.user if self.request.user.is_authenticated() else None
 
-        # Save datetime times
-        times = getattr(self.Meta, 'date_times', {})
-        if times:
-            for field_name in self.date_fields:
-                if field_name in times and getattr(instance, field_name, None):
-                    setattr(
-                        instance, field_name,
-                        getattr(instance, field_name).replace(
-                            hour=times[field_name][0], minute=times[field_name][1]))
         # Save d_ dict choices
         for dfield, choices in self.d_choices.items():
             d = {}
@@ -705,9 +835,33 @@ class MagiForm(forms.ModelForm):
         # Save CSV values
         for field in self.c_choices:
             instance.save_c(field[2:], self.cleaned_data.get(field, getattr(instance, field)))
+
+        # Images selector
+        if self.userimages_fields:
+            # Set save m2m (called later)
+            super_save_m2m = self.save_m2m
+            def _save_m2m(*args, **kwargs):
+                for field_name in self.userimages_fields:
+                    # Upload new images
+                    for image in self.cleaned_data.get(field_name, []):
+                        imageObject = models.UserImage.objects.create()
+                        imageObject.image.save(randomString(64), image)
+                        getattr(instance, field_name).add(imageObject)
+                    del(self.cleaned_data[field_name])
+                    # Delete existing images selected for deletion
+                    pks_of_images_to_remove = self.cleaned_data.get(u'delete_{}'.format(field_name))
+                    if pks_of_images_to_remove:
+                        images_to_remove = list(getattr(instance, field_name).filter(pk__in=pks_of_images_to_remove))
+                        images_to_remove_ids = [i.id for i in images_to_remove]
+                        getattr(instance, field_name).remove(*images_to_remove)
+                        models.UserImage.objects.filter(id__in=images_to_remove_ids).delete()
+                super_save_m2m(*args, **kwargs)
+            self.save_m2m = _save_m2m
+
         if commit:
             instance.save()
         return instance
+
 
     def _transform_on_change_value(self, values):
         def _get_i(field_name, value):
@@ -1050,7 +1204,7 @@ class MagiFiltersForm(AutoForm):
     _internal_presets = {}
     @classmethod
     def get_presets(self):
-        if not self._internal_presets and self.presets:
+        if not getattr(self, '_internal_presets', None) and self.presets:
             self._internal_presets = OrderedDict([
                 (tourldash(k), {
                     'fields': v
@@ -1250,7 +1404,9 @@ class MagiFiltersForm(AutoForm):
         # Filter by owner
         if self.request and 'owner' in self.request.GET:
             self.owner_filter = MagiFilter(selector=self.Meta.model.selector_to_owner())
-            self.fields['owner'] = forms.CharField(widget=forms.HiddenInput)
+            changeFormField(self, 'owner', forms.CharField, {
+                'widget': forms.HiddenInput,
+            })
 
         if 'search' in self.fields:
             # Remove search from field if search_fields is not specified
@@ -1282,8 +1438,7 @@ class MagiFiltersForm(AutoForm):
             if 'reverse_order' in self.fields:
                 del(self.fields['reverse_order'])
 
-        fields_order = self.fields.keys()
-        order_changed = False
+        order_to_change = {}
 
         # Modify fields
 
@@ -1323,12 +1478,9 @@ class MagiFiltersForm(AutoForm):
                     if field_name in self.fields:
                         self.fields[field_name].widget = self.fields[field_name].hidden_widget()
                         if not met_first_field:
-                            fields_order = [
-                                (new_field_name if key == field_name
-                                 else key) for key in fields_order
-                            ]
+                            setSubField(order_to_change, 'insert_after', key=field_name, value=[
+                                new_field_name], force_add=True)
                             met_first_field = True
-                            order_changed = True
                     field_choices = (
                         field_details.get('choices', None)
                         or getattr(self.fields.get(field_name, None), 'choices', None)
@@ -1418,8 +1570,8 @@ class MagiFiltersForm(AutoForm):
                 self.fields[field_name].initial = self.request.GET[field_name]
 
         # Reorder if needed
-        if order_changed:
-            self.reorder_fields(fields_order)
+        if order_to_change:
+            self.reorder_fields(newOrder(self.fields.keys(), **order_to_change))
 
     def _filter_queryset_for_field(self, field_name, queryset, request, value=None, filter=None):
         if True:
@@ -1600,10 +1752,10 @@ def to_auto_filter_form(list_view):
                     self.cuteform[field_name] = {
                         'type': CuteFormType.YesNo,
                     }
-                    self.fields[field_name] = forms.NullBooleanField(
-                        required=False, initial=None,
-                        label=self.fields[field_name].label,
-                    )
+                    changeFormField(self, field_name, forms.NullBooleanField, {
+                        'required': False,
+                        'initial': None,
+                    })
 
         class Meta(MagiFiltersForm.Meta):
             model = list_view.collection.queryset.model
@@ -1645,11 +1797,11 @@ class AccountForm(AutoForm):
             if not self.collection or not hasattr(self.collection, 'get_profile_account_tabs'):
                 del(self.fields['default_tab'])
             else:
-                self.fields['default_tab'] = forms.ChoiceField(
-                    required=False,
-                    label=_('Default tab'),
-                    initial=FIRST_COLLECTION,
-                    choices=BLANK_CHOICE_DASH + [
+                changeFormField(self, 'default_tab', forms.ChoiceField, {
+                    'required': False,
+                    'label': _('Default tab'),
+                    'initial': FIRST_COLLECTION,
+                    'choices': BLANK_CHOICE_DASH + [
                         (tab_name, tab['name'])
                         for tab_name, tab in
                         self.collection.get_profile_account_tabs(
@@ -1658,7 +1810,7 @@ class AccountForm(AutoForm):
                             self.instance if not self.is_creating else None,
                         ).items()
                     ],
-                )
+                })
                 if len(self.fields['default_tab'].choices) <= 2:
                     self.fields['default_tab'].widget = self.fields['default_tab'].hidden_widget()
         self.previous_level = None
@@ -2984,7 +3136,6 @@ NotificationFilterForm = FilterNotification
 
 class ReportForm(MagiForm):
     reason = forms.ChoiceField(required=True, label=_('Reason'))
-    images = MultiImageField(min_num=0, max_num=10, required=False, label=_('Images'))
 
     def __init__(self, *args, **kwargs):
         self.type = kwargs.pop('type', None)
@@ -3011,11 +3162,6 @@ class ReportForm(MagiForm):
         translation_activate('en')
         instance.reported_thing_title = unicode(getMagiCollection(self.type).title)
         translation_activate(old_lang)
-        instance.save()
-        for image in self.cleaned_data['images']:
-            imageObject = models.UserImage.objects.create()
-            imageObject.image.save(randomString(64), image)
-            instance.images.add(imageObject)
         return instance
 
     class Meta(MagiForm.Meta):
@@ -3290,3 +3436,29 @@ class PrivateMessageFilterForm(MagiFiltersForm):
         model = models.PrivateMessage
         fields = ('to_user', )
         hidden_foreign_keys = ('to_user', )
+
+############################################################
+############################################################
+############################################################
+# Abstract collections
+
+############################################################
+# Event
+
+def to_EventForm(cls):
+    class EventForm(AutoForm):
+
+        if modelHasField(cls.queryset.model, 'c_versions'):
+            on_change_value_show = {
+                'c_versions': {
+                    _version_name: [
+                        _field_name.format(_version['prefix'])
+                        for _field_name in cls.queryset.model.FIELDS_PER_VERSION
+                    ] for _version_name, _version in cls.queryset.model.VERSIONS.items()
+                }
+            }
+
+        class Meta(AutoForm.Meta):
+            model = cls.queryset.model
+
+    return EventForm

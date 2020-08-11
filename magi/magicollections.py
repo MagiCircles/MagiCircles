@@ -38,6 +38,7 @@ from magi.utils import (
     YouTubeVideoField,
     translationURL,
     modelHasField,
+    modelFieldVerbose,
     isBirthdayToday,
     getSearchSingleFieldLabel,
     isTranslationField,
@@ -46,6 +47,8 @@ from magi.utils import (
     getEmojis,
     filterRealAccounts,
     filterRealCollectiblesPerAccount,
+    failSafe,
+    toHumanReadable,
 )
 from magi.raw import please_understand_template_sentence, unrealistic_template_sentence
 from magi.django_translated import t
@@ -155,6 +158,9 @@ class _View(object):
                 redirectWhenNotAuthenticated(request, context, next_title=self.get_page_title())
                 if item.owner_id != request.user.id and not hasOneOfPermissions(request.user, owner_only_or_one_of_permissions_required):
                     raise PermissionDenied()
+
+    def get_extra_fields(self, item):
+        return []
 
     #######################
     # Tools - not meant to be overridden
@@ -909,67 +915,94 @@ class MagiCollection(object):
         images.update(self.fields_images)
         images.update(view.fields_images)
 
+        extra_fields += view.get_extra_fields(item)
+        if hasattr(view, 'fields_extra'):
+            extra_fields += view.fields_extra
+
         if hasattr(view, 'fields_order'):
-            order = order + view.fields_order
+            order += view.fields_order
 
         if hasattr(view, 'fields_preselected'):
-            preselected = preselected + view.fields_preselected
+            preselected += view.fields_preselected
 
         if hasattr(view, 'fields_prefetched'):
-            prefetched = prefetched + view.fields_prefetched
+            prefetched += view.fields_prefetched
 
         if hasattr(view, 'fields_prefetched_together'):
-            prefetched_together = prefetched_together + view.fields_prefetched_together
+            prefetched_together += view.fields_prefetched_together
 
         language = get_language()
 
-        # Fields from reverse
-        for details in getattr(item, 'reverse_related', []):
-            if isinstance(details, dict):
-                field_name = details['field_name']
-                url = details.get('url', field_name)
-                verbose_name = details.get('verbose_name', field_name)
-                if callable(verbose_name):
-                    verbose_name = verbose_name()
-                plural_verbose_name = details.get('plural_verbose_name', verbose_name)
-                filter_field_name = details.get('filter_field_name', item.collection_name)
-                max_per_line = details.get('max_per_line', 5)
-                show_per_line = details.get('show_per_line', 5)
-                allow_ajax_per_item = details.get('allow_ajax_per_item', True)
-                allow_ajax_for_more = details.get('allow_ajax_for_more', True)
-                to_preset = details.get('to_preset', None)
-                show_first = details.get('show_first', False)
-                show_last = details.get('show_last', False)
-            else: # old style
-                if len(details) == 4:
-                    field_name, url, verbose_name, filter_field_name = details
-                else:
-                    field_name, url, verbose_name = details
-                    filter_field_name = item.collection_name
-                max_per_line = 5
-                show_per_line = 5
-                if callable(verbose_name):
-                    verbose_name = verbose_name()
-                plural_verbose_name = verbose_name
-                allow_ajax_per_item = True
-                allow_ajax_for_more = True
-                to_preset = None
-                show_first = False
-                show_last = False
+        # Related fields
+        #   from reverse_related setting
+        related_fields = OrderedDict([
+            (details['field_name'] if isinstance(details, dict) else details[0],
+             details if isinstance(details, dict) else { # old style with tuples
+                 'url': getIndex(details, 1),
+                 'verbose_name': getIndex(details, 2),
+                 'filter_field_name': getIndex(details, 3),
+             }) for details in getattr(item, 'reverse_related', [])
+        ])
+        #   from many to many
+        for m in item._meta.many_to_many:
+            if m.name not in related_fields:
+                related_fields[m.name] = {}
+            if 'verbose_name' not in related_fields[m.name]:
+                related_fields[m.name]['verbose_name'] = modelFieldVerbose(type(item), m.name)
+            if 'collection_name' not in related_fields[m.name]:
+                related_fields[m.name]['collection_name'] = getattr(m.rel.to, 'collection_name', None)
+
+        #   from related objects
+        for r in item._meta.get_all_related_objects():
+            field_name = r.get_accessor_name()
+            if field_name not in related_fields:
+                related_fields[field_name] = {}
+            if 'collection_name' not in related_fields[field_name]:
+                related_fields[field_name]['collection_name'] = getattr(r.model, 'collection_name', None)
+
+        for field_name, details in related_fields.items():
+            # Exclude field if needed
             if only_fields and field_name not in only_fields:
                 continue
             if field_name in exclude_fields:
                 continue
+
+            # Get collection if specified
+            collection = getMagiCollection(details['collection_name']) if details.get('collection_name', None) else None
+
+            # Set defaults from dict
+            url = details.get('url', field_name)
+            verbose_name = (
+                details.get('verbose_name', None)
+                or (
+                    (collection.title if field_name in prefetched else collection.plural_title)
+                    if collection else None
+                ) or toHumanReadable(field_name)
+            )
+            if callable(verbose_name):
+                verbose_name = verbose_name()
+            filter_field_name = details.get('filter_field_name', item.collection_name)
+            plural_verbose_name = details.get('plural_verbose_name', verbose_name)
+            max_per_line = details.get('max_per_line', 5 if collection else None)
+            show_per_line = details.get('show_per_line', 5)
+            allow_ajax_per_item = details.get('allow_ajax_per_item', True)
+            allow_ajax_for_more = details.get('allow_ajax_for_more', True)
+            to_preset = details.get('to_preset', None)
+            show_first = details.get('show_first', False)
+            show_last = details.get('show_last', False)
+            icon = details.get('icon', None) or (collection.icon if collection else None)
+            image = details.get('image', None) or (collection.image if collection else None)
+
             if field_name in prefetched:
                 # Ensure cached total gets updated
                 try: getattr(item, 'cached_total_{}'.format(field_name))
                 except AttributeError: pass
                 for related_item in getattr(item, field_name).all().distinct():
                     d = {
-                        'verbose_name': unicode(verbose_name).capitalize(),
+                        'verbose_name': verbose_name,
                         'value': unicode(related_item),
-                        'icon': icons.get(field_name, None),
-                        'image': images.get(field_name, None),
+                        'icon': icons.get(field_name, icon),
+                        'image': images.get(field_name, image),
                     }
                     template = getattr(related_item, 'template_for_prefetched', None)
                     item_url = getattr(related_item, 'item_url', None)
@@ -1008,9 +1041,9 @@ class MagiCollection(object):
                 try: getattr(item, 'cached_total_{}'.format(field_name))
                 except AttributeError: pass
                 d = {
-                    'verbose_name': unicode(verbose_name).capitalize(),
-                    'icon': icons.get(field_name, None),
-                    'image': images.get(field_name, None),
+                    'verbose_name': verbose_name,
+                    'icon': icons.get(field_name, icon),
+                    'image': images.get(field_name, image),
                     'images': [],
                     'links': [],
                     'template': None,
@@ -1033,7 +1066,7 @@ class MagiCollection(object):
                         'link_text': unicode(related_item),
                     }
                     if allow_ajax_per_item:
-                        to_append['ajax_link'] = getattr(related_item, 'ajax_item_url')
+                        to_append['ajax_link'] = getattr(related_item, 'ajax_item_url', None)
                     if template:
                         with_template = True
                         d['type'] = 'templates'
@@ -1045,6 +1078,7 @@ class MagiCollection(object):
                         link_to_append['value'] = unicode(related_item)
                         l_links.append(link_to_append)
                         item_image = None
+                        used_image_field_name = None
                         for image_field in [
                                 'image_for_prefetched',
                                 'top_image_list', 'top_image',
@@ -1052,9 +1086,15 @@ class MagiCollection(object):
                         ]:
                             if getattr(related_item, image_field, None):
                                 item_image = getattr(related_item, image_field)
+                                used_image_field_name = image_field
                                 break
                         if item_image:
                             image_to_append = to_append.copy()
+                            if not image_to_append['link']:
+                                if used_image_field_name == 'image_thumbnail_url':
+                                    image_to_append['link'] = getattr(related_item, 'image_url', item_image)
+                                else:
+                                    image_to_append['link'] = item_image
                             image_to_append['value'] = item_image
                             image_to_append['tooltip'] = unicode(related_item)
                             l_images.append(image_to_append)
@@ -1101,10 +1141,10 @@ class MagiCollection(object):
                     if '{total}' not in unicode(plural_verbose_name)
                     else unicode(plural_verbose_name).format(total=total))
                 if total:
-                    icon = icons.get(field_name, None)
+                    icon = icons.get(field_name, icon)
                     if callable(icon):
                         icon = icon(item)
-                    image = images.get(field_name, None)
+                    image = images.get(field_name, image)
                     if callable(image):
                         image = image(item)
                     if image:
@@ -1195,7 +1235,7 @@ class MagiCollection(object):
                 if value is None or field.name.startswith('m_') and not value[1]:
                     continue
             d = {
-                'verbose_name': getattr(field, 'verbose_name', _(field_name.capitalize())),
+                'verbose_name': getattr(field, 'verbose_name', field_name.capitalize()),
                 'value': value,
                 'icon': icons.get(field_name, None),
                 'image': images.get(field_name, None),
@@ -1207,6 +1247,11 @@ class MagiCollection(object):
                     cache = getattr(item, 'cached_' + field_name, None)
                 if not cache:
                     continue
+                collection_name = getattr(field.rel.to, 'collection_name', None)
+                collection = getMagiCollection(collection_name) if collection_name else None
+                if collection:
+                    d['icon'] = collection.icon or d['icon']
+                    d['image'] = collection.image or d['image']
                 link = getattr(cache, 'item_url')
                 if link:
                     d['type'] = 'text_with_link'
@@ -1270,7 +1315,7 @@ class MagiCollection(object):
             elif (isinstance(field, models.models.DateField)
                   or isinstance(field, models.models.DateTimeField)):
                 d['type'] = 'timezone_datetime'
-                d['timezones'] = ['Local time']
+                d['timezones'] = item.get_displayed_timezones(field_name)
                 d['ago'] = True
             elif isinstance(field, models.models.FileField):
                 d['type'] = 'link'
@@ -1526,7 +1571,7 @@ class MagiCollection(object):
             buttons['translate']['ajax_url'] = u'{}{}translate'.format(buttons['translate']['ajax_url'], '&' if '?' in buttons['translate']['ajax_url'] else '?')
             if 'ajax_url' in buttons['translate']['url']:
                 buttons['translate']['ajax_url'] = u'{}{}translate'.format(buttons['translate']['ajax_url'], '&' if '?' in buttons['translate']['ajax_url'] else '?')
-        # Report buttons
+        # Report buttons: don't show in list view unless there's no item view
         if self.reportable:
             buttons['report']['show'] = view.show_report_button
             buttons['report']['title'] = item.report_sentence
@@ -1669,7 +1714,8 @@ class MagiCollection(object):
         show_edit_button_superuser_only = property(propertyFromCollection('show_edit_button_superuser_only'))
         show_edit_button_permissions_only = property(propertyFromCollection('show_edit_button_permissions_only'))
         show_translate_button = property(propertyFromCollection('show_translate_button'))
-        show_report_button = property(propertyFromCollection('show_report_button'))
+        # Show report button if button not in item view
+        show_report_button = property(lambda _s: not _s.collection.item_view.show_report_button)
         show_collect_button = property(propertyFromCollection('show_collect_button'))
         show_collect_total = property(propertyFromCollection('show_collect_total'))
 
@@ -2043,11 +2089,14 @@ class MagiCollection(object):
         # Optional variables with default values
         show_title = True
         authentication_required = True
-        savem2m = False
         allow_next = True
         alert_duplicate = True
         back_to_list_button = True
         unique_per_owner = False
+
+        @property
+        def savem2m(self):
+            return bool(self.collection.queryset.model._meta.many_to_many)
 
         def quick_add_to_collection(self, request):
             return False # for collectibles only
@@ -2152,7 +2201,11 @@ class MagiCollection(object):
             return ['edit_reported_things'] if self.collection.reportable and not self.staff_required else []
         owner_only_or_one_of_permissions_required = []
         allow_next = True
-        savem2m = False
+
+        @property
+        def savem2m(self):
+            return bool(self.collection.queryset.model._meta.many_to_many)
+
         back_to_list_button = True
         show_cascade_before_delete = True
 
@@ -2481,6 +2534,7 @@ class AccountCollection(MagiCollection):
     class ListView(MagiCollection.ListView):
         item_template = 'defaultAccountItem'
         show_edit_button_superuser_only = True
+        show_report_button = True
         show_title = True
         per_line = 1
         add_button_subtitle = _('Create your account to join the community and be in the leaderboard!')
@@ -3490,6 +3544,7 @@ class ActivityCollection(MagiCollection):
 
     class ListView(MagiCollection.ListView):
         item_template = custom_item_template
+        header_template = None
         per_line = 1
         distinct = False
         add_button_subtitle = _('Share your adventures!')
@@ -3551,6 +3606,9 @@ class ActivityCollection(MagiCollection):
 
         def extra_context(self, context):
             super(ActivityCollection.ListView, self).extra_context(context)
+
+            # Header template (if any)
+            context['header_template'] = self.header_template
 
             # Show homepage / hide sidebar
 

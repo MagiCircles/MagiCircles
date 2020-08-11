@@ -58,7 +58,16 @@ from magi.settings import (
     PROFILE_BACKGROUNDS_IMAGES,
 )
 from magi.raw import other_sites
-from magi.item_model import MagiModel, BaseMagiModel, get_image_url, i_choices, addMagiModelProperties, getInfoFromChoices
+from magi.item_model import (
+    MagiModel,
+    BaseMagiModel,
+    get_image_url,
+    i_choices,
+    addMagiModelProperties,
+    getInfoFromChoices,
+    ALL_ALT_LANGUAGES,
+    UserImage,
+)
 from magi.abstract_models import CacheOwner
 from magi.default_settings import RAW_CONTEXT
 
@@ -115,15 +124,6 @@ ACTIVITIES_TAGS_HIDDEN_BY_DEFAULT = [
     for _tag_name, _tag in ACTIVITY_TAGS.items()
     if _tag.get('hidden_by_default', False)
 ]
-
-############################################################
-# Utility Models
-
-class UserImage(BaseMagiModel):
-    image = models.ImageField(upload_to=uploadToRandom('user_images'))
-
-    def __unicode__(self):
-        return unicode(self.image_url)
 
 ############################################################
 # User preferences
@@ -649,11 +649,11 @@ class StaffDetails(MagiModel):
     description = models.TextField('Self introduction', help_text='You can use markdown to add links.', null=True)
 
     favorite_food = models.CharField(max_length=100, null=True)
-    FAVORITE_FOODS_CHOICES = [ l for l in django_settings.LANGUAGES if l[0] != 'en' ]
+    FAVORITE_FOODS_CHOICES = ALL_ALT_LANGUAGES
     d_favorite_foods = models.TextField(_('Liked food'), null=True)
 
     hobbies = models.CharField(max_length=100, null=True)
-    HOBBIESS_CHOICES = [ l for l in django_settings.LANGUAGES if l[0] != 'en' ]
+    HOBBIESS_CHOICES = ALL_ALT_LANGUAGES
     d_hobbiess = models.TextField(_('hobbies'), null=True)
 
     nickname = models.CharField('Super hero / Rock star name', null=True, max_length=100)

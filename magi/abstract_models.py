@@ -1,7 +1,7 @@
 import datetime
 from collections import OrderedDict
 from django.contrib.auth.models import User
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext_lazy as _, string_concat
 from django.db import models
 from django.conf import settings as django_settings
 from django.core.validators import RegexValidator
@@ -12,14 +12,28 @@ from magi.item_model import (
     get_image_url_from_path,
     i_choices,
     getInfoFromChoices,
+    ALL_ALT_LANGUAGES,
 )
 from magi.utils import (
     AttrDict,
     PastOnlyValidator,
     uploadItem,
     uploadThumb,
+    uploadTiny,
     modelHasField,
     filterRealAccounts,
+    staticImageURL,
+    getEventStatus,
+)
+from magi.versions_utils import (
+    getRelevantVersion,
+    getFieldForRelevantVersion,
+    getTranslatedValueForRelevantVersion,
+    getFieldNameForVersion,
+    getFieldForVersion,
+    getLanguagesForVersion,
+    getTranslatedValuesForVersion,
+    getRelevantTranslatedValueForVersion,
 )
 from magi.default_settings import RAW_CONTEXT
 
@@ -265,3 +279,272 @@ class MobileGameAccount(BaseAccount):
 
     class Meta:
         abstract = True
+
+############################################################
+# BaseEvent
+
+class _BaseEvent(MagiModel):
+    collection_name = 'event'
+
+    owner = models.ForeignKey(User, related_name='added_%(class)ss')
+
+    ############################################################
+    # Name
+
+    name = models.CharField(_('Title'), max_length=100, null=True)
+    NAMES_CHOICES = ALL_ALT_LANGUAGES
+    d_names = models.TextField(_('Title'), null=True)
+
+    ############################################################
+    # Description
+
+    m_description = models.TextField(_('Description'), null=True)
+    M_DESCRIPTIONS_CHOICES = ALL_ALT_LANGUAGES
+    d_m_descriptions = models.TextField(_('Description'), null=True)
+    _cache_description = models.TextField(null=True)
+
+    def __unicode__(self):
+        return unicode(self.t_name)
+
+    class Meta(MagiModel.Meta):
+        abstract = True
+
+class BaseEvent(_BaseEvent):
+    collection_name = 'event'
+
+    image = models.ImageField(_('Image'), upload_to=uploadItem('event'), null=True)
+    _original_image = models.ImageField(null=True, upload_to=uploadTiny('event'))
+
+    start_date = models.DateTimeField(_('Beginning'), null=True)
+    end_date = models.DateTimeField(_('End'), null=True)
+
+    get_status = lambda _s: getEventStatus(_s.start_date, _s.end_date)
+    status = property(get_status)
+
+    class Meta(MagiModel.Meta):
+        abstract = True
+
+BASE_EVENT_FIELDS_PER_VERSION = OrderedDict([
+    (u'{}image', lambda _version_name, _version: models.ImageField(
+        string_concat(_version['translation'], ' - ', _('Image')),
+        upload_to=uploadItem(u'event/{}'.format(_version_name.lower())), null=True,
+    )),
+    (u'_original_{}image', lambda _version_name, _version: models.ImageField(
+        upload_to=uploadItem(u'event/{}'.format(_version_name.lower())), null=True,
+    )),
+    (u'{}start_date', lambda _version_name, _version: models.DateTimeField(
+        string_concat(_version['translation'], ' - ', _('Beginning')), null=True,
+    )),
+    (u'{}end_date', lambda _version_name, _version: models.DateTimeField(
+        string_concat(_version['translation'], ' - ', _('End')), null=True,
+    )),
+])
+
+BASE_EVENT_UTILS_PER_VERSION = OrderedDict([
+    (u'{}name', lambda _version_name, _version: property(lambda _s: _s.get_name_for_version(_version_name))),
+    (u'{}status', lambda _version_name, _version: property(lambda _s: _s.get_status_for_version(_version_name))),
+])
+
+# todo: change plural title of event participations
+# javascript for events stuff
+
+def getBaseEventWithVersions(versions, defaults={}, fallbacks={}, extra_fields=None, extra_utils=None):
+    """
+    `versions` is an ordered dict with values being dicts containing:
+    required: translation, prefix
+    optional: language, languages, image, icon, timezone
+
+    `extra_fields` allows to add custom model fields per version
+    `extra_fields` is an ordered dict with:
+    key must contain '{}' which will be replaced with the version prefix
+    value must be a lambda that takes version name and version details (dict)
+    and return the model field (ex: lambda _vn, _v: models.CharField(...))
+
+    Utility functions will automatically be available for all the fields.
+    Ex: for '{}image' field, there will be a 'get_image_for_version' method
+    that takes the version name as parameter and returns the value for that
+    version. It doesn't use `defaults`, but you can call the method and follow
+    it with `or your_default_value`.
+
+    relevant_{} properties will automatically be available for all the fields.
+    Ex: for '{}image' field, there will be an 'relevant_image' property that will automatically
+    determine the relevant value to return within the available versions.
+    By default, if none of the "relevant" versions have a value, it will try to
+    fallback to other versions that have a value. This can be disabled by setting
+    `fallbacks` to False for the given field name. Finally, if no value is available
+    in any version (or fallback is disabled), it will return what's in `defaults`
+    for the given field, or None.
+
+    `fallbacks` is a dict of field name -> bool
+    Ex: { '{}image': False }
+
+    `defaults` is a dict of field name -> default value
+    Ex: { '{}image': 'default.png' }
+
+    `extra_utils` allows to specify your own utils per version, being properties,
+    methods, or variables.
+    `extra_utils` is an ordered dict with:
+    key must contain '{}' which will be replaced with the version prefix
+    value must be a lambda that takes version name and version details (dict)
+    and returns yout utility.
+    Ex: { '{}duration': lambda _version_name, _version: property(
+            lambda _s: _s.getDuration(_version_name)) }
+    """
+    if not extra_fields:
+        extra_fields = {}
+    if not extra_utils:
+        extra_utils = {}
+
+    default_name = defaults.get('name', None)
+
+    class BaseEventWithVersions(_BaseEvent):
+
+        ############################################################
+        # Versions
+
+        FIELDS_PER_VERSION = ['image', 'start_date', 'end_date']
+
+        VERSIONS = versions
+        VERSIONS_CHOICES = [(_name, _info['translation']) for _name, _info in VERSIONS.items()]
+        c_versions = models.TextField(
+            _('Server availability'), blank=True, null=True,
+            default=u'"{}"'.format(versions.keys()[0]),
+        )
+
+        ############################################################
+        # Utils
+
+        # Pick version automatically
+
+        @property
+        def relevant_version(self):
+            return getRelevantVersion(item=self)
+
+        def get_relevant_name(self, return_version=False):
+            return self.get_translated_value_for_relevant_version(
+                'name', return_version=return_version,
+                default=default_name() if callable(default_name) else default_name,
+            )
+        relevant_name = property(get_relevant_name)
+
+        image = property(lambda _s: _s.relevant_image)
+
+        def get_field_for_relevant_version(self, field_name, default=None, get_value=None, return_version=False, fallback=True):
+            return getFieldForRelevantVersion(
+                self, field_name, default=default, get_value=get_value,
+                return_version=return_version, fallback=fallback,
+            )
+
+        def get_translated_value_for_relevant_version(self, field_name, default=None, return_version=False):
+            return getTranslatedValueForRelevantVersion(self, field_name, default=default, return_version=return_version)
+
+        # Specify version
+
+        get_name_for_version = lambda _s, _v: _s.get_relevant_translated_value_for_version('name', _v)
+
+        def get_field_for_version(self, field_name, version_name, get_value=None):
+            return getFieldForVersion(self, field_name, version_name, self.VERSIONS[version_name], get_value=get_value)
+
+        def get_status_for_version(self, version_name):
+            return getEventStatus(
+                self.get_field_for_version('start_date', version_name),
+                self.get_field_for_version('end_date', version_name),
+            )
+
+        def get_translated_values_for_version(self, field_name, version_name):
+            return getTranslatedValuesForVersion(self, field_name, self.VERSIONS[version_name])
+
+        def get_relevant_translated_value_for_version(self, field_name, version_name, fallback=False, default=None):
+            return getRelevantTranslatedValueForVersion(
+                self, field_name, version_name, self.VERSIONS[version_name], fallback=fallback, default=default,
+            )
+
+        ############################################################
+        # Class utils
+
+        get_version_name = classmethod(lambda _s, _v: _s.get_version_info(_v, 'translation'))
+        get_version_image = classmethod(lambda _s, _v: staticImageURL(_s.get_version_info(_v, 'image')))
+        get_version_icon = classmethod(lambda _s, _v: _s.get_version_info(_v, 'icon'))
+
+        @classmethod
+        def get_field_name_for_version(self, field_name, version_name):
+            return getFieldNameForVersion(field_name, self.VERSIONS[version_name])
+
+        @classmethod
+        def get_field_names_all_versions(self, field_name):
+            return [
+                self.get_field_name_for_version(field_name, version_name)
+                for version_name in self.VERSIONS.keys()
+            ]
+
+        @classmethod
+        def get_version_languages(self, version_name):
+            return getLanguagesForVersion(self.VERSIONS[version_name])
+
+        @classmethod
+        def get_version_info(self, version_name, field_name, default=None):
+            return self.VERSIONS[version_name].get(field_name, default)
+
+        ############################################################
+        # Views utils
+
+        @property
+        def top_image(self):
+            return self.relevant_image_url
+
+        ############################################################
+        # Utility method get_{}_for_version for all fields
+
+        def __getattr__(self, name):
+            if name.startswith('get_') and name.endswith('_for_version'):
+                return lambda version_name: self.get_field_for_version(
+                    name[len('get_') : len('_for_version') * -1], version_name,
+                )
+            elif name.startswith('get_relevant_'):
+                field_name = name[len('get_relevant_'):]
+                default = defaults.get(field_name, None)
+                fallback = fallbacks.get(field_name, True)
+                return lambda _self, return_version=False: _self.get_field_for_relevant_version(
+                    field_name, default=default() if callable(default) else default,
+                    return_version=return_version, fallback=fallback,
+                )
+            elif name.startswith('relevant_'):
+                return getattr(self, u'get_relevant_{}'.format(name[len('relevant_'):]))(self)
+            return super(BaseEventWithVersions, self).__getattr__(name)
+
+        ############################################################
+        # Unicode
+
+        def __unicode__(self):
+            return unicode(self.relevant_name or _('Event'))
+
+        class Meta(MagiModel.Meta):
+            abstract = True
+
+    ############################################################
+    # Add fields and utils per version
+
+    for version_name, version in versions.items():
+
+        # Add model fields per version
+        for field_name, to_field in BASE_EVENT_FIELDS_PER_VERSION.items() + extra_fields.items():
+            field = to_field(version_name, version)
+            BaseEventWithVersions.add_to_class(getFieldNameForVersion(field_name, version), field)
+
+        # Add utils per version
+        for field_name, to_util in BASE_EVENT_UTILS_PER_VERSION.items() + extra_utils.items():
+            setattr(BaseEventWithVersions, getFieldNameForVersion(field_name, version), to_util(version_name, version))
+
+    for field_name in BASE_EVENT_FIELDS_PER_VERSION.keys() + extra_fields.keys():
+        if not field_name.startswith('_'):
+
+            # Add to FIELDS_PER_VERSION
+            BaseEventWithVersions.FIELDS_PER_VERSION.append(field_name)
+
+    return BaseEventWithVersions
+
+############################################################
+# Collectible utils
+
+class AutoImageFromParent(object):
+    image = property(lambda _s: getattr(_s, _s.collection.item_field_name).image if _s.collection else None)

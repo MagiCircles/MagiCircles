@@ -390,6 +390,8 @@ class Command(BaseCommand):
                 with_padding=200,
                 width=200,
             )
+            badge_instance._thumbnail_image = badge_instance.image
+            badge_instance.save()
 
         print ''
         print '# MARKDOWN POST'

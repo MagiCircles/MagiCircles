@@ -17,7 +17,15 @@ from magi.utils import (
     LANGUAGES_NAMES,
     listUnique,
     modelHasField,
+    uploadToRandom,
+    uploadThumb,
 )
+
+############################################################
+# Utils for translated fields
+
+ALL_ALT_LANGUAGES = [ _l for _l in django_settings.LANGUAGES if _l[0] != 'en' ]
+NON_LATIN_LANGUAGES = [ l for l in django_settings.LANGUAGES if l[0] in ['ja', 'ru', 'zh-hans', 'zh-hant', 'kr'] ]
 
 ############################################################
 # Utils for images / files
@@ -532,6 +540,16 @@ class BaseMagiModel(models.Model):
 
     get_translation_from_dict = get_translation # for retro-compatibility
 
+    def get_displayed_timezones(self, name):
+        timezones = ['Local time']
+        saved_timezone = getattr(self, u'_{}_timezone'.format(name), None)
+        if saved_timezone:
+            timezones.append(saved_timezone)
+        default_timezones = getattr(self, u'{}_DEFAULT_TIMEZONES'.format(name.upper()), None)
+        if default_timezones:
+            timezones += default_timezones
+        return listUnique(timezones)
+
     def _attr_error(self, name):
         raise AttributeError("%r object has no attribute %r" % (self.__class__, name))
 
@@ -569,6 +587,13 @@ class BaseMagiModel(models.Model):
                 'selector_to_collected_item',
         ]:
             return self._attr_error(original_name)
+
+        # PREFIX + SUFFIX
+        ############################################################
+        # When accessing "something1_X_something2"
+
+        if name.startswith('display_') and name.endswith('_timezones'):
+            return type(self).get_displayed_timezones(name)
 
         # PREFIXES
         ############################################################
@@ -795,6 +820,11 @@ def get_collection_title(instance):
         instance._collection_title = instance.collection.title
     return instance._collection_title
 
+def get_collection_plural_title(instance):
+    if not getattr(instance, '_collection_plural_title', None):
+        instance._collection_plural_title = instance.collection.plural_title
+    return instance._collection_plural_title
+
 ############################################################
 # Transform an existing model to an MagiModel
 # Used for the User model
@@ -809,6 +839,7 @@ def addMagiModelProperties(modelClass, collection_name):
     modelClass.collection = property(get_collection)
     modelClass.collection_plural_name = property(get_collection_plural_name)
     modelClass.collection_title = property(get_collection_title)
+    modelClass.collection_plural_title = property(get_collection_plural_title)
     modelClass.item_url = property(get_item_url)
     modelClass.ajax_item_url = property(get_ajax_item_url)
     modelClass.full_item_url = property(get_full_item_url)
@@ -851,6 +882,7 @@ class MagiModel(BaseMagiModel):
     collection = property(get_collection)
     collection_plural_name = property(get_collection_plural_name)
     collection_title = property(get_collection_title)
+    collection_plural_title = property(get_collection_plural_title)
     item_url = property(get_item_url)
     ajax_item_url = property(get_ajax_item_url)
     full_item_url = property(get_full_item_url)
@@ -868,9 +900,24 @@ class MagiModel(BaseMagiModel):
 
     def __unicode__(self):
         try:
+            return self.t_name
+        except AttributeError:
+            pass
+        try:
             return unicode(self.collection_title)
         except AttributeError:
-            return unicode(self.collection_name)
+            pass
+        return unicode(self.collection_name)
 
     class Meta:
         abstract = True
+
+############################################################
+# Utility Models
+
+class UserImage(BaseMagiModel):
+    image = models.ImageField(upload_to=uploadToRandom('user_images'))
+    _thumbnail_image = models.ImageField(null=True, upload_to=uploadThumb('user_images'))
+
+    def __unicode__(self):
+        return unicode(_('Image'))

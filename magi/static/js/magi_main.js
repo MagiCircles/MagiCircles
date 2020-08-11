@@ -114,14 +114,24 @@ function loadPageScroll() {
 }
 
 // *****************************************
-// Check if date input is supported and add an help text otherwise
+// Date input support
 
 function dateInputSupport() {
+    // Auto set timezone
+    $('[data-auto-change-timezone]').each(function() {
+        let timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (timezone && $(this).find('option[value="' + timezone + '"]').length > 0) {
+            $(this).val(timezone);
+        }
+    });
+
     if ($('input[type="date"]').length > 0) {
         var input = document.createElement('input');
+
+        // Check if date input is supported and add an help text otherwise
         input.setAttribute('type', 'date');
         if (input.type == 'date') {
-            $('input[type="date"]').parent().find('.help-block').hide();
+            $('input[type="date"]').parent().find('.help-block .format-help').hide();
         }
     }
 }
@@ -2343,6 +2353,13 @@ function modalCuteFormSeparators(settings) {
             });
         }
     });
+}
+
+// *****************************************
+// Abstract utils
+
+function loadBaseEvent() {
+
 }
 
 // *****************************************

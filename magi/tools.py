@@ -265,6 +265,9 @@ def getSeasonalActivityTagBanners(latest_news=None, seasonal_settings=None):
         return latest_news
     for current_season_name, current_season in seasonal_settings.items():
         season = SEASONS.get(current_season_name, {})
+        show = season.get('show_activity_tag_banner_on_homepage', True)
+        if not show:
+            continue
         tag = season.get('activity_tag', None)
         if tag:
             image = current_season.get('activity_tag_banner', None) or None
@@ -378,14 +381,17 @@ def generateShareImageForMainCollections(collection):
         print '!! Warning: Not enough images to generate share image for', collection.plural_name
         return None
     # Create share image from images
-    return unicode(makeImageGrid(
+    image_instance = makeImageGrid(
         images,
         per_line=SHARE_IMAGE_PER_LINE,
         size_per_tile=SHARE_IMAGES_SIZE,
         upload=True,
         model=models.UserImage,
         previous_url=getattr(django_settings, 'GENERATED_SHARE_IMAGES', {}).get(collection.name, None),
-    ).image)
+    )
+    image_instance._thumbnail_image = image_instance.image
+    image_instance.save()
+    return unicode(image_instance.image)
 
 ############################################################
 # Generate settings (for generated settings)
