@@ -513,7 +513,8 @@ class UserLink(BaseMagiModel):
     ]
 
     TYPE_WITHOUT_I_CHOICES = True
-    i_type = models.CharField(_('Platform'), max_length=20, choices=TYPE_CHOICES)
+    TYPE_SOFT_CHOICES = True
+    i_type = models.CharField(_('Platform'), max_length=20)
 
     RELEVANCE_CHOICES = (
         _('Never'),
