@@ -3554,6 +3554,7 @@ class ActivityCollection(MagiCollection):
         show_relevant_fields_on_ordering = False
         show_item_buttons = False
         show_item_buttons_justified = False
+        show_report_button = True
         ajax_callback = 'loadIndex'
         as_profile_tab = True
         profile_tab_name = property(lambda _s: _s.collection.plural_title)
