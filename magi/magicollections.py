@@ -953,7 +953,8 @@ class MagiCollection(object):
                 related_fields[m.name]['collection_name'] = getattr(m.rel.to, 'collection_name', None)
 
         #   from related objects
-        for r in item._meta.get_all_related_objects():
+        #   + from many to many related objects
+        for r in item._meta.get_all_related_objects() + item._meta.get_all_related_many_to_many_objects():
             field_name = r.get_accessor_name()
             if field_name not in related_fields:
                 related_fields[field_name] = {}
