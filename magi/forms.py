@@ -717,17 +717,6 @@ class MagiForm(forms.ModelForm):
                 else:
                     value = pytz.utc.localize(naive_value)
                 self.cleaned_data[field_name] = value
-        # - From date_times in Meta
-        times = getattr(self.Meta, 'date_times', {})
-        if times:
-            for field_name in self.date_fields:
-                if (field_name not in getattr(self.Meta, 'date_fields_with_time', {})
-                    and field_name in times
-                    and getattr(instance, field_name, None)):
-                    setattr(
-                        instance, field_name,
-                        getattr(instance, field_name).replace(
-                            hour=times[field_name][0], minute=times[field_name][1]))
         return self.cleaned_data
 
     def save(self, commit=True):
@@ -739,6 +728,17 @@ class MagiForm(forms.ModelForm):
                 instance.owner = owner
             else:
                 instance.owner = self.request.user if self.request.user.is_authenticated() else None
+
+        # Clean datetime times
+        # - From date_times in Meta
+        times = getattr(self.Meta, 'date_times', {})
+        if times:
+            for field_name in self.date_fields:
+                if field_name in times and getattr(instance, field_name, None):
+                    setattr(
+                        instance, field_name,
+                        getattr(instance, field_name).replace(
+                            hour=times[field_name][0], minute=times[field_name][1]))
 
         # Save d_ dict choices
         for dfield, choices in self.d_choices.items():

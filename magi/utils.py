@@ -1902,8 +1902,11 @@ def formFieldFromOtherField(field, to_new_field, new_parameters={}):
     parameters.update(new_parameters)
     return to_new_field(**parameters)
 
-def changeFormField(form, field_name, to_new_field, new_parameters={}):
-    form.fields[field_name] = formFieldFromOtherField(form.fields[field_name], to_new_field, new_parameters)
+def changeFormField(form, field_name, to_new_field, new_parameters={}, force_add=True):
+    if field_name in form.fields:
+        form.fields[field_name] = formFieldFromOtherField(form.fields[field_name], to_new_field, new_parameters)
+    elif force_add:
+        form.fields[field_name] = to_new_field(**new_parameters)
 
 def newOrder(current_order, insert_after=None, insert_before=None, insert_instead=None,
              insert_at=None, insert_at_instead=None):
