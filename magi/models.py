@@ -1188,7 +1188,7 @@ class Report(MagiModel):
     reported_thing_owner_id = models.PositiveIntegerField(null=True)
     reason = models.TextField(_('Reason'))
     message = models.TextField(_('Message'))
-    images = models.ManyToManyField(UserImage, related_name="report", verbose_name=_('Images'))
+    images = models.ManyToManyField(UserImage, related_name="report", verbose_name=_('Images'), blank=True)
     staff = models.ForeignKey(User, related_name='staff_reports', null=True, on_delete=models.SET_NULL)
     staff_message = models.TextField('Staff message', null=True)
 
