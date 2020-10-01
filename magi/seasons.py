@@ -177,7 +177,7 @@ DEFAULT_SEASONS = {
         'activity_tag': string_concat(_('Happy Thanksgiving!'), u' 🦃🥧'),
     },
     'halloween': {
-        'start_date': (10, 20),
+        'start_date': (10, 01),
         'end_date': (10, 31),
         'activity_tag': string_concat(_('Happy Halloween!'), u' 🎃👻'),
     },
