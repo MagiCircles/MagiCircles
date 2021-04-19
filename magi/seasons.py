@@ -67,11 +67,11 @@ DEFAULT_SEASONS = {
         'end_date': (02, 15),
         'activity_tag': string_concat(_('Happy Valentine\'s Day!'), u' 💝🍫'),
     },
-    'leapday': {
-        'start_date': (02, 29),
-        'end_date': (03, 01),
-        'activity_tag': string_concat(_('Happy Leap Day!'), u' 🐸'),
-    },
+    # 'leapday': {
+    #     'start_date': (02, 29),
+    #     'end_date': (03, 01),
+    #     'activity_tag': string_concat(_('Happy Leap Day!'), u' 🐸'),
+    # },
     'pieday': {
         'start_date': (03, 14),
         'end_date': (03, 15),

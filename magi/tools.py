@@ -396,10 +396,8 @@ def generateShareImageForMainCollections(collection):
 ############################################################
 # Generate settings (for generated settings)
 
-def seasonalGeneratedSettings(staff_configurations=None, generated_settings=None):
+def seasonalGeneratedSettings(staff_configurations):
     print 'Get seasonal settings'
-    if not staff_configurations:
-        staff_configurations = generated_settings['STAFF_CONFIGURATIONS']
     seasonal_settings = {}
     for season_name, season in SEASONS.items():
         if getEventStatus(season['start_date'], season['end_date'], ends_within=1) in ['current', 'ended_recently']:
@@ -411,8 +409,6 @@ def seasonalGeneratedSettings(staff_configurations=None, generated_settings=None
                 value = staff_configurations.get(u'season_{}_{}'.format(season_name, variable), None)
                 if value is not None:
                     seasonal_settings[season_name][variable] = value
-    if generated_settings:
-        generated_settings['SEASONAL_SETTINGS'] = seasonal_settings
     return seasonal_settings
 
 def magiCirclesGeneratedSettings(existing_values):
