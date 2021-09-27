@@ -47,8 +47,8 @@ class Command(BaseCommand):
                     except Exception, e:
                         print u'!! Error when sending email to {} !!'.format(notification.owner.email)
                         print e
-                        notification.owner.preferences.invalid_email = True
-                        notification.owner.preferences.save()
+                        # notification.owner.preferences.invalid_email = True
+                        # notification.owner.preferences.save()
             else:
                 try:
                     print '  No email for {}: {}'.format(notification.owner.username, notification.localized_message.replace('\n', ''))
