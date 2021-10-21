@@ -1,4 +1,4 @@
-Babel==2.0
+Babel==2.9.1
 Django==1.7.3
 Jinja2==2.8
 MarkupSafe==0.23
