@@ -714,7 +714,9 @@ class MagiForm(forms.ModelForm):
         owner = getattr(self, 'to_owner', self.request.user)
         if (self.is_creating and self.collection
             and not isinstance(self, MagiFiltersForm)
-            and self.request and owner.is_authenticated()):
+            and self.request and owner.is_authenticated()
+            and not owner.hasPermission('bypass_max_per_user')
+            and not owner.is_superuser):
             if self.collection.add_view.max_per_user_per_minute:
                 already_added = self.Meta.model.objects.filter(**{
                     self.Meta.model.selector_to_owner(): owner,
@@ -992,7 +994,7 @@ class MagiForm(forms.ModelForm):
         )
         self.fields = OrderedDict(sorted(
             self.fields.items(),
-            key=lambda k: sorted_keys.index(k[0]),
+            key=lambda k: sorted_keys.index(k[0]) if k[0] in sorted_keys else 99999,
         ))
 
     class Meta:

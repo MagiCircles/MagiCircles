@@ -353,12 +353,38 @@ def getVerboseLanguage(language):
 ############################################################
 # Getters for django settings
 
-def getStaffConfiguration(key, default=None, language=None):
+def getStaffConfiguration(key, default=None, language=None, from_db_model_class=False, is_json=False):
     if language is not None:
         if language == True:
             language = get_language()
-        return django_settings.STAFF_CONFIGURATIONS.get(key, {}).get(language, default)
-    return django_settings.STAFF_CONFIGURATIONS.get(key, default)
+    if from_db_model_class:
+        value = failSafe(lambda: from_db_model_class.objects.filter(**(
+            { 'key': key } if not language else { 'key': key, 'language': language }))[0].value, exceptions=[
+                IndexError])
+    elif language:
+        value = django_settings.STAFF_CONFIGURATIONS.get(key, {}).get(language, None)
+    else:
+        value = django_settings.STAFF_CONFIGURATIONS.get(key, None)
+    if not value:
+        return default
+    return json.loads(value) if is_json else value
+
+def getStaffConfigurationCache(model_class, key, default=None, is_json=True):
+    default = {} if is_json else None
+    tmp_default = -1 if default != -1 else -2
+    # Always retrieves from db
+    value = getStaffConfiguration(
+        key, default=tmp_default, is_json=is_json,
+        from_db_model_class=model_class)
+    if value == tmp_default:
+        value = default
+        model_class.objects.create(
+            owner=get_default_owner(model_class._meta.get_field('owner').rel.to), key=key,
+            value=json.dumps(default), verbose_key='Internal cache: {}. Do not edit manually.'.format(key))
+    return value
+
+def saveStaffConfigurationCache(model_class, key, value, is_json=True):
+    model_class.objects.filter(key=key).update(value=json.dumps(value) if is_json else value)
 
 ############################################################
 # Use a dict as a class

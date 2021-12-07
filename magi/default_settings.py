@@ -73,6 +73,7 @@ DEFAULT_GROUPS = [
             'list_homepage_arts',
             'access_site_before_launch',
             'beta_test_features',
+            'bypass_max_per_user',
         ],
         'outside_permissions': {
             'Tweetdeck': { 'image': 'links/twitter', 'url': 'https://tweetdeck.twitter.com/' },
@@ -149,6 +150,7 @@ DEFAULT_GROUPS = [
             'list_homepage_arts',
             'access_site_before_launch',
             'beta_test_features',
+            'bypass_max_per_user',
         ],
         'requires_staff': True,
         'guide': '/help/Database%20maintainers%20guide',
@@ -162,6 +164,7 @@ DEFAULT_GROUPS = [
             'list_homepage_arts',
             'access_site_before_launch',
             'beta_test_features',
+            'bypass_max_per_user',
         ],
         'requires_staff': True,
         'outside_permissions': {

@@ -19,6 +19,7 @@ from magi.utils import (
     modelHasField,
     uploadToRandom,
     uploadThumb,
+    staticImageURL,
 )
 
 ############################################################
@@ -474,6 +475,13 @@ class BaseMagiModel(models.Model):
             or getattr(self, u'{}_original'.format(field_name), None)
         )
 
+    def get_auto_image(self, field_name):
+        for name_option in ['i_{}'.format(field_name), 'c_{}'.format(field_name), field_name]:
+            if hasattr(self, name_option):
+                original_field_name = name_option
+                break
+        return staticImageURL(getattr(self, field_name), folder=original_field_name)
+
     @classmethod
     def get_field_translation_sources(self, field_name):
         return listUnique(getattr(self, u'{}_SOURCE_LANGUAGES'.format(
@@ -686,6 +694,10 @@ class BaseMagiModel(models.Model):
         elif name.endswith('_2x'):
             field_name = name[:-3]
             return self.get_2x(field_name)
+
+        # When accessing "something_image"
+        elif name.endswith('_image') and getattr(self, '{}_AUTO_IMAGES'.format(name[:-6].upper()), False):
+            return self.get_auto_image(name[:-6])
 
         # When accessing "something_url"
         elif name.endswith('_url'):
