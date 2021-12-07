@@ -19,6 +19,7 @@ from magi.utils import (
     getCharacterURLFromPk,
     getCharacterLabel,
     getImageForPrefetched,
+    getIndex,
     AttrDict,
     justReturn,
     propertyFromCollection,

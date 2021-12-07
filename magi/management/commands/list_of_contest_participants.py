@@ -390,18 +390,29 @@ class Command(BaseCommand):
         pick = self.options['pick_random_winners']
         entries = self.get_flat_entries(all_entries)
         if pick > len(entries):
+            print '[Warning] Not enough entries, picking', len(entries), 'instead of', pick, 'entries'
             pick = len(entries)
         filtered_entries = []
+        filtered_out_entries = []
         if self.options.get('lower_chance_for_staff', False) or self.options.get('lower_chance_for_previous_winners', False):
+            print '[Info] Filtering entries...'
             for entry in entries:
-                if self.options.get('lower_chance_for_staff', False) and self.entry_is_staff(entry):
-                    continue
-                if self.options.get('lower_chance_for_previous_winners', False) and self.entry_won_before(entry):
-                    continue
-                filtered_entries.append(entry)
-        if pick > len(filtered_entries):
-            filtered_entries = entries
-        return random.sample(filtered_entries, pick)
+                if ((self.options.get('lower_chance_for_staff', False) and self.entry_is_staff(entry))
+                    or (self.options.get('lower_chance_for_previous_winners', False) and self.entry_won_before(entry))):
+                    filtered_out_entries.append(entry)
+                else:
+                    filtered_entries.append(entry)
+            print '  All entries:', len(entries)
+            print '  Filtered entries:', len(filtered_entries)
+            print '  Filtered out entries:', len(filtered_out_entries)
+        winners = []
+        for i in range(0, pick):
+            if not filtered_entries:
+                print '[Warning] Not enough filtered entries, some winners will be picked from filtered out entries'
+                filtered_entries = filtered_out_entries
+            random.shuffle(filtered_entries)
+            winners.append(filtered_entries.pop())
+        return winners
 
     def list_first(self, l):
         if isinstance(l, list):

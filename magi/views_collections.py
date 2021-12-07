@@ -406,7 +406,10 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['total_results_sentence'] = _('1 {object} matches your search:').format(object=collection.title.lower()) if context['total_results'] == 1 else _('{total} {objects} match your search:').format(total=context['total_results'], objects=collection.plural_title.lower())
 
     if 'page' in request.GET and request.GET['page']:
-        page = int(request.GET['page']) - 1
+        try:
+            page = int(request.GET['page']) - 1
+        except ValueError:
+            page = 0
         if page < 0:
             page = 0
     unpaginated_queryset = queryset
