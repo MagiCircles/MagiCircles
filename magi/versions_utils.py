@@ -4,26 +4,32 @@ from magi.default_settings import RAW_CONTEXT
 from magi.utils import (
     couldSpeakEnglish,
     getEventStatus,
+    listUnique,
+    tourldash,
+    LANGUAGES_DICT,
+    getAccountVersionsFromSession,
 )
-
-############################################################
-# Get relevant values that should be displayed
-# based on base languages or specified languages (ordered)
-
-def getRelevantValues():
-    pass #todo
 
 ############################################################
 # Pick relevant version automatically
 
+def getFirstVersion(item=None, versions=None):
+    versions = versions or (item.VERSIONS if item else {})
+    return versions.keys()[0]
+
 def getRelevantVersion(
         request=None,
-        fallback_to_first=True,
         exclude_versions=[],
         # Either:
         item=None,
         # Or:
         versions=None, versions_statuses=None,
+        # Customize what's checked
+        check_filtered_choice=True,
+        check_status=True,
+        check_accounts=True,
+        check_language=True,
+        fallback_to_first=True,
 ):
     """
     See getBaseEventWithVersions in magi/abstract_models.py
@@ -48,16 +54,40 @@ def getRelevantVersion(
         request = getattr(item, 'request', None)
 
     # Filtered choice
-    if request:
+    if check_filtered_choice and request:
         version_name = request.GET.get('version', None)
         if version_name in versions:
             return version_name
         version_name = i_version_string_to_version.get(request.GET.get('i_version', None), None)
         if version_name in versions:
             return version_name
+        c_versions = request.GET.get('c_versions', '').split(',')
+        for version_name in c_versions:
+            if version_name in versions:
+                return version_name
 
     # Based on status
-    if versions_statuses or item:
+    if check_status and (versions_statuses or item):
+        for status in ['current']:
+            for version_name, version in versions.items():
+                if versions_statuses:
+                    if versions_statuses.get(version_name, None) == status:
+                        return version_name
+                elif item:
+                    if ((getattr(item, u'{}status'.format(version['prefix']), None) == status)
+                        or (hasattr(item, 'get_status')
+                            and item.get_status(version_name) == status)
+                        or (status == 'current'
+                            and hasattr(item, u'{}start_date'.format(version['prefix']))
+                            and hasattr(item, u'{}end_date'.format(version['prefix']))
+                            and getEventStatus(
+                                getattr(item, u'{}start_date'.format(version['prefix'])),
+                                getattr(item, u'{}end_date'.format(version['prefix'])),
+                            ) == status)):
+                        return version_name
+
+    # Based on status with more tolerance
+    if check_status and (versions_statuses or item):
         for status in ['current', 'starts_soon', 'ended_recently']:
             for version_name, version in versions.items():
                 if versions_statuses:
@@ -76,16 +106,24 @@ def getRelevantVersion(
                             ) == status)):
                         return version_name
 
-    # User language
-    language = request.LANGUAGE_CODE if request else get_language()
-    for version_name, version in versions.items():
-        for version_language in getLanguagesForVersion(version):
-            if language == version_language:
+    # Based on account versions
+    if check_accounts and request:
+        account_versions = getAccountVersionsFromSession(request)
+        for version_name in account_versions:
+            if version_name in versions:
                 return version_name
+
+    # User language
+    if check_language:
+        language = request.LANGUAGE_CODE if request else get_language()
+        for version_name, version in versions.items():
+            for version_language in getLanguagesForVersion(version):
+                if language == version_language:
+                    return version_name
 
     # Fallback to first
     if fallback_to_first:
-        return versions.keys()[0]
+        return getFirstVersion(versions=versions)
 
     return None
 
@@ -134,11 +172,49 @@ def getFieldForRelevantVersion(item, field_name, default=None, request=None, get
         return None, default
     return default
 
+def getRelevantVersions(
+        request=None,
+        exclude_versions=[],
+        # Either:
+        item=None,
+        # Or:
+        versions=None, versions_statuses=None,
+        # Customize what's checked
+        check_filtered_choice=True,
+        check_status=True,
+        check_accounts=True,
+        check_language=True,
+        fallback_to_first=False,
+):
+    relevant_versions = []
+    while True:
+        relevant_version = getRelevantVersion(
+            request=request,
+            exclude_versions=exclude_versions + relevant_versions,
+            item=item, versions=versions, versions_statuses=versions_statuses,
+            check_filtered_choice=check_filtered_choice,
+            check_status=check_status,
+            check_accounts=check_accounts,
+            check_language=check_language,
+            fallback_to_first=False,
+        )
+        if not relevant_version:
+            break
+        relevant_versions.append(relevant_version)
+    if not relevant_versions and fallback_to_first:
+        relevant_versions.append(getFieldForVersion(item=item, versions=versions))
+    return relevant_versions
+
+def getAllVersionsOrderedByRelevance(*args, **kwargs):
+    relevant_versions = getRelevantVersions(*args, **kwargs)
+    versions = kwargs.get('versions', None) or (kwargs['item'].VERSIONS if kwargs.get('item', None) else {})
+    return listUnique(relevant_versions + versions.keys())
+
 # Translated fields
 
 def getTranslatedValueForRelevantVersion(item, field_name, request=None, default=None, return_version=False):
     _get_value = lambda item, version_name, version: getRelevantTranslatedValueForVersion(
-        item, field_name, version_name, version, request=request, fallback=False,
+        item, field_name, version_name, version, request=request,
     )
     return (
         getFieldForRelevantVersion(
@@ -149,20 +225,75 @@ def getTranslatedValueForRelevantVersion(item, field_name, request=None, default
         ) or default
     )
 
+def sortByRelevantVersions(
+        queryset,
+        sorted_field_name='{}start_date',
+        # Arguments given to getRelevantVersions
+        *args, **kwargs):
+    item = kwargs.get('item', None)
+    versions = kwargs.get('versions', None) or (item.VERSIONS if item else {})
+    relevant_versions = getRelevantVersions(*args, **kwargs)
+    first_version = getFirstVersion(item=item, versions=versions)
+    neutral_field_name = getVersionNeutralFieldName(sorted_field_name)
+    if first_version not in relevant_versions:
+        relevant_versions.append(first_version)
+    if len(relevant_versions) == 1:
+        queryset = queryset.extra(select={
+            neutral_field_name: getFieldNameForVersion(sorted_field_name, versions[relevant_versions[0]]),
+        })
+    elif relevant_versions:
+        queryset = queryset.extra(select={
+            neutral_field_name: u'COALESCE({})'.format(u', '.join([
+                getFieldNameForVersion(sorted_field_name, versions[version_name])
+                for version_name in relevant_versions
+            ])),
+        })
+    return queryset
+
 ############################################################
 # Specify version
 
-def getFieldNameForVersion(field_name, version):
-    return (
-        field_name.format(version['prefix'])
-        if '{}' in field_name
-        else u'{}{}'.format(version['prefix'], field_name)
-    )
+def getFieldTemplateForVersion(field_name):
+    return field_name if '{}' in field_name else u'{}{}'.format('{}', field_name)
 
-def getFieldForVersion(item, field_name, version_name, version, get_value=None):
+def getVersionNeutralFieldName(field_name):
+    return getFieldTemplateForVersion(field_name).format('')
+
+def getFieldNameForVersion(field_name, version):
+    return getFieldTemplateForVersion(field_name).format(version['prefix'])
+
+def getFieldNameForVersionAndLanguage(field_name, version, language):
+    return getFieldTemplateForVersion(field_name).format(u'{}{}_'.format(
+        version['prefix'], tourldash(language).replace('-', '')))
+
+def getFieldForVersion(item, field_name, version_name, version, get_value=None, language=None):
     if get_value:
         return get_value(item, version_name, version)
+    if language:
+        return getattr(item, getFieldNameForVersionAndLanguage(field_name, version, language), None)
     return getattr(item, getFieldNameForVersion(field_name, version), None)
+
+# Values per languages
+
+def getValuesPerLanguagesForVersion(item, field_name, version_name, version, get_value=None):
+    return OrderedDict([ (l, v) for l, v in [
+        (language, getFieldForVersion(item, field_name, version_name, version, get_value=get_value, language=language,
+        )) for language in getLanguagesForVersion(version) or LANGUAGES_DICT.keys()
+    ] if v ])
+
+def getValueOfRelevantLanguageForVersion(item, field_name, version_name, version, request=None, default=None):
+    if not request:
+        request = getattr(item, 'request', None)
+    values = getValuesPerLanguagesForVersion(item, field_name, version_name, version)
+    if values:
+        # Try current language first
+        language = request.LANGUAGE_CODE if request else get_language()
+        if values.get(language, None):
+            return values[language]
+        # Fallback to 1st in list
+        return values[values.keys()[0]]
+    # Fallback to default
+    return default
 
 # Translated fields
 

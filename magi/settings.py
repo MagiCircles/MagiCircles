@@ -575,6 +575,11 @@ if hasattr(settings_module, 'BIRTHDAY_TAG'):
 else:
     BIRTHDAY_TAG = None
 
+if hasattr(settings_module, 'BIRTHDAY_BANNER_HIDE_TITLE'):
+    BIRTHDAY_BANNER_HIDE_TITLE = getattr(settings_module, 'BIRTHDAY_BANNER_HIDE_TITLE')
+else:
+    BIRTHDAY_BANNER_HIDE_TITLE = False
+
 if hasattr(settings_module, 'USERS_BIRTHDAYS_BANNER'):
     USERS_BIRTHDAYS_BANNER = getattr(settings_module, 'USERS_BIRTHDAYS_BANNER')
 else:
@@ -702,7 +707,11 @@ def _birthday_tags_per_characters_key(key):
         return lambda: u'{}, {}! {}'.format(
             _('Happy Birthday'), _getCharacterNameFromPk(key, pk), year)
     tags = []
-    for year in range((LAUNCH_DATE or LAST_SERVER_RESTART).year, LAST_SERVER_RESTART.year + 2):
+    try:
+        start_year = LAUNCH_DATE.year
+    except AttributeError:
+        start_year = LAST_SERVER_RESTART.year
+    for year in range(start_year, LAST_SERVER_RESTART.year + 2):
         collection_name = (
             (FAVORITE_CHARACTERS_MODEL.collection_name
              if FAVORITE_CHARACTERS_MODEL

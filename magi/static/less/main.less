@@ -860,6 +860,10 @@ a.text-muted {
     width: 100%;
     max-width: 800px;
 
+    .item {
+        background-size: cover;
+    }
+
     .item.birthday {
         background-size: 150%;
         background-position-y: 30%;
@@ -1539,9 +1543,6 @@ form .form-group ul {
             margin: 5px 0;
         }
         .a-variant(white);
-        a {
-            color: lighten(@secondaryColor, 20%);
-        }
         .text-muted {
             color: fade(white, 50%);
         }
@@ -1697,7 +1698,7 @@ a.avatar_wrapper {
 
 a[href="#hideStaffButtons"] {
     position: fixed;
-    z-index: 1030;
+    z-index: 1060;
     bottom: 20px;
     left: 20px;
     width: 70px;
@@ -1718,7 +1719,7 @@ a[href="#hideStaffButtons"] {
 
 .corner-popup {
     position: fixed;
-    z-index: 1040;
+    z-index: 1070;
     bottom: 20px;
     left: 20px;
     max-width: 100%;
@@ -2249,6 +2250,11 @@ nav {
         }
     }
     #sidebar-wrapper {
+        .padded-inner-sidebar {
+            a {
+                color: @accentColor;
+            }
+        }
         .cuteform-elt {
             border-color: @mainColor;
             &.cuteform-selected {

@@ -9,6 +9,7 @@ t = {
     '%(model_name)s with this %(field_labels)s already exists.': _('%(model_name)s with this %(field_labels)s already exists.'),
     'and': _('and'),
     'Clear': _('Clear'),
+    'Delete': _('Delete'),
     'Download': _('Download'),
     'Email': _('Email'),
     'English': _('English'),

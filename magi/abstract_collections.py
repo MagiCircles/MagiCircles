@@ -2,7 +2,9 @@ import operator
 from django.utils.translation import ugettext_lazy as _
 from magi.magicollections import MainItemCollection
 from magi.utils import (
+    addParametersToURL,
     eventToCountDownField,
+    listUnique,
     modelFieldVerbose,
     modelHasField,
     staticImageURL,
@@ -37,18 +39,38 @@ class BaseEventCollection(MainItemCollection):
         'end_date': 'date',
     }
 
-    def get_fields_icons_for_version(self, version_name, version):
+    fields_icons_per_version = {
+        u'{}start_date': 'date',
+        u'{}end_date': 'date',
+    }
+
+    fields_icons_per_version_and_language = {
+    }
+
+    def get_fields_icons_per_version(self, version_name, version):
         return {
-            u'{}image'.format(version['prefix']): version.get('icon', None),
-            u'{}start_date'.format(version['prefix']): 'date',
-            u'{}end_date'.format(version['prefix']): 'date',
+            u'{}image': version.get('icon', None),
+        }
+
+    def get_fields_icons_per_version_and_language(self, version_name, version, language):
+        return {
+            u'{}image': version.get('icon', None),
         }
 
     @property
     def fields_icons(self):
         fields_icons = self.base_fields_icons.copy()
-        for version_name, version in self.versions.items():
-            fields_icons.update(self.get_fields_icons_for_version(version_name, version))
+        if self.with_versions:
+            # Static fields_icons_per_version + fields_icons_per_version_and_language
+            for template_field_name, icon in self.fields_icons_per_version.items() + self.fields_icons_per_version_and_language.items():
+                fields_icons.update({ field_name: icon for field_name in self.queryset.model.get_all_versions_field_names(template_field_name) })
+            # Dynamic get_fields_icons_per_version
+            for version_name, version in self.versions.items():
+                for template_field_name, icon in self.get_fields_icons_per_version(version_name, version).items():
+                    fields_icons[self.queryset.model.get_field_name_for_version(template_field_name, version_name)] = icon
+                for language in self.queryset.model.get_version_languages(version_name):
+                    for template_field_name, icon in self.get_fields_icons_per_version_and_language(version_name, version, language).items():
+                        fields_icons[self.queryset.model.get_field_name_for_version_and_language(template_field_name, version_name, language)] = icon
         return fields_icons
 
     ############################################################
@@ -56,16 +78,36 @@ class BaseEventCollection(MainItemCollection):
 
     base_fields_images = {}
 
-    def get_fields_images_for_version(self, version_name, version):
+    fields_images_per_version = {
+    }
+
+    fields_images_per_version_and_language = {
+    }
+
+    def get_fields_images_per_version(self, version_name, version):
         return {
-            u'{}image'.format(version['prefix']): version.get('image', None),
+            u'{}image': version.get('image', None),
+        }
+
+    def get_fields_images_per_version_and_language(self, version_name, version, language):
+        return {
+            u'{}image': version.get('image', None),
         }
 
     @property
     def fields_images(self):
         fields_images = self.base_fields_images.copy()
-        for version_name, version in self.versions.items():
-            fields_images.update(self.get_fields_images_for_version(version_name, version))
+        if self.with_versions:
+            # Static fields_images_per_version + fields_images_per_version_and_language
+            for template_field_name, image in self.fields_images_per_version.items() + self.fields_images_per_version_and_language.items():
+                fields_images.update({ field_name: image for field_name in self.queryset.model.get_all_versions_field_names(template_field_name) })
+            # Dynamic get_fields_images_per_version
+            for version_name, version in self.versions.items():
+                for template_field_name, image in self.get_fields_images_per_version(version_name, version).items():
+                    fields_images[self.queryset.model.get_field_name_for_version(template_field_name, version_name)] = image
+                for language in self.queryset.model.get_version_languages(version_name):
+                    for template_field_name, image in self.get_fields_images_per_version_and_language(version_name, version, language).items():
+                        fields_images[self.queryset.model.get_field_name_for_version_and_language(template_field_name, version_name, language)] = image
         return fields_images
 
     ############################################################
@@ -87,7 +129,10 @@ class BaseEventCollection(MainItemCollection):
     # List view
 
     class ListView(MainItemCollection.ListView):
-        auto_filter_form = True # todo
+        default_ordering = '-start_date'
+
+        def to_filter_form_class(self):
+            self.filter_form = forms.to_EventFilterForm(self)
 
     ############################################################
     # Item view
@@ -102,41 +147,44 @@ class BaseEventCollection(MainItemCollection):
             'c_versions',
         ]
 
-        @property
-        def fields_order(self):
-            return self.fields_order_before + [
-                # Fields per version
-                field_name.format(version['prefix'])
-                for version_name, version in self.collection.versions.items()
-                for field_name in [
-                        version_name,
-                        '{}countdown',
-                ] + self.collection.queryset.model.FIELDS_PER_VERSION
-            ]
+        def get_fields_order(self, item):
+            if self.collection.with_versions:
+                order = self.fields_order_before
+                for version_name in item.versions_display_order:
+                    order.append(version_name)
+                    order += [
+                        self.collection.queryset.model.get_field_name_for_version('{}countdown', version_name)
+                    ] + self.collection.queryset.model.ALL_FIELDS_BY_VERSION[version_name]
+                return order
+            return []
+
+        def extra_context(self, context):
+            super(BaseEventCollection.ItemView, self).extra_context(context)
+            if 'js_variables' not in context:
+                context['js_variables'] = {}
+            context['js_variables']['event_collection_name'] = self.collection.name
+            context['js_variables']['with_versions'] = self.collection.with_versions
+            if self.collection.with_versions:
+                context['js_variables']['versions'] = self.collection.versions
+                context['js_variables']['opened_versions'] = context['item'].opened_versions
 
         # Fields exclude
-
-        fields_exclude_per_version = [
-            'image'
-        ]
+        fields_exclude_before = []
+        fields_exclude_per_version = []
+        fields_exclude_per_version_and_language = []
 
         @property
         def fields_exclude(self):
-            # todo
-            print '----'
             try:
-                print [
-                    self.collection.queryset.model.get_field_names_all_versions(field_name)
-                    for field_name in self.fields_exclude_per_version
-                ]
-            except:
-                import traceback
-                traceback.print_exc()
-                print '/////'
-            return reduce(operator.add, [
-                self.collection.queryset.model.get_field_names_all_versions(field_name)
-                for field_name in self.fields_exclude_per_version
-            ])
+                fields_excluded = MainItemCollection.ItemView.fields_exclude.fget(self) + self.fields_exclude_before
+            except AttributeError:
+                fields_excluded = self.fields_exclude_before
+            if self.collection.with_versions:
+                return reduce(operator.add, [
+                    self.collection.queryset.model.get_all_versions_field_names(field_name)
+                    for field_name in self.fields_exclude_per_version + self.fields_exclude_per_version_and_language
+                ], fields_excluded)
+            return fields_excluded
 
         # Extra fields
 
@@ -147,20 +195,27 @@ class BaseEventCollection(MainItemCollection):
 
                 for version_name in item.versions:
 
+                    anchor = u'version{}'.format(version_name)
+
                     # Add title for each version
                     title_field = {
                         'image': item.get_version_image(version_name),
                         'icon': item.get_version_icon(version_name),
-                        'verbose_name': item.get_name_for_version(version_name),
+                        'verbose_name': item.get_name_for_version(version_name) or unicode(item),
                         'verbose_name_subtitle': item.get_version_name(version_name),
+                        'attributes': { 'id': anchor },
                     }
-                    image = item.get_field_for_version('image_url', version_name)
+                    if '{}image' in self.collection.queryset.model.FIELDS_PER_VERSION_AND_LANGUAGE:
+                        image = item.get_value_of_relevant_language_for_version('image_url', version_name)
+                    else:
+                        image = item.get_field_for_version('image_url', version_name)
                     if image:
                         title_field.update({
                             'type': 'image_link',
                             'value': image,
                             'link_text': item.get_name_for_version(version_name),
-                            'link': item.get_field_for_version('image_original_url', version_name),
+                            'link': addParametersToURL(item.item_url, anchor=anchor),
+                            'not_new_window': True,
                         })
                     else:
                         title_field.update({
@@ -181,8 +236,22 @@ class BaseEventCollection(MainItemCollection):
 
                     # Add participations(?) todo
 
-            else:
-                pass
-            # todo
-
             return extra_fields
+
+        def to_fields(self, item, *args, **kwargs):
+            fields = super(BaseEventCollection.ItemView, self).to_fields(item, *args, **kwargs)
+            if self.collection.with_versions:
+                # Links to versions with smooth page scroll
+                if getattr(item, 'request', None) and not item.request.path_info.startswith('/ajax/'):
+                    if 'versions' in fields:
+                        fields['versions'].update({
+                            'type': 'list_links',
+                            'links': [{
+                                'link': u'#version{}'.format(version_name),
+                                'value': item.get_version_name(version_name),
+                                'not_new_window': True,
+                                'attributes': { 'class': 'page-scroll' },
+                            } for version_name in item.versions_display_order
+                            ],
+                        })
+            return fields

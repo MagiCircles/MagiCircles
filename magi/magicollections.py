@@ -18,6 +18,7 @@ from magi.utils import (
     getCharacterImageFromPk,
     getCharacterURLFromPk,
     getCharacterLabel,
+    getImageForPrefetched,
     AttrDict,
     justReturn,
     propertyFromCollection,
@@ -49,6 +50,8 @@ from magi.utils import (
     filterRealCollectiblesPerAccount,
     failSafe,
     toHumanReadable,
+    YouTubeVideoField,
+    markSafeFormat,
 )
 from magi.raw import please_understand_template_sentence, unrealistic_template_sentence
 from magi.django_translated import t
@@ -210,9 +213,10 @@ class MagiCollection(object):
     navbar_link_list_divider_before = False
     navbar_link_list_divider_after = False
     types = None
-    filter_cuteform = None
+    filter_cuteform = {}
     fields_icons = {}
     fields_images = {}
+
     collectible = None
     collectible_collections = {}
 
@@ -841,8 +845,15 @@ class MagiCollection(object):
 
     reportable = True
     blockable = True
-    report_edit_templates = {}
-    report_delete_templates = {}
+    report_edit_templates = {
+        'Wrong details': 'The following details seemed to be wrong: XXXXXXXXX',
+        'Inappropriate content': 'Something you wrote or uploaded was inappropriate. ' + please_understand_template_sentence,
+    }
+    report_delete_templates = {
+        'Inappropriate content': 'Something you wrote or uploaded was inappropriate. ' + please_understand_template_sentence,
+        'Troll': 'This content has been detected as being deliberately provocative with the intention of causing disruption or argument and therefore has been deleted. We kindly ask you not to re-iterate your actions and be respectful towards our community.',
+        'Spam activity': 'This content has been detected as spam. We do not tolerate such behavior and kindly ask you not to re-iterate your actions or your entire profile might get deleted next time.',
+    }
     report_allow_edit = True
     report_allow_delete = True
 
@@ -922,6 +933,9 @@ class MagiCollection(object):
         if hasattr(view, 'fields_order'):
             order += view.fields_order
 
+        if hasattr(view, 'get_fields_order'):
+            order += view.get_fields_order(item)
+
         if hasattr(view, 'fields_preselected'):
             preselected += view.fields_preselected
 
@@ -951,6 +965,8 @@ class MagiCollection(object):
                 related_fields[m.name]['verbose_name'] = modelFieldVerbose(type(item), m.name)
             if 'collection_name' not in related_fields[m.name]:
                 related_fields[m.name]['collection_name'] = getattr(m.rel.to, 'collection_name', None)
+            if 'filter_field_name' not in related_fields[m.name]:
+                related_fields[m.name]['filter_field_name'] = m.related.get_accessor_name()
 
         #   from related objects
         #   + from many to many related objects
@@ -960,6 +976,8 @@ class MagiCollection(object):
                 related_fields[field_name] = {}
             if 'collection_name' not in related_fields[field_name]:
                 related_fields[field_name]['collection_name'] = getattr(r.model, 'collection_name', None)
+            if 'filter_field_name' not in related_fields[field_name]:
+                related_fields[field_name]['filter_field_name'] = r.field.name
 
         for field_name, details in related_fields.items():
             # Exclude field if needed
@@ -972,7 +990,7 @@ class MagiCollection(object):
             collection = getMagiCollection(details['collection_name']) if details.get('collection_name', None) else None
 
             # Set defaults from dict
-            url = details.get('url', field_name)
+            url = details.get('url', collection.plural_name if collection else field_name)
             verbose_name = (
                 details.get('verbose_name', None)
                 or (
@@ -1017,16 +1035,7 @@ class MagiCollection(object):
                         if allow_ajax_per_item:
                             d['ajax_link'] = getattr(related_item, 'ajax_item_url')
                         d['link_text'] = unicode(_(u'Open {thing}')).format(thing=d['verbose_name'].lower())
-                        item_image = None
-                        for image_field in [
-                                'image_for_prefetched',
-                                'top_image_list', 'top_image',
-                                'image_thumbnail_url', 'image_url',
-                        ]:
-                            if getattr(related_item, image_field, None):
-                                item_image = getattr(related_item, image_field)
-                                break
-                        d['image_for_link'] = item_image
+                        d['image_for_link'] = getImageForPrefetched(related_item)
                     d['icon'] = getattr(related_item, 'icon_for_prefetched',
                                         getattr(related_item, 'flaticon', d['icon']))
                     if callable(d['icon']):
@@ -1078,17 +1087,7 @@ class MagiCollection(object):
                         link_to_append = to_append.copy()
                         link_to_append['value'] = unicode(related_item)
                         l_links.append(link_to_append)
-                        item_image = None
-                        used_image_field_name = None
-                        for image_field in [
-                                'image_for_prefetched',
-                                'top_image_list', 'top_image',
-                                'image_thumbnail_url', 'image_url',
-                        ]:
-                            if getattr(related_item, image_field, None):
-                                item_image = getattr(related_item, image_field)
-                                used_image_field_name = image_field
-                                break
+                        used_image_field_name, item_image = getImageForPrefetched(related_item, return_field_name=True)
                         if item_image:
                             image_to_append = to_append.copy()
                             if not image_to_append['link']:
@@ -1235,12 +1234,22 @@ class MagiCollection(object):
                     continue
                 if value is None or field.name.startswith('m_') and not value[1]:
                     continue
+
+            # HIDE_WHEN_DEFAULT option
+            if (getattr(item, u'{}_HIDE_WHEN_DEFAULT'.format(field_name.upper()), False)
+                and getattr(item, field.name, None) == field.default):
+                continue
+
             d = {
                 'verbose_name': getattr(field, 'verbose_name', field_name.capitalize()),
                 'value': value,
                 'icon': icons.get(field_name, None),
                 'image': images.get(field_name, None),
             }
+            # Auto image if exists
+            if (not d['image'] and getattr(item, '{}_AUTO_IMAGES'.format(field_name.upper()), False)
+                and not field.name.startswith('c_')):
+                d['image'] = staticImageURL(getattr(item, field_name), folder=field.name)
             if is_foreign_key:
                 if field_name in preselected:
                     cache = getattr(item, field_name, None)
@@ -1260,16 +1269,7 @@ class MagiCollection(object):
                     d['link'] = link
                     d['ajax_link'] = getattr(cache, 'ajax_item_url')
                     d['link_text'] = unicode(_(u'Open {thing}')).format(thing=d['verbose_name'].lower())
-                    item_image = None
-                    for image_field in [
-                            'image_for_prefetched',
-                            'top_image_list', 'top_image',
-                            'image_thumbnail_url', 'image_url',
-                    ]:
-                        if getattr(cache, image_field, None):
-                            item_image = getattr(cache, image_field)
-                            break
-                    d['image_for_link'] = item_image
+                    d['image_for_link'] = getImageForPrefetched(cache)
                     d['icon'] = getattr(cache, 'icon_for_prefetched',
                                         getattr(cache, 'flaticon', d['icon']))
                 else:
@@ -1277,6 +1277,14 @@ class MagiCollection(object):
                     d['value'] = getattr(cache, 'unicode', field_name)
             elif field.name.startswith('c_'): # original field name
                 d['type'] = 'list'
+                if (getattr(item, '{}_AUTO_IMAGES'.format(field_name.upper()), False)):
+                    d['value'] = [
+                        markSafeFormat(
+                            u'<img src="{url}" alt="{v}" height="30"> {v}',
+                            url=staticImageURL(_value, folder=field.name),
+                            v=item.get_verbose_i(field_name, item.get_i(field_name, _value)))
+                        for _value in getattr(item, field_name)
+                    ]
             elif field.name.startswith('m_'): # original field name
                 d['type'] = 'markdown'
                 d['allow_html'] = self.allow_html_in_markdown
@@ -1332,7 +1340,7 @@ class MagiCollection(object):
                 d['type'] = 'color'
             elif isinstance(field, YouTubeVideoField):
                 d['type'] = 'youtube_video'
-                d['value'] = d['value'].replace('watch?v=', 'embed/')
+                d['value'] = YouTubeVideoField.embed_url(d['value'])
                 d['spread_across'] = True
             elif isinstance(field, models.models.URLField):
                 d['type'] = 'button'
@@ -1862,8 +1870,11 @@ class MagiCollection(object):
                 dict_alt_views = dict(self.alt_views)
 
                 # Don't show view details if view is not visible anywhere
-                if (dict_alt_views[view].get('hide_in_filter', False)
-                    and dict_alt_views[view].get('hide_in_navbar', False)):
+                if (('show_view_title' not in dict_alt_views[view]
+                     and (dict_alt_views[view].get('hide_in_filter', False)
+                          and dict_alt_views[view].get('hide_in_navbar', False)))
+                    or ('show_view_title' in dict_alt_views[view]
+                        and not dict_alt_views[view]['show_view_title'])):
                     view = None
 
             def _preset_title():
@@ -1877,6 +1888,8 @@ class MagiCollection(object):
                 h1['image'] = self.collection.image
             def _view_title():
                 h1['title'] = dict_alt_views[view]['verbose_name']
+                h1['icon'] = dict_alt_views[view].get('icon')
+                h1['image'] = dict_alt_views[view].get('image')
             def _parent_prefix():
                 parent_prefix = self.collection.get_parent_prefix(request, context)
                 if parent_prefix:
@@ -2648,6 +2661,8 @@ class AccountCollection(MagiCollection):
             super(AccountCollection.AddView, self).before_save(request, instance, type=type)
             if 'account_ids' in request.session:
                 del request.session['account_ids']
+            if 'account_versions' in request.session:
+                del request.session['account_versions']
             return instance
 
         def after_save(self, request, instance, type=None):
@@ -2668,10 +2683,18 @@ class AccountCollection(MagiCollection):
                 return '/ajax/successedit/'
             return '{}#{}'.format(request.user.item_url, instance.pk)
 
+        def before_save(self, request, instance, type=None):
+            super(AccountCollection.EditView, self).before_save(request, instance, type=type)
+            if 'account_versions' in request.session:
+                del request.session['account_versions']
+            return instance
+
         def before_delete(self, request, item, ajax):
             super(AccountCollection.EditView, self).before_delete(request, item, ajax)
             if 'account_ids' in request.session:
                 del request.session['account_ids']
+            if 'account_versions' in request.session:
+                del request.session['account_versions']
             request._account_owner = item.owner
 
         def after_delete(self, request):

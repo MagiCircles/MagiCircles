@@ -2187,12 +2187,14 @@ function formOnChangeValueShow(form, changingFieldName, valuesToShow) {
     // or an object { value: array of field names }
     let changingField = form.find('#id_' + changingFieldName);
     let allFields = [];
+    let originalInputVals = {};
     function onChange(animation) {
         if (Array.isArray(valuesToShow)) {
             $.each(valuesToShow, function(i, fieldName) {
                 let input = form.find('#id_' + fieldName);
                 let field = input.closest('.form-group');
                 if (hasValue(changingField)) {
+                    input.val(originalInputVals[fieldName]);
                     field.show(animation);
                 } else {
                     input.val('');
@@ -2203,7 +2205,7 @@ function formOnChangeValueShow(form, changingFieldName, valuesToShow) {
         } else {
             let to_show = [];
             $.each(valuesToShow, function(value, fields) {
-                if (String(getValue(changingField)) == String(value)) {
+                if (String(getValue(changingField)).toLowerCase() == String(value).toLowerCase()) {
                     $.each(fields, function(i, fieldName) {
                         if (!to_show.includes(fieldName)) {
                             to_show.push(fieldName);
@@ -2216,6 +2218,7 @@ function formOnChangeValueShow(form, changingFieldName, valuesToShow) {
                 let field = input.closest('.form-group');
                 if (to_show.includes(fieldName)) {
                     field.show(animation);
+                    input.val(originalInputVals[fieldName]);
                 } else {
                     input.val('');
                     input.trigger('change');
@@ -2235,6 +2238,11 @@ function formOnChangeValueShow(form, changingFieldName, valuesToShow) {
             });
         });
     }
+    // Save original values
+    $.each(allFields, function(i, fieldName) {
+        let input = form.find('#id_' + fieldName);
+        originalInputVals[fieldName] = input.val();
+    });
     onChange();
     changingField.change(function() {
         onChange('fast');
@@ -2252,7 +2260,7 @@ function formOnChangeValueTrigger(form, changingFieldName, valuesThatTrigger) {
             valuesThatTrigger();
         } else {
             $.each(valuesThatTrigger, function(value, callback) {
-                if (String(getValue(changingField)) == String(value)) {
+                if (String(getValue(changingField).toLowerCase()) == String(value).toLowerCase()) {
                     if (typeof callback == 'string') {
                         window[callback]();
                     } else if ($.isFunction(callback)) {
@@ -2359,7 +2367,81 @@ function modalCuteFormSeparators(settings) {
 // Abstract utils
 
 function loadBaseEvent() {
+    if (event_collection_name && with_versions) {
+        // Versions panels
+        $('[class^="item-info ' + event_collection_name + '"]:not(.loaded)').each(function() {
+            let event = $(this);
+            event.addClass('loaded');
+            $.each(versions, function(version_name, version) {
+                let main_field = event.find(' tr[data-field="' + version_name + '"]');
+                if (main_field.length > 0) {
+                    let fields = event.find('[data-field^="' + version.prefix + '"]');
+                    // Add some spacing to separate version fields from the rest
+                    fields.first().find('th, td').css('border-top', 0);
+                    fields.last().after('<tr><td colspan="99" height="40px" style="border-top: 0"></td></tr>');
+                    main_field.before('<tr><td colspan="99" height="40px" style="border-top: 0"></td></tr>');
+                    // Add separator with button to show/hide
+                    let separator_tr = (
+                        $(document).width() > 992 ?
+                            $('<tr><td></td><td colspan="99"><div class="title-separator"><span></span></div></td></tr>')
+                            : $('<tr><td colspan="99"><div class="title-separator"><span></span></div></td></tr>')
+                    );
+                    separator_tr.find('th, td').css('border-top', 0);
+                    fields.first().before(separator_tr);
+                    // When screen is big enough, make it a sub table
+                    if ($(document).width() > 992) {
+                        let tr = $('<tr><td></td><td colspan="2"><table class="table"></table></td></tr>');
+                        tr.find('th, td').css('border-top', 0);
+                        separator_tr.after(tr);
+                        fields.appendTo(tr.find('table'));
+                    } else {
+                        // Otherwise, make the text smaller
+                        fields.css('font-size', '0.8em');
+                    }
+                    // Remove the prefixes to the field names
+                    let prefix = version.translation + ' - ';
+                    fields.each(function() {
+                        let field_name = $(this).find('.verbose-name').text();
+                        if (field_name.startsWith(prefix)) {
+                            $(this).find('.verbose-name').text(field_name.slice(prefix.length));
+                        }
+                    });
 
+                    let open_html = '<a href="#" class="btn btn-secondary btn-lg">' + gettext('Open {thing}').replace(
+                        '{thing}', version.translation) + ' <span class="glyphicon glyphicon-triangle-bottom"></span></a>';
+                    let close_html = '<a href="#" class="text-muted a-nodifference">' + gettext('Close {thing}').replace(
+                        '{thing}', version.translation) + ' <span class="glyphicon glyphicon-triangle-top"></span></a>';
+                    function toggleVersionFields(toggle, animation) { // true = open, false = close
+                        if (toggle) {
+                            separator_tr.find('span').html(close_html);
+                            fields.show(animation);
+                            separator_tr.find('a').unbind('click');
+                            separator_tr.find('a').click(function(e) {
+                                e.preventDefault();
+                                toggleVersionFields(false, 'fast');
+                                return false;
+                            });
+                        } else {
+                            separator_tr.find('span').html(open_html);
+                            fields.hide(animation);
+                            separator_tr.find('a').unbind('click');
+                            separator_tr.find('a').click(function(e) {
+                                e.preventDefault();
+                                toggleVersionFields(true, 'fast');
+                                return false;
+                            });
+                        }
+                    }
+                    if (opened_versions.includes(version_name)) {
+                        toggleVersionFields(true);
+                    } else {
+                        toggleVersionFields(false);
+                    }
+
+                }
+            });
+        });
+    }
 }
 
 // *****************************************

@@ -72,6 +72,16 @@ class Command(BaseCommand):
             action='store_true',
             help='By default, all entries have the same chance to win. With this, entries are reduced to one per user bfore picking a random winner.',
         ),
+        make_option(
+            '--lower-chance-for-previous-winners',
+            action='store_true',
+            help='People who won something already have a lower chance to win.',
+        ),
+        make_option(
+            '--lower-chance-for-staff',
+            action='store_true',
+            help='Members of the staff team have a lower chance to win.',
+        ),
 
         make_option(
             '--make-markdown-post',
@@ -356,8 +366,42 @@ class Command(BaseCommand):
             return self.get_unique_entries(all_entries)
         return self.get_all_flat_entries(all_entries)
 
+    def entry_is_staff(self, entry):
+        username = entry[u'{site}_username'.format(site=django_settings.SITE)]
+        if not username:
+            return False
+        try:
+            return models.User.objects.filter(username=username)[0].is_staff
+        except IndexError:
+            return False
+
+    def entry_won_before(self, entry):
+        username = entry[u'{site}_username'.format(site=django_settings.SITE)]
+        if not username:
+            return False
+        return bool(models.PrivateMessage.objects.filter(
+            to_user__username=username,
+            owner__is_staff=True,
+            message__contains=u'Congratulations! 🎉').filter(
+                message__contains='Can you fill this form for me so I can send you your prize?',
+            ).count())
+
     def pick_random_winners(self, all_entries):
-        return random.sample(self.get_flat_entries(all_entries), self.options['pick_random_winners'])
+        pick = self.options['pick_random_winners']
+        entries = self.get_flat_entries(all_entries)
+        if pick > len(entries):
+            pick = len(entries)
+        filtered_entries = []
+        if self.options.get('lower_chance_for_staff', False) or self.options.get('lower_chance_for_previous_winners', False):
+            for entry in entries:
+                if self.options.get('lower_chance_for_staff', False) and self.entry_is_staff(entry):
+                    continue
+                if self.options.get('lower_chance_for_previous_winners', False) and self.entry_won_before(entry):
+                    continue
+                filtered_entries.append(entry)
+        if pick > len(filtered_entries):
+            filtered_entries = entries
+        return random.sample(filtered_entries, pick)
 
     def list_first(self, l):
         if isinstance(l, list):

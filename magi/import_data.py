@@ -1,17 +1,20 @@
 from __future__ import print_function
-import requests, json
+import requests, json, os.path
 from django.conf import settings as django_settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q, ImageField
 from magi.utils import (
     addParametersToURL,
+    AttrDict,
+    failSafe,
     getSubField,
+    getIndex,
     join_data,
     modelHasField,
     matchesTemplate,
     saveImageURLToModel,
 )
-from magi.models import StaffConfiguration
+from magi.models import StaffConfiguration, MagiModel
 from magi.tools import get_default_owner
 
 ############################################################
@@ -102,6 +105,90 @@ def twitterAPICall(url, data, load_json_api_options={}, verbose=False, log_funct
     return result
 
 ############################################################
+# From Google Spreadsheet
+
+def import_from_sheet(spreadsheet_id, import_configuration, local=False, to_import=None, verbose=False, force_reload_images=False):
+    """
+    When used, the following needs to be added to your requirements.txt:
+    google-api-python-client==1.8.3
+    google-auth-httplib2==0.0.3
+    google-auth-oauthlib==0.4.1
+
+    The key in import configuration must match the name of the sheet tab (or provide "sheet_name").
+    Must create credentials in google_sheets_credentials.json
+    by going to https://developers.google.com/workspace/guides/create-credentials
+    """
+    from google_auth_oauthlib.flow import InstalledAppFlow
+
+    sheet = _login_to_google_sheets(InstalledAppFlow)
+
+    def request_call(url, *args, **kwargs):
+        name = url.split('?')[0]
+        sheet_name = import_configuration[name].get('sheet_name', name)
+        result = sheet.get(
+            includeGridData=True,
+            spreadsheetId=spreadsheet_id,
+            ranges=sheet_name,
+            fields='sheets/data/rowData/values/userEnteredValue',
+        ).execute()
+        result = result['sheets'][0]['data'][0]['rowData']
+        keys = [ col['userEnteredValue']['stringValue'] for col in result[0]['values'] ]
+        def _col_to_value(row):
+            if 'userEnteredValue' in row:
+                image = row['userEnteredValue'].get('formulaValue', None)
+                if image:
+                    return image.replace('=IMAGE("', '').replace('")', '')
+                return row['userEnteredValue'].get('stringValue', None)
+        result = [
+            {
+                key: _col_to_value(getIndex(row.get('values', []), index, []))
+                for index, key in enumerate(keys)
+            } for row in result[1:]
+        ]
+        return AttrDict({
+            'status_code': 200,
+            'json': lambda: result,
+            'text': json.dumps(result),
+        })
+
+    return import_data(
+        '', import_configuration,
+        local=local, to_import=to_import,
+        verbose=verbose,
+        force_reload_images=False,
+        request_call=request_call,
+    )
+
+def _login_to_google_sheets(InstalledAppFlow):
+    import pickle
+    from google.auth.transport.requests import Request
+    from googleapiclient.discovery import build
+    creds = None
+    # The file token.pickle stores the user's access and refresh tokens, and is
+    # created automatically when the authorization flow completes for the first
+    # time.
+    if os.path.exists('token.pickle'):
+        with open('token.pickle', 'rb') as token:
+            creds = pickle.load(token)
+    # If there are no (valid) credentials available, let the user log in.
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                'google_sheets_credentials.json', [
+                    'https://www.googleapis.com/auth/spreadsheets.readonly',
+                ])
+            creds = flow.run_local_server(port=0)
+        # Save the credentials for the next run
+        with open('token.pickle', 'wb') as token:
+            pickle.dump(creds, token)
+
+    service = build('sheets', 'v4', credentials=creds)
+    sheet = service.spreadsheets()
+    return sheet
+
+############################################################
 # Utils
 
 def loadJsonAPIPage(url, parameters=None, local=False, local_file_name='tmp', request_options={}, page_number=0, log_function=print, load_on_not_found_local=False, verbose=False, post=False, request_call=None):
@@ -136,7 +223,7 @@ def loadJsonAPIPage(url, parameters=None, local=False, local_file_name='tmp', re
 ############################################################
 # Import data utils
 
-def import_map(maps, field_name, value):
+def import_map(maps, field_name, value, verbose=False, log_function=print):
     if not isinstance(maps, list):
         maps = [maps]
     fields = None
@@ -150,6 +237,19 @@ def import_map(maps, field_name, value):
             # Function can return multiple fields in a dict
             if isinstance(result, dict):
                 fields = result
+            # Or, for foreign keys, a tuple with (field_name, Model class, unique data dict, defaults dict)
+            elif (isinstance(result, tuple)
+                  and failSafe(lambda: issubclass(result[1], MagiModel), exceptions=[TypeError], default=False)):
+                field_name = result[0]
+                parameters = getIndex(result, 2, { 'pk': value }).copy()
+                parameters['defaults'] = getIndex(result, 3, {}).copy()
+                if (modelHasField(result[1], 'owner')
+                    and 'owner' not in parameters['defaults']
+                    and 'owner_id' not in parameters['defaults']):
+                    parameters['defaults']['owner'] = get_default_owner()
+                value, created = result[1].objects.get_or_create(**parameters)
+                if created and verbose:
+                    log_function('   Created foreign key', result[0], parameters)
             # Or return a new field_name and a value
             else:
                 field_name, value = result
@@ -162,7 +262,7 @@ def import_map(maps, field_name, value):
             field_name = mapped
     return fields if fields is not None else { field_name: value }
 
-def import_generic_item(details, item):
+def import_generic_item(details, item, verbose=False, log_function=print):
     data = {}
     unique_data = {}
     all_fields = details.get('fields', []) + details.get('unique_fields', [])
@@ -177,7 +277,7 @@ def import_generic_item(details, item):
 
         # Map
         if field_name in details.get('mapping', {}):
-            fields = import_map(details['mapping'][field_name], field_name, value)
+            fields = import_map(details['mapping'][field_name], field_name, value, verbose=verbose, log_function=log_function)
 
         elif field_name not in all_fields:
             not_in_fields[field_name] = value
@@ -339,6 +439,7 @@ def api_pages(
         log_function=print, request_options={},
         verbose=False, download_images=False,
         force_reload_images=False,
+        request_call=None,
 ):
     log_function('Downloading list of {}...'.format(name))
     details.get('callback_before', lambda: None)()
@@ -357,8 +458,11 @@ def api_pages(
     request_options.update(details.get('request_options', {}))
     while url:
         result = loadJsonAPIPage(
-            url, local_file_name=name, request_options=request_options,
-            page_number=page_number, log_function=log_function)
+            url, local=local, load_on_not_found_local=local, verbose=verbose,
+            local_file_name=name, request_options=request_options,
+            page_number=page_number, log_function=log_function,
+            request_call=request_call,
+        )
         if 'callback_before_page' in details:
             result = details['callback_before_page'](result)
         results = result
@@ -374,7 +478,7 @@ def api_pages(
             if details.get('callback_per_item', False):
                 unique_data, data = details['callback_per_item'](details, item)
             else:
-                unique_data, data, not_in_fields = import_generic_item(details, item)
+                unique_data, data, not_in_fields = import_generic_item(details, item, verbose=verbose, log_function=log_function)
             save_item(
                 details, unique_data, data, log_function, json_item=item,
                 verbose=verbose, download_images=download_images,
@@ -404,6 +508,7 @@ def import_data(
         local=False, to_import=None, log_function=print,
         request_options={}, verbose=False, download_images=False,
         force_reload_images=False,
+        request_call=None,
 ):
     """
     url: must end with a /. Example: https://schoolido.lu/api/. can be overriden per conf
@@ -460,4 +565,5 @@ def import_data(
                 request_options=request_options,
                 verbose=verbose, download_images=download_images,
                 force_reload_images=force_reload_images,
+                request_call=request_call,
             )

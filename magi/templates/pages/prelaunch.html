@@ -5,7 +5,7 @@
 <style>
   {% if homepage_background %}
   body {
-      background: url('{% if '//' in homepage_background %}{{ homepage_background }}{% else %}{{ static_url }}img/{{ homepage_background }}?{{ static_files_version }}{% endif %}');
+      background-image: url('{% if '//' in homepage_background %}{{ homepage_background }}{% else %}{{ static_url }}img/{{ homepage_background }}?{{ static_files_version }}{% endif %}');
   }
   {% endif %}
 </style>

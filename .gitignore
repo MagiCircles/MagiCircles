@@ -91,3 +91,10 @@ ENV/
 
 # OS X
 .DS_Store
+
+# Git
+*.patch
+
+# Emacs
+#*#
+*~

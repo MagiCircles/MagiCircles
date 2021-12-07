@@ -14,17 +14,17 @@
   {% endif %}
   {% if homepage_background %}
   body {
-      background: url('{% if '//' in homepage_background %}{{ homepage_background }}{% else %}{{ static_url }}img/{{ homepage_background }}?{{ static_files_version }}{% endif %}');
+      background-image: url('{% if '//' in homepage_background %}{{ homepage_background }}{% else %}{{ static_url }}img/{{ homepage_background }}?{{ static_files_version }}{% endif %}');
   }
   @media(max-width: 991px) {
       body.homepage .home-wrapper .home {
-          background: url('{% if '//' in homepage_background %}{{ homepage_background }}{% else %}{{ static_url }}img/{{ homepage_background }}?{{ static_files_version }}{% endif %}')!important;
+          background-image: url('{% if '//' in homepage_background %}{{ homepage_background }}{% else %}{{ static_url }}img/{{ homepage_background }}?{{ static_files_version }}{% endif %}')!important;
       }
   }
   {% elif art %}
   @media(max-width: 991px) {
       body.homepage .home-wrapper .home {
-          background: white!important;
+          background-color: white!important;
       }
   }
   {% endif %}
@@ -122,7 +122,7 @@
             {% for news in latest_news %}
             <a href="{{ news.url }}" class="item{% if not news.image %} without-image{% endif %}{% if forloop.counter0 == 0 %} active{% endif %}{% if news.css_classes %} {{ news.css_classes }}{% endif %}"
                {% if news.ajax %} data-ajax-url="{{ news.ajax }}" data-ajax-title="{% if news.t_titles and news.t_titles|getattribute:LANGUAGE_CODE %}{{ news.t_titles|getattribute:LANGUAGE_CODE }}{% else %}{{ news.title }}{% endif %}"{% endif %}
-               {% if news.background %} style="background-image: url('{{ news.background }}');{% if news.color %} background-color: {{ news.color }}{% endif %}"{% endif %}
+               {% if news.background %} style="background-image: url('{% if '//' in news.background %}{{ news.background }}{% else %}{{ static_url }}img/{{ news.background }}?{{ static_files_version }}{% endif %}');{% if news.color %} background-color: {{ news.color }}{% endif %}"{% endif %}
                {% if not news.background and not news.image %} style="background: {% if news.color %}{{ news.color }}{% else %}{{ site_color }}{% endif %}"{% endif %}
                >
 	          {% if news.image %}<img src="{% if '//' in news.image %}{{ news.image }}{% else %}{{ static_url }}img/{{ news.image }}?{{ static_files_version }}{% endif %}" alt="{% if news.t_titles and news.t_titles|getattribute:LANGUAGE_CODE %}{{ news.t_titles|getattribute:LANGUAGE_CODE }}{% else %}{{ news.title }}{% endif %}">{% endif %}

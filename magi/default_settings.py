@@ -723,7 +723,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
             'permissions_required': ['translate_items'],
             'navbar_link': False,
             'url_variables': [
-                ('collection_name', '[a-z]+'),
+                ('model_name', '[a-z]+'),
                 ('field_name', '[a-z_]+'),
             ],
             'show_title': True,
@@ -1051,6 +1051,9 @@ DEFAULT_PRELAUNCH_ENABLED_PAGES = [
     'donate_list',
     'changelanguage',
     'help',
+    'report_add',
+    'report_item',
+    'report_edit',
 ]
 
 ############################################################

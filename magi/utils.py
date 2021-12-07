@@ -1,19 +1,23 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
-import os, string, random, csv, tinify, cStringIO, pytz, simplejson, datetime, io, operator, re, math, requests, urllib, urllib2
+import os, string, random, csv, tinify, cStringIO, pytz, simplejson, datetime, io, operator, re, math, requests, urllib, urllib2, json
 from PIL import Image
+from json.encoder import encode_basestring_ascii
 from collections import OrderedDict
 from dateutil.relativedelta import relativedelta
 from django.conf import settings as django_settings
 from django.core.files.temp import NamedTemporaryFile
 from django.core.exceptions import ValidationError
+from django.core.serializers.json import DjangoJSONEncoder
 from django.core.urlresolvers import resolve
-from django.core.validators import BaseValidator, RegexValidator
+from django.core.validators import RegexValidator
 from django.http import Http404
 from django.utils.http import urlquote
 from django.utils.deconstruct import deconstructible
+from django.utils.encoding import force_text
 from django.utils.translation import ugettext_lazy as _, get_language, activate as translation_activate
 from django.utils.formats import dateformat, date_format
+from django.utils.functional import Promise
 from django.utils.safestring import mark_safe, SafeText, SafeBytes
 from django.utils.html import escape
 from django.utils import timezone
@@ -32,6 +36,7 @@ from django.forms import (
     URLField as forms_URLField,
     CheckboxInput,
     HiddenInput,
+    TimeField,
 )
 from django.core.mail import EmailMultiAlternatives
 from django.core.files.images import ImageFile
@@ -342,6 +347,9 @@ LANGUAGES_NAMES = {
 }
 LANGUAGES_NAMES_TO_CODES = { _v: _k for _k, _v in LANGUAGES_NAMES.items() }
 
+def getVerboseLanguage(language):
+    return LANGUAGES_DICT.get(language, None)
+
 ############################################################
 # Getters for django settings
 
@@ -475,7 +483,10 @@ def usersWithGroups(queryset, groups):
     """
     Users in all these groups
     """
-    return queryset.filter(**{ 'preferences__c_groups__contains': u'"{}"'.format(group) for group in groups })
+    q = Q()
+    for group in groups:
+        q &= Q(preferences__c_groups__contains=u'"{}"'.format(group))
+    return queryset.filter(q)
 
 def usersWithOneOfGroups(queryset, groups):
     """
@@ -775,6 +786,20 @@ def getAccountIdsFromSession(request):
             })
         ]
     return request.session['account_ids']
+
+def getAccountVersionsFromSession(request):
+    # /!\ Can't be called at global level
+    if not request.user.is_authenticated():
+        return []
+    if 'account_versions' not in request.session:
+        request.session['account_versions'] = [
+            getattr(account, 'version', None)
+            for account in RAW_CONTEXT['account_model'].objects.filter(**{
+                    RAW_CONTEXT['account_model'].selector_to_owner():
+                    request.user
+            })
+        ]
+    return request.session['account_versions']
 
 def addCornerPopupToContext(
         context, name, title, content=None, image=None, image_overflow=None, buttons=None,
@@ -1356,6 +1381,9 @@ def send_email(subject, template_name, to=[], context=None, from_email=django_se
 def randomString(length, choice=(string.ascii_letters + string.digits)):
     return ''.join(random.SystemRandom().choice(choice) for _ in range(length))
 
+def isAscii(string):
+    return all(ord(c) < 128 for c in string)
+
 def ordinalNumber(n):
     return "%d%s" % (n,"tsnrhtdd"[(n/10%10!=1)*(n%10<4)*n%10::4])
 
@@ -1403,9 +1431,15 @@ def getAllTranslationsOfModelField(item, field_name='name', unique=False):
         unique=unique,
     )
 
+class LazyEncoder(DjangoJSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Promise):
+            return force_text(obj)
+        return super(LazyEncoder, self).default(obj)
+
 def jsv(v):
     if isinstance(v, list) or isinstance(v, dict):
-        return mark_safe(simplejson.dumps(v))
+        return mark_safe(json.dumps(v, cls=LazyEncoder))
     if isinstance(v, bool):
         return 'true' if v else 'false'
     if isinstance(v, str) or isinstance(v, unicode):
@@ -1469,6 +1503,13 @@ def getIndex(list, index, default=None):
         return list[index]
     except IndexError:
         return default
+
+def updatedDict(d, *args, **kwargs):
+    if kwargs.get('copy', False):
+	d = d.copy()
+    for new_d in args:
+	d.update(new_d)
+    return d
 
 NUMBER_AND_FLOAT_REGEX = '[-+]?[0-9]*\.?[0-9]+'
 
@@ -1746,8 +1787,7 @@ def filterByTranslatedValue(
                 other_languages_fields.append(short_source_field_name)
 
     if isinstance(value, basestring):
-        d_value = u'{}'.format(value.encode('unicode-escape'))
-        d_value = d_value.replace('"', '\\"')
+        d_value = encode_basestring_ascii(value)[1:-1]
 
     if mode == FilterByMode.Exact:
         if isinstance(value, basestring):
@@ -1837,56 +1877,100 @@ class ColorField(models.CharField):
         kwargs['widget'] = ColorInput
         return super(ColorField, self).formfield(**kwargs)
 
-class YouTubeVideoFormField(forms_URLField):
-    pass
+class _YouTubeFieldsHelpTextMixin(object):
+    HELP_TEXT = u'Enter a valid YouTube URL with format: https://www.youtube.com/watch?v=xxxxxxxxxxx. Time can also be added with &t=xxx where xxx is the number of seconds'
 
-class YouTubeVideoField(models.URLField):
-    _help = u'Enter a valid YouTube URL with format: https://www.youtube.com/watch?v=xxxxxxxxxxx'
-    default_validators = [
-        RegexValidator(
-            re.compile(r'^https\:\/\/www\.youtube\.com\/watch\?v\=([^&]+)$'),
-            _help,
-            'invalid',
-        ),
+    def __init__(self, *args, **kwargs):
+        kwargs['help_text'] = (
+            markSafeFormat(u'{}<br>{}', kwargs['help_text'], self.HELP_TEXT)
+            if kwargs.get('help_text', None) else self.HELP_TEXT
+        )
+        super(_YouTubeFieldsHelpTextMixin, self).__init__(*args, **kwargs)
+
+    def deconstruct(self):
+        name, path, args, kwargs = super(_YouTubeFieldsHelpTextMixin, self).deconstruct()
+        del kwargs['help_text']
+        return name, path, args, kwargs
+
+class YouTubeVideoField(_YouTubeFieldsHelpTextMixin, models.URLField):
+    REGEX = re.compile(r'^https\:\/\/www\.youtube\.com\/watch\?v\=(?P<code>[a-zA-Z0-9\_-]+)(&t=(?P<start_time>[0-9]+))?&?$')
+
+    # Regex Validator for YouTube URLs with or without timestamp
+
+    default_validators = models.URLField.default_validators + [
+        RegexValidator(REGEX, _YouTubeFieldsHelpTextMixin.HELP_TEXT, 'invalid'),
     ]
 
-    def formfield(self, **kwargs):
-        defaults = {
-            'help_text': self._help,
-            'form_class': YouTubeVideoFormField,
-        }
-        defaults.update(kwargs)
-        return super(YouTubeVideoField, self).formfield(**defaults)
+    # Utils class methods
+
+    @classmethod
+    def parse_url(self, url):
+        match = self.REGEX.match(url)
+        if not match:
+            raise ValidationError(self.HELP_TEXT)
+        d = match.groupdict()
+        return d
+
+    @classmethod
+    def url_from_code(self, code, start_time=None):
+        return u'https://www.youtube.com/watch?v={}{}'.format(
+            code, '' if not start_time else '&t={}'.format(start_time),
+        )
+
+    @classmethod
+    def embed_url_from_code(self, code, start_time=None):
+        return u'https://www.youtube.com/embed/{}{}'.format(
+            code, '' if not start_time else '?start={}'.format(start_time),
+        )
+
+    @classmethod
+    def embed_url(self, url):
+        d = self.parse_url(url)
+        return self.embed_url_from_code(code=d['code'], start_time=d.get('start_time', None))
+
+class YouTubeVideoTranslationsField(_YouTubeFieldsHelpTextMixin, models.TextField):
+    pass
 
 def presetsFromChoices(
         model, field_name,
         get_label=None, get_image=None, get_field_value=None,
-        get_key=None, auto_image=False,
+        get_key=None, auto_image=False, auto_image_with_key=False,
         should_include=None,
+        extra_fields={},
+        to_extra_fields=lambda i, value, verbose: {},
 ):
+    auto_image_with_key = getattr(model, u'{}_AUTO_IMAGES'.format(field_name.upper()), auto_image_with_key)
+    prefix = 'i_' if modelHasField(model, 'i_{}'.format(field_name)) else (
+        'c_' if modelHasField(model, 'c_{}'.format(field_name)) else '')
     return [
         (value if not get_key else get_key(i, value, verbose), {
             'label': get_label(i, value, verbose) if get_label else None,
             'verbose_name': verbose,
-            'fields': {
+            'fields': updatedDict({
                 u'i_{}'.format(field_name): get_field_value(i, value, verbose) if get_field_value else i,
-            },
+            }, extra_fields, to_extra_fields(i, value, verbose)),
             'image': get_image(i, value, verbose) if get_image else (
-                u'{}/{}.png'.format(u'i_{}'.format(field_name), i) if auto_image else None),
+                u'{}{}/{}.png'.format(prefix, field_name, i) if auto_image else (
+                    u'{}{}/{}.png'.format(prefix, field_name, value) if auto_image_with_key else None
+                )),
         }) for i, (value, verbose) in model.get_choices(field_name)
         if (True if not should_include else should_include(i, value, verbose))
     ]
 
-def presetsFromCharacters(field_name, get_label=None, get_field_value=None, key='FAVORITE_CHARACTERS'):
+def presetsFromCharacters(
+        field_name, get_label=None, get_field_value=None, key='FAVORITE_CHARACTERS',
+        extra_fields={},
+        to_extra_fields=lambda i, value, verbose: {},
+):
     def _lambda(pk):
         return lambda: getCharacterNameFromPk(pk, key=key)
     return [
         (name, {
             'label': get_label(pk, name, name) if get_label else None,
             'verbose_name': _lambda(pk),
-            'fields': {
+            'fields': updatedDict({
                 field_name: get_field_value(pk, name, name) if get_field_value else pk,
-            },
+            }, extra_fields, to_extra_fields(pk, name, name)),
             'image': getCharacterImageFromPk(pk, key=key),
         }) for (pk, name, _image) in getattr(django_settings, key, [])
     ]
@@ -1970,6 +2054,12 @@ def getSubField(fields, l, default=None):
     return ret
 
 ############################################################
+# List utils
+
+def flattenListOfLists(list_of_lists):
+    return [item for sublist in list_of_lists for item in sublist]
+
+############################################################
 # to_fields utils
 
 def toFieldsItemsGallery(d, items, image_field='image_url'):
@@ -1986,6 +2076,55 @@ def toFieldsAddAttribute(fields, field_name, attribute, value):
     attributes = getSubField(fields, [field_name, 'attributes'], {})
     attributes[attribute] = value
     setSubField(fields, field_name, key='attributes', value=attributes)
+
+def getImageForPrefetched(item, return_field_name=False):
+    for image_field in [
+            'image_for_prefetched',
+            'top_image_list', 'top_image',
+            'image_thumbnail_url', 'image_url',
+    ]:
+        if getattr(item, image_field, None):
+            if getattr(item, image_field) == -1:
+                return (None, None) if return_field_name else None
+            image = getattr(item, image_field)
+            return (image_field, image) if return_field_name else image
+    return (None, None) if return_field_name else None
+
+# Extra fields for navigation between ordered items
+def extraFieldsNavigation(item, extra_fields, to_order_field_value=None, field_name='order', starts_at=1, to_queryset=None, to_image=None, allow_more_than_1=True):
+    order_field_value = to_order_field_value(item) if to_order_field_value else getattr(item, field_name)
+    def _extra_field_episode_navigation(number_operation, navigation_field_name, icon, verbose):
+        if to_queryset:
+            items = to_queryset(item, order_field_value, number_operation)
+        else:
+            items = item._meta.model.objects.filter(**{
+                field_name: number_operation(order_field_value),
+            })
+        if not allow_more_than_1:
+            items = items[:1]
+        for other_item in items:
+            extra_fields.append((navigation_field_name, {
+                'verbose_name': verbose,
+                'icon': icon,
+                'link_text': _('Open {thing}').format(thing=unicode(other_item.collection_title).lower()),
+                'value': unicode(other_item),
+                'link': other_item.item_url,
+                'ajax_link': other_item.ajax_item_url,
+                'image_for_link': to_image(other_item) if to_image else getImageForPrefetched(other_item),
+                'type': 'text_with_link',
+            }))
+    if order_field_value is not None:
+        # Next
+        _extra_field_episode_navigation(
+            lambda x: x + 1, 'next_{}'.format(item.collection_name), 'toggler',
+            _('Next {thing}').format(thing=unicode(item.collection_title).lower()),
+        )
+        # Previous
+        if order_field_value > starts_at:
+            _extra_field_episode_navigation(
+                lambda x: x - 1, 'previous_{}'.format(item.collection_name), 'back',
+                _('Previous {thing}').format(thing=unicode(item.collection_title).lower()),
+            )
 
 ############################################################
 # Join / Split data stored as string in database
@@ -2036,6 +2175,10 @@ def PastOnlyValidator(value):
     if value > datetime.date.today():
         raise ValidationError(_('This date cannot be in the future.'), code='past_value')
 
+TIME_REGEX = re.compile('^(?:([01]?\d|2[0-3]):([0-5]?\d):)?([0-5]?\d)$')
+
+TimeValidator = RegexValidator(TIME_REGEX, TimeField.default_error_messages['invalid'], 'invalid')
+
 ############################################################
 # Image manipulation
 
@@ -2075,6 +2218,11 @@ def imageThumbnailFromData(data, filename, width=200, height=200, return_data=Fa
         image.thumbnail((width, height))
         return image
     return _imageProcessing(data, filename, _toThumbnail, return_data=return_data, return_pil_image=return_pil_image)
+
+def imageResizeFromData(data, filename, width=200, height=200, return_data=False, return_pil_image=False):
+    def _toResize(image):
+        return image.resize((width, height))
+    return _imageProcessing(data, filename, _toResize, return_data=return_data, return_pil_image=return_pil_image)
 
 def imageSquareThumbnailFromData(data, filename, size=200, return_data=False, return_pil_image=False):
     def _toSquareThumbnail(image):
@@ -2210,6 +2358,24 @@ def saveLocalImageToModel(item, field_name, path, return_data=False):
     setattr(item, u'_thumbnail_{}'.format(field_name), None)
     setattr(item, u'_original_{}'.format(field_name), None)
     setattr(item, u'_2x_{}'.format(field_name), None)
+    if return_data:
+        return (data, image)
+    return image
+
+def saveLocalImageToModelImagesField(item, path, unique_image_name=None, field_name='images', return_data=False):
+    data, image = localImageToImageFile(path, return_data=True)
+    image_item = None
+    if unique_image_name:
+        # Check if exists
+        try: image_item = getattr(item, field_name).filter(name=unique_image_name)[0]
+        except IndexError: pass
+    if not image_item:
+        image_item = getattr(item, field_name).model.objects.create(image='')
+    image_item.image = image
+    image_item._thumbnail_image = None
+    image_item.name = unique_image_name
+    image_item.save()
+    getattr(item, field_name).add(image_item)
     if return_data:
         return (data, image)
     return image
@@ -2358,19 +2524,20 @@ def makeBadgeImage(badge, width=None, path=None, upload=False, instance=None, mo
 ############################################################
 # Image URLs
 
-def staticImageURL(path, folder=None, extension=None, versionned=True, full=False, static_url=None):
+def staticFileURL(path, folder=None, extension=None, versionned=True, full=False, static_url=None, default_extension=None, default_folder=None):
     # /!\ Can't be called at global level
     if not path and not folder and not extension:
         return None
     path = unicode(path)
-    if not extension and '.' not in path:
-        extension = 'png'
+    if not extension and '.' not in path and default_extension:
+        extension = default_extension
     if path.startswith('//') or path.startswith('http://') or path.startswith('https://'):
         return path
     if not static_url:
         static_url = RAW_CONTEXT['static_url'] if not full else RAW_CONTEXT['full_static_url']
-    return u'{static}img/{folder}{path}{extension}{version}'.format(
+    return u'{static}{default_folder}{folder}{path}{extension}{version}'.format(
         static=static_url,
+        default_folder=default_folder or '',
         folder=u'{}/'.format(folder) if folder else '',
         path=path,
         extension=u'.{}'.format(extension) if extension else '',
@@ -2379,6 +2546,11 @@ def staticImageURL(path, folder=None, extension=None, versionned=True, full=Fals
             version=RAW_CONTEXT['static_files_version'],
         ),
     )
+
+def staticImageURL(path, folder=None, extension=None, versionned=True, full=False, static_url=None):
+    # /!\ Can't be called at global level
+    return staticFileURL(path, folder=folder, extension=extension, versionned=versionned, full=full,
+                         static_url=static_url, default_extension='png', default_folder='img/',)
 
 def linkToImageURL(link):
     # /!\ Can't be called at global level
@@ -2498,6 +2670,19 @@ def markdownHelpText(request=None):
         ))
     else:
         return _(u'You may use Markdown formatting.')
+
+def flaticonHelpText(help_text=None):
+    # /!\ Can't be called at global level
+    return markSafeFormat(
+        u'{}{}{}',
+        help_text or '',
+        ' - ' if help_text else '',
+        markSafeFormat(
+            '<a href="{}" target="_blank">{}</a>',
+            staticFileURL('css/flaticon.html'),
+            _('View all'),
+        ),
+    )
 
 def getSearchSingleFieldLabel(field_name, model_class, labels={}, translated_fields=[]):
     if field_name in labels:

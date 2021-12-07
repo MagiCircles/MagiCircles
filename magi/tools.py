@@ -37,6 +37,7 @@ from magi.settings import (
     STATIC_FILES_VERSION,
     SEASONS,
     USERS_BIRTHDAYS_BANNER,
+    BIRTHDAY_BANNER_HIDE_TITLE,
 )
 from magi import models, seasons
 
@@ -203,14 +204,14 @@ def getCharactersBirthdays(queryset, get_name_image_url_from_character=defaultGe
             )
         translation_activate(old_lang)
         latest_news.append({
+            'background': image,
             'category': category,
             'color': getattr(character, 'color', None),
             't_titles': t_titles,
-            'background': image,
             'url': url,
-            'hide_title': False,
+            'hide_title': getattr(character, 'birthday_banner_hide_title', BIRTHDAY_BANNER_HIDE_TITLE),
             'ajax': False,
-            'css_classes': 'birthday',
+            'css_classes': getattr(character, 'birthday_banner_css_class', 'birthday'),
         })
     return latest_news
 
@@ -401,6 +402,7 @@ def seasonalGeneratedSettings(staff_configurations):
     seasonal_settings = {}
     for season_name, season in SEASONS.items():
         if getEventStatus(season['start_date'], season['end_date'], ends_within=1) in ['current', 'ended_recently']:
+            print '  Current season:', season_name
             seasonal_settings[season_name] = {}
             for variable in seasons.AVAILABLE_SETTINGS:
                 if variable in season:

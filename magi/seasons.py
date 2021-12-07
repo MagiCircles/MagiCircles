@@ -67,11 +67,11 @@ DEFAULT_SEASONS = {
         'end_date': (02, 15),
         'activity_tag': string_concat(_('Happy Valentine\'s Day!'), u' 💝🍫'),
     },
-    # 'leapday': {
-    #     'start_date': (02, 29),
-    #     'end_date': (03, 01),
-    #     'activity_tag': string_concat(_('Happy Leap Day!'), u' 🐸'),
-    # },
+    'leapday': {
+        'start_date': (2024, 02, 29),
+        'end_date': (2024, 03, 01),
+        'activity_tag': string_concat(_('Happy Leap Day!'), u' 🐸'),
+    },
     'pieday': {
         'start_date': (03, 14),
         'end_date': (03, 15),
@@ -195,5 +195,10 @@ DEFAULT_SEASONS = {
         'secondary_color': '#69ab23',
         'accent_color': '#ffffff',
         'activity_tag': string_concat(_('Merry Christmas!'), u' 🎄🎅'),
+    },
+    'hanukkah': {
+        'start_date': (12, 10),
+        'end_date': (12, 18),
+        'activity_tag': string_concat(_('Happy Hanukkah!'), u' 🕎'),
     },
 }

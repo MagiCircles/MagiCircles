@@ -1416,7 +1416,10 @@ def translations(request, context):
             context['total_per_languages'][staff_configuration.language]['total'] += 1
 
     context['total_translated'] = context['total'] - context['total_need_translations']
-    context['percent_translated'] = int(context['total_translated'] / context['total'] * 100)
+    try:
+        context['percent_translated'] = int(context['total_translated'] / context['total'] * 100)
+    except ZeroDivisionError:
+        context['percent_translated'] = 0
     for language, details in context['total_per_languages'].items():
         details['total_translated'] = details['total'] - details['total_need_translations']
         details['percent_translated'] = int(details['total_translated'] / details['total'] * 100)

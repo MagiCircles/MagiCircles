@@ -86,7 +86,12 @@ from magi.utils import (
     getIndex,
     newOrder,
     setSubField,
+    CuteFormTransform,
+    filterEventsByStatus,
+    TimeValidator,
+    failSafe,
 )
+from versions_utils import sortByRelevantVersions
 
 ############################################################
 # Internal utils
@@ -199,6 +204,12 @@ class ReCaptchaField(_ReCaptchaField):
         kwargs['widget'] = ReCaptchaHiddenInput()
         super(ReCaptchaField, self).__init__(*args, **kwargs)
 
+def _to_cuteform_for_auto_images(model, field_name):
+    return lambda k, v: staticImageURL(
+        failSafe(lambda: model.get_reverse_i(field_name[2:], k), exceptions=[KeyError], default=k),
+        folder=field_name,
+    )
+
 ############################################################
 # HiddenModelChoiceField is a form field type that will not retrieve
 # the list of choices but will validate if the foreign key
@@ -260,6 +271,8 @@ class MagiForm(forms.ModelForm):
         self.keep_underscore_fields = []
         self.force_tinypng_on_save = []
         self.generate_thumbnails_for = []
+        self.extra_fields_added = { None: [] } # None = not attached to any other field
+        self.cuteform = getattr(self, 'cuteform', {})
         order_to_change = {}
 
         # If is creating and item is unique per owner, redirect to edit unique
@@ -299,10 +312,12 @@ class MagiForm(forms.ModelForm):
                 self.fields['next'] = forms.CharField(
                     required=False, widget=forms.HiddenInput(),
                     initial=self.request.GET.get('next', None))
+                self.extra_fields_added[None] = 'next'
             if 'next_title' not in self.fields:
                 self.fields['next_title'] = forms.CharField(
                     required=False, widget=forms.HiddenInput(),
                     initial=self.request.GET.get('next_title', None))
+                self.extra_fields_added[None] = 'next_title'
 
         for name, field in self.fields.items():
             # Fix optional fields using null=True
@@ -336,7 +351,7 @@ class MagiForm(forms.ModelForm):
                                  or not self.request
                                  or not self.request.user.is_authenticated()
                                  or not self.request.user.hasPermission('translate_items'))
-                             else u'<a href="{url}">{content}</a>').format(
+                             else u'<a href="{url}" target="_blank">{content}</a>').format(
                                 content=u'<img src="{image}" alt="{language}" height="15">'.format(
                                     language=language,
                                     image=staticImageURL(language, folder='language', extension='png'),
@@ -365,6 +380,7 @@ class MagiForm(forms.ModelForm):
                 # Add time + timezone fields if needed
                 if name in getattr(self.Meta, 'date_fields_with_time', {}):
                     minutes_interval = self.Meta.date_fields_with_time[name].get('minutes_interval', 60)
+                    manual_time = self.Meta.date_fields_with_time[name].get('manual_time', False)
                     current_timezone = (
                         (getattr(self.instance, u'_{}_timezone'.format(name), None)
                          if not self.is_creating else None)
@@ -376,32 +392,50 @@ class MagiForm(forms.ModelForm):
                     if not self.is_creating:
                         # Take value from db which is in UTC and has the right time
                         in_db_value = getattr(self.instance._meta.model.objects.get(pk=self.instance.pk), name)
-                        if current_timezone:
-                            value_with_timezone = in_db_value.astimezone(pytz.timezone(current_timezone))
-                            setattr(self.instance, name, value_with_timezone.strftime('%Y-%m-%d'))
-                            initial_time = value_with_timezone.strftime('%H:%M:%S')
-                        else:
-                            initial_time = in_db_value.strftime('%H:%M:%S')
-                    else:
+                        if in_db_value:
+                            if current_timezone:
+                                value_with_timezone = in_db_value.astimezone(pytz.timezone(current_timezone))
+                                setattr(self.instance, name, value_with_timezone.strftime('%Y-%m-%d'))
+                                initial_time = value_with_timezone.strftime('%H:%M:%S')
+                            else:
+                                initial_time = in_db_value.strftime('%H:%M:%S')
+                    if not initial_time:
                         times = getattr(self.Meta, 'date_times', {})
                         if times and times.get(name, None):
                             initial_time = u'{}:{}:00'.format(times[name][0], times[name][1])
                     if not initial_time:
                         initial_time = '15:00:00'
-                    choices = [
-                        u'{:02d}:{:02d}:00'.format(hour, minute)
-                        for hour in range(0, 24)
-                        for minute in range(0, 60, minutes_interval)
-                    ]
-                    self.fields[u'{}_time'.format(name)] = forms.ChoiceField(
-                        label='',
-                        required=field.required,
-                        choices=[(v, localizeTimeOnly(v)) for v in choices] + (
-                            [(initial_time, localizeTimeOnly(initial_time))]
-                            if initial_time not in choices else []
-                        ),
-                        initial=initial_time,
-                    )
+                    if manual_time:
+                        self.fields[u'{}_time'.format(name)] = forms.CharField(
+                            label='',
+                            required=field.required,
+                            initial=initial_time,
+                            help_text='HH:MM:SS',
+                            validators=[TimeValidator],
+                        )
+                        self.fields[u'{}_time'.format(name)].placeholder = 'HH:MM:SS'
+                        if name not in self.extra_fields_added:
+                            self.extra_fields_added[name] = []
+                        self.extra_fields_added[name].append(u'{}_time'.format(name))
+                    else:
+                        choices = [
+                            u'{:02d}:{:02d}:00'.format(hour, minute)
+                            for hour in range(0, 24)
+                            for minute in range(0, 60, minutes_interval)
+                        ]
+                        self.fields[u'{}_time'.format(name)] = forms.ChoiceField(
+                            label='',
+                            required=field.required,
+                            choices=[(v, localizeTimeOnly(v)) for v in choices] + (
+                                [(initial_time, localizeTimeOnly(initial_time))]
+                                if initial_time not in choices else []
+                            ),
+                            initial=initial_time,
+                            validators=[TimeValidator],
+                        )
+                        if name not in self.extra_fields_added:
+                            self.extra_fields_added[name] = []
+                        self.extra_fields_added[name].append(u'{}_time'.format(name))
                     self.fields[u'{}_timezone'.format(name)] = forms.ChoiceField(
                         label='',
                         required=field.required,
@@ -414,6 +448,9 @@ class MagiForm(forms.ModelForm):
                     })
                     setSubField(order_to_change, 'insert_after', key=name, value=[
                         u'{}_time'.format(name), u'{}_timezone'.format(name)], force_add=True)
+                    if name not in self.extra_fields_added:
+                        self.extra_fields_added[name] = []
+                    self.extra_fields_added[name].append(u'{}_timezone'.format(name))
             # Make CSV values with choices use a CheckboxSelectMultiple widget
             elif name.startswith('c_'):
                 choices = getattr(self.Meta.model, '{name}_CHOICES'.format(name=name[2:].upper()), None)
@@ -422,10 +459,18 @@ class MagiForm(forms.ModelForm):
                     if not choices:
                         self.fields.pop(name)
                     else:
+                        auto_images = getattr(self.Meta.model, u'{name}_AUTO_IMAGES'.format(name=name[2:].upper()), False)
+                        def _get_choice(c):
+                            k, v = (c[0], c[1]) if isinstance(c, tuple) else (c, c)
+                            if auto_images:
+                                return (k, markSafeFormat(
+                                    u'<img src="{url}" alt="{v}" height="30"> {v}',
+                                    url=staticImageURL(k, folder=name), v=v))
+                            return (k, v)
                         changeFormField(self, name, forms.MultipleChoiceField, {
                             'required': False,
                             'widget': forms.CheckboxSelectMultiple,
-                            'choices': [(c[0], c[1]) if isinstance(c, tuple) else (c, c) for c in choices],
+                            'choices': [_get_choice(c) for c in choices],
                         })
                         if not self.is_creating:
                             # Set the value in the object to the list to pre-select the right options
@@ -534,16 +579,19 @@ class MagiForm(forms.ModelForm):
                         'class': 'hidden',
                     })
                 # Add field to allow to delete existing images
-                if not self.is_creating:
+                if not self.is_creating and existing_images_choices:
                     self.fields[u'delete_{}'.format(name)] = forms.MultipleChoiceField(
                         required=False,
                         widget=forms.CheckboxSelectMultiple,
                         choices=existing_images_choices,
                         label='',
-                        help_text=_('Delete'),
+                        help_text=t['Delete'],
                     )
                     setSubField(order_to_change, 'insert_after', key=name, value=[
-                        u'delete_{}'.format(name)])
+                        u'delete_{}'.format(name)], force_add=True)
+                    if name not in self.extra_fields_added:
+                        self.extra_fields_added[name] = []
+                    self.extra_fields_added[name].append(u'delete_{}'.format(name))
 
             elif name.startswith('_'):
 
@@ -582,6 +630,13 @@ class MagiForm(forms.ModelForm):
                         u'High resolution image generated by AI. Recommended: <a href="http://waifu2x.udp.jp/">Waifu2x</a> with settings:<ul><li>Artwork</li><li>Highest</li><li>2x</li></ul>')
                     self.fields[name].form_group_classes = ['staff-only']
 
+            # Auto cuteform for fields with auto images
+            if (not isinstance(field, forms.MultipleChoiceField)
+                and name.startswith('i_')
+                and (getattr(self.Meta.model, '{}_AUTO_IMAGES'.format(name[2:].upper()), False))):
+                self.cuteform[name] = {
+                    'to_cuteform': _to_cuteform_for_auto_images(self.Meta.model, name),
+                }
 
         # Fix force required fields
         if hasattr(self.Meta, 'required_fields'):
@@ -702,6 +757,8 @@ class MagiForm(forms.ModelForm):
         # - From time field (date_fields_with_time in Meta)
         for field_name in getattr(self.Meta, 'date_fields_with_time', {}):
             date = self.cleaned_data.get(field_name, None)
+            if not date:
+                continue
             if not isinstance(date, basestring):
                 date = date.strftime('%Y-%m-%d')
             time = self.cleaned_data.get(u'{}_time'.format(field_name), None)
@@ -869,16 +926,41 @@ class MagiForm(forms.ModelForm):
                 try: return self.Meta.model.get_i(field_name[2:], value)
                 except (FieldDoesNotExist, KeyError): pass
             return value
-        return OrderedDict([
-            (
-                (field_name, fields)
-                if not field_name.startswith('i_') or not isinstance(fields, dict)
-                else (field_name, {
-                        _get_i(field_name, value): value_fields
-                        for value, value_fields in fields.items()
-                })
-            ) for field_name, fields in values.items()
-        ])
+        on_change_value = OrderedDict()
+        for field_name, fields in values.items():
+            # For c_ fields, specify all choices as their own fields (seperate checkboxes)
+            if field_name.startswith('c_') and field_name in self.fields:
+                for i, (choice, _v_choice) in enumerate(self.fields[field_name].choices):
+                    if isinstance(fields, dict):
+                        if choice in fields:
+                            on_change_value[u'{}_{}'.format(field_name, i)] = fields[choice]
+                    else:
+                        on_change_value[u'{}_{}'.format(field_name, i)] = fields
+            # for i_ fields, change to integer values if need be
+            elif field_name.startswith('i_') and isinstance(fields, dict):
+                on_change_value[field_name] = {
+                    _get_i(field_name, value): value_fields
+                    for value, value_fields in fields.items()
+                }
+            else:
+                on_change_value[field_name] = fields
+
+        for field_name, fields in on_change_value.items():
+            if isinstance(fields, dict):
+                for value, sub_fields in fields.items():
+                    to_add = []
+                    for sub_field_name in (
+                            sub_fields.keys()
+                            if isinstance(sub_fields, dict)
+                            else sub_fields):
+                        # Add extra added sub fields to fields to show/hide
+                        sub_fields += self.extra_fields_added.get(sub_field_name, [])
+            else:
+                # Add extra added sub fields to fields to show/hide
+                for affected_field_name in fields:
+                    on_change_value[field_name] += self.extra_fields_added.get(affected_field_name, [])
+
+        return on_change_value
 
     def get_on_change_value_show(self):
         on_change_value_show = getattr(self, 'on_change_value_show', None)
@@ -892,7 +974,8 @@ class MagiForm(forms.ModelForm):
             return None
         return self._transform_on_change_value(on_change_value_trigger)
 
-    def reorder_fields(self, order):
+    def reorder_fields(self, order=[], insert_after=None, insert_before=None, insert_instead=None,
+                       insert_at=None, insert_at_instead=None):
         """
         Reorder form fields by order.
         Fields not in order will be placed at the end.
@@ -902,9 +985,14 @@ class MagiForm(forms.ModelForm):
         ...     ['b', 'c', 'a'])
         OrderedDict([('b', 2), ('c', 3), ('a', 1)])
         """
+        sorted_keys = newOrder(
+            listUnique(order + self.fields.keys()),
+            insert_after=insert_after, insert_before=insert_before,
+            insert_instead=insert_instead, insert_at=insert_at, insert_at_instead=insert_at_instead,
+        )
         self.fields = OrderedDict(sorted(
             self.fields.items(),
-            key=lambda k: order.index(k[0]) if k[0] in order else 9999999,
+            key=lambda k: sorted_keys.index(k[0]),
         ))
 
     class Meta:
@@ -1408,6 +1496,25 @@ class MagiFiltersForm(AutoForm):
                 'widget': forms.HiddenInput,
             })
 
+        # Filter by foreign keys, many2many and reverse relations
+        for field_name in ([
+                field.name
+                for field in self.Meta.model._meta.fields
+                if (isinstance(field, models.models.ForeignKey)
+                    or isinstance(field, models.models.OneToOneField))
+        ] + [
+            field.name
+            for field in self.Meta.model._meta.many_to_many
+        ] + [
+            field.get_accessor_name()
+            for field in self.Meta.model._meta.get_all_related_objects()
+        ] + [
+            field.get_accessor_name()
+            for field in self.Meta.model._meta.get_all_related_many_to_many_objects()
+        ]):
+            if field_name not in self.fields and field_name in self.request.GET:
+                self.fields[field_name] = forms.ChoiceField(widget=forms.HiddenInput)
+
         if 'search' in self.fields:
             # Remove search from field if search_fields is not specified
             if not getattr(self, 'search_fields', None) and not getattr(self, 'search_fields_exact', None):
@@ -1546,15 +1653,18 @@ class MagiFiltersForm(AutoForm):
         if getattr(self.Meta, 'all_optional', True):
             for field_name, field in self.fields.items():
                 # Add blank choice to list of choices that don't have one
+                # + Set initial as empty
                 if (isinstance(field, forms.fields.ChoiceField)
-                    and not isinstance(field, forms.fields.MultipleChoiceField)
                     and field.choices
                     and field_name != 'ordering'
                     and not field_name.startswith('add_to_')):
-                    choices = list(self.fields[field_name].choices)
-                    if choices and choices[0][0] != '':
-                        self.fields[field_name].choices = BLANK_CHOICE_DASH + choices
+                    if isinstance(field, forms.fields.MultipleChoiceField):
                         self.fields[field_name].initial = ''
+                    else:
+                        choices = list(self.fields[field_name].choices)
+                        if choices and choices[0][0] != '':
+                            self.fields[field_name].choices = BLANK_CHOICE_DASH + choices
+                            self.fields[field_name].initial = ''
                 # Marks all fields as not required
                 field.required = False
 
@@ -1596,6 +1706,7 @@ class MagiFiltersForm(AutoForm):
                 condition = Q()
                 filters, exclude = {}, {}
                 for selector in selectors:
+                    sub_condition = Q()
                     # NullBooleanField
                     if isinstance(field, forms.fields.NullBooleanField):
                         value = self._value_as_nullbool(filter, value)
@@ -1617,7 +1728,7 @@ class MagiFiltersForm(AutoForm):
                                 except FieldDoesNotExist: pass
                                 if empty_value is not None:
                                     if value: # Also include empty values
-                                        condition = condition | Q(**{ original_selector: empty_value })
+                                        sub_condition = sub_condition | Q(**{ original_selector: empty_value })
                                     else: # Exclude empty values
                                         # need to check if int then 0 else ''
                                         exclude = { original_selector: empty_value }
@@ -1626,15 +1737,15 @@ class MagiFiltersForm(AutoForm):
                           or filter.multiple):
                         values = value if isinstance(value, list) else [value]
                         if field_name.startswith('c_'):
-                            values = [u'"{}"'.format(value) for value in values]
+                            values = [u'"{}"'.format(sub_value) for sub_value in values]
                         if operator_for_multiple == MagiFilterOperator.OrContains:
-                            for value in values:
-                                condition = condition | Q(**{ u'{}__contains'.format(selector): value })
+                            for sub_value in values:
+                                sub_condition = sub_condition | Q(**{ u'{}__contains'.format(selector): sub_value })
                         elif operator_for_multiple == MagiFilterOperator.OrExact:
                             filters = { u'{}__in'.format(selector): values }
                         elif operator_for_multiple == MagiFilterOperator.And:
-                            for value in values:
-                                condition = condition & Q(**{ u'{}__contains'.format(selector): value })
+                            for sub_value in values:
+                                sub_condition = sub_condition & Q(**{ u'{}__contains'.format(selector): sub_value })
                         else:
                             raise NotImplementedError('Unknown operator for multiple condition')
                     # Generic
@@ -1642,9 +1753,9 @@ class MagiFiltersForm(AutoForm):
                         filters = { selector: self._value_as_string(filter, value) }
                     # Add filters to condition based on operator for selectors
                     if operator_for_multiple_selectors == MagiFilterOperatorSelector.Or:
-                        condition = condition | Q(**filters)
+                        condition = condition | Q(**filters) | sub_condition
                     else:
-                        condition = condition & Q(**filters)
+                        condition = condition & Q(**filters) & sub_condition
                 queryset = queryset.filter(condition).exclude(**exclude)
                 if filter.distinct:
                     queryset = queryset.distinct()
@@ -1713,7 +1824,8 @@ def to_auto_filter_form(list_view):
     auto_search_fields = []
     auto_ordering_fields = []
     filter_fields = []
-    for field_name in list_view.collection.queryset.model._meta.get_all_field_names():
+    for field in list_view.collection.queryset.model._meta.fields:
+        field_name = field.name
         if field_name.startswith('_'):
             continue
         try:
@@ -1725,15 +1837,19 @@ def to_auto_filter_form(list_view):
             auto_search_fields.append(field_name)
 
         if (not field_name.startswith('i_')
-              and (('name' in field_name and not field_name.startswith('d_'))
-                   or isinstance(field, django_models.IntegerField)
-                   or isinstance(field, django_models.FloatField)
-                   or isinstance(field, django_models.AutoField)
-                   or isinstance(field, django_models.DateField)
-              )):
+            and field_name != 'id'
+            and (('name' in field_name and not field_name.startswith('d_'))
+                 or isinstance(field, django_models.IntegerField)
+                 or isinstance(field, django_models.FloatField)
+                 or isinstance(field, django_models.AutoField)
+                 or isinstance(field, django_models.DateField)
+            )
+            and field_name not in (getattr(list_view.collection.item_view, 'fields_exclude', []) or [])
+        ):
             auto_ordering_fields.append((field_name, field.verbose_name))
 
         if (field_name.startswith('i_')
+            or field_name.startswith('c_')
             or isinstance(field, django_models.BooleanField)
             or isinstance(field, django_models.NullBooleanField)):
             filter_fields.append(field_name)
@@ -1746,8 +1862,9 @@ def to_auto_filter_form(list_view):
 
         def __init__(self, *args, **kwargs):
             super(_AutoFiltersForm, self).__init__(*args, **kwargs)
-            self.cuteform = {}
+            self.cuteform = getattr(self, 'cuteform', {})
             for field_name in filter_fields:
+                # Auto cuteform for boolean fields
                 if field_name in self.fields and isinstance(self.fields[field_name], forms.BooleanField):
                     self.cuteform[field_name] = {
                         'type': CuteFormType.YesNo,
@@ -1896,14 +2013,14 @@ class AccountFilterForm(MagiFiltersForm):
     search_fields = ['owner__username', 'nickname', 'owner__links__value']
     search_fields_exact = ['owner__email']
     search_fields_labels = {
-        'owner__username': t['Username'],
+        'owner__username': _('Username'),
         'owner__links__value': _('Links'),
         'owner__email': _('Email'),
     }
 
     ordering_fields = [
         ('level', _('Level')),
-        ('owner__username', t['Username']),
+        ('owner__username', _('Username')),
         ('creation', _('Join Date')),
         ('start_date', _('Start Date')),
         ('owner__preferences___cache_reputation', _('Most popular')),
@@ -2004,7 +2121,7 @@ class _UserCheckEmailUsernameForm(MagiForm):
             raise forms.ValidationError(
                 message=t["%(model_name)s with this %(field_labels)s already exists."],
                 code='unique_together',
-                params={'model_name': t['User'], 'field_labels': t['Email']},
+                params={'model_name': _('User'), 'field_labels': t['Email']},
             )
         return email
 
@@ -2014,13 +2131,13 @@ class _UserCheckEmailUsernameForm(MagiForm):
             raise forms.ValidationError(
                 message=t["%(field_labels)s can\'t contain only digits."],
                 code='unique_together',
-                params={'field_labels': t['Username']},
+                params={'field_labels': _('Username')},
             )
         if models.User.objects.filter(username__iexact=username).exclude(id=self.instance.id if not self.is_creating else None).count():
             raise forms.ValidationError(
                 message=t["%(model_name)s with this %(field_labels)s already exists."],
                 code='unique_together',
-                params={'model_name': t['User'], 'field_labels': t['Username']},
+                params={'model_name': _('User'), 'field_labels': _('Username')},
             )
         return username
 
@@ -2080,7 +2197,7 @@ class CreateUserForm(_UserCheckEmailUsernameForm):
         fields = ('username', 'email', 'password')
 
 class UserForm(_UserCheckEmailUsernameForm):
-    form_title = string_concat(t['Username'], ' / ', t['Email'])
+    form_title = string_concat(_('Username'), ' / ', t['Email'])
     form_icon = 'profile'
 
     class Meta(_UserCheckEmailUsernameForm.Meta):
@@ -2515,7 +2632,7 @@ class UserFilterForm(MagiFiltersForm):
     }
     ordering_fields = (
         ('id', _('Join Date')),
-        ('username', t['Username']),
+        ('username', _('Username')),
         ('preferences___cache_reputation', _('Most popular')),
         ('followed,id', _('Following')),
     )
@@ -2860,7 +2977,7 @@ class StaffDetailsForm(AutoForm):
 class StaffDetailsFilterForm(MagiFiltersForm):
     search_fields = ['owner__username', 'discord_username', 'preferred_name', 'description', 'nickname']
     search_fields_labels = {
-        'owner__username': t['Username'],
+        'owner__username': _('Username'),
     }
 
     class Meta:
@@ -3172,7 +3289,7 @@ class ReportForm(MagiForm):
 class FilterReports(MagiFiltersForm):
     search_fields = ['owner__username', 'message', 'staff_message', 'reason', 'reported_thing_title']
     search_fields_labels = {
-        'owner__username': t['Username'],
+        'owner__username': _('Username'),
         'reported_thing_title': 'Name of the item',
     }
     ordering_fields = [
@@ -3219,7 +3336,7 @@ class DonateForm(AutoForm):
 # Add/Edit Badges
 
 class _BadgeForm(MagiForm):
-    username = forms.CharField(max_length=32, label=t['Username'])
+    username = forms.CharField(max_length=32, label=_('Username'))
 
     def __init__(self, *args, **kwargs):
         super(_BadgeForm, self).__init__(*args, **kwargs)
@@ -3332,7 +3449,7 @@ class DonatorBadgeForm(_BadgeForm):
 class FilterBadges(MagiFiltersForm):
     search_fields = ['user__username', 'name', 'm_description']
     search_fields_labels = {
-        'user__username': t['Username'],
+        'user__username': _('Username'),
     }
     ordering_fields = [
         ('date', 'Date'),
@@ -3421,7 +3538,7 @@ class PrivateMessageForm(MagiForm):
 class PrivateMessageFilterForm(MagiFiltersForm):
     search_fields = ['message', 'to_user__username', 'owner__username']
     search_fields_labels = {
-        'to_user__username': t['Username'],
+        'to_user__username': _('Username'),
         'owner__username': '',
     }
 
@@ -3446,19 +3563,91 @@ class PrivateMessageFilterForm(MagiFiltersForm):
 # Event
 
 def to_EventForm(cls):
-    class EventForm(AutoForm):
+    class _EventForm(AutoForm):
 
+        # Show/hide versions fields details when versions are selected
         if modelHasField(cls.queryset.model, 'c_versions'):
             on_change_value_show = {
-                'c_versions': {
-                    _version_name: [
-                        _field_name.format(_version['prefix'])
-                        for _field_name in cls.queryset.model.FIELDS_PER_VERSION
-                    ] for _version_name, _version in cls.queryset.model.VERSIONS.items()
-                }
+                'c_versions': cls.queryset.model.ALL_FIELDS_BY_VERSION,
             }
 
         class Meta(AutoForm.Meta):
             model = cls.queryset.model
+    return _EventForm
 
-    return EventForm
+def to_EventFilterForm(cls):
+    form_class = to_auto_filter_form(cls)
+    model_class = cls.collection.queryset.model
+    form_class.Meta.with_versions = cls.collection.with_versions
+
+    class _EventFilterForm(form_class):
+        # Filter by status
+        def _status_to_queryset(self, queryset, request, value):
+            if self.Meta.with_versions:
+                if not self.data.get('version'):
+                    return queryset
+                return filterEventsByStatus(
+                    queryset, value, prefix=model_class.VERSIONS[
+                        self.data.get('version')]['prefix'])
+            return filterEventsByStatus(queryset, value)
+
+        status = forms.ChoiceField(label=_('Status'), choices=[
+            ('ended', _('Past')),
+            ('current', _('Current')),
+            ('future', _('Future')),
+        ])
+        status_filter = MagiFilter(to_queryset=_status_to_queryset)
+        cuteform = getattr(form_class, 'cuteform', {})
+        cuteform['status'] = {
+            'type': CuteFormType.HTML,
+        }
+
+        # Versions
+        if form_class.Meta.with_versions:
+
+            # Add generic date field as first (default ordering option)
+            ordering_fields = [
+                ('start_date', _('Date')),
+            ] + getattr(form_class, 'ordering_fields', [])
+
+            def filter_queryset(self, queryset, parameters, request, *args, **kwargs):
+                queryset = super(_EventFilterForm, self).filter_queryset(
+                    queryset, parameters, request, *args, **kwargs)
+                if parameters.get('ordering', 'start_date') == 'start_date':
+                    queryset = sortByRelevantVersions(
+                        queryset,
+                        request=self.request, fallback_to_first=True,
+                        versions=model_class.VERSIONS,
+                    )
+                return queryset
+
+            # Filter by version (c_versions allows multiple with a checkbox, we want just one at a time with a cuteform)
+            version = forms.ChoiceField(label=_(u'Server availability'), choices=model_class.VERSIONS_CHOICES)
+            version_filter = MagiFilter(to_queryset=lambda form, queryset, request, value: queryset.filter(c_versions__contains=value))
+
+            if model_class.VERSIONS_HAVE_IMAGES:
+                cuteform['version'] = {
+                    'transform': CuteFormTransform.ImagePath,
+                    'image_folder': '',
+                    'to_cuteform': lambda _key, _value: model_class.get_version_image(_key),
+                }
+            elif model_class.VERSIONS_HAVE_ICONS:
+                cuteform['version'] = {
+                    'transform': CuteFormTransform.Flaticon,
+                    'to_cuteform': lambda _key, _value: model_class.get_version_icon(_key),
+                }
+
+            # Show/hide status filter to show up only when filtering by version
+            on_change_value_show = getattr(form_class, 'on_change_value_show', {})
+            on_change_value_show['version'] = ['status']
+
+        class Meta(form_class.Meta):
+            if form_class.Meta.with_versions:
+                hidden_fields = getattr(form_class.Meta, 'hidden_fields', []) + ['c_versions']
+                fields = newOrder(form_class.Meta.fields, insert_before={
+                    'ordering': (
+                        ['version'] if modelHasField(model_class, 'c_versions') else []
+                    ) + ['status'],
+                })
+
+    return _EventFilterForm

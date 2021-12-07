@@ -124,7 +124,11 @@ def _set_javascript_form_details(form, form_selector, context, cuteforms, ajax):
 
 def _add_h1_and_prefixes_to_context(view, context, title_prefixes, h1, item=None, get_page_title_parameters={}):
     context['show_title'] = view.show_title
+    if context.get('alt_view', None) and 'show_title' in context['alt_view']:
+        context['show_title'] = context['alt_view']['show_title']
     context['show_small_title'] = view.show_small_title
+    if context.get('alt_view', None) and 'show_small_title' in context['alt_view']:
+        context['show_small_title'] = context['alt_view']['show_title']
     context['title_prefixes'] = title_prefixes
     h1ToContext(h1, context)
     context['page_title'] = pageTitleFromPrefixes(
@@ -150,6 +154,7 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
     else:
         options = collection.item_view.get_item(request, pk)
     context['item'] = get_one_object_or_404(queryset, **options) if not item else item
+    context['item'].request = request
     collection.item_view.check_owner_permissions(request, context, context['item'])
 
     if request.user.is_authenticated() and collection.blockable:
@@ -227,7 +232,6 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
 
     context['include_below_item'] = False
     context['show_item_buttons'] = collection.item_view.show_item_buttons
-    context['item'].request = request
     context['item'].show_item_buttons_justified = collection.item_view.show_item_buttons_justified
     context['item'].show_item_buttons_as_icons = collection.item_view.show_item_buttons_as_icons
     context['item'].show_item_buttons_in_one_line = collection.item_view.show_item_buttons_in_one_line

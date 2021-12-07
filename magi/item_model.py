@@ -24,8 +24,8 @@ from magi.utils import (
 ############################################################
 # Utils for translated fields
 
-ALL_ALT_LANGUAGES = [ _l for _l in django_settings.LANGUAGES if _l[0] != 'en' ]
-NON_LATIN_LANGUAGES = [ l for l in django_settings.LANGUAGES if l[0] in ['ja', 'ru', 'zh-hans', 'zh-hant', 'kr'] ]
+ALL_ALT_LANGUAGES = [ _l for _l in django_settings.LANGUAGES if _l[0] != django_settings.LANGUAGE_CODE ]
+NON_LATIN_LANGUAGES = [ l for l in django_settings.LANGUAGES if l[0] in ['ja', 'ru', 'zh-hans', 'zh-hant', 'kr', 'th'] ]
 
 ############################################################
 # Utils for images / files
@@ -565,6 +565,8 @@ class BaseMagiModel(models.Model):
                 'top_image_list',
                 'top_image_item',
                 'birthday_banner',
+                'birthday_banner_hide_title',
+                'birthday_banner_css_class',
                 'share_image',
                 'share_image_in_list',
                 'display_name',
@@ -576,7 +578,7 @@ class BaseMagiModel(models.Model):
                 'html_attributes',
                 'html_attributes_in_list',
                 'thumbnail_size',
-                'flaticon',
+                'tinypng_settings',
                 'icon_for_prefetched',
                 'image_for_prefetched',
                 'template_for_prefetched',
@@ -585,6 +587,8 @@ class BaseMagiModel(models.Model):
                 'display_ajax_item_url',
                 'show_section_header',
                 'selector_to_collected_item',
+                'get_item_url',
+                'get_ajax_item_url',
         ]:
             return self._attr_error(original_name)
 
@@ -769,12 +773,23 @@ def get_collection(instance):
 # Checking adds a significant cost since it accesses the collection, so only do it when necessary.
 
 def get_item_url(instance):
-    return u'/{}/{}/{}/'.format(instance.collection_name, instance.pk, tourldash(unicode(instance)))
+    return (
+        getattr(instance, 'get_item_url', lambda: None)()
+        or u'/{}/{}/{}/'.format(instance.collection_name, instance.pk, tourldash(unicode(instance)))
+    )
 
 def get_ajax_item_url(instance):
-    return u'/ajax/{}/{}/'.format(instance.collection_name, instance.pk)
+    return (
+        getattr(instance, 'get_ajax_item_url', lambda: None)()
+        or u'/ajax/{}/{}/'.format(instance.collection_name, instance.pk)
+    )
 
 def get_full_item_url(instance):
+    display_url = getattr(instance, 'get_ajax_item_url', lambda: None)()
+    if display_url:
+        if '//' not in display_url[:8]:
+            return u'{}{}'.format(django_settings.SITE_URL, display_url)
+        return display_url
     return u'{}{}/{}/{}/'.format(django_settings.SITE_URL, instance.collection_name, instance.pk, tourldash(unicode(instance)))
 
 def get_http_item_url(instance):
@@ -900,7 +915,7 @@ class MagiModel(BaseMagiModel):
 
     def __unicode__(self):
         try:
-            return self.t_name
+            return unicode(self.t_name)
         except AttributeError:
             pass
         try:
@@ -918,6 +933,7 @@ class MagiModel(BaseMagiModel):
 class UserImage(BaseMagiModel):
     image = models.ImageField(upload_to=uploadToRandom('user_images'))
     _thumbnail_image = models.ImageField(null=True, upload_to=uploadThumb('user_images'))
+    name = models.CharField(_('Title'), max_length=100, null=True)
 
     def __unicode__(self):
         return unicode(_('Image'))
