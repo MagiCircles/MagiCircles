@@ -138,7 +138,10 @@ def import_from_sheet(spreadsheet_id, import_configuration, local=False, to_impo
                 image = row['userEnteredValue'].get('formulaValue', None)
                 if image:
                     return image.replace('=IMAGE("', '').replace('")', '')
-                return row['userEnteredValue'].get('stringValue', None)
+                return row['userEnteredValue'].get(
+                    'stringValue', row['userEnteredValue'].get(
+                        'numberValue', None
+                    ))
         result = [
             {
                 key: _col_to_value(getIndex(row.get('values', []), index, []))

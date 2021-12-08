@@ -1571,15 +1571,15 @@ class MagiCollection(object):
                         }
                         buttons['translate']['url'] = addParametersToURL(
                             buttons['translate']['url'], parameters)
-                        buttons['translate']['ajax_url'] = addParametersToURL(
-                            buttons['translate']['ajax_url'], parameters)
+                        if buttons['tranlate']['ajax_url']:
+                            buttons['translate']['ajax_url'] = addParametersToURL(
+                                buttons['translate']['ajax_url'], parameters)
                         break
 
             buttons['translate']['title'] = unicode(_('Edit {thing}')).format(thing=unicode(_('Translations')).lower())
             buttons['translate']['icon'] = 'translate'
             buttons['translate']['url'] = u'{}{}translate'.format(buttons['translate']['url'], '&' if '?' in buttons['translate']['url'] else '?')
-            buttons['translate']['ajax_url'] = u'{}{}translate'.format(buttons['translate']['ajax_url'], '&' if '?' in buttons['translate']['ajax_url'] else '?')
-            if 'ajax_url' in buttons['translate']['url']:
+            if buttons['translate']['ajax_url']:
                 buttons['translate']['ajax_url'] = u'{}{}translate'.format(buttons['translate']['ajax_url'], '&' if '?' in buttons['translate']['ajax_url'] else '?')
         # Report buttons: don't show in list view unless there's no item view
         if self.reportable:

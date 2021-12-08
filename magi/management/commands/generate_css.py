@@ -130,8 +130,9 @@ def generateStylesheets(name=None, settings={}):
         filename = 'style.css'
     css_path = os.path.join(django_settings.BASE_DIR, django_settings.SITE, 'static', 'css', filename)
 
-    print css_path
-    os.system(u'lessc {path} {css_path}'.format(path=path, css_path=css_path))
+    command = u'lessc {path} {css_path}'.format(path=path, css_path=css_path)
+    print command
+    os.system(command)
 
 class Command(BaseCommand):
     can_import_settings = True
