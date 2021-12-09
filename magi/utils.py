@@ -1465,7 +1465,7 @@ class LazyEncoder(DjangoJSONEncoder):
 
 def jsv(v):
     if isinstance(v, list) or isinstance(v, dict):
-        return mark_safe(json.dumps(v, cls=LazyEncoder))
+        return mark_safe(json.dumps(v, cls=LazyEncoder).replace('"True"', '"true"').replace('"False"', '"false"'))
     if isinstance(v, bool):
         return 'true' if v else 'false'
     if isinstance(v, str) or isinstance(v, unicode):

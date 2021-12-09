@@ -294,10 +294,10 @@ for collection in collections.values():
                             new_ordering += [l['url_name'] for l in added_links]
                         else:
                             new_ordering.append(no)
-                if collection.navbar_link_list:
-                    navbar_links[collection.navbar_link_list]['order'] = new_ordering
-                else:
-                    NAVBAR_ORDERING = new_ordering
+                    if collection.navbar_link_list:
+                        navbar_links[collection.navbar_link_list]['order'] = new_ordering
+                    else:
+                        NAVBAR_ORDERING = new_ordering
     if collection.item_view.enabled:
         url_name = '{}_item'.format(collection.name)
         urls.append(url(u'^{}/(?P<pk>\d+)[/]*$'.format(collection.name), views_collections.item_view, parameters, name=url_name))

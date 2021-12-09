@@ -921,8 +921,7 @@ class MagiForm(forms.ModelForm):
             instance.save()
         return instance
 
-
-    def _transform_on_change_value(self, values):
+    def _transform_on_change_value(self, values, add_affected_fields=True):
         def _get_i(field_name, value):
             if not isinstance(value, int):
                 try: return self.Meta.model.get_i(field_name[2:], value)
@@ -956,11 +955,13 @@ class MagiForm(forms.ModelForm):
                             if isinstance(sub_fields, dict)
                             else sub_fields):
                         # Add extra added sub fields to fields to show/hide
-                        sub_fields += self.extra_fields_added.get(sub_field_name, [])
+                        if add_affected_fields:
+                            sub_fields += self.extra_fields_added.get(sub_field_name, [])
             else:
                 # Add extra added sub fields to fields to show/hide
-                for affected_field_name in fields:
-                    on_change_value[field_name] += self.extra_fields_added.get(affected_field_name, [])
+                if add_affected_fields:
+                    for affected_field_name in fields:
+                        on_change_value[field_name] += self.extra_fields_added.get(affected_field_name, [])
 
         return on_change_value
 
@@ -974,7 +975,7 @@ class MagiForm(forms.ModelForm):
         on_change_value_trigger = getattr(self, 'on_change_value_trigger', None)
         if not on_change_value_trigger:
             return None
-        return self._transform_on_change_value(on_change_value_trigger)
+        return self._transform_on_change_value(on_change_value_trigger, add_affected_fields=False)
 
     def reorder_fields(self, order=[], insert_after=None, insert_before=None, insert_instead=None,
                        insert_at=None, insert_at_instead=None):

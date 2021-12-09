@@ -10,7 +10,7 @@
       {% if not account.center or not account.center.art %}<div class="col-md-2">
         {% if account.center %}
         <a href="{{ account.center.item_url }}" data-ajax-url="{{ account.center.ajax_item_url }}" data-ajax-title="{{ account.center }}">
-          <img src="{{ account.center.image_url }}" alt="{{ account.center }}" class="account-center">
+          <img src="{% if account.center.image_thumbnail %}{{ account.center.image_thumbnail_url }}{% else %}{{ account.center.image_url }}{% endif %}" alt="{{ account.center }}" class="account-center">
         </a>
         {% else %}
         {% include 'include/avatar.html' with av_user=account.cached_owner av_size=30 av_image_size=100 av_fixed=True %}

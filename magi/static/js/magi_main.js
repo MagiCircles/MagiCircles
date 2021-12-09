@@ -2260,7 +2260,7 @@ function formOnChangeValueTrigger(form, changingFieldName, valuesThatTrigger) {
             valuesThatTrigger();
         } else {
             $.each(valuesThatTrigger, function(value, callback) {
-                if (String(getValue(changingField).toLowerCase()) == String(value).toLowerCase()) {
+                if (String(getValue(changingField)).toLowerCase() == String(value).toLowerCase()) {
                     if (typeof callback == 'string') {
                         window[callback]();
                     } else if ($.isFunction(callback)) {
