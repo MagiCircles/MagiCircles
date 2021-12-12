@@ -320,6 +320,8 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     show_relevant_fields_on_ordering = collection.list_view.show_relevant_fields_on_ordering
     if context['alt_view'] and 'show_relevant_fields_on_ordering' in context['alt_view']:
         show_relevant_fields_on_ordering = context['alt_view']['show_relevant_fields_on_ordering']
+    if 'hide_relevant_fields_on_ordering' in request.GET:
+        show_relevant_fields_on_ordering = False
 
     ordering = None
     if (request.GET.get('ordering', None)

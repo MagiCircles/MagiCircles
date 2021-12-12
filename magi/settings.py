@@ -522,6 +522,11 @@ if hasattr(settings_module, 'GET_STARTED_VIDEO'):
 else:
     GET_STARTED_VIDEO = None
 
+if hasattr(settings_module, 'GET_STARTED_MARKDOWN_TUTORIAL'):
+    GET_STARTED_MARKDOWN_TUTORIAL = getattr(settings_module, 'GET_STARTED_MARKDOWN_TUTORIAL')
+else:
+    GET_STARTED_MARKDOWN_TUTORIAL = None
+
 if hasattr(settings_module, 'ON_USER_EDITED'):
     ON_USER_EDITED = getattr(settings_module, 'ON_USER_EDITED')
 else:

@@ -54,6 +54,7 @@ from magi.settings import (
     STAFF_CONFIGURATIONS,
     FIRST_COLLECTION,
     GET_STARTED_VIDEO,
+    GET_STARTED_MARKDOWN_TUTORIAL,
     GLOBAL_OUTSIDE_PERMISSIONS,
     GROUPS,
     JAVASCRIPT_COMMONS,
@@ -708,6 +709,7 @@ RAW_CONTEXT['github_repository'] = GITHUB_REPOSITORY
 RAW_CONTEXT['site_description'] = SITE_DESCRIPTION
 RAW_CONTEXT['staff_configurations'] = STAFF_CONFIGURATIONS
 RAW_CONTEXT['get_started_video'] = GET_STARTED_VIDEO
+RAW_CONTEXT['get_started_markdown_tutorial'] = GET_STARTED_MARKDOWN_TUTORIAL
 RAW_CONTEXT['game_name'] = GAME_NAME
 RAW_CONTEXT['game_name_per_language'] = GAME_NAME_PER_LANGUAGE
 RAW_CONTEXT['static_uploaded_files_prefix'] = STATIC_UPLOADED_FILES_PREFIX

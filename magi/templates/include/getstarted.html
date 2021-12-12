@@ -5,7 +5,7 @@
   <div class="row">
     <div class="col-md-{% if get_started_video %}6{% else %}12{% endif %}">
       <div class="get-started">
-        {% if staff_configurations.get_started and staff_configurations.get_started|getattribute:LANGUAGE_CODE %}<div class="to-markdown">{{ staff_configurations.get_started|getattribute:LANGUAGE_CODE }}</div>{% endif %}
+        {% if staff_configurations.get_started and staff_configurations.get_started|getattribute:LANGUAGE_CODE %}<div class="to-markdown">{{ staff_configurations.get_started|getattribute:LANGUAGE_CODE }}</div>{% elif get_started %}<div class="to-markdown">{{ get_started_markdown_tutorial }}</div>{% endif %}
 	      <div class="text-center">
 	        <a href="#below-get-started" class="btn btn-main btn-lg page-scroll">
 	          {% trans 'Get Started' %}
