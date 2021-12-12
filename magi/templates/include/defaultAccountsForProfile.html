@@ -8,7 +8,7 @@
       {% else %}
     <div class="row">
       {% if not account.center or not account.center.art %}<div class="col-md-2">
-        {% if account.center %}
+        {% if account.center and account.center.image_url %}
         <a href="{{ account.center.item_url }}" data-ajax-url="{{ account.center.ajax_item_url }}" data-ajax-title="{{ account.center }}">
           <img src="{% if account.center.image_thumbnail %}{{ account.center.image_thumbnail_url }}{% else %}{{ account.center.image_url }}{% endif %}" alt="{{ account.center }}" class="account-center">
         </a>

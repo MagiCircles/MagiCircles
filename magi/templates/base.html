@@ -79,7 +79,7 @@
                 {% if link.icon %}
                 <i class="flaticon-{{ link.icon }}"></i>
                 {% elif link.image %}
-                <img src="{{ static_url }}img/{{ link.image }}.png?{{ static_files_version }}" height="16" />
+                <img src="{{ static_url }}img/{{ link.image }}.png?{{ static_files_version }}" {% if link.larger_image %}class="link_larger_image"{% else %}height="16"{% endif %} />
                 {% endif %}
                 {% if link.image or link.icon %}<span class="hidden-sm"> &nbsp; {% else %}<span>{% endif %}
                     {% navbarTitle link=link %}
@@ -93,7 +93,7 @@
                   {% if sub_link.icon %}
                   <i class="flaticon-{{ sub_link.icon }}"></i>
                   {% elif sub_link.image %}
-                  <img src="{{ static_url }}img/{{ sub_link.image }}.png?{{ static_files_version }}" height="16" />
+                  <img src="{{ static_url }}img/{{ sub_link.image }}.png?{{ static_files_version }}" {% if link.larger_image %}class="link_larger_image"{% else %}height="16"{% endif %} />
                   {% endif %}
                   {% navbarTitle link=sub_link %}
                 </li>
@@ -106,7 +106,7 @@
                     {% if sub_link.icon %}
                     <i class="flaticon-{{ sub_link.icon }}"></i>
                     {% elif sub_link.image %}
-                    <img src="{{ static_url }}img/{{ sub_link.image }}.png?{{ static_files_version }}" height="16" />
+                    <img src="{{ static_url }}img/{{ sub_link.image }}.png?{{ static_files_version }}" {% if link.larger_image %}class="link_larger_image"{% else %}height="16"{% endif %} />
                     {% endif %}
                     {% navbarTitle link=sub_link %}
                   </a>

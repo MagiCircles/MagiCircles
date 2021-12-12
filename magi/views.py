@@ -75,7 +75,6 @@ from magi.notifications import pushNotification
 from magi.settings import (
     ACTIVITY_TAGS,
     ENABLED_PAGES,
-    ENABLED_NAVBAR_LISTS,
     SITE_NAME,
     SITE_NAME_PER_LANGUAGE,
     GAME_NAME,

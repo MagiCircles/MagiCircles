@@ -210,6 +210,7 @@ class MagiCollection(object):
     # Optional variables without default
     icon = None
     image = None
+    larger_image = False
     navbar_link_list = None
     navbar_link_list_divider_before = False
     navbar_link_list_divider_after = False

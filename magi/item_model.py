@@ -475,11 +475,23 @@ class BaseMagiModel(models.Model):
             or getattr(self, u'{}_original'.format(field_name), None)
         )
 
-    def get_auto_image(self, field_name):
+    @classmethod
+    def get_auto_image(self, field_name, value):
+        original_field_name = field_name
+        for name_option in ['i_{}'.format(field_name), 'c_{}'.format(field_name)]:
+            if modelHasField(self, name_option):
+                original_field_name = name_option
+                break
+        return staticImageURL(value, folder=original_field_name)
+
+    def _get_auto_image(self, field_name):
+        original_field_name = None
         for name_option in ['i_{}'.format(field_name), 'c_{}'.format(field_name), field_name]:
             if hasattr(self, name_option):
                 original_field_name = name_option
                 break
+        if not original_field_name:
+            raise ValueError
         return staticImageURL(getattr(self, field_name), folder=original_field_name)
 
     @classmethod
@@ -697,7 +709,7 @@ class BaseMagiModel(models.Model):
 
         # When accessing "something_image"
         elif name.endswith('_image') and getattr(self, '{}_AUTO_IMAGES'.format(name[:-6].upper()), False):
-            return self.get_auto_image(name[:-6])
+            return self._get_auto_image(name[:-6])
 
         # When accessing "something_url"
         elif name.endswith('_url'):
