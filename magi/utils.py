@@ -2033,6 +2033,8 @@ def newOrder(current_order, insert_after=None, insert_before=None, insert_instea
             new_order.append(order_field_name)
             if order_field_name in (insert_after or {}):
                 new_order += insert_after[order_field_name]
+    else:
+        new_order = current_order[:]
     for position, to_insert in (insert_at or {}).items():
         new_order = new_order[:position] + to_insert + new_order[position:]
     return new_order
