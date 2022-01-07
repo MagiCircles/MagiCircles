@@ -661,7 +661,7 @@ class MagiForm(forms.ModelForm):
             self.is_suggestededit = 'is_suggestededit' in request.GET
 
         # Add buttons to add/edit sub items
-        if (not self.is_reported and not self.is_suggestedit
+        if (not self.is_reported and not self.is_suggestededit
             and not getattr(self, 'is_translate_form', False)
             and self.collection
             and getattr(self.collection, 'sub_collections', None)
