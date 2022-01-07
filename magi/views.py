@@ -984,7 +984,7 @@ def moderatereport(request, report, action):
         if report.owner:
             translation_activate(report.owner.preferences.language if report.owner.preferences.language else 'en')
             if report.is_suggestededit:
-                context['sentence'] = _('The edit you suggested has been reviewed by a database maintainer and the {thing} has been edited accordingly. Thank you so much for your help!')
+                context['sentence'] = unicode(_('The edit you suggested has been reviewed by a database maintainer and the {thing} has been edited accordingly. Thank you so much for your help!')).format(thing=_(report.reported_thing_title))
                 subject = _(u'Thank you for suggesting this edit!')
             else:
                 context['sentence'] = _(u'This {thing} you reported has been reviewed by a moderator and {verb}. Thank you so much for your help!').format(thing=_(report.reported_thing_title), verb=_(u'edited'))
