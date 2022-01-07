@@ -53,6 +53,8 @@ from magi.utils import (
     toHumanReadable,
     YouTubeVideoField,
     markSafeFormat,
+    listUnique,
+    getEnglish,
 )
 from magi.raw import please_understand_template_sentence, unrealistic_template_sentence
 from magi.django_translated import t
@@ -847,6 +849,8 @@ class MagiCollection(object):
 
     reportable = True
     blockable = True
+    allow_suggest_edit = False
+
     report_edit_templates = {
         'Wrong details': 'The following details seemed to be wrong: XXXXXXXXX',
         'Inappropriate content': 'Something you wrote or uploaded was inappropriate. ' + please_understand_template_sentence,
@@ -858,6 +862,16 @@ class MagiCollection(object):
     }
     report_allow_edit = True
     report_allow_delete = True
+
+    def get_suggest_edit_choices(self, request):
+        formClass = self.form_class
+        if str(type(formClass)) == '<type \'instancemethod\'>':
+            formClass = formClass(request, {})
+        return listUnique([
+            (getEnglish(field.label), field.label)
+            for field in formClass(request=request, collection=self)
+            if field.name not in self.item_view.fields_exclude
+        ])
 
     translated_fields = None
 
@@ -1416,6 +1430,7 @@ class MagiCollection(object):
     show_edit_button_permissions_only = []
     show_translate_button = True
     show_report_button = True
+    show_suggestedit_button = True
     show_collect_button = True # Can also be a dictionary when multiple collectibles
     show_collect_total = True
 
@@ -1437,7 +1452,7 @@ class MagiCollection(object):
                 'ajax_url': False,
                 'ajax_title': False, # By default will use title
                 'classes': view.get_item_buttons_classes(request, context, item=item),
-            }) for button_name in self.collectible_collections.keys() + ['edit', 'translate', 'report']
+            }) for button_name in self.collectible_collections.keys() + ['edit', 'translate', 'report', 'suggestedit']
         ])
         # Collectible buttons
         for name, collectible_collection in self.collectible_collections.items():
@@ -1591,6 +1606,17 @@ class MagiCollection(object):
                                                     or item.owner_id != request.user.id)
             buttons['report']['url'] = item.report_url
             buttons['report']['open_in_new_window'] = True
+        # Suggest edit buttons: don't show in list view unless there's no item view
+        if self.allow_suggest_edit:
+            buttons['suggestedit']['show'] = view.show_suggestedit_button
+            buttons['suggestedit']['title'] = item.suggestedit_sentence
+            buttons['suggestedit']['icon'] = 'edit'
+            buttons['suggestedit']['has_permissions'] = (
+                not request.user.is_authenticated()
+                or (item.owner_id != request.user.id and not buttons.get('edit', {}).get('has_permissions', False))
+            )
+            buttons['suggestedit']['url'] = item.suggestedit_url
+            buttons['suggestedit']['open_in_new_window'] = True
         return buttons
 
     def get_parent_prefix(self, request, context):
@@ -1725,8 +1751,9 @@ class MagiCollection(object):
         show_edit_button_superuser_only = property(propertyFromCollection('show_edit_button_superuser_only'))
         show_edit_button_permissions_only = property(propertyFromCollection('show_edit_button_permissions_only'))
         show_translate_button = property(propertyFromCollection('show_translate_button'))
-        # Show report button if button not in item view
+        # Show report/suggestedit buttons only if not in item view
         show_report_button = property(lambda _s: not _s.collection.item_view.show_report_button)
+        show_suggestedit_button = property(lambda _s: not _s.collection.item_view.show_suggestedit_button)
         show_collect_button = property(propertyFromCollection('show_collect_button'))
         show_collect_total = property(propertyFromCollection('show_collect_total'))
 
@@ -2004,6 +2031,7 @@ class MagiCollection(object):
         show_edit_button_permissions_only = property(propertyFromCollection('show_edit_button_permissions_only'))
         show_translate_button = property(propertyFromCollection('show_translate_button'))
         show_report_button = property(propertyFromCollection('show_report_button'))
+        show_suggestedit_button = property(propertyFromCollection('show_suggestedit_button'))
         show_collect_button = property(propertyFromCollection('show_collect_button'))
         show_collect_total = property(propertyFromCollection('show_collect_total'))
         # Note: if you use the 'default' template, the following 2 will be ignored:
@@ -2210,12 +2238,23 @@ class MagiCollection(object):
         allow_delete = False
         @property
         def owner_only(self):
-            return not self.collection.reportable and not self.staff_required
+            return (
+                not self.collection.reportable
+                and not self.collection.allow_suggest_edit
+                and not self.staff_required
+            )
         owner_or_staff_only = False
+        owner_only_or_permissions_required = []
         @property
-        def owner_only_or_permissions_required(self):
-            return ['edit_reported_things'] if self.collection.reportable and not self.staff_required else []
-        owner_only_or_one_of_permissions_required = []
+        def owner_only_or_one_of_permissions_required(self):
+            if self.staff_required:
+                return []
+            permissions = []
+            if self.collection.reportable:
+                permissions += ['edit_reported_things']
+            if self.collection.allow_suggest_edit:
+                permissions += ['edit_suggested_edits']
+            return permissions
         allow_next = True
 
         @property
@@ -2337,11 +2376,15 @@ class MagiCollection(object):
 class MainItemCollection(MagiCollection):
     blockable = False
     reportable = False
+    allow_suggest_edit = True
     allow_html_in_markdown = True
     auto_share_image = True
 
     class ListView(MagiCollection.ListView):
         add_button_subtitle = None
+
+    class ItemView(MagiCollection.ItemView):
+        show_suggestedit_button = True
 
     class AddView(MagiCollection.AddView):
         staff_required = True
@@ -4001,13 +4044,14 @@ class BadgeCollection(MagiCollection):
             request._badge_user.preferences.force_update_cache('tabs_with_content')
 
 ############################################################
-# Report Collection
+# Report Collection / Suggestion Collection
 
-class ReportCollection(MagiCollection):
+class _BaseReportCollection(MagiCollection):
     navbar_link_list = 'staff'
-    title = _('Report')
-    icon = 'warning'
-    queryset = models.Report.objects.all().select_related('owner', 'owner__preferences', 'staff', 'staff__preferences').prefetch_related(Prefetch('images', to_attr='all_images'))
+    queryset = models.Report.objects.select_related(
+        'owner', 'owner__preferences', 'staff', 'staff__preferences',
+    ).prefetch_related(Prefetch('images', to_attr='all_images'))
+
     reportable = False
     blockable = False
 
@@ -4024,20 +4068,15 @@ class ReportCollection(MagiCollection):
                     'icon': c.icon,
                 }
                 for name, c in getMagiCollections().items()
-                if c.reportable
+                if (c.allow_suggest_edit if self.name == 'suggestededit' else c.reportable)
             }
         return self._cached_types
     _cached_types = None
 
-    @property
-    def add_sentence(self):
-        return _('Report')
-
     class ListView(MagiCollection.ListView):
-        item_template = custom_item_template
+        item_template = 'reportItem'
         show_title = True
         staff_required = True
-        permissions_required = ['moderate_reports']
         show_edit_button = False
         per_line = 1
         js_files = ['reports']
@@ -4047,9 +4086,8 @@ class ReportCollection(MagiCollection):
         allow_random = False
 
     class ItemView(MagiCollection.ItemView):
-        template = custom_item_template
+        template = 'reportItem'
         comments_enabled = False
-        owner_only_or_permissions_required = ['moderate_reports']
         show_edit_button = False
         js_files = ['reports']
         ajax_callback = 'updateReport'
@@ -4058,7 +4096,29 @@ class ReportCollection(MagiCollection):
         authentication_required = True
         alert_duplicate = False
         back_to_list_button = False
-        form_class = forms.ReportForm
+
+    class EditView(MagiCollection.EditView):
+        allow_delete = True
+        redirect_after_delete = justReturn('/')
+        back_to_list_button = False
+
+class ReportCollection(_BaseReportCollection):
+    title = _('Report')
+    icon = 'warning'
+    queryset = _BaseReportCollection.queryset.filter(is_suggestededit=False)
+    form_class = forms.ReportForm
+
+    @property
+    def add_sentence(self):
+        return _('Report')
+
+    class ListView(_BaseReportCollection.ListView):
+        permissions_required = ['moderate_reports']
+
+    class ItemView(_BaseReportCollection.ItemView):
+        owner_only_or_permissions_required = ['moderate_reports']
+
+    class AddView(_BaseReportCollection.AddView):
 
         def extra_context(self, context):
             context['alert_message'] = mark_safe(u'{message}<ul>{list}</ul>{learn_more}'.format(
@@ -4070,11 +4130,24 @@ class ReportCollection(MagiCollection):
             ))
             return context
 
-    class EditView(MagiCollection.EditView):
-        allow_delete = True
-        redirect_after_delete = justReturn('/')
-        back_to_list_button = False
-        form_class = forms.ReportForm
+class SuggestedEditCollection(_BaseReportCollection):
+    name = 'suggestededit'
+    plural_name = 'suggestededits'
+    title = _('Suggested edit')
+    plural_title = _('Suggested edits')
+    icon = 'edit'
+    queryset = _BaseReportCollection.queryset.filter(is_suggestededit=True)
+    form_class = forms.SuggestedEditForm
+
+    @property
+    def add_sentence(self):
+        return _('Suggest edit')
+
+    class ListView(_BaseReportCollection.ListView):
+        permissions_required = ['moderate_suggested_edits']
+
+    class ItemView(_BaseReportCollection.ItemView):
+        owner_only_or_permissions_required = ['moderate_suggested_edits']
 
 ############################################################
 # Donate Collection

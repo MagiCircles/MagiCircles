@@ -5,7 +5,7 @@
 <div class="well report report-{{ report.status }}" data-report-id="{{ report.id }}">
   <div class="row">
     <div class="col-md-8">
-      <h4>{% trans 'Report' %}: {% trans report.reported_thing_title %}</h4>
+      <h4>{% if report.is_suggestededit %}{% trans 'Suggested edit' %}{% else %}{% trans 'Report' %}{% endif %}: {% trans report.reported_thing_title %}</h4>
     </div>
     <div class="col-md-4">
       <h1 class="text-right report_status">{{ report.status }}</h1>
@@ -15,7 +15,8 @@
   </div>
   <ul class="list-group">
     <li class="list-group-item">
-      <strong>{% trans 'Reported by:' %}</strong>
+      {% if user.is_staff %}
+      <strong>{% if report.is_suggestededit %}Suggested by:{% else %}Reported by:{% endif %}</strong>
       {% if report.owner %}
       <a href="{{ report.owner.item_url }}">
 	{{ report.owner }}
@@ -23,14 +24,15 @@
       Anonymous
       {% endif %}
       <br>
+      {% endif %}
       <small class="text-muted">{{ report.creation }}</small>
     </li>
     <li class="list-group-item">
-      <strong>{% trans 'Reason' %}</strong><br>
+      <strong>{% if report.is_suggestededit %}{% trans 'Field(s) to edit' %}{% else %}{% trans 'Reason' %}{% endif %}</strong><br>
       {% if report.reason %}{{ report.reason }}{% else %}Unknown{% endif %}
     </li>
     <li class="list-group-item">
-      <strong>{% trans 'Message' %}</strong><br>
+      <strong>{% if report.is_suggestededit %}{% trans 'What should be edited?' %}{% else %}{% trans 'Message' %}{% endif %}</strong><br>
       {{ report.message }}
     </li>
     {% if report.all_images %}
@@ -60,13 +62,13 @@
     </li>
     {% endif %}
   </ul>
-  {% if user.is_authenticated and user.id == report.owner.id %}
+  {% if report.status == 'Pending' and user.is_authenticated and user.id == report.owner.id %}
   <a href="{{ report.edit_url }}" class="btn btn-main btn-xl btn-block">
     {{ report.edit_sentence }}
   </a><br>
   {% endif %}
   {% if report.item_view_enabled %}
-  <a href="/{{ report.reported_thing }}/{{ report.reported_thing_id }}/" class="open-thing btn btn-main btn-xl btn-block" data-ajax-url="/ajax/{{ report.reported_thing }}/{{ report.reported_thing_id }}/" data-ajax-show-button="true">
+  <a href="/{{ report.reported_thing }}/{{ report.reported_thing_id }}/" class="open-thing btn btn-main btn-xl btn-block" {% if report.reported_thing_collection.item_view.ajax %}data-ajax-url="/ajax/{{ report.reported_thing }}/{{ report.reported_thing_id }}/" data-ajax-show-button="true"{% else %}target="_blank"{% endif %}>
     {{ report.reported_thing_open_sentence }}
   </a>
   {% else %}
@@ -77,25 +79,25 @@
   {% if user.id != report.owner.id or user.is_superuser %}
   {% if report.status == 'Pending' %}
   <div class="panel-group staff-buttons" id="staff-buttons-{{ report.id }}">
-    <div class="panel panel-info inline-block" style="width: 33%; vertical-align: top; margin-top: 0;">
+    <div class="panel panel-info inline-block" style="width: {% if report.is_suggestededit %}49{% else %}33{% endif %}%; vertical-align: top; margin-top: 0;">
       <div class="panel-heading">
 	<h3 class="panel-title fontx1-5 text-center">
-	  <a href="#collapseIgnore{{ report.id }}" data-toggle="collapse" data-parent="#staff-buttons-{{ report.id }}" class="a-nodifference">I see nothing wrong</a>
+	  <a href="#collapseIgnore{{ report.id }}" data-toggle="collapse" data-parent="#staff-buttons-{{ report.id }}" class="a-nodifference">{% if report.is_suggestededit %}It shouldn't be edited{% else %}I see nothing wrong{% endif %}</a>
 	</h3>
       </div>
       <div class="panel-collapse collapse" id="collapseIgnore{{ report.id }}">
 	<form class="panel-body" method="POST" action="/ajax/moderatereport/{{ report.id }}/Ignored/">
 	  {% csrf_token %}
-	  <input type="submit" class="btn btn-info btn-block btn-lines" value="Ignore this report">
+	  <input type="submit" class="btn btn-info btn-block btn-lines" value="Ignore this {% if report.is_suggestededit %}suggestion{% else %}report{% endif %}">
 	  <br>
 	  <ul>
 	    <li>Will not notify anyone.</li>
-	    <li>Will mark the report as done.</li>
+	    <li>Will mark the {% if report.is_suggestededit %}suggestion{% else %}report{% endif %} as done.</li>
 	  </ul>
 	</form>
       </div>
     </div>
-    <div class="panel panel-warning inline-block" style="width: 33%; vertical-align: top; margin-top: 0;">
+    <div class="panel panel-warning inline-block" style="width: {% if report.is_suggestededit %}49{% else %}33{% endif %}%; vertical-align: top; margin-top: 0;">
       <div class="panel-heading">
 	<h3 class="panel-title fontx1-5 text-center">
 	  <a href="#collapseEdited{{ report.id }}" data-toggle="collapse" data-parent="#staff-buttons-{{ report.id }}" class="a-nodifference">It should be edited</a>
@@ -105,6 +107,10 @@
 	{% if user.is_superuser or report.allow_edit %}
 	<form class="panel-body" method="POST" action="/ajax/moderatereport/{{ report.id }}/Edited/">
 	  {% csrf_token %}
+          {% if report.is_suggestededit %}
+          1. Explain what was changed and why:
+          <textarea name="staff_message" class="form-control" placeholder="Explain what has been edited and why (in English).">{{ report.reason }} have been edited.</textarea><br>
+          {% else %}
 	  1. Select a reason:
 	  <select name="reason" class="form-control" required>
 	    <option value="">------</option>
@@ -114,15 +120,19 @@
 	    <option value="_other">Other...</option>
 	  </select>
 	  <textarea name="staff_message" class="form-control" placeholder="Explain what has been edited and why (in English)." style="display: none;" required></textarea><br>
+          {% endif %}
 	  2. Edit the {{ report.reported_thing }} accordingly:
-	  <a href="/{{ report.reported_thing_plural_name }}/edit/{{ report.reported_thing_id }}/" target="_blank" class="btn btn-success btn-block btn-lines" data-ajax-url="/ajax/{{ report.reported_thing_plural_name }}/edit/{{ report.reported_thing_id }}/?disable_delete&is_reported" data-ajax-handle-form="true">Edit {{ report.reported_thing }}</a><br>
-	  2. Confirm the report:
+	  <a href="/{{ report.reported_thing_plural_name }}/edit/{{ report.reported_thing_id }}/" target="_blank" class="btn btn-success btn-block btn-lines" {% if report.reported_thing_collection.edit_view.ajax %}data-ajax-url="/ajax/{{ report.reported_thing_plural_name }}/edit/{{ report.reported_thing_id }}/?disable_delete&{% if report.is_suggestededit %}is_suggestededit{% else %}is_reported{% endif %}" data-ajax-handle-form="true"{% else %}target="_blank"{% endif %}>Edit {{ report.reported_thing }}</a><br>
+	  2. Confirm the {% if report.is_suggestededit %}suggestion was taken into account{% else %}report{% endif %}:
 	  <input type="submit" class="btn btn-warning btn-block btn-lines" value="Confirm">
 	  <br>
 	  <ul>
+	    <li>Will notify the person who {% if report.is_suggestededit %}suggested{% else %}reported{% endif %} this {{ report.reported_thing }}.</li>
 	    <li>Will notify the owner of this {{ report.reported_thing }}.</li>
-	    <li>Will notify all the people who reported this {{ report.reported_thing }}.</li>
+	    {% if not report.is_suggestededit %}
+            <li>Will notify all the people who reported this {{ report.reported_thing }}.</li>
 	    <li>Will mark all the reports for that {{ report.reported_thing }} as done.</li>
+            {% endif %}
 	  </ul>
 	</form>
 	{% else %}
@@ -130,6 +140,7 @@
 	{% endif %}
       </div>
     </div>
+    {% if not report.is_suggestededit %}
     <div class="panel panel-danger inline-block" style="width: 33%; vertical-align: top; margin-top: 0;">
       <div class="panel-heading">
 	<h3 class="panel-title fontx1-5 text-center">
@@ -164,6 +175,7 @@
 	{% endif %}
       </div>
     </div>
+    {% endif %}
   </div>
   {% endif %}
   {% else %}

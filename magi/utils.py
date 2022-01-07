@@ -1429,6 +1429,13 @@ def getTranslatedName(d, field_name='name', language=None):
         d.get(field_name, None),
     )
 
+def getEnglish(translated_string):
+    old_lang = get_language()
+    translation_activate('en')
+    string = unicode(translated_string)
+    translation_activate(old_lang)
+    return translated_string
+
 def getAllTranslations(term, unique=False):
     translations = {}
     old_lang = get_language()

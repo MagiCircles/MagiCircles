@@ -65,7 +65,8 @@ DEFAULT_GROUPS = [
             'edit_roles', 'edit_staff_status', 'edit_donator_status', 'see_profile_edit_button',
             'edit_staff_configurations', 'add_badges', 'see_collections_details',
             'manage_main_items', 'view_items_history',
-            'edit_staff_details', 'moderate_reports', 'edit_reported_things', 'post_community_event_activities',
+            'edit_staff_details', 'moderate_reports', 'edit_reported_things', 'edit_suggested_edits', 'post_community_event_activities',
+            'moderate_suggested_edits',
             'apply_suggestions',
             'message_almost_anyone',
             'manage_prizes', 'manipulate_activities', 'mark_activities_as_staff_pick',
@@ -146,6 +147,8 @@ DEFAULT_GROUPS = [
         'description': 'We gather all the game data in one convenient place for you! Our database maintainers manually update the details as soon as they are available.',
         'permissions': [
             'manage_main_items', 'translate_items',
+            'moderate_suggested_edits',
+            'edit_suggested_edits',
             'order_by_any_field',
             'list_homepage_arts',
             'access_site_before_launch',
@@ -159,7 +162,9 @@ DEFAULT_GROUPS = [
         'translation': string_concat(_('Database maintainer'), ' (API)'),
         'description': 'Extracts assets and data and automatically updates our website. They do their best to publish all the details as soon they are available.',
         'permissions': [
-            'manage_main_items',
+            'manage_main_items', 'translate_items',
+            'moderate_suggested_edits',
+            'edit_suggested_edits',
             'order_by_any_field',
             'list_homepage_arts',
             'access_site_before_launch',
@@ -276,6 +281,7 @@ DEFAULT_GROUPS = [
         'permissions': [
             'moderate_reports',
             'edit_reported_things',
+            'message_almost_anyone',
             'manipulate_activities',
             'edit_activities_post_language',
             'access_site_before_launch',
@@ -1057,6 +1063,9 @@ DEFAULT_PRELAUNCH_ENABLED_PAGES = [
     'report_add',
     'report_item',
     'report_edit',
+    'suggestededit_add',
+    'suggestededit_item',
+    'suggestededit_edit',
 ]
 
 ############################################################

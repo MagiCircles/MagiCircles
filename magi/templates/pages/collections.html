@@ -26,6 +26,15 @@
     </tr>
     {% endif %}
 
+    {% if collection.allow_suggest_edit %}
+    <tr>
+      <th>Allows users to suggest edits</th>
+      <td class="text-right">
+        <i class="text-success flaticon-checked"></i>
+      </td>
+    </tr>
+    {% endif %}
+
     {% if collection.types %}
     <tr>
       <th>Types</th>

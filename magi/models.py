@@ -1177,8 +1177,9 @@ class Notification(MagiModel):
 # Report
 
 class Report(MagiModel):
-    collection_name = 'report'
+    collection_name = property(lambda _s: 'suggestededit' if _s.is_suggestededit else 'report')
 
+    is_suggestededit = models.BooleanField(default=False, db_index=True)
     creation = models.DateTimeField(auto_now_add=True)
     modification = models.DateTimeField(auto_now=True)
     owner = models.ForeignKey(User, related_name='reports', null=True)
@@ -1240,6 +1241,10 @@ class Report(MagiModel):
     @property
     def delete_templates(self):
         return self.reported_thing_collection.report_delete_templates
+
+    @property
+    def edited_fields(self):
+        return self.reported_thing_collection.get_suggest_edit_choices(getattr(self, 'request', None))
 
     def __unicode__(self):
         return u'{title} #{id}'.format(

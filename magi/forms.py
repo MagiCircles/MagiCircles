@@ -649,18 +649,17 @@ class MagiForm(forms.ModelForm):
                 if field in self.fields:
                     self.fields[field].widget = self.fields[field].hidden_widget()
 
-        # Has the form been opened in the context of a report?
-        self.is_reported = (
-            not self.is_creating
+        # Has the form been opened in the context of a report or a suggested edit?
+        if (not self.is_creating
             and not isinstance(self, MagiFiltersForm)
             and self.request
-            and 'is_reported' in self.request.GET
             and self.request.user.is_authenticated()
-            and self.instance.owner != self.request.user
-        )
+            and self.instance.owner != self.request.user):
+            self.is_reported = 'is_reported' in request.GET
+            self.is_suggestededit = 'is_suggestededit' in request.GET
 
         # Add buttons to add/edit sub items
-        if (not self.is_reported
+        if (not self.is_reported and not self.is_suggestedit
             and not getattr(self, 'is_translate_form', False)
             and self.collection
             and getattr(self.collection, 'sub_collections', None)
@@ -3254,12 +3253,10 @@ NotificationFilterForm = FilterNotification
 ############################################################
 # Add/Edit reports
 
-class ReportForm(MagiForm):
-    reason = forms.ChoiceField(required=True, label=_('Reason'))
-
+class BaseReportForm(MagiForm):
     def __init__(self, *args, **kwargs):
         self.type = kwargs.pop('type', None)
-        super(ReportForm, self).__init__(*args, **kwargs)
+        super(BaseReportForm, self).__init__(*args, **kwargs)
         if self.instance.pk:
             self.reported_thing_id = self.instance.reported_thing_id
             self.type = self.instance.reported_thing
@@ -3269,13 +3266,11 @@ class ReportForm(MagiForm):
             self.reported_thing_id = self.request.GET['id']
             # Check if the reported thing exists
             get_object_or_404(getMagiCollection(self.type).queryset, pk=self.reported_thing_id)
-        reasons = OrderedDict()
-        for reason in getMagiCollection(self.type).report_edit_templates.keys() + getMagiCollection(self.type).report_delete_templates.keys():
-            reasons[reason] = _(reason)
-        self.fields['reason'].choices = BLANK_CHOICE_DASH + reasons.items()
+        if 'images' in self.fields:
+            self.fields['images'].help_text = _('Optional')
 
     def save(self, commit=True):
-        instance = super(ReportForm, self).save(commit=False)
+        instance = super(BaseReportForm, self).save(commit=False)
         instance.reported_thing = self.type
         instance.reported_thing_id = self.reported_thing_id
         old_lang = get_language()
@@ -3288,6 +3283,41 @@ class ReportForm(MagiForm):
         model = models.Report
         fields = ('reason', 'message', 'images')
         save_owner_on_creation = True
+
+class ReportForm(BaseReportForm):
+    reason = forms.ChoiceField(required=True, label=_('Reason'))
+
+    def __init__(self, *args, **kwargs):
+        super(ReportForm, self).__init__(*args, **kwargs)
+        reasons = OrderedDict()
+        for reason in getMagiCollection(self.type).report_edit_templates.keys() + getMagiCollection(self.type).report_delete_templates.keys():
+            reasons[reason] = _(reason)
+        self.fields['reason'].choices = BLANK_CHOICE_DASH + reasons.items()
+
+class SuggestedEditForm(BaseReportForm):
+    reason = forms.MultipleChoiceField(required=True, label=_('Reason'))
+
+    def __init__(self, *args, **kwargs):
+        super(SuggestedEditForm, self).__init__(*args, **kwargs)
+        if not self.is_creating:
+            self.instance.reason = (
+                ', '.join(self.instance.reason) if isinstance(self.instance.reason, list) else self.instance.reason
+            ).split(', ')
+        if 'reason' in self.fields:
+            collection = getMagiCollection(self.type)
+            self.fields['reason'].label = _('Field(s) to edit')
+            self.fields['reason'].choices = collection.get_suggest_edit_choices(self.request)
+        if 'message' in self.fields:
+            self.fields['message'].label = _('What should be edited?')
+
+    def clean_reason(self):
+        fields = self.cleaned_data['reason']
+        return ', '.join(fields)
+
+    def save(self, commit=True):
+        instance = super(SuggestedEditForm, self).save(commit=False)
+        instance.is_suggestededit = True
+        return instance
 
 class FilterReports(MagiFiltersForm):
     search_fields = ['owner__username', 'message', 'staff_message', 'reason', 'reported_thing_title']
@@ -3305,13 +3335,23 @@ class FilterReports(MagiFiltersForm):
         choices=[],
     )
 
+    cuteform = {
+        'i_status': { 'type': CuteFormType.HTML },
+        'reported_thing': { 'type': CuteFormType.HTML },
+    }
+
     def __init__(self, *args, **kwargs):
         super(FilterReports, self).__init__(*args, **kwargs)
         self.fields['reported_thing'].choices = BLANK_CHOICE_DASH + [ (name, info['title']) for name, info in self.collection.types.items() ]
+        if self.collection.name == 'suggestededit':
+            self.fields['reported_thing'].label = 'Item'
+            permission = 'moderate_suggested_edits'
+        else:
+            permission = 'moderate_reports'
         self.fields['staff'].queryset = usersWithPermission(
             self.fields['staff'].queryset,
             self.request.user.preferences.GROUPS,
-            'moderate_reports',
+            permission,
         )
 
     class Meta(MagiFiltersForm.Meta):

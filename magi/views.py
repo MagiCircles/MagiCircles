@@ -959,9 +959,10 @@ def moderatereport(request, report, action):
         report.staff_message = request.POST['staff_message']
 
         # Get reason
-        reason = request.POST.get('reason', None)
-        if reason and reason != '_other':
-            report.reason = reason
+        if not report.is_suggestededit:
+            reason = request.POST.get('reason', None)
+            if reason and reason != '_other':
+                report.reason = reason
 
     # Action: Ignore
     if action == 'Ignored':
@@ -982,18 +983,26 @@ def moderatereport(request, report, action):
         # Notify reporter
         if report.owner:
             translation_activate(report.owner.preferences.language if report.owner.preferences.language else 'en')
-            context['sentence'] = _(u'This {thing} you reported has been reviewed by a moderator and {verb}. Thank you so much for your help!').format(thing=_(report.reported_thing_title), verb=_(u'edited'))
+            if report.is_suggestededit:
+                context['sentence'] = _('The edit you suggested has been reviewed by a database maintainer and the {thing} has been edited accordingly. Thank you so much for your help!')
+                subject = _(u'Thank you for suggesting this edit!')
+            else:
+                context['sentence'] = _(u'This {thing} you reported has been reviewed by a moderator and {verb}. Thank you so much for your help!').format(thing=_(report.reported_thing_title), verb=_(u'edited'))
+                subject = _(u'Thank you for reporting this {thing}')
             context['user'] = report.owner
             context['show_donation'] = True
             context['subject'] = u'{} {}'.format(
                 SITE_NAME_PER_LANGUAGE.get(get_language(), SITE_NAME),
-                unicode(_(u'Thank you for reporting this {thing}').format(thing=_(report.reported_thing_title))),
+                unicode(subject.format(thing=_(report.reported_thing_title))),
             )
             send_email(context['subject'], template_name='report', to=[context['user'].email], context=context)
         # Notify owner
         if thing.owner:
             translation_activate(thing.real_owner.preferences.language if thing.real_owner.preferences.language else 'en')
-            context['sentence'] = _(u'Your {thing} has been reported, and a moderator confirmed it should be {verb}.').format(thing=_(report.reported_thing_title), verb=_(u'edited'))
+            if report.is_suggestededit:
+                context['sentence'] = 'An edit has been suggested on your {thing}, and a database maintainer confirmed and applied it.'.format(thing=report.reported_thing_title)
+            else:
+                context['sentence'] = _(u'Your {thing} has been reported, and a moderator confirmed it should be {verb}.').format(thing=_(report.reported_thing_title), verb=_(u'edited'))
             context['user'] = thing.real_owner
             context['show_donation'] = False
             context['subject'] = u'{} {}'.format(
@@ -1004,7 +1013,8 @@ def moderatereport(request, report, action):
         report.save()
         moderated_reports = [report.pk]
 
-    elif action == 'Deleted':
+    # Delete is not an option for suggested edits
+    elif action == 'Deleted' and not report.is_suggestededit:
         report.i_status = models.Report.get_i('status', 'Deleted')
         report.reported_thing_owner_id = thing.real_owner.id
         report.saved_data = dumpModel(thing)

@@ -831,6 +831,9 @@ def get_edit_url(instance):
 def get_report_url(instance):
     return u'/reports/add/{}/?id={}'.format(instance.collection_name, instance.pk)
 
+def get_suggestedit_url(instance):
+    return u'/suggestededits/add/{}/?id={}'.format(instance.collection_name, instance.pk)
+
 def get_ajax_edit_url(instance):
     return u'/ajax/{}/edit/{}/'.format(instance.collection_plural_name, instance.pk)
 
@@ -848,6 +851,9 @@ def get_delete_sentence(instance):
 
 def get_report_sentence(instance):
     return _('Report {thing}').format(thing=unicode(instance.collection_title).lower())
+
+def get_suggestedit_sentence(instance):
+    return _('Suggest edit')
 
 def get_collection_plural_name(instance):
     if not getattr(instance, '_collection_plural_name', None):
@@ -886,6 +892,7 @@ def addMagiModelProperties(modelClass, collection_name):
     modelClass.share_url = property(get_share_url)
     modelClass.edit_url = property(get_edit_url)
     modelClass.report_url = property(get_report_url)
+    modelClass.suggestedit_url = property(get_suggestedit_url)
     modelClass.ajax_edit_url = property(get_ajax_edit_url)
     modelClass.image_url = property(get_image_url)
     modelClass.http_image_url = property(get_http_image_url)
@@ -893,6 +900,7 @@ def addMagiModelProperties(modelClass, collection_name):
     modelClass.edit_sentence = property(get_edit_sentence)
     modelClass.delete_sentence = property(get_delete_sentence)
     modelClass.report_sentence = property(get_report_sentence)
+    modelClass.suggestedit_sentence = property(get_suggestedit_sentence)
     modelClass.tinypng_settings = {}
     modelClass.request = None
 
@@ -929,11 +937,13 @@ class MagiModel(BaseMagiModel):
     share_url = property(get_share_url)
     edit_url = property(get_edit_url)
     report_url = property(get_report_url)
+    suggestedit_url = property(get_suggestedit_url)
     ajax_edit_url = property(get_ajax_edit_url)
     open_sentence = property(get_open_sentence)
     edit_sentence = property(get_edit_sentence)
     delete_sentence = property(get_delete_sentence)
     report_sentence = property(get_report_sentence)
+    suggestedit_sentence = property(get_suggestedit_sentence)
 
     allow_multiple_per_owner = classmethod(get_allow_multiple_per_owner)
 

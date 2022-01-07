@@ -199,6 +199,7 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
 
     context['js_files'] = collection.item_view.js_files
     context['reportable'] = collection.reportable
+    context['allow_suggest_edit'] = collection.allow_suggest_edit
     context['share_image'] = _get_share_image(context, collection.item_view, item=context['item'])
     context['comments_enabled'] = collection.item_view.comments_enabled
     context['share_enabled'] = collection.item_view.share_enabled
@@ -509,6 +510,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['name'] = name
     context['title'] = collection.title
     context['reportable'] = collection.reportable
+    context['allow_suggest_edit'] = collection.allow_suggest_edit
     context['hide_sidebar'] = collection.list_view.hide_sidebar
     context['before_template'] = collection.list_view.before_template
     context['no_result_template'] = collection.list_view.no_result_template
@@ -763,6 +765,7 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
     _redirect_on_high_traffic(collection.edit_view, request, ajax=ajax)
 
     context['is_reported'] = 'is_reported' in request.GET
+    context['is_suggestededit'] = 'is_suggestededit' in request.GET
     context = _modification_view(context, name, collection.edit_view, ajax)
     queryset = collection.edit_view.get_queryset(collection.queryset, _get_filters(request.GET, extra_filters), request)
     instance = get_one_object_or_404(queryset, **collection.edit_view.get_item(request, pk))
