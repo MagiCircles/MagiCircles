@@ -650,6 +650,8 @@ class MagiForm(forms.ModelForm):
                     self.fields[field].widget = self.fields[field].hidden_widget()
 
         # Has the form been opened in the context of a report or a suggested edit?
+        self.is_reported = False
+        self.is_suggestededit = False
         if (not self.is_creating
             and not isinstance(self, MagiFiltersForm)
             and self.request
