@@ -854,21 +854,26 @@ class CuteFormTransform:
     No, ImagePath, Flaticon, FlaticonWithText, ImageWithText = range(5)
     default_field_type = [CuteFormType.Images, CuteFormType.Images, CuteFormType.HTML, CuteFormType.HTML, CuteFormType.HTML]
 
-def _callToCuteForm(to_cuteform, key, value):
+def _callToCuteForm(field_name, model, to_cuteform, key, value):
     if to_cuteform == 'key':
         return key
     elif to_cuteform == 'value':
         return value
+    if (field_name.startswith('i_') # i_choices
+        and to_cuteform.func_code.co_argcount == 3): # to_cuteform takes 3 arguments
+        if not model:
+            raise ValueError('When to_cuteform takes 3 arguments, it\'s required to specify the model class.')
+        return to_cuteform(key, model.get_reverse_i(field_name[2:], key), value)
     return to_cuteform(key, value)
 
-def cuteFormFieldsForContext(cuteform_fields, context, form=None, prefix=None, ajax=False):
+def cuteFormFieldsForContext(cuteform_fields, context, form=None, prefix=None, ajax=False, model=None):
     """
     Adds the necesary context to call cuteform in javascript.
     Prefix is a prefix to add to all selectors. Can be useful to isolate your cuteform within areas of your page.
     cuteform_fields: must be a dictionary of {
       field_name: {
         type: CuteFormType.Images, .HTML, .YesNo or .OnlyNone, will be images if not specified,
-        to_cuteform: 'key' or 'value' or lambda that takes key and value, will be 'key' if not specified,
+        to_cuteform: 'key' or 'value' or lambda that takes key and value, will be 'key' if not specified, Can also take i, key, value if i_choice
         choices: list of pair, if not specified will use form
         selector: will be #id_{field_name} if not specified,
         transform: when to_cuteform is a lambda: CuteFormTransform.No, .ImagePath, .Flaticon, .FlaticonWithText, .ImageWithText
@@ -878,6 +883,8 @@ def cuteFormFieldsForContext(cuteform_fields, context, form=None, prefix=None, a
     """
     if not cuteform_fields:
         return
+    if form and not model:
+        model = getattr(form.Meta, 'model', None) if form else None
     if 'cuteform_fields' not in context:
         context['cuteform_fields'] = {}
         context['cuteform_fields_json'] = {}
@@ -945,7 +952,7 @@ def cuteFormFieldsForContext(cuteform_fields, context, form=None, prefix=None, a
                 cuteform = empty if field_type == CuteFormType.Images else empty_image
             else:
                 # Get the cuteform value with to_cuteform
-                cuteform_value = _callToCuteForm(field['to_cuteform'], key, value)
+                cuteform_value = _callToCuteForm(field_name, model, field['to_cuteform'], key, value)
                 # Transform to image path
                 if (field_type == CuteFormType.Images
                     and (field['to_cuteform'] in ['key', 'value']
@@ -979,7 +986,7 @@ def cuteFormFieldsForContext(cuteform_fields, context, form=None, prefix=None, a
         # Store a JSON version to be displayed in Javascript
         context['cuteform_fields_json'][selector] = simplejson.dumps(context['cuteform_fields'][selector])
 
-def mergedFieldCuteForm(cuteform, settings, merged_fields, merged_field_name=None):
+def mergedFieldCuteForm(cuteform, settings, merged_fields, merged_field_name=None, model=None):
     if not merged_fields:
         return
     if not isinstance(merged_fields, dict):
@@ -995,7 +1002,11 @@ def mergedFieldCuteForm(cuteform, settings, merged_fields, merged_field_name=Non
         for field_name, to_cuteform in merged_fields.items():
             if k.startswith(field_name):
                 k = k[len(field_name) + 1:]
-                return _callToCuteForm(to_cuteform or default_to_cuteform, k, v)
+                return _callToCuteForm(
+                    field_name, model,
+                    to_cuteform or cuteform.get(field_name, {}).get('to_cuteform', None) or default_to_cuteform,
+                    int(k) if field_name.startswith('i_') and k.isdecimal() else k, v,
+                )
     cuteform[merged_field_name] = settings
     cuteform[merged_field_name]['to_cuteform'] = _to_cuteform
 
