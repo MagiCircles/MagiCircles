@@ -657,8 +657,8 @@ class MagiForm(forms.ModelForm):
             and self.request
             and self.request.user.is_authenticated()
             and self.instance.owner != self.request.user):
-            self.is_reported = 'is_reported' in request.GET
-            self.is_suggestededit = 'is_suggestededit' in request.GET
+            self.is_reported = 'is_reported' in self.request.GET
+            self.is_suggestededit = 'is_suggestededit' in self.request.GET
 
         # Add buttons to add/edit sub items
         if (not self.is_reported and not self.is_suggestededit
