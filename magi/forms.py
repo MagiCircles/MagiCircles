@@ -3348,6 +3348,10 @@ class FilterReports(MagiFiltersForm):
         if self.collection.name == 'suggestededit':
             self.fields['reported_thing'].label = 'Item'
             permission = 'moderate_suggested_edits'
+            self.fields['i_status'].choices = [
+                (k, v) for k, v in self.fields['i_status'].choices
+                if k != models.Report.get_i('status', 'Deleted')
+            ]
         else:
             permission = 'moderate_reports'
         self.fields['staff'].queryset = usersWithPermission(
