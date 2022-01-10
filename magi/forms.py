@@ -656,7 +656,7 @@ class MagiForm(forms.ModelForm):
             and not isinstance(self, MagiFiltersForm)
             and self.request
             and self.request.user.is_authenticated()
-            and self.instance.owner != self.request.user):
+            and hasattr(self.instance, 'owner') and self.instance.owner != self.request.user):
             self.is_reported = 'is_reported' in self.request.GET
             self.is_suggestededit = 'is_suggestededit' in self.request.GET
 
