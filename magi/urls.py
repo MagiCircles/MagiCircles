@@ -152,7 +152,9 @@ def getURLLambda(name, lambdas):
     return (lambda context: u'/{}/{}/'.format(name, '/'.join([f(context) for f in lambdas])))
 
 def getCollectionShowLinkLambda(collection):
-    return (lambda context: collection.list_view.has_permissions_to_see_in_navbar(context['request'], context))
+    return (lambda context: (
+        collection.list_view if collection.name != 'badge' else collection.add_view).has_permissions_to_see_in_navbar(
+            context['request'], context))
 
 def _addToCollections(name, cls): # Class of the collection
     collection = cls()
@@ -537,9 +539,13 @@ for permission, details in GLOBAL_OUTSIDE_PERMISSIONS.items():
             'new_tab': True,
         }, 'staff')
 
-def _getPageShowLinkForGroupsLambda(group):
+def _getPageShowLinkForGroupsLambda(group, show_link_lambda):
     def _show_link_callback(context):
-        return context['request'].user.is_authenticated() and context['request'].user.hasGroup(group)
+        return (
+            context['request'].user.is_authenticated()
+            and context['request'].user.hasGroup(group)
+            and show_link_lambda(context)
+        )
     return _show_link_callback
 
 _groups_dict = dict(GROUPS)
@@ -569,7 +575,7 @@ for collection in collections.values():
                     'icon': collection.icon,
                     'image': collection.image,
                     'url': collection.get_list_url(),
-                    'show_link_callback': _getPageShowLinkForGroupsLambda(group),
+                    'show_link_callback': _getPageShowLinkForGroupsLambda(group, getCollectionShowLinkLambda(collection)),
                 }, 'staff')
                 if u'{}_list'.format(collection.name) in navbar_links['staff']['links']:
                     del(navbar_links['staff']['links'][u'{}_list'.format(collection.name)])
@@ -597,7 +603,7 @@ for name, pages in ENABLED_PAGES.items():
                         'image': page.get('image', None),
                         'url': page.get('redirect', None) or '/{}/'.format(name),
                         'get_url': None if not page.get('url_variables', None) else (getURLLambda(name, lambdas)),
-                        'show_link_callback': _getPageShowLinkForGroupsLambda(group),
+                        'show_link_callback': _getPageShowLinkForGroupsLambda(group, getPageShowLinkLambda(page)),
                     }, 'staff')
                     if name in navbar_links['staff']['links']:
                         del(navbar_links['staff']['links'][name])
@@ -620,7 +626,7 @@ for group, group_details in GROUPS:
                 'image': details.get('image', None),
                 'icon': details.get('icon', None),
                 'title': permission,
-                'show_link_callback': _getPageShowLinkForGroupsLambda(group),
+                'show_link_callback': _getPageShowLinkForGroupsLambda(group, lambda _c: True),
                 'new_tab': True,
             }))
     if links_to_add or _links_for_groups.get(group, []):
@@ -629,7 +635,7 @@ for group, group_details in GROUPS:
             'title': group_details['translation'],
             'image': 'groups/{}'.format(group),
             'is_header': True,
-            'show_link_callback': _getPageShowLinkForGroupsLambda(group),
+            'show_link_callback': _getPageShowLinkForGroupsLambda(group, lambda _c: True),
          }, 'staff')
         _staff_order.append(header_name)
         _staff_order += _links_for_groups.get(group, [])
