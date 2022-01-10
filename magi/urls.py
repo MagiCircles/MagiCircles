@@ -64,6 +64,7 @@ from magi.settings import (
     SITE_EMOJIS,
 )
 from magi.models import UserPreferences
+from magi.middleware.httpredirect import HttpRedirectException
 from magi.utils import (
     getGlobalContext,
     getNavbarPrefix,
@@ -381,6 +382,13 @@ def getPageShowLinkLambda(page):
         )
     return _showLink
 
+def permissionDeniedOrRedirect(request, redirect):
+    if redirect:
+        if 'next' in request.GET:
+            raise HttpRedirectException(redirect)
+        raise HttpRedirectException(redirect)
+    raise PermissionDenied()
+
 def page_view(name, page):
     function_name = page.get('function_name', name)
     try:
@@ -398,26 +406,27 @@ def page_view(name, page):
     def _view(request, *args, **kwargs):
         # Check permissions
         permissions_context = { 'current_url': request.get_full_path() }
+        redirect = page.get('on_permission_denied_redirect', None)
         if page.get('logout_required', False) and request.user.is_authenticated():
-            raise PermissionDenied()
+            permissionDeniedOrRedirect(request, redirect)
         if page.get('authentication_required'):
             redirectWhenNotAuthenticated(request, permissions_context, next_title=page.get('title', ''))
         if page.get('staff_required', False):
             redirectWhenNotAuthenticated(request, permissions_context, next_title=page.get('title', ''))
             if not request.user.is_staff and not request.user.is_superuser:
-                raise PermissionDenied()
+                permissionDeniedOrRedirect(request, redirect)
         if page.get('prelaunch_staff_required', False):
             redirectWhenNotAuthenticated(request, permissions_context, next_title=page.get('title', ''))
             if not request.user.hasPermission('access_site_before_launch'):
-                raise PermissionDenied()
+                permissionDeniedOrRedirect(request, redirect)
         if page.get('permissions_required', []):
             redirectWhenNotAuthenticated(request, permissions_context, next_title=page.get('title', ''))
             if not hasPermissions(request.user, page['permissions_required']):
-                raise PermissionDenied()
+                permissionDeniedOrRedirect(request, redirect)
         if page.get('one_of_permissions_required', []):
             redirectWhenNotAuthenticated(request, permissions_context, next_title=page.get('title', ''))
             if not hasOneOfPermissions(request.user, page['one_of_permissions_required']):
-                raise PermissionDenied()
+                permissionDeniedOrRedirect(request, redirect)
 
         if boilerplate:
             # Context

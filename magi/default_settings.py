@@ -554,6 +554,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'title': _('Login'),
         'navbar_link_list': 'you',
         'logout_required': True,
+        'on_permission_denied_redirect': '/',
         'boilerplate': False,
     }),
     ('signup', {
@@ -561,6 +562,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'title': _('Sign Up'),
         'navbar_link_list': 'you',
         'logout_required': True,
+        'on_permission_denied_redirect': '/',
         'as_form': True,
     }),
     ('user', {
