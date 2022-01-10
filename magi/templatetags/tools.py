@@ -85,6 +85,8 @@ def callWithContext(context, dict, function, p1=None, p2=None, p3=None):
 def getattribute(value, arg):
     """Gets an attribute of an object dynamically from a string name"""
     if not value: return None
+    try: return value[arg]
+    except: pass
     if hasattr(value, str(arg)):
         if callable(getattr(value, arg)):
             return getattr(value, arg)()
@@ -95,5 +97,4 @@ def getattribute(value, arg):
         return value[int(arg)]
     elif str(arg) in value:
         return value.get(arg)
-    try: return value[arg]
-    except: return None
+    return None

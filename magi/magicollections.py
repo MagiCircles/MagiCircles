@@ -1020,8 +1020,8 @@ class MagiCollection(object):
             plural_verbose_name = details.get('plural_verbose_name', verbose_name)
             max_per_line = details.get('max_per_line', 5 if collection else None)
             show_per_line = details.get('show_per_line', 5)
-            allow_ajax_per_item = details.get('allow_ajax_per_item', True)
-            allow_ajax_for_more = details.get('allow_ajax_for_more', True)
+            allow_ajax_per_item = details.get('allow_ajax_per_item', True) and (not collection or collection.item_view.ajax)
+            allow_ajax_for_more = details.get('allow_ajax_for_more', True) and (not collection or collection.list_view.ajax)
             to_preset = details.get('to_preset', None)
             show_first = details.get('show_first', False)
             show_last = details.get('show_last', False)
@@ -1275,6 +1275,7 @@ class MagiCollection(object):
                     continue
                 collection_name = getattr(field.rel.to, 'collection_name', None)
                 collection = getMagiCollection(collection_name) if collection_name else None
+                allow_ajax = not collection or collection.item_view.ajax
                 if collection:
                     d['icon'] = collection.icon or d['icon']
                     d['image'] = collection.image or d['image']
@@ -1283,7 +1284,8 @@ class MagiCollection(object):
                     d['type'] = 'text_with_link'
                     d['value'] = getattr(cache, 'unicode', unicode(cache))
                     d['link'] = link
-                    d['ajax_link'] = getattr(cache, 'ajax_item_url')
+                    if allow_ajax:
+                        d['ajax_link'] = getattr(cache, 'ajax_item_url')
                     d['link_text'] = unicode(_(u'Open {thing}')).format(thing=d['verbose_name'].lower())
                     d['image_for_link'] = getImageForPrefetched(cache)
                     d['icon'] = getattr(cache, 'icon_for_prefetched',

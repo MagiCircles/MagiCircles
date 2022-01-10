@@ -688,6 +688,7 @@ def globalContext(request=None, email=False):
     context['t_email_image'] = context['email_image_per_language'].get(language, context['email_image'])
     context['t_full_email_image'] = context['full_email_image_per_language'].get(
         language, context['full_email_image'])
+    context['js_variables'] = {}
 
     ############################################################
     # Debug

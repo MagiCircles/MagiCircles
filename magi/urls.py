@@ -431,6 +431,8 @@ def page_view(name, page):
             context['page_description'] = page.get('page_description', None)
             context['comments_enabled'] = page.get('comments_enabled', False)
             context['template'] = page.get('template', name)
+            context['js_files'] = page.get('js_files', [])
+            context['ajax_callback'] = page.get('ajax_callback', None)
             # Set title and prefixes
             context['title_prefixes'] = []
             if 'navbar_link_list' in page:
