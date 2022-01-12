@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
-import string
+import string, copy
 from collections import OrderedDict
 from django.utils.translation import ugettext_lazy as _, string_concat, get_language
 from django.utils import timezone
@@ -461,6 +461,57 @@ class MagiCollection(object):
                     ))
                 # Collected item field
                 self.fields[item_field_name] = forms.forms.IntegerField(required=False, widget=forms.forms.HiddenInput)
+
+                # Add filters from parent filters
+                parent_filter_form = parent_collection.list_view.filter_form() # todo pass collection and request etc
+                self.parent_fields = []
+                self.on_change_value_show = getattr(self, 'on_change_value_show', {})
+                for field_name, field in parent_filter_form.fields.items():
+                    new_field_name = '{}_{}'.format(item_field_name, field_name)
+                    if (field_name in ['search', 'ordering', 'reverse_order', 'view', item_field_name, model_class.fk_as_owner, 'owner']
+                        or field_name in self.fields or new_field_name in self.fields):
+                        continue
+                    filter = getattr(parent_filter_form, u'{}_filter'.format(field_name), None)
+                    if filter:
+                        filter = copy.deepcopy(filter)
+                    else:
+                        filter = forms.MagiFilter()
+                    if filter.to_queryset or filter.noop:
+                        continue
+                    self.fields[new_field_name] = field
+                    self.parent_fields.append(new_field_name)
+                    if not filter.selectors:
+                        filter.selectors = ['{}__{}'.format(item_field_name, field_name)]
+                    else:
+                        filter.selectors = [
+                            u'{}__{}'.format(item_field_name, selector)
+                            for selector in filter.selectors
+                        ]
+                    setattr(self, u'{}_filter'.format(new_field_name), filter)
+                    cuteform = (
+                        parent_filter_form.cuteform.get(field_name, None)
+                        or parent_collection.filter_cuteform.get(field_name, None)
+                        or parent_collection.list_view.filter_cuteform.get(field_name, None)
+                    )
+                    if cuteform is not None:
+                        cuteform = cuteform.copy()
+                        if not cuteform.get('image_folder', None):
+                            cuteform['image_folder'] = field_name
+                        self.cuteform[new_field_name] = cuteform
+                    parent_on_change_value_show = getattr(parent_filter_form, 'on_change_value_show', {}).get(field_name, None)
+                    if parent_on_change_value_show:
+                        if isinstance(parent_on_change_value_show, dict):
+                            self.on_change_value_show[new_field_name] = {
+                                key: [u'{}_{}'.format(item_field_name, sub_field_name) for sub_field_name in sub_field_names]
+                                for key, sub_field_names in parent_on_change_value_show.items()
+                            }
+                        else:
+                            self.on_change_value_show[new_field_name] = [
+                                u'{}_{}'.format(item_field_name, sub_field_name) for sub_field_name in parent_on_change_value_show
+                            ]
+
+                if self.parent_fields and not getattr(self, 'show_more', None):
+                    self.show_more = forms.FormShowMore(cutoff=self.parent_fields[0], including_cutoff=True, message_more=parent_collection.title)
 
             class Meta(forms.MagiFiltersForm.Meta):
                 model = model_class
