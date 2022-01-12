@@ -47,14 +47,19 @@
     <nav class="navbar navbar-main navbar-fixed-top">
       <div class="container">
         <div class="navbar-header">
+          {% if current %}
           <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target=".navbar-collapse">
             <span class="sr-only">Toggle navigation</span>
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
+          {% else %}{# html .navbar-main .navbar-nav > li > a #}
+          <a href="/" class="navbar-toggle collapsed">
+            <i class="flaticon-home"></i></a>
+          {% endif %}
           <a class="navbar-brand" href="/">
-            {% if site_nav_logo %}<img src="{{ static_url }}img/{{ site_nav_logo }}?{{ static_files_version }}" class="logo hidden-xs hidden-sm"><span class="visible-xs visible-sm site-name">{{ t_site_name }}</span>{% else %}{{ t_site_name }}{% endif %}
+            {% if site_nav_logo %}<img src="{{ static_url }}img/{{ site_nav_logo }}?{{ static_files_version }}" class="logo hidden-xs hidden-sm"><span class="visible-xs visible-sm site-name">{% if t_site_name %}{{ t_site_name }}{% else %}{{ site_name }}{% endif %}</span>{% elif t_site_name %}{{ t_site_name }}{% else %}{{ site_name }}{% endif %}
           </a>
         </div>
         {% if current %}
@@ -83,6 +88,7 @@
                 {% endif %}
                 {% if link.image or link.icon %}<span class="hidden-sm"> &nbsp; {% else %}<span>{% endif %}
                     {% navbarTitle link=link %}
+                    {% if link.is_list %}<small class="hidden-md hidden-lg hidden-xl">&nbsp; <span class="glyphicon glyphicon-chevron-down"></span></small>{% endif %}
                   </span>
               </a>
               {% if link.is_list %}
