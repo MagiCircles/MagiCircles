@@ -1422,6 +1422,7 @@ class MagiFiltersForm(AutoForm):
         self.preset = kwargs.pop('preset', None)
         super(MagiFiltersForm, self).__init__(*args, **kwargs)
         self.empty_permitted = True
+        language = self.request.LANGUAGE_CODE if self.request else get_language()
 
         # Set action when using a preset
 
@@ -1518,7 +1519,7 @@ class MagiFiltersForm(AutoForm):
             field.get_accessor_name()
             for field in self.Meta.model._meta.get_all_related_many_to_many_objects()
         ]):
-            if field_name not in self.fields and field_name in self.request.GET:
+            if field_name not in self.fields and field_name in (self.request.GET if self.request else {}):
                 self.fields[field_name] = forms.ChoiceField(widget=forms.HiddenInput)
 
         if 'search' in self.fields:
@@ -1531,8 +1532,8 @@ class MagiFiltersForm(AutoForm):
                 if not self.fields['search'].help_text:
                     if not hasattr(type(self), 'search_field_help_text'):
                         type(self).search_field_help_text = {}
-                    if self.request.LANGUAGE_CODE not in type(self).search_field_help_text:
-                        type(self).search_field_help_text[self.request.LANGUAGE_CODE] = getSearchFieldHelpText(
+                    if language not in type(self).search_field_help_text:
+                        type(self).search_field_help_text[language] = getSearchFieldHelpText(
                             search_fields=(
                                 list(getattr(self, 'search_fields', []))
                                 + list(getattr(self, 'search_fields_exact', []))
@@ -1541,8 +1542,8 @@ class MagiFiltersForm(AutoForm):
                             labels=getattr(self, 'search_fields_labels', {}),
                             translated_fields=(self.collection.translated_fields if self.collection else []) or [],
                         )
-                    if type(self).search_field_help_text[self.request.LANGUAGE_CODE]:
-                        self.fields['search'].help_text = type(self).search_field_help_text[self.request.LANGUAGE_CODE]
+                    if type(self).search_field_help_text[language]:
+                        self.fields['search'].help_text = type(self).search_field_help_text[language]
 
         # Remove ordering form field if ordering_fields is not specified
         if not getattr(self, 'ordering_fields', None):
@@ -1629,8 +1630,11 @@ class MagiFiltersForm(AutoForm):
 
         # Set default ordering initial value
         if 'ordering' in self.fields:
-            initial = ','.join(self.collection.list_view.plain_default_ordering_list)
-            if initial not in dict(self.ordering_fields):
+            if self.collection:
+                initial = ','.join(self.collection.list_view.plain_default_ordering_list)
+            else:
+                initial = None
+            if initial and initial not in dict(self.ordering_fields):
                 self.ordering_fields = [(initial, _('Default'))] + self.ordering_fields
             self.fields['ordering'].choices = [
                 (k, v() if callable(v) else v)
@@ -1676,7 +1680,7 @@ class MagiFiltersForm(AutoForm):
 
         # Set default values from GET form
         for field_name in GET_PARAMETERS_IN_FORM_HANDLED_OUTSIDE:
-            if field_name in self.fields and self.request.GET.get(field_name, None):
+            if field_name in self.fields and (self.request.GET if self.request else {}).get(field_name, None):
                 # Check for valid ordering choices, bypass when has permission
                 if (field_name == 'ordering'
                     and not (self.request.user.is_authenticated()
