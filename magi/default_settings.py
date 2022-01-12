@@ -48,6 +48,14 @@ DEFAULT_LANGUAGES_CANT_SPEAK_ENGLISH = ['ja', 'zh-hans', 'zh-hant', 'kr']
 
 DEFAULT_SEASONS = DEFAULT_SEASONS
 
+DEFAULT_USER_COLORS = [
+    ('red', 'Red', 'red', '#ff4d5d'),
+    ('orange', 'Orange', 'orange', '#ffb054'),
+    ('yellow', 'Yellow', 'yellow', '#FFD34E'),
+    ('green', 'Green', 'green', '#64d97d'),
+    ('blue', 'Blue', 'blue', '#54b5ff'),
+]
+
 ############################################################
 # Groups
 

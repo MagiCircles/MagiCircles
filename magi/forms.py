@@ -803,7 +803,9 @@ class MagiForm(forms.ModelForm):
         # Save d_ dict choices
         for dfield, choices in self.d_choices.items():
             d = {}
+            known_keys = []
             for field, key in choices:
+                known_keys.append(key)
                 if field not in self.fields:
                     continue
                 if (self.cleaned_data[field]
@@ -812,7 +814,7 @@ class MagiForm(forms.ModelForm):
             # Keep unknown keys
             if dfield in getattr(self.Meta, 'keep_unknwon_keys_for_d', []):
                 for key, value in getattr(instance, dfield).items():
-                    if key not in d:
+                    if key not in known_keys:
                         d[key] = value
             instance.save_d(dfield, d)
 
@@ -2313,8 +2315,8 @@ class ActivitiesPreferencesForm(MagiForm):
         }
 
 class SecurityPreferencesForm(MagiForm):
-    form_title = _('Security')
-    form_icon = 'warning'
+    form_title = string_concat(_('Private messages'), ' (', _('Security'), ')')
+    form_icon = 'contact'
 
     def __init__(self, *args, **kwargs):
         super(SecurityPreferencesForm, self).__init__(*args, **kwargs)
@@ -2343,6 +2345,10 @@ class UserPreferencesForm(MagiForm):
 
         order = ['m_description', 'location']
 
+        # Remove color if needed
+        if 'color' in self.fields and not USER_COLORS:
+            del(self.fields['color'])
+
         # Default tab
         if 'default_tab' in self.fields:
             self.fields['default_tab'].choices = BLANK_CHOICE_DASH + [
@@ -2361,16 +2367,17 @@ class UserPreferencesForm(MagiForm):
         for key, fields in getCharactersFavoriteFields(only_one=False).items():
             for field_name, verbose_name in fields:
                 if field_name in self.fields:
-                    if not hasCharacters(key=key):
-                        self.fields.pop(field_name)
-                    else:
-                        self.fields[field_name] = forms.ChoiceField(
-                            required=False,
-                            choices=BLANK_CHOICE_DASH + getCharactersChoices(key=key),
-                            label=verbose_name,
-                            initial=self.fields[field_name].initial,
-                        )
-                        order.append(field_name)
+                    self.fields[field_name] = forms.ChoiceField(
+                        required=False,
+                        choices=BLANK_CHOICE_DASH + getCharactersChoices(key=key),
+                        label=verbose_name,
+                        initial=self.fields[field_name].initial,
+                    )
+                    order.append(field_name)
+        if not hasCharacters():
+            for field_name in ['favorite_character1', 'favorite_character2', 'favorite_character3']:
+                if field_name in self.fields:
+                    del(self.fields[field_name])
 
         # Backgrounds
         if 'd_extra-background' in self.fields:

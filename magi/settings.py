@@ -20,6 +20,7 @@ from magi.default_settings import (
     DEFAULT_EXTRA_PREFERENCES,
     DEFAULT_HOMEPAGE_ART_POSITION,
     DEFAULT_SEASONS,
+    DEFAULT_USER_COLORS,
 )
 from magi.utils import (
     complementaryColor,
@@ -205,11 +206,6 @@ if hasattr(settings_module, 'EMPTY_IMAGE'):
 else:
     EMPTY_IMAGE = 'empty.png'
 
-if hasattr(settings_module, 'SHOW_TOTAL_ACCOUNTS'):
-    SHOW_TOTAL_ACCOUNTS = getattr(settings_module, 'SHOW_TOTAL_ACCOUNTS')
-else:
-    SHOW_TOTAL_ACCOUNTS = True
-
 if hasattr(settings_module, 'ACTIVITY_TAGS'):
     ACTIVITY_TAGS = getattr(settings_module, 'ACTIVITY_TAGS')
 else:
@@ -324,6 +320,11 @@ if hasattr(settings_module, 'CORNER_POPUP_IMAGE_OVERFLOW'):
     CORNER_POPUP_IMAGE_OVERFLOW = getattr(settings_module, 'CORNER_POPUP_IMAGE_OVERFLOW')
 else:
     CORNER_POPUP_IMAGE_OVERFLOW = False
+
+if hasattr(settings_module, 'USER_COLORS'):
+    USER_COLORS = getattr(settings_module, 'USER_COLORS')
+else:
+    USER_COLORS = DEFAULT_USER_COLORS
 
 ############################################################
 # Optional settings without default values (= None)
@@ -479,11 +480,6 @@ elif hasattr(settings_module, 'DONATORS_GOAL'):
     DONATORS_GOAL = getattr(settings_module, 'DONATORS_GOAL')
 else:
     DONATORS_GOAL = None
-
-if hasattr(settings_module, 'USER_COLORS'):
-    USER_COLORS = getattr(settings_module, 'USER_COLORS')
-else:
-    USER_COLORS = None
 
 if hasattr(django_settings, 'LATEST_NEWS'):
     LATEST_NEWS = getattr(django_settings, 'LATEST_NEWS')

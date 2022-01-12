@@ -118,11 +118,7 @@
       {% for tab_name, tab in profile_tabs.items %}
       <div role="tabpanel" class="tab-pane{% if opened_tab == tab_name %} active{% endif %}" id="profile{{ tab_name }}" data-tab-name="{{ tab_name }}">{% if tab_name == 'account' %}
         {% if profile_user.all_accounts|length > 0 %}
-        {% if show_total_accounts %}
-        {% with length=profile_user.all_accounts|length %}
-        <h2>{% blocktrans count counter=length %}{{ length }} account:{% plural %}{{ length }} accounts:{% endblocktrans %}</h2>
-        {% endwith %}
-        {% endif %}
+        <br>
         {% include accounts_template|add:'.html' %}
         {% endif %}
         {% if is_me and can_add_account %}

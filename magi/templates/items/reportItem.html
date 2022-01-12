@@ -109,7 +109,7 @@
 	  {% csrf_token %}
           {% if report.is_suggestededit %}
           1. Explain what was changed and why:
-          <textarea name="staff_message" class="form-control" placeholder="Explain what has been edited and why (in English).">{{ report.reason }} have been edited.</textarea><br>
+          <textarea name="staff_message" class="form-control" placeholder="Explain what has been edited and why (in English).">{{ report.reason }} {% if ', ' in report.reason %}have{% else %}has{% endif %} been edited.</textarea><br>
           {% else %}
 	  1. Select a reason:
 	  <select name="reason" class="form-control" required>

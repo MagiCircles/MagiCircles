@@ -64,7 +64,6 @@ from magi.item_model import get_http_image_url_from_path
 from magi.settings import (
     ACCOUNT_MODEL,
     ACTIVITY_TAGS,
-    SHOW_TOTAL_ACCOUNTS,
     PROFILE_TABS,
     GET_GLOBAL_CONTEXT,
     DONATE_IMAGE,
@@ -3111,8 +3110,6 @@ class UserCollection(MagiCollection):
                 context['item'].latest_badges = context['item'].latest_badges[:5]
 
             # Profile tabs
-            context['show_total_accounts'] = SHOW_TOTAL_ACCOUNTS
-
             parameters = {
                 'ajax_show_no_result': '',
                 'buttons_color': user.preferences.css_color,
@@ -4106,6 +4103,7 @@ class _BaseReportCollection(MagiCollection):
 
 class ReportCollection(_BaseReportCollection):
     title = _('Report')
+    plural_title = _('Reports')
     icon = 'warning'
     queryset = _BaseReportCollection.queryset.filter(is_suggestededit=False)
     form_class = forms.ReportForm

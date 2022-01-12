@@ -4,10 +4,8 @@
 {# optional variables: top_buttons, filter_form #}
 
 {% extends "base.html" %}
-{% load i18n %}
 {% load tools %}
 {% load bootstrap %}
-{% get_current_language as LANGUAGE_CODE %}
 
 {% block js %}
 {% if hide_sidebar %}
@@ -92,7 +90,7 @@
       {% endif %}
       {% if total_results and show_search_results %}
       <div class="padding20 total-search-results">
-	{% trans total_results_sentence %}
+	{{ total_results_sentence }}
       </div>
       {% endif %}
       {% include "collections/list_page.html" %}

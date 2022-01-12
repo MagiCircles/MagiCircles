@@ -1446,7 +1446,7 @@ def getEnglish(translated_string):
     translation_activate('en')
     string = unicode(translated_string)
     translation_activate(old_lang)
-    return translated_string
+    return string
 
 def getAllTranslations(term, unique=False):
     translations = {}

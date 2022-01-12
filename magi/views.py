@@ -70,6 +70,7 @@ from magi.utils import (
     get_default_owner,
     getEventStatus,
     listUnique,
+    markSafeFormat,
 )
 from magi.notifications import pushNotification
 from magi.settings import (
@@ -586,6 +587,7 @@ def settings(request, context):
     context['back_to_profile_sentence'] = _('Back to {page_name}').format(page_name=_('Profile').lower())
     context['alert_reputation_title'] = _('You are not allowed to send private messages.')
     context['alert_reputation_message'] = _('Take some time to play around {site_name} to unlock this feature!').format(site_name=context['t_site_name'])
+    context['blocked_users_sentence'] = _('Block {username}').format(username=_('Users').lower())
 
     context['t_english'] = t['English']
     context['global_outside_permissions'] = GLOBAL_OUTSIDE_PERMISSIONS
@@ -691,28 +693,73 @@ def settings(request, context):
 
     # Recent reports
     now = timezone.now()
-    a_month_ago = now - datetime.timedelta(days=30)
-    context['reports'] = list(models.Report.objects.filter(
-        reported_thing_owner_id=request.user.id,
-        i_status__in=[
-            models.Report.get_i('status', 'Deleted'),
-            models.Report.get_i('status', 'Edited'),
-        ],
-        modification__gte=a_month_ago,
-    ).order_by('-modification'))
-    for report in context['reports']:
-        report.introduction_sentence = mark_safe(
-            _(u'Your {thing} has been reported, and a moderator confirmed it should be {verb}.').format(**{
-                'thing': u'<a href="/{thing}/{id}/">{title}</a>'.format(
-                    thing=report.reported_thing,
-                    id=report.reported_thing_id,
-                    title=unicode(report).lower(),
-                ),
-                'verb': _(u'edited'),
-            } if report.status == 'Edited' else {
-                'thing': unicode(report).lower(),
-                'verb': _(u'deleted'),
-            }))
+    six_months_ago = now - datetime.timedelta(days=30 * 6)
+    reports = list(models.Report.objects.filter(
+        Q(
+            Q(modification__gte=six_months_ago)
+            & Q(
+                i_status__in=[
+                    models.Report.get_i('status', 'Deleted'),
+                    models.Report.get_i('status', 'Edited'),
+                ])
+            & Q(
+                Q(reported_thing_owner_id=request.user.id)
+                | Q(owner_id=request.user.id)
+            )
+        )
+        | Q(
+            Q(
+                i_status__in=[
+                    models.Report.get_i('status', 'Pending'),
+                ])
+            & Q(owner_id=request.user.id)
+        )
+    ).order_by('-modification', '-creation'))
+    context['reports'] = []
+    context['pending_reports'] = []
+    context['suggested_edits'] = []
+    context['pending_suggested_edits'] = []
+    for report in reports:
+        if report.status == 'Pending':
+            if report.is_suggestededit:
+                context['pending_suggested_edits'].append(report)
+            else:
+                context['pending_reports'].append(report)
+            continue
+        if report.status == 'Edited':
+            thing = markSafeFormat(
+                u'<a href="/{thing}/{id}/">{title}</a>',
+                thing=report.reported_thing,
+                id=report.reported_thing_id,
+                title=unicode(report).lower(),
+            )
+        else:
+            thing = unicode(report).lower()
+        if report.is_suggestededit:
+            if report.status == 'Deleted':
+                continue
+            if report.reported_thing_owner_id == request.user.id:
+                report.introduction_sentence = markSafeFormat(
+                    _('An edit has been suggested on your {thing}, and a database maintainer confirmed and applied it.'),
+                    thing=thing,
+                )
+            else:
+                report.introduction_sentence = markSafeFormat(
+                    _('The edit you suggested has been reviewed by a database maintainer and the {thing} has been edited accordingly. Thank you so much for your help!'),
+                    thing=thing,
+                )
+            context['suggested_edits'].append(report)
+        else:
+            verb = _(u'edited') if report.status == 'Edited' else _(u'deleted')
+            if report.reported_thing_owner_id == request.user.id:
+                report.introduction_sentence = markSafeFormat(
+                    _(u'Your {thing} has been reported, and a moderator confirmed it should be {verb}.'),
+                    thing=thing, verb=verb)
+            else:
+                report.introduction_sentence = markSafeFormat(
+                    _(u'This {thing} you reported has been reviewed by a moderator and {verb}. Thank you so much for your help!'),
+                    thing=thing, verb=verb)
+            context['reports'].append(report)
 
     context['js_files'] = ['settings']
 
@@ -1000,7 +1047,7 @@ def moderatereport(request, report, action):
         if thing.owner:
             translation_activate(thing.real_owner.preferences.language if thing.real_owner.preferences.language else 'en')
             if report.is_suggestededit:
-                context['sentence'] = 'An edit has been suggested on your {thing}, and a database maintainer confirmed and applied it.'.format(thing=report.reported_thing_title)
+                context['sentence'] = _('An edit has been suggested on your {thing}, and a database maintainer confirmed and applied it.').format(thing=report.reported_thing_title)
             else:
                 context['sentence'] = _(u'Your {thing} has been reported, and a moderator confirmed it should be {verb}.').format(thing=_(report.reported_thing_title), verb=_(u'edited'))
             context['user'] = thing.real_owner
