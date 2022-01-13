@@ -1,6 +1,10 @@
 
 function linkRendererTitle(link, title) {
-    return '<a href="' + site_url + current + '/' + link + '" class="internal-wiki-link">' + title + '</a>';
+    if (current.endsWith('_ajax')) {
+        return '<a href="/' + current.slice(0, -5) + '/' + link + '/" class="internal-wiki-link" data-ajax-url="/ajax/' + current.slice(0, -5) + '/' + link + '/">' + title + '</a>';
+    } else {
+        return '<a href="/' + current + '/' + link + '/" class="internal-wiki-link">' + title + '</a>';
+    }
 }
 
 function linkRenderer(link) {
@@ -12,8 +16,8 @@ function afterLoadWiki(page) {
     page.find('a:not(.internal-wiki-link):not([href^="#"])').attr("target", "_blank");
 }
 
-$(document).ready(function() {
-    var wikiPageName = $('#wiki-title').data('url');
+function loadWikiPage() {
+    var wikiPageName = wiki_url;
     var wikiPageUrl = githubwiki.getGithubName(wikiPageName);
 
     githubwiki.setMarkedOptions({
@@ -37,7 +41,8 @@ $(document).ready(function() {
     githubwiki.get(wikiPageUrl + '.md', function(data) {
         $('#wiki-content').html(data);
         afterLoadWiki($('#wiki-content'));
+        ajaxModals();
     });
 
     $('.edit-link').attr('href', 'https://github.com/' + github_repository_username + '/' + github_repository_name + '/wiki/' + wikiPageUrl + '/_edit');
-});
+}

@@ -90,6 +90,7 @@ DEFAULT_GROUPS = [
         },
         'requires_staff': True,
         'guide': '/help/Managers%20guide',
+        'ajax_guide': '/ajax/help/Managers%20guide',
     }),
     ('circles_manager', {
         'translation': string_concat('Circles - ', _('Manager')),
@@ -101,6 +102,7 @@ DEFAULT_GROUPS = [
             'beta_test_features',
         ],
         'guide': '/help/Circles%20managers%20guide',
+        'ajax_guide': '/ajax/help/Circles%20managers%20guide',
     }),
     ('team', {
         'translation': _('Team manager'),
@@ -121,6 +123,7 @@ DEFAULT_GROUPS = [
             'Administrate the moderators on Disqus': False, # Added in settings
         },
         'guide': '/help/Team%20managers%20guide',
+        'ajax_guide': '/ajax/help/Team%20managers%20guide',
     }),
     ('finance', {
         'translation': _('Finance manager'),
@@ -149,6 +152,7 @@ DEFAULT_GROUPS = [
             },
         },
         'guide': '/help/Finance%20managers%20guide',
+        'ajax_guide': '/ajax/help/Finance%20managers%20guide',
     }),
     ('db', {
         'translation': _('Database maintainer'),
@@ -165,6 +169,7 @@ DEFAULT_GROUPS = [
         ],
         'requires_staff': True,
         'guide': '/help/Database%20maintainers%20guide',
+        'ajax_guide': '/ajax/help/Database%20maintainers%20guide',
     }),
     ('dbapi', {
         'translation': string_concat(_('Database maintainer'), ' (API)'),
@@ -187,6 +192,7 @@ DEFAULT_GROUPS = [
             },
         },
         'guide': '/help/Database%20maintainers%20guide',
+        'ajax_guide': '/ajax/help/Database%20maintainers%20guide',
     }),
     ('cm', {
         'translation': _('Community manager'),
@@ -207,6 +213,7 @@ DEFAULT_GROUPS = [
             },
         ],
         'guide': '/help/Community%20managers%20guide',
+        'ajax_guide': '/ajax/help/Community%20managers%20guide',
     }),
     ('twitter_cm', {
         'translation': string_concat(_('Community manager'), ' (', _('Twitter'), ')'),
@@ -221,6 +228,7 @@ DEFAULT_GROUPS = [
             'Tweetdeck': { 'image': 'links/twitter', 'url': 'https://tweetdeck.twitter.com/' },
         },
         'guide': '/help/Community%20managers%20guide',
+        'ajax_guide': '/ajax/help/Community%20managers%20guide',
     }),
     ('instagram_cm', {
         'translation': string_concat(_('Community manager'), ' (Instagram)'),
@@ -235,6 +243,7 @@ DEFAULT_GROUPS = [
             'Instagram account': { 'image': 'links/instagram', 'url': 'https://instagram.com/' },
         },
         'guide': '/help/Community%20managers%20guide',
+        'ajax_guide': '/ajax/help/Community%20managers%20guide',
     }),
     ('external_cm', {
         'translation': _('External communication'),
@@ -245,6 +254,7 @@ DEFAULT_GROUPS = [
             'beta_test_features',
         ],
         'guide': '/help/External%20communication%20guide',
+        'ajax_guide': '/ajax/help/External%20communication%20guide',
     }),
     ('support', {
         'translation': _('Support'),
@@ -263,6 +273,7 @@ DEFAULT_GROUPS = [
             # 'Feedback form' added in settings if exists
         },
         'guide': '/help/Support%20guide',
+        'ajax_guide': '/ajax/help/Support%20guide',
     }),
     ('a_moderator', {
         'translation': string_concat(_('Moderator'), ' (', _('Active'), ')'),
@@ -282,6 +293,7 @@ DEFAULT_GROUPS = [
             },
         ],
         'guide': '/help/Moderators%20guide',
+        'ajax_guide': '/ajax/help/Moderators%20guide',
     }),
     ('d_moderator', {
         'translation': string_concat(_('Moderator'), ' (', _('Decisive'), ')'),
@@ -308,6 +320,7 @@ DEFAULT_GROUPS = [
             },
         ],
         'guide': '/help/Moderators%20guide',
+        'ajax_guide': '/ajax/help/Moderators%20guide',
     }),
     ('entertainer', {
         'translation': _('Community entertainer'),
@@ -336,6 +349,7 @@ DEFAULT_GROUPS = [
             },
         ],
         'guide': '/help/Community%20entertainers%20guide',
+        'ajax_guide': '/ajax/help/Community%20entertainers%20guide',
     }),
     ('assistant', {
         'translation': _('Backup staff'),
@@ -346,6 +360,7 @@ DEFAULT_GROUPS = [
             'beta_test_features',
         ],
         'guide': '/help/Backup%20staff%20guide',
+        'ajax_guide': '/ajax/help/Backup%20staff%20guide',
     }),
     ('discord', {
         'translation': string_concat(_('Moderator'), ' (Discord)'),
@@ -355,6 +370,7 @@ DEFAULT_GROUPS = [
             'Discord moderation': { 'image': 'links/discord', 'url': DEFAULT_CONTACT_DISCORD },
         },
         'guide': '/help/Discord%20moderators%20guide',
+        'ajax_guide': '/ajax/help/Discord%20moderators%20guide',
     }),
     ('translator', {
         'translation': _('Translator'),
@@ -370,6 +386,7 @@ DEFAULT_GROUPS = [
             'POEditor': { 'icon': 'link', 'url': DEFAULT_POEDITOR_URL },
         },
         'guide': '/help/Translators%20guide',
+        'ajax_guide': '/ajax/help/Translators%20guide',
         'settings': ['languages'],
     }),
     ('design', {
@@ -377,12 +394,14 @@ DEFAULT_GROUPS = [
         'description': 'Our graphic designers help with banners, flyers, or any other graphic edit we need to communicate about the website or organize special events.',
         'requires_staff': False,
         'guide': '/help/Join%20the%20graphic%20design%20team',
+        'ajax_guide': '/ajax/help/Join%20the%20graphic%20design%20team',
     }),
     ('artist', {
         'translation': _('Artist'),
         'description': 'Our artists help with illustrations and drawings we need to communicate about the website or organize special events.',
         'requires_staff': False,
         'guide': '/help/Join%20the%20graphic%20design%20team',
+        'ajax_guide': '/ajax/help/Join%20the%20graphic%20design%20team',
     }),
     ('developer', {
         'translation': _('Developer'),
@@ -397,6 +416,7 @@ DEFAULT_GROUPS = [
         ],
         'requires_staff': False,
         'guide': '/help/Developers%20guide',
+        'ajax_guide': '/ajax/help/Developers%20guide',
     }),
     ('sysadmin', {
         'translation': _('System administrator'),
@@ -412,6 +432,7 @@ DEFAULT_GROUPS = [
         ],
         'requires_staff': False,
         'guide': '/help/System%30administrator%20guide',
+        'ajax_guide': '/ajax/help/System%30administrator%20guide',
     }),
     ('betatester', {
         'translation': _(u'β-tester'),
@@ -669,6 +690,23 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
             'as_sidebar': True,
             'show_title': True,
         },
+        {
+            'ajax': True,
+            'custom': False,
+            'title': _('Help'),
+            'template': 'wiki',
+            'show_title': True,
+        },
+        {
+            'ajax': True,
+            'custom': False,
+            'title': _('Help'),
+            'url_variables': [
+                ('wiki_url', '[^/]+'),
+            ],
+            'template': 'wiki',
+            'show_title': True,
+        },
     ]),
     ('wiki', [
         # page_description set in settings.py
@@ -692,6 +730,25 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
             'navbar_link': False,
             'check_permissions': lambda c: c['request'].LANGUAGE_CODE not in DEFAULT_LANGUAGES_CANT_SPEAK_ENGLISH,
             'as_sidebar': True,
+            'show_title': True,
+        },
+        {
+            'enabled': False,
+            'ajax': True,
+            'custom': False,
+            'title': _('Wiki'),
+            'template': 'wiki',
+            'show_title': True,
+        },
+        {
+            'enabled': False,
+            'ajax': True,
+            'custom': False,
+            'title': _('Wiki'),
+            'url_variables': [
+                ('wiki_url', '[^/]+'),
+            ],
+            'template': 'wiki',
             'show_title': True,
         },
     ]),

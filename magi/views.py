@@ -842,12 +842,14 @@ def custom_wiki(wiki, wiki_base_url, wiki_name, request, context, wiki_url):
     context['wiki'] = wiki
     context['full_wiki_url'] = 'https://github.com/{}/{}/wiki/'.format(wiki[0], wiki[1])
     context['js_files'] = ['bower/marked/lib/marked', 'bower/github-wiki/js/githubwiki', 'wiki']
+    context['ajax_callback'] = 'loadWikiPage'
     context['back_to_home_sentence'] = _('Back to {page_name}').format(
         page_name=_('Wiki home').lower(),
     )
     if 'js_variables' not in context:
         context['js_variables'] = {}
     context['js_variables'].update({
+        'wiki_url': wiki_url,
         'site_url': context['site_url'],
         'current': context['current'],
         'github_repository_username': wiki[0],

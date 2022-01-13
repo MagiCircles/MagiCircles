@@ -463,7 +463,7 @@ class MagiCollection(object):
                 self.fields[item_field_name] = forms.forms.IntegerField(required=False, widget=forms.forms.HiddenInput)
 
                 # Add filters from parent filters
-                parent_filter_form = parent_collection.list_view.filter_form() # todo pass collection and request etc
+                parent_filter_form = parent_collection.list_view.filter_form(request=self.request, ajax=self.ajax, collection=self.collection)
                 self.parent_fields = []
                 self.on_change_value_show = getattr(self, 'on_change_value_show', {})
                 for field_name, field in parent_filter_form.fields.items():
@@ -3713,6 +3713,7 @@ class ActivityCollection(MagiCollection):
                     'title': _('You might be the first person who sees these activities!'),
                     'subtitle': _('If you see anything that doesn\'t follow our rules, please help us by reporting it.'),
                     'url': '/help/Report/',
+                    'ajax_url': '/ajax/help/Report/',
                     'open_in_new_window': True,
                     'icon': 'about',
                 }
@@ -3993,6 +3994,7 @@ class BadgeCollection(MagiCollection):
                     buttons['get_badges'] = {
                         'show': True, 'has_permissions': True,
                         'url': '/help/Badges',
+                        'ajax_url': '/ajax/help/Badges',
                         'icon': self.collection.icon,
                         'classes': self.get_top_buttons_classes(request, context),
                         'title': _('How to get badges?'),

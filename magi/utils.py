@@ -2711,7 +2711,7 @@ def markdownHelpText(request=None):
     # /!\ Can't be called at global level
     if ('help' in RAW_CONTEXT['all_enabled']
         and (not request or request.LANGUAGE_CODE not in RAW_CONTEXT['languages_cant_speak_english'])):
-        return mark_safe(u'{} <a href="/help/Markdown" target="_blank">{}.</a>'.format(
+        return mark_safe(u'{} <a href="/help/Markdown" data-ajax-url="/ajax/help/Markdown/" target="_blank">{}.</a>'.format(
             _(u'You may use Markdown formatting.'),
             _(u'Learn more'),
         ))

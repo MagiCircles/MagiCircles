@@ -1,8 +1,10 @@
 # MagiCircles Unit Tests
 
 ```shell
-virtualenv env
+virtualenv --python=`which python2` env
 source env/bin/activate
+pip install --upgrade setuptools
+pip install pip==9.0.1
 pip install -r requirements.txt
 python manage.py test
 ```

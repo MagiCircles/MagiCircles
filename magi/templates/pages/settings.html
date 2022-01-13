@@ -56,7 +56,7 @@
   <div class="alert alert-info">{% trans 'To change your avatar, use Gravatar with the same email address.' %}</div>
   <div class="text-right">
     <a href="#content" class="btn btn-lg btn-link page-scroll"><span class="glyphicon glyphicon-chevron-up"></span></a>
-    {% if LANGUAGE_CODE not in languages_cant_speak_english %}<a href="/help/Change%20your%20profile%20picture" target="_blank" class="btn btn-lg btn-link">{% trans 'F.A.Q.' %}</a>{% endif %}
+    {% if 'help' in all_enabled and LANGUAGE_CODE not in languages_cant_speak_english %}<a href="/help/Change%20your%20profile%20picture"  data-ajax-url="/ajax/help/Change%20your%20profile%20picture/"target="_blank" class="btn btn-lg btn-link">{% trans 'F.A.Q.' %}</a>{% endif %}
     <a class="btn btn-lg btn-main" href="https://{{ LANGUAGE_CODE }}.gravatar.com/" target="_blank">{% trans 'Change Avatar' %}</a>
   </div>
 </form>
@@ -355,7 +355,7 @@
       </p>
       {% if details.guide %}
       <div class="text-right">
-        <a class="btn btn-lg btn-secondary" href="{{ details.guide }}" target="_blank">
+        <a class="btn btn-lg btn-secondary" href="{{ details.guide }}" {% if details.ajax_guide %}data-ajax-url="{{ details.ajax_guide }}"{% endif %} target="_blank">
           Read the {{ details.translation }} guide
         </a>
       </div>

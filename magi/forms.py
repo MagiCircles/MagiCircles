@@ -2294,7 +2294,7 @@ class ActivitiesPreferencesForm(MagiForm):
         if ('i_default_activities_tab' in self.fields
             and self.request.LANGUAGE_CODE not in LANGUAGES_CANT_SPEAK_ENGLISH):
             self.fields['i_default_activities_tab'].below_field = mark_safe(
-                u'<a href="/help/Activities%20tabs" class="pull-right btn btn-main btn-sm" target="_blank">{}</a>'.format(
+                u'<a href="/help/Activities%20tabs" data-ajax-url="/ajax/help/Activities%20tabs/" class="pull-right btn btn-main btn-sm" target="_blank">{}</a>'.format(
                     _('Learn more'),
                 ))
 
@@ -2879,7 +2879,7 @@ class ConfirmDelete(forms.Form):
         total = self._get_total_deleted(collector.nested())
         if total >= up_to:
             raise forms.ValidationError(mark_safe(u'You are not allowed to delete this. {}'.format(
-                'Ask an administrator.' if self.request.user.is_staff else '<a href="/help/Delete%20error/">Learn more</a>.',
+                'Ask an administrator.' if self.request.user.is_staff else '<a href="/help/Delete%20error/" data-ajax-url="/ajax/help/Delete%20error/">Learn more</a>.',
             )))
 
 class Confirm(forms.Form):

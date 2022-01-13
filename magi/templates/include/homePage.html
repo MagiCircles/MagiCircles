@@ -164,7 +164,7 @@
         <i class="flaticon-{{ active_activity_tab.icon }}"></i>
         {{ active_activity_tab.title }}
         {% if show_about_button %}
-        <a href="/help/Activities%20tabs" target="_blank" class="a-nodifference text-muted">
+        <a href="/help/Activities%20tabs" data-ajax-url="/ajax/help/Activities%20tabs/" target="_blank" class="a-nodifference text-muted">
           <i class="flaticon-about"></i>
         </a>
         {% endif %}
@@ -181,7 +181,7 @@
           {% endfor %}
           {% if show_about_button %}
           <li data-tab-name="about" class="hidden-xs">
-            <a href="/help/Activities%20tabs" target="_blank">
+            <a href="/help/Activities%20tabs" data-ajax-url="/ajax/help/Activities%20tabs/" target="_blank">
               <i class="flaticon-about"></i>
             </a>
           </li>

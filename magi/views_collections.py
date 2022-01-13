@@ -128,7 +128,7 @@ def _add_h1_and_prefixes_to_context(view, context, title_prefixes, h1, item=None
         context['show_title'] = context['alt_view']['show_title']
     context['show_small_title'] = view.show_small_title
     if context.get('alt_view', None) and 'show_small_title' in context['alt_view']:
-        context['show_small_title'] = context['alt_view']['show_title']
+        context['show_small_title'] = context['alt_view']['show_small_title']
     context['title_prefixes'] = title_prefixes
     h1ToContext(h1, context)
     context['page_title'] = pageTitleFromPrefixes(
