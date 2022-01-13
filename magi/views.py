@@ -844,7 +844,6 @@ def custom_wiki(wiki, wiki_base_url, wiki_name, request, context, wiki_url):
     context['small_container'] = True
     context['wiki'] = wiki
     context['full_wiki_url'] = 'https://github.com/{}/{}/wiki/'.format(wiki[0], wiki[1])
-    context['js_files'] = ['bower/marked/lib/marked', 'bower/github-wiki/js/githubwiki', 'wiki']
     context['ajax_callback'] = 'loadWikiPage'
     context['back_to_home_sentence'] = _('Back to {page_name}').format(
         page_name=_('Wiki home').lower(),
