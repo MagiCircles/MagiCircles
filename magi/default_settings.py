@@ -456,6 +456,19 @@ DEFAULT_GROUPS = [
 # Navbar lists
 
 DEFAULT_ENABLED_NAVBAR_LISTS = OrderedDict([
+    ('community', {
+        'title': _('Community'), # todo why doesnt show up
+        'icon': 'users',
+        'order': [
+            'account_list',
+            'user_list',
+            'map',
+            'discord',
+            'twitter',
+            'instagram',
+            'facebook',
+        ],
+    }),
     ('you', {
         'title': lambda context: context['request'].user.username if context['request'].user.is_authenticated() else _('You'),
         'icon': 'profile',
@@ -662,7 +675,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'title': _('Map'),
         'custom': False,
         'icon': 'map',
-        'navbar_link_list': 'more',
+        'navbar_link_list': 'community',
         'full_template': True,
         # page_description set in settings.py
     }),
@@ -752,6 +765,42 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
             'show_title': True,
         },
     ]),
+    # Social media links
+    ('discord', {
+        'title': 'Discord',
+        'image': 'links/discord',
+        'navbar_link_list': 'community',
+        # redirect set in settings.py
+        'new_tab': True,
+        'divider_before': True,
+        'check_permissions': lambda c: c['request'].LANGUAGE_CODE not in DEFAULT_LANGUAGES_CANT_SPEAK_ENGLISH,
+    }),
+    ('twitter', {
+        'title': 'Twitter',
+        'image': 'links/twitter',
+        'divider_before': True,
+        'navbar_link_list': 'community',
+        # redirect set in settings.py
+        'new_tab': True,
+        'check_permissions': lambda c: c['request'].LANGUAGE_CODE not in DEFAULT_LANGUAGES_CANT_SPEAK_ENGLISH,
+    }),
+    ('instagram', {
+        'title': 'Instagram',
+        'image': 'links/instagram',
+        'navbar_link_list': 'community',
+        # redirect set in settings.py
+        'new_tab': True,
+        'check_permissions': lambda c: c['request'].LANGUAGE_CODE not in DEFAULT_LANGUAGES_CANT_SPEAK_ENGLISH,
+    }),
+    ('facebook', {
+        'title': 'Facebook',
+        'image': 'links/facebook',
+        'navbar_link_list': 'community',
+        # redirect set in settings.py
+        'new_tab': True,
+        'check_permissions': lambda c: c['request'].LANGUAGE_CODE not in DEFAULT_LANGUAGES_CANT_SPEAK_ENGLISH,
+    }),
+
     ('block', {
         'navbar_link': False,
         'custom': False,
@@ -1107,6 +1156,7 @@ DEFAULT_PROFILE_TABS = OrderedDict([
 # Default navbar ordering
 
 DEFAULT_NAVBAR_ORDERING = [
+    'community',
     'account_list',
     'staff',
     'you',

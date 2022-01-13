@@ -1930,6 +1930,8 @@ class MagiCollection(object):
             return buttons
 
         def get_page_title(self):
+            if self.collection.navbar_link and not self.collection.navbar_link_list:
+                return self.collection.plural_title
             return _(u'{things} list').format(things=self.collection.plural_title)
 
         def get_h1_title(self, request, context, view=None, preset=None):
@@ -2533,6 +2535,7 @@ class AccountCollection(MagiCollection):
     queryset = ACCOUNT_MODEL.objects.all()
     report_allow_delete = False
     form_class = forms.AccountForm
+    navbar_link_list = 'community'
 
     show_item_buttons = False
     show_item_buttons_justified = False
@@ -2810,6 +2813,7 @@ class UserCollection(MagiCollection):
     title = _('Profile')
     plural_title = _('Players')
     navbar_link = False
+    navbar_link_list = 'community'
     queryset = models.User.objects.all().select_related('preferences')
     report_allow_delete = False
     report_edit_templates = OrderedDict([

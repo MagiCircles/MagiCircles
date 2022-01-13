@@ -124,11 +124,6 @@ if hasattr(settings_module, 'CONTACT_DISCORD'):
 else:
     CONTACT_DISCORD = DEFAULT_CONTACT_DISCORD
 
-if hasattr(settings_module, 'CONTACT_FACEBOOK'):
-    CONTACT_FACEBOOK = getattr(settings_module, 'CONTACT_FACEBOOK')
-else:
-    CONTACT_FACEBOOK = 'db0company'
-
 if hasattr(settings_module, 'ABOUT_PHOTO'):
     ABOUT_PHOTO = getattr(settings_module, 'ABOUT_PHOTO')
 else:
@@ -171,11 +166,6 @@ if hasattr(settings_module, 'SEASONS'):
     SEASONS = getattr(settings_module, 'SEASONS')
 else:
     SEASONS = DEFAULT_SEASONS
-
-if hasattr(settings_module, 'TWITTER_HANDLE'):
-    TWITTER_HANDLE = getattr(settings_module, 'TWITTER_HANDLE')
-else:
-    TWITTER_HANDLE = 'schoolidolu'
 
 if hasattr(settings_module, 'TRANSLATION_HELP_URL'):
     TRANSLATION_HELP_URL = getattr(settings_module, 'TRANSLATION_HELP_URL')
@@ -328,6 +318,31 @@ else:
 
 ############################################################
 # Optional settings without default values (= None)
+
+if hasattr(settings_module, 'TWITTER_HANDLE'):
+    TWITTER_HANDLE = getattr(settings_module, 'TWITTER_HANDLE')
+else:
+    TWITTER_HANDLE = None
+
+if hasattr(settings_module, 'INSTAGRAM_HANDLE'):
+    INSTAGRAM_HANDLE = getattr(settings_module, 'INSTAGRAM_HANDLE')
+else:
+    INSTAGRAM_HANDLE = None
+
+if hasattr(settings_module, 'FACEBOOK_HANDLE'):
+    FACEBOOK_HANDLE = getattr(settings_module, 'FACEBOOK_HANDLE')
+else:
+    FACEBOOK_HANDLE = None
+
+if hasattr(settings_module, 'CONTACT_FACEBOOK'):
+    CONTACT_FACEBOOK = getattr(settings_module, 'CONTACT_FACEBOOK')
+else:
+    CONTACT_FACEBOOK = FACEBOOK_HANDLE or 'db0company'
+
+if hasattr(settings_module, 'COMMUNITY_DISCORD'):
+    COMMUNITY_DISCORD = getattr(settings_module, 'COMMUNITY_DISCORD')
+else:
+    COMMUNITY_DISCORD = None
 
 if hasattr(settings_module, 'SITE_LOGO_WHEN_LOGGED_IN'):
     SITE_LOGO_WHEN_LOGGED_IN = getattr(settings_module, 'SITE_LOGO_WHEN_LOGGED_IN')
@@ -877,7 +892,7 @@ if WIKI:
 
 # Enabled pages defaults
 
-def _set_default_for_page(page_name, setting, value):
+def _set_default_for_page(page_name, setting, value, on_none_disable=False):
     if page_name in ENABLED_PAGES:
         for page in (
                 ENABLED_PAGES[page_name]
@@ -885,6 +900,8 @@ def _set_default_for_page(page_name, setting, value):
                 else [ENABLED_PAGES[page_name]]):
             if setting not in page:
                 page[setting] = value
+            if on_none_disable and not value:
+                page['enabled'] = False
 
 _wiki_page_description = lambda: u'{} - {}'.format(
     _('Help'), _('Learn a few tips and tricks to help you easily use {site}.').format(
@@ -897,6 +914,10 @@ for _args in [
             license=GAME_NAME_PER_LANGUAGE.get(get_language(), GAME_NAME))),
         ('help', 'page_description', _wiki_page_description),
         ('wiki', 'page_description', _wiki_page_description),
+        ('discord', 'redirect', COMMUNITY_DISCORD if COMMUNITY_DISCORD else None, True),
+        ('twitter', 'redirect', 'https://twitter.com/{}'.format(TWITTER_HANDLE) if TWITTER_HANDLE else None, True),
+        ('instagram', 'redirect', 'https://instagram.com/{}'.format(INSTAGRAM_HANDLE) if INSTAGRAM_HANDLE else None, True),
+        ('facebook', 'redirect', 'https://facebook.com/{}'.format(FACEBOOK_HANDLE) if FACEBOOK_HANDLE else None, True),
 ]:
     _set_default_for_page(*_args)
 

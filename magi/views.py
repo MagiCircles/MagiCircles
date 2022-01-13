@@ -80,6 +80,7 @@ from magi.settings import (
     SITE_NAME_PER_LANGUAGE,
     GAME_NAME,
     TWITTER_HANDLE,
+    INSTAGRAM_HANDLE,
     BUG_TRACKER_URL,
     GITHUB_REPOSITORY,
     CONTRIBUTE_URL,
@@ -441,6 +442,8 @@ def about(request, context):
             ('Discord', 'discord', CONTACT_DISCORD),
             ('Twitter', 'twitter', u'https://twitter.com/{}/'.format(
                 TWITTER_HANDLE) if TWITTER_HANDLE else None),
+            ('Instagram', 'instagram', u'https://instagram.com/{}/'.format(
+                INSTAGRAM_HANDLE) if INSTAGRAM_HANDLE else None),
             ('Reddit', 'reddit', u'https://www.reddit.com/user/{}/'.format(
                 CONTACT_REDDIT) if CONTACT_REDDIT else None),
             ('Facebook', 'facebook', u'https://facebook.com/{}/'.format(
