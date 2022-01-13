@@ -1817,7 +1817,7 @@ class MagiCollection(object):
         show_items_names = False
         authentication_required = False
         distinct = False
-        add_button_subtitle = _('Become a contributor to help us fill the database')
+        add_button_subtitle = None
         full_width = False
         show_relevant_fields_on_ordering = True
         hide_sidebar = False
@@ -4174,18 +4174,6 @@ class ReportCollection(_BaseReportCollection):
 
     class ItemView(_BaseReportCollection.ItemView):
         owner_only_or_permissions_required = ['moderate_reports']
-
-    class AddView(_BaseReportCollection.AddView):
-
-        def extra_context(self, context):
-            context['alert_message'] = mark_safe(u'{message}<ul>{list}</ul>{learn_more}'.format(
-                message=_(u'Only submit a report if there is a problem with this specific {thing}. If it\'s about something else, your report will be ignored. For example, don\'t report an account or a profile if there is a problem with an activity. Look for "Report" buttons on the following to report individually:').format(thing=self.collection.types[context['type']]['title'].lower()),
-                list=''.join([u'<li>{}</li>'.format(unicode(type['plural_title'])) for name, type in self.collection.types.items() if name != context['type']]),
-                learn_more=(
-                    '' if context['request'].LANGUAGE_CODE in LANGUAGES_CANT_SPEAK_ENGLISH else
-                    u'<div class="text-right"><a href="/help/Report" target="_blank" class="btn btn-warning">{}</a></div>'.format(_('Learn more'))),
-            ))
-            return context
 
 class SuggestedEditCollection(_BaseReportCollection):
     name = 'suggestededit'

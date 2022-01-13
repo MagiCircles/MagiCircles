@@ -38,7 +38,6 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'corsheaders',
     'bootstrapform',
-    'bootstrap_form_horizontal',
     'rest_framework',
     'storages',
     'magi',

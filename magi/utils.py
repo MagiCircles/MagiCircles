@@ -2662,7 +2662,8 @@ def HTMLAlert(type='warning', flaticon='about', title=None, message=None, button
     """
     button is a dict that contains url and verbose
     """
-    return u"""
+    return markSafeFormat(
+        u"""
 <div class="alert alert-{type}">
   <div class="row">
     <div class="col-sm-2 text-center hidden-xs">
@@ -2675,20 +2676,21 @@ def HTMLAlert(type='warning', flaticon='about', title=None, message=None, button
     {button}
   </div>
 </div><br>
-""".format(
-    type=type,
-    flaticon=flaticon,
-    title=u'<h4>{title}</h4>'.format(title) if title else '',
-    message=message or '',
-    col_size=7 if button else 10,
-    button=u"""
-    <div class="col-sm-3 hidden-xs">
-      <a href="{url}" class="btn btn-main btn-lg btn-block" target="_blank">
+""",
+        type=type,
+        flaticon=flaticon,
+        title=markSafeFormat(u'<h4>{title}</h4>', title) if title else '',
+        message=message or '',
+        col_size=7 if button else 10,
+        button=markSafeFormat(
+            u"""
+        <div class="col-sm-3 hidden-xs">
+        <a href="{url}" class="btn btn-main btn-lg btn-block" target="_blank">
 	{verbose}
 	<i class="flaticon-link"></i>
       </a>
     </div>
-    """.format(**button) if button else '',
+            """, **button) if button else '',
 )
 
 def _markSafeFormatEscapeOrNot(string):
@@ -2703,6 +2705,11 @@ def markSafeFormat(string, *args, **kwargs):
     ], **{
         key: _markSafeFormatEscapeOrNot(value) for key, value in kwargs.items()
     }))
+
+def markSafeJoin(strings, separator=u','):
+    return mark_safe(separator.join([
+        _markSafeFormatEscapeOrNot(string) for string in strings
+    ]))
 
 ############################################################
 # Form labels and help texts

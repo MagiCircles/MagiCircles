@@ -82,6 +82,7 @@ from magi.utils import (
     changeFormField,
     formFieldFromOtherField,
     markSafeFormat,
+    markSafeJoin,
     localizeTimeOnly,
     getIndex,
     newOrder,
@@ -90,6 +91,7 @@ from magi.utils import (
     filterEventsByStatus,
     TimeValidator,
     failSafe,
+    HTMLAlert,
 )
 from versions_utils import sortByRelevantVersions
 
@@ -3306,6 +3308,20 @@ class ReportForm(BaseReportForm):
         for reason in getMagiCollection(self.type).report_edit_templates.keys() + getMagiCollection(self.type).report_delete_templates.keys():
             reasons[reason] = _(reason)
         self.fields['reason'].choices = BLANK_CHOICE_DASH + reasons.items()
+        self.beforefields = HTMLAlert(
+            message=markSafeFormat(
+                u'{message}<ul>{list}</ul>{learn_more}',
+                message=_(u'Only submit a report if there is a problem with this specific {thing}. If it\'s about something else, your report will be ignored. For example, don\'t report an account or a profile if there is a problem with an activity. Look for "Report" buttons on the following to report individually:').format(thing=self.collection.types[self.type]['title'].lower()),
+                list=markSafeJoin([
+                    markSafeFormat(u'<li>{}</li>', unicode(type['plural_title']))
+                    for name, type in self.collection.types.items() if name != self.type
+                ], separator=u''),
+                learn_more=(
+                    '' if (self.request.LANGUAGE_CODE if self.request else get_language()) in LANGUAGES_CANT_SPEAK_ENGLISH else
+                    markSafeFormat(
+                        u'<div class="text-right"><a href="/help/Report" data-ajax-url="/ajax/help/Report/" target="_blank" class="btn btn-warning">{}</a></div>',
+                        _('Learn more'))),
+            ))
 
 class SuggestedEditForm(BaseReportForm):
     reason = forms.MultipleChoiceField(required=True, label=_('Reason'))

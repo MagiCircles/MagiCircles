@@ -1,6 +1,7 @@
 from dateutil.relativedelta import relativedelta
 from django.test import TestCase
 from django.utils import timezone
+from django.utils.safestring import mark_safe
 from magi import utils
 
 class UtilsTestCase(TestCase):
@@ -108,3 +109,10 @@ class UtilsTestCase(TestCase):
         self.assertEqual(utils.getEventStatus(
             two_weeks_ago, one_week_ago,
         ), 'ended')
+
+    def test_markSafeJoin(self):
+        self.assertEqual(unicode(utils.markSafeJoin([
+            mark_safe('<b>hello</b>'),
+            utils.markSafeFormat('<b>{}</b>', 'world'),
+            '<b>unsafe</b>',
+        ], separator=' test ')), u'<b>hello</b> test <b>world</b> test &lt;b&gt;unsafe&lt;/b&gt;')
