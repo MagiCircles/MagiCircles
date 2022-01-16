@@ -506,8 +506,11 @@ def about(request, context):
                             })
                         total = model.objects.filter(owner_filter).filter(**(stat.get('filters', {}))).count()
                         if total:
-                            staff_member.stats[group].append(mark_safe(
-                                unicode(stat['template']).format(total=u'<strong>{}</strong>'.format(total))))
+                            staff_member.stats[group].append(
+                                stat['template'](total)
+                                if callable(stat['template'])
+                                else mark_safe(unicode(stat['template']).format(total=u'<strong>{}</strong>'.format(total)))
+                            )
                 settings = staff_member.preferences.t_settings_per_groups.get(group, None)
                 if settings:
                     for setting, value in settings.items():
