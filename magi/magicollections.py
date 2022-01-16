@@ -2849,6 +2849,7 @@ class AccountCollection(MagiCollection):
 class UserCollection(MagiCollection):
     title = _('Profile')
     plural_title = _('Players')
+    icon = 'users'
     navbar_link = False
     navbar_link_list = 'community'
     queryset = models.User.objects.all().select_related('preferences')
