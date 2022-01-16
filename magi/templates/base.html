@@ -80,7 +80,7 @@
             {% callWithContext dict=link function='show_link_callback' %}
             {% if result_of_callwithcontext %}
             <li class="{% if current == link_name %}active{% endif %}{% if link.is_list %} dropdown{% endif %}" data-link-name="{{ link_name }}">
-              <a href="{% navbarGetURL link=link %}"{% if link.is_list %} class="dropdown-toggle" data-toggle="dropdown" id="navBarIDDropDown{{ link_name }}"{% endif %}{% if link.new_tab %} target="_blank"{% endif %}>
+              <a href="{% navbarGetURL link=link %}"{% if link.is_list %} class="dropdown-toggle" data-toggle="dropdown" id="navBarIDDropDown{{ link_name }}"{% elif link.external_link %} class="external-link"{% endif %}{% if link.new_tab %} target="_blank"{% endif %}>
                 {% if link.icon %}
                 <i class="flaticon-{{ link.icon }}"></i>
                 {% elif link.image %}
@@ -108,7 +108,7 @@
                 <li class="divider"></li>
                 {% endif %}
                 <li class="{% if current == sub_link_name %}active{% endif %}" data-link-name="{{ sub_link_name }}">
-                  <a href="{% navbarGetURL link=sub_link %}"{% if sub_link.new_tab %} target="_blank"{% endif %}>
+                  <a href="{% navbarGetURL link=sub_link %}"{% if sub_link.external_link %} class="external-link"{% endif %}{% if sub_link.new_tab %} target="_blank"{% endif %}>
                     {% if sub_link.icon %}
                     <i class="flaticon-{{ sub_link.icon }}"></i>
                     {% elif sub_link.image %}

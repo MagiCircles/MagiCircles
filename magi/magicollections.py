@@ -1905,7 +1905,10 @@ class MagiCollection(object):
                     'ajax_url': False,
                     'open_in_new_window': False,
                     'classes': top_buttons_classes,
-                    'show': alt_view_details.get('show_as_top_button', False),
+                    'show': alt_view_details.get('show_as_top_button', False) and not (
+                        # Don't show table alt views when getting started because they don't have add buttons
+                        'get_started' in request.GET and alt_view_details.get('display_style', None) == 'table'
+                    ),
                 }
                 if context.get('view', None) == alt_view_name:
                     buttons[alt_view_name].update({
@@ -1924,7 +1927,7 @@ class MagiCollection(object):
             # Add buttons
             if self.collection.add_view.enabled:
                 for_all_buttons = {
-                    'show': self.show_add_button(request),
+                    'show': self.show_add_button(request) and 'get_started' not in request.GET,
                     'has_permissions': self.collection.add_view.has_permissions(request, context),
                     'ajax_url': False, # Top add buttons should always open a full page
                     'open_in_new_window': False,
@@ -3547,7 +3550,7 @@ class ActivityCollection(MagiCollection):
     plural_title = _('Activities')
     plural_name = 'activities'
     queryset = models.Activity.objects.all()
-    navbar_link = False
+    navbar_link_list = 'community'
     icon = 'comments'
 
     report_edit_templates = OrderedDict([

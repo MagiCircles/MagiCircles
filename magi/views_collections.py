@@ -577,6 +577,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
         context['show_small_title'] = False
         context['show_search_results'] = False
         context['before_template'] = 'include/getstarted'
+        context['share_collection_sentence'] = _('Share your {things}!').format(things=unicode(collection.plural_title).lower())
         context['after_template'] = 'include/afterGetStarted'
 
     # Top buttons

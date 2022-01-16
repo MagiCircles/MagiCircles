@@ -522,6 +522,7 @@ for (name, pages) in ENABLED_PAGES.items():
                     'new_tab': page.get('new_tab', False),
                     'auth': page.get('navbar_link_auth', (True, True)),
                     'get_url': None if not page.get('url_variables', None) else (getURLLambda(name, lambdas)),
+                    'external_link': page.get('external_link', False),
                     'show_link_callback': getPageShowLinkLambda(page),
                     'divider_before': page.get('divider_before', False),
                     'divider_after': page.get('divider_after', False),
@@ -609,6 +610,7 @@ for name, pages in ENABLED_PAGES.items():
                         'icon': page.get('icon', None),
                         'image': page.get('image', None),
                         'url': page.get('redirect', None) or '/{}/'.format(name),
+                        'external_link': page.get('external_link', False),
                         'get_url': None if not page.get('url_variables', None) else (getURLLambda(name, lambdas)),
                         'show_link_callback': _getPageShowLinkForGroupsLambda(group, getPageShowLinkLambda(page)),
                     }, 'staff')

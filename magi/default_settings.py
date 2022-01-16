@@ -457,11 +457,12 @@ DEFAULT_GROUPS = [
 
 DEFAULT_ENABLED_NAVBAR_LISTS = OrderedDict([
     ('community', {
-        'title': _('Community'), # todo why doesnt show up
+        'title': _('Community'),
         'icon': 'users',
         'order': [
             'account_list',
             'user_list',
+            'activity_list',
             'map',
             'discord',
             'twitter',
@@ -774,6 +775,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'new_tab': True,
         'divider_before': True,
         'check_permissions': lambda c: c['request'].LANGUAGE_CODE not in DEFAULT_LANGUAGES_CANT_SPEAK_ENGLISH,
+        'external_link': True,
     }),
     ('twitter', {
         'title': 'Twitter',
@@ -783,6 +785,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         # redirect set in settings.py
         'new_tab': True,
         'check_permissions': lambda c: c['request'].LANGUAGE_CODE not in DEFAULT_LANGUAGES_CANT_SPEAK_ENGLISH,
+        'external_link': True,
     }),
     ('instagram', {
         'title': 'Instagram',
@@ -791,6 +794,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         # redirect set in settings.py
         'new_tab': True,
         'check_permissions': lambda c: c['request'].LANGUAGE_CODE not in DEFAULT_LANGUAGES_CANT_SPEAK_ENGLISH,
+        'external_link': True,
     }),
     ('facebook', {
         'title': 'Facebook',
@@ -799,6 +803,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         # redirect set in settings.py
         'new_tab': True,
         'check_permissions': lambda c: c['request'].LANGUAGE_CODE not in DEFAULT_LANGUAGES_CANT_SPEAK_ENGLISH,
+        'external_link': True,
     }),
 
     ('block', {
