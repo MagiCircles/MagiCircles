@@ -55,6 +55,7 @@ from magi.utils import (
     markSafeFormat,
     listUnique,
     getEnglish,
+    newOrder,
 )
 from magi.raw import please_understand_template_sentence, unrealistic_template_sentence
 from magi.django_translated import t
@@ -999,6 +1000,10 @@ class MagiCollection(object):
         if hasattr(view, 'fields_order'):
             order += view.fields_order
 
+        order_settings = {}
+        if hasattr(view, 'fields_order_settings'):
+            order_settings = view.fields_order_settings
+
         if hasattr(view, 'get_fields_order'):
             order += view.get_fields_order(item)
 
@@ -1460,12 +1465,18 @@ class MagiCollection(object):
                         break
                 if field_name not in sorted_fields:
                     sorted_fields[field_name] = dict_fields[field_name] if field_name in dict_fields else { 'verbose_name': '', 'type': 'text', 'value': '' }
+            if order_settings:
+                sorted_fields = newOrder(sorted_fields, **order_settings)
             if to_dict:
                 fields = sorted_fields
             else:
                 fields = sorted_fields.items()
+        elif to_dict and order_settings:
+            fields = newOrder(OrderedDict(fields), **order_settings)
         elif to_dict:
             fields = OrderedDict(fields)
+        elif order_settings:
+            fields = newOrder(OrderedDict(fields), **order_settings).items()
         return fields
 
     #######################
@@ -1887,6 +1898,29 @@ class MagiCollection(object):
             """
             buttons = OrderedDict()
             top_buttons_classes = self.get_top_buttons_classes(request, context)
+            # Alt view buttons
+            for alt_view_name, alt_view_details in self.alt_views:
+                buttons[alt_view_name] = {
+                    'has_permissions': True, # if you have permissions for the list view, alt view should work too
+                    'ajax_url': False,
+                    'open_in_new_window': False,
+                    'classes': top_buttons_classes,
+                    'show': alt_view_details.get('show_as_top_button', False),
+                }
+                if context.get('view', None) == alt_view_name:
+                    buttons[alt_view_name].update({
+                        'title': u'{} ({})'.format(self.get_page_title(), _('Default')),
+                        'url': self.collection.get_list_url(),
+                        'icon': self.collection.icon,
+                        'image': self.collection.image,
+                    })
+                else:
+                    buttons[alt_view_name].update({
+                        'url': self.collection.get_list_url(parameters={ 'view': alt_view_name }),
+                        'icon': alt_view_details.get('icon', self.collection.icon if not alt_view_details.get('image', None) else None),
+                        'image': alt_view_details.get('image', self.collection.image),
+                        'title': alt_view_details['verbose_name'],
+                    })
             # Add buttons
             if self.collection.add_view.enabled:
                 for_all_buttons = {

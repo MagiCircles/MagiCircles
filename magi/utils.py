@@ -2038,24 +2038,52 @@ def changeFormField(form, field_name, to_new_field, new_parameters={}, force_add
         form.fields[field_name] = to_new_field(**new_parameters)
 
 def newOrder(current_order, insert_after=None, insert_before=None, insert_instead=None,
-             insert_at=None, insert_at_instead=None):
+             insert_at=None, insert_at_instead=None, insert_at_from_last=None, insert_at_from_last_instead=None, dict_values={}):
     """
     All insert_ parameters are dictionaries with key = the name of the field to look at
     and value = a list to insert
     For insert_at_, key is the index (int)
+    Note: won't work if you refer to a field both as a marker and as an inserted thing. needs to be called twice in that case.
+    Works with dicts. If you're inserting an item not in the dict, you need to provide a value for the key in dict_values.
     """
-    new_order = []
-    if insert_after or insert_before:
-        for order_field_name in current_order:
+    if isinstance(current_order, OrderedDict):
+        order = current_order.keys()
+    else:
+        order = current_order
+    will_be_reinserted_fields = flattenListOfLists(sum([
+        (insert_after or {}).values(), (insert_before or {}).values(), (insert_instead or {}).values(),
+        (insert_at or {}).values(), (insert_at_instead or {}).values(), (insert_at_from_last or {}).values(),
+        (insert_at_from_last_instead or {}).values(),
+    ], []))
+    filtered_order = [field for field in order if field not in will_be_reinserted_fields]
+    if insert_after or insert_before or insert_instead:
+        new_order = []
+        for order_field_name in filtered_order:
             if order_field_name in (insert_before or {}):
                 new_order += insert_before[order_field_name]
-            new_order.append(order_field_name)
+            if order_field_name in (insert_instead or {}):
+                new_order += insert_instead[order_field_name]
+            else:
+                new_order.append(order_field_name)
             if order_field_name in (insert_after or {}):
                 new_order += insert_after[order_field_name]
     else:
-        new_order = current_order[:]
+        new_order = filtered_order
     for position, to_insert in (insert_at or {}).items():
         new_order = new_order[:position] + to_insert + new_order[position:]
+    for position, to_insert in (insert_at_instead  or {}).items():
+        new_order = new_order[:position] + to_insert + new_order[position + 1:]
+    for position, to_insert in (insert_at_from_last or {}).items():
+        if position == 0:
+            new_order += to_insert
+        else:
+            new_order = new_order[:-position] + to_insert + new_order[-position:]
+    for position, to_insert in (insert_at_from_last_instead or {}).items():
+        if position == 0:
+            new_order = new_order[:-1] + to_insert
+        new_order = new_order[:-position - 1] + to_insert + new_order[-position:]
+    if isinstance(current_order, OrderedDict):
+        return OrderedDict([( key, dict_values.get(key, current_order.get(key, None))) for key in new_order ])
     return new_order
 
 ############################################################

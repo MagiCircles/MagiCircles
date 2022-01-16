@@ -983,7 +983,7 @@ class MagiForm(forms.ModelForm):
         return self._transform_on_change_value(on_change_value_trigger, add_affected_fields=False)
 
     def reorder_fields(self, order=[], insert_after=None, insert_before=None, insert_instead=None,
-                       insert_at=None, insert_at_instead=None):
+                       insert_at=None, insert_at_instead=None, insert_at_from_last=None, insert_at_from_last_instead=None):
         """
         Reorder form fields by order.
         Fields not in order will be placed at the end.
@@ -997,6 +997,7 @@ class MagiForm(forms.ModelForm):
             listUnique(order + self.fields.keys()),
             insert_after=insert_after, insert_before=insert_before,
             insert_instead=insert_instead, insert_at=insert_at, insert_at_instead=insert_at_instead,
+            insert_at_from_last=insert_at_from_last, insert_at_from_last_instead=insert_at_from_last_instead,
         )
         self.fields = OrderedDict(sorted(
             self.fields.items(),
@@ -1656,7 +1657,9 @@ class MagiFiltersForm(AutoForm):
                     for view_name, view in self.collection.list_view.alt_views
                 ]
             if not [_v for _v in self.collection.list_view.alt_views or []
-                    if not _v[1].get('hide_in_filter', False) and _v[1].get('hide_in_navbar', False)]: # None visible
+                    if (not _v[1].get('hide_in_filter', False)
+                        and _v[1].get('hide_in_navbar', False)
+                        and not _v[1].get('show_as_top_button', False))]: # None visible
                 self.fields['view'].widget = self.fields['view'].hidden_widget()
             self.fields['view'].choices = self.collection.list_view._alt_view_choices
         else:
