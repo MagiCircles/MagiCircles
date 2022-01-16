@@ -308,18 +308,22 @@ class MagiForm(forms.ModelForm):
             self.allow_upload_custom_2x = self.request.user.hasPermission('upload_custom_2x')
             self.allow_translate = self.request.user.hasPermission('translate_items')
 
+        fields_to_keep = []
         # When next is allowed, add next fields
         if self.request and self.allow_next:
-            if 'next' not in self.fields:
-                self.fields['next'] = forms.CharField(
-                    required=False, widget=forms.HiddenInput(),
-                    initial=self.request.GET.get('next', None))
-                self.extra_fields_added[None] = 'next'
-            if 'next_title' not in self.fields:
-                self.fields['next_title'] = forms.CharField(
-                    required=False, widget=forms.HiddenInput(),
-                    initial=self.request.GET.get('next_title', None))
-                self.extra_fields_added[None] = 'next_title'
+            fields_to_keep += ['next', 'next_title']
+        # Keep get_started
+        if self.request and 'get_started' in self.request.GET:
+            fields_to_keep += ['get_started']
+        for field_name in fields_to_keep:
+            if field_name not in self.fields:
+                self.fields[field_name] = forms.CharField(
+                    required=False, widget=forms.HiddenInput,
+                    initial=self.request.GET.get(field_name, None),
+                )
+                self.extra_fields_added[None].append(field_name)
+            if not getattr(self, u'{}_filter'.format(field_name), None):
+                setattr(self, u'{}_filter'.format(field_name), MagiFilter(noop=True))
 
         for name, field in self.fields.items():
             # Fix optional fields using null=True
