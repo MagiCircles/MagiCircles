@@ -1012,9 +1012,11 @@ class MagiCollection(object):
 
         if hasattr(view, 'fields_prefetched'):
             prefetched += view.fields_prefetched
+        prefetched_field_names = [p[0] if isinstance(p, tuple) else p for p in prefetched]
 
         if hasattr(view, 'fields_prefetched_together'):
             prefetched_together += view.fields_prefetched_together
+        prefetched_together_field_names = [p[0] if isinstance(p, tuple) else p for p in prefetched_together]
 
         language = get_language()
 
@@ -1065,7 +1067,7 @@ class MagiCollection(object):
             verbose_name = (
                 details.get('verbose_name', None)
                 or (
-                    (collection.title if field_name in prefetched else collection.plural_title)
+                    (collection.title if field_name in prefetched_field_names else collection.plural_title)
                     if collection else None
                 ) or toHumanReadable(field_name)
             )
@@ -1083,7 +1085,7 @@ class MagiCollection(object):
             icon = details.get('icon', None) or (collection.icon if collection else None)
             image = details.get('image', None) or (collection.image if collection else None)
 
-            if field_name in prefetched:
+            if field_name in prefetched_field_names:
                 # Ensure cached total gets updated
                 try: getattr(item, 'cached_total_{}'.format(field_name))
                 except AttributeError: pass
@@ -1117,7 +1119,7 @@ class MagiCollection(object):
                         d['image'] = staticImageURL(d['image'])
                     (many_fields if show_first else many_fields_galleries).append(
                         (u'{}{}'.format(field_name, related_item.pk), d))
-            elif field_name in prefetched_together:
+            elif field_name in prefetched_together_field_names:
                 # Ensure cached total gets updated
                 try: getattr(item, 'cached_total_{}'.format(field_name))
                 except AttributeError: pass
