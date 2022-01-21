@@ -1914,7 +1914,7 @@ class ManyToManyCSVField(forms_CharField):
         help_text = _('Separate {things} with commas. Example: "Apple, Orange"').format(
             things=(
                 verbose_name
-                or failSafe(lambda: getattr(self.m2m_model_class, self.m2m_field_name).field.verbose_name)
+                or failSafe(lambda: getattr(self.m2m_model_class, self.m2m_field_name).field.verbose_name.lower())
                 or toHumanReadable(lookup_field_name, capitalize=False)
             ))
         kwargs['help_text'] = (
