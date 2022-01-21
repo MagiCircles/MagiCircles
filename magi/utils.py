@@ -1432,8 +1432,11 @@ def tourldash(string, separator=u'-'):
     s =  u''.join(e if e.isalnum() else separator for e in string)
     return separator.join([s for s in s.split(separator) if s])
 
-def toHumanReadable(string):
-    return string.lower().replace('_', ' ').replace('-', ' ').capitalize()
+def toHumanReadable(string, capitalize=True):
+    string = string.lower().replace('_', ' ').replace('-', ' ')
+    if capitalize:
+        return string.capitalize()
+    return string
 
 def getTranslatedName(d, field_name='name', language=None):
     return d.get(u'{}s'.format(field_name), {}).get(
@@ -1900,6 +1903,57 @@ def filterByTranslatedValue(
 
 ############################################################
 # Form utils
+
+class ManyToManyCSVField(forms_CharField):
+
+    def __init__(self, model_class, field_name, lookup_field_name='name', verbose_name=None, *args, **kwargs):
+        self.m2m_model_class = model_class
+        self.m2m_field_name = field_name
+        self.m2m_lookup_field_name = lookup_field_name
+        self.m2m_items_model_class = getattr(self.m2m_model_class, self.m2m_field_name).field.rel.to
+        help_text = _('Separate {things} with commas. Example: "Apple, Orange"').format(
+            things=(
+                verbose_name
+                or failSafe(lambda: getattr(self.m2m_model_class, self.m2m_field_name).field.verbose_name)
+                or toHumanReadable(lookup_field_name, capitalize=False)
+            ))
+        kwargs['help_text'] = (
+            markSafeFormat(u'{}<br>{}', kwargs['help_text'], help_text)
+            if kwargs.get('help_text', None) else help_text
+        )
+        super(ManyToManyCSVField, self).__init__(*args, **kwargs)
+
+    def prepare_value(self, value):
+        if not value:
+            return None
+        if isinstance(value, list):
+            if isinstance(value[0], self.m2m_items_model_class):
+                value = [getattr(item, self.m2m_lookup_field_name) for item in value]
+            elif isinstance(value[0], int): # ids
+                value = [
+                    getattr(item, self.m2m_lookup_field_name) for item in
+                    self.m2m_items_model_class.objects.filter(pk__in=value)
+                ]
+            if not isinstance(value[0], basestring):
+                raise ValueError('Unknown value {} ({})'.format(type(value), value))
+            return u', '.join(value)
+        elif isinstance(value, basestring):
+            return value
+        raise ValueError('Unknown value {} ({})'.format(type(value), value))
+
+    def clean(self, data, initial=None):
+        value = super(ManyToManyCSVField, self).clean(data)
+        items_names = [s.strip() for s in split_data(value) if s.strip()]
+        items = list(self.m2m_items_model_class.objects.filter(**{
+            u'{}__in'.format(self.m2m_lookup_field_name): items_names,
+        }).distinct())
+        if len(items) != len(items_names):
+            found_items = [getattr(item, self.m2m_lookup_field_name) for item in items]
+            raise ValidationError(u'{}: {}'.format(
+                join_data(*[ name for name in items_names if name not in found_items ]),
+                _('No result.'),
+            ))
+        return items
 
 class ColorFormField(forms_CharField):
     pass
