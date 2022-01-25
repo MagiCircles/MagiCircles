@@ -2794,6 +2794,32 @@ def markSafeJoin(strings, separator=u','):
         if string is not None
     ]))
 
+COMMA_PER_LANGUAGE = {
+    'en': u', ', # kr, ru, th use English comma
+    'ja': u'、',
+    'zh-hant': u'，',
+    'zh-hans': u'，',
+}
+_mark_safe = mark_safe
+
+def andJoin(strings, translated=True, mark_safe=False, language=None):
+    strings = [
+        _markSafeFormatEscapeOrNot(string) if mark_safe else string
+        for string in strings if string is not None
+    ]
+    if len(strings) == 1:
+        string = strings[0]
+    else:
+        comma = COMMA_PER_LANGUAGE.get('en' if not translated else (language or get_language()), COMMA_PER_LANGUAGE['en'])
+        string = u''.join([
+            comma.join(strings[:-1]),
+            u' {} '.format(_('and') if translated else 'and'),
+            strings[-1],
+        ])
+    if mark_safe:
+        return _mark_safe(string)
+    return string
+
 ############################################################
 # Form labels and help texts
 

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from dateutil.relativedelta import relativedelta
 from django.test import TestCase
 from django.utils import timezone
@@ -116,3 +117,61 @@ class UtilsTestCase(TestCase):
             utils.markSafeFormat('<b>{}</b>', 'world'),
             '<b>unsafe</b>',
         ], separator=' test ')), u'<b>hello</b> test <b>world</b> test &lt;b&gt;unsafe&lt;/b&gt;')
+
+    def test_andJoin(self):
+        self.assertEqual(unicode(utils.andJoin([
+            '<b>hello</b>',
+        ])), u'<b>hello</b>')
+        self.assertEqual(unicode(utils.andJoin([
+            '<b>hello</b>',
+        ], mark_safe=True)), u'&lt;b&gt;hello&lt;/b&gt;')
+        self.assertEqual(unicode(utils.andJoin([
+            '<b>hello</b>',
+            mark_safe('<b>world</b>'),
+        ])), u'<b>hello</b> and <b>world</b>')
+        self.assertEqual(unicode(utils.andJoin([
+            '<b>hello</b>',
+            mark_safe('<b>world</b>'),
+        ], mark_safe=True)), u'&lt;b&gt;hello&lt;/b&gt; and <b>world</b>')
+        self.assertEqual(unicode(utils.andJoin([
+            '<b>hello</b>',
+            '<b>world</b>',
+            mark_safe('<b>foo</b>'),
+        ])), u'<b>hello</b>, <b>world</b> and <b>foo</b>')
+        self.assertEqual(unicode(utils.andJoin([
+            '<b>hello</b>',
+            '<b>world</b>',
+            mark_safe('<b>foo</b>'),
+        ], mark_safe=True)), u'&lt;b&gt;hello&lt;/b&gt;, &lt;b&gt;world&lt;/b&gt; and <b>foo</b>')
+
+        # Other language
+        utils.translation_activate('ja')
+        self.assertEqual(unicode(utils.andJoin([
+            u'<b>こんにちは</b>',
+        ])), u'<b>こんにちは</b>')
+        self.assertEqual(unicode(utils.andJoin([
+            u'<b>こんにちは</b>',
+        ], mark_safe=True)), u'&lt;b&gt;こんにちは&lt;/b&gt;')
+        self.assertEqual(unicode(utils.andJoin([
+            u'<b>こんにちは</b>',
+            mark_safe(u'<b>世界</b>'),
+        ])), u'<b>こんにちは</b> と <b>世界</b>')
+        self.assertEqual(unicode(utils.andJoin([
+            u'<b>こんにちは</b>',
+            mark_safe(u'<b>世界</b>'),
+        ], mark_safe=True)), u'&lt;b&gt;こんにちは&lt;/b&gt; と <b>世界</b>')
+        self.assertEqual(unicode(utils.andJoin([
+            u'<b>こんにちは</b>',
+            u'<b>世界</b>',
+            mark_safe(u'<b>フー</b>'),
+        ])), u'<b>こんにちは</b>、<b>世界</b> と <b>フー</b>')
+        self.assertEqual(unicode(utils.andJoin([
+            u'<b>こんにちは</b>',
+            u'<b>世界</b>',
+            mark_safe(u'<b>フー</b>'),
+        ], mark_safe=True)), u'&lt;b&gt;こんにちは&lt;/b&gt;、&lt;b&gt;世界&lt;/b&gt; と <b>フー</b>')
+        self.assertEqual(unicode(utils.andJoin([
+            u'<b>こんにちは</b>',
+            u'<b>世界</b>',
+            mark_safe(u'<b>フー</b>'),
+        ], mark_safe=True, translated=False)), u'&lt;b&gt;こんにちは&lt;/b&gt;, &lt;b&gt;世界&lt;/b&gt; and <b>フー</b>')
