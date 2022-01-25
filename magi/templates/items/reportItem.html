@@ -107,11 +107,13 @@
 	{% if user.is_superuser or report.allow_edit %}
 	<form class="panel-body" method="POST" action="/ajax/moderatereport/{{ report.id }}/Edited/">
 	  {% csrf_token %}
+	  1. Edit the {{ report.reported_thing }} accordingly:
+	  <a href="/{{ report.reported_thing_plural_name }}/edit/{{ report.reported_thing_id }}/" target="_blank" class="btn btn-success btn-block btn-lines" {% if report.reported_thing_collection.edit_view.ajax %}data-ajax-url="/ajax/{{ report.reported_thing_plural_name }}/edit/{{ report.reported_thing_id }}/?disable_delete&{% if report.is_suggestededit %}is_suggestededit{% else %}is_reported{% endif %}" data-ajax-handle-form="true"{% else %}target="_blank"{% endif %}>Edit {{ report.reported_thing }}</a><br>
           {% if report.is_suggestededit %}
-          1. Explain what was changed and why:
+          2. Explain what was changed and why:
           <textarea name="staff_message" class="form-control" placeholder="Explain what has been edited and why (in English).">{{ report.reason }} {% if ', ' in report.reason %}have{% else %}has{% endif %} been edited.</textarea><br>
           {% else %}
-	  1. Select a reason:
+	  2. Select a reason:
 	  <select name="reason" class="form-control" required>
 	    <option value="">------</option>
 	    {% for template_name, template_message in report.edit_templates.items %}
@@ -121,9 +123,7 @@
 	  </select>
 	  <textarea name="staff_message" class="form-control" placeholder="Explain what has been edited and why (in English)." style="display: none;" required></textarea><br>
           {% endif %}
-	  2. Edit the {{ report.reported_thing }} accordingly:
-	  <a href="/{{ report.reported_thing_plural_name }}/edit/{{ report.reported_thing_id }}/" target="_blank" class="btn btn-success btn-block btn-lines" {% if report.reported_thing_collection.edit_view.ajax %}data-ajax-url="/ajax/{{ report.reported_thing_plural_name }}/edit/{{ report.reported_thing_id }}/?disable_delete&{% if report.is_suggestededit %}is_suggestededit{% else %}is_reported{% endif %}" data-ajax-handle-form="true"{% else %}target="_blank"{% endif %}>Edit {{ report.reported_thing }}</a><br>
-	  2. Confirm the {% if report.is_suggestededit %}suggestion was taken into account{% else %}report{% endif %}:
+	  3. Confirm the {% if report.is_suggestededit %}suggestion was taken into account{% else %}report{% endif %}:
 	  <input type="submit" class="btn btn-warning btn-block btn-lines" value="Confirm">
 	  <br>
 	  <ul>

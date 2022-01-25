@@ -1205,7 +1205,10 @@ class Report(MagiModel):
 
     @property # Required by magicircles since the magicollection uses types
     def type(self):
-        return self.reported_thing_collection.model_name
+        try:
+            return self.reported_thing_collection.model_name
+        except AttributeError:
+            return None
 
     @property
     def reported_thing_collection(self):
