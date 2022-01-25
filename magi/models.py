@@ -1183,9 +1183,9 @@ class Report(MagiModel):
     creation = models.DateTimeField(auto_now_add=True)
     modification = models.DateTimeField(auto_now=True)
     owner = models.ForeignKey(User, related_name='reports', null=True)
-    reported_thing = models.CharField(max_length=300)
-    reported_thing_title = models.CharField(max_length=300)
-    reported_thing_id = models.PositiveIntegerField()
+    reported_thing = models.CharField(max_length=300) # Collection name
+    reported_thing_title = models.CharField(max_length=300) # Collection title in English
+    reported_thing_id = models.PositiveIntegerField() # Pk
     reported_thing_owner_id = models.PositiveIntegerField(null=True)
     reason = models.TextField(_('Reason'))
     message = models.TextField(_('Message'))
@@ -1205,11 +1205,19 @@ class Report(MagiModel):
 
     @property # Required by magicircles since the magicollection uses types
     def type(self):
-        return self.reported_thing
+        return self.reported_thing_collection.model_name
 
     @property
     def reported_thing_collection(self):
         return getMagiCollection(self.reported_thing)
+
+    @property
+    def reported_thing_item_url(self):
+        return u'/{thing}/{id}/'.format(thing=self.reported_thing, id=self.reported_thing_id)
+
+    @property
+    def reported_thing_ajax_item_url(self):
+        return u'/ajax/{thing}/{id}/'.format(thing=self.reported_thing, id=self.reported_thing_id)
 
     @property
     def reported_thing_open_sentence(self):
@@ -1218,7 +1226,7 @@ class Report(MagiModel):
     @property
     def reported_thing_plural_name(self):
         if not self._reported_thing_plural_name:
-            self._reported_thing_plural_name = getMagiCollection(self.reported_thing).plural_name
+            self._reported_thing_plural_name = self.reported_thing_collection.plural_name
         return self._reported_thing_plural_name
     _reported_thing_plural_name = None
 
@@ -1233,6 +1241,10 @@ class Report(MagiModel):
     @property
     def allow_delete(self):
         return self.reported_thing_collection.report_allow_delete
+
+    @property
+    def allow_ajax(self):
+        return self.reported_thing_collection.item_view.ajax
 
     @property
     def edit_templates(self):

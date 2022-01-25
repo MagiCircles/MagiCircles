@@ -55,6 +55,7 @@ from magi.utils import (
     shrinkImageFromData,
     imageThumbnailFromData,
     getMagiCollection,
+    getMagiCollectionFromModelName,
     getAccountIdsFromSession,
     hasPermission,
     toHumanReadable,
@@ -92,6 +93,7 @@ from magi.utils import (
     TimeValidator,
     failSafe,
     HTMLAlert,
+    getEnglish,
 )
 from versions_utils import sortByRelevantVersions
 
@@ -3281,24 +3283,22 @@ class BaseReportForm(MagiForm):
         super(BaseReportForm, self).__init__(*args, **kwargs)
         if self.instance.pk:
             self.reported_thing_id = self.instance.reported_thing_id
-            self.type = self.instance.reported_thing
+            self.type = self.instance.type
         else:
             if 'id' not in self.request.GET:
                 raise PermissionDenied()
             self.reported_thing_id = self.request.GET['id']
             # Check if the reported thing exists
-            get_object_or_404(getMagiCollection(self.type).queryset, pk=self.reported_thing_id)
+            get_object_or_404(getMagiCollectionFromModelName(self.type).queryset, pk=self.reported_thing_id)
         if 'images' in self.fields:
             self.fields['images'].help_text = _('Optional')
 
     def save(self, commit=True):
         instance = super(BaseReportForm, self).save(commit=False)
-        instance.reported_thing = self.type
+        collection = getMagiCollectionFromModelName(self.type)
+        instance.reported_thing = collection.name
         instance.reported_thing_id = self.reported_thing_id
-        old_lang = get_language()
-        translation_activate('en')
-        instance.reported_thing_title = unicode(getMagiCollection(self.type).title)
-        translation_activate(old_lang)
+        instance.reported_thing_title = getEnglish(collection.title)
         return instance
 
     class Meta(MagiForm.Meta):
@@ -3312,13 +3312,17 @@ class ReportForm(BaseReportForm):
     def __init__(self, *args, **kwargs):
         super(ReportForm, self).__init__(*args, **kwargs)
         reasons = OrderedDict()
-        for reason in getMagiCollection(self.type).report_edit_templates.keys() + getMagiCollection(self.type).report_delete_templates.keys():
+        collection = getMagiCollectionFromModelName(self.type)
+        for reason in (
+                collection.report_edit_templates.keys()
+                + collection.report_delete_templates.keys()
+        ):
             reasons[reason] = _(reason)
         self.fields['reason'].choices = BLANK_CHOICE_DASH + reasons.items()
         self.beforefields = HTMLAlert(
             message=markSafeFormat(
                 u'{message}<ul>{list}</ul>{learn_more}',
-                message=_(u'Only submit a report if there is a problem with this specific {thing}. If it\'s about something else, your report will be ignored. For example, don\'t report an account or a profile if there is a problem with an activity. Look for "Report" buttons on the following to report individually:').format(thing=self.collection.types[self.type]['title'].lower()),
+                message=_(u'Only submit a report if there is a problem with this specific {thing}. If it\'s about something else, your report will be ignored. For example, don\'t report an account or a profile if there is a problem with an activity. Look for "Report" buttons on the following to report individually:').format(thing=collection.title.lower()),
                 list=markSafeJoin([
                     markSafeFormat(u'<li>{}</li>', unicode(type['plural_title']))
                     for name, type in self.collection.types.items() if name != self.type
@@ -3340,7 +3344,7 @@ class SuggestedEditForm(BaseReportForm):
                 ', '.join(self.instance.reason) if isinstance(self.instance.reason, list) else self.instance.reason
             ).split(', ')
         if 'reason' in self.fields:
-            collection = getMagiCollection(self.type)
+            collection = getMagiCollectionFromModelName(self.type)
             self.fields['reason'].label = _('Field(s) to edit')
             self.fields['reason'].choices = collection.get_suggest_edit_choices(self.request)
         if 'message' in self.fields:
@@ -3375,6 +3379,11 @@ class FilterReports(MagiFiltersForm):
         'i_status': { 'type': CuteFormType.HTML },
         'reported_thing': { 'type': CuteFormType.HTML },
     }
+
+    reported_thing_filter = MagiFilter(to_value=lambda _model_names: [
+        getMagiCollectionFromModelName(_model_name).name
+        for _model_name in _model_names
+    ])
 
     def __init__(self, *args, **kwargs):
         super(FilterReports, self).__init__(*args, **kwargs)

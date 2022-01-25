@@ -829,10 +829,10 @@ def get_edit_url(instance):
     return u'/{}/edit/{}/'.format(instance.collection_plural_name, instance.pk)
 
 def get_report_url(instance):
-    return u'/reports/add/{}/?id={}'.format(instance.collection_name, instance.pk)
+    return u'/reports/add/{}/?id={}'.format(instance.collection.model_name, instance.pk)
 
 def get_suggestedit_url(instance):
-    return u'/suggestededits/add/{}/?id={}'.format(instance.collection_name, instance.pk)
+    return u'/suggestededits/add/{}/?id={}'.format(instance.collection.model_name, instance.pk)
 
 def get_ajax_edit_url(instance):
     return u'/ajax/{}/edit/{}/'.format(instance.collection_plural_name, instance.pk)

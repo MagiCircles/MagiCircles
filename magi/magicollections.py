@@ -4151,20 +4151,26 @@ class _BaseReportCollection(MagiCollection):
     reportable = False
     blockable = False
 
+    def get_collections(self):
+        return {
+            name: collection
+            for name, collection in getMagiCollections().items()
+            if (collection.allow_suggest_edit if self.name == 'suggestededit' else collection.reportable)
+        }
+
     @property
     def types(self):
         if not getMagiCollections():
             return True
         if not self._cached_types:
             self._cached_types = {
-                name: {
-                    'title': c.title,
-                    'plural_title': c.plural_title,
-                    'image': c.image,
-                    'icon': c.icon,
+                collection.model_name: {
+                    'title': collection.title,
+                    'plural_title': collection.plural_title,
+                    'image': collection.image,
+                    'icon': collection.icon,
                 }
-                for name, c in getMagiCollections().items()
-                if (c.allow_suggest_edit if self.name == 'suggestededit' else c.reportable)
+                for collection in self.get_collections().values()
             }
         return self._cached_types
     _cached_types = None

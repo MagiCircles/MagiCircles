@@ -2791,6 +2791,7 @@ def markSafeFormat(string, *args, **kwargs):
 def markSafeJoin(strings, separator=u','):
     return mark_safe(separator.join([
         _markSafeFormatEscapeOrNot(string) for string in strings
+        if string is not None
     ]))
 
 ############################################################

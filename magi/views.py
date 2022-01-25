@@ -734,9 +734,8 @@ def settings(request, context):
             continue
         if report.status == 'Edited':
             thing = markSafeFormat(
-                u'<a href="/{thing}/{id}/">{title}</a>',
-                thing=report.reported_thing,
-                id=report.reported_thing_id,
+                u'<a href="{url}">{title}</a>',
+                url=report.reported_thing_item_url,
                 title=unicode(report).lower(),
             )
         else:

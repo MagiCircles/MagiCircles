@@ -68,11 +68,11 @@
   </a><br>
   {% endif %}
   {% if report.item_view_enabled %}
-  <a href="/{{ report.reported_thing }}/{{ report.reported_thing_id }}/" class="open-thing btn btn-main btn-xl btn-block" {% if report.reported_thing_collection.item_view.ajax %}data-ajax-url="/ajax/{{ report.reported_thing }}/{{ report.reported_thing_id }}/" data-ajax-show-button="true"{% else %}target="_blank"{% endif %}>
+  <a href="{{ report.reported_thing_item_url }}" class="open-thing btn btn-main btn-xl btn-block" {% if report.allow_ajax %}data-ajax-url="{{ report.reported_thing_ajax_item_url }}" data-ajax-show-button="true"{% else %}target="_blank"{% endif %}>
     {{ report.reported_thing_open_sentence }}
   </a>
   {% else %}
-  <h3 class="text-center">{{ report.reported_thing_title }} #{{ report.reported_thing_id }}</h3>
+  <h3 class="text-center">{{ report }}</h3>
   {% endif %}
   {% if user.is_staff %}
   <br><br>

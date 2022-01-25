@@ -1,6 +1,6 @@
 <div class="text-center top-item"{% if item_padding %} style="padding: {% if not item_padding|length %}{{ item_padding }}px{% elif item_padding|length >= 2 %}{{ item_padding.0 }}px {{ item_padding.1 }}px{% if item_padding|length >= 4 %} {{ item_padding.2 }}px {{ item_padding.3 }}px{% endif %}{% else %}{{ item_padding }}px{% endif %};"{% endif %}{% for key, value in item.html_attributes_in_list.items %} {{ key }}="{{ value }}"{% endfor %}{% for key, value in item.html_attributes.items %} {{ key }}="{{ value }}"{% endfor %}>
   {% if item_view_enabled or item.display_item_url %}
-  <a href="{% if item.display_item_url %}{{ item.display_item_url }}{% else %}{{ item.item_url }}{% endif %}"{% if ajax_item_view_enabled %} data-ajax-url="{% if item.display_ajax_item_url %}{{ item.display_ajax_item_url }}{% else %}{{ item.ajax_item_url }}{% endif %}" data-ajax-title="{{ item }}"{% endif %}{% if ajax_item_popover %} data-ajax-popover="{{ item.ajax_item_url }}" title="{{ item }}"{% endif %}>
+  <a href="{% if item.display_item_url %}{{ item.display_item_url }}{% else %}{{ item.item_url }}{% endif %}"{% if ajax_item_view_enabled %} data-ajax-url="{% if item.display_ajax_item_url %}{{ item.display_ajax_item_url }}{% else %}{{ item.ajax_item_url }}{% endif %}" data-ajax-title="{{ item }}"{% endif %}{% if ajax_item_popover %} data-ajax-popover="{{ item.ajax_item_url }}" title="{{ item }}"{% endif %} class="a-nodifference">
     {% endif %}
     {% if item.top_html_list %}
     {{ item.top_html_list|safe }}
