@@ -1905,12 +1905,14 @@ def filterByTranslatedValue(
 # Form utils
 
 class ManyToManyCSVField(forms_CharField):
+    # Only works if pk is an integer
 
     def __init__(self, model_class, field_name, lookup_field_name='name', verbose_name=None, *args, **kwargs):
         self.m2m_model_class = model_class
         self.m2m_field_name = field_name
         self.m2m_lookup_field_name = lookup_field_name
         self.m2m_items_model_class = getattr(self.m2m_model_class, self.m2m_field_name).field.rel.to
+        self._known_items_by_pk = {}
         help_text = _('Separate {things} with commas. Example: "Apple, Orange"').format(
             things=(
                 verbose_name
@@ -1923,17 +1925,23 @@ class ManyToManyCSVField(forms_CharField):
         )
         super(ManyToManyCSVField, self).__init__(*args, **kwargs)
 
+    def _save_known_items(self, items):
+        for item in items:
+            self._known_items_by_pk[item.pk] = item
+
     def prepare_value(self, value):
         if not value:
             return None
         if isinstance(value, list):
             if isinstance(value[0], self.m2m_items_model_class):
                 value = [getattr(item, self.m2m_lookup_field_name) for item in value]
-            elif isinstance(value[0], int): # ids
-                value = [
-                    getattr(item, self.m2m_lookup_field_name) for item in
-                    self.m2m_items_model_class.objects.filter(pk__in=value)
-                ]
+            elif isinstance(value[0], int): # pk
+                try:
+                    value = [ getattr(self._known_items_by_pk[item_pk], self.m2m_lookup_field_name) for item_pk in value ]
+                except KeyError:
+                    items = list(self.m2m_items_model_class.objects.filter(pk__in=value))
+                    self._save_known_items(items)
+                    value = [ getattr(item, self.m2m_lookup_field_name) for item in items ]
             if not isinstance(value[0], basestring):
                 raise ValueError('Unknown value {} ({})'.format(type(value), value))
             return u', '.join(value)
@@ -1947,6 +1955,7 @@ class ManyToManyCSVField(forms_CharField):
         items = list(self.m2m_items_model_class.objects.filter(**{
             u'{}__in'.format(self.m2m_lookup_field_name): items_names,
         }).distinct())
+        self._save_known_items(items)
         if len(items) != len(items_names):
             found_items = [getattr(item, self.m2m_lookup_field_name) for item in items]
             raise ValidationError(u'{}: {}'.format(
@@ -2140,6 +2149,13 @@ def newOrder(current_order, insert_after=None, insert_before=None, insert_instea
         return OrderedDict([( key, dict_values.get(key, current_order.get(key, None))) for key in new_order ])
     return new_order
 
+def toNullBool(value):
+    if value == '2' or value == True:
+        return True
+    elif value == '3' or value == False:
+        return False
+    return None
+
 ############################################################
 # Set a field in a sub dictionary
 
@@ -2206,11 +2222,13 @@ def toFieldsAddAttribute(fields, field_name, attribute, value):
     attributes[attribute] = value
     setSubField(fields, field_name, key='attributes', value=attributes)
 
-def getImageForPrefetched(item, return_field_name=False):
+def getImageForPrefetched(item, return_field_name=False, in_list=True):
     for image_field in [
             'image_for_prefetched',
-            'top_image_list', 'top_image',
-            'image_thumbnail_url', 'image_url',
+    ] + (['top_image_list'] if in_list else []) + [
+        'top_image',
+        'image_thumbnail_url',
+        'image_url',
     ]:
         if getattr(item, image_field, None):
             if getattr(item, image_field) == -1:

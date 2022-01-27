@@ -94,6 +94,7 @@ from magi.utils import (
     failSafe,
     HTMLAlert,
     getEnglish,
+    toNullBool,
 )
 from versions_utils import sortByRelevantVersions
 
@@ -1723,6 +1724,7 @@ class MagiFiltersForm(AutoForm):
                 field = self.fields.get(field_name, forms.CharField())
                 operator_for_multiple = filter.operator_for_multiple or MagiFilterOperator.default_for_field(field)
                 operator_for_multiple_selectors = filter.operator_for_multiple_selectors or MagiFilterOperatorSelector.default
+                original_operator_for_multiple_selectors = operator_for_multiple_selectors
                 selectors = filter.selectors if filter.selectors else [field_name]
                 condition = Q()
                 filters, exclude = {}, {}
@@ -1732,12 +1734,18 @@ class MagiFiltersForm(AutoForm):
                     if isinstance(field, forms.fields.NullBooleanField):
                         value = self._value_as_nullbool(filter, value)
                         if value is not None:
-                            filters[selector] = value
                             # Special case for __isnull selectors
                             if selector.endswith('__isnull') and not filter.to_value:
-                                filters[selector] = value = not value
                                 original_selector = selector[:(-1 * len('__isnull'))]
-                                # Get what corresponds to an empty value
+
+                                # When filtering for items that don't have values ("No"), swap operator for multiple selector:
+                                if not value:
+                                    if original_operator_for_multiple_selectors == MagiFilterOperatorSelector.And:
+                                        operator_for_multiple_selectors = MagiFilterOperatorSelector.Or
+                                    elif original_operator_for_multiple_selectors == MagiFilterOperatorSelector.Or:
+                                        operator_for_multiple_selectors = MagiFilterOperatorSelector.And
+
+                                # Get what corresponds to an empty value (if any)
                                 empty_value = None
                                 try:
                                     model_field = queryset.model._meta.get_field(original_selector)
@@ -1747,12 +1755,22 @@ class MagiFiltersForm(AutoForm):
                                     ):
                                         empty_value = ''
                                 except FieldDoesNotExist: pass
+
                                 if empty_value is not None:
-                                    if value: # Also include empty values
-                                        sub_condition = sub_condition | Q(**{ original_selector: empty_value })
-                                    else: # Exclude empty values
-                                        # need to check if int then 0 else ''
-                                        exclude = { original_selector: empty_value }
+                                    if value:
+                                        sub_condition = Q(
+                                            Q(**{ selector: False })
+                                            & ~Q(**{ original_selector: empty_value })
+                                        )
+                                    else:
+                                        sub_condition = Q(
+                                            Q(**{ selector: True })
+                                            | Q(**{ original_selector: empty_value })
+                                        )
+                                else:
+                                    sub_condition = Q(**{ selector: not value })
+                            else:
+                                filters[selector] = value
                     # MultipleChoiceField
                     elif (isinstance(field, forms.fields.MultipleChoiceField)
                           or filter.multiple):
@@ -1812,11 +1830,7 @@ class MagiFiltersForm(AutoForm):
         return filter.to_value(value) if filter.to_value else value
 
     def to_nullbool(self, value):
-        if value == '2' or value == True:
-            return True
-        elif value == '3' or value == False:
-            return False
-        return None
+        return toNullBool(value)
 
     def _value_as_nullbool(self, filter, value):
         new_value = self.to_nullbool(value)

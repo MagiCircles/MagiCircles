@@ -958,6 +958,8 @@ class Activity(MagiModel):
         except IndexError:
             return None
 
+    m_description = property(lambda _s: _s.m_message)
+
     def __unicode__(self):
         return self.summarize()
 

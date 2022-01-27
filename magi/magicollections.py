@@ -921,7 +921,7 @@ class MagiCollection(object):
         return listUnique([
             (getEnglish(field.label), field.label)
             for field in formClass(request=request, collection=self)
-            if field.name not in self.item_view.fields_exclude
+            if field.name not in (getattr(self.item_view, 'fields_exclude', None) or [])
         ])
 
     translated_fields = None
@@ -1098,17 +1098,32 @@ class MagiCollection(object):
                     }
                     template = getattr(related_item, 'template_for_prefetched', None)
                     item_url = getattr(related_item, 'item_url', None)
+                    item_view_has_permissions = bool(item_url)
+                    if (collection and request
+                        and collection.item_view.enabled
+                        and not collection.item_view.has_permissions(request, {}, related_item)):
+                        item_view_has_permissions = False
+                    used_image_field_name, item_image = getImageForPrefetched(related_item, return_field_name=True)
                     if template:
                         d['type'] = 'template'
                         d['template'] = template
                         d['item'] = related_item
-                    elif item_url:
+                    elif item_url and item_view_has_permissions:
                         d['type'] = 'text_with_link'
                         d['link'] = item_url
                         if allow_ajax_per_item:
                             d['ajax_link'] = getattr(related_item, 'ajax_item_url')
                         d['link_text'] = unicode(_(u'Open {thing}')).format(thing=d['verbose_name'].lower())
                         d['image_for_link'] = getImageForPrefetched(related_item)
+                        d['image_for_link'] = item_image
+                    elif item_image:
+                        d['type'] = 'image_link'
+                        d['value'] = item_image
+                        d['link_text'] = d['verbose_name']
+                        if used_image_field_name == 'image_thumbnail_url':
+                            d['link'] = getattr(related_item, 'image_url', item_image)
+                        else:
+                            d['link'] = item_image
                     d['icon'] = getattr(related_item, 'icon_for_prefetched',
                                         getattr(related_item, 'flaticon', d['icon']))
                     if callable(d['icon']):
@@ -1144,11 +1159,16 @@ class MagiCollection(object):
                         break
                     template = getattr(related_item, 'template_for_prefetched', None)
                     item_url = getattr(related_item, 'item_url', None)
+                    item_view_has_permissions = True
+                    if (collection and request
+                        and collection.item_view.enabled
+                        and not collection.item_view.has_permissions(request, {}, related_item)):
+                        item_view_has_permissions = False
                     to_append = {
-                        'link': item_url,
+                        'link': item_url if item_view_has_permissions else None,
                         'link_text': unicode(related_item),
                     }
-                    if allow_ajax_per_item:
+                    if item_view_has_permissions and allow_ajax_per_item:
                         to_append['ajax_link'] = getattr(related_item, 'ajax_item_url', None)
                     if template:
                         with_template = True
