@@ -1302,7 +1302,7 @@ class MagiCollection(object):
                     if (language in LANGUAGES_CANT_SPEAK_ENGLISH
                         and not force_all_fields):
                         continue
-                    else:
+                    elif not isinstance(field, YouTubeVideoField):
                         value = mark_safe(translationURL(
                             value,
                             from_language=result_language,
