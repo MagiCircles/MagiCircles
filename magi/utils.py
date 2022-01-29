@@ -1935,7 +1935,7 @@ class ManyToManyCSVField(forms_CharField):
         if isinstance(value, list):
             if isinstance(value[0], self.m2m_items_model_class):
                 value = [getattr(item, self.m2m_lookup_field_name) for item in value]
-            elif isinstance(value[0], int): # pk
+            elif isinstance(value[0], int) or isinstance(value[0], long): # pk
                 try:
                     value = [ getattr(self._known_items_by_pk[item_pk], self.m2m_lookup_field_name) for item_pk in value ]
                 except KeyError:
