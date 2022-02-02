@@ -330,7 +330,7 @@ def generateCharactersSettings(
             ))
 
     all_names = OrderedDict()
-    for language in LANGUAGES_DICT.keys()
+    for language in LANGUAGES_DICT.keys():
         for character in queryset:
             if character.pk not in original_names:
                 continue
