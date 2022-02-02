@@ -77,16 +77,10 @@ DATABASES = {
 # Internationalization
 # https://docs.djangoproject.com/en/1.7/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_L10N = True
-
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.7/howto/static-files/
@@ -119,6 +113,26 @@ LANGUAGES = (
     ('pt-br', _('Brazilian Portuguese')),
     ('tr', _('Turkish')),
     ('th', _('Thai')),
+)
+
+NATIVE_LANGUAGES = (
+    ('en', u'English'),
+    ('es', u'Español'),
+    ('zh-hans', u'简体中文'),
+    ('ru', u'Русский'),
+    ('it', u'Italiano'),
+    ('fr', u'Français'),
+    ('de', u'Deutsch'),
+    ('pl', u'polski'),
+    ('ja', u'日本語'),
+    ('kr', u'한국어'),
+    ('id', u'Indonesia'),
+    ('vi', u'Tiếng Việt Nam'),
+    ('zh-hant', u'繁體中文'),
+    ('pt', u'Português'),
+    ('pt-br', u'Português Brasileiro'),
+    ('tr', u'Türkçe'),
+    ('th', u'ไทย'),
 )
 
 LANGUAGE_CODE = 'en'

@@ -66,6 +66,7 @@ from magi.utils import (
     duplicate_translation,
     getColSize,
     LANGUAGES_NAMES,
+    LANGUAGES_DICT,
     h1ToContext,
     get_default_owner,
     getEventStatus,
@@ -1390,7 +1391,7 @@ def translations(request, context):
                 languages = getattr(
                     collection.queryset.model,
                     u'{name}S_CHOICES'.format(name=field.upper()),
-                    django_settings.LANGUAGES,
+                    LANGUAGES_DICT.items(),
                 )
 
                 source_languages = getattr(
@@ -1520,7 +1521,7 @@ def translations_check(request, context):
         form = TranslationCheckForm(request.POST)
         if form.is_valid():
             old_lang = get_language()
-            for lang, verbose in django_settings.LANGUAGES:
+            for lang, verbose in LANGUAGES_DICT.items():
                 translation_activate(lang)
                 terms.append((lang, verbose, unicode(_(form.cleaned_data['term']))))
                 translation_activate(old_lang)

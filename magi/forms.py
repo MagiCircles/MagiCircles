@@ -95,6 +95,7 @@ from magi.utils import (
     HTMLAlert,
     getEnglish,
     toNullBool,
+    getVerboseLanguage,
 )
 from versions_utils import sortByRelevantVersions
 
@@ -1059,13 +1060,10 @@ def to_translate_form_class(view):
                 else: # dict
                     return u'd_{}s-{}'.format(field_name, language)
 
-        def _get_verbose_language(self, language):
-            return LANGUAGES_NAMES.get(language, language).replace('_', ' ').title()
-
         def _language_help_text(self, language, verbose_language, field_name, sources):
             formatted_sources = [
                 u' <span class="label label-info">{language}</span> {value}'.format(
-                    language=self._get_verbose_language(source_language),
+                    language=getVerboseLanguage(source_language),
                     value=(
                         u'<pre style="white-space: pre-line;">{}</pre>'.format(value)
                         if field_name.startswith('d_m_')
@@ -1132,7 +1130,7 @@ def to_translate_form_class(view):
                         self._language_help_text(language, verbose_language, destination_field_name, sources)
                 for language, fields in self.Meta.external_translation_fields.items():
                     if field_name in fields:
-                        verbose_language = self._get_verbose_language(language)
+                        verbose_language = getVerboseLanguage(language)
                         self._language_help_text(language, verbose_language, fields[field_name], sources)
 
                 # Add English to spoken languages if needed
@@ -1147,7 +1145,7 @@ def to_translate_form_class(view):
                         language=language,
                         vlanguage=verbose_language,
                         image=staticImageURL(language, folder='language', extension='png'),
-                    ) for language, verbose_language in django_settings.LANGUAGES
+                    ) for language, verbose_language in LANGUAGES_DICT.items()
                 ]),
             ))
 
@@ -2587,7 +2585,7 @@ class StaffEditUser(_UserCheckEmailUsernameForm):
             self.fields['group_settings_translator_languages'] = forms.MultipleChoiceField(
                 required=False,
                 label=self.fields['group_settings_translator_languages'].label,
-                choices=django_settings.LANGUAGES,
+                choices=LANGUAGES_DICT.items(),
                 initial=(instance.preferences.settings_per_groups or {}).get('translator', {}).get('languages', [])
             )
 

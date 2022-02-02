@@ -339,15 +339,23 @@ def getCharactersFavoriteQueryset(queryset, value, key='FAVORITE_CHARACTERS', fi
 ############################################################
 # Languages
 
-LANGUAGES_DICT = dict(django_settings.LANGUAGES)
+# es -> _("Spanish")
+LANGUAGES_DICT = OrderedDict(django_settings.LANGUAGES)
 
+# es -> "Español"
+NATIVE_LANGUAGES = OrderedDict(getattr(django_settings, 'NATIVE_LANGUAGES', [])) or LANGUAGES_DICT
+
+# es -> spanish
 LANGUAGES_NAMES = {
     _language: unicode(_verbose_name).replace(' ', '_').lower()
-    for _language, _verbose_name in django_settings.LANGUAGES
+    for _language, _verbose_name in LANGUAGES_DICT.items()
 }
+# spanish -> es
 LANGUAGES_NAMES_TO_CODES = { _v: _k for _k, _v in LANGUAGES_NAMES.items() }
 
-def getVerboseLanguage(language):
+def getVerboseLanguage(language, in_native_language=False):
+    if in_native_language:
+        return NATIVE_LANGUAGES.get(language, None)
     return LANGUAGES_DICT.get(language, None)
 
 ############################################################
@@ -681,6 +689,8 @@ def globalContext(request=None, email=False):
     context['page_title'] = None
     context['current_language'] = language
     context['localized_language'] = LANGUAGES_DICT.get(language, '')
+    context['native_language'] = NATIVE_LANGUAGES.get(language, '')
+    context['switch_languages_choices'] = NATIVE_LANGUAGES.items()
     context['t_site_name'] = context['site_name_per_language'].get(language, context['site_name'])
     context['t_site_image'] = context['site_image_per_language'].get(language, context['site_image'])
     context['t_game_name'] = context['game_name_per_language'].get(language, context['game_name'])
@@ -726,7 +736,7 @@ def globalContext(request=None, email=False):
         cuteFormFieldsForContext({
             'language': {
                 'selector': '#switchLanguage',
-                'choices': django_settings.LANGUAGES,
+                'choices': NATIVE_LANGUAGES.items(),
             },
         }, context)
 
@@ -1454,7 +1464,7 @@ def getEnglish(translated_string):
 def getAllTranslations(term, unique=False):
     translations = {}
     old_lang = get_language()
-    for lang, _verbose in django_settings.LANGUAGES:
+    for lang in LANGUAGES_DICT.keys():
         translation_activate(lang)
         if callable(term):
             translations[lang] = unicode(term(lang))

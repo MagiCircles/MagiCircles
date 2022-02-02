@@ -25,6 +25,7 @@ from magi.utils import (
     birthdayOrderingQueryset,
     modelHasField,
     getCharacterImageFromPk,
+    LANGUAGES_DICT,
 )
 from magi.settings import (
     ACTIVITY_TAGS,
@@ -195,7 +196,7 @@ def getCharactersBirthdays(queryset, get_name_image_url_from_character=defaultGe
             continue
         t_titles = {}
         old_lang = get_language()
-        for lang, _verbose in django_settings.LANGUAGES:
+        for lang in LANGUAGES_DICT.keys():
             translation_activate(lang)
             t_titles[lang] = u'{}, {}! {}'.format(
                 _('Happy Birthday'),
@@ -234,7 +235,7 @@ def getUsersBirthdaysToday(image=None, latest_news=None, max_usernames=4):
         )
         t_titles = {}
         old_lang = get_language()
-        for lang, _verbose in django_settings.LANGUAGES:
+        for lang in LANGUAGES_DICT.keys():
             translation_activate(lang)
             t_titles[lang] = u'{} 🎂🎉 {}'.format(
                 _('Happy Birthday'),
@@ -274,7 +275,7 @@ def getSeasonalActivityTagBanners(latest_news=None, seasonal_settings=None):
             image = current_season.get('activity_tag_banner', None) or None
             t_titles = {}
             old_lang = get_language()
-            for lang, _verbose in django_settings.LANGUAGES:
+            for lang in LANGUAGES_DICT.keys():
                 translation_activate(lang)
                 t_titles[lang] = unicode(tag)
                 translation_activate(old_lang)
@@ -329,7 +330,7 @@ def generateCharactersSettings(
             ))
 
     all_names = OrderedDict()
-    for language, _verbose in django_settings.LANGUAGES:
+    for language in LANGUAGES_DICT.keys()
         for character in queryset:
             if character.pk not in original_names:
                 continue

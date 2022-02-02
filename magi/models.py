@@ -23,7 +23,6 @@ from magi.utils import (
     hasOneOfPermissions,
     hasPermissions,
     toHumanReadable,
-    LANGUAGES_DICT,
     locationOnChange,
     staticImageURL,
     birthdayURL,
@@ -36,6 +35,8 @@ from magi.utils import (
     getCharacterImageFromPk,
     getCharacterURLFromPk,
     getCharactersFavoriteFields,
+    NATIVE_LANGUAGES,
+    LANGUAGES_DICT,
 )
 from magi.settings import (
     ACCOUNT_MODEL,
@@ -65,6 +66,7 @@ from magi.item_model import (
     i_choices,
     addMagiModelProperties,
     getInfoFromChoices,
+    ALL_LANGUAGES,
     ALL_ALT_LANGUAGES,
     UserImage,
 )
@@ -131,7 +133,7 @@ ACTIVITIES_TAGS_HIDDEN_BY_DEFAULT = [
 class UserPreferences(BaseMagiModel):
     user = models.OneToOneField(User, related_name='preferences', on_delete=models.CASCADE)
 
-    LANGUAGE_CHOICES = django_settings.LANGUAGES
+    LANGUAGE_CHOICES = NATIVE_LANGUAGES.items()
     LANGUAGE_WITHOUT_I_CHOICES = True
     LANGUAGE_SOFT_CHOICES = True
     i_language = models.CharField(_('Language'), max_length=10)
@@ -169,7 +171,7 @@ class UserPreferences(BaseMagiModel):
     i_default_activities_tab = models.PositiveIntegerField(_('Default tab'), default=0)
     default_activities_tab_form_fields = property(getInfoFromChoices('default_activities_tab', HOME_ACTIVITY_TABS, 'form_fields'))
 
-    ACTIVITIES_LANGUAGE_CHOICES = LANGUAGE_CHOICES
+    ACTIVITIES_LANGUAGE_CHOICES = ALL_LANGUAGES
     ACTIVITIES_LANGUAGE_WITHOUT_I_CHOICES = True
     ACTIVITIES_LANGUAGE_SOFT_CHOICES = True
     i_activities_language = models.CharField(_('Always post activities in {language}'), max_length=10)
@@ -576,7 +578,7 @@ class StaffConfiguration(MagiModel):
     verbose_key = models.CharField('Name', max_length=100)
     value = models.TextField('Value', null=True)
 
-    LANGUAGE_CHOICES = django_settings.LANGUAGES
+    LANGUAGE_CHOICES = ALL_LANGUAGES
     LANGUAGE_WITHOUT_I_CHOICES = True
     LANGUAGE_SOFT_CHOICES = True
     i_language = models.CharField(_('Language'), max_length=10, null=True)
@@ -812,7 +814,7 @@ class Activity(MagiModel):
 
     likes = models.ManyToManyField(User, related_name="liked_activities")
 
-    LANGUAGE_CHOICES = django_settings.LANGUAGES
+    LANGUAGE_CHOICES = NATIVE_LANGUAGES.items()
     LANGUAGE_WITHOUT_I_CHOICES = True
     LANGUAGE_SOFT_CHOICES = True
     i_language = models.CharField(_('Language'), max_length=10)

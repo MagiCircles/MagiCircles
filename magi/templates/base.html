@@ -143,8 +143,8 @@
                     {% csrf_token %}
                     <input name="next" type="hidden" value="{{ current_url }}" />
                     <select name="{% if user.is_authenticated %}i_{% endif %}language" id="switchLanguage">
-                      {% for lang in LANGUAGES %}
-                      <option value="{{ lang.0 }}"{% if lang.0 == LANGUAGE_CODE %} selected{% endif %}>{{ lang.1 }}</option>
+                      {% for code, verbose in switch_languages_choices %}
+                      <option value="{{ code }}"{% if code == LANGUAGE_CODE %} selected{% endif %}>{{ verbose }}</option>
                       {% endfor %}
                     </select>
                   </form>

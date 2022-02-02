@@ -25,8 +25,16 @@ from magi.utils import (
 ############################################################
 # Utils for translated fields
 
-ALL_ALT_LANGUAGES = [ _l for _l in django_settings.LANGUAGES if _l[0] != django_settings.LANGUAGE_CODE ]
-NON_LATIN_LANGUAGES = [ l for l in django_settings.LANGUAGES if l[0] in ['ja', 'ru', 'zh-hans', 'zh-hant', 'kr', 'th'] ]
+ALL_LANGUAGES = django_settings.LANGUAGES
+
+ALL_ALT_LANGUAGES = [
+    (_code, _verbose) for _code, _verbose in django_settings.LANGUAGES
+    if _code != django_settings.LANGUAGE_CODE
+]
+NON_LATIN_LANGUAGES = [
+    (_code, _verbose) for _code, _verbose in django_settings.LANGUAGES
+    if _code in [ 'ja', 'ru', 'zh-hans', 'zh-hant', 'kr', 'th']
+]
 
 ############################################################
 # Utils for images / files
