@@ -1771,7 +1771,7 @@ class ColorInput(TextInput):
         return value
 
 class FilterByMode:
-    Exact, Contains, StartsWith, EndsWith = range(4)
+    Exact, Contains, StartsWith, EndsWith, iExact = range(5)
 
 def filterByTranslatedValue(
         queryset, field_name, language=None, value=None,
@@ -1830,6 +1830,8 @@ def filterByTranslatedValue(
                 return _return(Q(**{ u'{}__startswith'.format(special_field_name): value }))
             elif mode == FilterByMode.EndsWith:
                 return _return(Q(**{ u'{}__endswith'.format(special_field_name): value }))
+            elif mode == FilterByMode.iExact:
+                return _return(Q(**{ u'{}__iexact'.format(special_field_name): value }))
             return _return()
     else:
         if value is None:
@@ -1862,6 +1864,23 @@ def filterByTranslatedValue(
             )
             for other_field_name in other_languages_fields:
                 condition |= Q(**{ other_field_name: value })
+            return _return(condition)
+
+    elif mode == FilterByMode.iExact:
+        if isinstance(value, basestring):
+            d_value = u'"{}"'.format(d_value)
+        if language:
+            return _return(
+                Q(**{ u'd_{}s__icontains'.format(field_name): u'"{}": {},'.format(language, d_value) })
+                | Q(**{ u'd_{}s__icontains'.format(field_name): u'"{}": {}}}'.format(language, d_value) }),
+            )
+        else:
+            condition = (
+                Q(**{ u'd_{}s__icontains'.format(field_name): u'": {},'.format(d_value) })
+                | Q(**{ u'd_{}s__icontains'.format(field_name): u'": {}}}'.format(d_value) })
+            )
+            for other_field_name in other_languages_fields:
+                condition |= Q(**{ u'{}__iexact'.format(other_field_name): value })
             return _return(condition)
 
     elif mode == FilterByMode.StartsWith:
