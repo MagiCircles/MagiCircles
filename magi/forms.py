@@ -1258,7 +1258,7 @@ class MagiFiltersForm(AutoForm):
                         getattr(self, 'search_fields', []) + getattr(self, 'search_fields_exact', [])):
                     condition |= filterByTranslatedValue(
                         queryset, field_name[2:-1], value=term,
-                        mode=FilterByMode.Contains,
+                        mode=FilterByMode.Contains, case_insensitive=True,
                         as_condition=True,
                         include_english=False,
                     )
@@ -1270,7 +1270,7 @@ class MagiFiltersForm(AutoForm):
                         getattr(self, 'search_fields', []) + getattr(self, 'search_fields_exact', [])):
                     condition |= filterByTranslatedValue(
                         queryset, field_name[2:-1], value=term,
-                        mode=FilterByMode.Exact,
+                        mode=FilterByMode.Exact, case_insensitive=True,
                         as_condition=True,
                         include_english=False,
                     )
