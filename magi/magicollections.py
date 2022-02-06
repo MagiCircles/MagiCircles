@@ -966,6 +966,28 @@ class MagiCollection(object):
             'ajax_modal_only' if ajax else '',
         )
 
+    def _get_value_from_display_property(self, view, item, field_name):
+        value = None
+        retrieved_display_from_view = False
+        if view.view == 'item_view':
+            try:
+                value = getattr(item, u'display_{}_item'.format(field_name))
+                retrieved_display_from_view = True
+            except AttributeError:
+                pass
+        elif view.view == 'list_view':
+            try:
+                value = getattr(item, u'display_{}_in_list'.format(field_name))
+                retrieved_display_from_view = True
+            except AttributeError:
+                pass
+        if not retrieved_display_from_view:
+            try:
+                value = getattr(item, u'display_{}'.format(field_name))
+            except AttributeError:
+                pass
+        return value
+
     def to_fields(self, view, item, to_dict=True, only_fields=None, icons=None, images=None, force_all_fields=False, order=None, extra_fields=None, exclude_fields=None, request=None, preselected=None, prefetched_together=None, prefetched=None, images_as_gallery=None):
         if extra_fields is None: extra_fields = []
         if exclude_fields is None: exclude_fields = []
@@ -1074,7 +1096,7 @@ class MagiCollection(object):
                 verbose_name = verbose_name()
             filter_field_name = details.get('filter_field_name', item.collection_name)
             plural_verbose_name = details.get('plural_verbose_name', verbose_name)
-            max_per_line = details.get('max_per_line', 5 if collection else None)
+            max_per_line = details.get('max', details.get('max_per_line', 5 if collection else None))
             show_per_line = details.get('show_per_line', 5)
             allow_ajax_per_item = details.get('allow_ajax_per_item', True) and (not collection or collection.item_view.ajax)
             allow_ajax_for_more = details.get('allow_ajax_for_more', True) and (not collection or collection.list_view.ajax)
@@ -1089,6 +1111,7 @@ class MagiCollection(object):
                 try: getattr(item, 'cached_total_{}'.format(field_name))
                 except AttributeError: pass
                 for related_item in getattr(item, field_name).all().distinct():
+                    related_item.request = request
                     d = {
                         'verbose_name': verbose_name,
                         'value': unicode(related_item),
@@ -1153,6 +1176,7 @@ class MagiCollection(object):
                 l_links = []
                 with_template = False
                 for i, related_item in enumerate(getattr(item, field_name).all().distinct()):
+                    related_item.request = request
                     if max_shown and i >= max_shown:
                         and_more = getattr(item, field_name).count() - max_shown
                         break
@@ -1197,7 +1221,8 @@ class MagiCollection(object):
                         d['type'] = 'images_links'
                         d['images'] = l_images
                         d['spread_across'] = True
-                        d['images_width'] = u'{}%'.format(100 / (max_per_line or show_per_line))
+                        d['images_width'] = u'{}%'.format(100 / (show_per_line or max_per_line))
+                        d['per_line'] = show_per_line
                     else:
                         d['type'] = 'list_links' if item_url else 'list'
                         d['links'] = l_links
@@ -1295,7 +1320,7 @@ class MagiCollection(object):
                 language = request.LANGUAGE_CODE if request else get_language()
                 try: # When display_{} is specified, resulting value will be assumed to be in the right language
                     result_language = language
-                    value = getattr(item, u'display_{}'.format(field_name))
+                    value = self._get_value_from_display_property(view, item, field_name)
                 except AttributeError:
                     result_language, value = item.get_translation_from_dict(
                         field.name, language=language, return_language=True)
@@ -1349,6 +1374,8 @@ class MagiCollection(object):
             if is_foreign_key:
                 if field_name in preselected:
                     cache = getattr(item, field_name, None)
+                    if cache:
+                        cache.request = request
                 else:
                     cache = getattr(item, 'cached_' + field_name, None)
                 if not cache:
@@ -1446,10 +1473,10 @@ class MagiCollection(object):
             else:
                 d['type'] = 'text'
 
-            try:
-                d['value'] = getattr(item, u'display_{}'.format(field_name))
-            except AttributeError:
-                pass
+            value = self._get_value_from_display_property(view, item, field_name)
+            if value:
+                d['value'] = value
+
             if callable(d.get('icon', None)):
                 d['icon'] = d['icon'](item)
             if callable(d.get('image', None)):
