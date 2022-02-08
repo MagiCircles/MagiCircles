@@ -27,7 +27,7 @@ from django.template.loader import get_template
 from django.db import models
 from django.db import connection
 from django.db.models.fields import BLANK_CHOICE_DASH, FieldDoesNotExist
-from django.db.models import Q
+from django.db.models import Q, Prefetch
 from django.forms.models import model_to_dict
 from django.forms import (
     NullBooleanField,
@@ -1757,6 +1757,58 @@ def failSafe(f, exceptions=None, default=None):
         return f()
     except:
         return default
+
+def getModelOfRelatedItem(model, related_item_field_name):
+    """
+    Does not support nested lookups. (ex: "card__idol")
+    """
+    if '__' in related_item_field_name:
+        return None
+    # Foreign key
+    field = modelGetField(model, related_item_field_name)
+    if field:
+        return field.rel.to
+    # Many to many field
+    for m in model._meta.many_to_many:
+        if m.name == related_item_field_name:
+            return m.rel.to
+    # Reverse related objects
+    # + many to many reverse related objects
+    for r in model._meta.get_all_related_objects() + model._meta.get_all_related_many_to_many_objects():
+        if r.get_accessor_name() == related_item_field_name:
+            return r.model
+    return None
+
+def selectRelatedDictToStrings(select_related, prefix=None):
+    if not isinstance(select_related, dict):
+        return []
+    new = []
+    for key, values in select_related.items():
+        if prefix:
+            key = u'{}__{}'.format(prefix, key)
+        new.append(key)
+        new += selectRelatedDictToStrings(values, prefix=key)
+    return new
+
+def displayQueryset(queryset, prefix=u''):
+    result = u''
+    if queryset is None:
+        result += u'{}None\n'.format(prefix)
+    else:
+        result += u'{}{}\n'.format(prefix, queryset.model)
+    result += u'{}{}\n'.format(prefix, '  Select related:')
+    result += u'{}{}{}\n'.format(prefix, '    ', queryset.query.select_related)
+    result += u'{}{}\n'.format(prefix, '  Prefetch related:')
+    if queryset._prefetch_related_lookups:
+        for p in queryset._prefetch_related_lookups:
+            if isinstance(p, Prefetch):
+                result += u'{}{}{}\n'.format(prefix, '    ', p.prefetch_to)
+                result += displayQueryset(p.queryset, prefix=prefix + u'      ')
+            else:
+                result += u'{}{}{}\n'.format(prefix, '    ', p)
+    else:
+        result += u'{}{}{}\n'.format(prefix, '    ', None)
+    return result
 
 class ColorInput(TextInput):
     input_type = 'color'

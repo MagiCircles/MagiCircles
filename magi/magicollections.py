@@ -56,6 +56,9 @@ from magi.utils import (
     listUnique,
     getEnglish,
     newOrder,
+    getModelOfRelatedItem,
+    selectRelatedDictToStrings,
+    displayQueryset,
 )
 from magi.raw import please_understand_template_sentence, unrealistic_template_sentence
 from magi.django_translated import t
@@ -116,7 +119,7 @@ class _View(object):
         return self.collection.share_image(context, item)
 
     def get_queryset(self, queryset, parameters, request):
-        return self.collection.get_queryset(queryset, parameters, request)
+        return self.collection.get_queryset(self, queryset, parameters, request)
 
     def check_permissions(self, request, context):
         if not self.enabled:
@@ -235,7 +238,106 @@ class MagiCollection(object):
     def navbar_link_title(self):
         return self.list_view.get_page_title()
 
-    def get_queryset(self, queryset, parameters, request):
+    def _get_queryset_from_model(self, model, request):
+        if model:
+            collection_name = getattr(model, 'collection_name', None)
+            if collection_name:
+                collection = getMagiCollection(collection_name)
+                if collection:
+                    return collection.get_queryset(None, collection.queryset, {}, request)
+            return model.objects.all()
+        return None
+
+    def get_queryset(self, view, queryset, parameters, request):
+        """
+        Will preselect/prefetch related items based on view settings.
+        For each preselected/prefetched item, it will make sure to call get_queryset to keep all
+          default preselected/prefetched items of those. It will however not use view settings for those.
+        It doesn't support nested lookups, which means if you preselect "idol__song", it won't call
+          get_queryset of idol nor song.
+        It doesn't support generic `select_related(True)`.
+        Example:
+          - CardsSetCollection item view has fields_prefetched = 'cards'
+          - CardCollection queryset = Card.objects.select_related('idol')
+          => When displaying a cards set item view, will prefetch cards, and their idols too.
+          => Result queryset: CardsSet.objects.prefetch_related(Prefetch('cards', models.Card.objects.select_related('idols'))
+        Example:
+          - CostumeCollection item view has fields_preselected = 'card'
+          - CardCollection queryset = Card.objects.select_related('idol')
+          => When displaying a costume item view, will preselect card, and its idol too.
+          => Result queryset: Costume.objects.select_related('card', 'card__idol')
+        Example:
+          - IdolCollection item view has fields_preselected = 'unit'
+          - UnitCollection queryset = Unit.objects.prefetch_related('idols')
+          => When displaying an idol item view, will preselect unit, and its idols too.
+          => Result queryset: Idol.objects.select_related('unit').prefetch_related('unit__idols')
+        """
+
+        # Preselected
+        fields_preselected = listUnique(
+            getattr(view, 'fields_preselected', [])
+            + selectRelatedDictToStrings(queryset.query.select_related)
+        )
+        if fields_preselected:
+            new_fields_preselected = []
+            for preselected in fields_preselected:
+                model_of_preselected = getModelOfRelatedItem(queryset.model, preselected)
+                queryset_of_preselected = self._get_queryset_from_model(model_of_preselected, request)
+                new_fields_preselected += [ preselected ]
+                if queryset_of_preselected is not None:
+                    new_fields_preselected += [
+                        u'{}__{}'.format(preselected, other_preselected)
+                        for other_preselected in selectRelatedDictToStrings(queryset_of_preselected.query.select_related)
+                    ]
+                    for other_prefetched in queryset_of_preselected._prefetch_related_lookups:
+                        queryset_of_other_prefetched = None
+                        if isinstance(other_prefetched, Prefetch):
+                            queryset_of_other_prefetched = other_prefetch.queryset
+                            other_prefetched = other_prefetched.prefetch_to
+                        if queryset_of_other_prefetched is None:
+                            model_of_other_prefetched = getModelOfRelatedItem(model_of_preselected, other_prefetched)
+                            queryset_of_other_prefetched = self._get_queryset_from_model(model_of_other_prefetched, request)
+                        if queryset_of_other_prefetched is not None:
+                            queryset = queryset.prefetch_related(Prefetch(
+                                u'{}__{}'.format(preselected, other_prefetched),
+                                queryset=queryset_of_other_prefetched.distinct(),
+                            ))
+                        else:
+                            queryset = queryset.prefetch_related( u'{}__{}'.format(preselected, other_prefetched))
+            # select_related modifies the queryset in place, so we need to make a copy
+            queryset = copy.deepcopy(queryset)
+            queryset.query.select_related = False
+            queryset = queryset.select_related(*new_fields_preselected)
+
+        # Prefetched
+        already_prefetched = [ p.prefetch_to if isinstance(p, Prefetch) else p for p in queryset._prefetch_related_lookups ]
+        fields_prefetched = listUnique( # may still get duplicates if queryset specified
+            getattr(view, 'fields_prefetched', [])
+            + getattr(view, 'fields_prefetched_together', [])
+            + queryset._prefetch_related_lookups
+        )
+        # Clear current prefetched because they'll be re-added here
+        queryset = queryset.prefetch_related(None)
+        for prefetched in fields_prefetched:
+            queryset_of_prefetched = None
+            if isinstance(prefetched, tuple):
+                queryset_of_prefetched = prefetched[1]()
+                prefetched = prefetched[0]
+            elif isinstance(prefetched, Prefetch):
+                queryset_of_prefetched = prefetch.queryset
+                prefetched = prefetched.prefetch_to
+            if queryset_of_prefetched is None:
+                model_of_prefetched = getModelOfRelatedItem(queryset.model, prefetched)
+                queryset_of_prefetched = self._get_queryset_from_model(model_of_prefetched, request)
+            if queryset_of_prefetched is not None:
+                queryset = queryset.prefetch_related(Prefetch(prefetched, queryset=queryset_of_prefetched.distinct()))
+            else:
+                queryset = queryset.prefetch_related(prefetched)
+
+        if django_settings.DEBUG and view:
+            print ''
+            print 'Get queryset for', self.plural_name, view.view
+            print displayQueryset(queryset, prefix=u'  ')
         return queryset
 
     def get_title_prefixes(self, request, context):
@@ -1110,7 +1212,7 @@ class MagiCollection(object):
                 # Ensure cached total gets updated
                 try: getattr(item, 'cached_total_{}'.format(field_name))
                 except AttributeError: pass
-                for related_item in getattr(item, field_name).all().distinct():
+                for related_item in getattr(item, field_name).all():
                     related_item.request = request
                     d = {
                         'verbose_name': verbose_name,
@@ -1175,7 +1277,7 @@ class MagiCollection(object):
                 l_images = []
                 l_links = []
                 with_template = False
-                for i, related_item in enumerate(getattr(item, field_name).all().distinct()):
+                for i, related_item in enumerate(getattr(item, field_name).all()):
                     related_item.request = request
                     if max_shown and i >= max_shown:
                         and_more = getattr(item, field_name).count() - max_shown
@@ -2182,16 +2284,7 @@ class MagiCollection(object):
         show_item_buttons_in_one_line = property(propertyFromCollection('show_item_buttons_in_one_line'))
 
         def get_queryset(self, queryset, parameters, request):
-            queryset = super(MagiCollection.ItemView, self).get_queryset(self.collection._collectibles_queryset(self, queryset, request), parameters, request)
-            if self.fields_preselected:
-                queryset = queryset.select_related(*self.fields_preselected)
-            if self.fields_prefetched or self.fields_prefetched_together:
-                for prefetched in self.fields_prefetched + self.fields_prefetched_together:
-                    if isinstance(prefetched, tuple):
-                        queryset = queryset.prefetch_related(Prefetch(prefetched[0], prefetched[1]()))
-                    else:
-                        queryset = queryset.prefetch_related(prefetched)
-            return queryset
+            return super(MagiCollection.ItemView, self).get_queryset(self.collection._collectibles_queryset(self, queryset, request), parameters, request)
 
         def to_fields(self, *args, **kwargs):
             return self.collection.to_fields(self, *args, **kwargs)
