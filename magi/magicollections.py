@@ -1199,7 +1199,7 @@ class MagiCollection(object):
             filter_field_name = details.get('filter_field_name', item.collection_name)
             plural_verbose_name = details.get('plural_verbose_name', verbose_name)
             max_per_line = details.get('max', details.get('max_per_line', 5 if collection else None))
-            show_per_line = details.get('show_per_line', 5)
+            show_per_line = details.get('show_per_line', None)
             allow_ajax_per_item = details.get('allow_ajax_per_item', True) and (not collection or collection.item_view.ajax)
             allow_ajax_for_more = details.get('allow_ajax_for_more', True) and (not collection or collection.list_view.ajax)
             to_preset = details.get('to_preset', None)
@@ -1323,7 +1323,7 @@ class MagiCollection(object):
                         d['type'] = 'images_links'
                         d['images'] = l_images
                         d['spread_across'] = True
-                        d['images_width'] = u'{}%'.format(100 / (show_per_line or max_per_line))
+                        d['images_width'] = u'{}%'.format(100 / (show_per_line or max_per_line or 5))
                         d['per_line'] = show_per_line
                     else:
                         d['type'] = 'list_links' if item_url else 'list'
