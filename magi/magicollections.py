@@ -1204,7 +1204,8 @@ class MagiCollection(object):
             show_per_line = 5
             if details.get('max_per_line', None):
                 max = details['max_per_line']
-                show_per_line = details['max_per_line']
+                if max:
+                    show_per_line = max
             if details.get('show_per_line', None):
                 show_per_line = details['show_per_line']
             if details.get('max', None):
