@@ -55,12 +55,9 @@
         </div>
 	    {% elif field.type == 'images_links'  %}
         <div class="images">
-        {% for image in field.images %}
-        {% if field.per_line and forloop.counter0 > 0 and forloop.counter != field.images.length and forloop.counter0|mod:field.per_line %}<br>{% endif %}
-        {% if image.link %}<a href="{{ image.link }}" class="a-nodifference" {% if not image.not_new_window %} target="_blank"{% endif %}{% if image.ajax_link %} data-ajax-url="{{ image.ajax_link }}" data-ajax-title="{{ image.link_text }}"{% endif %}>{% endif %}
-	      <img src="{{ image.value }}" alt="{{ image.link_text }}"{% if image.tooltip %} data-toggle="tooltip" title="{{ image.tooltip }}"{% endif %}{% if field.images_width %} style="max-width: {{ field.images_width }};"{% endif %}>
-        {% if image.link %}</a>{% endif %}
-        {% endfor %}
+        {% for image in field.images %}{% if field.per_line and forloop.counter0 > 0 and forloop.counter != field.images.length and forloop.counter0|mod:field.per_line %}<br>{% endif %}{% if image.link %}<a href="{{ image.link }}" class="a-nodifference" {% if not image.not_new_window %} target="_blank"{% endif %}{% if image.ajax_link %} data-ajax-url="{{ image.ajax_link }}" data-ajax-title="{{ image.link_text }}"{% endif %}{% if field.images_width %} style="display: inline-block; max-width: {{ field.images_width }};"{% endif %}>{% endif %}
+	      <img src="{{ image.value }}" alt="{{ image.link_text }}"{% if image.tooltip %} data-toggle="tooltip" title="{{ image.tooltip }}"{% endif %}>
+        {% if image.link %}</a>{% endif %}{% endfor %}
         </div>
         {% if field.and_more %}
         <br><a href="{{ field.and_more.link }}" class="btn-link-secondary padding10{% if field.and_more.hide %} hidden{% endif %}"
