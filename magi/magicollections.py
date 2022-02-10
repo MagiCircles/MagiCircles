@@ -1198,8 +1198,18 @@ class MagiCollection(object):
                 verbose_name = verbose_name()
             filter_field_name = details.get('filter_field_name', item.collection_name)
             plural_verbose_name = details.get('plural_verbose_name', verbose_name)
-            max_per_line = details.get('max', details.get('max_per_line', 5 if collection else None))
-            show_per_line = details.get('show_per_line', None)
+
+            # Max and show per line
+            max = 5 if collection else None
+            show_per_line = 5
+            if details.get('max_per_line', None):
+                max = details['max_per_line']
+                show_per_line = details['max_per_line']
+            if details.get('show_per_line', None):
+                show_per_line = details['show_per_line']
+            if details.get('max', None):
+                max = details['max']
+
             allow_ajax_per_item = details.get('allow_ajax_per_item', True) and (not collection or collection.item_view.ajax)
             allow_ajax_for_more = details.get('allow_ajax_for_more', True) and (not collection or collection.list_view.ajax)
             to_preset = details.get('to_preset', None)
@@ -1272,15 +1282,14 @@ class MagiCollection(object):
                     'items': [],
                 }
                 and_more = False
-                max_shown = max_per_line
                 all_have_images = True
                 l_images = []
                 l_links = []
                 with_template = False
                 for i, related_item in enumerate(getattr(item, field_name).all()):
                     related_item.request = request
-                    if max_shown and i >= max_shown:
-                        and_more = getattr(item, field_name).count() - max_shown
+                    if max and i >= max:
+                        and_more = getattr(item, field_name).count() - max
                         break
                     template = getattr(related_item, 'template_for_prefetched', None)
                     item_url = getattr(related_item, 'item_url', None)
@@ -1323,7 +1332,7 @@ class MagiCollection(object):
                         d['type'] = 'images_links'
                         d['images'] = l_images
                         d['spread_across'] = True
-                        d['images_width'] = u'{}%'.format(100 / (show_per_line or max_per_line or 5))
+                        d['images_width'] = u'{}%'.format(100 / show_per_line)
                         d['per_line'] = show_per_line
                     else:
                         d['type'] = 'list_links' if item_url else 'list'
