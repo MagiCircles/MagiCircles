@@ -320,19 +320,22 @@ class MagiCollection(object):
         queryset = queryset.prefetch_related(None)
         for prefetched in fields_prefetched:
             queryset_of_prefetched = None
+            to_attr = None
             if isinstance(prefetched, tuple):
                 queryset_of_prefetched = prefetched[1]()
                 prefetched = prefetched[0]
             elif isinstance(prefetched, Prefetch):
-                queryset_of_prefetched = prefetch.queryset
-                prefetched = prefetched.prefetch_to
+                queryset_of_prefetched = prefetched.queryset
+                to_attr = prefetched.prefetch_to
+                prefetched = prefetched.prefetch_through
             if queryset_of_prefetched is None:
                 model_of_prefetched = getModelOfRelatedItem(queryset.model, prefetched)
                 queryset_of_prefetched = self._get_queryset_from_model(model_of_prefetched, request)
             if queryset_of_prefetched is not None:
-                queryset = queryset.prefetch_related(Prefetch(prefetched, queryset=queryset_of_prefetched.distinct()))
+                queryset = queryset.prefetch_related(Prefetch(prefetched, queryset=queryset_of_prefetched.distinct(), to_attr=to_attr))
             else:
                 queryset = queryset.prefetch_related(prefetched)
+
 
         if django_settings.DEBUG and view:
             print ''
@@ -1814,7 +1817,7 @@ class MagiCollection(object):
                         }
                         buttons['translate']['url'] = addParametersToURL(
                             buttons['translate']['url'], parameters)
-                        if buttons['tranlate']['ajax_url']:
+                        if buttons['translate']['ajax_url']:
                             buttons['translate']['ajax_url'] = addParametersToURL(
                                 buttons['translate']['ajax_url'], parameters)
                         break

@@ -1885,7 +1885,7 @@ def filterByTranslatedValue(
 
         if special_field_name:
             if mode == FilterByMode.Exact:
-                return _return(Q(**{ special_field_name: value }))
+                return _return(Q(**{ u'{}__{}exact'.format(special_field_name, i): value }))
             elif mode == FilterByMode.Contains:
                 return _return(Q(**{ u'{}__{}contains'.format(special_field_name, i): value }))
             elif mode == FilterByMode.StartsWith:
