@@ -4589,8 +4589,8 @@ class PrivateMessageCollection(MagiCollection):
             ),
         }), pk=request.GET['to_user'])
 
-    def get_queryset(self, queryset, parameters, request):
-        queryset = super(PrivateMessageCollection, self).get_queryset(queryset, parameters, request)
+    def get_queryset(self, view, queryset, parameters, request):
+        queryset = super(PrivateMessageCollection, self).get_queryset(view, queryset, parameters, request)
         # Only return messages sent from or to me
         queryset = queryset.filter(Q(to_user=request.user) | Q(owner=request.user))
         return queryset
