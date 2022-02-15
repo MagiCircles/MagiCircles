@@ -1,9 +1,8 @@
 {% load tools %}
-{# Required: top_buttons, top_buttons_col_size, top_buttons_per_line #}
+{# Required: filtered_top_buttons, top_buttons_col_size, top_buttons_per_line #}
       <div class="top_buttons top-buttons-{{ collection.name }}">
         <div class="row">
-          {% for name, button in top_buttons.items %}
-          {% if button.show and button.has_permissions %}
+          {% for name, button in filtered_top_buttons.items %}
           <div class="col-md-{{ top_buttons_col_size }}">
             <a href="{{ button.url }}"
                data-top-btn-name="{{ name }}"
@@ -23,7 +22,6 @@
           </div>
           {% if forloop.counter0 != 0 and forloop.counter0|mod:top_buttons_per_line %}
         </div><div style="height: 5px"></div><div class="row">
-          {% endif %}
           {% endif %}
           {% endfor %}
         </div>
