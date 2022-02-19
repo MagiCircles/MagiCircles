@@ -634,7 +634,7 @@ def add_view(request, name, collection, type=None, ajax=False, shortcut_url=None
         formClass = collection.add_view.form_class
     if str(_type(formClass)) == '<type \'instancemethod\'>':
         formClass = formClass(request, context)
-    if request.method == 'GET':
+    if request.method in ['GET', 'HEAD']:
         form = formClass(request=request, ajax=ajax, collection=collection, allow_next=collection.add_view.allow_next) if not with_types else formClass(request=request, ajax=ajax, collection=collection, type=type, allow_next=collection.add_view.allow_next)
     elif request.method == 'POST':
         form = formClass(request.POST, request.FILES, request=request, ajax=ajax, collection=collection, allow_next=collection.add_view.allow_next) if not with_types else formClass(request.POST, request.FILES, request=request, ajax=ajax, collection=collection, type=type, allow_next=collection.add_view.allow_next)
