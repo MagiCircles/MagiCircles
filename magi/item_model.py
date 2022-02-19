@@ -246,7 +246,7 @@ class BaseMagiModel(models.Model):
             return next(
                 (c[0] if isinstance(c, tuple) else c)
                 for index, c in self.get_choices(field_name)
-                if index == i
+                if unicode(index) == unicode(i)
             )
         except StopIteration:
             if i is None or i == '':

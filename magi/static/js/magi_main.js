@@ -2049,7 +2049,7 @@ function isNullBool(input) {
 
 function hasValue(input) {
     // Multiple choice checkboxes
-    if (input.is('ul') && input.find('[type="checkbox"]:checked').length > 0) {
+    if (input.is('ul') && input.find('[type="checkbox"]:checked, [type="radio"]:checked').length > 0) {
         return true;
     }
     // Checkbox
@@ -2064,10 +2064,10 @@ function hasValue(input) {
 }
 
 function getValue(input) {
-    // Multiple choice checkboxes
+    // Multiple choice checkboxes or radio boxes
     if (input.is('ul')) {
         let result = [];
-        $.each(input.find('[type="checkbox"]:checked'), function() {
+        $.each(input.find('[type="checkbox"]:checked, [type="radio"]:checked'), function() {
             result.push($(this).prop('value'));
         });
         return result;

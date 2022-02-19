@@ -9,6 +9,7 @@ from django.shortcuts import render
 from django.utils import timezone
 from django.utils.translation import string_concat, ugettext_lazy as _
 from django.views.generic.base import RedirectView
+from django.forms import BaseForm
 #from magi import bouncy # unused, only to force load the feedback process
 from magi import views_collections, magicollections
 from magi import views as magi_views
@@ -77,6 +78,7 @@ from magi.utils import (
     groupsWithPermissions,
     groupsWithOneOfPermissions,
     staticImageURL,
+    setJavascriptFormContext,
 )
 from raw import other_sites
 
@@ -459,6 +461,16 @@ def page_view(name, page):
             # Call function
             if function:
                 result = function(request, context, *args, **kwargs)
+            # Javascript Form Context
+            for form_name, form in list(context.get('forms', {})) + [
+                    ('form', context.get('form')),
+                    ('filter_form', context.get('filter_form')),
+            ]:
+                if isinstance(form, BaseForm):
+                    setJavascriptFormContext(
+                        form=form, context=context, cuteforms={}, ajax=context['ajax'],
+                        form_selector=u'[data-form-name=\\"{}\\"]'.format(form_name),
+                    )
             # Render with full template
             if page.get('full_template', False):
                 return render(request, u'pages/{}.html'.format(

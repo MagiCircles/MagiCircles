@@ -1040,6 +1040,61 @@ class FormShowMore:
         self.message_less = message_less
         self.check_values = check_values
 
+
+def setJavascriptFormContext(form, form_selector, context, cuteforms, ajax):
+    # CuteForm
+    cuteform = dict(getattr(form, 'cuteform', {}).items())
+    for a_cuteform in cuteforms:
+        if a_cuteform:
+            cuteform.update(a_cuteform)
+    if cuteform:
+        cuteFormFieldsForContext(
+            cuteform,
+            context, form=form,
+            prefix=form_selector + ' ',
+            ajax=ajax,
+        )
+    # Modal cuteform separators
+    modal_cuteform_separators = getattr(form, 'modal_cuteform_separators', None)
+    if modal_cuteform_separators:
+        if 'modal_cuteform_separators' not in context:
+            context['modal_cuteform_separators'] = {}
+        if form_selector not in context['modal_cuteform_separators']:
+            context['modal_cuteform_separators'][form_selector] = []
+        context['modal_cuteform_separators'][form_selector].append(modal_cuteform_separators)
+    # Show more
+    form_show_more = getattr(form, 'show_more', None)
+    if form_show_more:
+        if 'form_show_more' not in context:
+            context['form_show_more'] = {}
+        if form_selector not in context['form_show_more']:
+            context['form_show_more'][form_selector] = []
+        context['form_show_more'][form_selector] += (
+            [form_show_more] if not isinstance(form_show_more, list) else form_show_more
+        )
+    # On change value show
+    on_change_value_show = form.get_on_change_value_show()
+    if on_change_value_show:
+        if 'form_on_change_value_show' not in context:
+            context['form_on_change_value_show'] = {}
+        if form_selector not in context['form_on_change_value_show']:
+            context['form_on_change_value_show'][form_selector] = {}
+        context['form_on_change_value_show'][form_selector].update(on_change_value_show)
+    # On change value trigger
+    on_change_value_trigger = form.get_on_change_value_trigger()
+    if on_change_value_trigger:
+        if 'form_on_change_value_trigger' not in context:
+            context['form_on_change_value_trigger'] = {}
+        if form_selector not in context['form_on_change_value_trigger']:
+            context['form_on_change_value_trigger'][form_selector] = {}
+        context['form_on_change_value_trigger'][form_selector].update(on_change_value_trigger)
+    # Collectible variables
+    collectible_variables = getattr(form, 'collectible_variables', {})
+    if collectible_variables:
+        if 'js_variables' not in context:
+            context['js_variables'] = {}
+        context['js_variables']['collectible_variables'] = collectible_variables
+
 def filterRealAccounts(queryset):
     if modelHasField(queryset.model, 'is_playground'):
         queryset = queryset.exclude(is_playground=True)

@@ -24,6 +24,7 @@ from magi.utils import (
     HTMLAlert,
     addParametersToURL,
     modelGetField,
+    setJavascriptFormContext,
 )
 from magi.raw import (
     GET_PARAMETERS_NOT_IN_FORM,
@@ -67,60 +68,6 @@ def _modification_view(context, name, view, ajax):
     )
     context['after_template'] = view.after_template
     return context
-
-def _set_javascript_form_details(form, form_selector, context, cuteforms, ajax):
-    # CuteForm
-    cuteform = {}
-    for a_cuteform in cuteforms:
-        if a_cuteform:
-            cuteform.update(a_cuteform)
-    if cuteform:
-        cuteFormFieldsForContext(
-            cuteform,
-            context, form=form,
-            prefix=form_selector + ' ',
-            ajax=ajax,
-        )
-    # Modal cuteform separators
-    modal_cuteform_separators = getattr(form, 'modal_cuteform_separators', None)
-    if modal_cuteform_separators:
-        if 'modal_cuteform_separators' not in context:
-            context['modal_cuteform_separators'] = {}
-        if form_selector not in context['modal_cuteform_separators']:
-            context['modal_cuteform_separators'][form_selector] = []
-        context['modal_cuteform_separators'][form_selector].append(modal_cuteform_separators)
-    # Show more
-    form_show_more = getattr(form, 'show_more', None)
-    if form_show_more:
-        if 'form_show_more' not in context:
-            context['form_show_more'] = {}
-        if form_selector not in context['form_show_more']:
-            context['form_show_more'][form_selector] = []
-        context['form_show_more'][form_selector] += (
-            [form_show_more] if not isinstance(form_show_more, list) else form_show_more
-        )
-    # On change value show
-    on_change_value_show = form.get_on_change_value_show()
-    if on_change_value_show:
-        if 'form_on_change_value_show' not in context:
-            context['form_on_change_value_show'] = {}
-        if form_selector not in context['form_on_change_value_show']:
-            context['form_on_change_value_show'][form_selector] = {}
-        context['form_on_change_value_show'][form_selector].update(on_change_value_show)
-    # On change value trigger
-    on_change_value_trigger = form.get_on_change_value_trigger()
-    if on_change_value_trigger:
-        if 'form_on_change_value_trigger' not in context:
-            context['form_on_change_value_trigger'] = {}
-        if form_selector not in context['form_on_change_value_trigger']:
-            context['form_on_change_value_trigger'][form_selector] = {}
-        context['form_on_change_value_trigger'][form_selector].update(on_change_value_trigger)
-    # Collectible variables
-    collectible_variables = getattr(form, 'collectible_variables', {})
-    if collectible_variables:
-        if 'js_variables' not in context:
-            context['js_variables'] = {}
-        context['js_variables']['collectible_variables'] = collectible_variables
 
 def _add_h1_and_prefixes_to_context(view, context, title_prefixes, h1, item=None, get_page_title_parameters={}):
     context['show_title'] = view.show_title
@@ -419,11 +366,11 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     queryset = queryset[(page * page_size):((page * page_size) + page_size)]
 
     if 'filter_form' in context and not ajax:
-        _set_javascript_form_details(
+        setJavascriptFormContext(
             form=context['filter_form'],
             form_selector='[id=\\"filter-form-{}\\"]'.format(collection.name),
             context=context,
-            cuteforms=[getattr(context['filter_form'], 'cuteform', None), collection.list_view.filter_cuteform],
+            cuteforms=[collection.list_view.filter_cuteform],
             ajax=ajax,
         )
 
@@ -724,11 +671,11 @@ def add_view(request, name, collection, type=None, ajax=False, shortcut_url=None
     context['ajax_callback'] = collection.add_view.ajax_callback
     context['collection'] = collection
 
-    _set_javascript_form_details(
+    setJavascriptFormContext(
         form=form,
         form_selector=u'[data-form-name=\\"add_{}\\"]'.format(collection.name),
         context=context,
-        cuteforms=[getattr(form, 'cuteform', None), collection.add_view.filter_cuteform],
+        cuteforms=[collection.add_view.filter_cuteform],
         ajax=ajax,
     )
 
@@ -835,11 +782,11 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
                     'next': next_value,
                     'next_title': form.cleaned_data.get('next_title', ''),
                 } if next_value else {}))
-    _set_javascript_form_details(
+    setJavascriptFormContext(
         form=form,
         form_selector=u'[data-form-name=\\"edit_{}\\"]'.format(collection.name),
         context=context,
-        cuteforms=[getattr(form, 'cuteform', None), collection.edit_view.filter_cuteform],
+        cuteforms=[collection.edit_view.filter_cuteform],
         ajax=ajax,
     )
     if shortcut_url is not None:
