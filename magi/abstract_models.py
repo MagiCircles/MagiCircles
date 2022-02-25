@@ -168,7 +168,7 @@ class CacheOwner(MagiModel):
 class BaseAccount(CacheOwner):
     collection_name = 'account'
 
-    owner = models.ForeignKey(User, related_name='accounts')
+    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='accounts')
     creation = models.DateTimeField(_('Join date'), auto_now_add=True)
     nickname = models.CharField(_('Nickname'), max_length=200, null=True, help_text=_('Give a nickname to your account to easily differentiate it from your other accounts when you\'re managing them.'))
     start_date = models.DateField(_('Start date'), null=True, validators=[PastOnlyValidator])
@@ -300,7 +300,7 @@ class MobileGameAccount(BaseAccount):
 class _BaseEvent(MagiModel):
     collection_name = 'event'
 
-    owner = models.ForeignKey(User, related_name='added_%(class)ss')
+    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='added_%(class)ss')
 
     ############################################################
     # Name
