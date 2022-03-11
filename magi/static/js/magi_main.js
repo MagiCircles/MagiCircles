@@ -118,20 +118,47 @@ function loadPageScroll() {
 
 function dateInputSupport() {
     // Auto set timezone
-    $('[data-auto-change-timezone]').each(function() {
+    $('[data-auto-change-timezone]:not(.loaded-auto-change-timezone)').each(function() {
+        let timezone_input = $(this);
+        timezone_input.addClass('loaded-auto-change-timezone');
         let timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        if (timezone && $(this).find('option[value="' + timezone + '"]').length > 0) {
-            $(this).val(timezone);
+        if (timezone && timezone_input.find('option[value="' + timezone + '"]').length > 0) {
+            timezone_input.val(timezone);
         }
     });
 
+    // Auto convert to timezone (from value in UTC)
+    $('[data-auto-convert-to-timezone]:not(.loaded-auto-convert-to-timezone)').each(function() {
+        let time_input = $(this);
+        time_input.addClass('loaded-auto-convert-to-timezone');
+        let timezone_value = time_input.closest('form').find(
+            '[name="' + time_input.prop('name').slice(0, -5) + '_timezone"]').val();
+        let time_value = time_input.val();
+        if (typeof time_value != 'undefined' && time_value != ''
+            && typeof timezone_value != 'undefined' && timezone_value != '') {
+            let date_value = time_input.closest('form').find(
+                '[name="' + time_input.prop('name').slice(0, -5) + '"]').val();
+            if (typeof date_value == 'undefined' || date_value == '') {
+                date_value = (new Date()).toISOString().split('T')[0];
+            }
+            let utc_date = new Date(date_value + 'T' + time_value + '.000Z');
+            let new_time = utc_date.toLocaleString('en-GB', { timeZone: timezone_value }).slice(-8);
+            if (time_input.is('select') && time_input.find('option[value="' + new_time + '"]').length == 0) {
+                time_input.append('<option value="' + new_time + '">' + new_time + '</option>');
+            }
+            time_input.val(new_time);
+        }
+    });
+
+    // If date input is supported, hide help text (string format)
     if ($('input[type="date"]').length > 0) {
         var input = document.createElement('input');
-
-        // Check if date input is supported and add an help text otherwise
         input.setAttribute('type', 'date');
         if (input.type == 'date') {
-            $('input[type="date"]').parent().find('.help-block .format-help').hide();
+            $('input[type="date"]:not(.loaded-hide-help-text)').each(function() {
+                $(this).addClass('loaded-hide-help-text');
+                $(this).parent().find('.help-block .format-help').hide();
+            });
         }
     }
 }
@@ -2238,6 +2265,7 @@ function formOnChangeValueShow(form, changingFieldName, valuesToShow) {
             });
         });
     }
+    loadCommons(); // Make sure dateInput initials are set
     // Save original values
     $.each(allFields, function(i, fieldName) {
         let input = form.find('#id_' + fieldName);

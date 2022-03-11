@@ -8,7 +8,7 @@ from django import forms
 from django.core.validators import MaxLengthValidator, MaxValueValidator
 from django.http.request import QueryDict
 from django.db import models as django_models
-from django.db.models.fields import BLANK_CHOICE_DASH, FieldDoesNotExist, TextField, CharField
+from django.db.models.fields import BLANK_CHOICE_DASH, FieldDoesNotExist, TextField, CharField, DateTimeField
 from django.db.models.fields.files import ImageField
 from django.db.models import Q
 from django.forms.models import model_to_dict, fields_for_model
@@ -96,6 +96,10 @@ from magi.utils import (
     getEnglish,
     toNullBool,
     getVerboseLanguage,
+    formUniquenessCheck,
+    addButtonsToSubCollection,
+    CSVChoiceField,
+    modelGetField,
 )
 from versions_utils import sortByRelevantVersions
 
@@ -273,6 +277,7 @@ class MagiForm(forms.ModelForm):
         self.d_choices = {}
         self.userimages_fields = []
         self.date_fields = []
+        self.date_previous_values = {}
         self.m_previous_values = {}
         self.keep_underscore_fields = []
         self.force_tinypng_on_save = []
@@ -342,13 +347,16 @@ class MagiForm(forms.ModelForm):
             if allow_initial_in_get == '__all__' or name in allow_initial_in_get:
                 value = self.request.GET.get(name, None)
                 if value:
-                    field.initial = value
-                    field.widget = field.hidden_widget()
-                    field.show_value_instead = (
-                        { unicode(k): v for k, v in dict(field.choices).items() }[value]
-                        if isinstance(field, forms.ChoiceField)
-                        else value
-                    )
+                    try:
+                        field.show_value_instead = (
+                            { unicode(k): v for k, v in dict(field.choices).items() }[value]
+                            if isinstance(field, forms.ChoiceField)
+                            else value
+                        )
+                        field.initial = value
+                        field.widget = field.hidden_widget()
+                    except KeyError: # Invalid value specified in GET
+                        pass
 
             # Show languages on translatable fields
             if self.collection and self.collection.translated_fields and name in self.collection.translated_fields:
@@ -383,39 +391,51 @@ class MagiForm(forms.ModelForm):
                 and (isinstance(field, forms.DateField)
                      or isinstance(field, forms.DateTimeField)
                      or name in getattr(self.Meta, 'date_fields', []))):
-                self.fields[name], value = date_input(field, value=(getattr(self.instance, name, None) if not self.is_creating else None))
                 self.date_fields.append(name)
+                original_value_with_time = getattr(self.instance, name)
+                # Save previous date: allows to keep the time on saving
+                if not self.is_creating:
+                    self.date_previous_values[name] = original_value_with_time
+                # Change field to date input
+                self.fields[name], value = date_input(field, value=(
+                    getattr(self.instance, name, None) if not self.is_creating else None))
+                # Set value in instance as date only, string, to be valid in date widget
                 if value:
                     setattr(self.instance, name, value)
                 # Add time + timezone fields if needed
                 if name in getattr(self.Meta, 'date_fields_with_time', {}):
-                    minutes_interval = self.Meta.date_fields_with_time[name].get('minutes_interval', 60)
-                    manual_time = self.Meta.date_fields_with_time[name].get('manual_time', False)
                     current_timezone = (
+                        # From timezone model field, when editing
                         (getattr(self.instance, u'_{}_timezone'.format(name), None)
                          if not self.is_creating else None)
+                        # From timezone model field default value, when adding
+                        or (failSafe(lambda: self.Meta.model._meta.get_field(
+                            '_{}_timezone'.format(name)).default, exceptions=[FieldDoesNotExist])
+                            if self.is_creating else None)
+                        # From form default_timezone
                         or self.Meta.date_fields_with_time[name].get('default_timezone', None)
+                        # From default displayed timezone
                         or getIndex(getattr(self.Meta.model, u'{}_DEFAULT_TIMEZONES'.format(name.upper()), []) or [], 0)
                     )
                     # Change displayed date and time from UTC to selected timezone
                     initial_time = None
                     if not self.is_creating:
-                        # Take value from db which is in UTC and has the right time
-                        in_db_value = getattr(self.instance._meta.model.objects.get(pk=self.instance.pk), name)
-                        if in_db_value:
+                        if original_value_with_time:
                             if current_timezone:
-                                value_with_timezone = in_db_value.astimezone(pytz.timezone(current_timezone))
+                                value_with_timezone = original_value_with_time.astimezone(pytz.timezone(current_timezone))
                                 setattr(self.instance, name, value_with_timezone.strftime('%Y-%m-%d'))
                                 initial_time = value_with_timezone.strftime('%H:%M:%S')
                             else:
-                                initial_time = in_db_value.strftime('%H:%M:%S')
+                                initial_time = original_value_with_time.strftime('%H:%M:%S')
                     if not initial_time:
                         times = getattr(self.Meta, 'date_times', {})
                         if times and times.get(name, None):
-                            initial_time = u'{}:{}:00'.format(times[name][0], times[name][1])
+                            initial_time = u'{:02d}:{:02d}:00'.format(times[name][0], times[name][1])
                     if not initial_time:
-                        initial_time = '15:00:00'
-                    if manual_time:
+                        initial_time = '00:00:00'
+                    # Add time field
+                    if self.Meta.date_fields_with_time[name].get('manual_time', False):
+                        # Manual time field
                         self.fields[u'{}_time'.format(name)] = forms.CharField(
                             label='',
                             required=field.required,
@@ -428,10 +448,12 @@ class MagiForm(forms.ModelForm):
                             self.extra_fields_added[name] = []
                         self.extra_fields_added[name].append(u'{}_time'.format(name))
                     else:
+                        # Choice time field
                         choices = [
                             u'{:02d}:{:02d}:00'.format(hour, minute)
                             for hour in range(0, 24)
-                            for minute in range(0, 60, minutes_interval)
+                            for minute in range(0, 60, self.Meta.date_fields_with_time[name].get(
+                                    'minutes_interval', 60))
                         ]
                         self.fields[u'{}_time'.format(name)] = forms.ChoiceField(
                             label='',
@@ -446,21 +468,42 @@ class MagiForm(forms.ModelForm):
                         if name not in self.extra_fields_added:
                             self.extra_fields_added[name] = []
                         self.extra_fields_added[name].append(u'{}_time'.format(name))
+                    # Timezone field
                     self.fields[u'{}_timezone'.format(name)] = forms.ChoiceField(
                         label='',
                         required=field.required,
                         choices=[ (v, v) for v in pytz.all_timezones ],
                         initial=current_timezone or 'UTC',
                     )
-                    if self.is_creating and not current_timezone:
-                        self.fields[u'{}_timezone'.format(name)].widget.attrs.update({
-                            'data-auto-change-timezone': True,
-                    })
-                    setSubField(order_to_change, 'insert_after', key=name, value=[
-                        u'{}_time'.format(name), u'{}_timezone'.format(name)], force_add=True)
                     if name not in self.extra_fields_added:
                         self.extra_fields_added[name] = []
                     self.extra_fields_added[name].append(u'{}_timezone'.format(name))
+                    # When creating:
+                    if self.is_creating:
+                        # When no default timezone found, auto change to local timezone
+                        if not current_timezone:
+                            self.fields[u'{}_timezone'.format(name)].widget.attrs.update({
+                                'data-auto-change-timezone': True,
+                            })
+                        # convert_default_to_timezone setting
+                        if self.Meta.date_fields_with_time[name].get(
+                            'convert_default_to_timezone', False):
+                            self.fields[u'{}_time'.format(name)].widget.attrs.update({
+                                'data-auto-convert-to-timezone': True,
+                            })
+                    # When editing:
+                    else:
+                        # When no timezone specified, convert to local timezone
+                        if not current_timezone:
+                            self.fields[u'{}_timezone'.format(name)].widget.attrs.update({
+                                'data-auto-change-timezone': True,
+                            })
+                            self.fields[u'{}_time'.format(name)].widget.attrs.update({
+                                'data-auto-convert-to-timezone': True,
+                            })
+                    # Make sure added time/timezone fields show under main date field
+                    setSubField(order_to_change, 'insert_after', key=name, value=[
+                        u'{}_time'.format(name), u'{}_timezone'.format(name)], force_add=True)
             # Make CSV values with choices use a CheckboxSelectMultiple widget
             elif name.startswith('c_'):
                 choices = getattr(self.Meta.model, '{name}_CHOICES'.format(name=name[2:].upper()), None)
@@ -477,14 +520,11 @@ class MagiForm(forms.ModelForm):
                                     u'<img src="{url}" alt="{v}" height="30"> {v}',
                                     url=staticImageURL(k, folder=name), v=v))
                             return (k, v)
-                        changeFormField(self, name, forms.MultipleChoiceField, {
+                        changeFormField(self, name, CSVChoiceField, {
                             'required': False,
                             'widget': forms.CheckboxSelectMultiple,
                             'choices': [_get_choice(c) for c in choices],
                         })
-                        if not self.is_creating:
-                            # Set the value in the object to the list to pre-select the right options
-                            setattr(self.instance, name, getattr(self.instance, name[2:]))
             # Add fields for d_ dict choices
             elif name.startswith('d_') and not isinstance(self, MagiFiltersForm):
                 choices = getattr(self.Meta.model, u'{name}_CHOICES'.format(name=name[2:].upper()), None)
@@ -659,6 +699,12 @@ class MagiForm(forms.ModelForm):
                 if field in self.fields:
                     self.fields[field].widget = self.fields[field].hidden_widget()
 
+        # Show as required
+        if hasattr(self.Meta, 'fields_show_as_required'):
+            for field in self.Meta.fields_show_as_required:
+                if field in self.fields:
+                    self.fields[field].show_as_required = True
+
         # Has the form been opened in the context of a report or a suggested edit?
         self.is_reported = False
         self.is_suggestededit = False
@@ -680,19 +726,7 @@ class MagiForm(forms.ModelForm):
             for sub_collection in getattr(self.collection, 'sub_collections', None).values():
                 if sub_collection.main_many2many:
                     if sub_collection.main_related in self.fields:
-                        self.fields[sub_collection.main_related].below_field = mark_safe(u"""
-                        <div class="btn-group btn-group-justified">
-                        <a href="{list_url}" target="_blank"
-                           class="btn btn-secondary">{plural_title}</a>
-                        <a href="{add_url}" target="_blank"
-                           class="btn btn-secondary">{add_sentence}</a>
-                        </div>
-                        """.format(
-                            list_url=sub_collection.get_list_url(),
-                            plural_title=sub_collection.plural_title,
-                            add_url=sub_collection.get_add_url(),
-                            add_sentence=sub_collection.add_sentence,
-                        ))
+                        addButtonsToSubCollection(self, sub_collection, sub_collection.main_related)
                 elif not self.is_creating:
                     self.sub_collections.append(self.get_sub_collections_details(sub_collection))
 
@@ -766,27 +800,6 @@ class MagiForm(forms.ModelForm):
                         things=unicode(self.collection.plural_title).lower(),
                     ))
 
-        # Clean datetime times
-        # - From time field (date_fields_with_time in Meta)
-        for field_name in getattr(self.Meta, 'date_fields_with_time', {}):
-            date = self.cleaned_data.get(field_name, None)
-            if not date:
-                continue
-            if not isinstance(date, basestring):
-                date = date.strftime('%Y-%m-%d')
-            time = self.cleaned_data.get(u'{}_time'.format(field_name), None)
-            timezone_value = self.cleaned_data.get(u'{}_timezone'.format(field_name), None)
-            # If the timezone is not UTC, convert to UTC before saving
-            if date and time:
-                naive_value = datetime.datetime.strptime(date + u'T' + time, '%Y-%m-%dT%H:%M:%S')
-                if timezone_value:
-                    value = pytz.timezone(timezone_value).localize(naive_value).astimezone(pytz.utc)
-                    # Save timezone in database if field exists
-                    if modelHasField(self.Meta.model, u'_{}_timezone'.format(field_name)):
-                        self.cleaned_data[u'_{}_timezone'.format(field_name)] = timezone_value
-                else:
-                    value = pytz.utc.localize(naive_value)
-                self.cleaned_data[field_name] = value
         return self.cleaned_data
 
     def save(self, commit=True):
@@ -800,15 +813,60 @@ class MagiForm(forms.ModelForm):
                 instance.owner = self.request.user if self.request.user.is_authenticated() else None
 
         # Clean datetime times
-        # - From date_times in Meta
         times = getattr(self.Meta, 'date_times', {})
-        if times:
-            for field_name in self.date_fields:
-                if field_name in times and getattr(instance, field_name, None):
+        fields_with_time = getattr(self.Meta, 'date_fields_with_time', {})
+        for field_name in self.date_fields:
+            # Save timezone in database if it has its own field
+            if (self.cleaned_data.get(u'{}_timezone'.format(field_name), None)
+                and modelHasField(self.Meta.model, u'_{}_timezone'.format(field_name))):
+                setattr(
+                    instance, u'_{}_timezone'.format(field_name),
+                    self.cleaned_data[u'{}_timezone'.format(field_name)],
+                )
+            # No date value
+            if not getattr(instance, field_name, None):
+                continue
+            model_field = modelGetField(self.Meta.model, field_name)
+            # Date with time
+            if model_field and isinstance(model_field, DateTimeField):
+                current_date_as_string = getattr(instance, field_name).strftime('%Y-%m-%d')
+                # From time/timezone field (added by date_fields_with_time): converts to UTC before saving
+                if (self.cleaned_data.get(u'{}_timezone'.format(field_name), None)
+                    and self.cleaned_data.get(u'{}_time'.format(field_name), None)):
+                    timezone = self.cleaned_data[u'{}_timezone'.format(field_name)]
+                    formatted_date = u'{}T{}'.format(
+                        current_date_as_string,
+                        self.cleaned_data[u'{}_time'.format(field_name)],
+                    )
+                    setattr(
+                        instance, field_name,
+                        pytz.timezone(timezone).localize(
+                            datetime.datetime.strptime(formatted_date, '%Y-%m-%dT%H:%M:%S'),
+                        ).astimezone(pytz.UTC),
+                    )
+                # From date_times in Meta: saves default time when creating or changing date
+                elif (field_name in times
+                      and (self.is_creating or not self.date_previous_values.get(field_name, None)
+                           or current_date_as_string != self.date_previous_values[field_name].strftime('%Y-%m-%d'))):
                     setattr(
                         instance, field_name,
                         getattr(instance, field_name).replace(
                             hour=times[field_name][0], minute=times[field_name][1]))
+                # No default time, but the date didn't change: make sure the time doesn't change either
+                elif (not self.is_creating
+                      and self.date_previous_values.get(field_name, None)
+                      and current_date_as_string == self.date_previous_values[field_name].strftime('%Y-%m-%d')):
+                    setattr(
+                        instance, field_name,
+                        getattr(instance, field_name).replace(
+                            hour=self.date_previous_values[field_name].hour,
+                            minute=self.date_previous_values[field_name].minute,
+                            second=self.date_previous_values[field_name].second,
+                        ),
+                    )
+            # Date without time
+            else:
+                pass
 
         # Save d_ dict choices
         for dfield, choices in self.d_choices.items():
@@ -904,10 +962,6 @@ class MagiForm(forms.ModelForm):
                         setattr(instance, u'_original_{}'.format(field), None)
                         setattr(instance, u'_2x_{}'.format(field), None)
 
-        # Save CSV values
-        for field in self.c_choices:
-            instance.save_c(field[2:], self.cleaned_data.get(field, getattr(instance, field)))
-
         # Images selector
         if self.userimages_fields:
             # Set save m2m (called later)
@@ -916,7 +970,9 @@ class MagiForm(forms.ModelForm):
                 for field_name in self.userimages_fields:
                     # Upload new images
                     for image in self.cleaned_data.get(field_name, []):
-                        imageObject = models.UserImage.objects.create()
+                        imageObject = models.UserImage.objects.create(
+                            name=u'{}-{}'.format(self.Meta.model.__name__.lower(), field_name),
+                        )
                         imageObject.image.save(randomString(64), image)
                         getattr(instance, field_name).add(imageObject)
                     del(self.cleaned_data[field_name])
@@ -1603,11 +1659,14 @@ class MagiFiltersForm(AutoForm):
                             setSubField(order_to_change, 'insert_after', key=field_name, value=[
                                 new_field_name], force_add=True)
                             met_first_field = True
-                    field_choices = (
-                        field_details.get('choices', None)
-                        or getattr(self.fields.get(field_name, None), 'choices', None)
-                        or self.Meta.model.get_choices(field_name)
-                    )
+                    try:
+                        field_choices = (
+                            field_details.get('choices', None)
+                            or getattr(self.fields.get(field_name, None), 'choices', None)
+                            or self.Meta.model.get_choices(field_name)
+                        )
+                    except FieldDoesNotExist:
+                        field_choices = []
                     if callable(field_choices):
                         field_choices = field_choices()
                     choices += [
@@ -2148,14 +2207,6 @@ class _UserCheckEmailUsernameForm(MagiForm):
         # If the email didn't change
         if self.previous_email and self.previous_email == email:
             return email
-        # If another user uses this email address
-        if (models.User.objects.filter(email__iexact=email)
-            .exclude(username=self.instance.username if not self.is_creating else None).count()):
-            raise forms.ValidationError(
-                message=t["%(model_name)s with this %(field_labels)s already exists."],
-                code='unique_together',
-                params={'model_name': _('User'), 'field_labels': t['Email']},
-            )
         return email
 
     def clean_username(self):
@@ -2166,13 +2217,18 @@ class _UserCheckEmailUsernameForm(MagiForm):
                 code='unique_together',
                 params={'field_labels': _('Username')},
             )
-        if models.User.objects.filter(username__iexact=username).exclude(id=self.instance.id if not self.is_creating else None).count():
-            raise forms.ValidationError(
-                message=t["%(model_name)s with this %(field_labels)s already exists."],
-                code='unique_together',
-                params={'model_name': _('User'), 'field_labels': _('Username')},
-            )
         return username
+
+    def clean(self):
+        super(_UserCheckEmailUsernameForm, self).clean()
+        # If another user uses this email address or username
+        formUniquenessCheck(
+            self, edited_instance=self.instance,
+            field_names=['email', 'username'],
+            case_insensitive=True,
+            unique_together=False,
+            all_fields_required=True,
+        )
 
     def __init__(self, *args, **kwargs):
         super(_UserCheckEmailUsernameForm, self).__init__(*args, **kwargs)

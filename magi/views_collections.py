@@ -739,14 +739,7 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
     if str(_type(allowDelete)) == '<type \'instancemethod\'>':
         allowDelete = allowDelete(instance, request, context)
     allowDelete = not context['is_translate'] and allowDelete and 'disable_delete' not in request.GET
-    if allowDelete:
-        formDelete = ConfirmDelete(initial={
-            'thing_to_delete': instance.pk,
-        }, request=request, instance=instance, collection=collection)
-    form = formClass(instance=instance, request=request, ajax=ajax, collection=collection, allow_next=collection.edit_view.allow_next)
-    # Todo: needed to load twice to ensure the setattr of c_ fields is done and c_ fields show
-    # default values. need to find a way to get values to show without having to set the list value
-    form = formClass(instance=instance, request=request, ajax=ajax, collection=collection, allow_next=collection.edit_view.allow_next)
+    # Delete form
     if allowDelete and request.method == 'POST' and u'delete_{}'.format(collection.name) in request.POST:
         formDelete = ConfirmDelete(request.POST, request=request, instance=instance, collection=collection)
         if formDelete.is_valid():
@@ -764,6 +757,9 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
 
             collection.edit_view.after_delete(request)
             raise HttpRedirectException(redirectURL)
+        else:
+            form = formClass(instance=instance, request=request, ajax=ajax, collection=collection, allow_next=collection.edit_view.allow_next)
+    # Edit form
     elif request.method == 'POST':
         form = formClass(request.POST, request.FILES, instance=instance, request=request, ajax=ajax, collection=collection, allow_next=collection.edit_view.allow_next)
         if form.is_valid():
@@ -782,6 +778,17 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
                     'next': next_value,
                     'next_title': form.cleaned_data.get('next_title', ''),
                 } if next_value else {}))
+        elif allowDelete:
+            formDelete = ConfirmDelete(initial={
+                'thing_to_delete': instance.pk,
+            }, request=request, instance=instance, collection=collection)
+    else:
+        form = formClass(instance=instance, request=request, ajax=ajax, collection=collection, allow_next=collection.edit_view.allow_next)
+        if allowDelete:
+            formDelete = ConfirmDelete(initial={
+                'thing_to_delete': instance.pk,
+            }, request=request, instance=instance, collection=collection)
+
     setJavascriptFormContext(
         form=form,
         form_selector=u'[data-form-name=\\"edit_{}\\"]'.format(collection.name),

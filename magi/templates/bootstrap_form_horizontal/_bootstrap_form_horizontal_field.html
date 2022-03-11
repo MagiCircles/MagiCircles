@@ -1,5 +1,8 @@
 {% load firstof from future %}
 {% load bootstrap_form_horizontal_tags %}
+{% if field.field.before_field %}
+{{ field.field.before_field }}
+{% endif %}
 {% if field.is_hidden %}
 {{ field }}
 {% if field.field.show_value_instead %}
@@ -23,10 +26,13 @@
   <div class="{% firstof label_class 'col-sm-4' %}"></div>
   {% else %}
   <label for="{{ field.id_for_label }}" class="{% firstof label_class 'col-sm-4' %} control-label" style="text-align: right;">
-    {% if field.field.required %}<span class="text-secondary">*</span>{% endif %}{{ field.label }}
+    {% if field.field.required or field.field.show_as_required %}<span class="text-secondary">*</span>{% endif %}{{ field.label }}
   </label>
   {% endif %}
   <div class="{% firstof field_class 'col-sm-8' %}">
+    {% if field.field.above_field %}
+    {{ field.field.above_field }}
+    {% endif %}
     {% if field.errors %}
     <div class="alert alert-warning">
       {{ field.errors }}
@@ -68,4 +74,7 @@
     {{ field.field.below_field }}
   </div>
 </div>
+{% endif %}
+{% if field.field.after_field %}
+{{ field.field.after_field }}
 {% endif %}

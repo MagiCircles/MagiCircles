@@ -336,7 +336,6 @@ class MagiCollection(object):
             else:
                 queryset = queryset.prefetch_related(prefetched)
 
-
         if django_settings.DEBUG and view:
             print ''
             print 'Get queryset for', self.plural_name, view.view
@@ -1561,11 +1560,12 @@ class MagiCollection(object):
             elif (isinstance(field, models.models.BooleanField)
                   or isinstance(field, models.models.NullBooleanField)):
                 d['type'] = 'bool'
-            elif (isinstance(field, models.models.DateField)
-                  or isinstance(field, models.models.DateTimeField)):
+            elif isinstance(field, models.models.DateTimeField):
                 d['type'] = 'timezone_datetime'
                 d['timezones'] = item.get_displayed_timezones(field_name)
                 d['ago'] = True
+            elif isinstance(field, models.models.DateField):
+                d['type'] = 'text'
             elif isinstance(field, models.models.FileField):
                 d['type'] = 'link'
                 d['link_text'] = t['Download']
@@ -1624,14 +1624,22 @@ class MagiCollection(object):
                 if field_name in dict_fields:
                     sorted_fields[field_name] = dict_fields[field_name]
                 elif force_all_fields:
-                    sorted_fields[field_name] = { 'verbose_name': '', 'type': 'text', 'value': '' }
+                    sorted_fields[field_name] = {
+                        'verbose_name': '',
+                        'type': 'text',
+                        'value': unicode(item) if field_name == 'unicode' else '',
+                    }
             for field_name in (only_fields if only_fields else dict_fields.keys()):
                 for prefix in ['i_', 'c_', 'm_', 'j_']:
                     if field_name.startswith(prefix):
                         field_name = field_name[2:]
                         break
                 if field_name not in sorted_fields:
-                    sorted_fields[field_name] = dict_fields[field_name] if field_name in dict_fields else { 'verbose_name': '', 'type': 'text', 'value': '' }
+                    sorted_fields[field_name] = dict_fields[field_name] if field_name in dict_fields else {
+                        'verbose_name': '',
+                        'type': 'text',
+                        'value': unicode(item) if field_name == 'unicode' else '',
+                    }
             if order_settings:
                 sorted_fields = newOrder(sorted_fields, **order_settings)
             if to_dict:
@@ -1655,6 +1663,7 @@ class MagiCollection(object):
     show_item_buttons_justified = True
     show_item_buttons_as_icons = False
     show_item_buttons_in_one_line = True
+    show_open_button = False
     show_edit_button = True
     show_edit_button_superuser_only = False
     show_edit_button_permissions_only = []
@@ -1682,7 +1691,7 @@ class MagiCollection(object):
                 'ajax_url': False,
                 'ajax_title': False, # By default will use title
                 'classes': view.get_item_buttons_classes(request, context, item=item),
-            }) for button_name in self.collectible_collections.keys() + ['edit', 'translate', 'report', 'suggestedit']
+            }) for button_name in self.collectible_collections.keys() + ['open', 'edit', 'translate', 'report', 'suggestedit']
         ])
         # Collectible buttons
         for name, collectible_collection in self.collectible_collections.items():
@@ -1770,6 +1779,22 @@ class MagiCollection(object):
                 if collectible_collection.add_view.staff_required and not view.staff_required:
                     buttons[name]['classes'].append('staff-only')
             buttons[name]['extra_attributes'] = extra_attributes
+        # Open button
+        if self.item_view.enabled and view.view == 'list_view':
+            buttons['open']['show'] = (context.get('alt_view', {}) or {}).get(
+                'show_open_button', view.show_open_button)
+            buttons['open']['title'] = item.open_sentence
+            buttons['open']['icon'] = self.icon
+            buttons['open']['image'] = self.image
+            buttons['open']['has_permissions'] = self.item_view.has_permissions(request, context, item=item)
+            buttons['open']['url'] = item.item_url
+            if self.item_view.ajax:
+                buttons['open']['ajax_url'] = item.ajax_item_url
+            if (request.user.is_staff
+                and self.item_view.staff_required
+                and not view.staff_required):
+                buttons['open']['classes'].append('staff-only')
+
         # Edit button
         if self.edit_view.enabled:
             buttons['edit']['show'] = (context.get('alt_view', {}) or {}).get(
@@ -1956,6 +1981,7 @@ class MagiCollection(object):
         display_style = 'rows'
         display_style_table_fields = ['image', 'name']
         display_style_table_classes = ['table']
+        display_style_table_show_open_button = False
         per_line = 3
         col_break = 'md'
         page_size = 12
@@ -1977,6 +2003,7 @@ class MagiCollection(object):
         show_item_buttons_justified = property(propertyFromCollection('show_item_buttons_justified'))
         show_item_buttons_as_icons = property(propertyFromCollection('show_item_buttons_as_icons'))
         show_item_buttons_in_one_line = property(propertyFromCollection('show_item_buttons_in_one_line'))
+        show_open_button = property(propertyFromCollection('show_open_button'))
         show_edit_button = property(propertyFromCollection('show_edit_button'))
         show_edit_button_superuser_only = property(propertyFromCollection('show_edit_button_superuser_only'))
         show_edit_button_permissions_only = property(propertyFromCollection('show_edit_button_permissions_only'))
@@ -2028,6 +2055,8 @@ class MagiCollection(object):
         def table_fields_headers(self, fields, view=None):
             headers = []
             for field_name in fields:
+                if field_name == 'unicode':
+                    field_name = 'name'
                 try:
                     headers.append((field_name, self.collection.queryset.model._meta.get_field(field_name).verbose_name))
                 except FieldDoesNotExist:
@@ -2284,6 +2313,7 @@ class MagiCollection(object):
         @property
         def show_item_buttons_as_icons(self):
             return True if self.template == 'default' else self.collection.show_item_buttons_as_icons
+        show_open_button = property(propertyFromCollection('show_open_button'))
         show_edit_button = property(propertyFromCollection('show_edit_button'))
         show_edit_button_superuser_only = property(propertyFromCollection('show_edit_button_superuser_only'))
         show_edit_button_permissions_only = property(propertyFromCollection('show_edit_button_permissions_only'))

@@ -264,7 +264,7 @@ class BaseMagiModel(models.Model):
             return next(
                 (c[1] if isinstance(c, tuple) else c)
                 for index, c in self.get_choices(field_name)
-                if index == i
+                if unicode(index) == unicode(i)
             )
         except StopIteration:
             if i is None:
@@ -326,10 +326,12 @@ class BaseMagiModel(models.Model):
         # Call pre if provided
         if hasattr(self, u'cached_{}_pre'.format(field_name)):
             getattr(self, u'cached_{}_pre'.format(field_name))(d)
+        # Add id if missing
+        if original_cls and 'id' not in d:
+            d['id'] = getattr(self, u'{}_id'.format(field_name), None)
         # Add default unicode if missing
         if 'unicode' not in d:
             d['unicode'] = d['name'] if 'name' in d else (unicode(d['id']) if 'id' in d else '?')
-
         if 'id' in d:
             if 'pk' not in d:
                 d['pk'] = d['id']
@@ -435,23 +437,51 @@ class BaseMagiModel(models.Model):
     def save_j(self, field_name, j):
         setattr(self, u'j_{name}'.format(name=field_name), json.dumps(j) if j else None)
 
-    def force_update_cache(self, field_name):
-        self.update_cache(field_name)
-        self.save()
-
-    def update_cache(self, field_name):
+    def _to_cache(self, field_name):
         to_cache_method = getattr(self, u'to_cache_{}'.format(field_name), None)
         if not to_cache_method:
             raise NotImplementedError(u'to_cache_{f} method is required for {f} cache'.format(f=field_name))
+        return to_cache_method()
+
+    def _update_cache(self, field_name, value):
         setattr(self, u'_cache_{}_last_update'.format(field_name), timezone.now())
-        value = to_cache_method()
         if hasattr(self, '_cache_j_{}'.format(field_name)):
             value = json.dumps(value) if value else None
             setattr(self, u'_cache_j_{}'.format(field_name), value)
         elif hasattr(self, '_cache_c_{}'.format(field_name)):
             value = join_data(*value) if value else None
             setattr(self, u'_cache_c_{}'.format(field_name), value)
+        elif hasattr(self, '_cache_i_{}'.format(field_name)):
+            setattr(self, u'_cache_i_{}'.format(field_name), value)
         setattr(self, u'_cache_{}'.format(field_name), value)
+
+    def update_cache(self, field_name, save=False):
+        self._update_cache(field_name, self._to_cache(field_name))
+        if save:
+            self.save()
+
+    def update_cache_if_changed(self, field_name, save=True):
+        current_value = getattr(self, u'cached_{}'.format(field_name))
+        value = self._to_cache(field_name)
+        if current_value == value:
+            return False
+        self._update_cache(field_name, value)
+        if save:
+            self.save()
+        return True
+
+    def update_caches_if_changed(self, field_names, save=True):
+        some_changed = False
+        for field_name in field_names:
+            changed = self.update_cache_if_changed(field_name, save=False)
+            if changed:
+                some_changed = True
+        if some_changed and save:
+            self.save()
+        return some_changed
+
+    def force_update_cache(self, field_name):
+        self.update_cache(field_name, save=True)
 
     def _force_on_last_update_or_none(self, field_name, prefix=''):
         days = getattr(self, u'_cache_{}_days'.format(field_name), None)
@@ -673,14 +703,12 @@ class BaseMagiModel(models.Model):
             # Accessing cached_something when _cache_i_something exists
             elif hasattr(self, '_cache_i_{}'.format(field_name)):
                 return type(self).get_reverse_i(
-                    'cached_{}'.format(field_name),
-                    getattr(self, 'cached_i_{}'.format(field_name)),
+                    field_name, getattr(self, 'cached_i_{}'.format(field_name)),
                 )
             # Accessing cached_t_something when _cache_i_something exists
             elif field_name.startswith('t_') and hasattr(self, '_cache_i_{}'.format(field_name[2:])):
                 return type(self).get_verbose_i(
-                    'cached_{}'.format(field_name[2:]),
-                    getattr(self, 'cached_i_{}'.format(field_name[2:])),
+                    field_name[2:], getattr(self, 'cached_i_{}'.format(field_name[2:])),
                 )
             # Accessing cached_something when _cache_something exists
             elif hasattr(self, '_cache_{}'.format(field_name)):

@@ -34,6 +34,7 @@ from django.forms import (
     TextInput,
     CharField as forms_CharField,
     URLField as forms_URLField,
+    MultipleChoiceField as forms_MultipleChoiceField,
     CheckboxInput,
     HiddenInput,
     TimeField,
@@ -1073,7 +1074,7 @@ def setJavascriptFormContext(form, form_selector, context, cuteforms, ajax):
             [form_show_more] if not isinstance(form_show_more, list) else form_show_more
         )
     # On change value show
-    on_change_value_show = form.get_on_change_value_show()
+    on_change_value_show = getattr(form, 'get_on_change_value_show', lambda: {})()
     if on_change_value_show:
         if 'form_on_change_value_show' not in context:
             context['form_on_change_value_show'] = {}
@@ -1081,7 +1082,7 @@ def setJavascriptFormContext(form, form_selector, context, cuteforms, ajax):
             context['form_on_change_value_show'][form_selector] = {}
         context['form_on_change_value_show'][form_selector].update(on_change_value_show)
     # On change value trigger
-    on_change_value_trigger = form.get_on_change_value_trigger()
+    on_change_value_trigger = getattr(form, 'get_on_change_value_trigger', lambda: {})()
     if on_change_value_trigger:
         if 'form_on_change_value_trigger' not in context:
             context['form_on_change_value_trigger'] = {}
@@ -1509,23 +1510,26 @@ def getTranslatedName(d, field_name='name', language=None):
         d.get(field_name, None),
     )
 
-def getEnglish(translated_string):
+def getTranslation(term, language):
+    """
+    term accepts callable
+    """
     old_lang = get_language()
-    translation_activate('en')
-    string = unicode(translated_string)
+    translation_activate(language)
+    translation = unicode(term(lang)) if callable(term) else unicode(term)
     translation_activate(old_lang)
-    return string
+    return translation
+
+def getEnglish(term):
+    return getTranslation(term, 'en')
 
 def getAllTranslations(term, unique=False):
     translations = {}
     old_lang = get_language()
     for lang in LANGUAGES_DICT.keys():
         translation_activate(lang)
-        if callable(term):
-            translations[lang] = unicode(term(lang))
-        else:
-            translations[lang] = unicode(term)
-        translation_activate(old_lang)
+        translations[lang] = unicode(term(lang)) if callable(term) else unicode(term)
+    translation_activate(old_lang)
     if unique:
         translations = {
             language: value
@@ -2032,7 +2036,7 @@ def filterByTranslatedValue(
 # Form utils
 
 class ManyToManyCSVField(forms_CharField):
-    # Only works if pk is an integer
+    # Only works if pk is an integer or long
 
     def __init__(self, model_class, field_name, lookup_field_name='name', verbose_name=None, *args, **kwargs):
         self.m2m_model_class = model_class
@@ -2090,6 +2094,19 @@ class ManyToManyCSVField(forms_CharField):
                 _('No result.'),
             ))
         return items
+
+class CSVChoiceField(forms_MultipleChoiceField):
+    def prepare_value(self, value):
+        if not value:
+            return None
+        if isinstance(value, list):
+            return value
+        elif isinstance(value, basestring):
+            return split_data(value)
+        raise ValueError('Unknown value {} ({})'.format(type(value), value))
+
+    def clean(self, data, initial=None):
+        return join_data(*super(CSVChoiceField, self).clean(data))
 
 class ColorFormField(forms_CharField):
     pass
@@ -2282,6 +2299,77 @@ def toNullBool(value):
     elif value == '3' or value == False:
         return False
     return None
+
+def formUniquenessCheck(
+        form,
+        edited_instance=None,
+        field_names=None,
+        filters=None,
+        model_class=None,
+        max=1,
+        labels=None,
+        model_title=None,
+        case_insensitive=False,
+        clean_per_field=False,
+        unique_together=True,
+        all_fields_required=False,
+):
+    if not model_class:
+        model_class = form.Meta.model
+    fields_dict = dict(filters or {})
+    for field_name in field_names:
+        if form.cleaned_data.get(field_name, None):
+            fields_dict[u'{}__iexact'.format(field_name) if case_insensitive else field_name] = form.cleaned_data[field_name]
+        elif all_fields_required:
+            return False
+    if unique_together:
+        condition = Q(**fields_dict)
+    else:
+        condition = Q()
+        for field_name, value in fields_dict.items():
+            condition |= Q(**{ field_name: value })
+    queryset = model_class.objects.filter(condition)
+    if edited_instance:
+        queryset = queryset.exclude(pk=edited_instance.pk)
+    if queryset.count() >= max:
+        if not labels:
+            labels = [
+                getattr(form.fields.get(field_name.split('__')[0], object()),
+                        'label', toHumanReadable(field_name.split('__')[0])).lower()
+                for field_name in field_names
+            ]
+        if not model_title:
+            collection = getMagiCollection(getattr(model_class, 'collection_name', None))
+            model_title = collection.title if collection else model_class._meta.verbose_name
+        validation_error = ValidationError(
+            message=t["%(model_name)s with this %(field_labels)s already exists."],
+            code='unique_together',
+            params={
+                'model_name': model_title,
+                'field_labels': andJoin(labels, or_=not unique_together),
+            },
+        )
+        if len(fields_dict) == 1 and not clean_per_field:
+            form.add_error(fields_dict.keys()[0], validation_error)
+            return False
+        else:
+            raise validation_error
+    return True
+
+def addButtonsToSubCollection(form, sub_collection, field_name):
+    form.fields[field_name].below_field = mark_safe(u"""
+    <div class="btn-group btn-group-justified">
+      <a href="{list_url}" target="_blank"
+        class="btn btn-secondary">{plural_title}</a>
+      <a href="{add_url}" target="_blank"
+        class="btn btn-secondary">{add_sentence}</a>
+    </div>
+    """.format(
+        list_url=sub_collection.get_list_url(),
+        plural_title=sub_collection.plural_title,
+        add_url=sub_collection.get_add_url(),
+        add_sentence=sub_collection.add_sentence,
+    ))
 
 ############################################################
 # Set a field in a sub dictionary
@@ -2947,18 +3035,22 @@ COMMA_PER_LANGUAGE = {
 }
 _mark_safe = mark_safe
 
-def andJoin(strings, translated=True, mark_safe=False, language=None):
+def andJoin(strings, translated=True, mark_safe=False, language=None, or_=False):
     strings = [
-        _markSafeFormatEscapeOrNot(string) if mark_safe else string
+        _markSafeFormatEscapeOrNot(string) if mark_safe else unicode(string)
         for string in strings if string is not None
     ]
     if len(strings) == 1:
         string = strings[0]
     else:
         comma = COMMA_PER_LANGUAGE.get('en' if not translated else (language or get_language()), COMMA_PER_LANGUAGE['en'])
+        if or_:
+            keyword = _('or') if translated else 'or'
+        else:
+            keyword = _('and') if translated else 'and'
         string = u''.join([
             comma.join(strings[:-1]),
-            u' {} '.format(_('and') if translated else 'and'),
+            u' {} '.format(keyword),
             strings[-1],
         ])
     if mark_safe:
