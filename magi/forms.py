@@ -970,10 +970,13 @@ class MagiForm(forms.ModelForm):
                 for field_name in self.userimages_fields:
                     # Upload new images
                     for image in self.cleaned_data.get(field_name, []):
-                        imageObject = models.UserImage.objects.create(
-                            name=u'{}-{}'.format(self.Meta.model.__name__.lower(), field_name),
-                        )
-                        imageObject.image.save(randomString(64), image)
+                        if isinstance(image, int) or isinstance(image, long):
+                            imageObject = models.UserImage.objects.get(id=image)
+                        else:
+                            imageObject = models.UserImage.objects.create(
+                                name=u'{}-{}'.format(self.Meta.model.__name__.lower(), field_name),
+                            )
+                            imageObject.image.save(randomString(64), image)
                         getattr(instance, field_name).add(imageObject)
                     del(self.cleaned_data[field_name])
                     # Delete existing images selected for deletion

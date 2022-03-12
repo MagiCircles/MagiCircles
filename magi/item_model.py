@@ -463,6 +463,8 @@ class BaseMagiModel(models.Model):
     def update_cache_if_changed(self, field_name, save=True):
         current_value = getattr(self, u'cached_{}'.format(field_name))
         value = self._to_cache(field_name)
+        if not current_value and not value: # For fields that save empty strings when no value, like images
+            return False
         if current_value == value:
             return False
         self._update_cache(field_name, value)
