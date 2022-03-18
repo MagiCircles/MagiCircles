@@ -27,6 +27,8 @@
       {{ item }}
       {% endif %}
     </h3>
+    {% else %}{# Ensure minimum height to avoid infinite load #}
+    <br>
     {% endif %}
     {% if item_view_enabled or item.display_item_url %}
   </a>

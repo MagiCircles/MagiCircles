@@ -344,7 +344,7 @@ class MagiForm(forms.ModelForm):
                 self.fields[name].required = False
 
             # Set initial value from GET
-            if allow_initial_in_get == '__all__' or name in allow_initial_in_get:
+            if self.request and (allow_initial_in_get == '__all__' or name in allow_initial_in_get):
                 value = self.request.GET.get(name, None)
                 if value:
                     try:
@@ -1002,6 +1002,12 @@ class MagiForm(forms.ModelForm):
         on_change_value = OrderedDict()
         for field_name, fields in values.items():
             # For c_ fields, specify all choices as their own fields (seperate checkboxes)
+            # Example (with dict):
+            # 'c_tags': { 'news': ['is_event_news'] },
+            # => 'c_tags-news': ['is_event_news'],
+            # Example (with list):
+            # 'c_tags': ['staff_favorite'],
+            # => 'c_tags_0': ['staff_favorite'], 'c_tags_2': ['staff_favorite'], ...
             if field_name.startswith('c_') and field_name in self.fields:
                 for i, (choice, _v_choice) in enumerate(self.fields[field_name].choices):
                     if isinstance(fields, dict):
@@ -1009,7 +1015,10 @@ class MagiForm(forms.ModelForm):
                             on_change_value[u'{}_{}'.format(field_name, i)] = fields[choice]
                     else:
                         on_change_value[u'{}_{}'.format(field_name, i)] = fields
-            # for i_ fields, change to integer values if need be
+            # For i_ fields, change to integer values if need be
+            # Example:
+            # 'i_rarity': { 'ur': ['special'] },
+            # => 'i_rarity': { 2: ['special'] },
             elif field_name.startswith('i_') and isinstance(fields, dict):
                 on_change_value[field_name] = {
                     _get_i(field_name, value): value_fields
@@ -1018,22 +1027,38 @@ class MagiForm(forms.ModelForm):
             else:
                 on_change_value[field_name] = fields
 
-        for field_name, fields in on_change_value.items():
-            if isinstance(fields, dict):
-                for value, sub_fields in fields.items():
+        # Add extra added sub fields to fields to show/hide
+        if add_affected_fields:
+            for field_name, fields in on_change_value.items():
+                if isinstance(fields, dict):
+                    # Example (with dict):
+                    # 'available_in_jp': { True: ['jp_start_date'] },
+                    # => 'available_in_jp': { True: ['jp_start_date', 'jp_start_date_time', ...] },
+                    for value, sub_fields in fields.items():
+                        to_add = []
+                        for sub_field_name in sub_fields:
+                            if sub_field_name in self.extra_fields_added:
+                                to_add += self.extra_fields_added[sub_field_name]
+                        if to_add:
+                            # create a new list, don't update existing one in case it's used elsewhere
+                            on_change_value[field_name][value] = (
+                                on_change_value[field_name][value]
+                                + to_add
+                            )
+                else:
+                    # Example (with list):
+                    # 'available_in_jp': ['jp_start_date'],
+                    # => 'available_in_jp': ['jp_start_date', 'jp_start_date_time', ...],
                     to_add = []
-                    for sub_field_name in (
-                            sub_fields.keys()
-                            if isinstance(sub_fields, dict)
-                            else sub_fields):
-                        # Add extra added sub fields to fields to show/hide
-                        if add_affected_fields:
-                            sub_fields += self.extra_fields_added.get(sub_field_name, [])
-            else:
-                # Add extra added sub fields to fields to show/hide
-                if add_affected_fields:
-                    for affected_field_name in fields:
-                        on_change_value[field_name] += self.extra_fields_added.get(affected_field_name, [])
+                    for sub_field_name in fields:
+                        if sub_field_name in self.extra_fields_added:
+                            to_add += self.extra_fields_added[sub_field_name]
+                    if to_add:
+                        # create a new list, don't update existing one in case it's used elsewhere
+                        on_change_value[field_name] = (
+                            on_change_value[field_name]
+                            + to_add
+                        )
 
         return on_change_value
 
