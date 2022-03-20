@@ -593,10 +593,11 @@ class MagiCollection(object):
                             for selector in filter.selectors
                         ]
                     setattr(self, u'{}_filter'.format(new_field_name), filter)
-                    cuteform = {}
-                    cuteform.update(parent_collection.filter_cuteform.get(field_name, {}))
-                    cuteform.update(parent_collection.list_view.filter_cuteform.get(field_name, {}))
-                    cuteform.update(parent_filter_form.cuteform.get(field_name, {}))
+                    cuteform = (
+                        parent_filter_form.cuteform.get(field_name, None)
+                        or parent_collection.list_view.filter_cuteform.get(field_name, None)
+                        or parent_collection.filter_cuteform.get(field_name, None)
+                    )
                     if cuteform is not None:
                         cuteform = cuteform.copy()
                         if not cuteform.get('image_folder', None):
