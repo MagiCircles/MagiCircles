@@ -21,7 +21,7 @@
 </div>
 {% endif %}
 {% else %}
-<div class="row form-group {% if field.errors %}has-error{% endif %} {% if field.required %}required{% endif %}{% for cls in field.field.form_group_classes %} {{ cls }}{% endfor %}">
+<div class="row form-group {% if field.errors %}has-error{% endif %} {% if field.required %}required{% endif %}{% for cls in field.field.form_group_classes %} {{ cls }}{% endfor %}" data-field-name="{{ field.name }}">
   {% if field|is_boolean and not field.help_text %}
   <div class="{% firstof label_class 'col-sm-4' %}"></div>
   {% else %}
