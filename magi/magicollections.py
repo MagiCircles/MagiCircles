@@ -1433,10 +1433,11 @@ class MagiCollection(object):
                     continue
             if self.translated_fields and field.name in self.translated_fields:
                 language = request.LANGUAGE_CODE if request else get_language()
-                try: # When display_{} is specified, resulting value will be assumed to be in the right language
+                # When display_{} is specified, resulting value will be assumed to be in the right language
+                value = self._get_value_from_display_property(view, item, field_name)
+                if value is not None:
                     result_language = language
-                    value = self._get_value_from_display_property(view, item, field_name)
-                except AttributeError:
+                else:
                     result_language, value = item.get_translation_from_dict(
                         field.name, language=language, return_language=True)
                 if not value:
