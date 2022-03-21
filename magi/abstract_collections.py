@@ -129,7 +129,10 @@ class BaseEventCollection(MainItemCollection):
     # List view
 
     class ListView(MainItemCollection.ListView):
-        default_ordering = '-start_date'
+
+        @property
+        def default_ordering(self):
+            return u','.join(getattr(self.collection.queryset.model._meta, 'ordering', [])) or '-start_date'
 
         def to_filter_form_class(self):
             self.filter_form = forms.to_EventFilterForm(self)
