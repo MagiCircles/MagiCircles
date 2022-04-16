@@ -43,8 +43,10 @@
       <div class="col-sm-4">
         <script type="text/javascript" src="https://ko-fi.com/widgets/widget_2.js"></script>
         <script type="text/javascript">
-          kofiwidget2.init("Support Me on Ko-fi", "{{ site_color }}", "D1D590OS");
-          kofiwidget2.draw();
+          if (typeof(kofiwidget2) != 'undefined') {
+              kofiwidget2.init("Support Me on Ko-fi", "{{ site_color }}", "D1D590OS");
+              kofiwidget2.draw();
+          }
         </script>
         <div class="visible-xs"<br><br><hr><br><br></div>
       </div>
