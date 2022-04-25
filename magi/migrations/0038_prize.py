@@ -27,7 +27,7 @@ class Migration(migrations.Migration):
                 ('i_character', models.CharField(max_length=200, null=True, verbose_name=b'Character', choices=[('1', 'qwert'), ('2', 'an idol')])),
                 ('m_details', models.TextField(null=True, verbose_name=b'Details')),
                 ('giveaway_url', models.CharField(help_text=b'If you specify a giveaway URL, the prize will be considered unavailable for future giveaways', max_length=100, null=True, verbose_name=b'Giveaway URL')),
-                ('owner', models.ForeignKey(related_name='added_prizes', to=settings.AUTH_USER_MODEL)),
+                ('owner', models.ForeignKey(related_name='added_prizes', to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)),
             ],
             options={
                 'abstract': False,

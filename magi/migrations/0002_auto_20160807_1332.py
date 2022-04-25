@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='report',
             name='owner',
-            field=models.ForeignKey(related_name='reports', to=settings.AUTH_USER_MODEL, null=True),
+            field=models.ForeignKey(related_name='reports', to=settings.AUTH_USER_MODEL, null=True, on_delete=models.CASCADE),
             preserve_default=True,
         ),
     ]

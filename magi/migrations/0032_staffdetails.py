@@ -36,7 +36,7 @@ class Migration(migrations.Migration):
                 ('availability_details', models.TextField(help_text=b"if your schedule doesn't match the weekdays / weekends schema", null=True, verbose_name=b'Availability details')),
                 ('experience', models.TextField(help_text=b"What are your previous/current experiences as an admin, moderator or middleman in the game's community or similar?", null=True, verbose_name=b'Experience with the community')),
                 ('other_experience', models.TextField(help_text=b'Other relevant experience as an admin/moderator, your professional background, education, experience working with people, managing social networks, etc.', null=True, verbose_name=b'Other experience')),
-                ('owner', models.OneToOneField(related_name='staff_details', to=settings.AUTH_USER_MODEL)),
+                ('owner', models.OneToOneField(related_name='staff_details', to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)),
             ],
             options={
                 'abstract': False,

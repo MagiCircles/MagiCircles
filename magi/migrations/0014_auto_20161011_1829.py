@@ -49,19 +49,19 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='badge',
             name='donation_month',
-            field=models.ForeignKey(related_name='badges', to='magi.DonationMonth', null=True),
+            field=models.ForeignKey(related_name='badges', to='magi.DonationMonth', null=True, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='badge',
             name='owner',
-            field=models.ForeignKey(related_name='badges_created', to=settings.AUTH_USER_MODEL),
+            field=models.ForeignKey(related_name='badges_created', to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(
             model_name='badge',
             name='user',
-            field=models.ForeignKey(related_name='badges', to=settings.AUTH_USER_MODEL),
+            field=models.ForeignKey(related_name='badges', to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AlterField(

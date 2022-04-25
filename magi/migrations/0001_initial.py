@@ -30,7 +30,7 @@ class Migration(migrations.Migration):
                 ('_cache_owner_preferences_status', models.CharField(max_length=12, null=True, choices=[(b'THANKS', b'Thanks'), (b'SUPPORTER', 'Player'), (b'LOVER', 'Super Player'), (b'AMBASSADOR', 'Extreme Player'), (b'PRODUCER', 'Master Player'), (b'DEVOTEE', 'Ultimate Player')])),
                 ('_cache_owner_preferences_twitter', models.CharField(max_length=32, null=True, blank=True)),
                 ('likes', models.ManyToManyField(related_name='liked_activities', to=settings.AUTH_USER_MODEL)),
-                ('owner', models.ForeignKey(related_name='activities', to=settings.AUTH_USER_MODEL)),
+                ('owner', models.ForeignKey(related_name='activities', to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)),
             ],
             options={
                 'verbose_name_plural': 'activities',
@@ -47,7 +47,7 @@ class Migration(migrations.Migration):
                 ('email_sent', models.BooleanField(default=False)),
                 ('seen', models.BooleanField(default=False)),
                 ('image', models.ImageField(null=True, upload_to=b'notifications/', blank=True)),
-                ('owner', models.ForeignKey(related_name='notifications', to=settings.AUTH_USER_MODEL)),
+                ('owner', models.ForeignKey(related_name='notifications', to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)),
             ],
             options={
             },
@@ -88,7 +88,7 @@ class Migration(migrations.Migration):
                 ('type', models.CharField(max_length=20, verbose_name='Platform', choices=[(b'facebook', b'Facebook'), (b'twitter', b'Twitter'), (b'reddit', b'Reddit'), (b'schoolidolu', b'School Idol Tomodachi'), (b'line', b'LINE Messenger'), (b'tumblr', b'Tumblr'), (b'twitch', b'Twitch'), (b'steam', b'Steam'), (b'instagram', b'Instagram'), (b'youtube', b'YouTube'), (b'github', b'GitHub')])),
                 ('value', models.CharField(help_text='Write your username only, no URL.', max_length=64, verbose_name='Username/ID', validators=[django.core.validators.RegexValidator(b'^[0-9a-zA-Z-_\\. ]*$', b'Only alphanumeric and - _ characters are allowed.')])),
                 ('relevance', models.PositiveIntegerField(blank=True, null=True, verbose_name='How often do you tweet/stream/post about ?', choices=[(0, 'Never'), (1, 'Sometimes'), (2, 'Often'), (3, 'Every single day')])),
-                ('owner', models.ForeignKey(related_name='links', to=settings.AUTH_USER_MODEL)),
+                ('owner', models.ForeignKey(related_name='links', to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)),
             ],
             options={
             },
@@ -116,7 +116,7 @@ class Migration(migrations.Migration):
                 ('unread_notifications', models.PositiveIntegerField(default=0)),
                 ('_cache_twitter', models.CharField(max_length=32, null=True, blank=True)),
                 ('following', models.ManyToManyField(related_name='followers', to=settings.AUTH_USER_MODEL)),
-                ('user', models.OneToOneField(related_name='preferences', to=settings.AUTH_USER_MODEL)),
+                ('user', models.OneToOneField(related_name='preferences', to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)),
             ],
             options={
                 'verbose_name_plural': 'list of userpreferences',
@@ -132,7 +132,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='report',
             name='owner',
-            field=models.ForeignKey(related_name='reports', to=settings.AUTH_USER_MODEL),
+            field=models.ForeignKey(related_name='reports', to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE),
             preserve_default=True,
         ),
         migrations.AddField(

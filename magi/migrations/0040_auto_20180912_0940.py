@@ -20,8 +20,8 @@ class Migration(migrations.Migration):
                 ('creation', models.DateTimeField(auto_now_add=True)),
                 ('message', models.TextField(max_length=1500, verbose_name='Message')),
                 ('seen', models.BooleanField(default=False)),
-                ('owner', models.ForeignKey(related_name='sent_messages', to=settings.AUTH_USER_MODEL)),
-                ('to_user', models.ForeignKey(related_name='received_messages', to=settings.AUTH_USER_MODEL)),
+                ('owner', models.ForeignKey(related_name='sent_messages', to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)),
+                ('to_user', models.ForeignKey(related_name='received_messages', to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)),
             ],
             options={
                 'abstract': False,

@@ -24,7 +24,7 @@ class Migration(migrations.Migration):
                 ('is_long', models.BooleanField(default=False)),
                 ('is_markdown', models.BooleanField(default=False)),
                 ('is_boolean', models.BooleanField(default=False)),
-                ('owner', models.ForeignKey(related_name='added_configurations', to=settings.AUTH_USER_MODEL)),
+                ('owner', models.ForeignKey(related_name='added_configurations', to=settings.AUTH_USER_MODEL, on_delete=models.CASCADE)),
             ],
             options={
             },
