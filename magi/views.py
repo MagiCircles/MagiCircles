@@ -1,18 +1,18 @@
 from __future__ import division
 import math, datetime, random, string, simplejson
 from collections import OrderedDict
+from urllib.request import pathname2url
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, JsonResponse, Http404
 from django.conf import settings as django_settings
-from django.contrib.auth.views import login as login_view
-from django.contrib.auth.views import logout as logout_view
+from django.contrib.auth.views import LoginView
+from django.contrib.auth.views import LogoutView
 from django.contrib.auth import authenticate, login as login_action
 from django.contrib.admin.utils import NestedObjects
-from django.utils.translation import ugettext_lazy as _, get_language, activate as translation_activate
-from django_translated import t
+from django.utils.translation import gettext_lazy as _, get_language, activate as translation_activate
+from .django_translated import t
 from django.utils.safestring import mark_safe
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
-from django.utils.http import urlquote
 from django.utils import timezone
 from django.db.models import Count, Prefetch, Q
 from magi.middleware.httpredirect import HttpRedirectException
@@ -173,7 +173,7 @@ def login(request):
             'title': title(context) if callable(title) else title,
             'url': u'/you/',
         }]
-    return login_view(
+    return LoginView.as_view(
         request,
         authentication_form=LoginForm,
         template_name='pages/login.html',
@@ -181,7 +181,7 @@ def login(request):
     )
 
 def logout(request):
-    return logout_view(request, next_page='/')
+    return LogoutView.as_view(request, next_page='/')
 
 def signup(request, context):
     if request.user.is_authenticated():
@@ -234,7 +234,7 @@ def signup(request, context):
             account_collection = getMagiCollection('account')
             if account_collection and account_collection.add_view.has_permissions(request, context):
                 url = u'/accounts/add/{}{}'.format(
-                    (u'?next={}'.format(urlquote(request.GET['next'])) if 'next' in request.GET else ''),
+                    (u'?next={}'.format(pathname2url(request.GET['next'])) if 'next' in request.GET else ''),
                     (u'&next_title={}'.format(request.GET['next_title'])
                      if 'next' in request.GET and 'next_title' in request.GET
                      else ''))
@@ -1624,7 +1624,7 @@ def handler500(request):
         'error_details': mark_safe('If the problem persists, please <a href="/about/#contact">contact us</a>.'),
     })
 
-def handler403(request):
+def handler403(request, _exception):
     return render(request, 'pages/error.html', {
         'error_code': 403,
         'page_title': 'Permission denied',
@@ -1698,7 +1698,7 @@ def adventcalendar(request, context, day=None):
             context['image'] = None
 
 def endaprilfool(request, context):
-    if getEventStatus((03, 31), (04, 03)) != 'current':
+    if getEventStatus((3, 31), (4, 3)) != 'current':
         raise PermissionDenied()
     badge_image = getattr(django_settings, 'SEASONAL_SETTINGS', {}).get('aprilfools', {}).get('extra', {}).get('badge_image', None)
     if not badge_image:

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from django.utils.translation import ugettext_lazy as _, string_concat
+from django.utils.translation import gettext_lazy as _
+from magi.polyfills import string_concat
 
 please_understand_template_sentence = 'Please understand that we have a very young audience, so we have to be very careful with what appears on our website.'
 

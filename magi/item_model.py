@@ -2,10 +2,10 @@ import json, datetime
 from collections import OrderedDict
 from django.contrib.auth.models import User
 from django.db import models
-from django.db.models.fields import FieldDoesNotExist
+from django.core.exceptions import FieldDoesNotExist
 from django.db.models.fields.files import ImageFieldFile
 from django.conf import settings as django_settings
-from django.utils.translation import ugettext_lazy as _, get_language
+from django.utils.translation import gettext_lazy as _, get_language
 from django.utils import timezone
 from magi.utils import (
     tourldash,
@@ -129,7 +129,7 @@ def get_owner_collection(cls):
 
 def get_allow_multiple_per_owner(cls):
     # todo
-    print cls.owner
+    print(cls.owner)
     return cls.owner
 
 def get_is_owner(instance, user):
@@ -246,7 +246,7 @@ class BaseMagiModel(models.Model):
             return next(
                 (c[0] if isinstance(c, tuple) else c)
                 for index, c in self.get_choices(field_name)
-                if unicode(index) == unicode(i)
+                if str(index) == str(i)
             )
         except StopIteration:
             if i is None or i == '':

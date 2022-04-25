@@ -30,7 +30,8 @@ from magi.utils import (
     getEventStatus,
     tourldash,
 )
-from django.utils.translation import ugettext_lazy as _, string_concat, get_language
+from django.utils.translation import gettext_lazy as _, get_language
+from magi.polyfills import string_concat
 
 settings_module = __import__(django_settings.SITE + '.settings', globals(), locals(), ['*'])
 
@@ -779,7 +780,7 @@ def _seasonal_tags():
             tags.append((
                 u'season-{}'.format(season_name), {
                     'translation': tag,
-                    'start_date': season.get('start_date', (01, 01)),
+                    'start_date': season.get('start_date', (1, 1)),
                     'end_date': season.get('end_date', (12, 31)),
                 }
             ))

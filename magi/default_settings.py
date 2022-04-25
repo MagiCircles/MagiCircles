@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 from collections import OrderedDict
 from django.conf import settings as django_settings
-from django.utils.translation import ugettext_lazy as _, string_concat
+from django.utils.translation import gettext_lazy as _
+from magi.polyfills import string_concat
 from magi.django_translated import t
 from magi.seasons import DEFAULT_SEASONS
 from django.conf import settings
@@ -613,8 +614,8 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'title': _('Profile'),
         'icon': 'profile',
         'url_variables': [
-            ('pk', '\d+', lambda (context): str(context['request'].user.id)),
-            ('username', _usernameRegexp, lambda (context): context['request'].user.username),
+            ('pk', '\d+', lambda context: str(context['request'].user.id)),
+            ('username', _usernameRegexp, lambda context: context['request'].user.username),
         ],
         'navbar_link_list': 'you',
         'authentication_required': True,

@@ -4,7 +4,7 @@ from dateutil.relativedelta import relativedelta
 from django.db import models
 from django.contrib.auth.models import User
 from django.core import validators
-from django.utils.translation import ugettext_lazy as _, string_concat, get_language
+from django.utils.translation import gettext_lazy as _, get_language
 from django.utils.safestring import mark_safe
 from django.utils import timezone
 from django.utils.formats import date_format
@@ -59,6 +59,7 @@ from magi.settings import (
     PROFILE_BACKGROUNDS_IMAGES,
 )
 from magi.raw import other_sites
+from magi.polyfills import string_concat
 from magi.item_model import (
     MagiModel,
     BaseMagiModel,
@@ -484,7 +485,7 @@ class UserPreferences(BaseMagiModel):
 
 class UserLink(BaseMagiModel):
     alphanumeric = validators.RegexValidator(r'^[0-9a-zA-Z\-_\. /]*$', 'Only alphanumeric and - _ characters are allowed.')
-    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='links')
+    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='links', on_delete=models.CASCADE)
     value = models.CharField(string_concat(_('Username'), '/', _('ID')), max_length=64, help_text=_('Write your username only, no URL.'), validators=[alphanumeric])
 
     TYPE_CHOICES = [
@@ -573,7 +574,7 @@ class UserLink(BaseMagiModel):
 class StaffConfiguration(MagiModel):
     collection_name = 'staffconfiguration'
 
-    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='added_configurations')
+    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='added_configurations', on_delete=models.CASCADE)
     key = models.CharField(max_length=100)
     verbose_key = models.CharField('Name', max_length=100)
     value = models.TextField('Value', null=True)
@@ -809,7 +810,7 @@ class Activity(MagiModel):
 
     creation = models.DateTimeField(auto_now_add=True)
     last_bump = models.DateTimeField(db_index=True, null=True)
-    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='activities', db_index=True)
+    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='activities', db_index=True, on_delete=models.CASCADE)
     m_message = models.TextField(_('Message'), null=True)
 
     likes = models.ManyToManyField(User, related_name="liked_activities")
@@ -1096,7 +1097,7 @@ def updateCachedActivities(user_id):
 class Notification(MagiModel):
     collection_name = 'notification'
 
-    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='notifications', db_index=True)
+    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='notifications', db_index=True, on_delete=models.CASCADE)
     creation = models.DateTimeField(auto_now_add=True)
 
     MESSAGES = [
@@ -1186,7 +1187,7 @@ class Report(MagiModel):
     is_suggestededit = models.BooleanField(default=False, db_index=True)
     creation = models.DateTimeField(auto_now_add=True)
     modification = models.DateTimeField(auto_now=True)
-    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='reports', null=True)
+    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='reports', null=True, on_delete=models.CASCADE)
     reported_thing = models.CharField(max_length=300) # Collection name
     reported_thing_title = models.CharField(max_length=300) # Collection title in English
     reported_thing_id = models.PositiveIntegerField() # Pk
@@ -1286,7 +1287,7 @@ BADGE_IMAGE_TINYPNG_SETTINGS = {
 class DonationMonth(MagiModel):
     collection_name = 'donate'
 
-    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='donation_month_created')
+    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='donation_month_created', on_delete=models.CASCADE)
     date = models.DateField(default=datetime.datetime.now)
     cost = models.FloatField(default=250)
     goal = DONATORS_GOAL
@@ -1350,9 +1351,9 @@ class Badge(MagiModel):
     collection_name = 'badge'
 
     date = models.DateField(default=datetime.datetime.now)
-    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='badges_created')
-    user = models.ForeignKey(User, related_name='badges', db_index=True)
-    donation_month = models.ForeignKey(DonationMonth, related_name='badges', null=True)
+    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='badges_created', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, related_name='badges', db_index=True, on_delete=models.CASCADE)
+    donation_month = models.ForeignKey(DonationMonth, related_name='badges', null=True, on_delete=models.CASCADE)
     name = models.CharField(_('Title'), max_length=50, null=True)
 
     m_description = models.TextField(_('Description'), null=True)
@@ -1425,7 +1426,7 @@ class Badge(MagiModel):
 class Prize(MagiModel):
     collection_name = 'prize'
 
-    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='added_prizes')
+    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='added_prizes', on_delete=models.CASCADE)
     name = models.CharField('Prize name', max_length=100)
     image = models.ImageField('Prize image', upload_to=uploadItem('prize'))
     image2 = models.ImageField('2nd image', upload_to=uploadItem('prize'), null=True, blank=True)

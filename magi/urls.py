@@ -2,14 +2,15 @@
 import string, inspect
 from collections import OrderedDict
 from django.conf import settings
-from django.conf.urls import include, patterns, url
+from django.urls import include, re_path as url
 from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
-from django.utils.translation import string_concat, ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from django.views.generic.base import RedirectView
 from django.forms import BaseForm
+from django.contrib.auth.views import PasswordResetView, PasswordChangeDoneView, PasswordResetConfirmView, PasswordResetCompleteView
 #from magi import bouncy # unused, only to force load the feedback process
 from magi import views_collections, magicollections
 from magi import views as magi_views
@@ -80,7 +81,8 @@ from magi.utils import (
     staticImageURL,
     setJavascriptFormContext,
 )
-from raw import other_sites
+from magi.polyfills import string_concat
+from .raw import other_sites
 
 ############################################################
 # Load dynamic module based on SITE
@@ -111,19 +113,19 @@ _verbose_re = '[\w.@+\-_]+'
 urls = [
     #url(r'^bouncy/', include('django_bouncy.urls', app_name='django_bouncy')),
     url(r'^i18n/', include('django.conf.urls.i18n')),
-    url(r'^password_reset[/]+$', 'django.contrib.auth.views.password_reset', {
+    url(r'^password_reset[/]+$', PasswordResetView, {
         'template_name': 'password/password_reset_form.html',
         'html_email_template_name': 'password/password_reset_email_html.html',
         'from_email': settings.PASSWORD_EMAIL,
 
     }, name='password_reset'),
-    url(r'^password_reset/done[/]+$', 'django.contrib.auth.views.password_reset_done', {
+    url(r'^password_reset/done[/]+$', PasswordChangeDoneView, {
         'template_name': 'password/password_reset_done.html'
     }, name='password_reset_done'),
-    url(r'^reset/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$', 'django.contrib.auth.views.password_reset_confirm', {
+    url(r'^reset/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$', PasswordResetConfirmView, {
         'template_name': 'password/password_reset_confirm.html'
     }, name='password_reset_confirm'),
-    url(r'^reset/done[/]+$', 'django.contrib.auth.views.password_reset_complete', {
+    url(r'^reset/done[/]+$', PasswordResetCompleteView, {
         'template_name': 'password/password_reset_complete.html'
     }, name='password_reset_complete'),
 ]
@@ -669,7 +671,7 @@ navbar_links['staff']['order'] = _staff_order
 
 ############################################################
 
-urlpatterns = patterns('', *urls)
+urlpatterns = urls
 
 ############################################################
 # Re-order navbar

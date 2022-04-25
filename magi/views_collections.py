@@ -2,7 +2,7 @@ from __future__ import division
 import math, string
 from collections import OrderedDict
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from magi.middleware.httpredirect import HttpRedirectException
 from django.shortcuts import render
 from django.http import Http404

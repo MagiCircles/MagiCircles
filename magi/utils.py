@@ -1,24 +1,25 @@
 # -*- coding: utf-8 -*-
 from __future__ import division
-import os, string, random, csv, tinify, cStringIO, pytz, simplejson, datetime, io, operator, re, math, requests, urllib, urllib2, json
+import os, string, random, csv, tinify, pytz, simplejson, datetime, io, operator, re, math, requests, urllib, json
+from urllib.request import pathname2url
+from io import StringIO
 from PIL import Image
 from json.encoder import encode_basestring_ascii
 from collections import OrderedDict
 from dateutil.relativedelta import relativedelta
 from django.conf import settings as django_settings
 from django.core.files.temp import NamedTemporaryFile
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, FieldDoesNotExist
 from django.core.serializers.json import DjangoJSONEncoder
-from django.core.urlresolvers import resolve
+from django.urls import resolve
 from django.core.validators import RegexValidator
 from django.http import Http404
-from django.utils.http import urlquote
 from django.utils.deconstruct import deconstructible
-from django.utils.encoding import force_text
-from django.utils.translation import ugettext_lazy as _, get_language, activate as translation_activate
+from django.utils.encoding import force_str
+from django.utils.translation import gettext_lazy as _, get_language, activate as translation_activate
 from django.utils.formats import dateformat, date_format
 from django.utils.functional import Promise
-from django.utils.safestring import mark_safe, SafeText, SafeBytes
+from django.utils.safestring import mark_safe, SafeText, SafeString
 from django.utils.html import escape
 from django.utils import timezone
 from django.utils.dateparse import parse_date
@@ -26,7 +27,7 @@ from django.template import Context
 from django.template.loader import get_template
 from django.db import models
 from django.db import connection
-from django.db.models.fields import BLANK_CHOICE_DASH, FieldDoesNotExist
+from django.db.models.fields import BLANK_CHOICE_DASH
 from django.db.models import Q, Prefetch
 from django.forms.models import model_to_dict
 from django.forms import (
@@ -41,7 +42,7 @@ from django.forms import (
 )
 from django.core.mail import EmailMultiAlternatives
 from django.core.files.images import ImageFile
-from django_translated import t
+from .django_translated import t
 from magi import seasons
 from magi.middleware.httpredirect import HttpRedirectException
 from magi.default_settings import RAW_CONTEXT
@@ -50,6 +51,7 @@ try:
     CUSTOM_SEASONAL_MODULE_FOR_CONTEXT = __import__(django_settings.SITE + '.seasons_context', fromlist=[''])
 except ImportError:
     CUSTOM_SEASONAL_MODULE_FOR_CONTEXT = None
+
 
 ############################################################
 # Characters
@@ -348,7 +350,7 @@ NATIVE_LANGUAGES = OrderedDict(getattr(django_settings, 'NATIVE_LANGUAGES', []))
 
 # es -> spanish
 LANGUAGES_NAMES = {
-    _language: unicode(_verbose_name).replace(' ', '_').lower()
+    _language: str(_verbose_name).replace(' ', '_').lower()
     for _language, _verbose_name in LANGUAGES_DICT.items()
 }
 # spanish -> es
@@ -1492,7 +1494,7 @@ def ordinalNumber(n):
     return "%d%s" % (n,"tsnrhtdd"[(n/10%10!=1)*(n%10<4)*n%10::4])
 
 def tourldash(string, separator=u'-'):
-    separator = unicode(separator)
+    separator = str(separator)
     if not string:
         return ''
     s =  u''.join(e if e.isalnum() else separator for e in string)
@@ -1551,7 +1553,7 @@ def getAllTranslationsOfModelField(item, field_name='name', unique=False):
 class LazyEncoder(DjangoJSONEncoder):
     def default(self, obj):
         if isinstance(obj, Promise):
-            return force_text(obj)
+            return force_str(obj)
         return super(LazyEncoder, self).default(obj)
 
 def jsv(v):
@@ -1632,9 +1634,9 @@ def getIndex(list, index, default=None):
 
 def updatedDict(d, *args, **kwargs):
     if kwargs.get('copy', False):
-	d = d.copy()
+        d = d.copy()
     for new_d in args:
-	d.update(new_d)
+        d.update(new_d)
     return d
 
 NUMBER_AND_FLOAT_REGEX = '[-+]?[0-9]*\.?[0-9]+'
@@ -2042,7 +2044,7 @@ class ManyToManyCSVField(forms_CharField):
         self.m2m_model_class = model_class
         self.m2m_field_name = field_name
         self.m2m_lookup_field_name = lookup_field_name
-        self.m2m_items_model_class = getattr(self.m2m_model_class, self.m2m_field_name).field.rel.to
+        self.m2m_items_model_class = getattr(self.m2m_model_class, self.m2m_field_name).field.remote_field.model
         self._known_items_by_pk = {}
         help_text = _('Separate {things} with commas. Example: "Apple, Orange"').format(
             things=(
@@ -2553,7 +2555,7 @@ def dataToImageFile(data):
 def _imageProcessing(data, filename, processing, return_data=False, return_pil_image=False):
     _, extension = os.path.splitext(filename)
     extension = extension.lower()
-    pil_image = Image.open(cStringIO.StringIO(data))
+    pil_image = Image.open(StringIO.StringIO(data))
     pil_image = processing(pil_image)
     output = io.BytesIO()
     pil_image.save(output, format={
@@ -2862,9 +2864,9 @@ def makeBadgeImage(badge, width=None, path=None, upload=False, instance=None, mo
     filename = 'badge{}'.format(badge.rank or '')
     border_image_url = staticImageURL(filename, folder='badges', full=True)
     try:
-        border_image = WandImage(file=urllib2.urlopen(border_image_url))
+        border_image = WandImage(file=urllib.urlopen(border_image_url))
     except:
-        border_image = WandImage(file=urllib2.urlopen('https://i.imgur.com/g2bVQoS.png'))
+        border_image = WandImage(file=urllib.urlopen('https://i.imgur.com/g2bVQoS.png'))
     width = width or border_image.width
     if width != border_image.width:
         border_image.resize(width=width, height=width)
@@ -2890,7 +2892,7 @@ def staticFileURL(path, folder=None, extension=None, versionned=True, full=False
     # /!\ Can't be called at global level
     if not path and not folder and not extension:
         return None
-    path = unicode(path)
+    path = str(path)
     if not extension and '.' not in path and default_extension:
         extension = default_extension
     if path.startswith('//') or path.startswith('http://') or path.startswith('https://'):
@@ -3011,7 +3013,7 @@ def HTMLAlert(type='warning', flaticon='about', title=None, message=None, button
 def _markSafeFormatEscapeOrNot(string):
     return unicode(string if (
         isinstance(string, SafeText)
-        or isinstance(string, SafeBytes)
+        or isinstance(string, SafeString)
     ) else escape(string))
 
 def markSafeFormat(string, *args, **kwargs):
@@ -3130,14 +3132,14 @@ def locationOnChange(user_preferences):
             user_preferences.longitude = location.longitude
             user_preferences.location_changed = False
             user_preferences.save()
-            print user_preferences.user, user_preferences.location, user_preferences.latitude, user_preferences.longitude
+            print(user_preferences.user, user_preferences.location, user_preferences.latitude, user_preferences.longitude)
             generateMap()
         else:
             user_preferences.location_changed = False
             user_preferences.save()
-            print user_preferences.user, user_preferences.location, 'Invalid location'
+            print(user_preferences.user, user_preferences.location, 'Invalid location')
     except:
-        print u'{} {} Error, {}'.format(user_preferences.user, user_preferences.location, sys.exc_info()[0])
+        print(u'{} {} Error, {}'.format(user_preferences.user, user_preferences.location, sys.exc_info()[0]))
         # Will not mark as not changed, so it will be retried at next iteration
     return True
 
@@ -3165,7 +3167,7 @@ def duplicate_translation(model, field, term, only_for_language=None, print_log=
                             close_a='</a>' if html_log else '',
                         )
                         if print_log:
-                            print log
+                            print(log)
                         logs.append(log)
                     s_item.save()
                 known_translations.append(language)
@@ -3248,7 +3250,7 @@ def translationURL(
     url = u'https://translate.google.com/#{from_language}|{to_language}|{value}'.format(
         to_language=googleTranslateFixLanguage(to_language),
         from_language=googleTranslateFixLanguage(from_language),
-        value=urlquote(value),
+        value=pathname2url(value),
     )
     if with_wrapper:
         return (

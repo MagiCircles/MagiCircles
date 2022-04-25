@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from django.utils.translation import ugettext_lazy as _, string_concat
+from django.utils.translation import gettext_lazy as _
+from magi.polyfills import string_concat
 
 # Will be added to the context directly
 CONTEXT_SETTINGS = [
@@ -54,42 +55,42 @@ STAFF_CONFIGURATIONS_SETTINGS = [
 DEFAULT_SEASONS = {
     'newyear': {
         'start_date': (12, 31),
-        'end_date': (01, 02),
+        'end_date': (1, 2),
         'activity_tag': string_concat(_('Happy New Year!'), u' 🍾🎆'),
     },
     'chinesenewyear': {
-        'start_date': (01, 21),
-        'end_date': (02, 18),
+        'start_date': (1, 21),
+        'end_date': (2, 18),
         'activity_tag': string_concat(_('Happy Lunar New Year!'), u' 🐉🧨🧧'),
     },
     'valentines': {
-        'start_date': (02, 13),
-        'end_date': (02, 15),
+        'start_date': (2, 13),
+        'end_date': (2, 15),
         'activity_tag': string_concat(_('Happy Valentine\'s Day!'), u' 💝🍫'),
     },
     'leapday': {
-        'start_date': (2024, 02, 29),
-        'end_date': (2024, 03, 01),
+        'start_date': (2024, 2, 29),
+        'end_date': (2024, 3, 1),
         'activity_tag': string_concat(_('Happy Leap Day!'), u' 🐸'),
     },
     'pieday': {
-        'start_date': (03, 14),
-        'end_date': (03, 15),
+        'start_date': (3, 14),
+        'end_date': (3, 15),
         'activity_tag': string_concat(_('Happy Pi Day!'), u' π🥧'),
     },
     'whiteday': {
-        'start_date': (03, 13),
-        'end_date': (03, 16),
+        'start_date': (3, 13),
+        'end_date': (3, 16),
         'activity_tag': string_concat(_('Happy White Day!'), u'🍬🎁')
     },
     'stpatrick': {
-        'start_date': (03, 17),
-        'end_date': (03, 18),
+        'start_date': (3, 17),
+        'end_date': (3, 18),
         'activity_tag': string_concat(_('Happy St Patrick\'s Day!'), u' ☘🇮🇪'),
     },
     'aprilfools': {
-        'start_date': (03, 31),
-        'end_date': (04, 03),
+        'start_date': (3, 31),
+        'end_date': (4, 3),
         'activity_tag': string_concat(_('Happy April Fool\'s Day!'), u' 🤪😜🤣'),
         'extrajavascript': 'aprilFools();',
         'extra': {
@@ -150,23 +151,23 @@ DEFAULT_SEASONS = {
         },
     },
     'easter': {
-        'start_date': (03, 22),
-        'end_date': (04, 26),
+        'start_date': (3, 22),
+        'end_date': (4, 26),
         'activity_tag': string_concat(_('Happy Easter!'), u' 🐰🥚🍫🐣'),
     },
     'may4': {
-        'start_date': (05, 04),
-        'end_date': (05, 06),
+        'start_date': (5, 4),
+        'end_date': (5, 6),
         'activity_tag': _('May the Fourth be with you!'),
     },
     'cincodemayo': {
-        'start_date': (05, 05),
-        'end_date': (05, 06),
+        'start_date': (5, 5),
+        'end_date': (5, 6),
         'activity_tag': string_concat(_('Happy Cinco de Mayo!'), u' 🇲🇽'),
     },
     'pride': {
-        'start_date': (06, 01),
-        'end_date': (07, 01),
+        'start_date': (6, 1),
+        'end_date': (7, 1),
         'activity_tag': string_concat(_('Happy Pride Month!'), u' 🏳️‍🌈🏳️‍⚧️'),
         'extracss_template': 'include/pride_css.css',
         'theme': True,
@@ -177,19 +178,19 @@ DEFAULT_SEASONS = {
         'activity_tag': string_concat(_('Happy Thanksgiving!'), u' 🦃🥧'),
     },
     'halloween': {
-        'start_date': (10, 01),
+        'start_date': (10, 1),
         'end_date': (10, 31),
         'activity_tag': string_concat(_('Happy Halloween!'), u' 🎃👻'),
     },
     'advent_calendar': {
-        'start_date': (12, 01),
+        'start_date': (12, 1),
         'end_date': (12, 25),
         'ajax_callback': 'adventCalendar',
         'to_context': 'adventCalendar',
         'staff_configurations_settings': ['images', 'badge_image', 'corner_popup_image'],
     },
     'christmas': {
-        'start_date': (12, 01),
+        'start_date': (12, 1),
         'end_date': (12, 31),
         'color': '#d42d2f',
         'secondary_color': '#69ab23',

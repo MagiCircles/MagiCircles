@@ -2,13 +2,13 @@
 from __future__ import division
 import string, copy
 from collections import OrderedDict
-from django.utils.translation import ugettext_lazy as _, string_concat, get_language
+from django.utils.translation import gettext_lazy as _, get_language
 from django.utils import timezone
 from django.utils.safestring import mark_safe
-from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
+from django.core.exceptions import PermissionDenied, ObjectDoesNotExist, FieldDoesNotExist
 from django.middleware import csrf
 from django.http import Http404
-from django.db.models import Q, Prefetch, FieldDoesNotExist
+from django.db.models import Q, Prefetch
 from django.shortcuts import get_object_or_404
 from django.conf import settings as django_settings
 from magi.views import indexExtraContext
@@ -79,6 +79,7 @@ from magi.settings import (
     HOME_ACTIVITY_TABS,
     LANGUAGES_CANT_SPEAK_ENGLISH,
 )
+from magi.polyfills import string_concat
 from magi import models, forms
 
 ############################################################
@@ -337,9 +338,9 @@ class MagiCollection(object):
                 queryset = queryset.prefetch_related(prefetched)
 
         if django_settings.DEBUG and view:
-            print ''
-            print 'Get queryset for', self.plural_name, view.view
-            print displayQueryset(queryset, prefix=u'  ')
+            print('')
+            print('Get queryset for', self.plural_name, view.view)
+            print(displayQueryset(queryset, prefix=u'  '))
         return queryset
 
     def get_title_prefixes(self, request, context):
@@ -427,7 +428,7 @@ class MagiCollection(object):
         """
         parent_collection = self
         item_field_name = parent_collection.model_name
-        item_field_model_class = model_class._meta.get_field(item_field_name).rel.to
+        item_field_model_class = model_class._meta.get_field(item_field_name).remote_field.model
         item_field_name_id = u'{}_{}'.format(item_field_name, item_field_model_class._meta.pk.column)
 
         class _CollectibleForm(forms.AutoForm):

@@ -2,13 +2,13 @@ import re, datetime, pytz
 from collections import OrderedDict
 from dateutil.relativedelta import relativedelta
 from multiupload.fields import MultiFileField
-from snowpenguin.django.recaptcha3.widgets import ReCaptchaHiddenInput as _ReCaptchaHiddenInput
-from snowpenguin.django.recaptcha3.fields import ReCaptchaField as _ReCaptchaField
+#from snowpenguin.django.recaptcha3.widgets import ReCaptchaHiddenInput as _ReCaptchaHiddenInput
+#from snowpenguin.django.recaptcha3.fields import ReCaptchaField as _ReCaptchaField
 from django import forms
 from django.core.validators import MaxLengthValidator, MaxValueValidator
 from django.http.request import QueryDict
 from django.db import models as django_models
-from django.db.models.fields import BLANK_CHOICE_DASH, FieldDoesNotExist, TextField, CharField, DateTimeField
+from django.db.models.fields import BLANK_CHOICE_DASH, TextField, CharField, DateTimeField
 from django.db.models.fields.files import ImageField
 from django.db.models import Q
 from django.forms.models import model_to_dict, fields_for_model
@@ -17,9 +17,9 @@ from django.contrib.auth import authenticate, login as login_action
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.admin.utils import NestedObjects
 from django.utils import timezone
-from django.utils.translation import ugettext_lazy as _, string_concat, get_language, activate as translation_activate
+from django.utils.translation import gettext_lazy as _, get_language, activate as translation_activate
 from django.utils.safestring import mark_safe
-from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
+from django.core.exceptions import PermissionDenied, ObjectDoesNotExist, FieldDoesNotExist
 from django.core.files.uploadedfile import InMemoryUploadedFile, TemporaryUploadedFile
 from django.core.validators import MinValueValidator, MinLengthValidator
 from django.shortcuts import get_object_or_404
@@ -31,6 +31,7 @@ from magi.raw import (
 )
 from magi import models
 from magi.default_settings import RAW_CONTEXT
+from magi.polyfills import string_concat
 from magi.settings import (
     USER_COLORS,
     GAME_NAME,
@@ -101,7 +102,7 @@ from magi.utils import (
     CSVChoiceField,
     modelGetField,
 )
-from versions_utils import sortByRelevantVersions
+from .versions_utils import sortByRelevantVersions
 
 ############################################################
 # Internal utils
@@ -204,6 +205,16 @@ CAPTCHA_CREDITS = u"""
   <a href="https://policies.google.com/terms">Terms of Service</a> apply.
 </p></div></div>
 """
+
+##FIXME Find replacement for django-recaptcha3
+class _ReCaptchaHiddenInput:
+    def nothing():
+        return 1
+
+class _ReCaptchaField:
+    def removeme():
+        return 1
+##
 
 class ReCaptchaHiddenInput(_ReCaptchaHiddenInput):
     def render(self, *args, **kwargs):
@@ -2761,15 +2772,12 @@ class UserFilterForm(MagiFiltersForm):
 
     show_more = FormShowMore(cutoff='color' if USER_COLORS else 'location', including_cutoff=True, until='ordering')
 
-    def _get_preset_language_label(verbose_language):
-        return lambda: _('Users who can speak {language}').format(language=verbose_language)
-
     show_presets_in_navbar = False
     presets = OrderedDict([
         # Used when clicking on the language of a user
         (_language, {
             'verbose_name': _verbose_language,
-            'label': _get_preset_language_label(_verbose_language),
+            'label': _('Users who can speak {language}').format(language=_verbose_language),
             'fields': {
                 'i_language': _language
             },

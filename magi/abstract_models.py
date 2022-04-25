@@ -1,7 +1,7 @@
 import datetime
 from collections import OrderedDict
 from django.contrib.auth.models import User
-from django.utils.translation import ugettext_lazy as _, string_concat
+from django.utils.translation import gettext_lazy as _
 from django.db import models
 from django.conf import settings as django_settings
 from django.core.validators import RegexValidator
@@ -44,6 +44,7 @@ from magi.versions_utils import (
     getRelevantTranslatedValueForVersion,
 )
 from magi.default_settings import RAW_CONTEXT
+from magi.polyfills import string_concat
 
 ############################################################
 # Collectible utils
@@ -168,7 +169,7 @@ class CacheOwner(MagiModel):
 class BaseAccount(CacheOwner):
     collection_name = 'account'
 
-    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='accounts')
+    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='accounts', on_delete=models.CASCADE)
     creation = models.DateTimeField(_('Join date'), auto_now_add=True)
     nickname = models.CharField(_('Nickname'), max_length=200, null=True, help_text=_('Give a nickname to your account to easily differentiate it from your other accounts when you\'re managing them.'))
     start_date = models.DateField(_('Start date'), null=True, validators=[PastOnlyValidator])
@@ -300,7 +301,7 @@ class MobileGameAccount(BaseAccount):
 class _BaseEvent(MagiModel):
     collection_name = 'event'
 
-    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='added_%(class)ss')
+    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='added_%(class)ss', on_delete=models.CASCADE)
 
     ############################################################
     # Name
@@ -669,7 +670,7 @@ def getBaseEventWithVersions(
 class BaseEventParticipation(AccountAsOwnerModel, AutoImageFromParent):
     collection_name = 'eventparticipation'
 
-    account = models.ForeignKey('{}.Account'.format(django_settings.SITE), related_name='%(class)ss', verbose_name=_('Account'))
+    account = models.ForeignKey('{}.Account'.format(django_settings.SITE), related_name='%(class)ss', verbose_name=_('Account'), on_delete=models.CASCADE)
 
     class Meta(MagiModel.Meta):
         abstract = True
