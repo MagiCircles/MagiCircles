@@ -72,7 +72,7 @@ class AccountAsOwnerModel(MagiModel):
     @classmethod
     def cached_account_extra(self, d):
         d['owner']['pk'] = d['owner']['id']
-        d['owner']['unicode'] = unicode(d['owner']['id'])
+        d['owner']['unicode'] = str(d['owner']['id'])
         d['item_url'] = u'/user/{}/#{}'.format(d['owner']['id'], d['id'])
         d['full_item_url'] = u'{}{}'.format(django_settings.SITE_URL, d['item_url'])
         d['http_item_url'] = u'http:' + d['full_item_url'] if 'http' not in d['full_item_url'] else d['full_item_url']
@@ -81,7 +81,7 @@ class AccountAsOwnerModel(MagiModel):
     def to_cache_account(self):
         return {
             'id': self.account_id,
-            'unicode': unicode(self.account),
+            'unicode': str(self.account),
             'owner': {
                 'id': self.account.owner_id,
             },
@@ -236,7 +236,7 @@ class MobileGameAccount(BaseAccount):
         RegexValidator(r'^[0-9 ]+$', t['Enter a number.']),
     ])
     show_friend_id = models.BooleanField(_('Should your friend ID be visible to other players?'), default=True)
-    accept_friend_requests = models.NullBooleanField(_('Accept friend requests'), null=True)
+    accept_friend_requests = models.BooleanField(_('Accept friend requests'), null=True)
 
     # How do you play?
 
@@ -322,7 +322,7 @@ class _BaseEvent(MagiModel):
     STATUS_ENDS_WITHIN = 3
 
     def __unicode__(self):
-        return unicode(self.t_name)
+        return str(self.t_name)
 
     class Meta(MagiModel.Meta):
         abstract = True
@@ -550,7 +550,7 @@ def getBaseEventWithVersions(
         # Unicode
 
         def __unicode__(self):
-            return unicode(self.relevant_name or _('Event'))
+            return str(self.relevant_name or _('Event'))
 
         class Meta(MagiModel.Meta):
             abstract = True

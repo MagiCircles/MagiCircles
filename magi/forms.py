@@ -360,7 +360,7 @@ class MagiForm(forms.ModelForm):
                 if value:
                     try:
                         field.show_value_instead = (
-                            { unicode(k): v for k, v in dict(field.choices).items() }[value]
+                            { str(k): v for k, v in dict(field.choices).items() }[value]
                             if isinstance(field, forms.ChoiceField)
                             else value
                         )
@@ -780,8 +780,8 @@ class MagiForm(forms.ModelForm):
                 }).count()
                 if already_added >= self.collection.add_view.max_per_user_per_minute:
                     raise forms.ValidationError(
-                        unicode(_('You\'ve added a lot of {things}, lately. Try to wait a little bit before adding more.'))
-                        .format(things=unicode(self.collection.plural_title).lower()))
+                        str(_('You\'ve added a lot of {things}, lately. Try to wait a little bit before adding more.'))
+                        .format(things=str(self.collection.plural_title).lower()))
             if self.collection.add_view.max_per_user_per_hour:
                 already_added = self.Meta.model.objects.filter(**{
                     self.Meta.model.selector_to_owner(): owner,
@@ -789,8 +789,8 @@ class MagiForm(forms.ModelForm):
                 }).count()
                 if already_added >= self.collection.add_view.max_per_user_per_hour:
                     raise forms.ValidationError(
-                        unicode(_('You\'ve added a lot of {things}, lately. Try to wait a little bit before adding more.'))
-                        .format(things=unicode(self.collection.plural_title).lower()))
+                        str(_('You\'ve added a lot of {things}, lately. Try to wait a little bit before adding more.'))
+                        .format(things=str(self.collection.plural_title).lower()))
             if self.collection.add_view.max_per_user_per_day:
                 already_added = self.Meta.model.objects.filter(**{
                     self.Meta.model.selector_to_owner(): owner,
@@ -798,17 +798,17 @@ class MagiForm(forms.ModelForm):
                 }).count()
                 if already_added >= self.collection.add_view.max_per_user_per_day:
                     raise forms.ValidationError(
-                        unicode(_('You\'ve added a lot of {things}, lately. Try to wait a little bit before adding more.'))
-                        .format(things=unicode(self.collection.plural_title).lower()))
+                        str(_('You\'ve added a lot of {things}, lately. Try to wait a little bit before adding more.'))
+                        .format(things=str(self.collection.plural_title).lower()))
             if self.collection.add_view.max_per_user:
                 already_added = self.Meta.model.objects.filter(**{
                     self.Meta.model.selector_to_owner(): owner
                 }).count()
                 if already_added >= self.collection.add_view.max_per_user:
-                    raise forms.ValidationError(unicode(_('You already have {total} {things}. You can only add up to {max} {things}.')).format(
+                    raise forms.ValidationError(str(_('You already have {total} {things}. You can only add up to {max} {things}.')).format(
                         total=already_added,
                         max=self.collection.add_view.max_per_user,
-                        things=unicode(self.collection.plural_title).lower(),
+                        things=str(self.collection.plural_title).lower(),
                     ))
 
         return self.cleaned_data
@@ -1167,7 +1167,7 @@ def to_translate_form_class(view):
                 ) for source_language, value in sources.items()
                 if value and language != source_language
             ]
-            original_help_text = self.fields[field_name].help_text.replace(unicode(verbose_language), '').strip()
+            original_help_text = self.fields[field_name].help_text.replace(str(verbose_language), '').strip()
             self.fields[field_name].help_text = mark_safe(
                 u'{is_source}{no_value}{original}{sources}<img src="{img}" height="20" /> {lang}'.format(
                     is_source=(
@@ -1413,7 +1413,7 @@ class MagiFiltersForm(AutoForm):
     @classmethod
     def get_presets_fields(self, preset, details=None):
         if details is None: details = self.get_presets()[preset]
-        return { k: unicode(v) for k, v in details['fields'].items() }
+        return { k: str(v) for k, v in details['fields'].items() }
 
     @classmethod
     def get_preset_verbose_name(self, preset, details=None):
@@ -1722,7 +1722,7 @@ class MagiFiltersForm(AutoForm):
                             field_label = self.Meta.model._meta.get_field(field_name).verbose_name
                         except FieldDoesNotExist:
                             field_label = toHumanReadable(field_name)
-                    label_parts.append(unicode(field_label))
+                    label_parts.append(str(field_label))
                 self.fields[new_field_name] = forms.ChoiceField(
                     choices=choices,
                     label=details.get('label', u' / '.join(label_parts)),
@@ -2069,7 +2069,7 @@ class AccountForm(AutoForm):
                 self.previous_level = self.instance.level
         self.previous_screenshot = ''
         if 'screenshot' in self.fields and not self.is_creating:
-            self.previous_screenshot = unicode(self.instance.screenshot) or ''
+            self.previous_screenshot = str(self.instance.screenshot) or ''
         if 'level_on_screenshot_upload' in self.fields:
             del(self.fields['level_on_screenshot_upload'])
 
@@ -2088,7 +2088,7 @@ class AccountForm(AutoForm):
             and has_field(self.Meta.model, 'screenshot')
             and new_level >= MAX_LEVEL_BEFORE_SCREENSHOT_REQUIRED
             and (new_level - previous_level) >= MAX_LEVEL_UP_STEP_BEFORE_SCREENSHOT_REQUIRED
-            and unicode(screenshot_image) == unicode(self.previous_screenshot)):
+            and str(screenshot_image) == str(self.previous_screenshot)):
             raise forms.ValidationError(
                 message=_('Please provide an updated screenshot of your in-game profile to prove your level.'),
                 code='level_proof_screenshot',
@@ -2101,7 +2101,7 @@ class AccountForm(AutoForm):
             instance._cache_leaderboards_last_update = None
         # When level screenshot gets updated, update level_on_screenshot_upload
         if (has_field(self.Meta.model, 'screenshot')
-            and unicode(getattr(self, 'previous_screenshot', '')) != unicode(instance.screenshot)):
+            and str(getattr(self, 'previous_screenshot', '')) != str(instance.screenshot)):
             instance.level_on_screenshot_upload = instance.level
         if commit:
             instance.save()
@@ -2407,7 +2407,7 @@ class ActivitiesPreferencesForm(MagiForm):
                 self.instance.t_language,
             )
         if 'i_activities_language' in self.fields:
-            self.fields['i_activities_language'].label = unicode(
+            self.fields['i_activities_language'].label = str(
                 self.fields['i_activities_language'].label).format(language='')
         if ('i_default_activities_tab' in self.fields
             and self.request.LANGUAGE_CODE not in LANGUAGES_CANT_SPEAK_ENGLISH):
@@ -2521,8 +2521,8 @@ class UserPreferencesForm(MagiForm):
         if 'location' in self.fields:
             self.fields['location'].help_text = mark_safe(
                 u'{} <a href="/map/" target="_blank">{} <i class="flaticon-link"></i></a>'.format(
-                    unicode(self.fields['location'].help_text),
-                    unicode(_(u'Open {thing}')).format(thing=unicode(_('Map')).lower()),
+                    str(self.fields['location'].help_text),
+                    str(_(u'Open {thing}')).format(thing=str(_('Map')).lower()),
                 ))
 
         self.old_location = self.instance.location if self.instance else None
@@ -2594,7 +2594,7 @@ class StaffEditUser(_UserCheckEmailUsernameForm):
                 self.fields['i_activities_language'] = forms.ChoiceField(
                     choices=models.Activity.LANGUAGE_CHOICES,
                     initial=self.fields['i_activities_language'].initial,
-                    label=unicode(self.fields['i_activities_language'].label).format(language=''),
+                    label=str(self.fields['i_activities_language'].label).format(language=''),
                     help_text='If you see that this user regularly posts with the wrong language, you can change the default language in which they post to avoid future mistakes.'
                 )
 
@@ -2907,7 +2907,7 @@ class AddLinkForm(MagiForm):
 
     @property
     def form_title(self):
-        return _(u'Add {thing}').format(thing=unicode(_('Link')).lower())
+        return _(u'Add {thing}').format(thing=str(_('Link')).lower())
 
     def __init__(self, *args, **kwargs):
         super(AddLinkForm, self).__init__(*args, **kwargs)
@@ -3144,7 +3144,7 @@ class ActivityForm(MagiForm):
                 self.fields['save_activities_language'].label = mark_safe(
                     _('Always post activities in {language}').format(
                         language=u'<span class="selected_language">{}</span>'.format(
-                            unicode(t['Language']).lower(),
+                            str(t['Language']).lower(),
                         ),
                     ),
                 )
@@ -3185,7 +3185,7 @@ class ActivityForm(MagiForm):
         m_message = self.cleaned_data.get('m_message', self.instance.m_message if not self.is_creating else None)
         if not image and not m_message:
             raise forms.ValidationError(_('{thing} required.').format(
-                thing=u' {} '.format(t['or']).join([unicode(_('Message')), unicode(_('Image'))])))
+                thing=u' {} '.format(t['or']).join([str(_('Message')), str(_('Image'))])))
         return self.cleaned_data
 
     def save(self, commit=False):
@@ -3428,7 +3428,7 @@ class ReportForm(BaseReportForm):
                 u'{message}<ul>{list}</ul>{learn_more}',
                 message=_(u'Only submit a report if there is a problem with this specific {thing}. If it\'s about something else, your report will be ignored. For example, don\'t report an account or a profile if there is a problem with an activity. Look for "Report" buttons on the following to report individually:').format(thing=collection.title.lower()),
                 list=markSafeJoin([
-                    markSafeFormat(u'<li>{}</li>', unicode(type['plural_title']))
+                    markSafeFormat(u'<li>{}</li>', str(type['plural_title']))
                     for name, type in self.collection.types.items() if name != self.type
                 ], separator=u''),
                 learn_more=(

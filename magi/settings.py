@@ -699,20 +699,20 @@ for _k, _v in DEFAULT_HOMEPAGE_ART_POSITION.items():
 # Add characters birthdays to activity tags
 
 _CHARACTERS_NAMES_U = { _key: OrderedDict([
-    (unicode(_pk), _name) for (_pk, _name, _image) in getattr(django_settings, _key, [])
+    (str(_pk), _name) for (_pk, _name, _image) in getattr(django_settings, _key, [])
 ]) for _key in ['FAVORITE_CHARACTERS'] + getattr(django_settings, 'OTHER_CHARACTERS_KEYS', []) }
 
 
 _CHARACTERS_LOCALIZED_NAMES_U = { _key: OrderedDict([
-    (unicode(_pk), _names) for (_pk, _names) in getattr(django_settings, '{}_NAMES'.format(_key), {}).items()
+    (str(_pk), _names) for (_pk, _names) in getattr(django_settings, '{}_NAMES'.format(_key), {}).items()
 ]) for _key in ['FAVORITE_CHARACTERS'] + getattr(django_settings, 'OTHER_CHARACTERS_KEYS', []) }
 
 def _getCharacterNameFromPk(key, pk):
     language = get_language()
     if language == 'en':
-        return _CHARACTERS_NAMES_U[key].get(unicode(pk), None)
-    return (_CHARACTERS_LOCALIZED_NAMES_U[key].get(unicode(pk), {}).get(language, None)
-            or _CHARACTERS_NAMES_U[key].get(unicode(pk), None))
+        return _CHARACTERS_NAMES_U[key].get(str(pk), None)
+    return (_CHARACTERS_LOCALIZED_NAMES_U[key].get(str(pk), {}).get(language, None)
+            or _CHARACTERS_NAMES_U[key].get(str(pk), None))
 
 def _birthday_tags_per_characters_key(key):
     def _birthday_tag_name(pk, year):

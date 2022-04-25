@@ -230,7 +230,7 @@ class UserPreferences(BaseMagiModel):
         }
         if 'translator' in s and 'Languages' in s['translator']:
             s['translator']['Languages'] = u', '.join([
-                unicode(LANGUAGES_DICT.get(l, l)) for l in s['translator']['Languages']
+                str(LANGUAGES_DICT.get(l, l)) for l in s['translator']['Languages']
             ])
         return s
 
@@ -282,7 +282,7 @@ class UserPreferences(BaseMagiModel):
     def get_localized_color(self, color):
         if color and USER_COLORS:
             try:
-                return (_(localized) for (name, localized, __, __) in USER_COLORS if unicode(name) == color).next()
+                return (_(localized) for (name, localized, __, __) in USER_COLORS if str(name) == color).next()
             except: pass
         return ''
     @property
@@ -293,7 +293,7 @@ class UserPreferences(BaseMagiModel):
     def get_hex_color(self, color):
         if color and USER_COLORS:
             try:
-                return (hex for (name, _, _, hex) in USER_COLORS if unicode(name) == color).next()
+                return (hex for (name, _, _, hex) in USER_COLORS if str(name) == color).next()
             except: pass
         return COLOR
     @property
@@ -311,7 +311,7 @@ class UserPreferences(BaseMagiModel):
     def get_css_color(self, color):
         if color and USER_COLORS:
             try:
-                return (css_color for (name, _, css_color, _) in USER_COLORS if unicode(name) == color).next()
+                return (css_color for (name, _, css_color, _) in USER_COLORS if str(name) == color).next()
             except: pass
         return 'main'
 
@@ -592,7 +592,7 @@ class StaffConfiguration(MagiModel):
     # Owner is always pre-selected
     @property
     def cached_owner(self):
-        self.owner.unicode = unicode(self.owner)
+        self.owner.unicode = str(self.owner)
         return self.owner
 
     @property
@@ -1268,7 +1268,7 @@ class Report(MagiModel):
 
     def __unicode__(self):
         return u'{title} #{id}'.format(
-            title=unicode(_(self.reported_thing_title)),
+            title=str(_(self.reported_thing_title)),
             id=self.reported_thing_id,
         )
 
@@ -1333,7 +1333,7 @@ class DonationMonth(MagiModel):
 
     @property
     def open_badge_sentence(self):
-        return _('Open {thing}').format(thing=unicode(_('Badge')).lower())
+        return _('Open {thing}').format(thing=str(_('Badge')).lower())
 
     @property
     def badge_sentence(self):
@@ -1342,7 +1342,7 @@ class DonationMonth(MagiModel):
         )
 
     def __unicode__(self):
-        return unicode(self.date)
+        return str(self.date)
 
     class Meta:
         ordering = ['-date']

@@ -204,7 +204,7 @@ class BaseEventCollection(MainItemCollection):
                     title_field = {
                         'image': item.get_version_image(version_name),
                         'icon': item.get_version_icon(version_name),
-                        'verbose_name': item.get_name_for_version(version_name) or unicode(item),
+                        'verbose_name': item.get_name_for_version(version_name) or str(item),
                         'verbose_name_subtitle': item.get_version_name(version_name),
                         'attributes': { 'id': anchor },
                     }

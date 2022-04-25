@@ -129,7 +129,7 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
     context['name'] = name
 
     # Page description
-    description = unicode(context['item'])
+    description = str(context['item'])
     for field_name, is_markdown in [
             ('t_m_description', True),
             ('t_description', False),
@@ -393,7 +393,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     if shortcut_url != '':
         if 'filter_form' in context:
             filters_labels = [
-                unicode(field.label).lower()
+                str(field.label).lower()
                 for field_name, field in context['filter_form'].fields.items()
                 if (field.label and field_name not in [
                         'search', 'ordering', 'reverse_order',
@@ -524,7 +524,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
         context['show_small_title'] = False
         context['show_search_results'] = False
         context['before_template'] = 'include/getstarted'
-        context['share_collection_sentence'] = _('Share your {things}!').format(things=unicode(collection.plural_title).lower())
+        context['share_collection_sentence'] = _('Share your {things}!').format(things=str(collection.plural_title).lower())
         context['after_template'] = 'include/afterGetStarted'
 
     # Top buttons
@@ -685,7 +685,7 @@ def add_view(request, name, collection, type=None, ajax=False, shortcut_url=None
             getattr(form, 'beforefield', ''), HTMLAlert(
                 message=_('Make sure the {thing} you\'re about to add doesn\'t already exist.').format(
                     thing=_(collection.title.lower())),
-                button={ 'url': context['list_url'], 'verbose': unicode(collection.plural_title) },
+                button={ 'url': context['list_url'], 'verbose': str(collection.plural_title) },
             )))
 
     # Title and prefixes
@@ -810,13 +810,13 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
 
     if allowDelete:
         formDelete.submit_title = instance.delete_sentence
-        formDelete.form_title = u'{}: {}'.format(instance.delete_sentence, unicode(instance))
+        formDelete.form_title = u'{}: {}'.format(instance.delete_sentence, str(instance))
 
         # Alert
         formDelete.beforefields = mark_safe(u'{}{}'.format(
             getattr(form, 'beforefield', ''), HTMLAlert(
                 type='danger',
-                message=unicode(_('You can\'t cancel this action afterwards.')),
+                message=str(_('You can\'t cancel this action afterwards.')),
             )))
 
         if 'js_variables' not in context or not context['js_variables']:

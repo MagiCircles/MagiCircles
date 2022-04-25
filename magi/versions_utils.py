@@ -37,7 +37,7 @@ def getRelevantVersion(
     """
     versions = versions or (item.VERSIONS if item else {})
     i_version_string_to_version = {
-        unicode(i): version_name
+        str(i): version_name
         for i, version_name in enumerate(versions.keys())
     }
     if exclude_versions:

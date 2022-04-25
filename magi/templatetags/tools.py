@@ -17,7 +17,7 @@ def split(string, splitter=","):
 
 @register.filter
 def addint(string, int):
-    return string + unicode(int)
+    return string + str(int)
 
 @register.filter
 def times(value):

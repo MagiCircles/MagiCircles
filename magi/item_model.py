@@ -42,7 +42,7 @@ NON_LATIN_LANGUAGES = [
 def get_file_url_from_path(filePath):
     if not filePath:
         return None
-    fileURL = unicode(filePath)
+    fileURL = str(filePath)
     if '//' in fileURL:
         return fileURL
     if fileURL.startswith(django_settings.SITE + '/'):
@@ -135,13 +135,13 @@ def get_allow_multiple_per_owner(cls):
 def get_is_owner(instance, user):
     return user and instance.owner_id == user.id
 
-def get_owner_unicode(instance):
+def get_owner_str(instance):
     if instance.fk_as_owner:
         fk_as_owner = getattr(instance, u'cached_{}'.format(instance.fk_as_owner))
         if not fk_as_owner:
             fk_as_owner = getattr(instance, instance.fk_as_owner)
-        return fk_as_owner.unicode if hasattr(fk_as_owner, 'unicode') else unicode(fk_as_owner)
-    return instance.owner.unicode if hasattr(instance.owner, 'unicode') else unicode(instance.owner)
+        return fk_as_owner.unicode if hasattr(fk_as_owner, 'unicode') else str(fk_as_owner)
+    return instance.owner.unicode if hasattr(instance.owner, 'unicode') else str(instance.owner)
 
 def get_real_owner(instance):
     """
@@ -191,7 +191,7 @@ class BaseMagiModel(models.Model):
     allow_multiple_per_owner = classmethod(get_allow_multiple_per_owner)
     owner_collection = classmethod(get_owner_collection)
     is_owner = get_is_owner
-    owner_unicode = property(get_owner_unicode)
+    owner_unicode = property(get_owner_str)
     real_owner = property(get_real_owner)
 
     @classmethod
@@ -264,7 +264,7 @@ class BaseMagiModel(models.Model):
             return next(
                 (c[1] if isinstance(c, tuple) else c)
                 for index, c in self.get_choices(field_name)
-                if unicode(index) == unicode(i)
+                if str(index) == str(i)
             )
         except StopIteration:
             if i is None:
@@ -331,7 +331,7 @@ class BaseMagiModel(models.Model):
             d['id'] = getattr(self, u'{}_id'.format(field_name), None)
         # Add default unicode if missing
         if 'unicode' not in d:
-            d['unicode'] = d['name'] if 'name' in d else (unicode(d['id']) if 'id' in d else '?')
+            d['unicode'] = d['name'] if 'name' in d else (str(d['id']) if 'id' in d else '?')
         if 'id' in d:
             if 'pk' not in d:
                 d['pk'] = d['id']
@@ -772,9 +772,9 @@ class BaseMagiModel(models.Model):
             value = getattr(self, field_name)
             if (isinstance(value, basestring)
                 or isinstance(value, ImageFieldFile)):
-                return (get_http_file_url_from_path(unicode(value))
+                return (get_http_file_url_from_path(str(value))
                         if name.startswith('http_')
-                        else get_file_url_from_path(unicode(value)))
+                        else get_file_url_from_path(str(value)))
             return self._attr_error(original_name)
 
         # WITHOUT PREFIX
@@ -837,7 +837,7 @@ def get_collection(instance):
 def get_item_url(instance):
     return (
         getattr(instance, 'get_item_url', lambda: None)()
-        or u'/{}/{}/{}/'.format(instance.collection_name, instance.pk, tourldash(unicode(instance)))
+        or u'/{}/{}/{}/'.format(instance.collection_name, instance.pk, tourldash(str(instance)))
     )
 
 def get_ajax_item_url(instance):
@@ -852,7 +852,7 @@ def get_full_item_url(instance):
         if '//' not in display_url[:8]:
             return u'{}{}'.format(django_settings.SITE_URL, display_url)
         return display_url
-    return u'{}{}/{}/{}/'.format(django_settings.SITE_URL, instance.collection_name, instance.pk, tourldash(unicode(instance)))
+    return u'{}{}/{}/{}/'.format(django_settings.SITE_URL, instance.collection_name, instance.pk, tourldash(str(instance)))
 
 def get_http_item_url(instance):
     url = get_full_item_url(instance)
@@ -879,16 +879,16 @@ def get_ajax_edit_url(instance):
 # Get sentences
 
 def get_open_sentence(instance):
-    return _('Open {thing}').format(thing=unicode(instance.collection_title).lower())
+    return _('Open {thing}').format(thing=str(instance.collection_title).lower())
 
 def get_edit_sentence(instance):
-    return _('Edit {thing}').format(thing=unicode(instance.collection_title).lower())
+    return _('Edit {thing}').format(thing=str(instance.collection_title).lower())
 
 def get_delete_sentence(instance):
-    return _('Delete {thing}').format(thing=unicode(instance.collection_title).lower())
+    return _('Delete {thing}').format(thing=str(instance.collection_title).lower())
 
 def get_report_sentence(instance):
-    return _('Report {thing}').format(thing=unicode(instance.collection_title).lower())
+    return _('Report {thing}').format(thing=str(instance.collection_title).lower())
 
 def get_suggestedit_sentence(instance):
     return _('Suggest edit')
@@ -950,7 +950,7 @@ def addMagiModelProperties(modelClass, collection_name):
     modelClass.allow_multiple_per_owner = classmethod(get_allow_multiple_per_owner)
     modelClass.owner_collection = classmethod(get_owner_collection)
     modelClass.is_owner = get_is_owner
-    modelClass.owner_unicode = property(get_owner_unicode)
+    modelClass.owner_unicode = property(get_owner_str)
     modelClass.real_owner = property(get_real_owner)
     modelClass.request = None
 
@@ -987,14 +987,14 @@ class MagiModel(BaseMagiModel):
 
     def __unicode__(self):
         try:
-            return unicode(self.t_name)
+            return str(self.t_name)
         except AttributeError:
             pass
         try:
-            return unicode(self.collection_title)
+            return str(self.collection_title)
         except AttributeError:
             pass
-        return unicode(self.collection_name)
+        return str(self.collection_name)
 
     class Meta:
         abstract = True
@@ -1008,4 +1008,4 @@ class UserImage(BaseMagiModel):
     name = models.CharField(_('Title'), max_length=100, null=True)
 
     def __unicode__(self):
-        return unicode(_('Image'))
+        return str(_('Image'))

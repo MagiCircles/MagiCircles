@@ -103,7 +103,7 @@ def tinypng_compress(model, field):
     image_name = uploadItem(prefix)(item, filename)
     content = value.read()
     if not content:
-        save_item(model, item, { original_field_name: unicode(value) })
+        save_item(model, item, { original_field_name: str(value) })
         print '[Warning] Empty file, discarded.'
         return True
     if use_tinypng or image_name.endswith('.gif'):
@@ -123,7 +123,7 @@ def tinypng_compress(model, field):
             image = dataToImageFile(content)
     image.name = image_name
     save_item(model, item, {
-        original_field_name: unicode(value),
+        original_field_name: str(value),
         field.name: image,
     }, in_item=True)
     print '[Info] Done.'
@@ -143,7 +143,7 @@ def tinypng_thumbnail(model, field):
     image_name = uploadItem(prefix)(item, filename)
     content = value.read()
     if not content:
-        save_item(model, item, { thumbnail_field_name: unicode(value) })
+        save_item(model, item, { thumbnail_field_name: str(value) })
         print '[Warning] Empty file, discarded.'
         return True
     tinypng_settings = getattr(item, 'tinypng_settings', {}).get(thumbnail_field_name, {}).copy()
@@ -174,7 +174,7 @@ def thumbnail(model, field):
     image_name = uploadItem(prefix)(item, filename)
     content = value.read()
     if not content:
-        save_item(model, item, { thumbnail_field_name: unicode(value) })
+        save_item(model, item, { thumbnail_field_name: str(value) })
         print '[Warning] Empty file, discarded.'
         return True
     thumbnail_size = getattr(model, 'thumbnail_size', {}).get(field.name, {}).copy()

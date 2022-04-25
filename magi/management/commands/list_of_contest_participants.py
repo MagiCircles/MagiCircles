@@ -512,9 +512,9 @@ class Command(BaseCommand):
                 print '![Prizes]({})'.format(self.options['prizes_image'])
                 print ''
             if self.options.get('physical_prizes', False):
-                print '- 1 {} physical prize (official merch)'.format(unicode(settings.GAME_NAME))
-            print '- 1 {} art commission'.format(unicode(settings.GAME_NAME))
-            print '- 1 {} graphic edit commission'.format(unicode(settings.GAME_NAME))
+                print '- 1 {} physical prize (official merch)'.format(str(settings.GAME_NAME))
+            print '- 1 {} art commission'.format(str(settings.GAME_NAME))
+            print '- 1 {} graphic edit commission'.format(str(settings.GAME_NAME))
             print ''
             print '*Subject to availability*'
             print ''

@@ -14,7 +14,7 @@ from magi.seasons import CSS_SETTINGS
 def generateLessColors(settings):
     resource_package = 'magi'
     resource_path = os.path.join('static', 'less', 'per-color-generator.less')
-    template = unicode(pkg_resources.resource_string(resource_package, resource_path))
+    template = str(pkg_resources.resource_string(resource_package, resource_path))
 
     color = settings.get('color', COLOR)
     secondary_color = settings.get('secondary_color', SECONDARY_COLOR)
@@ -36,7 +36,7 @@ html {{
     accent_parameter='' if not accent_color else ', @accentColor',
 )
     for color in (USER_COLORS or []):
-        raw_color, verbose_color, css_class, hex_code = [unicode(v) for v in color]
+        raw_color, verbose_color, css_class, hex_code = [str(v) for v in color]
         less += template.replace('HEX_COLOR', hex_code).replace(
             'COLOR_NAME', css_class).replace('COLOR', css_class)
     return less
@@ -55,7 +55,7 @@ def generateStylesheets(name=None, settings={}):
         resource_package = 'magi'
         resource_path = os.path.join('static', 'less', '{}.less'.format(name))
         try:
-            magi_has_content = unicode(pkg_resources.resource_string(resource_package, resource_path))
+            magi_has_content = str(pkg_resources.resource_string(resource_package, resource_path))
         except IOError:
             magi_has_content = False
         local_path = os.path.join(

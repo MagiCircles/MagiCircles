@@ -510,7 +510,7 @@ def about(request, context):
                             staff_member.stats[group].append(
                                 stat['template'](total)
                                 if callable(stat['template'])
-                                else mark_safe(unicode(stat['template']).format(total=u'<strong>{}</strong>'.format(total)))
+                                else mark_safe(str(stat['template']).format(total=u'<strong>{}</strong>'.format(total)))
                             )
                 settings = staff_member.preferences.t_settings_per_groups.get(group, None)
                 if settings:
@@ -678,7 +678,7 @@ def settings(request, context):
                         _settingsOnSuccess(form)
                 context['forms'][form_name] = form
 
-    context['add_custom_link_sentence'] = _(u'Add {thing}').format(thing=unicode(_('Custom link')).lower())
+    context['add_custom_link_sentence'] = _(u'Add {thing}').format(thing=str(_('Custom link')).lower())
     if 'donationLink' in context['forms']:
         context['forms']['donationLink'].form_title = context['add_custom_link_sentence']
 
@@ -737,10 +737,10 @@ def settings(request, context):
             thing = markSafeFormat(
                 u'<a href="{url}">{title}</a>',
                 url=report.reported_thing_item_url,
-                title=unicode(report).lower(),
+                title=str(report).lower(),
             )
         else:
-            thing = unicode(report).lower()
+            thing = str(report).lower()
         if report.is_suggestededit:
             if report.status == 'Deleted':
                 continue
@@ -1038,7 +1038,7 @@ def moderatereport(request, report, action):
         if report.owner:
             translation_activate(report.owner.preferences.language if report.owner.preferences.language else 'en')
             if report.is_suggestededit:
-                context['sentence'] = unicode(_('The edit you suggested has been reviewed by a database maintainer and the {thing} has been edited accordingly. Thank you so much for your help!')).format(thing=_(report.reported_thing_title))
+                context['sentence'] = str(_('The edit you suggested has been reviewed by a database maintainer and the {thing} has been edited accordingly. Thank you so much for your help!')).format(thing=_(report.reported_thing_title))
                 subject = _(u'Thank you for suggesting this edit!')
             else:
                 context['sentence'] = _(u'This {thing} you reported has been reviewed by a moderator and {verb}. Thank you so much for your help!').format(thing=_(report.reported_thing_title), verb=_(u'edited'))
@@ -1047,7 +1047,7 @@ def moderatereport(request, report, action):
             context['show_donation'] = True
             context['subject'] = u'{} {}'.format(
                 SITE_NAME_PER_LANGUAGE.get(get_language(), SITE_NAME),
-                unicode(subject.format(thing=_(report.reported_thing_title))),
+                str(subject.format(thing=_(report.reported_thing_title))),
             )
             send_email(context['subject'], template_name='report', to=[context['user'].email], context=context)
         # Notify owner
@@ -1061,7 +1061,7 @@ def moderatereport(request, report, action):
             context['show_donation'] = False
             context['subject'] = u'{} {}'.format(
                 SITE_NAME_PER_LANGUAGE.get(get_language(), SITE_NAME),
-                unicode(_(u'Your {thing} has been {verb}').format(thing=_(report.reported_thing_title), verb=_(u'edited'))),
+                str(_(u'Your {thing} has been {verb}').format(thing=_(report.reported_thing_title), verb=_(u'edited'))),
             )
             send_email(context['subject'], template_name='report', to=[context['user'].email], context=context)
         report.save()
@@ -1086,7 +1086,7 @@ def moderatereport(request, report, action):
                 context['show_donation'] = True
                 context['subject'] = u'{} {}'.format(
                     SITE_NAME_PER_LANGUAGE.get(get_language(), SITE_NAME),
-                    unicode(_(u'Thank you for reporting this {thing}').format(thing=_(report.reported_thing_title))),
+                    str(_(u'Thank you for reporting this {thing}').format(thing=_(report.reported_thing_title))),
                 )
                 send_email(context['subject'], template_name='report', to=[context['user'].email], context=context)
         # Notify owner
@@ -1097,7 +1097,7 @@ def moderatereport(request, report, action):
             context['show_donation'] = False
             context['subject'] = u'{} {}'.format(
                 SITE_NAME_PER_LANGUAGE.get(get_language(), SITE_NAME),
-                unicode(_(u'Your {thing} has been {verb}').format(thing=_(report.reported_thing_title), verb=_(u'deleted'))),
+                str(_(u'Your {thing} has been {verb}').format(thing=_(report.reported_thing_title), verb=_(u'deleted'))),
             )
             send_email(context['subject'], template_name='report', to=[context['user'].email], context=context)
         moderated_reports = [a_report.pk for a_report in all_reports]
@@ -1191,7 +1191,7 @@ def likeactivity(request, context, pk):
         activity.likes.add(request.user)
         activity.update_cache('total_likes')
         activity.save()
-        pushNotification(activity.owner, 'like-archive' if activity.archived_by_owner else 'like', [unicode(request.user), unicode(activity)], url_values=[str(activity.id), tourldash(unicode(activity))], image=activity.image)
+        pushNotification(activity.owner, 'like-archive' if activity.archived_by_owner else 'like', [str(request.user), str(activity)], url_values=[str(activity.id), tourldash(str(activity))], image=activity.image)
         return {
             'total_likes': activity.total_likes + 2,
             'result': 'liked',
@@ -1300,7 +1300,7 @@ def markactivitystaffpick(request, context, pk):
         'result': {
             'staff-picks': True,
             'tags': {
-                k: unicode(v)
+                k: str(v)
                 for k, v in activity.t_tags.items()
             },
         },
@@ -1318,7 +1318,7 @@ def removeactivitystaffpick(request, context, pk):
         'result': {
             'staff-picks': False,
             'tags': {
-                k: unicode(v)
+                k: str(v)
                 for k, v in activity.t_tags.items()
             },
         },
@@ -1339,8 +1339,8 @@ def follow(request, context, username):
         pushNotification(
             user,
             'follow',
-            [unicode(request.user)],
-            url_values=[str(request.user.id), unicode(request.user)],
+            [str(request.user)],
+            url_values=[str(request.user.id), str(request.user)],
             image=request.user.image_url,
         )
         return {
@@ -1523,7 +1523,7 @@ def translations_check(request, context):
             old_lang = get_language()
             for lang, verbose in LANGUAGES_DICT.items():
                 translation_activate(lang)
-                terms.append((lang, verbose, unicode(_(form.cleaned_data['term']))))
+                terms.append((lang, verbose, str(_(form.cleaned_data['term']))))
                 translation_activate(old_lang)
     else:
         form = TranslationCheckForm()
@@ -1638,7 +1638,7 @@ def adventcalendar(request, context, day=None):
     today = datetime.date.today()
     days_opened = request.user.preferences.extra.get('advent_calendar{}'.format(today.year), '').split(',')
     context['calendar'] = OrderedDict([
-        (unicode(i_day), unicode(i_day) in days_opened)
+        (str(i_day), str(i_day) in days_opened)
         for i_day in range(1, 25)
     ])
     if day and day in context['calendar']:

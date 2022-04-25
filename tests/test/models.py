@@ -179,7 +179,7 @@ class Card(MagiModel):
             'name': self.idol.name,
             'names': self.idol.names,
             'japanese_name': self.idol.japanese_name,
-            'image': unicode(self.idol.image),
+            'image': str(self.idol.image),
         }
 
     # Cache idol name (it wouldn't make sense in a real life scenario to cache name when json cache exists)
@@ -212,7 +212,7 @@ class Card(MagiModel):
             gachas.append({
                 'id': gacha.id,
                 'name': gacha.name,
-                'image': unicode(gacha.image),
+                'image': str(gacha.image),
                 'i_attribute': gacha.i_attribute,
                 'i_power': gacha.i_power,
                 'i_super_power': gacha.i_super_power,

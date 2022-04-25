@@ -177,7 +177,7 @@ def defaultGetNameImageURLFromCharacter(character):
         image = getattr(character, image_field, None)
         if image:
             break
-    return getattr(character, 'first_name', unicode(character)), image, character.item_url
+    return getattr(character, 'first_name', str(character)), image, character.item_url
 
 def getCharactersBirthdays(queryset, get_name_image_url_from_character=defaultGetNameImageURLFromCharacter,
                            latest_news=None, days_after=12, days_before=1, field_name='birthday',
@@ -249,7 +249,7 @@ def getUsersBirthdaysToday(image=None, latest_news=None, max_usernames=4):
             'url': (
                 users[0].item_url
                 if len(users) == 1
-                else u'/users/?ids={}&ordering=preferences___cache_reputation&reverse_order=on'.format(u','.join([unicode(user.id) for user in users]))
+                else u'/users/?ids={}&ordering=preferences___cache_reputation&reverse_order=on'.format(u','.join([str(user.id) for user in users]))
             ),
             'hide_title': False,
             'css_classes': 'birthday font0-5',
@@ -277,7 +277,7 @@ def getSeasonalActivityTagBanners(latest_news=None, seasonal_settings=None):
             old_lang = get_language()
             for lang in LANGUAGES_DICT.keys():
                 translation_activate(lang)
-                t_titles[lang] = unicode(tag)
+                t_titles[lang] = str(tag)
                 translation_activate(old_lang)
             latest_news.append({
                 'category': 'seasonal_activity_tag',
@@ -309,7 +309,7 @@ def generateCharactersSettings(
     generated_settings[base_name] = []
     original_names = {}
     for character in queryset:
-        name = unicode(character)
+        name = str(character)
         if to_image:
             image = to_image(character)
         else:
@@ -335,7 +335,7 @@ def generateCharactersSettings(
             if character.pk not in original_names:
                 continue
             translation_activate(language)
-            name = unicode(character)
+            name = str(character)
             if name != original_names[character.pk]:
                 if character.pk not in all_names:
                     all_names[character.pk] = {}
@@ -393,7 +393,7 @@ def generateShareImageForMainCollections(collection):
     )
     image_instance._thumbnail_image = image_instance.image
     image_instance.save()
-    return unicode(image_instance.image)
+    return str(image_instance.image)
 
 ############################################################
 # Generate settings (for generated settings)
@@ -519,7 +519,7 @@ def magiCirclesGeneratedSettings(existing_values):
             for collection_name, collection in getMagiCollections().items():
                 if collection.auto_share_image:
                     generated_share_images[collection.name] = generateShareImageForMainCollections(collection)
-    generated_settings['GENERATED_SHARE_IMAGES_LAST_DATE'] = 'datetime.datetime.fromtimestamp(' + unicode(
+    generated_settings['GENERATED_SHARE_IMAGES_LAST_DATE'] = 'datetime.datetime.fromtimestamp(' + str(
         time.mktime(generated_share_images_last_date.timetuple())
     ) + ')'
     generated_settings['GENERATED_SHARE_IMAGES'] = generated_share_images
@@ -578,10 +578,10 @@ def generateSettings(values, imports=[]):
 import datetime\n\
 ' + u'\n'.join(listUnique(imports)) + '\n\
 ' + u'\n'.join([
-    u'{key} = {value}'.format(key=key, value=unicode(value))
+    u'{key} = {value}'.format(key=key, value=str(value))
     for key, value in m_values.items()
 ]) + u'\n\
-GENERATED_DATE = datetime.datetime.fromtimestamp(' + unicode(time.time()) + u')\n\
+GENERATED_DATE = datetime.datetime.fromtimestamp(' + str(time.time()) + u')\n\
 '
     with open(django_settings.BASE_DIR + '/' + django_settings.SITE + '_project/generated_settings.py', 'w') as f:
         f.write(s.encode('utf8'))

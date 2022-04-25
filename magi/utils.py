@@ -67,7 +67,7 @@ _CHARACTERS_IMAGES = {
 
 _CHARACTERS_IMAGES_UNICODE = {
     _key: OrderedDict([
-        (unicode(_pk), _image)
+        (str(_pk), _image)
         for (_pk, _name, _image) in getattr(django_settings, _key, [])
     ]) for _key in ALL_CHARACTERS_KEYS
 }
@@ -81,7 +81,7 @@ _CHARACTERS_NAMES = {
 
 _CHARACTERS_NAMES_UNICODE = {
     _key: OrderedDict([
-        (unicode(_pk), _name)
+        (str(_pk), _name)
         for (_pk, _name, _image) in getattr(django_settings, _key, [])
     ]) for _key in ALL_CHARACTERS_KEYS
 }
@@ -93,7 +93,7 @@ _CHARACTERS_LOCALIZED_NAMES = {
 
 _CHARACTERS_LOCALIZED_NAMES_UNICODE = {
     _key: OrderedDict([
-        (unicode(_pk), _names)
+        (str(_pk), _names)
         for (_pk, _names) in getattr(django_settings, '{}_NAMES'.format(_key), {}).items()
     ]) for _key in ALL_CHARACTERS_KEYS
 }
@@ -105,7 +105,7 @@ _CHARACTERS_BIRTHDAYS = {
 
 _CHARACTERS_BIRTHDAYS_UNICODE = {
     _key: OrderedDict([
-        (unicode(_pk), _birthday)
+        (str(_pk), _birthday)
         for (_pk, _birthday) in getattr(django_settings, '{}_BIRTHDAYS'.format(_key), {}).items()
     ]) for _key in ALL_CHARACTERS_KEYS
 }
@@ -734,7 +734,7 @@ def globalContext(request=None, email=False):
 
         context['hidenavbar'] = 'hidenavbar' in request.GET
         context['javascript_translated_terms_json'] = simplejson.dumps(
-            { term: unicode(_(term)) for term in context['javascript_translated_terms'] })
+            { term: str(_(term)) for term in context['javascript_translated_terms'] })
 
         cuteFormFieldsForContext({
             'language': {
@@ -954,7 +954,7 @@ def cuteFormFieldsForContext(cuteform_fields, context, form=None, prefix=None, a
         }
         # Add title if any
         if 'title' in field:
-            context['cuteform_fields'][selector]['title'] = _(u'Select {}').format(unicode(field['title']).lower())
+            context['cuteform_fields'][selector]['title'] = _(u'Select {}').format(str(field['title']).lower())
         # Add extra settings if any
         if 'extra_settings' in field:
             context['cuteform_fields'][selector].update(field['extra_settings'] if not ajax else {
@@ -972,7 +972,7 @@ def cuteFormFieldsForContext(cuteform_fields, context, form=None, prefix=None, a
                     and (field['to_cuteform'] in ['key', 'value']
                          or transform == CuteFormTransform.ImagePath)):
                     cuteform = staticImageURL(
-                        unicode(cuteform_value),
+                        str(cuteform_value),
                         folder=field.get('image_folder', field_name),
                     )
                 # Transform to flaticon
@@ -987,13 +987,13 @@ def cuteFormFieldsForContext(cuteform_fields, context, form=None, prefix=None, a
                 elif transform == CuteFormTransform.ImageWithText:
                     cuteform = u'<img src="{img}"> {text}'.format(
                         img=staticImageURL(
-                            unicode(cuteform_value),
+                            str(cuteform_value),
                             folder=field.get('image_folder', field_name),
                         ),
                         text=u' {}'.format(value) if transform == CuteFormTransform.FlaticonWithText else '',
                     )
                 else:
-                    cuteform = unicode(cuteform_value)
+                    cuteform = str(cuteform_value)
             # Add in key, value in context for field
             context['cuteform_fields'][selector][CuteFormType.to_string[field_type]][key] = cuteform
 
@@ -1155,10 +1155,10 @@ class uploadToRandom(_uploadToBase):
 @deconstructible
 class uploadItem(_uploadToBase):
     def get_name(self, instance, filename, limit_to):
-        id = unicode(instance.pk if instance.pk else randomString(6))
+        id = str(instance.pk if instance.pk else randomString(6))
         return u'{id}{string}-{random}'.format(
             id=id,
-            string=tourldash(unicode(instance))[:(limit_to - len(id) - self.length)],
+            string=tourldash(str(instance))[:(limit_to - len(id) - self.length)],
             random=randomString(self.length),
         )
 
@@ -1166,7 +1166,7 @@ class uploadItem(_uploadToBase):
 class uploadThumb(uploadItem):
     def __init__(self, prefix, *args, **kwargs):
         super(uploadThumb, self).__init__(
-            prefix + ('thumb' if prefix.endswith('/') else '/thumb'),
+            str(prefix) + ('thumb' if str(prefix).endswith('/') else '/thumb'),
             *args, **kwargs
         )
 
@@ -1174,7 +1174,7 @@ class uploadThumb(uploadItem):
 class uploadTthumb(uploadItem):
     def __init__(self, prefix, *args, **kwargs):
         super(uploadTthumb, self).__init__(
-            prefix + ('tthumb' if prefix.endswith('/') else '/tthumb'),
+            str(prefix) + ('tthumb' if str(prefix).endswith('/') else '/tthumb'),
             *args, **kwargs
         )
 
@@ -1182,7 +1182,7 @@ class uploadTthumb(uploadItem):
 class uploadTiny(uploadItem):
     def __init__(self, prefix, *args, **kwargs):
         super(uploadTiny, self).__init__(
-            prefix + ('tiny' if prefix.endswith('/') else '/tiny'),
+            str(prefix) + ('tiny' if str(prefix).endswith('/') else '/tiny'),
             *args, **kwargs
         )
 
@@ -1190,7 +1190,7 @@ class uploadTiny(uploadItem):
 class upload2x(uploadItem):
     def __init__(self, prefix, *args, **kwargs):
         super(upload2x, self).__init__(
-            prefix + ('2x' if prefix.endswith('/') else '/2x'),
+            str(prefix) + ('2x' if str(prefix).endswith('/') else '/2x'),
             *args, **kwargs
         )
 
@@ -1518,7 +1518,7 @@ def getTranslation(term, language):
     """
     old_lang = get_language()
     translation_activate(language)
-    translation = unicode(term(lang)) if callable(term) else unicode(term)
+    translation = str(term(lang)) if callable(term) else str(term)
     translation_activate(old_lang)
     return translation
 
@@ -1530,7 +1530,7 @@ def getAllTranslations(term, unique=False):
     old_lang = get_language()
     for lang in LANGUAGES_DICT.keys():
         translation_activate(lang)
-        translations[lang] = unicode(term(lang)) if callable(term) else unicode(term)
+        translations[lang] = str(term(lang)) if callable(term) else str(term)
     translation_activate(old_lang)
     if unique:
         translations = {
@@ -1541,7 +1541,7 @@ def getAllTranslations(term, unique=False):
     return translations
 
 def spaceOutCode(code, block_size=2):
-    code = unicode(code).replace(' ', '')
+    code = str(code).replace(' ', '')
     return ' '.join(code[i:i + block_size] for i in range(0, len(code), block_size))
 
 def getAllTranslationsOfModelField(item, field_name='name', unique=False):
@@ -1717,9 +1717,9 @@ def couldSpeakEnglish(language=None, request=None):
 
 def pageTitleFromPrefixes(title_prefixes, page_title):
     return u' | '.join([
-        unicode(page_title)
+        str(page_title)
     ] + [
-        unicode(prefix['title'])
+        str(prefix['title'])
         for prefix in reversed(title_prefixes or [])
         if prefix.get('include_in_title', True)
     ])
@@ -1758,7 +1758,7 @@ def redirectWhenNotAuthenticated(request, context, next_title=None):
     if not request.user.is_authenticated():
         if context.get('current_url', '').startswith('/ajax/'):
             raise HttpRedirectException(u'/signup/')
-        raise HttpRedirectException(u'/signup/{}'.format((u'?next={}{}'.format(context['current_url'], u'&next_title={}'.format(unicode(next_title)) if next_title else u'')) if 'current_url' in context else ''))
+        raise HttpRedirectException(u'/signup/{}'.format((u'?next={}{}'.format(context['current_url'], u'&next_title={}'.format(str(next_title)) if next_title else u'')) if 'current_url' in context else ''))
 
 ############################################################
 # Fail safe get_object_or_404
@@ -1786,7 +1786,7 @@ def dumpModel(instance):
         if isinstance(dump[key], models.Model):
             dump[key] = dump[key].pk
         else:
-            dump[key] = unicode(dump[key])
+            dump[key] = str(dump[key])
     return dump
 
 def modelHasField(model, field_name):
@@ -2429,7 +2429,7 @@ def toFieldsItemsGallery(d, items, image_field='image_url'):
     d['images'] = [{
         'link': item.item_url,
         'ajax_link': item.ajax_item_url,
-        'link_text': unicode(item),
+        'link_text': str(item),
         'value': getattr(item, image_field, None),
     } for item in items if getattr(item, image_field, None)]
     return d
@@ -2470,8 +2470,8 @@ def extraFieldsNavigation(item, extra_fields, to_order_field_value=None, field_n
             extra_fields.append((navigation_field_name, {
                 'verbose_name': verbose,
                 'icon': icon,
-                'link_text': _('Open {thing}').format(thing=unicode(other_item.collection_title).lower()),
-                'value': unicode(other_item),
+                'link_text': _('Open {thing}').format(thing=str(other_item.collection_title).lower()),
+                'value': str(other_item),
                 'link': other_item.item_url,
                 'ajax_link': other_item.ajax_item_url,
                 'image_for_link': to_image(other_item) if to_image else getImageForPrefetched(other_item),
@@ -2481,13 +2481,13 @@ def extraFieldsNavigation(item, extra_fields, to_order_field_value=None, field_n
         # Next
         _extra_field_episode_navigation(
             lambda x: x + 1, 'next_{}'.format(item.collection_name), 'toggler',
-            _('Next {thing}').format(thing=unicode(item.collection_title).lower()),
+            _('Next {thing}').format(thing=str(item.collection_title).lower()),
         )
         # Previous
         if order_field_value > starts_at:
             _extra_field_episode_navigation(
                 lambda x: x - 1, 'previous_{}'.format(item.collection_name), 'back',
-                _('Previous {thing}').format(thing=unicode(item.collection_title).lower()),
+                _('Previous {thing}').format(thing=str(item.collection_title).lower()),
             )
 
 ############################################################
@@ -2508,7 +2508,7 @@ def split_data(data):
     def unicode_csv_reader(unicode_csv_data, **kwargs):
         csv_reader = csv.reader(utf_8_encoder(unicode_csv_data), **kwargs)
         for row in csv_reader:
-            yield [unicode(cell, 'utf-8') for cell in row]
+            yield [str(cell, 'utf-8') for cell in row]
 
     reader = unicode_csv_reader([data])
     for reader in reader:
@@ -2519,7 +2519,7 @@ def join_data(*args):
     """
     Takes a list of unicode strings and return a CSV string.
     """
-    data = u'\"' + u'","'.join([unicode(value).replace('\n', ' ').replace('\r', ' ').replace('"','\"') for value in args]) + u'\"'
+    data = u'\"' + u'","'.join([str(value).replace('\n', ' ').replace('\r', ' ').replace('"','\"') for value in args]) + u'\"'
     return data if data != '""' else None
 
 def csvToDict(row, titles_row, snake_case=False):
@@ -2797,7 +2797,7 @@ def saveGeneratedImage(image, path=None, upload=False, instance=None, model=None
     elif isinstance(image, Image.Image):
         image.save(path)
     else:
-        raise NotImplementedError(u'Can\'t save image, unknwon type ' + unicode(type(image)))
+        raise NotImplementedError(u'Can\'t save image, unknwon type ' + str(type(image)))
     # Return local image path or upload
     if not upload:
         return path
@@ -3011,7 +3011,7 @@ def HTMLAlert(type='warning', flaticon='about', title=None, message=None, button
 )
 
 def _markSafeFormatEscapeOrNot(string):
-    return unicode(string if (
+    return str(string if (
         isinstance(string, SafeText)
         or isinstance(string, SafeString)
     ) else escape(string))
@@ -3039,7 +3039,7 @@ _mark_safe = mark_safe
 
 def andJoin(strings, translated=True, mark_safe=False, language=None, or_=False):
     strings = [
-        _markSafeFormatEscapeOrNot(string) if mark_safe else unicode(string)
+        _markSafeFormatEscapeOrNot(string) if mark_safe else str(string)
         for string in strings if string is not None
     ]
     if len(strings) == 1:
@@ -3104,7 +3104,7 @@ def getSearchFieldHelpText(search_fields, model_class, labels, translated_fields
         if label is None:
             and_more = True
         elif label:
-            label = unicode(label)
+            label = str(label)
             field_labels.append(label if first and not all_lower else label.lower())
             first = False
     if field_labels:
@@ -3234,10 +3234,10 @@ def googleTranslateFixLanguage(language):
     }.get(language, language)
 
 def translationSentence(from_language, to_language):
-    return unicode(_(u'Translate from %(from_language)s to %(to_language)s')).replace(
-        '%(from_language)s', unicode(LANGUAGES_DICT.get(from_language, '')),
+    return str(_(u'Translate from %(from_language)s to %(to_language)s')).replace(
+        '%(from_language)s', str(LANGUAGES_DICT.get(from_language, '')),
     ).replace(
-        '%(to_language)s', unicode(LANGUAGES_DICT.get(to_language, '')),
+        '%(to_language)s', str(LANGUAGES_DICT.get(to_language, '')),
     )
 
 def translationURL(
