@@ -1164,7 +1164,7 @@ class MagiCollection(object):
             if 'verbose_name' not in related_fields[m.name]:
                 related_fields[m.name]['verbose_name'] = modelFieldVerbose(type(item), m.name)
             if 'collection_name' not in related_fields[m.name]:
-                related_fields[m.name]['collection_name'] = getattr(m.rel.to, 'collection_name', None)
+                related_fields[m.name]['collection_name'] = getattr(m.remote_field.model, 'collection_name', None)
             if 'filter_field_name' not in related_fields[m.name]:
                 related_fields[m.name]['filter_field_name'] = m.related.get_accessor_name()
 
@@ -1497,7 +1497,7 @@ class MagiCollection(object):
                     cache = getattr(item, 'cached_' + field_name, None)
                 if not cache:
                     continue
-                collection_name = getattr(field.rel.to, 'collection_name', None)
+                collection_name = getattr(field.remote_field.model, 'collection_name', None)
                 collection = getMagiCollection(collection_name) if collection_name else None
                 allow_ajax = not collection or collection.item_view.ajax
                 if collection:

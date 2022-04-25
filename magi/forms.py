@@ -617,7 +617,7 @@ class MagiForm(forms.ModelForm):
             # Images selector
             elif (model_field
                   and isinstance(model_field, django_models.ManyToManyField)
-                  and issubclass(model_field.rel.to, models.UserImage)):
+                  and issubclass(model_field.remote_field.model, models.UserImage)):
                 self.userimages_fields.append(name)
                 max_images = getattr(self.Meta.model, u'{}_MAX'.format(name.upper()), 10)
                 if not self.is_creating:

@@ -390,7 +390,7 @@ def getStaffConfigurationCache(model_class, key, default=None, is_json=True):
     if value == tmp_default:
         value = default
         model_class.objects.create(
-            owner=get_default_owner(model_class._meta.get_field('owner').rel.to), key=key,
+            owner=get_default_owner(model_class._meta.get_field('owner').remote_field.model), key=key,
             value=json.dumps(default), verbose_key='Internal cache: {}. Do not edit manually.'.format(key))
     return value
 
@@ -1106,9 +1106,9 @@ def filterRealAccounts(queryset):
     return queryset
 
 def filterRealCollectiblesPerAccount(queryset):
-    if modelHasField(queryset.model.account.field.rel.to, 'is_playground'):
+    if modelHasField(queryset.model.account.field.remote_field.model, 'is_playground'):
         queryset = queryset.exclude(account__is_playground=True)
-    if modelHasField(queryset.model.account.field.rel.to, 'is_hidden_from_leaderboard'):
+    if modelHasField(queryset.model.account.field.remote_field.model, 'is_hidden_from_leaderboard'):
         queryset = queryset.exclude(account__is_hidden_from_leaderboard=True)
     return queryset
 
@@ -1828,11 +1828,11 @@ def getModelOfRelatedItem(model, related_item_field_name):
     # Foreign key
     field = modelGetField(model, related_item_field_name)
     if field:
-        return field.rel.to
+        return field.remote_field.model
     # Many to many field
     for m in model._meta.many_to_many:
         if m.name == related_item_field_name:
-            return m.rel.to
+            return m.remote_field.model
     # Reverse related objects
     # + many to many reverse related objects
     for r in model._meta.get_all_related_objects() + model._meta.get_all_related_many_to_many_objects():

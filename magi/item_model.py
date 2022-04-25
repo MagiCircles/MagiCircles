@@ -106,7 +106,7 @@ def get_selector_to_owner(cls):
 def get_owners_queryset(cls, user):
     if not cls.fk_as_owner:
         return [user]
-    return cls._meta.get_field(cls.fk_as_owner).rel.to.objects.filter(**{
+    return cls._meta.get_field(cls.fk_as_owner).remote_field.model.objects.filter(**{
         cls.selector_to_owner()[(len(cls.fk_as_owner) + 2):]:
         user,
     })
@@ -120,7 +120,7 @@ def get_owner_from_pk(cls, owner_pk):
     """
     Always performs a database query, use with caution.
     """
-    return cls._meta.get_field(cls.fk_as_owner or 'owner').rel.to.objects.get(pk=owner_pk)
+    return cls._meta.get_field(cls.fk_as_owner or 'owner').remote_field.model.objects.get(pk=owner_pk)
 
 def get_owner_collection(cls):
     if cls.fk_as_owner:
@@ -319,7 +319,7 @@ class BaseMagiModel(models.Model):
     @classmethod
     def cached_json_extra(self, field_name, d):
         # Get original model class for cached thing
-        try: original_cls = self._meta.get_field(field_name).rel.to
+        try: original_cls = self._meta.get_field(field_name).remote_field.model
         except FieldDoesNotExist: original_cls = None
         original_cls = getattr(self, u'_cache_{}_fk_class'.format(field_name), original_cls)
         if callable(original_cls): original_cls = original_cls()
