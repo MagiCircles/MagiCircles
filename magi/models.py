@@ -1024,7 +1024,7 @@ def getAllowedTags(
                 return False
         # Hidden by user
         if check_hidden_by_user:
-            if request.user.is_authenticated():
+            if request.user.is_authenticated:
                 if request.user.preferences.hidden_tags:
                     if request.user.preferences.hidden_tags.get(tag_name, False):
                         notAllowedReason(tag_name, tag, 'user', _CHOOSE_HIDDEN_TAGS_MESSAGE)

@@ -184,7 +184,7 @@ def logout(request):
     return LogoutView.as_view(request, next_page='/')
 
 def signup(request, context):
-    if request.user.is_authenticated():
+    if request.user.is_authenticated:
         redirectToProfile(request)
     if request.method == "POST":
         form = CreateUserForm(request.POST, request=request)
@@ -392,7 +392,7 @@ def indexExtraContext(context):
 def index(request):
     context = getGlobalContext(request)
     if (context.get('launch_date', None)
-        and not request.user.is_authenticated()
+        and not request.user.is_authenticated
         or not request.user.hasPermission('access_site_before_launch')):
         raise HttpRedirectException('/prelaunch/')
     indexExtraContext(context)
@@ -875,7 +875,7 @@ def map(request, context):
         'https://maps.googleapis.com/maps/api/js?key=AIzaSyDHtAPFTmOCQZrKSjZlIeoZrZYLJjKLupE',
         'oms.min',
     ]
-    if request.user.is_authenticated() and request.user.preferences.latitude:
+    if request.user.is_authenticated and request.user.preferences.latitude:
         context['center'] = {
             'latitude': request.user.preferences.latitude,
             'longitude': request.user.preferences.longitude,
@@ -1138,7 +1138,7 @@ def markallnotificationsread(request):
     raise HttpRedirectException(u'/notifications/?marked_read={}'.format(read))
 
 def me(request):
-    if request.user.is_authenticated():
+    if request.user.is_authenticated:
         raise HttpRedirectException(request.user.http_item_url)
     raise HttpRedirectException('/signup/')
 
@@ -1237,7 +1237,7 @@ def archiveactivity(request, context, pk):
 
 def unarchiveactivity(request, context, pk):
     by_staff = False
-    if not request.user.is_authenticated() or request.method != 'POST':
+    if not request.user.is_authenticated or request.method != 'POST':
         raise PermissionDenied()
     activity = get_object_or_404(models.Activity.objects.select_related('archived_by_staf'), pk=pk)
     if activity.is_owner(request.user):
@@ -1265,7 +1265,7 @@ def unarchiveactivity(request, context, pk):
     }
 
 def bumpactivity(request, context, pk):
-    if (not request.user.is_authenticated() or request.method != 'POST'
+    if (not request.user.is_authenticated or request.method != 'POST'
         or not request.user.hasPermission('manipulate_activities')):
         raise PermissionDenied()
     activity = get_object_or_404(models.Activity, pk=pk)
@@ -1276,7 +1276,7 @@ def bumpactivity(request, context, pk):
     }
 
 def drownactivity(request, context, pk):
-    if (not request.user.is_authenticated() or request.method != 'POST'
+    if (not request.user.is_authenticated or request.method != 'POST'
         or not request.user.hasPermission('manipulate_activities')):
         raise PermissionDenied()
     activity = get_object_or_404(models.Activity, pk=pk)
@@ -1289,7 +1289,7 @@ def drownactivity(request, context, pk):
     }
 
 def markactivitystaffpick(request, context, pk):
-    if (not request.user.is_authenticated() or request.method != 'POST'
+    if (not request.user.is_authenticated or request.method != 'POST'
         or 'staff' not in ACTIVITY_TAGS.keys()
         or not request.user.hasPermission('mark_activities_as_staff_pick')):
         raise PermissionDenied()
@@ -1307,7 +1307,7 @@ def markactivitystaffpick(request, context, pk):
     }
 
 def removeactivitystaffpick(request, context, pk):
-    if (not request.user.is_authenticated() or request.method != 'POST'
+    if (not request.user.is_authenticated or request.method != 'POST'
         or 'staff' not in ACTIVITY_TAGS.keys()
         or not request.user.hasPermission('mark_activities_as_staff_pick')):
         raise PermissionDenied()
@@ -1325,7 +1325,7 @@ def removeactivitystaffpick(request, context, pk):
     }
 
 def follow(request, context, username):
-    if not request.user.is_authenticated() or request.method != 'POST' or request.user.username == username:
+    if not request.user.is_authenticated or request.method != 'POST' or request.user.username == username:
         raise PermissionDenied()
     user = get_object_or_404(models.User.objects.extra(select={
         'followed': 'SELECT COUNT(*) FROM magi_userpreferences_following WHERE userpreferences_id = {} AND user_id = auth_user.id'.format(request.user.preferences.id),

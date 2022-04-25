@@ -38,7 +38,7 @@ from magi.forms import ConfirmDelete, filter_ids
 def _redirect_on_high_traffic(view, request, ajax=False):
     if (getattr(django_settings, 'HIGH_TRAFFIC', False)
         and view.disable_on_high_traffic
-        and not request.user.is_authenticated()):
+        and not request.user.is_authenticated):
         raise HttpRedirectException(u'{}/hightraffic/'.format('/ajax' if ajax else ''))
 
 def _get_filters(request_get, extra_filters={}):
@@ -104,7 +104,7 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
     context['item'].request = request
     collection.item_view.check_owner_permissions(request, context, context['item'])
 
-    if request.user.is_authenticated() and collection.blockable:
+    if request.user.is_authenticated and collection.blockable:
         # Blocked
         if context['item'].owner_id in request.user.preferences.cached_blocked_ids:
             if ajax:
@@ -233,7 +233,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
 
     if (shortcut_url == ''
         and context.get('launch_date', None)
-        and (not request.user.is_authenticated()
+        and (not request.user.is_authenticated
              or not request.user.hasPermission('access_site_before_launch'))):
         raise HttpRedirectException('/prelaunch/')
 
@@ -273,7 +273,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
 
     ordering = None
     if (request.GET.get('ordering', None)
-        and ((request.user.is_authenticated()
+        and ((request.user.is_authenticated
               and request.user.hasPermission('order_by_any_field'))
              or (collection.list_view.filter_form
                  and request.GET['ordering'] in dict(
@@ -581,7 +581,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
         item.show_item_buttons_in_one_line = collection.list_view.show_item_buttons_in_one_line
         if collection.list_view.show_item_buttons and [True for b in item.buttons_to_show.values() if b['show'] and b['has_permissions']]:
             context['include_below_item'] = True
-        if request.user.is_authenticated() and collection.blockable:
+        if request.user.is_authenticated and collection.blockable:
             if item.owner_id in request.user.preferences.cached_blocked_ids:
                 item.blocked = True
                 try:

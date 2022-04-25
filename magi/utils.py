@@ -774,7 +774,7 @@ def globalContext(request=None, email=False):
                         )(request, context)
 
         # Corner popups
-        if request.user.is_authenticated():
+        if request.user.is_authenticated:
             if isBirthdayToday(request.user.preferences.birthdate):
                 context['corner_popups'][u'happy_birthday{}'.format(datetime.datetime.today().year)] = {
                     'title': mark_safe(u'<span class="fontx1-5">{} 🎉</span>'.format(_('Happy Birthday'))),
@@ -815,7 +815,7 @@ def emailContext():
 
 def getAccountIdsFromSession(request):
     # /!\ Can't be called at global level
-    if not request.user.is_authenticated():
+    if not request.user.is_authenticated:
         return []
     if 'account_ids' not in request.session:
         request.session['account_ids'] = [
@@ -829,7 +829,7 @@ def getAccountIdsFromSession(request):
 
 def getAccountVersionsFromSession(request):
     # /!\ Can't be called at global level
-    if not request.user.is_authenticated():
+    if not request.user.is_authenticated:
         return []
     if 'account_versions' not in request.session:
         request.session['account_versions'] = [
@@ -1755,7 +1755,7 @@ def redirectToProfile(request, account=None):
     raise HttpRedirectException(u'/user/{}/{}/'.format(request.user.id, request.user.username, '#{}'.format(account.id) if account else ''))
 
 def redirectWhenNotAuthenticated(request, context, next_title=None):
-    if not request.user.is_authenticated():
+    if not request.user.is_authenticated:
         if context.get('current_url', '').startswith('/ajax/'):
             raise HttpRedirectException(u'/signup/')
         raise HttpRedirectException(u'/signup/{}'.format((u'?next={}{}'.format(context['current_url'], u'&next_title={}'.format(str(next_title)) if next_title else u'')) if 'current_url' in context else ''))
@@ -3310,7 +3310,7 @@ def artSettingsToGetParameters(settings):
     return parameters
 
 def artPreviewButtons(view, buttons, request, item, images, get_parameter='url', settings=None):
-    if (not request.user.is_authenticated()
+    if (not request.user.is_authenticated
         or not request.user.hasPermission('manage_main_items')):
         return
     for field_name, in_use in (images if isinstance(images, dict) else { k: None for k in images }).items():
@@ -3373,7 +3373,7 @@ def adventCalendar(request, context):
     If 25th:
     - add badge
     """
-    if not request.user.is_authenticated():
+    if not request.user.is_authenticated:
         return
     today = datetime.date.today()
     if 'js_variables' not in context:

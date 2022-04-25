@@ -323,7 +323,7 @@ class MagiForm(forms.ModelForm):
         self.allow_upload_custom_2x = False
         self.allow_translate = False
         if (self.request
-            and self.request.user.is_authenticated()):
+            and self.request.user.is_authenticated):
             self.allow_upload_custom_thumbnail = self.request.user.hasPermission('upload_custom_thumbnails')
             self.allow_upload_custom_2x = self.request.user.hasPermission('upload_custom_2x')
             self.allow_translate = self.request.user.hasPermission('translate_items')
@@ -378,7 +378,7 @@ class MagiForm(forms.ModelForm):
                             (u'{content}'
                              if (getattr(self, 'is_translate_form', False)
                                  or not self.request
-                                 or not self.request.user.is_authenticated()
+                                 or not self.request.user.is_authenticated
                                  or not self.request.user.hasPermission('translate_items'))
                              else u'<a href="{url}" target="_blank">{content}</a>').format(
                                 content=u'<img src="{image}" alt="{language}" height="15">'.format(
@@ -722,7 +722,7 @@ class MagiForm(forms.ModelForm):
         if (not self.is_creating
             and not isinstance(self, MagiFiltersForm)
             and self.request
-            and self.request.user.is_authenticated()
+            and self.request.user.is_authenticated
             and hasattr(self.instance, 'owner') and self.instance.owner != self.request.user):
             self.is_reported = 'is_reported' in self.request.GET
             self.is_suggestededit = 'is_suggestededit' in self.request.GET
@@ -821,7 +821,7 @@ class MagiForm(forms.ModelForm):
             if owner:
                 instance.owner = owner
             else:
-                instance.owner = self.request.user if self.request.user.is_authenticated() else None
+                instance.owner = self.request.user if self.request.user.is_authenticated else None
 
         # Clean datetime times
         times = getattr(self.Meta, 'date_times', {})
@@ -1538,7 +1538,7 @@ class MagiFiltersForm(AutoForm):
         # Add/delete fields
 
         # Collectible
-        if self.collection and self.request.user.is_authenticated():
+        if self.collection and self.request.user.is_authenticated:
             for collection_name, collection in self.collection.collectible_collections.items():
                 if (collection.queryset.model.fk_as_owner
                     and collection.add_view.enabled):
@@ -1588,7 +1588,7 @@ class MagiFiltersForm(AutoForm):
                             widget=forms.HiddenInput(attrs=({'value': initial} if initial else {})),
                         )
         # Add missing_{}_translations for all translatable fields if the current user has permission
-        if self.collection and self.request.user.is_authenticated() and self.allow_translate and self.collection.translated_fields:
+        if self.collection and self.request.user.is_authenticated and self.allow_translate and self.collection.translated_fields:
             for field_name in self.collection.translated_fields:
                 filter_field_name = u'missing_{}_translations'.format(field_name)
                 if filter_field_name in self.request.GET:
@@ -1791,7 +1791,7 @@ class MagiFiltersForm(AutoForm):
             if field_name in self.fields and (self.request.GET if self.request else {}).get(field_name, None):
                 # Check for valid ordering choices, bypass when has permission
                 if (field_name == 'ordering'
-                    and not (self.request.user.is_authenticated()
+                    and not (self.request.user.is_authenticated
                              and self.request.user.hasPermission('order_by_any_field'))
                     and self.request.GET[field_name] not in dict(self.fields[field_name].choices)):
                     continue
@@ -2854,7 +2854,7 @@ class UserFilterForm(MagiFiltersForm):
         # Filter by who the user can private messages to
         # Should follow the logic of utils.hasPermissionToMessage
         if (request.GET.get('view', None) == 'send_private_message'
-            and request.user.is_authenticated()):
+            and request.user.is_authenticated):
 
             # Can't send message to self
             queryset = queryset.exclude(id=request.user.id)
@@ -3022,7 +3022,7 @@ class StaffConfigurationForm(AutoForm):
     def save(self, commit=True):
         instance = super(StaffConfigurationForm, self).save(commit=False)
         # Save owner as last updater
-        instance.owner = self.request.user if self.request.user.is_authenticated() else None
+        instance.owner = self.request.user if self.request.user.is_authenticated else None
         if commit:
             instance.save()
         return instance
@@ -3132,7 +3132,7 @@ class ActivityForm(MagiForm):
         if 'i_language' in self.fields:
             self.fields['i_language'].initial = (
                 self.request.user.preferences.activities_language
-                if self.request.user.is_authenticated() and self.request.user.preferences.activities_language
+                if self.request.user.is_authenticated and self.request.user.preferences.activities_language
                 else django_settings.LANGUAGE_CODE
             )
             if (self.request.user.preferences.view_activities_language_only
@@ -3164,7 +3164,7 @@ class ActivityForm(MagiForm):
         if 'm_message' in self.fields:
             # Community managers are allowed to post activities with no character limit
             if (not self.request
-                or not self.request.user.is_authenticated()
+                or not self.request.user.is_authenticated
                 or not self.request.user.hasPermission('post_news')):
                 self.fields['m_message'].validators += [MaxLengthValidator(15000)]
         # Only allow users to add tags they are allowed to add or already had before
@@ -3241,7 +3241,7 @@ class FilterActivities(MagiFiltersForm):
         # it's likely the user didn't change their settings and will expect to
         # see the activities they just posted on the homepage, so also return
         # own activities to avoid confusion
-        if (request.user.is_authenticated()
+        if (request.user.is_authenticated
             and self.active_tab == 'popular'
             and request.user.preferences.default_activities_tab == 'popular'):
             return queryset.filter(Q(**filter_popular) | Q(owner_id=request.user.id))
@@ -3296,21 +3296,21 @@ class FilterActivities(MagiFiltersForm):
         # Default selected language
         if 'i_language' in self.fields:
             self.default_to_current_language = False
-            if ((self.request.user.is_authenticated()
+            if ((self.request.user.is_authenticated
                 and self.request.user.preferences.view_activities_language_only)
-                or (not self.request.user.is_authenticated()
+                or (not self.request.user.is_authenticated
                     and (ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT
                          or self.request.LANGUAGE_CODE in ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES)
                 )):
                 self.default_to_current_language = True
                 self.fields['i_language'].initial = self.request.LANGUAGE_CODE
-        if not self.request.user.is_authenticated():
+        if not self.request.user.is_authenticated:
             if 'is_following' in self.fields:
                 del(self.fields['is_following'])
             if 'liked' in self.fields:
                 del(self.fields['liked'])
         self.active_tab = None
-        if self.request.user.is_authenticated():
+        if self.request.user.is_authenticated:
             # If a tab is selected in the request (URL)
             self.request_tab = None
             if self.request.path.startswith('/activities/'):

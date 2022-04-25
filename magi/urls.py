@@ -411,7 +411,7 @@ def page_view(name, page):
         # Check permissions
         permissions_context = { 'current_url': request.get_full_path() }
         redirect = page.get('on_permission_denied_redirect', None)
-        if page.get('logout_required', False) and request.user.is_authenticated():
+        if page.get('logout_required', False) and request.user.is_authenticated:
             permissionDeniedOrRedirect(request, redirect)
         if page.get('authentication_required'):
             redirectWhenNotAuthenticated(request, permissions_context, next_title=page.get('title', ''))
