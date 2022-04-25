@@ -2259,11 +2259,11 @@ def newOrder(current_order, insert_after=None, insert_before=None, insert_instea
         order = current_order.keys()
     else:
         order = current_order
-    will_be_reinserted_fields = flattenListOfLists(sum([
+    will_be_reinserted_fields = flattenListOfLists(sum(map(lambda x: list(x), [
         (insert_after or {}).values(), (insert_before or {}).values(), (insert_instead or {}).values(),
         (insert_at or {}).values(), (insert_at_instead or {}).values(), (insert_at_from_last or {}).values(),
         (insert_at_from_last_instead or {}).values(),
-    ], []))
+    ]), []))
     filtered_order = [field for field in order if field not in will_be_reinserted_fields]
     if insert_after or insert_before or insert_instead:
         new_order = []

@@ -1097,7 +1097,7 @@ class MagiForm(forms.ModelForm):
         OrderedDict([('b', 2), ('c', 3), ('a', 1)])
         """
         sorted_keys = newOrder(
-            listUnique(order + self.fields.keys()),
+            listUnique(order + list(self.fields.keys())),
             insert_after=insert_after, insert_before=insert_before,
             insert_instead=insert_instead, insert_at=insert_at, insert_at_instead=insert_at_instead,
             insert_at_from_last=insert_at_from_last, insert_at_from_last_instead=insert_at_from_last_instead,
