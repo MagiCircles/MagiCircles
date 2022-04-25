@@ -1368,13 +1368,13 @@ def addYearToEventWithoutYear(start_date=None, end_date=None, return_have_year=F
         end_date = start_date
 
     # Transform strings to dates
-    if isinstance(start_date, basestring):
+    if isinstance(start_date, str):
         try:
             start_date = pytz.utc.localize(datetime.datetime.strptime(start_date, '%Y-%m-%d'))
         except ValueError:
             start_date = datetime.datetime.strptime(start_date, '%m-%d')
             start_date = (start_date.month, start_date.day)
-    if isinstance(end_date, basestring):
+    if isinstance(end_date, str):
         try:
             end_date = pytz.utc.localize(datetime.datetime.strptime(end_date, '%Y-%m-%d'))
         except ValueError:
