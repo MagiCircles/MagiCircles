@@ -1607,6 +1607,18 @@ class MagiFiltersForm(AutoForm):
             })
 
         # Filter by foreign keys, many2many and reverse relations
+        meta_all_related_objects = [
+            f for f in self.Meta.model._meta.get_fields()
+            if (f.one_to_many or f.one_to_one)
+            and f.auto_created and not f.concrete
+        ]
+
+        meta_all_related_m2m_objects = [
+            f for f in self.Meta.model._meta.get_fields(include_hidden=True)
+            if f.many_to_many and f.auto_created
+        ]
+
+
         for field_name in ([
                 field.name
                 for field in self.Meta.model._meta.fields
@@ -1617,10 +1629,10 @@ class MagiFiltersForm(AutoForm):
             for field in self.Meta.model._meta.many_to_many
         ] + [
             field.get_accessor_name()
-            for field in self.Meta.model._meta.get_all_related_objects()
+            for field in meta_all_related_objects
         ] + [
             field.get_accessor_name()
-            for field in self.Meta.model._meta.get_all_related_many_to_many_objects()
+            for field in meta_all_related_m2m_objects
         ]):
             if field_name not in self.fields and field_name in (self.request.GET if self.request else {}):
                 self.fields[field_name] = forms.ChoiceField(widget=forms.HiddenInput)
