@@ -874,7 +874,7 @@ def _callToCuteForm(field_name, model, to_cuteform, key, value):
     elif to_cuteform == 'value':
         return value
     if (field_name.startswith('i_') # i_choices
-        and to_cuteform.func_code.co_argcount == 3): # to_cuteform takes 3 arguments
+        and to_cuteform.__code__.co_argcount == 3): # to_cuteform takes 3 arguments
         if not model:
             raise ValueError('When to_cuteform takes 3 arguments, it\'s required to specify the model class.')
         return to_cuteform(key, model.get_reverse_i(field_name[2:], key), value)
