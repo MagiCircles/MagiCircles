@@ -1,5 +1,5 @@
 from django.conf import settings as django_settings
-from django.utils.translation import ugettext_lazy as _, string_concat
+from django.utils.translation import gettext_lazy as _, string_concat
 from test import models
 
 SITE_NAME = 'Sample Website'

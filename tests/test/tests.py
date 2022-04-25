@@ -1,6 +1,6 @@
 from collections import OrderedDict
 from django.test import TestCase
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from magi.item_model import i_choices
 from test import models
 

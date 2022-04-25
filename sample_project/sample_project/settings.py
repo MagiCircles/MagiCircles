@@ -93,7 +93,7 @@ AUTHENTICATION_BACKENDS = ('magi.backends.AuthenticationBackend',)
 
 DEBUG_PORT = 8000
 
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 LANGUAGES = (
     ('en', _('English')),

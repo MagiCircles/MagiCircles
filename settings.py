@@ -1,4 +1,4 @@
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 import os
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))

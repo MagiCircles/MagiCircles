@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import datetime
 from django.core.management.base import BaseCommand, CommandError
-from django.utils.translation import ugettext_lazy as _, string_concat, activate as translation_activate
+from django.utils.translation import gettext_lazy as _, string_concat, activate as translation_activate
 from django.utils import timezone
 from magi.urls import * # unused, just to make sure raw_context is updated
 from magi import models

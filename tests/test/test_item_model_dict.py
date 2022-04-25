@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from django.test import TestCase
-from django.utils.translation import ugettext_lazy as _, get_language, activate as activate_language
+from django.utils.translation import gettext_lazy as _, get_language, activate as activate_language
 from test import models
 
 class ItemModelDict(TestCase):

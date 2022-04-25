@@ -1,6 +1,6 @@
 from collections import OrderedDict
 from django.contrib.auth.models import User
-from django.utils.translation import ugettext_lazy as _, get_language
+from django.utils.translation import gettext_lazy as _, get_language
 from django.db import models
 from magi.utils import justReturn
 from magi.abstract_models import CacheOwner

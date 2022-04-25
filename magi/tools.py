@@ -3,7 +3,7 @@ import datetime, time, sys, os, math, pytz
 from collections import OrderedDict
 from PIL import Image
 from django.utils import timezone
-from django.utils.translation import activate as translation_activate, ugettext_lazy as _, get_language
+from django.utils.translation import activate as translation_activate, gettext_lazy as _, get_language
 from django.utils.formats import date_format
 from django.utils.html import escape
 from django.core.exceptions import ObjectDoesNotExist
