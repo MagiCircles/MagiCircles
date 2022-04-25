@@ -3322,9 +3322,9 @@ class FilterActivities(MagiFiltersForm):
             if 'liked' in self.fields:
                 del(self.fields['liked'])
         self.active_tab = None
+        self.request_tab = None
         if self.request.user.is_authenticated:
             # If a tab is selected in the request (URL)
-            self.request_tab = None
             if self.request.path.startswith('/activities/'):
                 self.request_tab = self.request.path.split('/')[2]
             elif self.request.path.startswith('/ajax/activities/'):
