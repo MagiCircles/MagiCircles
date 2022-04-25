@@ -1565,8 +1565,8 @@ def jsv(v):
         return mark_safe(u'"{}"'.format(v))
     return v
 
-def templateVariables(string):
-    return [x[1] for x in string._formatter_parser() if x[1]]
+def templateVariables(input):
+    return [fname for _, fname, _, _ in string.Formatter().parse(input) if fname]
 
 def snakeToCamelCase(string):
     return ''.join(x.capitalize() or '_' for x in string.split('_'))
