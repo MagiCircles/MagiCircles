@@ -276,7 +276,7 @@ def indexExtraContext(context):
         if logo_per_language:
             context['site_logo'] = staticImageURL(logo_per_language)
 
-    if context['request'].user.is_authenticated():
+    if context['request'].user.is_authenticated:
         # 'Tis the season
         if isValueInAnyCurrentSeason('site_logo_when_logged_in'):
             context['site_logo'] = staticImageURL(getRandomValueInCurrentSeasons(
@@ -293,7 +293,7 @@ def indexExtraContext(context):
         context['full_width'] = True
 
         can_preview = (django_settings.DEBUG
-                       or (context['request'].user.is_authenticated()
+                       or (context['request'].user.is_authenticated
                            and context['request'].user.hasPermission('manage_main_items')))
 
         if can_preview:
@@ -333,7 +333,7 @@ def indexExtraContext(context):
 
         # 1 chance out of 5 to get a random art of 1 of your favorite characters
         elif (RANDOM_ART_FOR_CHARACTER
-            and context['request'].user.is_authenticated()
+            and context['request'].user.is_authenticated
             and context['request'].user.preferences.favorite_characters
             and random.randint(0, 5) == 5):
             character_id = random.choice(context['request'].user.preferences.favorite_characters)
@@ -361,8 +361,8 @@ def indexExtraContext(context):
 
         # When a foreground is provided but no background,
         # use a random background in HOMEPAGE_BACKGROUNDS
-        if (context['art'].has_key('foreground_url')
-            and not context['art'].has_key('url')
+        if ('foreground_url' in context['art']
+            and "url" not in context['art']
             and HOMEPAGE_BACKGROUNDS):
 
             background = None

@@ -370,15 +370,15 @@ def getPageShowLinkLambda(page):
         one_of_permissions_required = page.get('one_of_permissions_required', [])
         check_permissions = page.get('check_permissions', None)
         return not (
-            (page.get('authentication_required', False) and not context['request'].user.is_authenticated())
-            or (page.get('logout_required', False) and context['request'].user.is_authenticated())
+            (page.get('authentication_required', False) and not context['request'].user.is_authenticated)
+            or (page.get('logout_required', False) and context['request'].user.is_authenticated)
             or (page.get('staff_required', False) and not context['request'].user.is_staff)
             or (permissions_required and (
-                not context['request'].user.is_authenticated()
+                not context['request'].user.is_authenticated
                 or not hasPermissions(context['request'].user, permissions_required)
             ))
             or (one_of_permissions_required and (
-                not context['request'].user.is_authenticated()
+                not context['request'].user.is_authenticated
                 or not hasOneOfPermissions(context['request'].user, one_of_permissions_required)
             ))
             or (check_permissions
@@ -564,7 +564,7 @@ for permission, details in GLOBAL_OUTSIDE_PERMISSIONS.items():
 def _getPageShowLinkForGroupsLambda(group, show_link_lambda):
     def _show_link_callback(context):
         return (
-            context['request'].user.is_authenticated()
+            context['request'].user.is_authenticated
             and context['request'].user.hasGroup(group)
             and show_link_lambda(context)
         )

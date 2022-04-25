@@ -3973,7 +3973,7 @@ class ActivityCollection(MagiCollection):
 
             # Activities tabs
 
-            if context['request'].user.is_authenticated():
+            if context['request'].user.is_authenticated:
                 context['activity_tabs'] = HOME_ACTIVITY_TABS
                 context['active_activity_tab_name'] = context['filter_form'].active_tab
                 if context['active_activity_tab_name']:

@@ -840,7 +840,7 @@ class Activity(MagiModel):
         # If you're premium, the one month limit doesn't apply
         # Returns: (has_permissions, because_premium)
         a_month_ago = timezone.now() - datetime.timedelta(days=30)
-        if not user.is_authenticated() or not self.is_owner(user):
+        if not user.is_authenticated or not self.is_owner(user):
             return (False, False)
         if user.preferences.is_premium:
             return (True, True)
@@ -850,7 +850,7 @@ class Activity(MagiModel):
 
     def has_permissions_to_ghost_archive(self, user):
         # If you have the manipulate_activities permission
-        return (user.is_authenticated()
+        return (user.is_authenticated
                 and not self.is_owner(user)
                 and user.hasPermission('manipulate_activities'))
 
