@@ -165,9 +165,9 @@ def thumbnail(model, field):
     item = get_next_item(model, field, thumbnail_field_name)
     if not item:
         return False
-    print('[Info] Generating a thumbnail {} for {} #{}...'.format()
+    print('[Info] Generating a thumbnail {} for {} #{}...'.format(
         field.name, model.__name__, item.pk,
-    )
+    ))
     value = getattr(item, field.name)
     filename = value.name
     prefix = field.upload_to.prefix + ('thumb' if field.upload_to.prefix.endswith('/') else '/thumb')
