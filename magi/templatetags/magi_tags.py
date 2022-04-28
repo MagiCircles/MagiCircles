@@ -11,6 +11,7 @@ from magi.utils import (
     jsv,
     staticImageURL,
 )
+from django.conf import settings as django_settings
 
 register = template.Library()
 
@@ -72,4 +73,4 @@ def translationURL(*args, **kwargs):
 
 @register.simple_tag(takes_context=True)
 def translatedName(context, d, field_name='name', language=None):
-    return getTranslatedName(d, field_name=field_name, language=language or context['LANGUAGE_CODE'])
+    return getTranslatedName(d, field_name=field_name, language=language or django_settings.LANGUAGE_CODE)
