@@ -141,7 +141,7 @@ def getStaffConfigurations(generated_settings=None):
         else:
             staff_configurations[staffconfiguration.key] = staffconfiguration.value
     latest_news = list(latest_news.items())
-    latest_news.sort(key=lambda (k, v): k)
+    latest_news.sort(key=lambda k, _v: k)
     latest_news = [
         news
         for number, news in latest_news
