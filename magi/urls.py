@@ -464,7 +464,7 @@ def page_view(name, page):
             if function:
                 result = function(request, context, *args, **kwargs)
             # Javascript Form Context
-            for form_name, form in context.get('forms', {}).items() + [
+            for form_name, form in list(context.get('forms', {}).items()) + [
                     ('form', context.get('form')),
                     ('filter_form', context.get('filter_form')),
             ]:
