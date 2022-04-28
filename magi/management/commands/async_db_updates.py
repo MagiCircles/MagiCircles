@@ -78,7 +78,7 @@ def update_image(model, field):
     if modelHasField(model, u'_2x_{}'.format(field.name)):
         if thumbnail(model, field):
             return True
-        print 'todo generate a 2x version with waifux2'
+        print('todo generate a 2x version with waifux2')
         return True
     return False
 
@@ -90,13 +90,13 @@ def tinypng_compress(model, field):
     settings = getattr(item, 'tinypng_settings', {}).get(field.name, {})
     use_tinypng = settings.get('use_tinypng', True)
     if use_tinypng:
-        print '[Info] Compressing on TinyPNG {} for {} #{}...'.format(
+        print('[Info] Compressing on TinyPNG {} for {} #{}...'.format(
             field.name, model.__name__, item.pk
-        )
+        ))
     else:
-        print '[Info] Resizing {} for {} #{}...'.format(
+        print('[Info] Resizing {} for {} #{}...'.format(
             field.name, model.__name__, item.pk
-        )
+        ))
     value = getattr(item, field.name)
     filename = value.name
     prefix = field.upload_to.prefix + ('tiny' if field.upload_to.prefix.endswith('/') else '/tiny')
@@ -104,7 +104,7 @@ def tinypng_compress(model, field):
     content = value.read()
     if not content:
         save_item(model, item, { original_field_name: str(value) })
-        print '[Warning] Empty file, discarded.'
+        print('[Warning] Empty file, discarded.')
         return True
     if use_tinypng or image_name.endswith('.gif'):
         image = shrinkImageFromData(content, filename, settings=settings)
@@ -126,7 +126,7 @@ def tinypng_compress(model, field):
         original_field_name: str(value),
         field.name: image,
     }, in_item=True)
-    print '[Info] Done.'
+    print('[Info] Done.')
     return True
 
 def tinypng_thumbnail(model, field):
@@ -134,9 +134,9 @@ def tinypng_thumbnail(model, field):
     item = get_next_item(model, field, thumbnail_field_name)
     if not item:
         return False
-    print '[Info] Generating thumbnail with TinyPNG {} for {} #{}...'.format(
+    print('[Info] Generating thumbnail with TinyPNG {} for {} #{}...'.format(
         field.name, model.__name__, item.pk,
-    )
+    ))
     value = getattr(item, field.name)
     filename = value.name
     prefix = field.upload_to.prefix + ('thumb' if field.upload_to.prefix.endswith('/') else '/thumb')
@@ -144,7 +144,7 @@ def tinypng_thumbnail(model, field):
     content = value.read()
     if not content:
         save_item(model, item, { thumbnail_field_name: str(value) })
-        print '[Warning] Empty file, discarded.'
+        print('[Warning] Empty file, discarded.')
         return True
     tinypng_settings = getattr(item, 'tinypng_settings', {}).get(thumbnail_field_name, {}).copy()
     for k, v in [
@@ -157,7 +157,7 @@ def tinypng_thumbnail(model, field):
     image = shrinkImageFromData(content, image_name, settings=tinypng_settings)
     image.name = image_name
     save_item(model, item, { thumbnail_field_name: image }, in_item=True)
-    print '[Info] Done.'
+    print('[Info] Done.')
     return True
 
 def thumbnail(model, field):
@@ -165,7 +165,7 @@ def thumbnail(model, field):
     item = get_next_item(model, field, thumbnail_field_name)
     if not item:
         return False
-    print '[Info] Generating a thumbnail {} for {} #{}...'.format(
+    print('[Info] Generating a thumbnail {} for {} #{}...'.format()
         field.name, model.__name__, item.pk,
     )
     value = getattr(item, field.name)
@@ -175,7 +175,7 @@ def thumbnail(model, field):
     content = value.read()
     if not content:
         save_item(model, item, { thumbnail_field_name: str(value) })
-        print '[Warning] Empty file, discarded.'
+        print('[Warning] Empty file, discarded.')
         return True
     thumbnail_size = getattr(model, 'thumbnail_size', {}).get(field.name, {}).copy()
     resize = thumbnail_size.get('resize', 'thumb')
@@ -189,7 +189,7 @@ def thumbnail(model, field):
             content, image_name, width=thumbnail_size.get('width', 200), height=thumbnail_size.get('height', 200))
     image.name = image_name
     save_item(model, item, { thumbnail_field_name: image }, in_item=True)
-    print '[Info] Done.'
+    print('[Info] Done.')
     return True
 
 def update_markdown(model, field):
@@ -197,7 +197,7 @@ def update_markdown(model, field):
         item = get_next_item(model, field, u'_cache_{}'.format(field.name[2:]))
         if not item:
             return False
-        print u'[Info] Updating markdown {} for {} #{}...'.format(field.name, model.__name__, item.pk)
+        print(u'[Info] Updating markdown {} for {} #{}...'.format(field.name, model.__name__, item.pk))
         headers = {
             'content-type': u'text/plain',
         }
@@ -212,7 +212,7 @@ def update_markdown(model, field):
         save_item(model, item, {
             u'_cache_{}'.format(field.name[2:]): r.text,
         })
-        print '[Info] Done.'
+        print('[Info] Done.')
         return True
     return False
 
@@ -221,10 +221,10 @@ def update_on_change(model, field):
         item = get_next_item(model, field, field.name[:8], boolean_on_change=True)
         if not item:
             return False
-        print u'[Info] Updating {} after change occured for {} #{}...'.format(field.name[:8], model.__name__, item.pk)
+        print(u'[Info] Updating {} after change occured for {} #{}...'.format(field.name[:8], model.__name__, item.pk))
         callback = getattr(model, u'{}_ON_CHANGE'.format(field.name[:8].upper()))
         if callback(item):
-            print '[Info] Done.'
+            print('[Info] Done.')
             return True
     return False
 
@@ -276,7 +276,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
 
-        print '[Info]', datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+        print('[Info]', datetime.datetime.now().strftime("%Y-%m-%d %H:%M"))
 
         try: specified_model = args[0]
         except IndexError: specified_model = None
@@ -296,4 +296,4 @@ class Command(BaseCommand):
             if model_async_update(model, specified_model=specified_model, field_name=specified_field_name):
                 return
 
-        print '[Info] Nothing to do'
+        print('[Info] Nothing to do')

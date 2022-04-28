@@ -70,7 +70,7 @@ def getUserFromLink(value, type=None):
 # Get total donators (for generated settings)
 
 def totalDonatorsThisMonth():
-    print 'Get total donators'
+    print('Get total donators')
     now = timezone.now()
     this_month = datetime.datetime(year=now.year, month=now.month, day=1)
     try:
@@ -83,14 +83,14 @@ def totalDonatorsThisMonth():
     return models.Badge.objects.filter(donation_month=donation_month).values('user').distinct().count()
 
 def totalDonators():
-    print 'Get total donators'
+    print('Get total donators')
     return models.UserPreferences.objects.filter(i_status__isnull=False).exclude(i_status__exact='').count()
 
 ############################################################
 # Get latest donation month (for generated settings)
 
 def latestDonationMonth(failsafe=False):
-    print 'Get latest donation month'
+    print('Get latest donation month')
     now = timezone.now()
     this_month = datetime.datetime(year=now.year, month=now.month, day=1)
     try:
@@ -122,7 +122,7 @@ def latestDonationMonth(failsafe=False):
 # Get staff configurations + latest news(for generated settings)
 
 def getStaffConfigurations(generated_settings=None):
-    print 'Get staff configurations and latest news'
+    print('Get staff configurations and latest news')
     staff_configurations = {}
     latest_news = {}
     for staffconfiguration in models.StaffConfiguration.objects.all():
@@ -182,7 +182,7 @@ def defaultGetNameImageURLFromCharacter(character):
 def getCharactersBirthdays(queryset, get_name_image_url_from_character=defaultGetNameImageURLFromCharacter,
                            latest_news=None, days_after=12, days_before=1, field_name='birthday',
                            category='characters_birthdays'):
-    print 'Show a banner for current and upcoming {}'.format(snakeCaseToTitle(category))
+    print('Show a banner for current and upcoming {}'.format(snakeCaseToTitle(category)))
     if not latest_news:
         latest_news = []
     now = timezone.now()
@@ -220,7 +220,7 @@ def getCharactersBirthdays(queryset, get_name_image_url_from_character=defaultGe
 # Get users birthdays (for generated settings)
 
 def getUsersBirthdaysToday(image=None, latest_news=None, max_usernames=4):
-    print 'Show a happy birthday banner for the users whose birthday is today'
+    print('Show a happy birthday banner for the users whose birthday is today')
     if not latest_news:
         latest_news = []
     now = timezone.now()
@@ -260,7 +260,7 @@ def getUsersBirthdaysToday(image=None, latest_news=None, max_usernames=4):
 # Get seasonal activity tag banners
 
 def getSeasonalActivityTagBanners(latest_news=None, seasonal_settings=None):
-    print 'Get seasonal activity tag banners'
+    print('Get seasonal activity tag banners')
     if latest_news is None:
         latest_news = []
     if not seasonal_settings:
@@ -304,7 +304,7 @@ def generateCharactersSettings(
         else:
             base_name = camelToSnakeCase(queryset.model.__name__, upper=True) + u'S'
 
-    print u'Get the {}'.format(snakeCaseToTitle(base_name))
+    print(u'Get the {}'.format(snakeCaseToTitle(base_name)))
 
     generated_settings[base_name] = []
     original_names = {}
@@ -380,7 +380,7 @@ def generateShareImageForMainCollections(collection):
         if len(images) == IMAGES_PER_SHARE_IMAGE:
             break
     if len(images) != IMAGES_PER_SHARE_IMAGE:
-        print '!! Warning: Not enough images to generate share image for', collection.plural_name
+        print('!! Warning: Not enough images to generate share image for', collection.plural_name)
         return None
     # Create share image from images
     image_instance = makeImageGrid(
@@ -399,11 +399,11 @@ def generateShareImageForMainCollections(collection):
 # Generate settings (for generated settings)
 
 def seasonalGeneratedSettings(staff_configurations):
-    print 'Get seasonal settings'
+    print('Get seasonal settings')
     seasonal_settings = {}
     for season_name, season in SEASONS.items():
         if getEventStatus(season['start_date'], season['end_date'], ends_within=1) in ['current', 'ended_recently']:
-            print '  Current season:', season_name
+            print('  Current season:', season_name)
             seasonal_settings[season_name] = {}
             for variable in seasons.AVAILABLE_SETTINGS:
                 if variable in season:
@@ -515,7 +515,7 @@ def magiCirclesGeneratedSettings(existing_values):
         else:
             generated_share_images_last_date = now
             generated_share_images = {}
-            print 'Generate auto share images'
+            print('Generate auto share images')
             for collection_name, collection in getMagiCollections().items():
                 if collection.auto_share_image:
                     generated_share_images[collection.name] = generateShareImageForMainCollections(collection)
@@ -591,7 +591,7 @@ GENERATED_DATE = datetime.datetime.fromtimestamp(' + str(time.time()) + u')\n\
 # Generate map
 
 def generateMap():
-    print '[Info]', datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), 'Generating map...'
+    print('[Info]', datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), 'Generating map...')
     map = models.UserPreferences.objects.filter(latitude__isnull=False).select_related('user')
 
     mapcache = u'{# this file is generated, do not edit it #}{% extends "base.html" %}{% load l10n %}{% block content %}<div class="padding15" id="map-title">{% include \'include/page_title.html\' with show_small_title=True %}</div><div id="map"></div>{% endblock %}{% block afterjs %}{% localize off %}<script>var center=new google.maps.LatLng({% if center %}{{ center.latitude }},{{ center.longitude }}{% else %}30,0{% endif %});var zoom={% if zoom %}{{ zoom }}{% else %}2{% endif %};var addresses = ['
@@ -614,12 +614,12 @@ def generateMap():
                 close=u'}',
             )
         except:
-            print 'One user not added in map', u.user.username, u.location
-            print sys.exc_info()[0]
+            print('One user not added in map', u.user.username, u.location)
+            print(sys.exc_info()[0])
 
     mapcache += u'];</script><script src="' + SITE_STATIC_URL + u'static/js/map.js?' + STATIC_FILES_VERSION + u'"></script>{% endlocalize %}{% endblock %}'
 
     with open(django_settings.BASE_DIR + '/' + django_settings.SITE + '/templates/pages/map.html', 'w') as f:
         f.write(mapcache.encode('UTF-8'))
     f.close()
-    print '[Info]', datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), 'Done'
+    print('[Info]', datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), 'Done')

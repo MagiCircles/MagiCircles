@@ -6,9 +6,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         if len(args) < 1:
-            print 'Specify username'
+            print('Specify username')
             return
         username = args[0]
         user = User.objects.get(username=username)
         user.delete()
-        print '%s Deleted' % (user)
+        print('%s Deleted' % (user))

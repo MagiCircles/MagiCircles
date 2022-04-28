@@ -390,25 +390,25 @@ class Command(BaseCommand):
         pick = self.options['pick_random_winners']
         entries = self.get_flat_entries(all_entries)
         if pick > len(entries):
-            print '[Warning] Not enough entries, picking', len(entries), 'instead of', pick, 'entries'
+            print('[Warning] Not enough entries, picking', len(entries), 'instead of', pick, 'entries')
             pick = len(entries)
         filtered_entries = []
         filtered_out_entries = []
         if self.options.get('lower_chance_for_staff', False) or self.options.get('lower_chance_for_previous_winners', False):
-            print '[Info] Filtering entries...'
+            print('[Info] Filtering entries...')
             for entry in entries:
                 if ((self.options.get('lower_chance_for_staff', False) and self.entry_is_staff(entry))
                     or (self.options.get('lower_chance_for_previous_winners', False) and self.entry_won_before(entry))):
                     filtered_out_entries.append(entry)
                 else:
                     filtered_entries.append(entry)
-            print '  All entries:', len(entries)
-            print '  Filtered entries:', len(filtered_entries)
-            print '  Filtered out entries:', len(filtered_out_entries)
+            print('  All entries:', len(entries))
+            print('  Filtered entries:', len(filtered_entries))
+            print('  Filtered out entries:', len(filtered_out_entries))
         winners = []
         for i in range(0, pick):
             if not filtered_entries:
-                print '[Warning] Not enough filtered entries, some winners will be picked from filtered out entries'
+                print('[Warning] Not enough filtered entries, some winners will be picked from filtered out entries')
                 filtered_entries = filtered_out_entries
             random.shuffle(filtered_entries)
             winners.append(filtered_entries.pop())
@@ -448,103 +448,103 @@ class Command(BaseCommand):
             badge_instance._thumbnail_image = badge_instance.image
             badge_instance.save()
 
-        print ''
-        print '# MARKDOWN POST'
-        print ''
-        print ''
+        print('')
+        print('# MARKDOWN POST')
+        print('')
+        print('')
         name = self.options.get('contest_name', None)
         if name:
-            print '# {}'.format(name)
-            print ''
-        print '### **Thanks to everyone who participated and helped make this event a success! We loved your entries!**'
-        print ''
+            print('# {}'.format(name))
+            print('')
+        print('### **Thanks to everyone who participated and helped make this event a success! We loved your entries!**')
+        print('')
 
         if grid_instance:
-            print u'![All participants]({})'.format(grid_instance.http_image_url)
-            print ''
+            print(u'![All participants]({})'.format(grid_instance.http_image_url))
+            print('')
 
-        print '***'
-        print ''
+        print('***')
+        print('')
         if badge_instance:
-            print 'As promised, you all received a badge on your profile, as a thank you for participating.'
-            print ''
-            print u'![Badge]({})'.format(badge_instance.http_image_url)
-            print ''
-            print '***'
-            print ''
+            print('As promised, you all received a badge on your profile, as a thank you for participating.')
+            print('')
+            print(u'![Badge]({})'.format(badge_instance.http_image_url))
+            print('')
+            print('***')
+            print('')
 
         if winners:
             if self.options.get('stretch_goals', False) and totals:
-                print u'## **Stretch goals reached!**'
-                print ''
-            print u'With a total of {}{} participants, we are proud to announce that there will be {} winner{}!'.format(
+                print(u'## **Stretch goals reached!**')
+                print('')
+            print(u'With a total of {}{} participants, we are proud to announce that there will be {} winner{}!'.format()
                 u'{} participating entries by '.format(totals['all']) if totals['all'] != totals['unique'] else '',
                 totals['unique'],
                 len(winners),
                 's' if len(winners) > 1 else '',
             )
-            print ''
-            print 'And the winner{}...'.format('s are' if len(winners) > 1 else ' is')
-            print ''
+            print('')
+            print('And the winner{}...'.format('s are' if len(winners) > 1 else ' is'))
+            print('')
             for entry in winners:
-                print u'## **[{username}]({url})**'.format(**({
+                print(u'## **[{username}]({url})**'.format(**({)
                     'username': self.list_first(entry[u'{}_username'.format(django_settings.SITE)]),
                     'url': self.list_first(entry[u'{}_profile_url'.format(django_settings.SITE)]),
                 } if entry.get(u'{}_username'.format(django_settings.SITE), None) else {
                     'username': self.list_first(entry[u'{}_username'.format(entry['platform'])]),
                     'url': self.list_first(entry[u'{}_profile_url'.format(entry['platform'])]),
                 }))
-                print ''
-                print '*Selected randomly, one chance per {}*'.format(
+                print('')
+                print('*Selected randomly, one chance per {}*'.format()
                     'user' if self.options.get('one_chance_per_user', False) else 'entry')
-                print ''
-                print u'↳ [See entry]({})'.format(entry['url'])
-                print ''
+                print('')
+                print(u'↳ [See entry]({})'.format(entry['url']))
+                print('')
                 if entry['image']:
-                    print '![winning entry image]({})'.format(entry['image'])
-                    print ''
-            print ''
-            print '## **Congratulations to our winner{}!**'.format('s' if len(winners) > 1 else '')
-            print ''
-            print 'They will be able to pick their prize between:'
-            print ''
+                    print('![winning entry image]({})'.format(entry['image']))
+                    print('')
+            print('')
+            print('## **Congratulations to our winner{}!**'.format('s' if len(winners) > 1 else ''))
+            print('')
+            print('They will be able to pick their prize between:')
+            print('')
             if self.options.get('prizes_image', None):
-                print '![Prizes]({})'.format(self.options['prizes_image'])
-                print ''
+                print('![Prizes]({})'.format(self.options['prizes_image']))
+                print('')
             if self.options.get('physical_prizes', False):
-                print '- 1 {} physical prize (official merch)'.format(str(settings.GAME_NAME))
-            print '- 1 {} art commission'.format(str(settings.GAME_NAME))
-            print '- 1 {} graphic edit commission'.format(str(settings.GAME_NAME))
-            print ''
-            print '*Subject to availability*'
-            print ''
-        print ''
-        print '***'
-        print ''
+                print('- 1 {} physical prize (official merch)'.format(str(settings.GAME_NAME)))
+            print('- 1 {} art commission'.format(str(settings.GAME_NAME)))
+            print('- 1 {} graphic edit commission'.format(str(settings.GAME_NAME)))
+            print('')
+            print('*Subject to availability*')
+            print('')
+        print('')
+        print('***')
+        print('')
         if 'donate' in RAW_CONTEXT['all_enabled']:
-            print '# Support our giveaways!'
-            print ''
-            print u'[![Support us on Patreon](https://i.imgur.com/kmQ3vKP.png)](https://patreon.com/db0company/)'
-            print ''
-            print 'These special events are made possible thanks to the support of our warm-hearted donators. If you wish to support {site} for both our future special events and to cover the cost of our expensive servers in which our site run, please consider donating on Patreon.'.format(site=settings.SITE_NAME)
-            print ''
-            print '***'
-            print ''
-        print '# **F.A.Q.**'
-        print ''
+            print('# Support our giveaways!')
+            print('')
+            print(u'[![Support us on Patreon](https://i.imgur.com/kmQ3vKP.png)](https://patreon.com/db0company/)')
+            print('')
+            print('These special events are made possible thanks to the support of our warm-hearted donators. If you wish to support {site} for both our future special events and to cover the cost of our expensive servers in which our site run, please consider donating on Patreon.'.format(site=settings.SITE_NAME))
+            print('')
+            print('***')
+            print('')
+        print('# **F.A.Q.**')
+        print('')
         print' - **I won and I didn\'t hear from you?**'
-        print '    - Check [your private messages](/privatemessages/). You may have to wait up to 24 hours after announcement.'
-        print '- **I didn\'t win and I\'m sad ;_;**'
-        print u'   - The staff and the community loved your entry so your efforts didn\'t go to waste at all 💖 Please join our next special event!'
-        print '- **How can  I thank you for your amazing work organizing these special events?**'
-        print u'    - We always appreciate sweet comments below, and if you want to push it a little further, we have a [Patreon](https://patreon.com/db0company/) open for donations ❤️'
-        print '- **More questions?**'
-        print '    -  Read the [Giveaways FAQ](/help/Giveaways%20FAQ) and ask your questions in the comments.'
-        print ''
-        print '***'
-        print ''
-        print '# **All participants**'
-        print ''
+        print('    - Check [your private messages](/privatemessages/). You may have to wait up to 24 hours after announcement.')
+        print('- **I didn\'t win and I\'m sad ;_;**')
+        print(u'   - The staff and the community loved your entry so your efforts didn\'t go to waste at all 💖 Please join our next special event!')
+        print('- **How can  I thank you for your amazing work organizing these special events?**')
+        print(u'    - We always appreciate sweet comments below, and if you want to push it a little further, we have a [Patreon](https://patreon.com/db0company/) open for donations ❤️')
+        print('- **More questions?**')
+        print('    -  Read the [Giveaways FAQ](/help/Giveaways%20FAQ) and ask your questions in the comments.')
+        print('')
+        print('***')
+        print('')
+        print('# **All participants**')
+        print('')
         for platform, entries in all_entries.items():
             if totals[platform] < 1:
                 continue
@@ -559,11 +559,11 @@ class Command(BaseCommand):
                         platform_name = models.UserLink.get_verbose_i('type', platform)
                     except KeyError:
                         platform_name = platform
-                print u'On {}{}:'.format(platform_name, u' ({})'.format(totals[platform]) if platform in totals else '')
-            print u', '.join([u'[{}]({})'.format(
+                print(u'On {}{}:'.format(platform_name, u' ({})'.format(totals[platform]) if platform in totals else ''))
+            print(u', '.join([u'[{}]({})'.format()
                 entry[u'{}_username'.format(platform)], entry['url']) for entry in entries]
             )
-            print ''
+            print('')
 
     def find_site_user_from_platform(self, platform, username):
         try:
@@ -574,7 +574,7 @@ class Command(BaseCommand):
             return None
 
     def add_badges(self, all_entries, winners):
-        print '# ADD BADGES'
+        print('# ADD BADGES')
         badge = models.Badge.objects.get(id=self.options['add_badges'])
         self.badge = badge
         cant_get = {}
@@ -628,12 +628,12 @@ class Command(BaseCommand):
                             existing_badge.save()
                     # Add badge
                     else:
-                        print 'Adding badge to {}'.format(username)
+                        print('Adding badge to {}'.format(username))
                         if not user:
                             try:
                                 user = models.User.objects.select_related('preferences').filter(username=username)[0]
                             except IndexError:
-                                print '   User not found'
+                                print('   User not found')
                         if user:
                             models.Badge.objects.create(
                                 owner=badge.owner,
@@ -649,8 +649,8 @@ class Command(BaseCommand):
                             )
                             user.preferences.force_update_cache('tabs_with_content')
         if self.options.get('list_missing_badges'):
-            print 'Couldn\'t add badges to:'
-            print json.dumps(cant_get, indent=4)
+            print('Couldn\'t add badges to:')
+            print(json.dumps(cant_get, indent=4))
 
     def handle(self, *args, **options):
         self.options = options
@@ -704,23 +704,23 @@ class Command(BaseCommand):
         if one_chance_per_user:
             totals['unique'] = len(self.get_unique_entries(all_entries))
 
-        # Print entries
-        print '# ALL ENTRIES'
-        print json.dumps(all_entries, indent=4)
-        print ''
-        print 'TOTAL'
-        print json.dumps(totals, indent=4)
-        print '  ---  '
-        print ''
+        # print(entries)
+        print('# ALL ENTRIES')
+        print(json.dumps(all_entries, indent=4))
+        print('')
+        print('TOTAL')
+        print(json.dumps(totals, indent=4))
+        print('  ---  ')
+        print('')
 
         # Pick random winners
         if options.get('pick_random_winners', None):
             winners = self.pick_random_winners(all_entries)
 
-            print '# WINNERS'
-            print json.dumps(winners, indent=4)
-            print '  ---  '
-            print ''
+            print('# WINNERS')
+            print(json.dumps(winners, indent=4))
+            print('  ---  ')
+            print('')
 
         # Add badges
         if options.get('add_badges', None):

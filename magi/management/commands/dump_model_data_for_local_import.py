@@ -175,7 +175,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         if len(args) < 1:
-            print '[model name]+'
+            print('[model name]+')
             return
 
         custom_models = __import__(django_settings.SITE + '.models', fromlist=['']).__dict__
@@ -189,23 +189,23 @@ class Command(BaseCommand):
 
         for model_name in args:
 
-            print '#', model_name
+            print('#', model_name)
 
             model = getattr(magi_models, model_name, None)
             model = custom_models.get(model_name, model)
             if not model:
-                print '  Model not found', model_name
+                print('  Model not found', model_name)
                 continue
 
             fields, unique_fields, foreign_keys, many_to_many = get_fields(model)
 
-            print ''
-            print '  Unique fields:', unique_fields
-            print '  Fields found:', fields
+            print('')
+            print('  Unique fields:', unique_fields)
+            print('  Fields found:', fields)
             if foreign_keys:
-                print '  Foreign keys found:', foreign_keys.keys()
+                print('  Foreign keys found:', foreign_keys.keys())
             if many_to_many:
-                print '  Many to many found:', many_to_many.keys()
+                print('  Many to many found:', many_to_many.keys())
 
             filename = u'/tmp/dump_{}.py'.format(model.__name__)
             filed = open(filename, 'w')
@@ -227,8 +227,8 @@ class Command(BaseCommand):
                     m2m_can_be_created[m2m] = all_fields
 
             if m2m_can_be_created:
-                print '  The following m2m may be created if needed:', m2m_can_be_created.keys()
-            print ''
+                print('  The following m2m may be created if needed:', m2m_can_be_created.keys())
+            print('')
 
             for item in model.objects.all().select_related(*foreign_keys.keys()).prefetch_related(*[
                     Prefetch(m2m, to_attr=u'all_{}'.format(m2m))
@@ -237,17 +237,17 @@ class Command(BaseCommand):
                 dump_item(fileds, model, item, unique_fields, fields, foreign_keys, many_to_many, foreign_keys_unique_fields, m2m_can_be_created)
                 total_dumped += 1
 
-            print_to_files(fileds, u'print \'#\', {}\n'.format(repr(model.__name__)))
-            print_to_files(fileds, u'print \'  Total created:\', total_created\n')
-            print_to_files(fileds, u'print \'  Total updated:\', total_updated\n')
+            print_to_files(fileds, u'print(\'#\', {}\n'.format(repr(model.__name__))))
+            print_to_files(fileds, u'print(\'  Total created:\', total_created\n'))
+            print_to_files(fileds, u'print(\'  Total updated:\', total_updated\n'))
 
             filed.close()
 
-            print '  Total dumped:', total_dumped
-            print '  See file:', filename
-            print ''
+            print('  Total dumped:', total_dumped)
+            print('  See file:', filename)
+            print('')
 
 
         if global_filed:
             global_filed.close()
-            print 'Global file: ', global_filename
+            print('Global file: ', global_filename)
