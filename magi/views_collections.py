@@ -420,7 +420,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
                 game=context['game_name'],
             )
 
-    context['total_pages'] = int(math.ceil(context['total_results'] / page_size))
+    context['total_pages'] = page_size and int(math.ceil(context['total_results'] / page_size))
     context['items'] = queryset
     context['page'] = page + 1
 
