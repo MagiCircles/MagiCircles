@@ -47,7 +47,7 @@
   <nav id="sidebar-wrapper"{% if hide_sidebar %} style="display: none;"{% endif %}>
     <form class="form-horizontal filter-form" method="get" action="{% if filter_form.action_url %}{{ filter_form.action_url }}{% endif %}" role="form" id="filter-form-{{ collection.name }}">
       <div id="filter-form-fields" class="padded-inner-sidebar">
-        <!-- FIXME add filter_form|bootstrap back -->
+        {{ filter_form|bootstrap }}
         <br>
       </div>
       {% for button in filter_form.extra_buttons.values %}
