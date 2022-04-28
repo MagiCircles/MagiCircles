@@ -84,9 +84,6 @@ def _add_h1_and_prefixes_to_context(view, context, title_prefixes, h1, item=None
 
 def _type(a): return type(a)
 
-def _get_context_dict(ctx):
-    ctx if isinstance(ctx, dict) else ctx.flatten()
-
 ############################################################
 # Item view
 
@@ -117,7 +114,7 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
                     username = _('this user')
                 context['item'].blocked_message = _(u'You blocked {username}.').format(username=username)
                 context['item'].unblock_button = _(u'Unblock {username}').format(username=username)
-                return render(request, 'items/default_blocked_template_in_list.html', _get_context_dict(context))
+                return render(request, 'items/default_blocked_template_in_list.html', context)
             raise HttpRedirectException(u'/block/{id}/?next={next_url}'.format(
                 id=context['item'].owner_id,
                 next_url=context['current_url'],
@@ -199,8 +196,8 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
     if ajax:
         context['ajax_include_title'] = True
         context['include_template'] = 'items/{}'.format(context['item_template'])
-        return render(request, 'ajax.html', _get_context_dict(context))
-    return render(request, 'collections/item_view.html', _get_context_dict(context))
+        return render(request, 'ajax.html', context)
+    return render(request, 'collections/item_view.html', context)
 
 ############################################################
 # Random view
@@ -610,8 +607,8 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
         context['ajax_include_title'] = True
         if context['ajax_modal_only'] and context['ajax_pagination_callback']:
             context['ajax_callback'] = context['ajax_pagination_callback']
-        return render(request, 'ajax.html', _get_context_dict(context))
-    return render(request, 'collections/list_view.html', _get_context_dict(context))
+        return render(request, 'ajax.html', context)
+    return render(request, 'collections/list_view.html', context)
 
 ############################################################
 # Add view
@@ -704,7 +701,7 @@ def add_view(request, name, collection, type=None, ajax=False, shortcut_url=None
         context['include_template'] = 'collections/modification_view'
         context['extends'] = 'ajax.html'
         context['ajax'] = True
-    return render(request, 'collections/modification_view.html', _get_context_dict(context))
+    return render(request, 'collections/modification_view.html', context)
 
 ############################################################
 # Edit view
@@ -841,4 +838,4 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
         context['include_template'] = 'collections/modification_view'
         context['extends'] = 'ajax.html'
         context['ajax'] = True
-    return render(request, 'collections/modification_view.html', _get_context_dict(context))
+    return render(request, 'collections/modification_view.html', context)
