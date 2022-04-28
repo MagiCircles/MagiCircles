@@ -620,6 +620,6 @@ def generateMap():
     mapcache += u'];</script><script src="' + SITE_STATIC_URL + u'static/js/map.js?' + STATIC_FILES_VERSION + u'"></script>{% endlocalize %}{% endblock %}'
 
     with open(django_settings.BASE_DIR + '/' + django_settings.SITE + '/templates/pages/map.html', 'w') as f:
-        f.write(mapcache.encode('UTF-8'))
+        f.write(str(mapcache))
     f.close()
     print('[Info]', datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), 'Done')
