@@ -95,8 +95,8 @@ def avatar(user, size=200):
     if user.preferences.twitter:
         default = u'{}twitter_avatar/{}/'.format(SITE_URL if SITE_URL.startswith('http') else 'https:' + SITE_URL, user.preferences.twitter)
     return ("https://www.gravatar.com/avatar/"
-            + hashlib.md5(user.email.lower()).hexdigest()
-            + "?" + urllib.urlencode({'d': default, 's': str(size)}))
+            + hashlib.md5(user.email.lower().encode('utf-8')).hexdigest()
+            + "?" + urllib.parse.urlencode({'d': default, 's': str(size)}))
 
 ############################################################
 # Add MagiModel properties to User objects
