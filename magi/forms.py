@@ -3434,7 +3434,7 @@ class ReportForm(BaseReportForm):
                 + collection.report_delete_templates.keys()
         ):
             reasons[reason] = _(reason)
-        self.fields['reason'].choices = BLANK_CHOICE_DASH + reasons.items()
+        self.fields['reason'].choices = BLANK_CHOICE_DASH + list(reasons.items())
         self.beforefields = HTMLAlert(
             message=markSafeFormat(
                 u'{message}<ul>{list}</ul>{learn_more}',

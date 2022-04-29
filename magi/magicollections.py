@@ -1694,7 +1694,7 @@ class MagiCollection(object):
                 'ajax_url': False,
                 'ajax_title': False, # By default will use title
                 'classes': view.get_item_buttons_classes(request, context, item=item),
-            }) for button_name in self.collectible_collections.keys() + ['open', 'edit', 'translate', 'report', 'suggestedit']
+            }) for button_name in list(self.collectible_collections.keys()) + ['open', 'edit', 'translate', 'report', 'suggestedit']
         ])
         # Collectible buttons
         for name, collectible_collection in self.collectible_collections.items():
@@ -3202,7 +3202,7 @@ class UserCollection(MagiCollection):
                         'title': _('Private messages'),
                         'has_permissions': request.user.hasPermissionToMessage(user),
                     }),
-                ] + buttons.items())
+                ] + list(buttons.items()))
 
             # Block button
             if request.user.is_authenticated and user.id != request.user.id:
@@ -3441,7 +3441,7 @@ class UserCollection(MagiCollection):
                 context['profile_tabs']['account']['icon'] = account_collection.icon
 
             # Set opened tab
-            context['opened_tab'] = context['profile_tabs'].keys()[0] if context['profile_tabs'] else None
+            context['opened_tab'] = list(context['profile_tabs'].keys())[0] if context['profile_tabs'] else None
             if user.preferences.default_tab and user.preferences.default_tab in context['profile_tabs']:
                 context['opened_tab'] = user.preferences.default_tab
             if 'open' in request.GET and request.GET['open'] in context['profile_tabs']:

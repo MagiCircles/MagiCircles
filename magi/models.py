@@ -398,7 +398,7 @@ class UserPreferences(BaseMagiModel):
             }).count()) for collection_name, collection in [
                 (collection_name, getMagiCollection(collection_name))
                 for collection_name in RAW_CONTEXT['collections_in_profile_tabs']
-            ] + RAW_CONTEXT['collectible_collections'].get('owner', {}).items()
+            ] + list(RAW_CONTEXT['collectible_collections'].get('owner', {}).items())
         })
 
         return tabs_with_content
