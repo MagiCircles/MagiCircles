@@ -355,7 +355,7 @@ class BaseMagiModel(models.Model):
                     d[u'http_{}_url'.format(image_field)] = get_http_image_url_from_path(d[image_field])
 
         if original_cls:
-            for k in d.keys():
+            for k in list(d.keys()):
                 # i_ fields
                 if k.startswith('i_'):
                     d[k[2:]] = original_cls.get_reverse_i(k[2:], d[k])

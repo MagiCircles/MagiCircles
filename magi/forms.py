@@ -345,7 +345,7 @@ class MagiForm(forms.ModelForm):
             if not getattr(self, u'{}_filter'.format(field_name), None):
                 setattr(self, u'{}_filter'.format(field_name), MagiFilter(noop=True))
 
-        for name, field in self.fields.items():
+        for name, field in list(self.fields.items()):
             # Fix optional fields using null=True
             try:
                 model_field = self.Meta.model._meta.get_field(name)
@@ -1124,7 +1124,7 @@ class AutoForm(MagiForm):
         if 'owner' in self.fields:
             del(self.fields['owner'])
 
-        for field_name in self.fields.keys():
+        for field_name in list(self.fields.keys()):
             if field_name.startswith('_') and field_name not in self.keep_underscore_fields:
                 del(self.fields[field_name])
             if field_name in getattr(self.Meta, 'exclude_fields', []):
@@ -2400,7 +2400,7 @@ class ActivitiesPreferencesForm(MagiForm):
                 new_d[default_hidden] = True
         self.instance.save_d('hidden_tags', new_d)
         self.old_hidden_tags = self.instance.hidden_tags
-        for field_name in self.fields.keys():
+        for field_name in list(self.fields.keys()):
             if field_name.startswith('d_hidden_tags'):
                 tag_name = field_name.replace('d_hidden_tags-', '')
                 if tag_name not in allowed_tags:
@@ -3097,7 +3097,7 @@ class StaffDetailsForm(AutoForm):
             pass
         elif 'for_user' in self.fields:
             del(self.fields['for_user'])
-        for field_name in self.fields.keys():
+        for field_name in list(self.fields.keys()):
             if field_name.startswith('d_availability') or field_name.startswith('d_weekend_availability'):
                 self.fields[field_name] = forms.BooleanField(
                     label=(
@@ -3138,7 +3138,7 @@ class ActivityForm(MagiForm):
             or (not self.is_creating
                 and self.instance.owner_id != self.request.user.id
                 and not self.request.user.hasPermission('edit_reported_things'))):
-            for field_name in self.fields.keys():
+            for field_name in list(self.fields.keys()):
                 if field_name not in ['i_language', 'save_activities_language']:
                     del(self.fields[field_name])
         if 'i_language' in self.fields:

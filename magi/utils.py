@@ -1782,7 +1782,7 @@ def dumpModel(instance):
     Allows to delete an instance without losing data.
     """
     dump = model_to_dict(instance)
-    for key in dump.keys():
+    for key in list(dump.keys()):
         if isinstance(dump[key], models.Model):
             dump[key] = dump[key].pk
         else:
@@ -3216,7 +3216,7 @@ def find_all_translations(model, field, only_for_language=None, with_count_has=T
                 translations[term][language][0].append(
                     mark_safe(u'<p class="to-markdown">{}</p>'.format(translation[1]))
                     if field.startswith('m_') else translation)
-    for term in translations.keys():
+    for term in list(translations.keys()):
         translations[term] = (
             translations[term],
             reduce(lambda a, b: a + b, [_t[2] for _t in translations[term].values()], 0),
