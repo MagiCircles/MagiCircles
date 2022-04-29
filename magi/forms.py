@@ -902,7 +902,7 @@ class MagiForm(forms.ModelForm):
             if (hasattr(instance, field)
                 and isinstance(self.fields[field], forms.Field)
                 and has_field(instance, field)
-                and (isinstance(getattr(instance, field), unicode) or isinstance(getattr(instance, field), str))
+                and isinstance(getattr(instance, field), str)
                 and getattr(instance, field).strip() == ''):
                 setattr(instance, field, None)
             # Remove cached HTML for markdown fields
