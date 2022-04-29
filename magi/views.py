@@ -174,14 +174,13 @@ def login(request):
             'url': u'/you/',
         }]
     return LoginView.as_view(
-        request,
         authentication_form=LoginForm,
         template_name='pages/login.html',
         extra_context=context,
-    )
+    )(request)
 
 def logout(request):
-    return LogoutView.as_view(request, next_page='/')
+    return LogoutView.as_view(next_page='/')(request)
 
 def signup(request, context):
     if request.user.is_authenticated:
