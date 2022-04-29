@@ -1302,7 +1302,7 @@ def birthdayURL(user):
 def getAge(birthdate, formatted=False):
     if not birthdate:
         return None
-    if isinstance(birthdate, str) or isinstance(birthdate, unicode):
+    if isinstance(birthdate, str):
         birthdate = parse_date(birthdate)
     today = datetime.date.today()
     age = today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
@@ -1561,7 +1561,7 @@ def jsv(v):
         return mark_safe(json.dumps(v, cls=LazyEncoder).replace('"True"', '"true"').replace('"False"', '"false"'))
     if isinstance(v, bool):
         return 'true' if v else 'false'
-    if isinstance(v, str) or isinstance(v, unicode):
+    if isinstance(v, str):
         return mark_safe(u'"{}"'.format(v))
     return v
 
