@@ -1800,8 +1800,11 @@ def modelGetField(model, field_name):
     except FieldDoesNotExist:
         return None
 
-def modelFieldVerbose(model, field_name):
-    return model._meta.get_field(field_name).verbose_name
+def modelFieldVerbose(model, field_name, fallback=True):
+    return (
+        model._meta.get_field(field_name)._verbose_name
+        or (toHumanReadable(field_name) if fallback else None)
+    )
 
 def modelFieldHelpText(model, field_name):
     return model._meta.get_field(field_name).help_text
@@ -2994,7 +2997,7 @@ def HTMLAlert(type='warning', flaticon='about', title=None, message=None, button
 """,
         type=type,
         flaticon=flaticon,
-        title=markSafeFormat(u'<h4>{title}</h4>', title) if title else '',
+        title=markSafeFormat(u'<h4>{title}</h4>', title=title) if title else '',
         message=message or '',
         col_size=7 if button else 10,
         button=markSafeFormat(
@@ -3007,6 +3010,12 @@ def HTMLAlert(type='warning', flaticon='about', title=None, message=None, button
     </div>
             """, **button) if button else '',
 )
+
+markSafe = mark_safe
+markUnsafe = escape
+
+def isMarkedSafe(string):
+    return isinstance(string, SafeText)
 
 def _markSafeFormatEscapeOrNot(string):
     return unicode(string if (
