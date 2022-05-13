@@ -1687,6 +1687,24 @@ def simplifyMarkdown(markdown_string, max_length=None):
         markdown_string = markdown_string.replace(c, ' ')
     return markdown_string
 
+HTML_CLEANER = re.compile('<(.|\n)*?>|&([a-z0-9]+|#[0-9]{1,6}|#x[0-9a-f]{1,6});', re.MULTILINE)
+
+def simplifyHTML(html, max_length=None):
+    for replace_from, replace_to in [
+            ('<li>\n', '<li>'),
+            ('<li>', '- '),
+    ] + [
+        ('<h{}>'.format(i), u'★ ')
+        for i in range(1, 6)
+    ] + [
+        ('</h{}>'.format(i), u' ★')
+        for i in range(1, 6)
+    ]:
+        html = html.replace(replace_from, replace_to)
+    html = re.sub(HTML_CLEANER, '', html)
+    html = u'\n'.join([ s.strip() for s in html.split('\n') ])
+    return summarize(html, max_length=max_length) if max_length else html
+
 def addParametersToURL(url, parameters={}, anchor=None):
     return u'{}{}{}{}'.format(
         url,
@@ -3254,20 +3272,20 @@ def translationURL(
 ):
     if not to_language:
         to_language = get_language()
-    url = u'https://translate.google.com/#{from_language}|{to_language}|{value}'.format(
+    url = u'https://translate.google.com/?sl={from_language}&tl={to_language}&text={value}&op=translate'.format(
         to_language=googleTranslateFixLanguage(to_language),
         from_language=googleTranslateFixLanguage(from_language),
-        value=urlquote(value),
+        value=urlquote(value, ''),
     )
     if with_wrapper:
-        return (
-            u'{value}{newline}[{translate}]({url})'
-            if markdown else
-            u'{value}{newline}<a href="{url}" target="_blank"><small class="text-muted">{translate} <i class="flaticon-link"></i></small></a>'
-        ).format(
-            newline=' ' if one_line or not show_value else ('\n\n' if markdown else '<br>'),
+        return markSafeFormat(
+            (
+                u'{value}{newline}[{translate}]({url})'
+                if markdown else
+                u'{value}{newline}<a href="{url}" target="_blank"><small class="text-muted">{translate} <i class="flaticon-link"></i></small></a>'),
+            newline=' ' if one_line or not show_value else ('\n\n' if markdown else markSafe('<br>')),
             url=url,
-            value=value if show_value else '',
+            value=value if show_value else u'',
             translate=sentence or translationSentence(from_language=from_language, to_language=to_language),
         )
     return url
