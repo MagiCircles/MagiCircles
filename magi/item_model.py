@@ -33,7 +33,7 @@ ALL_ALT_LANGUAGES = [
 ]
 NON_LATIN_LANGUAGES = [
     (_code, _verbose) for _code, _verbose in django_settings.LANGUAGES
-    if _code in [ 'ja', 'ru', 'zh-hans', 'zh-hant', 'kr', 'th']
+    if _code in [ 'ja', 'ru', 'zh-hans', 'zh-hant', 'kr', 'th' ]
 ]
 
 ############################################################
@@ -157,6 +157,21 @@ def get_real_owner(instance):
     return instance.owner
 
 ############################################################
+# Utils for permissions
+
+def has_item_view_permissions(instance, context={}):
+    if 'request' in context and not getattr(instance, 'request', None):
+        instance.request = context['request']
+    collection = getattr(instance, 'collection', None)
+    if collection:
+        if getattr(instance, 'request', None) and collection.item_view.enabled:
+            if not hasattr(instance, 'owner_id'):
+                instance.owner_id = 0
+            return collection.item_view.has_permissions(instance.request, context, instance)
+        return None
+    return False
+
+############################################################
 # BaseMagiModel
 
 class BaseMagiModel(models.Model):
@@ -193,6 +208,7 @@ class BaseMagiModel(models.Model):
     is_owner = get_is_owner
     owner_unicode = property(get_owner_unicode)
     real_owner = property(get_real_owner)
+    has_item_view_permissions = has_item_view_permissions
 
     @classmethod
     def get_int_choices(self, field_name):
@@ -318,6 +334,7 @@ class BaseMagiModel(models.Model):
 
     @classmethod
     def cached_json_extra(self, field_name, d):
+        d = AttrDict(d)
         # Get original model class for cached thing
         try: original_cls = self._meta.get_field(field_name).rel.to
         except FieldDoesNotExist: original_cls = None
@@ -337,6 +354,14 @@ class BaseMagiModel(models.Model):
                 d['pk'] = d['id']
             # Set collection item URLs
             collection_name = getattr(self, u'_cached_{}_collection_name'.format(field_name), field_name)
+            if collection_name:
+                d['collection_name'] = collection_name
+                d['collection'] = getMagiCollection(d.collection_name)
+                d['has_item_view_permissions'] = lambda _context={}: has_item_view_permissions(d, context=_context)
+            else:
+                d['collection_name'] = None
+                d['collection'] = None
+                d['has_item_view_permissions'] = lambda _context={}: False
             if 'item_url' not in d:
                 d['item_url'] = u'/{}/{}/{}/'.format(collection_name, d['id'], tourldash(d['unicode']))
             if 'ajax_item_url' not in d:
@@ -380,9 +405,9 @@ class BaseMagiModel(models.Model):
         d = json.loads(value)
         if d is None: return None
         if isinstance(d, list):
-            d = map(lambda _d: AttrDict(self.cached_json_extra(field_name, _d)), d)
+            d = map(lambda _d: self.cached_json_extra(field_name, _d), d)
         else:
-            d = AttrDict(self.cached_json_extra(field_name, d))
+            d = self.cached_json_extra(field_name, d)
         return d
 
     @classmethod
@@ -539,6 +564,10 @@ class BaseMagiModel(models.Model):
         return listUnique(getattr(self, u'{}_SOURCE_LANGUAGES'.format(
             field_name.upper()), []) + ['en'])
 
+    def get_display_translation_sources(self, field_name):
+        return listUnique(getattr(self, u'DISPLAY_{}_SOURCE_LANGUAGES'.format(
+            field_name.upper()), type(self).get_field_translation_sources(field_name)) + ['en'])
+
     @classmethod
     def get_field_translation_languages(self, field_name, include_english=True, as_choices=False):
         return ([('en', LANGUAGES_NAMES['en']) if as_choices else 'en'] if include_english else []) + [
@@ -583,7 +612,7 @@ class BaseMagiModel(models.Model):
             if value:
                 result_language = 'en'
         if not value and fallback_to_other_sources:
-            for source in self.get_field_translation_sources(
+            for source in self.get_display_translation_sources(
                     field_name[2:] if field_name.startswith('m_') else field_name):
                 if source != 'en':
                     value_for_source = d.get(source, None)
@@ -631,6 +660,7 @@ class BaseMagiModel(models.Model):
                 'share_image_in_list',
                 'display_name',
                 'display_name_in_list',
+                'display_suggest_edit_button_on_fields',
                 'blocked',
                 'blocked_by_owner',
                 'blocked_owner_id',
@@ -656,8 +686,11 @@ class BaseMagiModel(models.Model):
         ############################################################
         # When accessing "something1_X_something2"
 
-        if name.startswith('display_') and name.endswith('_timezones'):
-            return type(self).get_displayed_timezones(name)
+        if name.startswith('display_'):
+            if name.endswith('_timezones'):
+                return type(self).get_displayed_timezones(name)
+            if name.endswith('_translation_sources'):
+                return self.get_display_translation_sources(name[8:-20])
 
         # PREFIXES
         ############################################################
@@ -671,7 +704,10 @@ class BaseMagiModel(models.Model):
                 return type(self).get_verbose_i(name, getattr(self, 'i_{name}'.format(name=name)))
             # For a CSV value: return dict {value: translated value}
             elif hasattr(self, 'c_{name}'.format(name=name)):
-                return type(self).get_csv_values(name, getattr(self, name))
+                return type(self).get_csv_values(name, getattr(self, name), translated=True)
+            # For a markdown value: (True, HTML) or (False, Markdown)
+            elif hasattr(self, u'm_{name}'.format(name=name)) and hasattr(self, u'd_m_{name}s'.format(name=name)):
+                return self.get_translation(name)
             # For a dict: return dict {key: {'value': value, 'verbose': translation}}
             elif hasattr(self, u'd_{name}'.format(name=name)):
                 return type(self).get_dict_values(name, getattr(self, u'd_{name}'.format(name=name)), translated=True)
@@ -869,7 +905,7 @@ def get_edit_url(instance):
 def get_report_url(instance):
     return u'/reports/add/{}/?id={}'.format(instance.collection.model_name, instance.pk)
 
-def get_suggestedit_url(instance):
+def get_suggest_edit_url(instance):
     return u'/suggestededits/add/{}/?id={}'.format(instance.collection.model_name, instance.pk)
 
 def get_ajax_edit_url(instance):
@@ -890,7 +926,7 @@ def get_delete_sentence(instance):
 def get_report_sentence(instance):
     return _('Report {thing}').format(thing=unicode(instance.collection_title).lower())
 
-def get_suggestedit_sentence(instance):
+def get_suggest_edit_sentence(instance):
     return _('Suggest edit')
 
 def get_collection_plural_name(instance):
@@ -923,6 +959,7 @@ def addMagiModelProperties(modelClass, collection_name):
     modelClass.collection_plural_name = property(get_collection_plural_name)
     modelClass.collection_title = property(get_collection_title)
     modelClass.collection_plural_title = property(get_collection_plural_title)
+    modelClass.has_item_view_permissions = has_item_view_permissions
     modelClass.item_url = property(get_item_url)
     modelClass.ajax_item_url = property(get_ajax_item_url)
     modelClass.full_item_url = property(get_full_item_url)
@@ -930,7 +967,7 @@ def addMagiModelProperties(modelClass, collection_name):
     modelClass.share_url = property(get_share_url)
     modelClass.edit_url = property(get_edit_url)
     modelClass.report_url = property(get_report_url)
-    modelClass.suggestedit_url = property(get_suggestedit_url)
+    modelClass.suggest_edit_url = property(get_suggest_edit_url)
     modelClass.ajax_edit_url = property(get_ajax_edit_url)
     modelClass.image_url = property(get_image_url)
     modelClass.http_image_url = property(get_http_image_url)
@@ -938,7 +975,7 @@ def addMagiModelProperties(modelClass, collection_name):
     modelClass.edit_sentence = property(get_edit_sentence)
     modelClass.delete_sentence = property(get_delete_sentence)
     modelClass.report_sentence = property(get_report_sentence)
-    modelClass.suggestedit_sentence = property(get_suggestedit_sentence)
+    modelClass.suggest_edit_sentence = property(get_suggest_edit_sentence)
     modelClass.tinypng_settings = {}
     modelClass.request = None
 
@@ -975,13 +1012,13 @@ class MagiModel(BaseMagiModel):
     share_url = property(get_share_url)
     edit_url = property(get_edit_url)
     report_url = property(get_report_url)
-    suggestedit_url = property(get_suggestedit_url)
+    suggest_edit_url = property(get_suggest_edit_url)
     ajax_edit_url = property(get_ajax_edit_url)
     open_sentence = property(get_open_sentence)
     edit_sentence = property(get_edit_sentence)
     delete_sentence = property(get_delete_sentence)
     report_sentence = property(get_report_sentence)
-    suggestedit_sentence = property(get_suggestedit_sentence)
+    suggest_edit_sentence = property(get_suggest_edit_sentence)
 
     allow_multiple_per_owner = classmethod(get_allow_multiple_per_owner)
 
