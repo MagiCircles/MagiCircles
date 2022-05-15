@@ -1671,7 +1671,9 @@ class MagiCollection(object):
     show_edit_button_permissions_only = []
     show_translate_button = True
     show_report_button = True
-    show_suggestedit_button = True
+    show_suggest_edit_button = True
+    show_comments_button = False
+    show_share_buttons = False
     show_collect_button = True # Can also be a dictionary when multiple collectibles
     show_collect_total = True
 
@@ -1693,7 +1695,13 @@ class MagiCollection(object):
                 'ajax_url': False,
                 'ajax_title': False, # By default will use title
                 'classes': view.get_item_buttons_classes(request, context, item=item),
-            }) for button_name in self.collectible_collections.keys() + ['open', 'edit', 'translate', 'report', 'suggestedit']
+            }) for button_name in self.collectible_collections.keys() + [
+                'open',
+                'edit',
+                'translate',
+                'report',
+                'suggest_edit',
+            ]
         ])
         # Collectible buttons
         for name, collectible_collection in self.collectible_collections.items():
@@ -1865,15 +1873,15 @@ class MagiCollection(object):
             buttons['report']['open_in_new_window'] = True
         # Suggest edit buttons: don't show in list view unless there's no item view
         if self.allow_suggest_edit:
-            buttons['suggestedit']['show'] = view.show_suggestedit_button
-            buttons['suggestedit']['title'] = item.suggestedit_sentence
-            buttons['suggestedit']['icon'] = 'edit'
-            buttons['suggestedit']['has_permissions'] = (
+            buttons['suggest_edit']['show'] = view.show_suggest_edit_button
+            buttons['suggest_edit']['title'] = item.suggest_edit_sentence
+            buttons['suggest_edit']['icon'] = 'edit'
+            buttons['suggest_edit']['has_permissions'] = (
                 not request.user.is_authenticated()
                 or (item.owner_id != request.user.id and not buttons.get('edit', {}).get('has_permissions', False))
             )
-            buttons['suggestedit']['url'] = item.suggestedit_url
-            buttons['suggestedit']['open_in_new_window'] = True
+            buttons['suggest_edit']['url'] = item.suggest_edit_url
+            buttons['suggest_edit']['open_in_new_window'] = True
         return buttons
 
     def get_parent_prefix(self, request, context):
@@ -2010,9 +2018,11 @@ class MagiCollection(object):
         show_edit_button_superuser_only = property(propertyFromCollection('show_edit_button_superuser_only'))
         show_edit_button_permissions_only = property(propertyFromCollection('show_edit_button_permissions_only'))
         show_translate_button = property(propertyFromCollection('show_translate_button'))
-        # Show report/suggestedit buttons only if not in item view
-        show_report_button = property(lambda _s: not _s.collection.item_view.show_report_button)
-        show_suggestedit_button = property(lambda _s: not _s.collection.item_view.show_suggestedit_button)
+        # Show report/suggest_edit buttons only if not in item view
+        show_report_button = property(lambda _s: not _s.collection.item_view.enabled or not _s.collection.item_view.show_report_button)
+        show_suggest_edit_button = property(lambda _s: not _s.collection.item_view.enabled or not _s.collection.item_view.show_suggest_edit_button)
+        show_comments_button = False
+        show_share_buttons = False
         show_collect_button = property(propertyFromCollection('show_collect_button'))
         show_collect_total = property(propertyFromCollection('show_collect_total'))
 
@@ -2321,7 +2331,9 @@ class MagiCollection(object):
         show_edit_button_permissions_only = property(propertyFromCollection('show_edit_button_permissions_only'))
         show_translate_button = property(propertyFromCollection('show_translate_button'))
         show_report_button = property(propertyFromCollection('show_report_button'))
-        show_suggestedit_button = property(propertyFromCollection('show_suggestedit_button'))
+        show_suggest_edit_button = property(propertyFromCollection('show_suggest_edit_button'))
+        show_comments_button = True
+        show_share_buttons = True
         show_collect_button = property(propertyFromCollection('show_collect_button'))
         show_collect_total = property(propertyFromCollection('show_collect_total'))
         # Note: if you use the 'default' template, the following 2 will be ignored:
@@ -2665,7 +2677,7 @@ class MainItemCollection(MagiCollection):
         add_button_subtitle = None
 
     class ItemView(MagiCollection.ItemView):
-        show_suggestedit_button = True
+        show_suggest_edit_button = True
 
     class AddView(MagiCollection.AddView):
         staff_required = True
