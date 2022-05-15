@@ -1022,8 +1022,8 @@ class MagiCollection(object):
         formClass = self.form_class
         if str(type(formClass)) == '<type \'instancemethod\'>':
             formClass = formClass(request, {})
-        return listUnique([
-            (getEnglish(field.label), field.label)
+        return OrderedDict([
+            (field.name, (getEnglish(field.label), field.label))
             for field in formClass(request=request, collection=self)
             if field.name not in (getattr(self.item_view, 'fields_exclude', None) or [])
         ])
