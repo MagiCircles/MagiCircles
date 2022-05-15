@@ -612,7 +612,7 @@ class MagiForm(forms.ModelForm):
                 if not self.is_creating:
                     existing_images_choices = [
                         (userimage.id, markSafeFormat(
-                            '<img src="{}" alt="user image" height="30">',
+                            u'<img src="{}" alt="user image" height="30">',
                             userimage.image_thumbnail_url,
                         )) for userimage in getattr(self.instance, name).all()
                     ]
@@ -3442,7 +3442,13 @@ class SuggestedEditForm(BaseReportForm):
         if 'reason' in self.fields:
             collection = getMagiCollectionFromModelName(self.type)
             self.fields['reason'].label = _('Field(s) to edit')
-            self.fields['reason'].choices = collection.get_suggest_edit_choices(self.request)
+            choices_dict = collection.get_suggest_edit_choices(self.request)
+            self.fields['reason'].choices = listUnique(choices_dict.values())
+            if (self.request and 'reason' in self.request.GET
+                and self.request.GET['reason'] in choices_dict):
+                self.fields['reason'].show_value_instead = choices_dict[self.request.GET['reason']][1]
+                self.fields['reason'].initial = [choices_dict[self.request.GET['reason']][0]]
+                self.fields['reason'].widget = self.fields['reason'].hidden_widget()
         if 'message' in self.fields:
             self.fields['message'].label = _('What should be edited?')
 
