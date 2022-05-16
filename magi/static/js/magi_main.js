@@ -1136,7 +1136,7 @@ function load_more_function(nextPageUrl, newPageParameters, newPageCallback /* o
     $.ajax({
         'url': (
             nextPageUrl + location.search
-                + (location.search == '' ? '?' : '&')
+                + (location.search == '' && nextPageUrl.search == '' ? '?' : '&')
                 + 'page=' + next_page
                 + newPageParameters
         ),
