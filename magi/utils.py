@@ -1566,6 +1566,9 @@ def jsv(v):
 def templateVariables(string):
     return [x[1] for x in string._formatter_parser() if x[1]]
 
+def oldStyleTemplateVariables(string):
+    return [ s for s in [ s.split(')s')[0] if ')s' in s else None for s in  string.split('%(')[1:] ] if s ]
+
 def snakeToCamelCase(string):
     return ''.join(x.capitalize() or '_' for x in string.split('_'))
 
@@ -3072,9 +3075,9 @@ def andJoin(strings, translated=True, mark_safe=False, language=None, or_=False)
     else:
         comma = COMMA_PER_LANGUAGE.get('en' if not translated else (language or get_language()), COMMA_PER_LANGUAGE['en'])
         if or_:
-            keyword = _('or') if translated else 'or'
+            keyword = t['or'] if translated else 'or'
         else:
-            keyword = _('and') if translated else 'and'
+            keyword = t['and'] if translated else 'and'
         string = u''.join([
             comma.join(strings[:-1]),
             u' {} '.format(keyword),

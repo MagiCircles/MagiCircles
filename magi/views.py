@@ -72,6 +72,7 @@ from magi.utils import (
     getEventStatus,
     listUnique,
     markSafeFormat,
+    markSafeJoin,
 )
 from magi.notifications import pushNotification
 from magi.settings import (
@@ -1528,24 +1529,87 @@ def translations_check(request, context):
     else:
         form = TranslationCheckForm()
     context['form'] = form
-    if terms:
-        context['form'].belowform = mark_safe(u'<br><br><ul class="list-group list-group-striped">{}</ul>'.format(
-            u''.join([
-                u"""
-                <li class="list-group-item">
-                <img src="{image}" height="30" />
-                &nbsp;&nbsp;&nbsp;
-                {term}
-                <span class="pull-right text-muted">{verbose}</span>
-                </li>
-                """.format(
+
+    translation_errors = []
+    if django_settings.DEBUG and request.method != 'POST':
+        try:
+            import polib
+        except ImportError:
+            polib = None
+            translation_errors.append(('en', '', 'Install polib with "pip install polib" to see all the template errors.'))
+        if polib:
+            from magi.utils import templateVariables, oldStyleTemplateVariables
+            pofile = polib.pofile(django_settings.BASE_DIR + '/' + django_settings.SITE + '/locale/es/LC_MESSAGES/django.po')
+            all_strings = [ entry.msgid for entry in pofile ]
+        else:
+            all_strings = {}
+        nameless_template_strings = sorted([ string for string in all_strings if '{}' in string ])
+        template_strings = { k: v for k, v in {
+            string: sorted(templateVariables(string))
+            for string in all_strings
+        }.items() if v }
+        old_style_template_strings = { k: v for k, v in {
+            string: sorted(oldStyleTemplateVariables(string))
+            for string in all_strings
+        }.items() if v }
+        old_lang = get_language()
+        for language in LANGUAGES_NAMES:
+            translation_activate(language)
+            # Check template variables with {}
+            for term in nameless_template_strings:
+                translation = unicode(_(term))
+                if term.count('{}') != translation.count('{}'):
+                    translation_errors.append([
+                        language,
+                        markSafeFormat(u'{}<br><span class="badge badge-main">{}</span>', translation, translation.count('{}')),
+                        markSafeFormat(u'{}<br><span class="badge badge-main">{}</span>', term, term.count('{}')),
+                    ])
+            # Check old style templates
+            for term, variables in old_style_template_strings.items():
+                translation = unicode(_(term.replace('pokemons)s', 'pokemon)s')))
+                language_variables = sorted(oldStyleTemplateVariables(translation))
+                if language_variables != variables:
+                    translation_errors.append([
+                        language,
+                        markSafeFormat(u'{}<br><span class="badge badge-main">{}</span>', translation, u', '.join(language_variables or [])),
+                        markSafeFormat(u'{}<br><span class="badge badge-main">{}</span>', term, u', '.join(variables or [])),
+                    ])
+            # Check template variables with {name}
+            for term, variables in template_strings.items():
+                translation = unicode(_(term))
+                try:
+                    language_variables = sorted(templateVariables(translation))
+                except ValueError:
+                    language_variables = None
+                if not language_variables or language_variables != variables:
+                    translation_errors.append([
+                        language,
+                        markSafeFormat(u'{}<br><span class="badge badge-main">{}</span>', translation, u', '.join(language_variables or [])),
+                        markSafeFormat(u'{}<br><span class="badge badge-main">{}</span>', term, u', '.join(variables or [])),
+                    ])
+        translation_activate(old_lang)
+
+    if terms or translation_errors:
+        context['form'].belowform = markSafeFormat(
+            u'<br><br><ul class="list-group list-group-striped">{}</ul>',
+            markSafeJoin([
+                markSafeFormat(
+                    u"""
+                    <li class="list-group-item">
+                    <img src="{image}" height="30" />
+                    &nbsp;&nbsp;&nbsp;
+                    {term}
+                    <span class="pull-right text-muted">{verbose}</span>
+                    <div class="clearfix"></div>
+                    </li>
+                    """,
                     image=staticImageURL(language, folder='language'),
                     term=term,
                     verbose=verbose,
                 )
-                for language, verbose, term in terms
-            ])
-        ))
+                for language, verbose, term in terms or translation_errors
+            ], separator=u''),
+        )
 
 def homepage_arts(request, context):
     context['tabs'] = OrderedDict()
