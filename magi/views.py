@@ -1553,7 +1553,7 @@ def translations_check(request, context):
             for string in all_strings
         }.items() if v }
         old_lang = get_language()
-        for language in LANGUAGES_NAMES:
+        for language in sorted(LANGUAGES_NAMES):
             translation_activate(language)
             # Check template variables with {}
             for term in nameless_template_strings:
@@ -1566,7 +1566,7 @@ def translations_check(request, context):
                     ])
             # Check old style templates
             for term, variables in old_style_template_strings.items():
-                translation = unicode(_(term.replace('pokemons)s', 'pokemon)s')))
+                translation = unicode(_(term))
                 language_variables = sorted(oldStyleTemplateVariables(translation))
                 if language_variables != variables:
                     translation_errors.append([
