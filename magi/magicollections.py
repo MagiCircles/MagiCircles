@@ -550,7 +550,9 @@ class MagiCollection(object):
                     for _f in getattr(parent_collection.list_view.filter_form, 'search_fields', [])
                 ] if v is not None }
                 ordering_fields = [
-                    (u','.join([u'{}__{}'.format(item_field_name, _os) for _os in _o.split(',')]), _t)
+                    (u','.join([u'{}__{}'.format(
+                        item_field_name, _os[1:] if _os.startswith('-') else _os,
+                    ) for _os in _o.split(',')]), _t)
                     for _o, _t in getattr(parent_collection.list_view.filter_form, 'ordering_fields', [])
                 ]
 
@@ -695,7 +697,7 @@ class MagiCollection(object):
                 # List view + Item view
                 # Show profile of user in prefixes
 
-                if 'item' in context or fk_as_owner in request.GET:
+                if 'item' in context or request.GET.get(fk_as_owner, None):
 
                     # User profile
 
@@ -755,7 +757,7 @@ class MagiCollection(object):
                 # List view only
                 # Show item view in prefixes
 
-                elif item_field_name in request.GET:
+                elif request.GET.get(item_field_name, None):
                     try:
                         item = item_field_model_class.objects.get(
                             pk=request.GET[item_field_name])
