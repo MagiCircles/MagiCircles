@@ -1018,7 +1018,9 @@ class MagiCollection(object):
         'Spam activity': 'This content has been detected as spam. We do not tolerate such behavior and kindly ask you not to re-iterate your actions or your entire profile might get deleted next time.',
     }
     report_allow_edit = True
+    report_allow_edit_with_permission = None
     report_allow_delete = True
+    report_allow_delete_with_permission = None
 
     def get_suggest_edit_choices(self, request):
         formClass = self.form_class
@@ -1669,7 +1671,6 @@ class MagiCollection(object):
     show_item_buttons_in_one_line = True
     show_open_button = False
     show_edit_button = True
-    show_edit_button_superuser_only = False
     show_edit_button_permissions_only = []
     show_translate_button = True
     show_report_button = True
@@ -1825,9 +1826,7 @@ class MagiCollection(object):
                 buttons['edit']['has_permissions'] = self.edit_view.has_permissions(request, context, item=item)
                 if self.types:
                     buttons['edit']['has_permissions'] = buttons['edit']['has_permissions'] and self.edit_view.has_type_permissions(request, context, type=item.type, item=item)
-                if (((view.show_edit_button_superuser_only
-                      and not request.user.is_superuser)
-                     or view.show_edit_button_permissions_only
+                if ((view.show_edit_button_permissions_only
                      and (not request.user.is_authenticated()
                           or not hasPermissions(request.user, view.show_edit_button_permissions_only)))
                     and buttons['edit']['has_permissions']
@@ -2017,7 +2016,6 @@ class MagiCollection(object):
         show_item_buttons_in_one_line = property(propertyFromCollection('show_item_buttons_in_one_line'))
         show_open_button = property(propertyFromCollection('show_open_button'))
         show_edit_button = property(propertyFromCollection('show_edit_button'))
-        show_edit_button_superuser_only = property(propertyFromCollection('show_edit_button_superuser_only'))
         show_edit_button_permissions_only = property(propertyFromCollection('show_edit_button_permissions_only'))
         show_translate_button = property(propertyFromCollection('show_translate_button'))
         # Show report/suggest_edit buttons only if not in item view
@@ -2030,7 +2028,6 @@ class MagiCollection(object):
 
         top_buttons_classes = ['btn', 'btn-lg', 'btn-block', 'btn-main']
         top_buttons_per_line = None
-        show_add_button_superuser_only = False
         show_add_button_permission_only = False
         show_search_results = True
         show_items_names = False
@@ -2147,10 +2144,8 @@ class MagiCollection(object):
                     ),
                     'title': self.collection.add_sentence,
                 }
-                if (((self.show_add_button_superuser_only
-                      and not request.user.is_superuser)
-                     or (self.show_add_button_permission_only
-                         and not hasPermission(request.user, self.show_add_button_permission_only)))
+                if (((self.show_add_button_permission_only
+                      and not hasPermission(request.user, self.show_add_button_permission_only)))
                     and for_all_buttons['has_permissions']
                     and request.user.is_staff):
                     for_all_buttons['show'] = False
@@ -2329,7 +2324,6 @@ class MagiCollection(object):
             return True if self.template == 'default' else self.collection.show_item_buttons_as_icons
         show_open_button = property(propertyFromCollection('show_open_button'))
         show_edit_button = property(propertyFromCollection('show_edit_button'))
-        show_edit_button_superuser_only = property(propertyFromCollection('show_edit_button_superuser_only'))
         show_edit_button_permissions_only = property(propertyFromCollection('show_edit_button_permissions_only'))
         show_translate_button = property(propertyFromCollection('show_translate_button'))
         show_report_button = property(propertyFromCollection('show_report_button'))
@@ -2888,7 +2882,6 @@ class AccountCollection(MagiCollection):
 
     class ListView(MagiCollection.ListView):
         item_template = 'defaultAccountItem'
-        show_edit_button_superuser_only = True
         show_report_button = True
         show_title = True
         per_line = 1
@@ -2928,7 +2921,6 @@ class AccountCollection(MagiCollection):
     class ItemView(MagiCollection.ItemView):
         template = 'defaultAccountItem'
         comments_enabled = False
-        show_edit_button_superuser_only = True
 
         if modelHasField(ACCOUNT_MODEL, 'center'):
             fields_preselected = ['center']
@@ -3057,7 +3049,7 @@ class UserCollection(MagiCollection):
     navbar_link = False
     navbar_link_list = 'community'
     queryset = models.User.objects.all().select_related('preferences')
-    report_allow_delete = False
+    report_allow_delete_with_permission = 'allow_delete_reported_profiles'
     report_edit_templates = OrderedDict([
         ('Inappropriate profile picture', 'Your profile picture is inappropriate. ' + please_understand_template_sentence + ' To change your avatar, go to gravatar and upload a new image, then go to your settings on our website to re-enter your email address.'),
         ('Inappropriate image in profile description', 'An image on your profile description was inappropriate. ' + please_understand_template_sentence),
@@ -3070,6 +3062,7 @@ class UserCollection(MagiCollection):
     report_delete_templates = {
         'Inappropriate behavior towards other user(s)': 'We noticed that you\'ve been acting in an inappropriate manner towards other user(s), which doesn\'t correspond to what we expect from our community members. Your profile, accounts, activities and everything else you owned on our website has been permanently deleted, and we kindly ask you not to re-iterate your actions.',
         'Spam': 'We detected spam activities from your user profile. Your profile, accounts, activities and everything else you owned on our website has been permanently deleted, and we kindly ask you not to re-iterate your actions.',
+        'Troll profile': 'This profile was deliberately made to be provocative with the intention of causing disruption or argument and therefore has been deleted. Activities, accounts, and everything else that was created using this profile have also been deleted. We kindly ask you not to re-iterate your actions and be respectful towards our community.',
     }
 
     filter_cuteform = {
@@ -3931,7 +3924,7 @@ class ActivityCollection(MagiCollection):
         def item_buttons_classes(self):
             return [cls for cls in super(ActivityCollection.ListView, self).item_buttons_classes if cls != 'btn-secondary'] + ['btn-link']
 
-        show_edit_button_superuser_only = True
+        show_edit_button_permissions_only = [ 'edit_activities_from_the_feed' ]
         shortcut_urls = [''] + [u'activities/{}'.format(_tab) for _tab in HOME_ACTIVITY_TABS.keys()]
 
         def get_queryset(self, queryset, parameters, request):
@@ -4011,7 +4004,7 @@ class ActivityCollection(MagiCollection):
         ajax_callback = 'updateActivities'
         show_item_buttons = False
         show_item_buttons_justified = False
-        show_edit_button_superuser_only = True
+        show_edit_button_permissions_only = [ 'edit_activities_from_the_feed' ]
 
         @property
         def item_buttons_classes(self):
@@ -4066,8 +4059,7 @@ class ActivityCollection(MagiCollection):
             return (
                 'fix_language' not in request.GET
                 and (
-                    request.user.is_superuser
-                    or item.owner_id == request.user.id
+                    item.owner_id == request.user.id
                     or request.user.hasPermission('edit_reported_things')
                 )
             )
@@ -4389,12 +4381,18 @@ class _BaseReportCollection(MagiCollection):
         show_add_button = justReturn(False)
         allow_random = False
 
+        def extra_context(self, context):
+            context['can_moderate_own_reports'] = context['request'].user.hasPermission('moderate_own_reports')
+
     class ItemView(MagiCollection.ItemView):
         template = 'reportItem'
         comments_enabled = False
         show_edit_button = False
         js_files = ['reports']
         ajax_callback = 'updateReport'
+
+        def extra_context(self, context):
+            context['can_moderate_own_reports'] = context['request'].user.hasPermission('moderate_own_reports')
 
     class AddView(MagiCollection.AddView):
         authentication_required = True
@@ -4462,8 +4460,6 @@ class DonateCollection(MagiCollection):
         page_size = 1
         per_line = 1
         show_title = False
-        show_edit_button_superuser_only = True
-        show_add_button_superuser_only = True
         before_template = 'include/donate'
         add_button_subtitle = ''
         allow_random = False

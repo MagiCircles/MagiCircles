@@ -980,16 +980,15 @@ def whatwillbedeleted(request, context, thing, thing_id):
     context['show_small_title'] = False
 
 def moderatereport(request, report, action):
-    if request.method != 'POST':
+    if not request.user.is_authenticated() or request.method != 'POST':
         raise PermissionDenied()
     queryset = models.Report.objects.select_related('owner', 'owner__preferences')
-    if not request.user.is_superuser:
+    if not request.user.hasPermission('moderate_own_reports'):
         queryset = queryset.exclude(owner=request.user)
     report = get_object_or_404(queryset, pk=report, i_status=models.Report.get_i('status', 'Pending'))
 
-    if (not request.user.is_superuser
-        and ((action == 'Edited' and not report.allow_edit)
-             or (action == 'Deleted' and not report.allow_delete))):
+    if ((action == 'Edited' and not report.has_permission_to_edit)
+        or (action == 'Deleted' and not report.has_permission_to_delete)):
         raise PermissionDenied()
 
     report.staff = request.user

@@ -76,7 +76,7 @@
   {% endif %}
   {% if user.is_staff %}
   <br><br>
-  {% if user.id != report.owner.id or user.is_superuser %}
+  {% if user.id != report.owner.id or can_moderate_own_reports %}
   {% if report.status == 'Pending' %}
   <div class="panel-group staff-buttons" id="staff-buttons-{{ report.id }}">
     <div class="panel panel-info inline-block" style="width: {% if report.is_suggestededit %}49{% else %}33{% endif %}%; vertical-align: top; margin-top: 0;">
@@ -103,8 +103,9 @@
 	  <a href="#collapseEdited{{ report.id }}" data-toggle="collapse" data-parent="#staff-buttons-{{ report.id }}" class="a-nodifference">It should be edited</a>
 	</h3>
       </div>
+      {% if report.allow_edit %}
       <div class="panel-collapse collapse" id="collapseEdited{{ report.id }}">
-	{% if user.is_superuser or report.allow_edit %}
+	{% if report.has_permission_to_edit %}
 	<form class="panel-body" method="POST" action="/ajax/moderatereport/{{ report.id }}/Edited/">
 	  {% csrf_token %}
 	  1. Edit the {{ report.reported_thing }} accordingly:
@@ -136,11 +137,12 @@
 	  </ul>
 	</form>
 	{% else %}
-	<div class="padding20 text-center">Ask an administrator</div>
+	<div class="padding20 text-center">You're not allowed to edit this {{ report.reported_thing }}. Ask a manager.</div>
 	{% endif %}
       </div>
     </div>
-    {% if not report.is_suggestededit %}
+    {% endif %}
+    {% if not report.is_suggestededit and report.allow_delete %}
     <div class="panel panel-danger inline-block" style="width: 33%; vertical-align: top; margin-top: 0;">
       <div class="panel-heading">
 	<h3 class="panel-title fontx1-5 text-center">
@@ -148,7 +150,7 @@
 	</h3>
       </div>
       <div class="panel-collapse collapse" id="collapseDeleted{{ report.id }}">
-	{% if user.is_superuser or report.allow_delete %}
+	{% if report.has_permission_to_delete %}
 	<form class="panel-body" method="POST" action="/ajax/moderatereport/{{ report.id }}/Deleted/">
 	  {% csrf_token %}
 	  1. Select a reason:
@@ -171,7 +173,7 @@
 	  </ul>
 	</form>
 	{% else %}
-	<div class="padding20 text-center">Ask an administrator</div>
+	<div class="padding20 text-center">You're not allowed to delete this {{ report.reported_thing }}. Ask a manager.</div>
 	{% endif %}
       </div>
     </div>

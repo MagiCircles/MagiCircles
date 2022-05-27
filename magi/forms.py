@@ -760,8 +760,7 @@ class MagiForm(forms.ModelForm):
         if (self.is_creating and self.collection
             and not isinstance(self, MagiFiltersForm)
             and self.request and owner.is_authenticated()
-            and not owner.hasPermission('bypass_max_per_user')
-            and not owner.is_superuser):
+            and not owner.hasPermission('bypass_max_per_user')):
             if self.collection.add_view.max_per_user_per_minute:
                 already_added = self.Meta.model.objects.filter(**{
                     self.Meta.model.selector_to_owner(): owner,
@@ -2976,7 +2975,7 @@ class ConfirmDelete(forms.Form):
     def clean(self):
         if not self.request or not self.collection or not self.instance:
             return
-        if self.request.user.is_superuser:
+        if self.request.user.hasPermission('bypass_maximum_items_that_can_be_deleted_at_once'):
             return
         up_to = self.collection.edit_view.allow_cascade_delete_up_to(self.request)
         if not up_to:
@@ -2986,7 +2985,7 @@ class ConfirmDelete(forms.Form):
         total = self._get_total_deleted(collector.nested())
         if total >= up_to:
             raise forms.ValidationError(mark_safe(u'You are not allowed to delete this. {}'.format(
-                'Ask an administrator.' if self.request.user.is_staff else '<a href="/help/Delete%20error/" data-ajax-url="/ajax/help/Delete%20error/">Learn more</a>.',
+                'Ask a manager.' if self.request.user.is_staff else '<a href="/help/Delete%20error/" data-ajax-url="/ajax/help/Delete%20error/">Learn more</a>.',
             )))
 
 class Confirm(forms.Form):

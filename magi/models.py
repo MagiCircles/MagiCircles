@@ -1246,8 +1246,24 @@ class Report(MagiModel):
         return self.reported_thing_collection.report_allow_edit
 
     @property
+    def has_permission_to_edit(self):
+        return (
+            self.reported_thing_collection.report_allow_edit
+            and (not self.reported_thing_collection.report_allow_edit_with_permission
+                 or self.request.user.hasPermission(self.reported_thing_collection.report_allow_edit_with_permission))
+        )
+
+    @property
     def allow_delete(self):
         return self.reported_thing_collection.report_allow_delete
+
+    @property
+    def has_permission_to_delete(self):
+        return (
+            self.reported_thing_collection.report_allow_delete
+            and (not self.reported_thing_collection.report_allow_delete_with_permission
+                 or self.request.user.hasPermission(self.reported_thing_collection.report_allow_delete_with_permission))
+        )
 
     @property
     def allow_ajax(self):
