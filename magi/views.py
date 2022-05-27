@@ -986,6 +986,7 @@ def moderatereport(request, report, action):
     if not request.user.hasPermission('moderate_own_reports'):
         queryset = queryset.exclude(owner=request.user)
     report = get_object_or_404(queryset, pk=report, i_status=models.Report.get_i('status', 'Pending'))
+    report.request = request
 
     if ((action == 'Edited' and not report.has_permission_to_edit)
         or (action == 'Deleted' and not report.has_permission_to_delete)):
