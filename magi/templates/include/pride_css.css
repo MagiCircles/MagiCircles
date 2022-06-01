@@ -1,0 +1,3 @@
+.navbar-brand:before, .page-title:before, .modal-title:before {
+    background-image: url('{{ static_url }}img/seasons/pride.png?{{ static_files_version }}');
+}
