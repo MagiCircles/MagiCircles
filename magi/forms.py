@@ -870,18 +870,22 @@ class MagiForm(forms.ModelForm):
         # Save d_ dict choices
         for dfield, choices in self.d_choices.items():
             d = {}
+            choices_keys_not_in_form = []
             known_keys = []
             for field, key in choices:
                 known_keys.append(key)
                 if field not in self.fields:
+                    choices_keys_not_in_form.append(key)
                     continue
                 if (self.cleaned_data[field]
                     or key in getattr(self.Meta, 'd_save_falsy_values_for_keys', {}).get(dfield, [])):
                     d[key] = self.cleaned_data[field]
-            # Keep unknown keys
-            if dfield in getattr(self.Meta, 'keep_unknwon_keys_for_d', []):
+
+            # Keep unknown keys and keys that are in choices but not in the form
+            keep_unknwon_keys = dfield in getattr(self.Meta, 'keep_unknwon_keys_for_d', [])
+            if keep_unknwon_keys or choices_keys_not_in_form:
                 for key, value in getattr(instance, dfield).items():
-                    if key not in known_keys:
+                    if key not in known_keys or key in choices_keys_not_in_form:
                         d[key] = value
             instance.save_d(dfield, d)
 
