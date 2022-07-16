@@ -3066,6 +3066,8 @@ COMMA_PER_LANGUAGE = {
 _mark_safe = mark_safe
 
 def andJoin(strings, translated=True, mark_safe=False, language=None, or_=False):
+    if not strings:
+        return u''
     strings = [
         _markSafeFormatEscapeOrNot(string) if mark_safe else unicode(string)
         for string in strings if string is not None
