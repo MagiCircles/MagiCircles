@@ -1832,6 +1832,27 @@ def modelFieldVerbose(model, field_name, fallback=True):
 def modelFieldHelpText(model, field_name):
     return model._meta.get_field(field_name).help_text
 
+def hasValue(value, false_bool_is_value=True, none_string_is_value=False):
+    """
+    Bool: False IS considered value. (can be changed with false_bool_is_value)
+    Int: 0 IS considered value.
+    None: NOT considered value
+    Images: '' NOT considered value.
+    Strings: '' NOT considered value.
+    Lists: [] NOT considered value.
+    Dicts: {} NOT considered value.
+    Tuples: () NOT considered value.
+    ManyToMany: [] NOT considered value.
+    """
+    if (isinstance(value, list)
+        or isinstance(value, dict)
+        or isinstance(value, tuple)):
+        return bool(value)
+    if value == 'None' and none_string_is_value:
+        return True
+    return value is not None and unicode(value) not in ['', 'None'] + (
+        ['False'] if not false_bool_is_value else [])
+
 def failSafe(f, exceptions=None, default=None):
     if exceptions is not None:
         try:
