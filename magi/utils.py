@@ -1624,8 +1624,10 @@ def complementaryColor(hex_color=None, rgb=None):
         return RGBToHex(new_rgb)
     return new_rgb
 
-def listUnique(list):
-    return OrderedDict([(item, None) for item in list]).keys()
+def listUnique(list, remove_empty=False):
+    """remove_empty will call hasValue and skip"""
+    remove_empty = True
+    return OrderedDict([(item, None) for item in list if not remove_empty or hasValue(item)]).keys()
 
 def getIndex(list, index, default=None):
     try:
@@ -2879,11 +2881,15 @@ def makeImageGrid(
         model=model, field_name=field_name, previous_url=previous_url,
     )
 
-def makeBadgeImage(badge, width=None, path=None, upload=False, instance=None, model=None, field_name='image', previous_url=None, with_padding=0):
+def makeBadgeImage(badge=None, badge_image=None, badge_rank=None, width=None, path=None, upload=False, instance=None, model=None, field_name='image', previous_url=None, with_padding=0):
+    # Either badge or badge_image required
     from wand.image import Image as WandImage
     # /!\ Can't be called at global level
+    if badge:
+        badge_image = badge.image
+        badge_rank = badge.rank
     # Get border
-    filename = 'badge{}'.format(badge.rank or '')
+    filename = 'badge{}'.format(badge_rank or '')
     border_image_url = staticImageURL(filename, folder='badges', full=True)
     try:
         border_image = WandImage(file=urllib2.urlopen(border_image_url))
@@ -2893,7 +2899,7 @@ def makeBadgeImage(badge, width=None, path=None, upload=False, instance=None, mo
     if width != border_image.width:
         border_image.resize(width=width, height=width)
     # Get badge image
-    badge_image_data = badge.image.read()
+    badge_image_data = badge_image.read()
     badge_image = WandImage(blob=badge_image_data)
     badge_image.resize(width=width, height=width)
     # Initialize image
