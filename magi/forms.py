@@ -815,8 +815,6 @@ class MagiForm(forms.ModelForm):
         times = getattr(self.Meta, 'date_times', {})
         fields_with_time = getattr(self.Meta, 'date_fields_with_time', {})
         for field_name in self.date_fields:
-            if field_name not in self.fields:
-                continue
             # Save timezone in database if it has its own field
             if (self.cleaned_data.get(u'{}_timezone'.format(field_name), None)
                 and modelHasField(self.Meta.model, u'_{}_timezone'.format(field_name))):

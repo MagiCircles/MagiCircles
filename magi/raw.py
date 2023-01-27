@@ -126,22 +126,6 @@ other_sites = [
         'shortname': 'schoolidolu',
     },
     {
-        'name': 'Maji Love',
-        'names': {
-            'ja': u'マジLOVE',
-            'kr': u'진심 LOVE',
-        },
-        'game_name': 'Utano☆Princesama Shining Live',
-        'game_names': {
-            'ja': u'うたの☆プリンスさまっ♪',
-            'kr': u'노래의☆왕자님♪',
-            'zh-hans': u'歌之王子殿下',
-            'ru': u'Поющий☆принц',
-        },
-        'image': 'majilove',
-        'url': 'https://maji.love/',
-    },
-    {
         'name': 'AC',
         'game_name': 'Animal Crossing: New Horizons',
         'game_names': {

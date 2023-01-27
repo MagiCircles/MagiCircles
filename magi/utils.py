@@ -2859,12 +2859,14 @@ def makeImageGrid(
     for image in images:
         if isinstance(image, basestring):
             data, imagefile = imageURLToImageFile(image, return_data=True)
+            if not imagefile:
+                continue
             name = imagefile.name
         else:
             data = image.read()
             name = image.name
         if not data:
-            return None
+            continue
         pil_image, _imagefile = imageSquareThumbnailFromData(
             data, filename=name, size=size_per_tile, return_pil_image=True)
         top = int(size_per_tile * line)
@@ -3072,8 +3074,6 @@ COMMA_PER_LANGUAGE = {
 _mark_safe = mark_safe
 
 def andJoin(strings, translated=True, mark_safe=False, language=None, or_=False):
-    if not strings:
-        return u''
     strings = [
         _markSafeFormatEscapeOrNot(string) if mark_safe else unicode(string)
         for string in strings if string is not None
