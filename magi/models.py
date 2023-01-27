@@ -1392,6 +1392,14 @@ class Badge(MagiModel):
 
     rank = models.PositiveIntegerField(null=True, blank=True, choices=RANK_CHOICES, help_text='Top 3 of this specific badge.')
 
+    @classmethod
+    def position_to_rank(self, position):
+        return {
+            1: self.RANK_GOLD,
+            2: self.RANK_SILVER,
+            3: self.RANK_BRONZE,
+        }.get(position, None)
+
     @property
     def t_rank(self):
         return self.RANK_CHOICES_DICT[self.rank]
