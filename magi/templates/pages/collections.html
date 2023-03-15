@@ -70,6 +70,7 @@
     <tr>
       {% for view in collection.all_views %}
       <th style="width: 25%">
+        <i class="flaticon-{{ view.view_icon }} pull-right"></i>
         {{ view.view_title }}
       </th>
       {% endfor %}
@@ -98,7 +99,38 @@
           {% if not view.authentication_required and not view.logout_required and not view.staff_required and not view.permissions_required and not view.one_of_permissions_required and not view.owner_only and not view.owner_or_staff_only and not view.owner_only_or_permissions_required and not view.owner_only_or_one_of_permissions_required %}<i class="flaticon-world text-muted"></i>{% endif %}
         </p>
 
-        {% if view.view == 'edit_view' %}
+        {% if view.view == 'list_view' %}
+        <p class="text-right">
+          <a href="{{ collection.list_url }}" target="_blank" class="btn btn-link-muted padding-nohorizontal">
+            <i class="flaticon-link"></i>
+          </a>
+        </p>
+        {% elif view.view == 'item_view' %}
+        <hr>
+        <h4 class="pull-left">Template</h4>
+        <p class="text-right">
+          {% if view.template != 'default' %}
+          Custom template<br>({{ view.template }})
+          {% elif view.uses_deprecated_to_fields %}
+          Deprecated
+          {% else %}
+          Flexbox
+          {% endif %}
+        </p>
+        {% if collection.list_view.allow_random %}
+        <p class="text-right">
+          <a href="{{ collection.random_url }}" target="_blank" class="btn btn-link-muted padding-nohorizontal">
+            <i class="flaticon-dice"></i> <i class="flaticon-link"></i>
+          </a>
+        </p>
+        {% endif %}
+        {% elif view.view == 'add_view' %}
+        <p class="text-right">
+          <a href="{{ collection.add_url }}" target="_blank" class="btn btn-link-muted padding-nohorizontal">
+            <i class="flaticon-link"></i>
+          </a>
+        </p>
+        {% elif view.view == 'edit_view' %}
         <hr>
         <h4 class="pull-left">Allow delete</h4>
         <p class="text-right">

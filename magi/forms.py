@@ -48,6 +48,8 @@ from magi.settings import (
     PROFILE_BACKGROUNDS_NAMES,
     MAX_LEVEL,
     GOOD_REPUTATION_THRESHOLD,
+    HAS_MANY_BACKGROUNDS,
+    GLOBAL_OUTSIDE_PERMISSIONS,
 )
 from magi.utils import (
     addParametersToURL,
@@ -78,10 +80,14 @@ from magi.utils import (
     getCharactersFavoriteFilter,
     getCharactersChoices,
     getCharactersFavoriteCuteForm,
+    getCharactersTotalFavoritable,
+    getCharactersFavoriteFieldLabel,
+    getCharactersHasMany,
     listUnique,
     modelHasField,
     changeFormField,
     formFieldFromOtherField,
+    markSafe,
     markSafeFormat,
     markSafeJoin,
     localizeTimeOnly,
@@ -100,8 +106,21 @@ from magi.utils import (
     addButtonsToSubCollection,
     CSVChoiceField,
     modelGetField,
+    notTranslatedWarning,
+    getAllModelRelatedFields,
+    hasValue,
+    reverseOrderingString,
+    ordinalNumber,
+    markSafeReplace,
+    markSafeStrip,
 )
+from magi.magidisplay import MagiDisplay, _MagiDisplayMultiple, MagiDisplayLink
 from versions_utils import sortByRelevantVersions
+
+forms.Form.form_title = None
+forms.Form.form_image = None
+forms.Form.form_icon = None
+forms.Form.error_css_class = ''
 
 ############################################################
 # Internal utils
@@ -220,6 +239,41 @@ def _to_cuteform_for_auto_images(model, field_name):
         folder=field_name,
     )
 
+def groupSettingsFields(form, group_name, edited_preferences=None):
+    new_fields = []
+    group = models.UserPreferences.GROUPS[group_name]
+    for setting in group.get('settings', []):
+        field_name = u'group_settings_{}_{}'.format(group_name, setting)
+        setting_label = toHumanReadable(setting, warning=False)
+        label = markSafeFormat(
+            u'<small><img height="20" alt="{name}" src="{img}"> {name}</small><br><b>{setting}</b>',
+            name=group['translation'], setting=setting_label,
+            img=staticImageURL(group_name, folder='groups', extension='png'),
+        )
+        if edited_preferences:
+            initial = (getattr(edited_preferences, 'settings_per_groups', None) or {}).get(
+                group_name, {}).get(setting, None)
+        if setting == 'languages':
+            form.fields[field_name] = forms.MultipleChoiceField(
+                required=False, label=label, choices=LANGUAGES_DICT.items(), initial=initial,
+            )
+        else:
+            form.fields[field_name] = forms.CharField(required=False, label=label, initial=initial)
+        form.fields[field_name].placeholder = setting_label
+        new_fields.append(field_name)
+    return new_fields
+
+def saveGroupsSettingsFields(form, edited_preferences):
+    j = {}
+    for group_name, group in models.UserPreferences.GROUPS.items():
+        for setting in group.get('settings', []):
+            field_name = u'group_settings_{}_{}'.format(group_name, setting)
+            cleaned_data = form.cleaned_data.get(field_name, None)
+            if group_name not in j:
+                j[group_name] = {}
+            j[group_name][setting] = cleaned_data
+    edited_preferences.save_j('settings_per_groups', j)
+
 ############################################################
 # HiddenModelChoiceField is a form field type that will not retrieve
 # the list of choices but will validate if the foreign key
@@ -273,6 +327,8 @@ class MagiForm(forms.ModelForm):
         self.allow_next = kwargs.pop('allow_next', False)
         super(MagiForm, self).__init__(*args, **kwargs)
         self.is_creating = not hasattr(self, 'instance') or not self.instance.pk
+        self.view = ((self.collection.add_view if self.is_creating else self.collection.edit_view)
+                     if self.collection else None)
         self.c_choices = []
         self.d_choices = {}
         self.userimages_fields = []
@@ -287,7 +343,7 @@ class MagiForm(forms.ModelForm):
         order_to_change = {}
 
         # If is creating and item is unique per owner, redirect to edit unique
-        if self.is_creating and self.collection and not isinstance(self, MagiFiltersForm) and not self.Meta.model.fk_as_owner and self.collection.add_view.unique_per_owner:
+        if self.request and self.is_creating and self.collection and not isinstance(self, MagiFiltersForm) and not self.Meta.model.fk_as_owner and self.collection.add_view.unique_per_owner:
             existing = self.collection.edit_view.get_queryset(self.collection.queryset, {}, self.request).filter(**self.collection.edit_view.get_item(self.request, 'unique'))
             try: raise HttpRedirectException(existing[0].ajax_edit_url if self.ajax else existing[0].edit_url) # Redirect to edit
             except IndexError: pass # Can add!
@@ -343,13 +399,24 @@ class MagiForm(forms.ModelForm):
             if model_field is not None and model_field.null:
                 self.fields[name].required = False
 
+            # For ModelChoiceField, make sure .get_queryset is called
+            if (isinstance(field, forms.ModelChoiceField)
+                and field.queryset is not None):
+                modelchoicefield_collection = getMagiCollection(
+                    getattr(field.queryset.model, 'collection_name', None))
+                if modelchoicefield_collection:
+                    field.queryset = modelchoicefield_collection.get_queryset()
+                    limit_choices_to = field.get_limit_choices_to()
+                    if limit_choices_to is not None:
+                        field.queryset = field.queryset.complex_filter(limit_choices_to)
+
             # Set initial value from GET
             if self.request and (allow_initial_in_get == '__all__' or name in allow_initial_in_get):
                 value = self.request.GET.get(name, None)
                 if value:
                     try:
                         field.show_value_instead = (
-                            { unicode(k): v for k, v in dict(field.choices).items() }[value]
+                            { unicode(k): v for k, v in dict(field.choices).items() }[unicode(value)]
                             if isinstance(field, forms.ChoiceField)
                             else value
                         )
@@ -512,7 +579,8 @@ class MagiForm(forms.ModelForm):
                     if not choices:
                         self.fields.pop(name)
                     else:
-                        auto_images = getattr(self.Meta.model, u'{name}_AUTO_IMAGES'.format(name=name[2:].upper()), False)
+                        auto_images = getattr(self.Meta.model, u'{name}_AUTO_IMAGES'.format(
+                            name=name[2:].upper()), False)
                         def _get_choice(c):
                             k, v = (c[0], c[1]) if isinstance(c, tuple) else (c, c)
                             if auto_images:
@@ -594,7 +662,7 @@ class MagiForm(forms.ModelForm):
                 if not self.is_creating:
                     self.m_previous_values[name] = getattr(self.instance, name)
                 help_text = getattr(self.fields[name], 'help_text', '')
-                markdown_help_text = markdownHelpText(request=self.request)
+                markdown_help_text = markdownHelpText(request=self.request, ajax=self.ajax)
                 if help_text:
                     self.fields[name].help_text = markSafeFormat(
                         u'{}<br><i class="text-muted fontx0-8">{}</i>',
@@ -712,7 +780,7 @@ class MagiForm(forms.ModelForm):
             and not isinstance(self, MagiFiltersForm)
             and self.request
             and self.request.user.is_authenticated()
-            and hasattr(self.instance, 'owner') and self.instance.owner != self.request.user):
+            and hasattr(type(self.instance), 'owner') and self.instance.owner_id != self.request.user.id):
             self.is_reported = 'is_reported' in self.request.GET
             self.is_suggestededit = 'is_suggestededit' in self.request.GET
 
@@ -815,6 +883,8 @@ class MagiForm(forms.ModelForm):
         times = getattr(self.Meta, 'date_times', {})
         fields_with_time = getattr(self.Meta, 'date_fields_with_time', {})
         for field_name in self.date_fields:
+            if field_name not in self.fields:
+                continue
             # Save timezone in database if it has its own field
             if (self.cleaned_data.get(u'{}_timezone'.format(field_name), None)
                 and modelHasField(self.Meta.model, u'_{}_timezone'.format(field_name))):
@@ -870,19 +940,24 @@ class MagiForm(forms.ModelForm):
         # Save d_ dict choices
         for dfield, choices in self.d_choices.items():
             d = {}
+            choices_keys_not_in_form = []
             known_keys = []
             for field, key in choices:
                 known_keys.append(key)
                 if field not in self.fields:
+                    choices_keys_not_in_form.append(key)
                     continue
                 if (self.cleaned_data[field]
                     or key in getattr(self.Meta, 'd_save_falsy_values_for_keys', {}).get(dfield, [])):
                     d[key] = self.cleaned_data[field]
-            # Keep unknown keys
-            if dfield in getattr(self.Meta, 'keep_unknwon_keys_for_d', []):
+
+            # Keep unknown keys and keys that are in choices but not in the form
+            keep_unknwon_keys = dfield in getattr(self.Meta, 'keep_unknwon_keys_for_d', [])
+            if keep_unknwon_keys or choices_keys_not_in_form:
                 for key, value in getattr(instance, dfield).items():
-                    if key not in known_keys:
+                    if key not in known_keys or key in choices_keys_not_in_form:
                         d[key] = value
+
             instance.save_d(dfield, d)
 
         for field in self.fields.keys():
@@ -1145,40 +1220,45 @@ def to_translate_form_class(view):
 
         def _language_help_text(self, language, verbose_language, field_name, sources):
             formatted_sources = [
-                u' <span class="label label-info">{language}</span> {value}'.format(
-                    language=getVerboseLanguage(source_language),
+                markSafeFormat(
+                    u"""<span class="label label-info">{language_verbose}</span>
+                    <span lang="{language}">{value}</span>""",
+                    language=source_language,
+                    language_verbose=getVerboseLanguage(source_language),
                     value=(
-                        u'<pre style="white-space: pre-line;">{}</pre>'.format(value)
+                        markSafeFormat(u'<pre style="white-space: pre-line;">{}</pre>', value)
                         if field_name.startswith('d_m_')
                         else value
                     ),
                 ) for source_language, value in sources.items()
                 if value and language != source_language
             ]
-            original_help_text = self.fields[field_name].help_text.replace(unicode(verbose_language), '').strip()
-            self.fields[field_name].help_text = mark_safe(
-                u'{is_source}{no_value}{original}{sources}<img src="{img}" height="20" /> {lang}'.format(
-                    is_source=(
-                        u'<span class="label label-info pull-right">Source</span>'
-                        if language in sources else ''
-                    ),
-                    no_value=(
-                        u'<span class="label label-danger pull-right">No value</span>'
-                        if not formatted_sources and language not in sources else ''
-                    ),
-                    original=(
-                        u'{}<br>'.format(original_help_text)
-                        if original_help_text
-                        else ''
-                    ),
-                    img=staticImageURL(language, folder='language', extension='png'),
-                    lang=verbose_language,
-                    sources=(
-                        u'<div class="alert alert-info">{}</div>'.format(
-                            u'<br>'.join(formatted_sources)
-                        ) if formatted_sources else ''
-                    ),
-                ))
+            original_help_text = markSafeStrip(markSafeReplace(
+                self.fields[field_name].help_text, unicode(verbose_language), ''))
+            self.fields[field_name].help_text = markSafeFormat(
+                u'{is_source}{no_value}{original}{sources}<img src="{img}" height="20" /> {lang}',
+                is_source=(
+                    markSafe(u'<span class="label label-info pull-right">Source</span>')
+                    if language in sources else ''
+                ),
+                no_value=(
+                    markSafe(u'<span class="label label-danger pull-right">No value</span>')
+                    if not formatted_sources and language not in sources else ''
+                ),
+                original=(
+                    markSafeFormat(u'{}<br>', original_help_text)
+                    if original_help_text
+                    else ''
+                ),
+                img=staticImageURL(language, folder='language', extension='png'),
+                lang=verbose_language,
+                sources=(
+                    markSafeFormat(
+                        u'<div class="alert alert-info">{}</div>',
+                        markSafeJoin(formatted_sources, separator=u'<br>')
+                    ) if formatted_sources else ''
+                ),
+            )
             self.fields[field_name].widget.attrs['data-language'] = language
 
         def __init__(self, *args, **kwargs):
@@ -1323,9 +1403,11 @@ class MagiFilterOperatorSelector:
     Or, And = range(2)
     default = Or
 
-def filter_ids(queryset, request):
-    if 'ids' in request.GET and request.GET['ids'] and request.GET['ids'].replace(',', '').isdigit():
-        queryset = queryset.filter(pk__in=request.GET['ids'].split(','))
+def filter_ids(queryset, ids):
+    if not ids:
+        return queryset
+    if ids.replace(',', '').isdigit():
+        queryset = queryset.filter(pk__in=ids.split(','))
     return queryset
 
 class MagiFiltersForm(AutoForm):
@@ -1401,7 +1483,14 @@ class MagiFiltersForm(AutoForm):
     @classmethod
     def get_presets_fields(self, preset, details=None):
         if details is None: details = self.get_presets()[preset]
-        return { k: unicode(v) for k, v in details['fields'].items() }
+        return {
+            k: [ unicode(i) for i in v ] if isinstance(v, list) else unicode(v)
+            for k, v in details['fields'].items()
+        }
+
+    @classmethod
+    def update_filters_with_preset(self, preset, filters):
+        filters.update(self.get_presets_fields(preset))
 
     @classmethod
     def get_preset_verbose_name(self, preset, details=None):
@@ -1464,6 +1553,14 @@ class MagiFiltersForm(AutoForm):
             ))
         return links
 
+    @classmethod
+    def set_filters_defaults_when_missing(self, collection, filters):
+        for field_name in collection.list_view.filters_with_default_form_values:
+            if field_name not in filters:
+                filters.update_key(
+                    field_name, collection.list_view.filters_details[field_name]['form_default'],
+                )
+
     @property
     def extra_buttons(self):
         buttons = OrderedDict()
@@ -1509,10 +1606,39 @@ class MagiFiltersForm(AutoForm):
             }
         return buttons
 
+    @classmethod
+    def foreach_merge_fields(self, foreach_merge_field):
+        """
+        Goes through merge fields and apply a function
+        Your function takes: new_field_name (the name of the merged fields), details, fields
+        details is a dict with details (keys: label, fields)
+        fields is a dict of field_name -> field details (keys: label, choices, filter)
+        Note: the field details are not filled automatically if not specified by the user
+        If in the future, this function needs to be the one doing the work of filling up
+        those details, see logic in _foreach_merge_field in __init__ of MagiFiltersForm
+        """
+        if not getattr(self, 'merge_fields', None):
+            return
+        for new_field_name, fields in (
+                self.merge_fields.items()
+                if isinstance(self.merge_fields, dict)
+                else [('_'.join(fields['fields'] if isinstance(fields, dict) else fields), fields)
+                      for fields in self.merge_fields]
+        ):
+            if 'fields' in fields:
+                details = fields
+                fields = details['fields']
+            else:
+                details = {}
+            foreach_merge_field(new_field_name, details, (
+                fields
+                if isinstance(fields, dict)
+                else OrderedDict([ (field, {}) for field in fields ])
+            ))
+
     def __init__(self, *args, **kwargs):
         self.preset = kwargs.pop('preset', None)
         super(MagiFiltersForm, self).__init__(*args, **kwargs)
-        self.empty_permitted = True
         language = self.request.LANGUAGE_CODE if self.request else get_language()
 
         # Set action when using a preset
@@ -1526,7 +1652,7 @@ class MagiFiltersForm(AutoForm):
         # Add/delete fields
 
         # Collectible
-        if self.collection and self.request.user.is_authenticated():
+        if self.collection and self.request and self.request.user.is_authenticated():
             for collection_name, collection in self.collection.collectible_collections.items():
                 if (collection.queryset.model.fk_as_owner
                     and collection.add_view.enabled):
@@ -1576,7 +1702,7 @@ class MagiFiltersForm(AutoForm):
                             widget=forms.HiddenInput(attrs=({'value': initial} if initial else {})),
                         )
         # Add missing_{}_translations for all translatable fields if the current user has permission
-        if self.collection and self.request.user.is_authenticated() and self.allow_translate and self.collection.translated_fields:
+        if self.collection and self.request and self.request.user.is_authenticated() and self.allow_translate and self.collection.translated_fields:
             for field_name in self.collection.translated_fields:
                 filter_field_name = u'missing_{}_translations'.format(field_name)
                 if filter_field_name in self.request.GET:
@@ -1595,22 +1721,13 @@ class MagiFiltersForm(AutoForm):
             })
 
         # Filter by foreign keys, many2many and reverse relations
-        for field_name in ([
-                field.name
-                for field in self.Meta.model._meta.fields
-                if (isinstance(field, models.models.ForeignKey)
-                    or isinstance(field, models.models.OneToOneField))
-        ] + [
-            field.name
-            for field in self.Meta.model._meta.many_to_many
-        ] + [
-            field.get_accessor_name()
-            for field in self.Meta.model._meta.get_all_related_objects()
-        ] + [
-            field.get_accessor_name()
-            for field in self.Meta.model._meta.get_all_related_many_to_many_objects()
-        ]):
+        for field_name in getAllModelRelatedFields(self.Meta.model).keys():
             if field_name not in self.fields and field_name in (self.request.GET if self.request else {}):
+                self.fields[field_name] = forms.ChoiceField(widget=forms.HiddenInput)
+
+        # Filter by multi-level reverse relations ("__")
+        for field_name in (self.request.GET if self.request and self.request.GET else {}):
+            if '__' in field_name and field_name not in self.fields:
                 self.fields[field_name] = forms.ChoiceField(widget=forms.HiddenInput)
 
         if 'search' in self.fields:
@@ -1649,37 +1766,12 @@ class MagiFiltersForm(AutoForm):
 
         # Merge filters
         if getattr(self, 'merge_fields', None):
-            def _get_merged_field_to_queryset(fields):
-                def _merged_field_to_queryset(form, queryset, request, value):
-                    for field_name, field_details in fields:
-                        if value.startswith(field_name):
-                            return self._filter_queryset_for_field(
-                                field_name, queryset, request,
-                                value=[value[len(field_name) + 1:]],
-                                filter=field_details.get(
-                                    'filter', getattr(self, u'{}_filter'.format(field_name), None)),
-                            )
-                    return queryset
-                return _merged_field_to_queryset
-            for new_field_name, fields in (
-                    self.merge_fields.items()
-                    if isinstance(self.merge_fields, dict)
-                    else [('_'.join(fields.keys() if isinstance(fields, dict) else fields), fields)
-                          for fields in self.merge_fields]
-            ):
-                if 'fields' in fields:
-                    details = fields
-                    fields = details['fields']
-                else:
-                    details = {}
+
+            def _foreach_merge_field(new_field_name, details, fields):
                 choices = BLANK_CHOICE_DASH[:]
                 label_parts = []
                 met_first_field = False
-                for field_name, field_details in (
-                        fields.items()
-                        if isinstance(fields, dict)
-                        else [(field, {}) for field in fields]
-                ):
+                for field_name, field_details in fields.items():
                     if field_name in self.fields:
                         self.fields[field_name].widget = self.fields[field_name].hidden_widget()
                         if not met_first_field:
@@ -1707,60 +1799,57 @@ class MagiFiltersForm(AutoForm):
                     )
                     if not field_label:
                         try:
-                            field_label = self.Meta.model._meta.get_field(field_name).verbose_name
+                            field_label = notTranslatedWarning(
+                                self.Meta.model._meta.get_field(field_name).verbose_name)
                         except FieldDoesNotExist:
-                            field_label = toHumanReadable(field_name)
+                            field_label = toHumanReadable(field_name, warning=True)
                     label_parts.append(unicode(field_label))
                 self.fields[new_field_name] = forms.ChoiceField(
                     choices=choices,
                     label=details.get('label', u' / '.join(label_parts)),
                 )
-                setattr(self, u'{}_filter'.format(new_field_name), MagiFilter(
-                    to_queryset=_get_merged_field_to_queryset(
-                        fields.items()
-                        if isinstance(fields, dict)
-                        else [(field, {}) for field in fields]
-                    )))
+                setattr(self, u'{}_filter'.format(new_field_name), MagiFilter(noop=True))
+
+            self.foreach_merge_fields(_foreach_merge_field)
 
         # Set default ordering initial value
         if 'ordering' in self.fields:
             if self.collection:
-                initial = ','.join(self.collection.list_view.plain_default_ordering_list)
-            else:
-                initial = None
-            if initial and initial not in dict(self.ordering_fields):
-                self.ordering_fields = [(initial, _('Default'))] + self.ordering_fields
+                default_ordering = self.collection.list_view.default_ordering
+                reverse = False
+                if default_ordering.startswith('-'):
+                    reverse = True
+                    default_ordering = reverseOrderingString(default_ordering)
+                # Add "Default" in ordering options if the default ordering is not in ordering fields
+                if default_ordering and default_ordering not in dict(self.ordering_fields):
+                    self.ordering_fields = [(default_ordering, _('Default'))] + self.ordering_fields
+                self.fields['ordering'].initial = default_ordering
+                self.fields['reverse_order'].initial = reverse
             self.fields['ordering'].choices = [
                 (k, v() if callable(v) else v)
                 for k, v in self.ordering_fields
             ]
-            if self.collection:
-                self.fields['ordering'].initial = initial
-                self.fields['reverse_order'].initial = self.collection.list_view.default_ordering.startswith('-')
 
         # Set view selector
         if ('view' in self.fields
             and self.collection
             and self.collection.list_view.alt_views):
-            if not self.collection.list_view._alt_view_choices:
-                self.collection.list_view._alt_view_choices = [('', self.collection.plural_title)] + [
-                    (view_name, view.get('verbose_name', view_name))
-                    for view_name, view in self.collection.list_view.alt_views
-                ]
-            if not [_v for _v in self.collection.list_view.alt_views or []
-                    if (not _v[1].get('hide_in_filter', False)
-                        and _v[1].get('hide_in_navbar', False)
-                        and not _v[1].get('show_as_top_button', False))]: # None visible
+            # If it's shown in narbar or top button, then it won't show as a filter
+            if not self.collection.list_view._alt_view_visible_choices:
                 self.fields['view'].widget = self.fields['view'].hidden_widget()
             self.fields['view'].choices = self.collection.list_view._alt_view_choices
         else:
             del(self.fields['view'])
 
+        # Set all fields as optional and empty
+        # If initial shouldn't be empty (ex: by default, only show Rare cards), this can
+        # be changed in the __init__ of your form
         if getattr(self.Meta, 'all_optional', True):
             for field_name, field in self.fields.items():
                 # Add blank choice to list of choices that don't have one
                 # + Set initial as empty
                 if (isinstance(field, forms.fields.ChoiceField)
+                    and not isinstance(field, forms.ModelChoiceField)
                     and field.choices
                     and field_name != 'ordering'
                     and not field_name.startswith('add_to_')):
@@ -1773,17 +1862,6 @@ class MagiFiltersForm(AutoForm):
                             self.fields[field_name].initial = ''
                 # Marks all fields as not required
                 field.required = False
-
-        # Set default values from GET form
-        for field_name in GET_PARAMETERS_IN_FORM_HANDLED_OUTSIDE:
-            if field_name in self.fields and (self.request.GET if self.request else {}).get(field_name, None):
-                # Check for valid ordering choices, bypass when has permission
-                if (field_name == 'ordering'
-                    and not (self.request.user.is_authenticated()
-                             and self.request.user.hasPermission('order_by_any_field'))
-                    and self.request.GET[field_name] not in dict(self.fields[field_name].choices)):
-                    continue
-                self.fields[field_name].initial = self.request.GET[field_name]
 
         # Reorder if needed
         if order_to_change:
@@ -1886,7 +1964,7 @@ class MagiFiltersForm(AutoForm):
 
     def filter_queryset(self, queryset, parameters, request):
         # Generic filter for ids
-        queryset = filter_ids(queryset, request)
+        queryset = filter_ids(queryset, parameters.get('ids', None))
         # Go through form fields
         for field_name in self.fields.keys():
             # Some fields are handled in views collection
@@ -1898,7 +1976,7 @@ class MagiFiltersForm(AutoForm):
             # Get value as list first
             value = None
             if field_name in parameters:
-                if parameters[field_name] != '':
+                if hasValue(parameters[field_name]):
                     value = parameters[field_name]
                     if ((isinstance(self.fields[field_name], forms.fields.MultipleChoiceField)
                          or filter.multiple)
@@ -1924,7 +2002,7 @@ class MagiFiltersForm(AutoForm):
         if isinstance(parameters, QueryDict):
             value = parameters.getlist(field_name)
             if allow_csv and len(value) == 1:
-                value = value[0].split(',')
+                value = unicode(value[0] or '').split(',')
         else:
             value = parameters[field_name]
         return filter.to_value(value) if filter.to_value else value
@@ -1996,12 +2074,12 @@ def to_auto_filter_form(list_view):
         class Meta(MagiFiltersForm.Meta):
             model = list_view.collection.queryset.model
             fields = ([
-                'search'
-            ] if auto_search_fields else []) + (
-                filter_fields
-            ) + ([
+                'search',
+            ] if auto_search_fields else []) + ([
                 'ordering', 'reverse_order'
-            ] if auto_ordering_fields else [])
+            ] if auto_ordering_fields else []) + (
+                filter_fields
+            )
 
     return _AutoFiltersForm
 
@@ -2026,7 +2104,7 @@ class AccountForm(AutoForm):
                 del(self.fields['center'])
             else:
                 self.fields['center'].queryset = self.fields['center'].queryset.filter(account=self.instance.id)
-        if self.is_creating and 'nickname' in self.fields:
+        if self.is_creating and 'nickname' in self.fields and self.request:
             if len(getAccountIdsFromSession(self.request)) == 0:
                 self.fields['nickname'].widget = self.fields['nickname'].hidden_widget()
         if 'default_tab' in self.fields:
@@ -2145,12 +2223,16 @@ class AccountFilterForm(MagiFiltersForm):
         ('owner__preferences___cache_reputation', _('Most popular')),
     ]
 
+    ordering_show_relevant_fields = {
+        'owner__preferences___cache_reputation': [ 'reputation' ],
+    }
+
     on_change_value_show = {
         'has_friend_id': {
             True: ['friend_id', 'accept_friend_requests'],
         },
     }
-    show_more = FormShowMore(cutoff='i_os', including_cutoff=True, until='ordering')
+    show_more = FormShowMore(cutoff='i_os')
 
     if has_field(models.Account, 'friend_id'):
         has_friend_id = forms.NullBooleanField(
@@ -2208,7 +2290,9 @@ class AccountFilterForm(MagiFiltersForm):
 
     class Meta(MagiFiltersForm.Meta):
         model = models.Account
-        top_fields = ['search'] + (
+        top_fields = [
+            'search', 'ordering', 'reverse_order',
+        ] + (
             (['has_friend_id', 'friend_id']
              + (['accept_friend_requests'] if has_field(models.Account, 'accept_friend_requests') else []))
             if has_field(models.Account, 'friend_id') else []
@@ -2287,17 +2371,17 @@ class LoginForm(AuthenticationForm):
 class CreateUserForm(_UserCheckEmailUsernameForm):
     # captcha = ReCaptchaField()
     submit_title = _('Sign Up')
-    preferences_fields = ('birthdate', 'show_birthdate_year')
+    PREFERENCES_FIELDS = [ 'birthdate', 'show_birthdate_year' ]
     password = forms.CharField(widget=forms.PasswordInput(), min_length=6, label=t['Password'])
 
     def __init__(self, *args, **kwargs):
         instance = kwargs.pop('instance', None)
         preferences_initial = (
-            model_to_dict(instance.preferences, self.preferences_fields)
+            model_to_dict(instance.preferences, self.PREFERENCES_FIELDS)
             if instance is not None else {}
         )
         super(CreateUserForm, self).__init__(initial=preferences_initial, instance=instance, *args, **kwargs)
-        self.fields.update(fields_for_model(models.UserPreferences, self.preferences_fields))
+        self.fields.update(fields_for_model(models.UserPreferences, self.PREFERENCES_FIELDS))
         self.fields['birthdate'], value = date_input(self.fields['birthdate'])
 
         self.otherbuttons = mark_safe(u'<a href="{url}" class="btn btn-lg btn-link">{verbose}</a>'.format(
@@ -2400,7 +2484,7 @@ class ActivitiesPreferencesForm(MagiForm):
         if ('i_default_activities_tab' in self.fields
             and self.request.LANGUAGE_CODE not in LANGUAGES_CANT_SPEAK_ENGLISH):
             self.fields['i_default_activities_tab'].below_field = mark_safe(
-                u'<a href="/help/Activities%20tabs" data-ajax-url="/ajax/help/Activities%20tabs/" class="pull-right btn btn-main btn-sm" target="_blank">{}</a>'.format(
+                u'<a href="/help/Activities%20tabs" data-ajax-url="/ajax/help/Activities%20tabs/" class="pull-right btn btn-link-muted" target="_blank">{}</a>'.format(
                     _('Learn more'),
                 ))
 
@@ -2434,6 +2518,144 @@ class SecurityPreferencesForm(MagiForm):
     class Meta(MagiForm.Meta):
         model = models.UserPreferences
         fields = ('i_private_message_settings', )
+
+class _DisplayOutsidePermissions(_MagiDisplayMultiple):
+    template = u"""
+        <div class="alert alert-warning">
+          <h5>External permissions</h5>
+          <p>
+            <small class="text-muted">
+              Added manually.
+              Contact the <b>team manager</b> if you don't have them.
+            </small>
+          </p>
+          <ul>
+            {display_value}
+          </ul>
+        </div>
+    """
+    template_foreach = u'<li>{value}</li>'
+
+DisplayOutsidePermissions = _DisplayOutsidePermissions()
+
+class _DisplayGlobalOutsidePermissions(_MagiDisplayMultiple):
+    template = u"""
+  <div class="alert alert-warning">
+    <h5>External permissions for all staff members.</h5>
+    <p>
+      <small class="text-muted">
+        Added manually.
+        Contact the <b>team manager</b> if you don't have them.
+      </small>
+    </p>
+    <ul>
+      {display_value}
+    </ul>
+  </div>
+    """
+    template_foreach = u'<li>{value}</li>'
+
+def outsidePermissionsToParameters(key, value):
+    return {
+        'link': value.get('url', None) if isinstance(value, dict) else value,
+        'text_image': staticImageURL(value.get('image', None) if isinstance(value, dict) else None),
+        'text_image_height': 20,
+        'text_icon': value.get('icon', None) if isinstance(value, dict) else (
+            'link' if not isinstance(value, dict) or not value.get('image', None) else None),
+    }
+
+class _DisplayGroup(MagiDisplay):
+    """Value = group_name"""
+    OPTIONAL_PARAMETERS = {
+        u'translation': None,
+        u'description': None,
+        u'verbose_permissions': None,
+        u'requires_staff': None,
+        u'outside_permissions': None,
+        u'guide': None,
+        u'ajax_guide': None,
+        u'settings': None,
+        u't_settings_per_groups': None,
+    }
+    def to_parameters_extra(self, parameters):
+        group = models.UserPreferences.GROUPS.get(parameters.display_value, None)
+        if group:
+            parameters.update(group)
+            parameters.img = staticImageURL(parameters.display_value, folder='groups', extension='png')
+        if parameters.ajax_guide:
+            parameters.ajax_guide = markSafeFormat(u'data-ajax-url="{ajax_guide}"', ajax_guide=parameters.ajax_guide)
+        if parameters.outside_permissions:
+            parameters.outside_permissions = DisplayOutsidePermissions.to_html(
+                parameters.item, value=parameters.outside_permissions,
+                item_display_class=MagiDisplayLink,
+                item_to_value=lambda value, _parameters_per_item: _parameters_per_item.key,
+                item_to_parameters=outsidePermissionsToParameters,
+            )
+
+    template = u"""
+    <div class="list-group-item">
+      <img class="pull-right" alt="{translation}" src="{img}" height="100">
+      <h3 class="list-group-item-heading">{translation}</h3>
+      <p class="list-group-item-text">
+        <blockquote class="fontx0-8">{description}</blockquote>
+        {verbose_permissions}
+        {outside_permissions}
+      </p>
+      {guide}
+    </div>
+    """
+    template_verbose_permissions = u'<h5>Permissions</h5><ul>{verbose_permissions}</ul>'
+    template_verbose_permissions_foreach = u'<li>{value}</li>'
+    template_guide = u"""
+      <div class="text-right">
+        <a class="btn btn-lg btn-secondary" href="{guide}" {ajax_guide} target="_blank">
+          Read the {translation} guide <i class="flaticon-link"></i>
+        </a>
+      </div>
+    """
+
+DisplayGroup = _DisplayGroup()
+
+class EditGroupsSettings(MagiForm):
+    form_title = _('Roles')
+    form_icon = 'staff'
+
+    def __init__(self, *args, **kwargs):
+        super(EditGroupsSettings, self).__init__(*args, **kwargs)
+        # Add settings fields and groups details
+        if self.instance:
+            no_settings_groups = []
+            for group_name in self.instance.groups:
+                if group_name not in models.UserPreferences.GROUPS:
+                    continue
+                group = models.UserPreferences.GROUPS[group_name]
+                new_fields = groupSettingsFields(self, group_name, edited_preferences=self.instance)
+                if new_fields:
+                    self.fields[new_fields[0]].before_field = markSafeJoin([
+                        markSafe(DisplayGroup.to_html(self.instance, group_name)),
+                        markSafe('<div class="list-group-item">'),
+                    ])
+                    self.fields[new_fields[-1]].after_field = markSafe('</div>')
+                else:
+                    no_settings_groups.append(markSafe(DisplayGroup.to_html(self.instance, group_name)))
+            self.afterfields = markSafeJoin(no_settings_groups)
+            self.beforefields = DisplayOutsidePermissions.to_html(
+                self.instance, value=GLOBAL_OUTSIDE_PERMISSIONS,
+                item_display_class=MagiDisplayLink,
+                item_to_value=lambda value, _parameters_per_item: _parameters_per_item.key,
+                item_to_parameters=outsidePermissionsToParameters,
+            )
+
+    def save(self, commit=True):
+        instance = super(EditGroupsSettings, self).save(commit=False)
+        saveGroupsSettingsFields(self, self.instance)
+        if commit:
+            instance.save()
+        return instance
+
+    class Meta(MagiForm.Meta):
+        model = models.UserPreferences
+        fields = []
 
 class UserPreferencesForm(MagiForm):
     form_title = _('Customize profile')
@@ -2477,21 +2699,25 @@ class UserPreferencesForm(MagiForm):
         for key, fields in getCharactersFavoriteFields(only_one=False).items():
             for field_name, verbose_name in fields:
                 if field_name in self.fields:
-                    self.fields[field_name] = forms.ChoiceField(
-                        required=False,
-                        choices=BLANK_CHOICE_DASH + getCharactersChoices(key=key),
-                        label=verbose_name,
-                        initial=self.fields[field_name].initial,
-                    )
-                    order.append(field_name)
-        if not hasCharacters():
+                    if getCharactersHasMany(key):
+                        del(self.fields[field_name]) # will be in external page
+                    else:
+                        self.fields[field_name] = forms.ChoiceField(
+                            required=False,
+                            choices=BLANK_CHOICE_DASH + getCharactersChoices(key=key),
+                            label=verbose_name,
+                            initial=self.fields[field_name].initial,
+                        )
+                        order.append(field_name)
+        if not hasCharacters() or getCharactersHasMany(): # will be in external page
             for field_name in ['favorite_character1', 'favorite_character2', 'favorite_character3']:
                 if field_name in self.fields:
                     del(self.fields[field_name])
 
         # Backgrounds
         if 'd_extra-background' in self.fields:
-            if not PROFILE_BACKGROUNDS_NAMES:
+            if (not PROFILE_BACKGROUNDS_NAMES
+                or HAS_MANY_BACKGROUNDS):
                 del(self.fields['d_extra-background'])
                 self.d_choices['extra'] = [
                     (k, v) for k, v in self.d_choices['extra']
@@ -2515,7 +2741,7 @@ class UserPreferencesForm(MagiForm):
 
         self.old_location = self.instance.location if self.instance else None
         if 'm_description' in self.fields:
-            self.fields['m_description'].help_text = markdownHelpText(self.request)
+            self.fields['m_description'].help_text = markdownHelpText(self.request, ajax=self.ajax)
 
         self.reorder_fields(order)
 
@@ -2549,168 +2775,288 @@ class UserPreferencesForm(MagiForm):
 
     class Meta(MagiForm.Meta):
         model = models.UserPreferences
-        fields = ('m_description', 'location', 'favorite_character1', 'favorite_character2', 'favorite_character3', 'color', 'birthdate', 'show_birthdate_year', 'default_tab', 'd_extra')
+        fields = [
+            'm_description', 'location',
+            'favorite_character1', 'favorite_character2', 'favorite_character3',
+            'color', 'birthdate', 'show_birthdate_year',
+            'default_tab', 'd_extra',
+        ]
         keep_unknwon_keys_for_d = ['extra']
 
-class StaffEditUser(_UserCheckEmailUsernameForm):
-    force_remove_avatar = forms.BooleanField(required=False)
+class SetFavoriteCharacter(MagiForm):
+    nth = forms.ChoiceField()
 
     def __init__(self, *args, **kwargs):
-        instance = kwargs.pop('instance', None)
-        preferences_fields = ('invalid_email', 'm_description', 'location', 'i_activities_language', 'i_status', 'donation_link', 'donation_link_title', 'c_groups')
-        preferences_initial = model_to_dict(instance.preferences, preferences_fields) if instance is not None else {}
-        super(StaffEditUser, self).__init__(initial=preferences_initial, instance=instance, *args, **kwargs)
-        self.fields.update(fields_for_model(models.UserPreferences, preferences_fields))
-        self.old_location = instance.preferences.location if instance else None
+        self.key = kwargs.pop('key', 'FAVORITE_CHARACTERS')
+        super(SetFavoriteCharacter, self).__init__(*args, **kwargs)
+        total_favoritable = getCharactersTotalFavoritable(key=self.key)
+        self.fields['nth'].label = getCharactersFavoriteFieldLabel(key=self.key)
+        self.fields['nth'].choices = BLANK_CHOICE_DASH + [
+            (i, _(ordinalNumber(i)))
+            for i in range(1, total_favoritable + 1)
+        ]
 
-        # m_description
-        if 'm_description' in self.fields:
-            self.fields['m_description'].help_text = markdownHelpText(self.request)
+    class Meta(MagiForm.Meta):
+        model = models.UserPreferences
+        fields = []
 
-        # invalid email
-        if 'invalid_email' in self.fields:
-            if not self.request.user.hasPermission('mark_email_addresses_invalid'):
-                del(self.fields['invalid_email'])
-            else:
-                self.fields['invalid_email'].help_text = 'Mark as invalid if we keep receiving bounce emails from that email address. No email will ever be sent to that user again.'
+class StaffEditUser(_UserCheckEmailUsernameForm):
+    class Meta(_UserCheckEmailUsernameForm.Meta):
+        model = models.User
+        fields = [ 'username', 'email' ]
 
-        # i_activities_language
-        if 'i_activities_language' in self.fields:
-            if not self.request.user.hasPermission('edit_activities_post_language'):
-                del(self.fields['i_activities_language'])
-            else:
-                self.fields['i_activities_language'] = forms.ChoiceField(
-                    choices=models.Activity.LANGUAGE_CHOICES,
-                    initial=self.fields['i_activities_language'].initial,
-                    label=unicode(self.fields['i_activities_language'].label).format(language=''),
-                    help_text='If you see that this user regularly posts with the wrong language, you can change the default language in which they post to avoid future mistakes.'
-                )
+class StaffAddRevokeOutsidePermissions(forms.Form):
+    beforefields = markSafe("""
+    <div class="alert alert-warning">
+    <i class="flaticon-warning"></i> Some permissions need to be manually given to (or revoked from) this user.
+    Please make sure you click on each link and add (or revoke) them.<br>
+    <small><i>If you're having trouble with these or you're unsure how to do it,
+    please message a Manager, Circles Manager or System administrator.</i></small>
+    </div>
+    """)
 
-        # edit_roles permission
-        self.old_c_groups = self.instance.preferences.c_groups
-        if 'c_groups' in self.fields:
-            if hasPermission(self.request.user, 'edit_roles'):
-                choices = [
-                    (key, mark_safe(u'<img class="pull-right" height="60" alt="{name}" src="{img}"><b>{name}</b><br><p>{reqstaff}<small class="text-muted">{description}</small></p><ul>{perms}</ul>{operms}<br>'.format(
-                        img=staticImageURL(key, folder='groups', extension='png'),
-                        name=group['translation'],
-                        reqstaff=u'<small class="text-danger">Requires staff status</small><br>' if group.get('requires_staff', False) else u'',
-                        description=group['description'],
-                        perms=u''.join([u'<li style="display: list-item"><small>{}</small></li>'.format(toHumanReadable(p)) for p in group.get('permissions', [])]),
-                        operms=u'<br><div class="alert alert-danger"><small>Make sure you also grant/revoke {user} the following permissions <b>manually</b>:</small> <ul>{permissions}</ul></div>'.format(
-                            user=instance.username,
-                            permissions=u''.join([u'<li style="display: list-item"><small>{}</small></li>'.format(
-                                p if not u
-                                else u'<a href="{}" target="_blank">{} <i class="flaticon-link"></i></a>'.format(
-                                        u['url'] if isinstance(u, dict) else u, p),
-                            ) for p, u in group['outside_permissions'].items()]),
-                        ) if group.get('outside_permissions', {}) else u'',
-                    ))) for key, group in instance.preferences.GROUPS.items()
-                ]
-                self.fields['c_groups'] = forms.MultipleChoiceField(
-                    required=False,
-                    widget=forms.CheckboxSelectMultiple,
-                    choices=choices,
-                    label=self.fields['c_groups'].label,
-                )
-                # Add settings
-                for key, group in instance.preferences.GROUPS.items():
-                    settings = group.get('settings', [])
-                    for setting in settings:
-                        field_name = u'group_settings_{}_{}'.format(key, setting)
-                        self.fields[field_name] = forms.CharField(
-                            required=False, label=u'Settings for {}: {}'.format(
-                                group['translation'],
-                                toHumanReadable(setting)
-                            ))
-                # Set default checkboxes
-                self.instance.preferences.c_groups = self.instance.preferences.groups
-            else:
-                del(self.fields['c_groups'])
-
-        # edit_staff_status permission
-        if 'is_staff' in self.fields:
-            if hasPermission(self.request.user, 'edit_staff_status'):
-                self.fields['is_staff'].help_text = 'Some roles require staff status, so you might need to remove the roles before being able to revoke staff status.'
-            else:
-                del(self.fields['is_staff'])
-
-        # edit_donator_status permission
-        if 'i_status' in self.fields:
-            if hasPermission(self.request.user, 'edit_donator_status'):
-                self.fields['i_status'].help_text = None
-                self.fields['i_status'] = forms.ChoiceField(
-                    required=False,
-                    choices=(BLANK_CHOICE_DASH + [(c[0], c[1]) if isinstance(c, tuple) else (c, c) for c in instance.preferences.STATUS_CHOICES]),
-                    label=self.fields['i_status'].label,
-                )
-            else:
-                del(self.fields['i_status'])
-        if 'donation_link' in self.fields:
-            if not hasPermission(self.request.user, 'edit_donator_status'):
-                del(self.fields['donation_link'])
-        if 'donation_link_title' in self.fields:
-            if hasPermission(self.request.user, 'edit_donator_status'):
-                self.fields['donation_link_title'].help_text = 'If the donator is not interested in adding a link but are eligible for it, write "Not interested" and leave ""Donation link" empty'
-            else:
-                del(self.fields['donation_link_title'])
-
-        # edit_reported_things
-        if not hasPermission(self.request.user, 'edit_reported_things'):
-            for field_name in ['username', 'email', 'm_description', 'location', 'force_remove_avatar']:
-                if field_name in self.fields:
-                    del(self.fields[field_name])
-        else:
-            self.fields['force_remove_avatar'].help_text = mark_safe('Check this box if the avatar is inappropriate. It will force the default avatar. <img src="{avatar_url}" alt="{username}" height="40" width="40">'.format(avatar_url=instance.image_url, username=instance.username))
-
-        # If languages for translator is specified, use a choice field
-        if 'group_settings_translator_languages' in self.fields:
-            self.fields['group_settings_translator_languages'] = forms.MultipleChoiceField(
-                required=False,
-                label=self.fields['group_settings_translator_languages'].label,
-                choices=LANGUAGES_DICT.items(),
-                initial=(instance.preferences.settings_per_groups or {}).get('translator', {}).get('languages', [])
+    def __init__(self, *args, **kwargs):
+        to_add = kwargs.pop('to_add', {})
+        to_revoke = kwargs.pop('to_revoke', {})
+        super(StaffAddRevokeOutsidePermissions, self).__init__(*args, **kwargs)
+        for name, details in to_revoke.items():
+            self.fields[name] = forms.BooleanField(
+                required=True, label=markSafe(
+                    '<i class="flaticon-delete text-danger"></i> <b>REVOKE</b> access to',
+                ), help_text=markSafeFormat(
+                    '<a href="{url}" target="_blank"> {name} <i class="flaticon-{icon}"></i></a>',
+                    url=details.get('url', '') if isinstance(details, dict) else details,
+                    name=name, icon=details.get('icon', 'link') if isinstance(details, dict) else 'link',
+                ),
             )
+            if isinstance(details, dict):
+                how_to = details.get('how_to_revoke', details.get('how_to', None))
+                if how_to:
+                    self.fields[name].below_field = markSafeFormat(
+                        u'<div class="text-muted fontx0-8"><i class="flaticon-idea"></i> {}</div>', how_to)
+        for name, details in to_add.items():
+            self.fields[name] = forms.BooleanField(
+                required=True, label=markSafe(
+                    '<i class="flaticon-add text-success"></i> <b>GIVE</b> access to',
+                ), help_text=markSafeFormat(
+                    '<a href="{url}" target="_blank"> {name} <i class="flaticon-{icon}"></i></a>',
+                    url=details.get('url', '') if isinstance(details, dict) else details,
+                    name=name, icon=details.get('icon', 'link') if isinstance(details, dict) else 'link',
+                ),
+            )
+            if isinstance(details, dict):
+                how_to = details.get('how_to_add', details.get('how_to', None))
+                if how_to:
+                    self.fields[name].below_field = markSafeFormat(
+                        u'<div class="text-muted fontx0-8"><i class="flaticon-idea"></i> {}</div>', how_to)
+
+STAFFEDITUSERPREFERENCES_FIELDS_PER_PERMISSION = {
+    # Edit reported things permission
+    'edit_reported_things': [
+        'm_description',
+        'location',
+        'force_remove_avatar',
+    ],
+
+    # Mark email addresses invalid permission
+    'mark_email_addresses_invalid': [
+        'invalid_email',
+    ],
+
+    # Edit roles permission
+    'edit_roles': [
+        'c_groups',
+    ],
+
+    # Edit donator status permission
+    'edit_donator_status': [
+        'i_status',
+        'donation_link',
+        'donation_link_title',
+    ],
+}
+
+class StaffEditUserPreferences(MagiForm):
+    BEFOREFIELDS_TEMPLATE = u"""
+    <div class="row form-group">
+    <label class="col-sm-4 text-right">Username</label>
+      <div class="col-sm-8"><pre>{username}</pre></div>
+    </div>
+    <div class="row form-group">
+      <label class="col-sm-4 text-right">E-mail address</label>
+      <div class="col-sm-8"><pre>{email}</pre></div>
+    </div>
+    <div class="row form-group"><div class='col-sm-offset-4 col-sm-8'>
+    <div class="alert alert-info">Inappropriate username or e-mail address?
+    <a class="btn btn-main btn-sm" href="{edit_user_url}" data-ajax-url="{ajax_edit_user_url}">
+    Edit username or e-mail address</a></div></div></div>"""
+
+    force_remove_avatar = forms.BooleanField(required=False)
+
+    cuteform = {
+        'i_status': {
+            'type': CuteFormType.HTML,
+            'to_cuteform': lambda _key, _value: u'{}{}'.format(
+                (u'<i class="flaticon-heart" style="color: {}"></i>'.format(
+                    models.UserPreferences.STATUS_COLORS[_key])
+                 if _key in models.UserPreferences.STATUS_COLORS else u''), _value),
+        },
+    }
+
+    on_change_value_show = {
+        'i_status': {
+            _key: [ 'donation_link', 'donation_link_title' ]
+            for _key, _verbose in models.UserPreferences.STATUS_CHOICES
+            if _key != 'THANKS'
+        },
+        'c_groups': {
+            _group: [ u'group_settings_{}_{}'.format(_group, _setting) for _setting in _details['settings'] ]
+            for _group, _details in models.UserPreferences.GROUPS.items()
+            if 'settings' in _details
+        },
+    }
+
+    def _delete_all_unrelated_fields(self, _current_type):
+        for _type, field_names in STAFFEDITUSERPREFERENCES_FIELDS_PER_PERMISSION.items():
+            if _type != _current_type:
+                for field_name in field_names:
+                    del(self.fields[field_name])
+
+    def __init__(self, *args, **kwargs):
+        super(StaffEditUserPreferences, self).__init__(*args, **kwargs)
+        if not self.request:
+            return
+        if not self.instance:
+            raise PermissionDenied()
+        # Used by save:
+        self.previous_location = self.instance.location if self.instance else None
+        # Used by redirect_after_edit:
+        self.request._previous_groups = self.instance.groups if self.instance else []
+        self.request._previous_is_staff = self.instance.owner.is_staff if self.instance else False
+
+        # Edit reported things permission
+        if self.is_reported:
+            if not hasPermission(self.request.user, 'edit_reported_things'):
+                raise PermissionDenied()
+            self._delete_all_unrelated_fields('edit_reported_things')
+            # Add user fields
+            self.fields['force_remove_avatar'].help_text = markSafeFormat(
+                u"""Check this box if the avatar is inappropriate.
+                It will force the default avatar.
+                <img src="{avatar_url}" alt="{username}" height="40" width="40">""",
+                avatar_url=self.instance.owner.image_url, username=self.instance.owner.username,
+            )
+            self.beforefields = markSafeFormat(
+                self.BEFOREFIELDS_TEMPLATE,
+                username=self.instance.owner.username, email=self.instance.owner.email,
+                edit_user_url=addParametersToURL(self.instance.owner.edit_url, parameters={
+                    'edit_reported_user': '' }), ajax_edit_user_url=addParametersToURL(
+                        self.instance.owner.ajax_edit_url, parameters={ 'edit_reported_user': '' }))
+
+        # Mark email addresses invalid permission
+        elif 'mark_email_addresses_invalid' in self.request.GET:
+            if not hasPermission(self.request.user, 'mark_email_addresses_invalid'):
+                raise PermissionDenied()
+            self._delete_all_unrelated_fields('mark_email_addresses_invalid')
+            self.fields['invalid_email'].above_field = markSafeFormat(
+                u'<pre>{}</pre>', self.instance.owner.email)
+
+        # Edit roles permission
+        elif 'edit_roles' in self.request.GET:
+            if not hasPermission(self.request.user, 'edit_roles'):
+                raise PermissionDenied()
+            self._delete_all_unrelated_fields('edit_roles')
+            self.fields['c_groups'].choices = [
+                (key, markSafeFormat(
+                    u"""<img class="pull-right" height="60" alt="{name}" src="{img}">
+                    <b>{name}</b><br><p>{reqstaff}<small class="text-muted">{description}</small></p>
+                    <ul>{perms}</ul>{operms}<br>""",
+                    img=staticImageURL(key, folder='groups', extension='png'),
+                    name=group['translation'],
+                    reqstaff=(
+                        markSafe(u'<small class="text-danger">Requires staff status</small><br>')
+                        if group.get('requires_staff', False) else u''
+                    ),
+                    description=group['description'],
+                    perms=markSafeJoin([
+                        markSafeFormat(
+                            u'<li style="display: list-item"><small>{}</small></li>',
+                            toHumanReadable(p, warning=False),
+                        ) for p in group.get('permissions', [])
+                    ]),
+                    operms=markSafeFormat(
+                        u"""<br><div class="alert alert-danger"><small>
+                        Make sure you also grant/revoke {user} the following permissions <b>manually</b>:
+                        </small> <ul>{permissions}</ul></div>""",
+                        user=self.instance.owner.username,
+                        permissions=markSafeJoin([
+                            markSafeFormat(
+                                u'<li style="display: list-item"><small>{}</small></li>',
+                                p if not u
+                                else markSafeFormat(
+                                        u'<a href="{}" target="_blank">{} <i class="flaticon-link"></i></a>',
+                                        u['url'] if isinstance(u, dict) else u, p
+                                ),
+                            ) for p, u in group['outside_permissions'].items()
+                        ]),
+                    ) if group.get('outside_permissions', {}) else u'',
+                )) for key, group in models.UserPreferences.GROUPS.items()
+            ]
+            # Add settings
+            for group_name in models.UserPreferences.GROUPS.keys():
+                groupSettingsFields(self, group_name, edited_preferences=self.instance)
+
+        # Edit donator status permission
+        elif 'edit_donator_status' in self.request.GET:
+            self._delete_all_unrelated_fields('edit_donator_status')
+            self.fields['donation_link_title'].help_text = u"""
+            If the donator is not interested in adding a link but are eligible for it,
+            write "Not interested" and leave ""Donation link" empty"""
+
+        else:
+            raise PermissionDenied()
 
     def save(self, commit=True):
-        instance = super(StaffEditUser, self).save(commit=False)
-        if 'force_remove_avatar' in self.fields and self.cleaned_data['force_remove_avatar'] and instance.email:
-            splitEmail = instance.email.split('@')
+        instance = super(StaffEditUserPreferences, self).save(commit=False)
+        save_owner = False
+
+        # Force remove avatar
+        if ('force_remove_avatar' in self.fields
+            and self.cleaned_data['force_remove_avatar']
+            and instance.owner.email):
+            splitEmail = instance.owner.email.split('@')
             localPart = splitEmail.pop(0)
-            instance.email = localPart.split('+')[0] + u'+' + randomString(4) + '@' + ''.join(splitEmail)
-        if 'location' in self.fields and self.old_location != self.cleaned_data['location']:
-            instance.preferences.location = self.cleaned_data['location']
-            instance.preferences.location_changed = True
-            instance.preferences.latitude = None
-            instance.preferences.longitude = None
-        for field_name in ['m_description', 'i_status', 'donation_link', 'donation_link_title', 'invalid_email', 'i_activities_language']:
-            if field_name in self.fields and field_name in self.cleaned_data:
-                setattr(instance.preferences, field_name, self.cleaned_data[field_name])
+            instance.owner.email = localPart.split('+')[0] + u'+' + randomString(4) + '@' + ''.join(splitEmail)
+            save_owner = True
+
+        # Location
+        if 'location' in self.fields and self.previous_location != self.cleaned_data['location']:
+            instance.location_changed = True
+            instance.latitude = None
+            instance.longitude = None
+
+        # Groups
         if 'c_groups' in self.fields and 'c_groups' in self.cleaned_data:
-            instance.preferences.save_c('groups', self.cleaned_data['c_groups'])
-            settings_to_save = {}
-            for group, details in instance.preferences.groups_and_details.items():
-                # Mark as staff if added role requires staff
-                if not instance.is_staff and instance.preferences.GROUPS[group].get('requires_staff', False):
-                    instance.is_staff = True
-                # Save settings for role
-                settings = details.get('settings', [])
-                if settings:
-                    settings_to_save[group] = {
-                        setting: self.cleaned_data.get(u'group_settings_{}_{}'.format(group, setting), None)
-                        for setting in settings
-                    }
-            instance.preferences.save_j('settings_per_groups', settings_to_save)
-        else:
-            instance.preferences.c_groups = self.old_c_groups
-        instance.preferences.save()
+            save_owner = True
+            if instance.owner.is_superuser:
+                instance.owner.is_staff = True
+            else:
+                instance.owner.is_staff = False
+                for group_name in instance.groups:
+                    if models.UserPreferences.GROUPS.get(group_name, {}).get('requires_staff', False):
+                        instance.owner.is_staff = True
+                        break
+            saveGroupsSettingsFields(self, self.instance)
+
+        if save_owner:
+            instance.owner.save()
         if commit:
             instance.save()
         return instance
 
-    class Meta(_UserCheckEmailUsernameForm.Meta):
-        model = models.User
-        fields = ('is_staff', 'username', 'email')
+    class Meta(MagiForm.Meta):
+        model = models.UserPreferences
+        fields = sum(STAFFEDITUSERPREFERENCES_FIELDS_PER_PERMISSION.values(), [])
 
 class ChangePasswordForm(MagiForm):
     form_title = _('Change your password')
@@ -2758,7 +3104,11 @@ class UserFilterForm(MagiFiltersForm):
         ('followed,id', _('Following')),
     )
 
-    show_more = FormShowMore(cutoff='color' if USER_COLORS else 'location', including_cutoff=True, until='ordering')
+    ordering_show_relevant_fields = {
+        'username': [],
+    }
+
+    show_more = FormShowMore(cutoff='color' if USER_COLORS else 'location')
 
     def _get_preset_language_label(verbose_language):
         return lambda: _('Users who can speak {language}').format(language=verbose_language)
@@ -2879,7 +3229,7 @@ class UserFilterForm(MagiFiltersForm):
     class Meta(MagiFiltersForm.Meta):
         model = models.User
         top_fields = [
-            'search',
+            'search', 'ordering', 'reverse_order',
         ]
         middle_fields = (
             ['color'] if USER_COLORS else []
@@ -2905,7 +3255,7 @@ class AddLinkForm(MagiForm):
         if 'i_relevance' in self.fields:
             self.fields['i_relevance'].label = _('How often do you tweet/stream/post about {}?').format(GAME_NAME)
         if 'i_type' in self.fields:
-            self.fields['i_type'].choices = [
+            self.fields['i_type'].choices = BLANK_CHOICE_DASH + [
                 (name, localized)
                 for (name, localized) in self.fields['i_type'].choices
                 if name != django_settings.SITE
@@ -2999,8 +3349,6 @@ class StaffConfigurationForm(AutoForm):
 
     def __init__(self, *args, **kwargs):
         super(StaffConfigurationForm, self).__init__(*args, **kwargs)
-        if 'i_language' in self.fields:
-            self.fields['i_language'].choices = BLANK_CHOICE_DASH + self.fields['i_language'].choices
         if 'value' in self.fields and (self.is_creating or not self.instance.is_boolean):
             self.fields['value'] = forms.CharField(required=False)
             if not self.is_creating and not self.instance.is_long:
@@ -3008,7 +3356,7 @@ class StaffConfigurationForm(AutoForm):
             else:
                 self.fields['value'].widget = forms.Textarea()
         if not self.is_creating and self.instance.is_markdown and 'value' in self.fields:
-            self.fields['value'].help_text = markdownHelpText(self.request)
+            self.fields['value'].help_text = markdownHelpText(self.request, ajax=self.ajax)
 
     def save(self, commit=True):
         instance = super(StaffConfigurationForm, self).save(commit=False)
@@ -3028,7 +3376,7 @@ class StaffConfigurationSimpleEditForm(StaffConfigurationForm):
         fields = ('verbose_key', 'value')
 
 class StaffConfigurationFilters(MagiFiltersForm):
-    search_fields = ['key', 'verbose_key', 'value']
+    search_fields = [ 'key', 'verbose_key', 'value' ]
 
     has_value = forms.NullBooleanField()
     has_value_filter = MagiFilter(selector='value__isnull')
@@ -3036,14 +3384,14 @@ class StaffConfigurationFilters(MagiFiltersForm):
     with_translations = forms.NullBooleanField()
     with_translations_filter = MagiFilter(selector='i_language__isnull')
 
-    i_language_filter = MagiFilter(to_queryset=lambda form, queryset, request, value: queryset.filter(
-        Q(i_language=value) | Q(i_language__isnull=True) | Q(i_language='')))
-
     key = forms.CharField(widget=forms.HiddenInput)
 
     class Meta(MagiFiltersForm.Meta):
         model = models.StaffConfiguration
-        fields = ('search', 'i_language', 'has_value', 'key')
+        fields = [
+            'search', 'ordering', 'reverse_order',
+            'i_language', 'has_value', 'key',
+        ]
 
 ############################################################
 # Staff details form
@@ -3072,7 +3420,7 @@ class StaffDetailsForm(AutoForm):
                 self.fields[field_name].help_text = mark_safe(u'{} (Public)'.format(self.fields[field_name].help_text))
             else:
                 self.fields[field_name].help_text = mark_safe(u'{} (Only staff can see it)'.format(self.fields[field_name].help_text))
-        if self.is_creating and hasPermission(self.request.user, 'edit_staff_details'):
+        if self.is_creating and self.request and hasPermission(self.request.user, 'edit_staff_details'):
             pass
         elif 'for_user' in self.fields:
             del(self.fields['for_user'])
@@ -3103,7 +3451,7 @@ class StaffDetailsFilterForm(MagiFiltersForm):
 
     class Meta:
         model = models.StaffDetails
-        fields = ['search']
+        fields = [ 'search' ]
 
 ############################################################
 # Activity form
@@ -3209,7 +3557,7 @@ class FilterActivities(MagiFiltersForm):
         ('_cache_total_likes,id', string_concat(_('Most popular'), ' (', _('This week'), ')')),
     ]
 
-    show_more = FormShowMore(cutoff='is_popular', until='ordering')
+    show_more = FormShowMore(cutoff='is_popular')
 
     c_past_tags = forms.MultipleChoiceField(required=False, widget=forms.CheckboxSelectMultiple, label=_('Past tags'))
     c_past_tags_filter = MagiFilter(selector=u'c_tags')
@@ -3287,21 +3635,23 @@ class FilterActivities(MagiFiltersForm):
         # Default selected language
         if 'i_language' in self.fields:
             self.default_to_current_language = False
-            if ((self.request.user.is_authenticated()
-                and self.request.user.preferences.view_activities_language_only)
-                or (not self.request.user.is_authenticated()
-                    and (ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT
-                         or self.request.LANGUAGE_CODE in ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES)
+            if (self.request
+                and (
+                    (self.request.user.is_authenticated()
+                     and self.request.user.preferences.view_activities_language_only)
+                    or (not self.request.user.is_authenticated()
+                        and (ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT
+                             or self.request.LANGUAGE_CODE in ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES))
                 )):
                 self.default_to_current_language = True
                 self.fields['i_language'].initial = self.request.LANGUAGE_CODE
-        if not self.request.user.is_authenticated():
+        if self.request and not self.request.user.is_authenticated():
             if 'is_following' in self.fields:
                 del(self.fields['is_following'])
             if 'liked' in self.fields:
                 del(self.fields['liked'])
         self.active_tab = None
-        if self.request.user.is_authenticated():
+        if self.request and self.request.user.is_authenticated():
             # If a tab is selected in the request (URL)
             self.request_tab = None
             if self.request.path.startswith('/activities/'):
@@ -3343,12 +3693,12 @@ class FilterActivities(MagiFiltersForm):
     class Meta(MagiFiltersForm.Meta):
         model = models.Activity
         fields = [
-            'search',
+            'search', 'ordering', 'reverse_order',
             'c_tags', 'is_popular',
             'is_following', 'liked',
             'hide_archived', 'with_image',
-            'c_past_tags',
             'i_language',
+            'c_past_tags',
         ]
 
 ActivityFilterForm = FilterActivities
@@ -3379,7 +3729,7 @@ class BaseReportForm(MagiForm):
         if self.instance.pk:
             self.reported_thing_id = self.instance.reported_thing_id
             self.type = self.instance.type
-        else:
+        elif self.request:
             if 'id' not in self.request.GET:
                 raise PermissionDenied()
             self.reported_thing_id = self.request.GET['id']
@@ -3408,26 +3758,27 @@ class ReportForm(BaseReportForm):
         super(ReportForm, self).__init__(*args, **kwargs)
         reasons = OrderedDict()
         collection = getMagiCollectionFromModelName(self.type)
-        for reason in (
-                collection.report_edit_templates.keys()
-                + collection.report_delete_templates.keys()
-        ):
-            reasons[reason] = _(reason)
-        self.fields['reason'].choices = BLANK_CHOICE_DASH + reasons.items()
-        self.beforefields = HTMLAlert(
-            message=markSafeFormat(
-                u'{message}<ul>{list}</ul>{learn_more}',
-                message=_(u'Only submit a report if there is a problem with this specific {thing}. If it\'s about something else, your report will be ignored. For example, don\'t report an account or a profile if there is a problem with an activity. Look for "Report" buttons on the following to report individually:').format(thing=collection.title.lower()),
-                list=markSafeJoin([
-                    markSafeFormat(u'<li>{}</li>', unicode(type['plural_title']))
-                    for name, type in self.collection.types.items() if name != self.type
-                ], separator=u''),
-                learn_more=(
-                    '' if (self.request.LANGUAGE_CODE if self.request else get_language()) in LANGUAGES_CANT_SPEAK_ENGLISH else
-                    markSafeFormat(
-                        u'<div class="text-right"><a href="/help/Report" data-ajax-url="/ajax/help/Report/" target="_blank" class="btn btn-warning">{}</a></div>',
-                        _('Learn more'))),
-            ))
+        if collection:
+            for reason in (
+                    collection.report_edit_templates.keys()
+                    + collection.report_delete_templates.keys()
+            ):
+                reasons[reason] = reason
+            self.fields['reason'].choices = BLANK_CHOICE_DASH + reasons.items()
+            self.beforefields = HTMLAlert(
+                message=markSafeFormat(
+                    u'{message}<ul>{list}</ul>{learn_more}',
+                    message=_(u'Only submit a report if there is a problem with this specific {thing}. If it\'s about something else, your report will be ignored. For example, don\'t report an account or a profile if there is a problem with an activity. Look for "Report" buttons on the following to report individually:').format(thing=collection.title.lower()),
+                    list=markSafeJoin([
+                        markSafeFormat(u'<li>{}</li>', unicode(type['plural_title']))
+                        for name, type in self.collection.types.items() if name != self.type
+                    ]),
+                    learn_more=(
+                        '' if (self.request.LANGUAGE_CODE if self.request else get_language()) in LANGUAGES_CANT_SPEAK_ENGLISH else
+                        markSafeFormat(
+                            u'<div class="text-right"><a href="/help/Report" data-ajax-url="/ajax/help/Report/" target="_blank" class="btn btn-warning">{}</a></div>',
+                            _('Learn more'))),
+                ))
 
 class SuggestedEditForm(BaseReportForm):
     reason = forms.MultipleChoiceField(required=True, label=_('Reason'))
@@ -3441,7 +3792,7 @@ class SuggestedEditForm(BaseReportForm):
         if 'reason' in self.fields:
             collection = getMagiCollectionFromModelName(self.type)
             self.fields['reason'].label = _('Field(s) to edit')
-            choices_dict = collection.get_suggest_edit_choices(self.request)
+            choices_dict = getattr(collection, 'suggest_edit_choices', {})
             self.fields['reason'].choices = listUnique(choices_dict.values())
             if (self.request and 'reason' in self.request.GET
                 and self.request.GET['reason'] in choices_dict):
@@ -3498,15 +3849,13 @@ class FilterReports(MagiFiltersForm):
             ]
         else:
             permission = 'moderate_reports'
-        self.fields['staff'].queryset = usersWithPermission(
-            self.fields['staff'].queryset,
-            self.request.user.preferences.GROUPS,
-            permission,
-        )
 
     class Meta(MagiFiltersForm.Meta):
         model = models.Report
-        fields = ('i_status', 'reported_thing', 'staff')
+        fields = [
+            'search', 'ordering', 'reverse_order',
+            'i_status', 'reported_thing',
+        ]
 
 ############################################################
 # Donation Months forms
@@ -3648,6 +3997,9 @@ class FilterBadges(MagiFiltersForm):
         ('date', 'Date'),
         ('rank', 'Rank'),
     ]
+    ordering_show_relevant_fields = {
+        'rank': [],
+    }
 
     added_by = forms.ModelChoiceField(label=_('Staff'), queryset=models.User.objects.filter(is_staff=True), )
 
@@ -3656,7 +4008,10 @@ class FilterBadges(MagiFiltersForm):
 
     class Meta(MagiFiltersForm.Meta):
         model = models.Badge
-        fields = ('search', 'rank', 'added_by', 'of_user')
+        fields = [
+            'search', 'ordering', 'reverse_order',
+            'rank', 'added_by', 'of_user',
+        ]
 
 ############################################################
 # Prizes form
@@ -3689,7 +4044,10 @@ class PrizeFilterForm(BasePrizeFilterForm):
 
     class Meta:
         model = models.Prize
-        fields = ('search', 'has_giveaway', 'i_character', 'ordering', 'reverse_order')
+        fields = [
+            'search', 'ordering', 'reverse_order',
+            'has_giveaway', 'i_character',
+        ]
 
 class PrizeViewingFilterForm(BasePrizeFilterForm):
     max_value = forms.IntegerField(widget=forms.HiddenInput)
@@ -3719,7 +4077,9 @@ class PrizeViewingFilterForm(BasePrizeFilterForm):
 class PrivateMessageForm(MagiForm):
     def __init__(self, *args, **kwargs):
         super(PrivateMessageForm, self).__init__(*args, **kwargs)
-        self.fields['to_user'].initial = self.request.GET.get('to_user', None)
+        self.fields['to_user'].initial = (
+            self.request.GET.get('to_user', None)
+            if self.request else None)
         self.fields['message'].validators.append(MinLengthValidator(2))
 
     class Meta(MagiForm.Meta):
@@ -3757,7 +4117,6 @@ class PrivateMessageFilterForm(MagiFiltersForm):
 
 def to_EventForm(cls):
     class _EventForm(AutoForm):
-
         # Show/hide versions fields details when versions are selected
         if modelHasField(cls.queryset.model, 'c_versions'):
             on_change_value_show = {

@@ -32,16 +32,24 @@ from magi.forms import (
     TranslationCheckForm,
     get_total_translations,
     get_missing_translations,
+    SetFavoriteCharacter,
+    EditGroupsSettings,
+    StaffAddRevokeOutsidePermissions,
 )
 from magi import models
 from magi.raw import donators_adjectives
 from magi.utils import (
     addParametersToURL,
     artSettingsToGetParameters,
+    failSafe,
+    getAllCurrentSeasons,
     getGlobalContext,
     getNavbarPrefix,
     getRandomValueInCurrentSeasons,
     getRandomVariableInCurrentSeasons,
+    getValueInSeason,
+    getVariableInAllCurrentSeasons,
+    getVariableInSeason,
     HTMLAlert,
     isValueInAnyCurrentSeason,
     isVariableInAnyCurrentSeason,
@@ -59,11 +67,12 @@ from magi.utils import (
     CuteFormType,
     getCharactersBirthdayToday,
     getCharactersFavoriteCuteForm,
+    isValidCharacterPk,
     groupsForAllPermissions,
     hasPermission,
     staticImageURL,
-    find_all_translations,
-    duplicate_translation,
+    findAllTranslations,
+    duplicateTranslation,
     getColSize,
     LANGUAGES_NAMES,
     LANGUAGES_DICT,
@@ -73,6 +82,20 @@ from magi.utils import (
     listUnique,
     markSafeFormat,
     markSafeJoin,
+    notTranslatedWarning,
+    jsv,
+    getCharactersTotalFavoritable,
+    setCharactersUserFavorite,
+    getCharactersHasMany,
+    getCharactersKeys,
+    getCharacterCollection,
+    getCharactersFavoriteFieldLabel,
+    getCharactersUsersFavorites,
+    getMedalImage,
+    unsetCharactersUserFavorite,
+    toNullBool,
+    andJoin,
+    getSiteName,
 )
 from magi.notifications import pushNotification
 from magi.settings import (
@@ -120,6 +143,11 @@ from magi.settings import (
     HOMEPAGE_BACKGROUND,
     PROFILE_BACKGROUNDS_THUMBNAILS,
     LANGUAGES_CANT_SPEAK_ENGLISH,
+    BACKGROUNDS_MODEL,
+    BACKGROUNDS_FILTER,
+    SHOW_BACKGROUND_NAME_ON_SELECTION,
+    HAS_MANY_BACKGROUNDS,
+    HAS_MANY_FAVORITE_CHARACTERS,
 )
 from magi.views_collections import item_view
 
@@ -295,23 +323,25 @@ def indexExtraContext(context):
 
         can_preview = (django_settings.DEBUG
                        or (context['request'].user.is_authenticated()
-                           and context['request'].user.hasPermission('manage_main_items')))
+                           and context['request'].user.hasPermission('list_homepage_arts')))
 
         if can_preview:
             preview = {}
-            for get_parameter, art_key in [
-                    ('preview', 'url'),
-                    ('foreground_preview', 'foreground_url'),
-                    ('position_x_preview', 'position_x'),
-                    ('position_y_preview', 'position_y'),
-                    ('position_size_preview', 'position_size'),
-                    ('side_preview', 'side'),
-                    ('ribbon_preview', 'ribbon'),
-                    ('gradient_preview', 'gradient'),
-                    ('hd_url_preview', 'hd_url'),
+            for get_parameter, art_key, is_bool in [
+                    ('preview', 'url', False),
+                    ('foreground_preview', 'foreground_url', False),
+                    ('position_x_preview', 'position_x', False),
+                    ('position_y_preview', 'position_y', False),
+                    ('position_size_preview', 'position_size', False),
+                    ('side_preview', 'side', False),
+                    ('ribbon_preview', 'ribbon', True),
+                    ('gradient_preview', 'gradient', True),
+                    ('hd_url_preview', 'hd_url', False),
             ]:
                 value = context['request'].GET.get(get_parameter, None)
                 if value:
+                    if is_bool:
+                        value = toNullBool(value)
                     if art_key.startswith('position_'):
                         if 'position' not in preview:
                             preview['position'] = {}
@@ -343,9 +373,24 @@ def indexExtraContext(context):
                 context['art'] = random.choice(HOMEPAGE_ARTS).copy()
 
         # 'Tis the season
-        elif isVariableInAnyCurrentSeason('to_random_homepage_art'):
-            context['art'] = getRandomVariableInCurrentSeasons(
-                'to_random_homepage_art', CUSTOM_SEASONAL_MODULE)()
+        elif (isVariableInAnyCurrentSeason('to_random_homepage_art')
+              or isVariableInAnyCurrentSeason('to_all_homepage_arts')):
+            all_seasons = getAllCurrentSeasons()
+            random.shuffle(all_seasons)
+            art = None
+            for season_name in all_seasons:
+                to_random_homepage_art = getVariableInSeason(season_name, 'to_random_homepage_art', CUSTOM_SEASONAL_MODULE)
+                if to_random_homepage_art:
+                    art = to_random_homepage_art()
+                    if art:
+                        break
+                to_all_homepage_arts = getVariableInSeason(season_name, 'to_all_homepage_arts', CUSTOM_SEASONAL_MODULE)
+                if to_all_homepage_arts:
+                    art = failSafe(lambda: random.choice(to_all_homepage_arts()), exceptions=[ IndexError ])
+                    if art:
+                        break
+            if art:
+                context['art'] = art
 
         # Random from the list
         if not context.get('art', None):
@@ -388,7 +433,7 @@ def indexExtraContext(context):
         # With gradient
         context['homepage_art_gradient'] = context['art'].get('gradient', HOMEPAGE_ART_GRADIENT)
 
-    context['homepage_ribbon'] = HOMEPAGE_RIBBON
+    context['homepage_ribbon'] = context.get('art', {}).get('ribbon', HOMEPAGE_RIBBON)
 
 def index(request):
     context = getGlobalContext(request)
@@ -442,13 +487,13 @@ def about(request, context):
         context['bug_tracker_url'] = BUG_TRACKER_URL
         context['contact_methods'] = [
             ('Discord', 'discord', CONTACT_DISCORD),
-            ('Twitter', 'twitter', u'https://twitter.com/{}/'.format(
+            (_('Twitter'), 'twitter', u'https://twitter.com/{}/'.format(
                 TWITTER_HANDLE) if TWITTER_HANDLE else None),
-            ('Instagram', 'instagram', u'https://instagram.com/{}/'.format(
+            (_('Instagram'), 'instagram', u'https://instagram.com/{}/'.format(
                 INSTAGRAM_HANDLE) if INSTAGRAM_HANDLE else None),
-            ('Reddit', 'reddit', u'https://www.reddit.com/user/{}/'.format(
+            (_('Reddit'), 'reddit', u'https://www.reddit.com/user/{}/'.format(
                 CONTACT_REDDIT) if CONTACT_REDDIT else None),
-            ('Facebook', 'facebook', u'https://facebook.com/{}/'.format(
+            (_('Facebook'), 'facebook', u'https://facebook.com/{}/'.format(
                 CONTACT_FACEBOOK) if CONTACT_FACEBOOK else None),
             (_('Email'), 'flaticon-contact', u'mailto:{}'.format(
                 CONTACT_EMAIL if CONTACT_EMAIL else None)),
@@ -596,9 +641,67 @@ def settings(request, context):
     context['alert_reputation_title'] = _('You are not allowed to send private messages.')
     context['alert_reputation_message'] = _('Take some time to play around {site_name} to unlock this feature!').format(site_name=context['t_site_name'])
     context['blocked_users_sentence'] = _('Block {username}').format(username=_('Users').lower())
+    context['add_custom_link_sentence'] = _(u'Add {thing}').format(thing=unicode(_('Custom link')).lower())
+    context['consider_donating_sentence'] = _('If you like {site_name}, please consider donating').format(
+        site_name=getSiteName())
 
     context['t_english'] = t['English']
     context['global_outside_permissions'] = GLOBAL_OUTSIDE_PERMISSIONS
+    if HAS_MANY_BACKGROUNDS:
+        backgrounds_collection = getMagiCollection(getattr(BACKGROUNDS_MODEL, 'collection_name', None))
+        if backgrounds_collection:
+            context['set_background'] = True
+            context['set_background_sentence'] = _('Select {}').format(_('Background').lower())
+            backgrounds_parameters = { 'view': 'set_background' }
+            context['unset_background_url'] = '/unset_background/'
+            context['set_background_url'] = backgrounds_collection.get_list_url(
+                parameters=backgrounds_parameters,
+            )
+            if backgrounds_collection.list_view.ajax:
+                context['set_background_ajax_url'] = backgrounds_collection.get_list_url(
+                    ajax=True, modal_only=True, parameters=backgrounds_parameters)
+                context['set_background_ajax_title'] = context['set_background_sentence']
+
+    context['set_characters'] = {}
+    current_favorite_characters = getCharactersUsersFavorites(request.user, with_images=True, with_names=True)
+    for key in getCharactersKeys():
+        if getCharactersHasMany(key):
+            character_collection = getCharacterCollection(key)
+            if character_collection:
+                total_favoritable = getCharactersTotalFavoritable(key)
+                context['set_characters'][key] = {
+                    'sentence': getCharactersFavoriteFieldLabel(key=key, plural=total_favoritable > 1),
+                    'total_favoritable': total_favoritable,
+                    'icon': character_collection.icon or 'star',
+                    'image': staticImageURL(character_collection.image),
+                    'larger_image': character_collection.larger_image,
+                    'nth': {},
+                }
+                for nth in range(1, total_favoritable + 1):
+                    if total_favoritable > 1:
+                        parameters = { 'view': 'set_favorite_character', 'nth': nth }
+                        nth_sentence = getCharactersFavoriteFieldLabel(key, nth=nth)
+                        unset_url = u'/unset_favorite_character/{}/{}/'.format(key, nth)
+                        image = getMedalImage(nth)
+                    else:
+                        parameters = { 'view': 'set_favorite_character' }
+                        nth_sentence = getCharactersFavoriteFieldLabel(key)
+                        unset_url = u'/unset_favorite_character/{}/'.format(key)
+                        image = None
+                    context['set_characters'][key]['nth'][nth] = {
+                        'sentence': nth_sentence,
+                        'edit_sentence': _('Edit {thing}').format(thing=nth_sentence),
+                        'set_url': character_collection.get_list_url(parameters=parameters),
+                        'unset_url': unset_url,
+                        'current': current_favorite_characters[key][nth],
+                        'image': image,
+                    }
+                    if character_collection.list_view.ajax:
+                        context['set_characters'][key]['nth'][nth]['ajax_url'] = character_collection.get_list_url(
+                            ajax=True, modal_only=True, parameters=parameters)
+
+    # Set up forms
+
     context['forms'] = OrderedDict([
         ('preferences', preferences_form_class(instance=context['preferences'], request=request)),
         ('addLink', AddLinkForm(request=request)),
@@ -612,7 +715,11 @@ def settings(request, context):
         ('emails', EmailsPreferencesForm(request=request)),
         ('activities', ActivitiesPreferencesForm(instance=context['preferences'], request=request)),
         ('security', SecurityPreferencesForm(instance=context['preferences'], request=request)),
+        ('groupsSettings', EditGroupsSettings(instance=context['preferences'], request=request)),
     ])
+
+    # Handle submitted forms
+
     if request.method == 'POST':
         for (form_name, form) in context['forms'].items():
             if form_name in request.POST:
@@ -668,6 +775,14 @@ def settings(request, context):
                         if ON_PREFERENCES_EDITED:
                             ON_PREFERENCES_EDITED(request.user)
                         _settingsOnSuccess(form)
+                elif form_name == 'groupsSettings':
+                    form = EditGroupsSettings(request.POST, instance=context['preferences'], request=request)
+                    if form.is_valid():
+                        form.save()
+                        models.onPreferencesEdited(request.user)
+                        if ON_PREFERENCES_EDITED:
+                            ON_PREFERENCES_EDITED(request.user)
+                        _settingsOnSuccess(form)
                 elif (request.user.preferences.is_premium
                       and form_name == 'donationLink'):
                     form = DonationLinkForm(request.POST, instance=context['preferences'], request=request)
@@ -679,7 +794,6 @@ def settings(request, context):
                         _settingsOnSuccess(form)
                 context['forms'][form_name] = form
 
-    context['add_custom_link_sentence'] = _(u'Add {thing}').format(thing=unicode(_('Custom link')).lower())
     if 'donationLink' in context['forms']:
         context['forms']['donationLink'].form_title = context['add_custom_link_sentence']
 
@@ -783,7 +897,7 @@ def settings(request, context):
             'title': _('Background'),
             'extra_settings': {
                 'modal': 'true',
-	        'modal-text': 'true',
+	        'modal-text': jsv(SHOW_BACKGROUND_NAME_ON_SELECTION),
             },
         },
     }
@@ -928,7 +1042,7 @@ def block(request, context, pk, unblock=False):
     context['form'].submit_title = title
     if not block:
         context['form'].beforeform = mark_safe(
-            """
+            u"""
             <div class=\"blocked-info\">
             <h1><i class=\"flaticon-block\"></i></h1>
             <p>{}</p>
@@ -940,6 +1054,68 @@ def block(request, context, pk, unblock=False):
                  if block
                  else _(u'Are you sure you want to unblock {username}?')).format(username=user.username)
     ))
+
+############################################################
+# Set background / favorite character(s)
+
+def set_background(request, context, pk):
+    if request.method == 'POST':
+        background_image_url = models.getBackgroundURLFromId(pk)
+        if not background_image_url:
+            raise Http404
+        request.user.preferences.add_d('extra', 'background', background_image_url)
+        request.user.preferences.save()
+        raise HttpRedirectException(request.user.item_url)
+    context['form'] = Confirm()
+
+def unset_background(request, context):
+    if request.method == 'POST':
+        request.user.preferences.remove_d('extra', 'background')
+        request.user.preferences.save()
+        raise HttpRedirectException(request.user.item_url)
+    context['form'] = Confirm()
+
+def _set_favorite_character(user, key, pk, nth):
+    setCharactersUserFavorite(user, pk, nth=nth, key=key)
+    user.preferences.save()
+
+def set_favorite_character(request, context, key, pk, nth=None):
+    if not isValidCharacterPk(pk, key=key):
+        raise Http404
+    total_favoritable = getCharactersTotalFavoritable(key=key)
+    if total_favoritable == 1:
+        nth = 1
+    if nth:
+        if request.method == 'POST':
+            _set_favorite_character(request.user, key, pk, nth)
+            raise HttpRedirectException(request.user.item_url)
+        context['form'] = Confirm()
+    else:
+        if request.method == 'POST':
+            context['form'] = SetFavoriteCharacter(
+                request.POST, key=key, request=request, ajax=context['ajax'],
+            )
+            if context['form'].is_valid():
+                if context['ajax']:
+                    _set_favorite_character(request.user, key, pk, context['form'].cleaned_data['nth'])
+                    raise HttpRedirectException('/ajax/successadd/')
+                raise HttpRedirectException(request.user.item_url)
+        else:
+            context['form'] = SetFavoriteCharacter(
+                key=key, request=request, ajax=context['ajax'],
+            )
+            cuteFormFieldsForContext({
+                'nth': {
+                    'type': CuteFormType.HTML,
+                },
+            }, context, form=context['form'])
+
+def unset_favorite_character(request, context, key, nth=None):
+    if request.method == 'POST':
+        unsetCharactersUserFavorite(request.user, key=key, nth=nth)
+        request.user.preferences.save()
+        raise HttpRedirectException(request.user.item_url)
+    context['form'] = Confirm()
 
 ############################################################
 # Avatar redirection for gravatar + twitter
@@ -1371,7 +1547,12 @@ def translations(request, context):
     context['total_need_translations'] = 0
     context['see_all'] = 'see_all' in request.GET
     speaks_languages = listUnique((request.user.preferences.settings_per_groups or {}).get(
-        'translator', {}).get('languages', []) + ['en'])
+        'translator', {}).get('languages', []))
+    if 'translator' in request.user.preferences.groups:
+        context['speaks_languages'] = andJoin([ LANGUAGES_DICT[language] for language in speaks_languages ])
+    else:
+        context['speaks_languages'] = None
+    speaks_languages.append('en')
     only_languages = speaks_languages[:]
     if context['see_all']:
         only_languages = {}
@@ -1395,9 +1576,7 @@ def translations(request, context):
                     LANGUAGES_DICT.items(),
                 )
 
-                source_languages = getattr(
-                    collection.queryset.model, u'{}_SOURCE_LANGUAGES'.format(field.upper()),
-                    ['en']) or ['en']
+                source_languages = collection.queryset.model.get_field_translation_sources(field)
 
                 limit_sources_to = dict(languages).keys()
 
@@ -1431,7 +1610,10 @@ def translations(request, context):
                         continue
                     c['translated_fields_per_languages'][language]['fields'].append({
                         'name': field,
-                        'verbose_name': collection.queryset.model._meta.get_field_by_name(field)[0].verbose_name or toHumanReadable(field),
+                        'verbose_name': (
+                            notTranslatedWarning(collection.queryset.model._meta.get_field_by_name(field)[0].verbose_name)
+                            or toHumanReadable(field, warning=True)
+                        ),
                         'total': count_total,
                         'total_need_translations': count_need_translations,
                         'total_translated': count_total - count_need_translations,
@@ -1505,16 +1687,16 @@ def translations_duplicator(request, context, model_name, field_name, language=N
         context['h1_page_title_icon'] = None
         context['h1_page_title_image'] = staticImageURL(language, folder='language')
     if request.method == 'POST' and 'term' in request.POST:
-        context['logs'] = duplicate_translation(
+        context['logs'] = duplicateTranslation(
             collection.queryset.model, field_name, request.POST['term'],
             only_for_language=language, print_log=False, html_log=True,
         )
 
-    context['terms'] = find_all_translations(collection.queryset.model, field_name, only_for_language=language)
+    context['terms'] = findAllTranslations(collection.queryset.model, field_name, only_for_language=language)
 
 def collections(request, context):
     context['collections'] = getMagiCollections()
-    context['groups_per_permissions'] = groupsForAllPermissions(request.user.preferences.GROUPS)
+    context['groups_per_permissions'] = groupsForAllPermissions(models.UserPreferences.GROUPS)
 
 def translations_check(request, context):
     terms = []
@@ -1608,7 +1790,7 @@ def translations_check(request, context):
                     verbose=verbose,
                 )
                 for language, verbose, term in terms or translation_errors
-            ], separator=u''),
+            ]),
         )
 
 def homepage_arts(request, context):
@@ -1635,12 +1817,16 @@ def homepage_arts(request, context):
     else:
         context['backgrounds'] = []
 
-    def transform_homepage_arts(arts_to_transform):
+    def transform_homepage_arts(arts_to_transform, title=None):
         new_arts = []
         for art in arts_to_transform:
+            if title:
+                art['title'] = title
             if not art:
                 continue
             sides = art.get('side', HOMEPAGE_ART_SIDE)
+            if not isinstance(sides, list):
+                sides = [ sides ]
             for side in ([sides] if not isinstance(sides, list) else sides):
                 new_arts.append(
                     (side, art, addParametersToURL(u'/', artSettingsToGetParameters(art)))
@@ -1663,20 +1849,77 @@ def homepage_arts(request, context):
         }
 
     # 'Tis the season
-    if isVariableInAnyCurrentSeason('to_random_homepage_art'):
+    if (isVariableInAnyCurrentSeason('to_random_homepage_art')
+        or isVariableInAnyCurrentSeason('to_all_homepage_arts')):
+        seasonal_arts = []
+        for season_name in getAllCurrentSeasons():
+            to_all_homepage_arts = getVariableInSeason(season_name, 'to_all_homepage_arts', CUSTOM_SEASONAL_MODULE)
+            if to_all_homepage_arts:
+                seasonal_arts += transform_homepage_arts(to_all_homepage_arts(), title=toHumanReadable(season_name))
+                continue
+            to_random_homepage_art = getVariableInSeason(season_name, 'to_random_homepage_art', CUSTOM_SEASONAL_MODULE)
+            if to_random_homepage_art:
+                seasonal_arts += transform_homepage_arts([
+                    to_random_homepage_art()
+                    for _i in range(50)
+                ], title=toHumanReadable(season_name))
         context['tabs']['seasonal_arts'] = {
             'name': 'Current season(s)',
-            'arts': transform_homepage_arts([
-                getRandomVariableInCurrentSeasons(
-                    'to_random_homepage_art', CUSTOM_SEASONAL_MODULE)()
-                for _i in range(50)
-            ]),
+            'arts': seasonal_arts,
         }
 
     context['tabs']['homepage_arts'] = {
         'name': 'Regular',
         'arts': arts,
     }
+
+############################################################
+# Add / revoke global permissions
+
+def addrevokeoutsidepermissions(request, context, username):
+    user = get_object_or_404(models.User.objects.select_related('preferences'), username=username)
+    previous_groups = request.GET.get('previous_groups', u'').split(',')
+    previous_is_staff = request.GET.get('previous_is_staff', False)
+
+    to_revoke = {}
+    to_add = {}
+
+    # To revoke
+    for group in previous_groups:
+        if group not in user.preferences.groups:
+            to_revoke.update(models.UserPreferences.GROUPS.get(group, {}).get('outside_permissions', {}))
+
+    # To add
+    for group in user.preferences.groups:
+        if group not in previous_groups:
+            to_add.update(models.UserPreferences.GROUPS.get(group, {}).get('outside_permissions', {}))
+
+    # Is staff? Global outside permissions for staff only
+    if previous_is_staff and not user.is_staff:
+        to_revoke.update(GLOBAL_OUTSIDE_PERMISSIONS)
+    if not previous_is_staff and user.is_staff:
+        to_add.update(GLOBAL_OUTSIDE_PERMISSIONS)
+
+    # If in both to revoke and to add, then remove from both
+    for name in list(to_revoke.keys()):
+        if name in to_add:
+            del(to_add[name])
+            del(to_revoke[name])
+
+    if not to_add and not to_revoke:
+        if context['ajax']:
+            raise HttpRedirectException('/ajax/successedit/')
+        raise HttpRedirectException(user.item_url)
+
+    if request.method == 'POST':
+        form = StaffAddRevokeOutsidePermissions(request.POST, to_add=to_add, to_revoke=to_revoke)
+        if form.is_valid():
+            if context['ajax']:
+                raise HttpRedirectException('/ajax/successedit/')
+            raise HttpRedirectException(user.item_url)
+    else:
+        form = StaffAddRevokeOutsidePermissions(to_add=to_add, to_revoke=to_revoke)
+    context['form'] = form
 
 ############################################################
 # Errors
@@ -1755,8 +1998,8 @@ def adventcalendar(request, context, day=None):
         context['day'] = day
         try:
             context['image'] = staticImageURL(
-                simplejson.loads(django_settings.STAFF_CONFIGURATIONS.get(
-                    'season_advent_calendar_images', {})).get(day, None)
+                (simplejson.loads(django_settings.STAFF_CONFIGURATIONS.get(
+                    'season_advent_calendar_images', u'') or u'') or {}).get(day, None)
             )
         except simplejson.JSONDecodeError:
             context['image'] = None

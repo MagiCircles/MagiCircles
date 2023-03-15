@@ -3,6 +3,7 @@ from __future__ import division
 import os, string, random, csv, tinify, cStringIO, pytz, simplejson, datetime, io, operator, re, math, requests, urllib, urllib2, json
 from PIL import Image
 from json.encoder import encode_basestring_ascii
+from urlparse import urlparse
 from collections import OrderedDict
 from dateutil.relativedelta import relativedelta
 from django.conf import settings as django_settings
@@ -15,6 +16,7 @@ from django.http import Http404
 from django.utils.http import urlquote
 from django.utils.deconstruct import deconstructible
 from django.utils.encoding import force_text
+from django.utils.functional import lazy
 from django.utils.translation import ugettext_lazy as _, get_language, activate as translation_activate
 from django.utils.formats import dateformat, date_format
 from django.utils.functional import Promise
@@ -27,10 +29,12 @@ from django.template.loader import get_template
 from django.db import models
 from django.db import connection
 from django.db.models.fields import BLANK_CHOICE_DASH, FieldDoesNotExist
+from django.db.models.related import RelatedObject
 from django.db.models import Q, Prefetch
 from django.forms.models import model_to_dict
 from django.forms import (
     NullBooleanField,
+    BooleanField,
     TextInput,
     CharField as forms_CharField,
     URLField as forms_URLField,
@@ -43,6 +47,16 @@ from django.core.mail import EmailMultiAlternatives
 from django.core.files.images import ImageFile
 from django_translated import t
 from magi import seasons
+from magi.raw import (
+    DEFAULT_ICONS_BASED_ON_NAMES,
+    FORM_FIELDS_EXTRA_VALUES,
+    GET_PARAMETERS_NOT_IN_FORM,
+    GET_PARAMETERS_IN_FORM_HANDLED_OUTSIDE,
+    TWITTER_LINKS_COUNT_AS_X_CHARACTERS,
+    TWITTER_MAX_CHARACTERS,
+    RFC3066_TO_ISO6392,
+    KNOWN_CRAWLERS,
+)
 from magi.middleware.httpredirect import HttpRedirectException
 from magi.default_settings import RAW_CONTEXT
 
@@ -50,6 +64,74 @@ try:
     CUSTOM_SEASONAL_MODULE_FOR_CONTEXT = __import__(django_settings.SITE + '.seasons_context', fromlist=[''])
 except ImportError:
     CUSTOM_SEASONAL_MODULE_FOR_CONTEXT = None
+
+############################################################
+# Lazy
+
+def _format_lazy(text, *args, **kwargs):
+    return unicode(text).format(*args, **kwargs)
+
+format_lazy = lazy(_format_lazy, unicode)
+__ = format_lazy
+
+# Example use:
+# __(_('Select {}'), _('Idol'))
+# __('{} - {}', _('Customize profile'), __(_('Select {}'), lowerTranslation(_('Idol'))))
+
+def _lower_lazy(text):
+    return unicode(text).lower()
+
+lowerTranslation = lazy(_lower_lazy, unicode)
+
+# Example use:
+# lowerTranslation(_('Idol')) -> idol
+
+def markSafeJoin(strings, separator=u' '):
+    return mark_safe(separator.join([
+        _markSafeFormatEscapeOrNot(string) for string in strings
+        if string is not None
+    ]))
+
+def _join_lazy(strings, separator=u'', mark_safe=False):
+    if mark_safe:
+        return markSafeJoin(strings, separator=separator)
+    return separator.join(strings)
+
+joinTranslation = lazy(_join_lazy, unicode)
+
+def andJoin(strings, translated=True, mark_safe=False, language=None, or_=False):
+    if not strings:
+        return u''
+    strings = [
+        _markSafeFormatEscapeOrNot(string) if mark_safe else unicode(string)
+        for string in strings if string is not None
+    ]
+    if len(strings) == 1:
+        string = strings[0]
+    else:
+        comma = COMMA_PER_LANGUAGE.get('en' if not translated else (language or get_language()), COMMA_PER_LANGUAGE['en'])
+        if or_:
+            keyword = t['or'] if translated else 'or'
+        else:
+            keyword = t['and'] if translated else 'and'
+        string = u''.join([
+            comma.join(strings[:-1]),
+            u' {} '.format(keyword),
+            strings[-1],
+        ])
+    if mark_safe:
+        return _mark_safe(string)
+    return string
+
+andJoinTranslation = lazy(andJoin, unicode)
+
+def getTranslatedName(d, field_name='name', language=None):
+    return d.get(u'{}s'.format(field_name), {}).get(
+        language or get_language(),
+        d.get(field_name, None),
+    )
+
+getTranslatedNameLazy = lazy(getTranslatedName, unicode)
 
 ############################################################
 # Characters
@@ -135,6 +217,15 @@ def getTotalCharacters(key='FAVORITE_CHARACTERS'):
 def getCharactersPks(key='FAVORITE_CHARACTERS'):
     return _CHARACTERS_NAMES.keys()
 
+def isValidCharacterPk(pk, key='FAVORITE_CHARACTERS'):
+    return (
+        pk in _CHARACTERS_NAMES.get(key, {})
+        or pk in _CHARACTERS_NAMES_UNICODE.get(key, {})
+    )
+
+def isValidCharacterNth(nth, key='FAVORITE_CHARACTERS'):
+    return unicode(nth) in [ unicode(i) for i in range(1, getCharactersTotalFavoritable(key) + 1) ]
+
 def getCharacterNamesFromPk(pk, key='FAVORITE_CHARACTERS'):
     return {
         'name': (
@@ -147,8 +238,11 @@ def getCharacterNamesFromPk(pk, key='FAVORITE_CHARACTERS'):
         ),
     }
 
+def getCharacterEnglishNameFromPk(pk, key='FAVORITE_CHARACTERS'):
+    return _CHARACTERS_NAMES.get(key, {}).get(pk, None)
+
 def getCharacterNameFromPk(pk, key='FAVORITE_CHARACTERS'):
-    return getTranslatedName(getCharacterNamesFromPk(pk, key=key))
+    return getTranslatedNameLazy(getCharacterNamesFromPk(pk, key=key))
 
 def getCharacterBirthdayFromPk(pk, failsafe=False, key='FAVORITE_CHARACTERS'):
     return (
@@ -158,7 +252,7 @@ def getCharacterBirthdayFromPk(pk, failsafe=False, key='FAVORITE_CHARACTERS'):
     )
 
 def getCharactersBirthdayToday(key='FAVORITE_CHARACTERS'):
-    return getattr(django_settings, 'FAVORITE_CHARACTERS_BIRTHDAY_TODAY', [])
+    return getattr(django_settings, u'{}_BIRTHDAY_TODAY'.format(key), [])
 
 def getCharacterImageFromPk(pk, default=None, key='FAVORITE_CHARACTERS'):
     return (
@@ -177,17 +271,23 @@ def getCharacterURLFromPk(pk, key='FAVORITE_CHARACTERS', ajax=False):
                 'value': getCharacterNameFromPk(pk),
             }),
         )
-    return u'{}/{}/{}/{}/'.format(
+    return u'{}/{}/{}/'.format(
         '/ajax' if ajax else '',
         getCharacterCollectionName(key=key),
-        pk, tourldash(getCharacterNameFromPk(pk, key=key)),
+        pk,
+        '{}/'.format(tourldash(getCharacterNameFromPk(pk, key=key))) if not ajax else '',
     )
 
+_CHARACTERS_CHOICES = {
+    _key: [
+        # It's OK to call getCharacterNameFromPk because translation is lazy
+        (_pk, getCharacterNameFromPk(_pk, key=_key))
+        for _pk, _character_name, _image in getattr(django_settings, _key, {})
+    ] for _key in ALL_CHARACTERS_KEYS
+}
+
 def getCharactersChoices(key='FAVORITE_CHARACTERS'):
-    return [
-        (pk, getCharacterNameFromPk(pk, key=key))
-        for pk, character_name, image in getattr(django_settings, key, {})
-    ]
+    return _CHARACTERS_CHOICES.get(key, [])
 
 def getCharacterCollectionName(key='FAVORITE_CHARACTERS'):
     # /!\ Can't be called at global level
@@ -206,12 +306,20 @@ def getCharacterLabel(key='FAVORITE_CHARACTERS'):
     if key == 'FAVORITE_CHARACTERS' and RAW_CONTEXT.get('favorite_character_name', None):
         label = RAW_CONTEXT['favorite_character_name']
     else:
-        try:
-            label = getCharacterCollection(key).title
-        except AttributeError:
-            label = _('Character')
+        label = failSafe(lambda: getCharacterCollection(key).title, exceptions=[ AttributeError ])
     if callable(label):
         label = label()
+    if not label:
+        label = _('Character')
+    return label
+
+def getCharacterPluralLabel(key='FAVORITE_CHARACTERS'):
+    # /!\ Can't be called at global level
+    label = failSafe(lambda: getCharacterCollection(key).plural_title, exceptions=[ AttributeError ])
+    if callable(label):
+        label = label()
+    if not label:
+        label = _('Characters')
     return label
 
 # When used as favorites
@@ -220,9 +328,15 @@ def getCharactersTotalFavoritable(key='FAVORITE_CHARACTERS'):
     # /!\ Can't be called at global level
     return getCharacterSetting('how_many_favorites', key=key, default=1)
 
-def getCharactersFavoriteFieldLabel(key='FAVORITE_CHARACTERS', nth=None):
+def getCharactersHasMany(key='FAVORITE_CHARACTERS'):
+    return getattr(django_settings, u'HAS_MANY_{}'.format(key), False)
+
+def getCharactersFavoriteFieldLabel(key='FAVORITE_CHARACTERS', nth=None, plural=False):
     # /!\ Can't be called at global level
-    label = getCharacterLabel(key=key)
+    if not nth and plural:
+        label = getCharacterPluralLabel(key=key)
+    else:
+        label = getCharacterLabel(key=key)
     if nth is None:
         return _(u'Favorite {thing}').format(
             thing=label.lower(),
@@ -232,32 +346,112 @@ def getCharactersFavoriteFieldLabel(key='FAVORITE_CHARACTERS', nth=None):
         thing=label.lower(),
     )
 
+def getCharactersKeys():
+    return [
+        key
+        for key in ALL_CHARACTERS_KEYS
+        if hasCharacters(key)
+    ]
+
+def getCharactersOtherExtraKey(key, nth=None, total_favoritable=None, collection_name=None):
+    if not total_favoritable:
+        total_favoritable = getCharactersTotalFavoritable(key)
+    if not collection_name:
+        collection_name = getCharacterCollectionName(key)
+    return u'favorite_{}{}'.format(
+        collection_name,
+        nth if total_favoritable > 1 else '',
+    )
+
 def getCharactersFavoriteFields(only_one=False):
+    """
+    Returns dict: key => [ (field_name, field_label) ]
+    """
     # /!\ Can't be called at global level
     fields = OrderedDict()
-    for key in ALL_CHARACTERS_KEYS:
-        if hasCharacters(key):
-            collection_name = getCharacterCollectionName(key)
-            total = getCharactersTotalFavoritable(key)
-            fields[key] = []
-            if only_one:
-                if key == 'FAVORITE_CHARACTERS':
-                    field_name = 'favorite_character'
-                else:
-                    field_name = 'favorite_{}'.format(collection_name)
-                label = getCharactersFavoriteFieldLabel(key=key)
-                fields[key].append((field_name, label))
+    for key in getCharactersKeys():
+        collection_name = getCharacterCollectionName(key)
+        total_favoritable = getCharactersTotalFavoritable(key)
+        fields[key] = []
+        if only_one:
+            if key == 'FAVORITE_CHARACTERS':
+                field_name = 'favorite_character'
             else:
-                for nth in range(1, total + 1):
-                    if key == 'FAVORITE_CHARACTERS':
-                        field_name = 'favorite_character{}'.format(nth)
-                    else:
-                        field_name = u'd_extra-favorite_{}{}'.format(
-                            collection_name, nth if total > 1 else '')
-                    label = getCharactersFavoriteFieldLabel(
-                        key=key, nth=nth if not only_one and total > 1 else None)
-                    fields[key].append((field_name, label))
+                field_name = 'favorite_{}'.format(collection_name)
+            label = getCharactersFavoriteFieldLabel(key=key)
+            fields[key].append((field_name, label))
+        else:
+            for nth in range(1, total_favoritable + 1):
+                if key == 'FAVORITE_CHARACTERS':
+                    field_name = 'favorite_character{}'.format(nth)
+                else:
+                    field_name = u'd_extra-{}'.format(getCharactersOtherExtraKey(
+                        key, nth=nth, total_favoritable=total_favoritable, collection_name=collection_name))
+                label = getCharactersFavoriteFieldLabel(
+                    key=key, nth=nth if not only_one and total_favoritable > 1 else None)
+                fields[key].append((field_name, label))
     return fields
+
+def getCharactersUsersFavorites(user, with_images=False, with_names=False):
+    """
+    Returns dict: key => { position: { field_name, field_label, pk, (image) } }
+    """
+    # /!\ Can't be called at global level
+    favorites = OrderedDict()
+    for key, fields in getCharactersFavoriteFields().items():
+        favorites[key] = OrderedDict()
+        for i, (field_name, field_label) in enumerate(fields):
+            try:
+                if field_name.startswith('d_extra-'):
+                    pk = user.preferences.extra.get(field_name[len('d_extra-'):], None)
+                else:
+                    pk = getattr(user.preferences, field_name)
+            except AttributeError:
+                pk = None
+            favorites[key][i + 1] = {
+                'field_name': field_name,
+                'field_label': field_label,
+                'pk': pk,
+            }
+            if with_images:
+                favorites[key][i + 1]['image'] = getCharacterImageFromPk(pk, key=key)
+            if with_names:
+                favorites[key][i + 1]['name'] = getCharacterNameFromPk(pk, key=key)
+    return favorites
+
+def isCharactersUserFavorite(pk, key='FAVORITE_CHARACTERS', favorite_characters=None, user=None):
+    """
+    Either specify user or already-retrieved favorite_characters (from getCharactersUsersFavorites).
+    Set key to None to find in all keys (not recommended).
+    """
+    # /!\ Can't be called at global level
+    if not favorite_characters:
+        favorite_characters = getCharactersUsersFavorites(user)
+    for current_key, current_favorite_characters in favorite_characters.items():
+        if key and current_key != key:
+            continue
+        for position, favorite_character in current_favorite_characters.items():
+            if favorite_character['pk'] and unicode(favorite_character['pk']) == unicode(pk):
+                return position
+    return False
+
+def setCharactersUserFavorite(user, pk, nth=1, key='FAVORITE_CHARACTERS'):
+    """You'll still need to call user.preferences.save() after"""
+    # /!\ Can't be called at global level
+    if not isValidCharacterNth(nth, key=key):
+        raise ValueError(u'"{}" is not a valid position for {}'.format(nth, key))
+    if key == 'FAVORITE_CHARACTERS':
+        setattr(user.preferences, 'favorite_character{}'.format(nth), pk)
+    else:
+        user.preferences.add_d('extra', getCharactersOtherExtraKey(key, nth), pk)
+
+def unsetCharactersUserFavorite(user, nth=1, key='FAVORITE_CHARACTERS'):
+    """You'll still need to call user.preferences.save() after"""
+    # /!\ Can't be called at global level
+    if key == 'FAVORITE_CHARACTERS':
+        setattr(user.preferences, 'favorite_character{}'.format(nth), None)
+    else:
+        user.preferences.remove_d('extra', getCharactersOtherExtraKey(key, nth))
 
 def getCharactersFavoriteCuteForm(only_one=True):
     # /!\ Can't be called at global level
@@ -326,6 +520,8 @@ def getCharactersFavoriteFilter(key='FAVORITE_CHARACTERS', field_name=None, pref
 
 def getCharactersFavoriteQueryset(queryset, value, key='FAVORITE_CHARACTERS', field_name=None, prefix=''):
     # /!\ Can't be called at global level
+    if not prefix:
+        queryset = queryset.select_related('preferences')
     magi_filter = getCharactersFavoriteFilter(key=key, field_name=field_name, prefix=prefix)
     if magi_filter.get('to_queryset', None):
         return magi_filter['to_queryset'](None, queryset, None, value)
@@ -336,6 +532,7 @@ def getCharactersFavoriteQueryset(queryset, value, key='FAVORITE_CHARACTERS', fi
         for selector in magi_filter['selectors']:
             condition |= Q(**{ selector: value })
         return queryset.filter(condition)
+    return queryset
 
 ############################################################
 # Languages
@@ -358,6 +555,24 @@ def getVerboseLanguage(language, in_native_language=False):
     if in_native_language:
         return NATIVE_LANGUAGES.get(language, None)
     return LANGUAGES_DICT.get(language, None)
+
+def getLanguageImage(language):
+    # /!\ Can't be called at global level
+    return staticImageURL(language, folder='language', extension='png')
+
+def getRomajiWithFallback(
+        item, romaji_field_name='romaji_name', fallback_field_name='name',
+        language=None, return_language=False,
+):
+    fallback_language, fallback = item.get_translation(fallback_field_name, language=language, return_language=True)
+    if not couldSpeakEnglish(language=language, request=getattr(item, 'request', None)):
+        if fallback:
+            return (fallback_language, fallback) if return_language else fallback
+        return ('en', item.romaji_name) if return_language else item.romaji_name
+    else:
+        if item.romaji_name:
+            return (language or 'en', item.romaji_name) if return_language else item.romaji_name
+        return (fallback_language, fallback) if return_language else fallback
 
 ############################################################
 # Getters for django settings
@@ -475,7 +690,7 @@ def groupsPerPermission(groups, permission):
 
 def groupsWithPermissions(groups, permissions):
     """
-    List of groups that all these permissions
+    List of groups that have all these permissions
     Example:
     - group1: a, b, c
     - group2: a, b, d, e
@@ -618,7 +833,14 @@ custom_item_template = property(lambda view: '{}Item'.format(view.collection.nam
 ############################################################
 # Seasonal helpers
 
-# For direct values
+# For direct values (generated settings)
+
+def getAllCurrentSeasons():
+    return getattr(django_settings, 'SEASONAL_SETTINGS', {}).keys()
+
+def getValueInSeason(season_name, key, default=None):
+    return getattr(django_settings, 'SEASONAL_SETTINGS', {})[season_name].get(key, default)
+
 def isValueInAnyCurrentSeason(key):
     return any(
         season.get(key, None)
@@ -635,7 +857,13 @@ def getValueInAllCurrentSeasons(key):
 def getRandomValueInCurrentSeasons(key):
     return random.choice(getValueInAllCurrentSeasons(key).values())
 
-# For variables in seasons.py module
+# For variables in seasons.py module (will retrieve them from string names, ex: 'getAllArts')
+
+def getVariableInSeason(season_name, key, custom_seasonal_module):
+    value = getValueInSeason(season_name, key)
+    if not value:
+        return None
+    return getVariableFromSeasonalModule(key, value, custom_seasonal_module)
 
 def isVariableInAnyCurrentSeason(key):
     return isValueInAnyCurrentSeason(key)
@@ -677,7 +905,13 @@ def globalContext(request=None, email=False):
         raise NotImplementedError('Request is required to get context.')
 
     context = RAW_CONTEXT.copy()
-    context['ajax'] = request.path_info.startswith('/ajax/') if request else False
+    context['ajax'] = isRequestAjax(request)
+    context['ajax_modal_only'] = context['ajax'] and 'ajax_modal_only' in request.GET
+    context['is_authenticated'] = request.user.is_authenticated()
+    if context['is_authenticated']:
+        context['is_crawler'] = False
+    else:
+        context['is_crawler'] = isRequestCrawler(request)
 
     if request:
         context['request'] = request
@@ -692,7 +926,7 @@ def globalContext(request=None, email=False):
     context['localized_language'] = LANGUAGES_DICT.get(language, '')
     context['native_language'] = NATIVE_LANGUAGES.get(language, '')
     context['switch_languages_choices'] = NATIVE_LANGUAGES.items()
-    context['t_site_name'] = context['site_name_per_language'].get(language, context['site_name'])
+    context['t_site_name'] = getSiteName()
     context['t_site_image'] = context['site_image_per_language'].get(language, context['site_image'])
     context['t_game_name'] = context['game_name_per_language'].get(language, context['game_name'])
     context['t_full_site_image'] = context['full_site_image_per_language'].get(language, context['full_site_image'])
@@ -717,6 +951,8 @@ def globalContext(request=None, email=False):
     if email:
         if context['site_url'].startswith('//'):
             context['site_url'] = 'http:' + context['site_url']
+        context['consider_donating_sentence'] = _('If you like {site_name}, please consider donating').format(
+            site_name=getSiteName())
 
     ############################################################
     # Only ajax pages
@@ -772,7 +1008,7 @@ def globalContext(request=None, email=False):
                         )(request, context)
 
         # Corner popups
-        if request.user.is_authenticated():
+        if context['is_authenticated']:
             if isBirthdayToday(request.user.preferences.birthdate):
                 context['corner_popups'][u'happy_birthday{}'.format(datetime.datetime.today().year)] = {
                     'title': mark_safe(u'<span class="fontx1-5">{} 🎉</span>'.format(_('Happy Birthday'))),
@@ -810,6 +1046,205 @@ def getGlobalContext(request):
 
 def emailContext():
     return globalContext(email=True)
+
+def isRequestAjax(request):
+    if not request:
+        return False
+    return request.path_info.startswith('/ajax/')
+
+def isRequestCrawler(request):
+    if not request or not request.META.get('HTTP_USER_AGENT', None):
+        return False
+    for known_crawler in KNOWN_CRAWLERS:
+        if known_crawler in request.META['HTTP_USER_AGENT']:
+            return True
+    return False
+
+def getDescriptionFromItem(item):
+    description = unicode(item)
+    for field_name, is_markdown in [
+            ('t_m_description', True),
+            ('t_description', False),
+            ('m_description', True),
+            ('description', False),
+    ]:
+        description = getattr(item, field_name, None)
+        if description:
+            if isinstance(description, tuple):
+                description = description[1]
+            description = (
+                simplifyMarkdown if is_markdown else summarize
+            )(description, max_length=158)
+            break
+    return description
+
+def jsonLd(type, content, context=None):
+    """
+    Types: https://developers.google.com/search/docs/advanced/structured-data/search-gallery
+    When context is specified, it just adds it in the context for you
+    """
+    json_ld = {
+        "@context": "https://schema.org",
+        "@type": type,
+    }
+    json_ld.update(content)
+    if context:
+        if 'json_ld' not in context:
+            context['json_ld'] = []
+        context['json_ld'].append(json_ld)
+    return json_ld
+
+def FAQjsonLd(faq, context=None):
+    return jsonLd(
+        'FAQPage',
+        {
+            'mainEntity': [
+                {
+                    '@type': 'Question',
+                    'name': question,
+                    'acceptedAnswer': {
+                        '@type': 'Answer',
+                        'text': answer,
+                    }
+                } for question, answer in faq
+            ],
+        },
+        context=context,
+    )
+
+def getOwnerFromItem(item):
+    """
+    Returns an object that has at least: username and http_item_url,
+    and may have: location
+    """
+    if modelHasField(type(item), '_cache_owner'):
+        return item.cached_owner
+    elif hasattr(item, 'cached_owner'):
+        return item.cached_owner
+    elif modelHasField(type(item), '_cache_owner_username'):
+        return AttrDict({
+            'username': item.cached_owner_username,
+            'http_item_url': u'{}{}/{}/{}/'.format(
+                django_settings.SITE_URL, 'user',
+                item.owner_id, tourldash(item.cached_owner_username),
+            ),
+        })
+    return item.owner
+
+def articleJsonLd(
+        article_title,
+        owner,
+        images_urls,
+        article_type='Article',
+        description=None,
+        date_published=None,
+        date_modified=None,
+        keywords=[],
+        body=None,
+        context=None,
+):
+    """
+    article_type can be: Article, NewsArticle, BlogPosting
+    """
+    content = {
+        'headline': summarize(article_title, max_length=110),
+        'author': authorJsonLd(owner),
+        'image': images_urls,
+    }
+    for key, value in {
+        'description': description,
+        'datePublished': torfc2822(date_published) if date_published else None,
+        'dateModified': torfc2822(date_modified) if date_modified else None,
+        'keywords': u', '.join([unicode(keyword) for keyword in keywords ]),
+        'articleBody': body,
+    }.items():
+        if value:
+            content[key] = value
+    return jsonLd(article_type, content, context=context)
+
+def getAddressFromOwner(owner):
+    """Owner retrieved by getOwnerFromItem"""
+    if hasattr(owner, 'preferences'): # if it's the actual owner instance, or the cached owner has complex hierarchy
+        return getattr(owner.preferences, 'location', None)
+    elif hasattr(owner, 'preferences_location'): # if it was added in cached_owner manually
+        return owner.preferences_location
+    return None
+
+def getTwitterFromOwner(owner, with_at=True):
+    """Owner retrieved by getOwnerFromItem"""
+    twitter = None
+    if hasattr(owner, 'preferences'): # if it's the actual owner instance, or the cached owner has complex hierarchy
+        twitter = getattr(owner.preferences, 'twitter', None)
+    elif hasattr(owner, 'preferences_twitter'): # if it was added in cached_owner manually
+        twitter = owner.preferences_twitter
+    if twitter and with_at:
+        return u'@{}'.format(twitter) if not twitter.startswith('@') else twitter
+    elif twitter and not with_at:
+        return twitter[1:] if twitter.startswith('@') else twitter
+    return twitter
+
+def authorJsonLd(owner):
+    author = {
+        '@type': 'Person',
+        'name': owner.username,
+        'url': owner.http_item_url,
+    }
+    address = getAddressFromOwner(owner)
+    if address:
+        author['address'] = address
+    twitter = getTwitterFromOwner(owner)
+    if twitter:
+        author['additionalName'] = twitter
+    return author
+
+def articleJsonLdFromActivity(activity, context):
+    articleJsonLd(
+        article_type='NewsArticle' if 'news' in activity.tags else 'BlogPosting',
+        article_title=activity.get_title(),
+        owner=getOwnerFromItem(activity),
+        images_urls=[ image for image in [
+            activity.get_first_image(),
+        ] if image ],
+        description=activity.summarize(),
+        date_published=activity.creation,
+        date_modified=activity.creation,
+        keywords=activity.t_tags.values() + RAW_CONTEXT.get('hashtags', []),
+        body=activity.message[1],
+        context=context,
+    )
+
+def articleJsonLdFromItem(item, body=None, context=None):
+    articleJsonLd(
+        article_title=unicode(item),
+        owner=getOwnerFromItem(item),
+        images_urls=[
+            staticImageURL(
+                getattr(item, 'top_image_item', None)
+                or getattr(item, 'top_image', None)
+                or getattr(item, 'image_url', None)
+            ),
+        ],
+        description=getDescriptionFromItem(item),
+        date_published=getattr(item, 'creation', None),
+        date_modified=getattr(item, 'modification', None),
+        body=body,
+        context=context,
+    )
+
+def videoJsonLd(video_url, video_title, video_description, upload_date, context=None):
+    return jsonLd(
+        'VideoObject',
+        {
+            'name': video_title,
+            'description': video_description,
+            'thumbnailUrl': YouTubeVideoField.thumbnail_url(video_url),
+            'uploadDate': failSafe(
+                lambda: torfc2822(upload_date), exceptions=[ AttributeError ], default=(upload_date or 'unknown')),
+            'contentUrl': video_url,
+            'embedUrl': YouTubeVideoField.embed_url(video_url),
+        },
+        context=context,
+    )
 
 def getAccountIdsFromSession(request):
     # /!\ Can't be called at global level
@@ -896,7 +1331,7 @@ def cuteFormFieldsForContext(cuteform_fields, context, form=None, prefix=None, a
     if not cuteform_fields:
         return
     if form and not model:
-        model = getattr(form.Meta, 'model', None) if form else None
+        model = failSafe(lambda: getattr(form.Meta, 'model', None), exceptions=[ AttributeError ])
     if 'cuteform_fields' not in context:
         context['cuteform_fields'] = {}
         context['cuteform_fields_json'] = {}
@@ -1040,7 +1475,6 @@ class FormShowMore:
         self.message_more = message_more
         self.message_less = message_less
         self.check_values = check_values
-
 
 def setJavascriptFormContext(form, form_selector, context, cuteforms, ajax):
     # CuteForm
@@ -1207,7 +1641,7 @@ def getMagiCollection(collection_name):
     """
     May return None if called before the magicollections have been initialized
     """
-    if 'magicollections' in RAW_CONTEXT and collection_name in RAW_CONTEXT['magicollections']:
+    if collection_name and 'magicollections' in RAW_CONTEXT and collection_name in RAW_CONTEXT['magicollections']:
         return RAW_CONTEXT['magicollections'][collection_name]
     return None
 
@@ -1216,6 +1650,57 @@ def getMagiCollectionFromModelName(model_name):
     for collection in getMagiCollections().values():
         if collection.model_name == model_name:
             return collection
+
+def getMagiCollectionFromModel(model):
+    # /!\ Can't be called at global level
+    if not model:
+        return None
+    collection_name = getattr(model, 'collection_name', None)
+    if collection_name:
+        collection = getMagiCollection(collection_name)
+        if collection:
+            return collection
+    return None
+
+def makeCollectionCommunity(collection):
+    """
+    Takes a collection that either inherits from MainItemCollection or MagiCollection
+    and sets default settings for collections expected to be filled by the community
+    """
+    class _CommunityCollection(collection):
+        blockable = False
+        reportable = True
+        allow_suggest_edit = True
+        allow_html_in_markdown = False
+        auto_share_image = True
+
+        class ItemView(collection.ItemView):
+            show_suggest_edit_button = True
+            share_templates = True
+
+            @property
+            def show_owner(self):
+                return self.template == 'default'
+
+            @property
+            def show_faq(self):
+                return self.template == 'default'
+
+            @property
+            def show_article_ld(self):
+                return self.template == 'default'
+
+        class AddView(collection.AddView):
+            staff_required = False
+            permissions_required = []
+            max_per_user_per_day = 30
+
+        class EditView(collection.EditView):
+            staff_required = False
+            permissions_required = []
+            owner_only_or_permissions_required = [ 'manage_main_items' ]
+            allow_delete = True
+    return _CommunityCollection
 
 ############################################################
 # Date to RFC 2822 format
@@ -1347,6 +1832,21 @@ def getAstrologicalSign(month, day):
             return sign
     return None
 
+def reverseOrdering(ordering_fields):
+    return [
+        field_name[1:] if field_name.startswith('-') else u'-' + field_name
+        for field_name in ordering_fields
+    ]
+
+def reverseOrderingString(ordering):
+    return u','.join(reverseOrdering(ordering.split(',')))
+
+def plainOrdering(ordering_fields):
+    return [
+        field_name[1:] if field_name.startswith('-') else field_name
+        for field_name in ordering_fields
+    ]
+
 ############################################################
 # Event status using start and end date
 
@@ -1413,6 +1913,11 @@ def getEventStatus(start_date=None, end_date=None, ends_within=0, starts_within=
     - If start_date and end_date specified: [invalid, future, current, ended]
     - If only start_date: [future, ended]
     """
+    now = timezone.now()
+    if type(start_date) == datetime.date:
+        start_date = datetime.datetime.combine(start_date, now.time()).replace(tzinfo=timezone.utc)
+    if type(end_date) == datetime.date:
+        end_date = datetime.datetime.combine(end_date, now.time()).replace(tzinfo=timezone.utc)
     start_date, end_date, tuples_have_year = addYearToEventWithoutYear(
         start_date, end_date, return_have_year=True)
     if not start_date and not end_date:
@@ -1420,7 +1925,6 @@ def getEventStatus(start_date=None, end_date=None, ends_within=0, starts_within=
     without_year = tuples_have_year == [False, False]
 
     # Return status
-    now = timezone.now()
     if start_date > end_date:
         return 'invalid'
     if now < (start_date - relativedelta(days=starts_within)):
@@ -1482,6 +1986,37 @@ def send_email(subject, template_name, to=[], context=None, from_email=django_se
 ############################################################
 # Various string/int/list tools
 
+def failSafe(f, exceptions=None, default=None, log_exception=False, log_print=None):
+    if exceptions is not None:
+        try:
+            return f()
+        except tuple(exceptions):
+            if django_settings.DEBUG and log_exception:
+                import traceback
+                traceback.print_exc()
+            if django_settings.DEBUG and log_print:
+                print log_print
+            return default
+    try:
+        return f()
+    except:
+        if django_settings.DEBUG and log_exception:
+            import traceback
+            traceback.print_exc()
+        if django_settings.DEBUG and log_print:
+            print log_print
+        return default
+
+def recursiveCall(values, original_value, f):
+    """
+    Goes through a list of values and applies f to each.
+    f takes the result value (original_value, then result of previous f)
+    and the current value from the list.
+    """
+    if not values:
+        return original_value
+    return recursiveCall(values[1:], f(original_value, values[0]), f)
+
 def randomString(length, choice=(string.ascii_letters + string.digits)):
     return ''.join(random.SystemRandom().choice(choice) for _ in range(length))
 
@@ -1491,6 +2026,9 @@ def isAscii(string):
 def ordinalNumber(n):
     return "%d%s" % (n,"tsnrhtdd"[(n/10%10!=1)*(n%10<4)*n%10::4])
 
+def getMedalImage(nth):
+    return staticImageURL(u'medal{}'.format(4 - nth), folder='badges') if nth < 4 else None
+
 def tourldash(string, separator=u'-'):
     separator = unicode(separator)
     if not string:
@@ -1498,35 +2036,44 @@ def tourldash(string, separator=u'-'):
     s =  u''.join(e if e.isalnum() else separator for e in string)
     return separator.join([s for s in s.split(separator) if s])
 
-def toHumanReadable(string, capitalize=True):
-    string = string.lower().replace('_', ' ').replace('-', ' ')
+def notTranslatedWarning(string):
+    if string and isinstance(string, basestring) and django_settings.DEBUG:
+        return u'❌🌏 {}'.format(string)
+    return string
+
+def toHumanReadable(string, capitalize=True, warning=False):
+    """
+    When warning is True, it will show a warning in DEBUG mode to help
+    developers know it's not translated
+    """
+    string = string.lower().replace('_', ' ').replace('-', ' ').strip()
+    if warning:
+        string = notTranslatedWarning(string)
     if capitalize:
         return string.capitalize()
     return string
-
-def getTranslatedName(d, field_name='name', language=None):
-    return d.get(u'{}s'.format(field_name), {}).get(
-        language or get_language(),
-        d.get(field_name, None),
-    )
 
 def getTranslation(term, language):
     """
     term accepts callable
     """
     old_lang = get_language()
-    translation_activate(language)
-    translation = unicode(term(lang)) if callable(term) else unicode(term)
-    translation_activate(old_lang)
+    if old_lang != language:
+        translation_activate(language)
+    translation = unicode(term(language)) if callable(term) else unicode(term)
+    if old_lang != language:
+        translation_activate(old_lang)
     return translation
 
 def getEnglish(term):
     return getTranslation(term, 'en')
 
-def getAllTranslations(term, unique=False):
+def getAllTranslations(term, unique=False, include_en=True):
     translations = {}
     old_lang = get_language()
     for lang in LANGUAGES_DICT.keys():
+        if not include_en and lang == 'en':
+            continue
         translation_activate(lang)
         translations[lang] = unicode(term(lang)) if callable(term) else unicode(term)
     translation_activate(old_lang)
@@ -1624,8 +2171,132 @@ def complementaryColor(hex_color=None, rgb=None):
         return RGBToHex(new_rgb)
     return new_rgb
 
-def listUnique(list):
-    return OrderedDict([(item, None) for item in list]).keys()
+def listUnique(list, remove_empty=False):
+    """remove_empty will call hasValue and skip"""
+    return OrderedDict([(item, None) for item in list if not remove_empty or hasValue(item)]).keys()
+
+class MagiQueryDict(object):
+    """
+    Wrapper around QueryDict
+    On init, querydict is request.GET
+    To pass the querydict to a form, make sure you use .querydict
+    """
+    def __init__(self, querydict):
+        self.querydict = querydict
+
+    def get(self, key, default=None, as_list=False):
+        """when as_list=False, only returns the first specified value (if multiple specified)"""
+        try: values = self.querydict.getlist(key) # for QueryDict
+        except AttributeError: values = [ self.querydict[key] ] # for dict
+        if key.startswith('c_'):
+            if not values:
+                return values
+            elif isinstance(values[0], list):
+                if as_list:
+                    return values
+                else:
+                    return values[0]
+            else:
+                return values
+        if as_list:
+            return values
+        if not values:
+            return default
+        return values[0]
+
+    def getlist(self, key):
+        return self.get(key, as_list=True)
+
+    def only_form_filters(self, collection, include_handled_outside=False, include_view=False):
+        form_filters = []
+        for key in self.keys():
+            if key in GET_PARAMETERS_NOT_IN_FORM:
+                continue
+            if (not include_handled_outside
+                and key in GET_PARAMETERS_IN_FORM_HANDLED_OUTSIDE):
+                continue
+            if (not include_view
+                and key == 'view' and not collection.list_view._alt_view_visible_choices):
+                continue
+            form_filters.append(key)
+        return form_filters
+
+    def is_form_filled(self, collection, include_view=True):
+        return bool(self.only_form_filters(collection, include_handled_outside=True, include_view=include_view))
+
+    def update_key(self, key, new_value):
+        """
+        If dict values are lists, then it will consider that you're passing multiple options,
+        not that your list is the value in itself.
+        """
+        if not self.querydict._mutable:
+            self.querydict = self.querydict.copy()
+        try: # for QueryDict
+            self.querydict.setlist(key, new_value if isinstance(new_value, list) else [ new_value ])
+        except AttributeError: # for dict
+            self.querydict[key] = new_value
+
+
+    def update(self, new_filters):
+        """
+        If dict values are lists, then it will consider that you're passing multiple options,
+        not that your list is the value in itself.
+        """
+        if not new_filters:
+            return
+        for key, new_value in new_filters.items():
+            self.update_key(key, new_value)
+
+    # Imitate dict behavior
+
+    def __getitem__(self, key):
+        return self.get(key, as_list=False)
+
+    def __contains__(self, key):
+        return key in self.querydict
+
+    def items(self):
+        for key in self.querydict.keys():
+            yield key, self.get(key)
+
+    def items_as_lists(self):
+        for key in self.querydict.keys():
+            yield key, self.get(key, as_list=True)
+
+    def __iter__(self):
+        for key in self.querydict.keys():
+            yield key
+
+    def keys(self):
+        for key in self.querydict.keys():
+            yield key
+
+    def values(self):
+        for key in self.querydict.keys():
+            yield self.get(key)
+
+    def __setitem__(self, key, value):
+        self.update_key(key, value)
+
+    def __delitem__(self, key):
+        del self.querydict[key]
+
+    def __len__(self):
+        return len(self.querydict)
+
+    # Fallback
+
+    def __getattr__(self, name):
+        if django_settings.DEBUG:
+            print u"""
+            [Warning] An unknown property of querydict was called,
+            which MagiQueryDict doesn\'t know of and doesn\'t wrap,
+            which could result in unexpected behavior.
+            """
+        try:
+            return getattr(self.querydict, name)
+        except AttributeError:
+            return None
 
 def getIndex(list, index, default=None):
     try:
@@ -1639,6 +2310,20 @@ def updatedDict(d, *args, **kwargs):
     for new_d in args:
 	d.update(new_d)
     return d
+
+def mergeDicts(d, *args):
+    return updatedDict(d, *args, copy=True)
+
+def fieldNameMatch(original_field_name, *field_names):
+    for field_name in field_names:
+        if (
+                original_field_name == field_name
+                or original_field_name.startswith(u'{}_'.format(field_name))
+                or original_field_name.endswith(u'_{}'.format(field_name))
+                or u'_{}_'.format(field_name) in original_field_name
+        ):
+            return True
+    return False
 
 NUMBER_AND_FLOAT_REGEX = '[-+]?[0-9]*\.?[0-9]+'
 
@@ -1690,6 +2375,24 @@ def simplifyMarkdown(markdown_string, max_length=None):
         markdown_string = markdown_string.replace(c, ' ')
     return markdown_string
 
+def tweetLength(tweet):
+    length = 0
+    # Links have a fixed length
+    for tweet_part in tweet.split('http'):
+        if tweet_part.startswith('s://') or tweet_part.startswith('://'):
+            length += TWITTER_LINKS_COUNT_AS_X_CHARACTERS
+            rest_of_tweet_part = ' '.join(tweet_part.split(' ')[1:])
+            if rest_of_tweet_part:
+                length += 1 # space separator
+                length += len(rest_of_tweet_part)
+        else:
+            length += len(tweet_part)
+    # Note: some emojis count as multiple characters, but len(...) already counts them that way
+    return length
+
+def isTweetTooLong(tweet):
+    return tweetLength(tweet) > TWITTER_MAX_CHARACTERS
+
 HTML_CLEANER = re.compile('<(.|\n)*?>|&([a-z0-9]+|#[0-9]{1,6}|#x[0-9a-f]{1,6});', re.MULTILINE)
 
 def simplifyHTML(html, max_length=None):
@@ -1709,12 +2412,42 @@ def simplifyHTML(html, max_length=None):
     return summarize(html, max_length=max_length) if max_length else html
 
 def addParametersToURL(url, parameters={}, anchor=None):
+    existing_anchor = u'#'.join(url.split('#')[1:])
     return u'{}{}{}{}'.format(
-        url,
-        '?' if '?' not in url else ('&' if not url.endswith('&') else ''),
+        url.split('#')[0],
+        ('?' if '?' not in url else ('&' if not url.endswith('&') else '')) if parameters else u'',
         '&'.join([u'{}={}'.format(k, v) for k, v in parameters.items() if v is not None]),
-        u'#{}'.format(anchor) if anchor else '',
+        u'#{}'.format(anchor or existing_anchor) if anchor or existing_anchor else '',
     )
+
+def isFullURL(url):
+    return url.startswith('//') or url.startswith('http://') or url.startswith('https://')
+
+def getListURL(
+        collection_plural_name, ajax=False, modal_only=False,
+        parameters=None, preset=None, random=False, full=False,
+):
+    url = u'{}{}{}/'.format(
+        django_settings.SITE_URL if full else '',
+        u'/' if not full else '',
+        u'/'.join([ s for s in [
+            'ajax' if ajax else None,
+            collection_plural_name,
+            preset,
+            'random' if random else None,
+        ] if s ]),
+    )
+    parameters = parameters.copy() if parameters else {}
+    if modal_only:
+        parameters['ajax_modal_only'] = ''
+    return addParametersToURL(url, parameters)
+
+def getDomainFromURL(url):
+    return urlparse(url).netloc
+
+def getSiteName(language=None):
+    # /!\ Can't be called at global level
+    return RAW_CONTEXT['site_name_per_language'].get(language if language else get_language(), RAW_CONTEXT['site_name'])
 
 def getEmojis(how_many=1):
     # /!\ Can't be called at global level
@@ -1774,10 +2507,12 @@ def redirectToProfile(request, account=None):
     raise HttpRedirectException(u'/user/{}/{}/'.format(request.user.id, request.user.username, '#{}'.format(account.id) if account else ''))
 
 def redirectWhenNotAuthenticated(request, context, next_title=None):
-    if not request.user.is_authenticated():
-        if context.get('current_url', '').startswith('/ajax/'):
+    if request and not request.user.is_authenticated():
+        current_url = context.get('current_url', request.get_full_path() if request else '')
+        if current_url.startswith('/ajax/'):
             raise HttpRedirectException(u'/signup/')
-        raise HttpRedirectException(u'/signup/{}'.format((u'?next={}{}'.format(context['current_url'], u'&next_title={}'.format(unicode(next_title)) if next_title else u'')) if 'current_url' in context else ''))
+        raise HttpRedirectException(u'/signup/{}'.format(u'?next={}{}'.format(
+            current_url, u'&next_title={}'.format(unicode(next_title)) if next_title else u'')))
 
 ############################################################
 # Fail safe get_object_or_404
@@ -1808,6 +2543,28 @@ def dumpModel(instance):
             dump[key] = unicode(dump[key])
     return dump
 
+def prepareCache(d):
+    if isinstance(d, dict):
+        return {
+            key: prepareCache(value)
+            for key, value in d.items()
+        }
+    elif isinstance(d, list):
+        return [ prepareCache(value) for value in d ]
+    elif isinstance(d, tuple):
+        return tuple([ prepareCache(value) for value in d ])
+    is_supported = False
+    for supported_type in [ basestring, int, float, bool, type(None) ]:
+        if isinstance(d, supported_type):
+            is_supported = True
+            break
+    if not is_supported:
+        try:
+            json.dumps(d)
+        except TypeError:
+            return unicode(d)
+    return d
+
 def modelHasField(model, field_name):
     try:
         model._meta.get_field(field_name)
@@ -1823,44 +2580,266 @@ def modelGetField(model, field_name):
 
 def modelFieldVerbose(model, field_name, fallback=True):
     return (
-        model._meta.get_field(field_name)._verbose_name
-        or (toHumanReadable(field_name) if fallback else None)
+        notTranslatedWarning(model._meta.get_field(field_name)._verbose_name)
+        or (toHumanReadable(field_name, warning=True) if fallback else None)
     )
 
 def modelFieldHelpText(model, field_name):
     return model._meta.get_field(field_name).help_text
 
-def failSafe(f, exceptions=None, default=None):
-    if exceptions is not None:
-        try:
-            return f()
-        except tuple(exceptions):
-            return default
-    try:
-        return f()
-    except:
-        return default
-
-def getModelOfRelatedItem(model, related_item_field_name):
+def getRelatedItemFromItem(item, related_item_field_name, unique=True, count=False):
     """
-    Does not support nested lookups. (ex: "card__idol")
+    Example: getRelatedItemFromItem(idol 'cards__voice_actresses')
+    Make sure everything has been preselected/prefetched!
+    Unique: If the result is a lit of items, make sure there's no duplicate
+    Count: Return the total number of items instead of the items.
+           If you use a multi-level lookup, it will still retrieve the intermediary items.
     """
+    value = item # for readability, because it can be a list when it's called recursively
     if '__' in related_item_field_name:
-        return None
-    # Foreign key
+        first_level_field_name = related_item_field_name.split('__')[0]
+        next_level_field_names = u'__'.join(related_item_field_name.split('__')[1:])
+    else:
+        first_level_field_name = related_item_field_name
+        next_level_field_names = None
+    if isinstance(value, list):
+        next_level_sub_lists_or_totals = []
+        for item in value:
+            if hasattr(getattr(item, first_level_field_name), 'all'):
+                if count and not next_level_field_names:
+                    next_level_sub_lists_or_totals.append(
+                        getattr(item, first_level_field_name).count()
+                    )
+                else:
+                    next_level_sub_lists_or_totals.append(
+                        list(getattr(item, first_level_field_name).all())
+                    )
+            else:
+                if count and not next_level_field_names:
+                    next_level_sub_lists_or_totals.append(1)
+                else:
+                    next_level_sub_lists_or_totals.append([
+                        getattr(item, first_level_field_name),
+                    ])
+        if count and not next_level_field_names:
+            next_level_value = sum(next_level_sub_lists_or_totals)
+        else:
+            next_level_value = sum(next_level_sub_lists_or_totals, [])
+    elif not value:
+        if count and not next_level_field_names:
+            next_level_value = 0
+        elif next_level_field_names:
+            next_level_value = []
+        else:
+            next_level_value = None
+    else:
+        if hasattr(getattr(value, first_level_field_name), 'all'):
+            if count and not next_level_field_names:
+                next_level_value = getattr(value, first_level_field_name).count()
+            else:
+                next_level_value = list(getattr(value, first_level_field_name).all())
+        else:
+            if count and not next_level_field_names:
+                next_level_value = 1
+            else:
+                next_level_value = getattr(value, first_level_field_name)
+    if unique and isinstance(next_level_value, list):
+        next_level_value = listUnique(next_level_value)
+    if next_level_field_names:
+        return getRelatedItemFromItem(next_level_value, next_level_field_names, unique=unique, count=count)
+    if count and not isinstance(next_level_value, int): # should never happen
+        if isinstance(next_level_value, list):
+            return len(next_level_value)
+        return 1
+    return next_level_value
+
+getRelatedItemsFromItem = getRelatedItemFromItem
+
+def getModelOfRelatedItem(
+        model, related_item_field_name,
+        return_model_field=False, return_is_plural=False,
+):
+    """return_model_field and return_is_plural are not supported with multi-level lookups"""
+    def _return(model, model_field, is_plural):
+        if return_model_field and return_is_plural:
+            return model, model_field, is_plural
+        elif return_model_field:
+            return model, model_field
+        elif return_is_plural:
+            return model, is_plural
+        return model
+    if '__' in related_item_field_name:
+        model_class = getModelOfRelatedItem(model, related_item_field_name.split('__')[0])
+        if not model_class:
+            return _return(None, None, None)
+        return getModelOfRelatedItem(model_class, u'__'.join(related_item_field_name.split('__')[1:]))
+    # Foreign key or many to many
     field = modelGetField(model, related_item_field_name)
     if field:
-        return field.rel.to
-    # Many to many field
-    for m in model._meta.many_to_many:
-        if m.name == related_item_field_name:
-            return m.rel.to
+        return _return(field.rel.to, field, isinstance(field, models.ManyToManyField))
     # Reverse related objects
-    # + many to many reverse related objects
-    for r in model._meta.get_all_related_objects() + model._meta.get_all_related_many_to_many_objects():
+    for r in model._meta.get_all_related_objects():
         if r.get_accessor_name() == related_item_field_name:
-            return r.model
-    return None
+            return _return(r.model, r, False)
+    # Many to many reverse related objects
+    for r in model._meta.get_all_related_many_to_many_objects():
+        if r.get_accessor_name() == related_item_field_name:
+            return _return(r.model, r, True)
+    return _return(None, None, None)
+
+def _getFilterFieldNameOfRelatedItem(model, related_item_field_name, suffix=u''):
+    if '__' in related_item_field_name:
+        filter_field_name = _getFilterFieldNameOfRelatedItem(model, related_item_field_name.split('__')[0])
+        if not filter_field_name:
+            return None
+        model_class = getModelOfRelatedItem(model, related_item_field_name.split('__')[0])
+        return _getFilterFieldNameOfRelatedItem(
+            model_class,
+            u'__'.join(related_item_field_name.split('__')[1:]),
+            suffix=clearJoin([ filter_field_name, suffix ], u'__'),
+        )
+    filter_field_name = failSafe(
+        lambda: getattr(model, related_item_field_name).field.related_query_name(),
+        exceptions=[ AttributeError ],
+    ) or failSafe(
+        lambda: getattr(model, related_item_field_name).related.field.name,
+        exceptions=[ AttributeError ],
+    ) or failSafe(
+        lambda: getattr(model, related_item_field_name).name,
+        exceptions=[ AttributeError ],
+    )
+    if not filter_field_name:
+        return None
+    return clearJoin([ filter_field_name, suffix], u'__')
+
+def _getVerboseNameOfRelatedFieldAsList(
+        model, related_item_field_name, model_field=None, plural=None,
+        rel_options=None, collection=None, current_list=None, default=None,
+):
+    if not current_list:
+        current_list = []
+    if '__' in related_item_field_name:
+        # rel_options and model_field are not used
+        first_level_field_name = related_item_field_name.split('__')[0]
+        first_level_model, first_level_model_field, first_level_plural = getModelOfRelatedItem(
+            model, first_level_field_name,
+            return_model_field=True, return_is_plural=True,
+        )
+        # Call it with just the first level
+        first_level_verbose_name = _getVerboseNameOfRelatedFieldAsList(
+            model, first_level_field_name, model_field=first_level_model_field,
+            plural=first_level_plural,
+        )[0]
+        current_list.append(first_level_verbose_name)
+        # Then add the rest
+        # plural and collection get passed all the way down to the last level
+        return _getVerboseNameOfRelatedFieldAsList(
+            first_level_model, u'__'.join(related_item_field_name.split('__')[1:]),
+            plural=plural, collection=collection,
+            current_list=current_list,
+        )
+    # From rel_options
+    if not rel_options:
+        rel_options = getRelOptionsDict(model_class=model, field_name=related_item_field_name)
+    verbose_name = getattr(rel_options, 'verbose_name', None)
+    if callable(verbose_name):
+        verbose_name = verbose_name()
+    # From model field
+    rel_model = None
+    if not verbose_name:
+        if not model_field:
+            rel_model, model_field, is_plural = getModelOfRelatedItem(
+                model, related_item_field_name, return_model_field=True,
+                return_is_plural=True,
+            )
+            if plural is None:
+                plural = is_plural
+        verbose_name = getattr(model_field, '_verbose_name', None)
+    # From default
+    if not verbose_name:
+        if default:
+            verbose_name = default
+    # From collection
+    if not verbose_name:
+        if not collection:
+            if not rel_model:
+                rel_model, is_plural = getModelOfRelatedItem(
+                    model, related_item_field_name, return_is_plural=True,
+                )
+                if plural is None:
+                    plural = is_plural
+            collection = getMagiCollection(getattr(rel_model, 'collection_name', None))
+        if plural:
+            verbose_name = getattr(collection, 'plural_title', None)
+        else:
+            verbose_name = getattr(collection, 'title', None)
+    # Fallback to the field name in human readable norm
+    if not verbose_name:
+        verbose_name = toHumanReadable(related_item_field_name, capitalize=True, warning=True)
+    # Return
+    current_list.append(verbose_name)
+    return current_list
+
+def getVerboseNameOfRelatedField(
+        model, related_item_field_name, model_field=None, plural=None,
+        rel_options=None, collection=None, prefix=None, default=None,
+        # For multi-level relationships:
+        return_as_list=False, separator=u' - '
+):
+    """
+    Example: Card contains fk to idol.
+    Then params will be:
+    - model=models.Card
+    - related_item_field_name='idol',
+    - model_field=<django.db.models.fields.related.ForeignKey: idol>
+    - plural=False
+    The result will be: "Idols"
+
+    rel_options and collection can be retrieved from the model if they're not specified.
+    It's just to avoid fetching them again if you already have them handy.
+
+    - plural = wether or not there are multiple items (fk vs m2m for ex)
+
+    Supports multi-level relationships.
+    In that case, it will return the chain of relationship seperated with " - " (or separator).
+    You can also get the list of verbose names using return_as_list.
+
+    When multi-level:
+    - if there's a verbose_name in rel_options, it will just return it and not do anything else
+    - otherwise: rel_options and model_field are not used
+    - plural and collection will be used for the last level
+
+    Example: Song contains singers. Singers (idols) contain voice actresses.
+    The params will be:
+    - model=Song
+    - related_item_field_name='singers__voice_actress'
+    - model_field=<django.db.models.fields.related.ManyToManyField: singers>
+    - plural=True
+    The result will be: "Singers - Voice actresses"
+    And if you set return_as_list, you will get:
+    [ "Singers", "Voice actresses" ]
+
+    You should always use return_as_list and not try to split them
+    yourself, you never know if one of the verbose names uses your separator too.
+    """
+    if rel_options and rel_options.get('verbose_name', None):
+        verbose_name = rel_options['verbose_name']
+        if callable(verbose_name):
+            verbose_name = verbose_name()
+        l = [ verbose_name ]
+    else:
+        l = _getVerboseNameOfRelatedFieldAsList(
+            model, related_item_field_name, model_field=model_field, plural=plural,
+            rel_options=rel_options, collection=collection, default=default,
+        )
+    if prefix:
+        l = [ prefix ] + l
+    if return_as_list:
+        return l
+    return separator.join([unicode(verbose_name) for verbose_name in l ])
+
+def getFilterFieldNameOfRelatedItem(model, related_item_field_name):
+    return _getFilterFieldNameOfRelatedItem(model, related_item_field_name)
 
 def selectRelatedDictToStrings(select_related, prefix=None):
     if not isinstance(select_related, dict):
@@ -1872,6 +2851,41 @@ def selectRelatedDictToStrings(select_related, prefix=None):
         new.append(key)
         new += selectRelatedDictToStrings(values, prefix=key)
     return new
+
+def getAllModelFields(model, only_related_fields=False):
+    """
+    Retrieve all the fields available in a model, including related and reverse related.
+    Sorted.
+    only_related_fields will only include fields related to other items (foreign keys included).
+    """
+    return OrderedDict([
+        (
+            model_field.get_accessor_name()
+            if isinstance(model_field, RelatedObject)
+            else model_field.name,
+            model_field
+        ) for model_field in (
+            sorted(
+                # Model fields
+                ([ f for f in (
+                    model._meta.concrete_fields
+                    + [f for f in model._meta.virtual_fields if isinstance(f, ModelField)]
+                ) if (not only_related_fields
+                      or isinstance(f, models.ForeignKey)
+                      or isinstance(f, models.OneToOneField))
+                  ])
+                # Many to many
+                + model._meta.many_to_many
+            ) + (
+                # Reverse related
+                model._meta.get_all_related_objects()
+                + model._meta.get_all_related_many_to_many_objects()
+            )
+        )
+    ])
+
+def getAllModelRelatedFields(model):
+    return getAllModelFields(model, only_related_fields=True)
 
 def displayQueryset(queryset, prefix=u''):
     result = u''
@@ -1892,6 +2906,137 @@ def displayQueryset(queryset, prefix=u''):
     else:
         result += u'{}{}{}\n'.format(prefix, '    ', None)
     return result
+
+def hasValue(value, false_bool_is_value=True, none_string_is_value=False):
+    """
+    Bool: False IS considered value. (can be changed with false_bool_is_value)
+    Int: 0 IS considered value.
+    None: NOT considered value
+    Images: '' NOT considered value.
+    Strings: '' NOT considered value.
+    Lists: [] NOT considered value.
+    Dicts: {} NOT considered value.
+    Tuples: () NOT considered value.
+    ManyToMany: [] NOT considered value.
+    """
+    if (isinstance(value, list)
+        or isinstance(value, dict)
+        or isinstance(value, tuple)):
+        return bool(value)
+    if value == 'None' and none_string_is_value:
+        return True
+    return value is not None and unicode(value) not in ['', 'None'] + (
+        ['False'] if not false_bool_is_value else [])
+
+def getRelOptionsDict(rel_options=None, model_class=None, field_name=None):
+    """
+    Either (rel_options) or (model_class + field_name required)
+    Will add default values.
+    """
+    if rel_options is None:
+        rel_options = failSafe(lambda: next(
+            r for r in (
+                getattr(model_class, 'REVERSE_RELATED', [])
+                + getattr(model_class, 'reverse_related', []) # for backwards compatibility
+            ) if (r[0] if isinstance(r, tuple) else r['field_name']) == field_name
+        ), exceptions=[ StopIteration ], default={})
+    if isinstance(rel_options, tuple):
+        rel_options = {
+            'field_name': getIndex(rel_options, 0),
+            'url': getIndex(rel_options, 1),
+            'verbose_name': getIndex(rel_options, 2),
+            'filter_field_name': getIndex(rel_options, 3),
+        }
+    rel_options = AttrDict(rel_options)
+    return rel_options
+
+def setRelOptionsDefaults(model_class, field_name, rel_collection, rel_options):
+    # Set defaults to None
+    for key in [
+            'verbose_name',
+            'icon',
+            'image',
+            # URL stuff:
+            'url',
+            'filter_field_name',
+            'to_preset',
+            'new_window',
+            # For fields in REVERSE_RELATED only (unknown from model):
+            'collection_name',
+            # Other:
+            'template_for_prefetched',
+            'template_for_preselected',
+    ]:
+        if key not in rel_options:
+            rel_options[key] = None
+    # Other defaults
+    for key, default in {
+            # For non-explicit relationships only
+            'prefetched': False,
+            'prefetched_together': False,
+            # URL stuff
+            'allow_ajax_per_item': True,
+            'allow_ajax_for_more': True,
+            # Display grid
+            'col_break': 'sm',
+            'align': 'right',
+    }.items():
+        if key not in rel_options:
+            rel_options[key] = default
+
+    # Max and per line
+    rel_options.max = getMaxShownForPrefetchedTogether(
+        model_class, field_name, rel_collection, rel_options=rel_options)
+    rel_options.show_per_line = (
+        getattr(rel_options, 'show_per_line', None)
+        or getattr(rel_options, 'max_per_line', None)
+        or getattr(model_class, u'{}_SHOW_PER_LINE'.format(field_name.upper()), None)
+        or getattr(model_class, u'{}_MAX_PER_LINE'.format(field_name.upper()), None)
+        or (
+            rel_collection.list_view.per_line
+            if rel_collection and rel_collection.list_view.per_line >= 3
+            else None
+        )
+        or 5
+    )
+
+def getMaxShownForPrefetchedTogether(model_class, field_name, rel_collection, rel_options=None):
+    if not rel_options:
+        rel_options = getRelOptionsDict(model_class=model_class, field_name=field_name)
+    if 'max' in rel_options:
+        return rel_options.max
+    elif 'max_per_line' in rel_options:
+        return rel_options.max_per_line
+    elif hasattr(model_class, u'{}_MAX'.format(field_name.upper())):
+        return getattr(model_class, u'{}_MAX'.format(field_name.upper()))
+    elif hasattr(model_class, u'{}_MAX_PER_LINE'.format(field_name.upper())):
+        return getattr(model_class, u'{}_MAX_PER_LINE'.format(field_name.upper()))
+    elif rel_collection and rel_collection.list_view.page_size >= 3:
+        return rel_collection.list_view.page_size
+    elif rel_collection:
+        return 5
+    return None
+
+def getValueIfNotProperty(cls, field_name, default=None):
+    """When trying to access a variable of a class and not its instance, makes sure it doesn't return falsely positive value."""
+    value = getattr(cls, field_name, default)
+    return value if not isinstance(value, property) else default
+
+def getQuerysetFromModel(model, request=None, return_collection=False):
+    """
+    Request is optional.
+    See collection.get_queryset to see how it's used.
+    """
+    if not model:
+        return (None, None) if return_collection else None
+    collection = getMagiCollectionFromModel(model)
+    if collection:
+        queryset = collection.get_queryset()
+    else:
+        queryset = model.objects.all()
+    if return_collection:
+        return collection, queryset
+    return queryset
 
 class ColorInput(TextInput):
     input_type = 'color'
@@ -2057,22 +3202,23 @@ def filterByTranslatedValue(
     return _return()
 
 ############################################################
-# Form utils
+# Model / Form fields
 
 class ManyToManyCSVField(forms_CharField):
     # Only works if pk is an integer or long
 
-    def __init__(self, model_class, field_name, lookup_field_name='name', verbose_name=None, *args, **kwargs):
+    def __init__(self, model_class, field_name, lookup_field_name='name', verbose_name=None, lowercase_verbose_name=True, queryset=None, *args, **kwargs):
         self.m2m_model_class = model_class
         self.m2m_field_name = field_name
         self.m2m_lookup_field_name = lookup_field_name
         self.m2m_items_model_class = getattr(self.m2m_model_class, self.m2m_field_name).field.rel.to
+        self.queryset = queryset or self.m2m_items_model_class.objects.all()
         self._known_items_by_pk = {}
         help_text = _('Separate {things} with commas. Example: "Apple, Orange"').format(
             things=(
-                verbose_name
+                (verbose_name.lower() if verbose_name and lowercase_verbose_name else verbose_name)
                 or failSafe(lambda: getattr(self.m2m_model_class, self.m2m_field_name).field.verbose_name.lower())
-                or toHumanReadable(lookup_field_name, capitalize=False)
+                or toHumanReadable(lookup_field_name, capitalize=False, warning=True)
             ))
         kwargs['help_text'] = (
             markSafeFormat(u'{}<br>{}', kwargs['help_text'], help_text)
@@ -2094,7 +3240,7 @@ class ManyToManyCSVField(forms_CharField):
                 try:
                     value = [ getattr(self._known_items_by_pk[item_pk], self.m2m_lookup_field_name) for item_pk in value ]
                 except KeyError:
-                    items = list(self.m2m_items_model_class.objects.filter(pk__in=value))
+                    items = list(self.queryset.filter(pk__in=value))
                     self._save_known_items(items)
                     value = [ getattr(item, self.m2m_lookup_field_name) for item in items ]
             if not isinstance(value[0], basestring):
@@ -2107,7 +3253,7 @@ class ManyToManyCSVField(forms_CharField):
     def clean(self, data, initial=None):
         value = super(ManyToManyCSVField, self).clean(data)
         items_names = [s.strip() for s in split_data(value) if s.strip()]
-        items = list(self.m2m_items_model_class.objects.filter(**{
+        items = list(self.queryset.filter(**{
             u'{}__in'.format(self.m2m_lookup_field_name): items_names,
         }).distinct())
         self._save_known_items(items)
@@ -2195,14 +3341,49 @@ class YouTubeVideoField(_YouTubeFieldsHelpTextMixin, models.URLField):
 
     @classmethod
     def embed_url_from_code(self, code, start_time=None):
-        return u'https://www.youtube.com/embed/{}{}'.format(
-            code, '' if not start_time else '?start={}'.format(start_time),
-        )
+        parameters = {
+            'modestbranding': 1,
+            'rel': 0,
+        }
+        if start_time:
+            parameters['start'] = start_time
+        return addParametersToURL(u'https://www.youtube.com/embed/{}'.format(code), parameters=parameters)
 
     @classmethod
     def embed_url(self, url):
         d = self.parse_url(url)
         return self.embed_url_from_code(code=d['code'], start_time=d.get('start_time', None))
+
+    @classmethod
+    def translated_embed_url_from_embed_url(self, embed_url, language=None):
+        if not language:
+            language = get_language()
+        google_language = googleTranslateFixLanguage(language)
+        return addParametersToURL(embed_url, parameters={
+            'hl': google_language,
+            'cc_lang_pref': google_language,
+            'cc_load_policy': 1,
+        })
+
+    @classmethod
+    def translated_embed_url(self, url, language=None):
+        return self.translated_embed_url_from_embed_url(self.embed_url(url), language=language)
+
+    @classmethod
+    def translated_embed_url_from_code(self, code, language=None):
+        return self.translated_embed_url_from_embed_url(self.embed_url_from_code(code), language=language)
+
+    @classmethod
+    def thumbnail_url_from_code(self, code, size='default'):
+        """Sizes: default, mqdefault, hqdefault, sddefault, maxresdefault"""
+        return u'https://i.ytimg.com/vi/{code}/{size}.jpg'.format(
+            code=code, size=size,
+        )
+
+    @classmethod
+    def thumbnail_url(self, url, size='default'):
+        d = self.parse_url(url)
+        return self.thumbnail_url_from_code(d['code'], size=size)
 
 class YouTubeVideoTranslationsField(_YouTubeFieldsHelpTextMixin, models.TextField):
     pass
@@ -2251,6 +3432,140 @@ def presetsFromCharacters(
         }) for (pk, name, _image) in getattr(django_settings, key, [])
     ]
 
+def _getAllEquivalentsOfField(field_name, model_field_class_or_form_field_class, value):
+    if (model_field_class_or_form_field_class == NullBooleanField
+        or model_field_class_or_form_field_class == BooleanField):
+        return validNullBoolOptions(value)
+    elif field_name.startswith('c_'):
+        if isinstance(value, list):
+            return [ value ]
+        else:
+            return [ split_data(value) ]
+    if not hasValue(value):
+        return listUnique([ value, '', None ])
+    return [ value ]
+
+def _equivalentFilters_isFilterEqual(key, values, field_details, value_to_compare):
+    """value_to_compare = either default or preset value"""
+    for option in _getAllEquivalentsOfField(
+            key, field_details['model_field_class'] or field_details['form_field_class'],
+            value_to_compare,
+    ):
+        if isinstance(option, list):
+            if sorted(values) == sorted(option):
+                return True
+        elif len(values) == 1:
+            if unicode(values[0]) == unicode(option):
+                return True
+        else:
+            # If multiple values are specified for a field that's not multi-values,
+            # it can't be equivalent to the default value or a preset (multi not supported)
+            pass
+    return False
+
+def _equivalentFilters(collection, filters, preset_filters, ignore_filters=[]):
+    if not preset_filters:
+        return False
+    # 1. Check if all preset keys are specified in filters
+    for key, value in preset_filters.items():
+        if key not in filters:
+            return False
+    flag = False
+    # 2. Go through each filter
+    for key, values in (
+            [ (k, [ v ]) for k, v in filters.items() ]
+            if isinstance(filters, dict)
+            else filters.items_as_lists()
+    ):
+        if key in ignore_filters:
+            continue
+        field_details = collection.list_view.filters_details.get(key, {})
+        # 3. If we don't know the details about this field, then we know it's not equivalent
+        if not field_details:
+            return False
+        # 4. If the key is not in preset filters,
+        #    check if it matches the default value in form. If it does, it can be ignored.
+        if (key not in preset_filters and _equivalentFilters_isFilterEqual(
+                key, values, field_details, field_details['form_default'])):
+            continue
+        # 5. If the key is not in preset filters and doesn't match the default value,
+        #    then we know it's not equivalent
+        if key not in preset_filters:
+            return False
+        # 6. Check that the value in filters matches the value in preset filters
+        #    If it doesn't, then we know they're not equivalent
+        if not _equivalentFilters_isFilterEqual(key, values, field_details, preset_filters.get(key, None)):
+            return False
+        flag = True
+    if flag:
+        return True
+    return False
+
+def isPreset(collection, filters, disable_cleaning=False):
+    """
+    Filters can be MagiQueryDict or dict
+
+    When disable_cleaning = False (default)
+    - will check for equivalent values. For example: True can be '2', 2, 'true', etc
+    - will look for merge fields and make sure they're ignored
+    - if a field is set and is not in presets, but it's the default value, it will be ignored
+    - so it's useful when the filters come from a user, so you're not sure what's in it (empty/default values)
+
+    When disable_cleaning = True
+    - it will skip the steps above
+    - but it will be faster
+    - so it's useful if you're creating the filters to check against yourself, so
+      you know the values will be correct and they'll be no extra values
+    """
+    if not filters:
+        return None
+    form_class = collection.list_view.filter_form
+    if not form_class:
+        return None
+    # Get merge fields so that they're ignored
+    ignore_filters = []
+    if not disable_cleaning:
+        def _foreach_merge_fields(new_field_name, details, fields):
+            ignore_filters.append(new_field_name)
+        form_class.foreach_merge_fields(_foreach_merge_fields)
+    # Go through each presets to check if it's a match
+    for preset, details in getattr(form_class, 'presets', {}).items():
+        if disable_cleaning:
+            if filters == details['fields']:
+                return tourldash(preset)
+        else:
+            if _equivalentFilters(
+                    collection, filters, details['fields'],
+                    ignore_filters=ignore_filters,
+            ):
+                return tourldash(preset)
+    return None
+
+def unifyMergedFields(collection, filters):
+    form_class = collection.list_view.filter_form
+    if not form_class:
+        return
+    def _unifyMergedFields_foreach(new_field_name, details, fields):
+        # If the merge field was used, set original fields too.
+        # Ex: idol_i_unit=i_unit-1, then set i_unit=1
+        merge_field_value = filters.get(new_field_name)
+        if merge_field_value:
+            for field_name in fields.keys():
+                if merge_field_value.startswith(field_name):
+                    filters.update_key(field_name, merge_field_value[len(field_name) + 1:])
+                    merge_field_updated = True
+        # If the original fields were used, set merge field too (only 1st)
+        # Ex: i_unit=1, then set idol_i_unit=i_unit-1
+        else:
+            for field_name in fields.keys():
+                field_value = filters.get(field_name)
+                if field_value:
+                    filters.update_key(new_field_name, u'{}-{}'.format(
+                        field_name, field_value,
+                    ))
+                    break
+    form_class.foreach_merge_fields(_unifyMergedFields_foreach)
+
 def formFieldFromOtherField(field, to_new_field, new_parameters={}):
     parameters = {
         'label': field.label,
@@ -2260,7 +3575,11 @@ def formFieldFromOtherField(field, to_new_field, new_parameters={}):
         'help_text': field.help_text,
     }
     parameters.update(new_parameters)
-    return to_new_field(**parameters)
+    new_field = to_new_field(**parameters)
+    for key in FORM_FIELDS_EXTRA_VALUES:
+        if hasattr(field, key):
+            setattr(new_field, key, getattr(field, key))
+    return new_field
 
 def changeFormField(form, field_name, to_new_field, new_parameters={}, force_add=True):
     if field_name in form.fields:
@@ -2269,7 +3588,8 @@ def changeFormField(form, field_name, to_new_field, new_parameters={}, force_add
         form.fields[field_name] = to_new_field(**new_parameters)
 
 def newOrder(current_order, insert_after=None, insert_before=None, insert_instead=None,
-             insert_at=None, insert_at_instead=None, insert_at_from_last=None, insert_at_from_last_instead=None, dict_values={}):
+             insert_at=None, insert_at_instead=None, insert_at_from_last=None,
+             insert_at_from_last_instead=None, dict_values={}, insert_in_dict_when_missing=True, order=[]):
     """
     All insert_ parameters are dictionaries with key = the name of the field to look at
     and value = a list to insert
@@ -2278,9 +3598,9 @@ def newOrder(current_order, insert_after=None, insert_before=None, insert_instea
     Works with dicts. If you're inserting an item not in the dict, you need to provide a value for the key in dict_values.
     """
     if isinstance(current_order, OrderedDict):
-        order = current_order.keys()
+        order = listUnique(order + current_order.keys())
     else:
-        order = current_order
+        order = listUnique(order + current_order)
     will_be_reinserted_fields = flattenListOfLists(sum([
         (insert_after or {}).values(), (insert_before or {}).values(), (insert_instead or {}).values(),
         (insert_at or {}).values(), (insert_at_instead or {}).values(), (insert_at_from_last or {}).values(),
@@ -2314,15 +3634,33 @@ def newOrder(current_order, insert_after=None, insert_before=None, insert_instea
             new_order = new_order[:-1] + to_insert
         new_order = new_order[:-position - 1] + to_insert + new_order[-position:]
     if isinstance(current_order, OrderedDict):
-        return OrderedDict([( key, dict_values.get(key, current_order.get(key, None))) for key in new_order ])
+        return OrderedDict([
+            ( key, dict_values.get(key, current_order.get(key, None)) )
+            for key in new_order
+            if (key in current_order or key in dict_values) or insert_in_dict_when_missing
+        ])
     return new_order
 
+
+VALID_NULLBOOL_OPTIONS = {
+    True: [ True, '2', 2, 'True', 'true', 'on' ],
+    False: [ False, '3', 3, 'False', 'false' ],
+    None: [ None, '1', 1, 'null' ],
+}
+
+def validNullBoolOptions(value, return_bool_value=False, **kwargs):
+    for main_value, valid_options in VALID_NULLBOOL_OPTIONS.items():
+        for valid_option in valid_options:
+            if value == valid_option:
+                if return_bool_value:
+                    return main_value
+                return valid_options
+    if 'default' in kwargs:
+        return kwargs['default']
+    raise ValueError
+
 def toNullBool(value):
-    if value == '2' or value == True:
-        return True
-    elif value == '3' or value == False:
-        return False
-    return None
+    return validNullBoolOptions(value, return_bool_value=True, default=None)
 
 def formUniquenessCheck(
         form,
@@ -2359,7 +3697,7 @@ def formUniquenessCheck(
         if not labels:
             labels = [
                 getattr(form.fields.get(field_name.split('__')[0], object()),
-                        'label', toHumanReadable(field_name.split('__')[0])).lower()
+                        'label', toHumanReadable(field_name.split('__')[0], warning=True)).lower()
                 for field_name in field_names
             ]
         if not model_title:
@@ -2545,10 +3883,11 @@ def join_data(*args):
     return data if data != '""' else None
 
 def csvToDict(row, titles_row, snake_case=False):
-    return {
-        (titleToSnakeCase(title) if snake_case else title).decode('utf-8'): row[i].decode('utf-8')
+    return OrderedDict([
+        ((titleToSnakeCase(title) if snake_case else title).decode('utf-8'),
+         getIndex(row, i, default=u'').decode('utf-8'))
         for i, title in enumerate(titles_row)
-    }
+    ])
 
 ############################################################
 # Validators
@@ -2879,11 +4218,15 @@ def makeImageGrid(
         model=model, field_name=field_name, previous_url=previous_url,
     )
 
-def makeBadgeImage(badge, width=None, path=None, upload=False, instance=None, model=None, field_name='image', previous_url=None, with_padding=0):
+def makeBadgeImage(badge=None, badge_image=None, badge_rank=None, width=None, path=None, upload=False, instance=None, model=None, field_name='image', previous_url=None, with_padding=0):
+    # Either badge or badge_image required
     from wand.image import Image as WandImage
     # /!\ Can't be called at global level
+    if badge:
+        badge_image = badge.image
+        badge_rank = badge.rank
     # Get border
-    filename = 'badge{}'.format(badge.rank or '')
+    filename = 'badge{}'.format(badge_rank or '')
     border_image_url = staticImageURL(filename, folder='badges', full=True)
     try:
         border_image = WandImage(file=urllib2.urlopen(border_image_url))
@@ -2893,7 +4236,7 @@ def makeBadgeImage(badge, width=None, path=None, upload=False, instance=None, mo
     if width != border_image.width:
         border_image.resize(width=width, height=width)
     # Get badge image
-    badge_image_data = badge.image.read()
+    badge_image_data = badge_image.read()
     badge_image = WandImage(blob=badge_image_data)
     badge_image.resize(width=width, height=width)
     # Initialize image
@@ -2912,12 +4255,12 @@ def makeBadgeImage(badge, width=None, path=None, upload=False, instance=None, mo
 
 def staticFileURL(path, folder=None, extension=None, versionned=True, full=False, static_url=None, default_extension=None, default_folder=None):
     # /!\ Can't be called at global level
-    if not path and not folder and not extension:
+    if not path:
         return None
     path = unicode(path)
     if not extension and '.' not in path and default_extension:
         extension = default_extension
-    if path.startswith('//') or path.startswith('http://') or path.startswith('https://'):
+    if isFullURL(path):
         return path
     if not static_url:
         static_url = RAW_CONTEXT['static_url'] if not full else RAW_CONTEXT['full_static_url']
@@ -2966,71 +4309,76 @@ def toCountDown(date, sentence, classes=None):
         date=torfc2822(date), sentence=sentence, classes=u' '.join(classes or []),
     )
 
-def toCountDownField(date, field_name=None, verbose_name=None, sentence=None, classes=None, icon=None, image=None):
-    return (field_name or 'countdown', {
-        'type': 'html',
-        'verbose_name': verbose_name or _('Countdown'),
-        'value': mark_safe(toCountDown(
-            date=date,
-            sentence=sentence or _('Starts in {time}'),
-            classes=classes if classes is not None else ['fontx1-5'],
-        )),
-        'icon': icon or 'times',
-        'image': image,
-    })
-
-def eventToCountDownField(start_date, end_date, field_name=None, verbose_name=None):
-    status = getEventStatus(start_date, end_date)
-    return toCountDownField(
-        date=end_date if status == 'current' else start_date,
-        field_name=field_name,
-        verbose_name=verbose_name,
-        sentence=_('{time} left') if status == 'current' else _('Starts in {time}'),
-    )
-
 def getColSize(per_line):
     if per_line == 5:
         return 'special-5'
     elif per_line == 7:
         return 'special-7'
+    elif per_line == 8:
+        return 'special-8'
     elif per_line == 9:
         return 'special-9'
     return int(math.ceil(12 / (per_line or 1)))
+
+def getColOffset(align='right', per_line=5, total=15, i=0):
+    """
+    If a class exists for the right offset: True, offset (ex: 8, can use class="... col-md-offset-8")
+    If it's not a rounded offset: False, margin in % (ex: 75, can use style="margin-left: 75%;")
+    """
+    if i != math.floor(total / per_line) * per_line:
+        return False, None
+    number_of_empty_items = per_line - (total - i)
+    if align == 'right':
+        offset = number_of_empty_items * (12 / per_line)
+    elif align == 'center':
+        offset = (number_of_empty_items * (12 / per_line)) / 2
+    if offset and math.floor(offset) != offset:
+        return False, (100 / per_line) * number_of_empty_items
+    return True, int(offset) if offset else None
+
+ALERT_TEMPLATE = u"""
+<div class="alert alert-{alert_type}">
+  <div class="row">
+    <div class="col-sm-2 text-center hidden-xs">
+      <i class="flaticon-{alert_icon} fontx2"></i>
+    </div>
+    <div class="col-sm-{alert_col_size}">
+      {alert_title}
+      {alert_message}
+    </div>
+    {alert_button}
+  </div>
+</div><br>
+"""
+
+ALERT_BUTTON_TEMPLATE = u"""
+<div class="col-sm-3 hidden-xs">
+  <a href="{url}" class="btn btn-main btn-lg btn-block" target="_blank">
+    {verbose}
+    <i class="flaticon-{icon}"></i>
+  </a>
+</div>
+"""
+ALERT_BUTTON_TEMPLATE_VARIABLES = [ 'url', 'verbose', 'icon' ]
 
 def HTMLAlert(type='warning', flaticon='about', title=None, message=None, button=None):
     """
     button is a dict that contains url and verbose
     """
+    if button:
+        alert_button = {
+            key: button.get(key, u'')
+            for key in ALERT_BUTTON_TEMPLATE_VARIABLES
+        }
     return markSafeFormat(
-        u"""
-<div class="alert alert-{type}">
-  <div class="row">
-    <div class="col-sm-2 text-center hidden-xs">
-      <i class="flaticon-{flaticon} fontx2"></i>
-    </div>
-    <div class="col-sm-{col_size}">
-      {title}
-      {message}
-    </div>
-    {button}
-  </div>
-</div><br>
-""",
-        type=type,
-        flaticon=flaticon,
-        title=markSafeFormat(u'<h4>{title}</h4>', title=title) if title else '',
-        message=message or '',
-        col_size=7 if button else 10,
-        button=markSafeFormat(
-            u"""
-        <div class="col-sm-3 hidden-xs">
-        <a href="{url}" class="btn btn-main btn-lg btn-block" target="_blank">
-	{verbose}
-	<i class="flaticon-link"></i>
-      </a>
-    </div>
-            """, **button) if button else '',
-)
+        ALERT_TEMPLATE,
+        alert_type=type,
+        alert_icon=flaticon,
+        alert_title=markSafeFormat(u'<h4>{title}</h4>', title=title) if title else '',
+        alert_message=message or '',
+        alert_col_size=7 if button else 10,
+        alert_button=markSafeFormat(ALERT_BUTTON_TEMPLATE, **alert_button) if button else '',
+    )
 
 markSafe = mark_safe
 markUnsafe = escape
@@ -3045,17 +4393,23 @@ def _markSafeFormatEscapeOrNot(string):
     ) else escape(string))
 
 def markSafeFormat(string, *args, **kwargs):
+    """The first string doesn't need to be marked safe, it's assumed safe"""
     return mark_safe(string.format(*[
         _markSafeFormatEscapeOrNot(arg) for arg in args
     ], **{
         key: _markSafeFormatEscapeOrNot(value) for key, value in kwargs.items()
     }))
 
-def markSafeJoin(strings, separator=u','):
-    return mark_safe(separator.join([
-        _markSafeFormatEscapeOrNot(string) for string in strings
-        if string is not None
-    ]))
+def markSafeReplace(string, replace_from, replace_to):
+    return markSafe(
+        _markSafeFormatEscapeOrNot(string).replace(
+            _markSafeFormatEscapeOrNot(replace_from),
+            _markSafeFormatEscapeOrNot(replace_to),
+        )
+    )
+
+def markSafeStrip(string):
+    return markSafe(_markSafeFormatEscapeOrNot(string).strip())
 
 COMMA_PER_LANGUAGE = {
     'en': u', ', # kr, ru, th use English comma
@@ -3065,39 +4419,22 @@ COMMA_PER_LANGUAGE = {
 }
 _mark_safe = mark_safe
 
-def andJoin(strings, translated=True, mark_safe=False, language=None, or_=False):
-    strings = [
-        _markSafeFormatEscapeOrNot(string) if mark_safe else unicode(string)
-        for string in strings if string is not None
-    ]
-    if len(strings) == 1:
-        string = strings[0]
-    else:
-        comma = COMMA_PER_LANGUAGE.get('en' if not translated else (language or get_language()), COMMA_PER_LANGUAGE['en'])
-        if or_:
-            keyword = t['or'] if translated else 'or'
-        else:
-            keyword = t['and'] if translated else 'and'
-        string = u''.join([
-            comma.join(strings[:-1]),
-            u' {} '.format(keyword),
-            strings[-1],
-        ])
-    if mark_safe:
-        return _mark_safe(string)
-    return string
+def clearJoin(strings, separator=u''):
+    return separator.join([ s for s in strings if s ])
 
 ############################################################
 # Form labels and help texts
 
-def markdownHelpText(request=None):
+def markdownHelpText(request=None, ajax=False):
     # /!\ Can't be called at global level
     if ('help' in RAW_CONTEXT['all_enabled']
         and (not request or request.LANGUAGE_CODE not in RAW_CONTEXT['languages_cant_speak_english'])):
-        return mark_safe(u'{} <a href="/help/Markdown" data-ajax-url="/ajax/help/Markdown/" target="_blank">{}.</a>'.format(
+        return markSafeFormat(
+            u'{} <a href="/help/Markdown" {} target="_blank">{}.</a>',
             _(u'You may use Markdown formatting.'),
+            markSafe(u'data-ajax-url="/ajax/help/Markdown/"') if not ajax else '',
             _(u'Learn more'),
-        ))
+        )
     else:
         return _(u'You may use Markdown formatting.')
 
@@ -3113,6 +4450,12 @@ def flaticonHelpText(help_text=None):
             _('View all'),
         ),
     )
+
+def suggestFlaticonFromFieldName(field_name, default='about'):
+    for base_field_name, icon in DEFAULT_ICONS_BASED_ON_NAMES.items():
+        if fieldNameMatch(field_name, base_field_name):
+            return icon
+    return default
 
 def getSearchSingleFieldLabel(field_name, model_class, labels={}, translated_fields=[]):
     if field_name in labels:
@@ -3174,7 +4517,7 @@ def locationOnChange(user_preferences):
 ############################################################
 # Translations
 
-def duplicate_translation(model, field, term, only_for_language=None, print_log=True, html_log=False):
+def duplicateTranslation(model, field, term, only_for_language=None, print_log=True, html_log=False):
     logs = []
     items = list(model.objects.filter(**{ field: term }))
     known_translations = []
@@ -3201,20 +4544,20 @@ def duplicate_translation(model, field, term, only_for_language=None, print_log=
                 known_translations.append(language)
     return logs
 
-def translations_count_has(model, field, term, language):
+def _translations_count_has(model, field, term, language):
     return model.objects.filter(**{
         field: term,
         u'd_{}s__icontains'.format(field): '"{}"'.format(language),
     }).count()
 
-def translations_count_to_apply_to(model, field, term, language):
+def _translations_count_to_apply_to(model, field, term, language):
     return model.objects.filter(**{
         field: term,
     }).exclude(**{
         u'd_{}s__icontains'.format(field): '"{}"'.format(language),
     }).count()
 
-def find_all_translations(model, field, only_for_language=None, with_count_has=True, with_count_to_apply_to=True):
+def findAllTranslations(model, field, only_for_language=None, with_count_has=True, with_count_to_apply_to=True):
     """
     Returns a dict of:
     base term in English
@@ -3237,8 +4580,8 @@ def find_all_translations(model, field, only_for_language=None, with_count_has=T
             if language not in translations[term]:
                 translations[term][language] = (
                     [],
-                    translations_count_has(model, field, term, language) if with_count_has else 0,
-                    translations_count_to_apply_to(model, field, term, language) if with_count_to_apply_to else 0,
+                    _translations_count_has(model, field, term, language) if with_count_has else 0,
+                    _translations_count_to_apply_to(model, field, term, language) if with_count_to_apply_to else 0,
                 )
             if translation not in translations[term][language][0]:
                 translations[term][language][0].append(
@@ -3253,13 +4596,10 @@ def find_all_translations(model, field, only_for_language=None, with_count_has=T
 
     return translations
 
-def googleTranslateFixLanguage(language):
-    return {
-        'zh-hans': 'zh-CN',
-        'zh-hant': 'zh-TW',
-        'kr': 'ko',
-        'pt-br': 'pt',
-    }.get(language, language)
+def rfc3066ToIso6392(language):
+    return RFC3066_TO_ISO6392.get(language, language)
+
+googleTranslateFixLanguage = rfc3066ToIso6392
 
 def translationSentence(from_language, to_language):
     return unicode(_(u'Translate from %(from_language)s to %(to_language)s')).replace(
@@ -3355,11 +4695,41 @@ def artPreviewButtons(view, buttons, request, item, images, get_parameter='url',
             'show': True,
             'url': addParametersToURL('/', parameters),
             'icon': 'home',
-            'title': u'Preview {} on homepage'.format(toHumanReadable(field_name)),
+            'title': u'Preview {} on homepage'.format(toHumanReadable(field_name, warning=False)),
             'subtitle': None if in_use is None else u'Currently {}abled'.format('en' if in_use else 'dis'),
             'has_permissions': True,
             'open_in_new_window': True,
         }
+
+BASE_BUTTON = {
+    'show': True,
+    'has_permissions': True,
+    'title': None,
+    'icon': False,
+    'image': False,
+    'url': False,
+    'open_in_new_window': False,
+    'ajax_url': False,
+    'ajax_title': False, # By default will use title
+}
+
+def baseButton(
+        button_name=None, buttons=None, extras=None, extra_classes=None,
+        # Either:
+        view=None, request=None, context=None, item=None,
+        # Or:
+        classes=None,
+):
+    if not classes:
+        classes = view.get_item_buttons_classes(request, context, item=item)
+    if extra_classes:
+        classes += extra_classes
+    button = mergeDicts(BASE_BUTTON, { 'classes': classes })
+    if extras:
+        button = updatedDict(button, extras)
+    if buttons is not None:
+        buttons[button_name] = button
+    return button
 
 ############################################################
 # Create user
@@ -3404,6 +4774,8 @@ def adventCalendar(request, context):
     if not request.user.is_authenticated():
         return
     today = datetime.date.today()
+    if today.month != 12 or today.day > 26:
+        return
     if 'js_variables' not in context:
         context['js_variables'] = {}
     context['js_variables']['advent_calendar_days_opened'] = request.user.preferences.extra.get(

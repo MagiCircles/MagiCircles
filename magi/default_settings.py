@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from collections import OrderedDict
 from django.conf import settings as django_settings
+from django.utils.functional import lazy
 from django.utils.translation import ugettext_lazy as _, string_concat
 from magi.django_translated import t
 from magi.seasons import DEFAULT_SEASONS
@@ -15,6 +16,10 @@ RAW_CONTEXT = {
 }
 
 _usernameRegexp = '[\w.@+-]+'
+
+def _format_lazy(text, *args, **kwargs):
+    return unicode(text).format(*args, **kwargs)
+__ = lazy(_format_lazy, unicode)
 
 ############################################################
 # Javascript translated terms
@@ -60,20 +65,42 @@ DEFAULT_USER_COLORS = [
 # Groups
 
 DEFAULT_GLOBAL_OUTSIDE_PERMISSIONS = {
-    'Staff/Contributor Discord': { 'image': 'links/discord', 'url': DEFAULT_CONTACT_DISCORD },
-    'Bug tracker': False, # Added in settings
-    # 'Wiki editor' added in settings
+    'Staff/Contributor Discord': {
+        'image': 'links/discord', 'url': DEFAULT_CONTACT_DISCORD,
+        'how_to': 'Ask a Discord moderator to add/revoke role on Discord',
+    },
 }
+
+TWEETDECK_PERMISSION = {
+    'image': 'links/twitter',
+    'url': 'https://tweetdeck.twitter.com/',
+    'how_to': u"""
+    Click Your account in the navigation bar. Select our Twitter account.
+    Click the Manage team button.""",
+}
+
+POEDITOR_PERMISSION = {
+    'icon': 'link',
+    'url': DEFAULT_POEDITOR_URL,
+    'how_to_add': u"""
+    Send them this link and ask them to join the project on POEditor.""",
+    'how_to_revoke': u"""
+    Click "Dashboard". Select "MagiCircles" project. Go to "Contributors" (UNDER MagiCircles title).
+    Find the contributor and click the trashcan icon.""",
+}
+
+GITHUB_HOW_TO = u"""Click on "Settings", then "Collaborators and teams"."""
 
 DEFAULT_GROUPS = [
     ('manager', {
         'translation': _('Manager'),
-        'description': 'The leader of our staff team is here to make sure that the website is doing well! They make sure we all get things done together and the website keeps getting new users everyday. They\'re also the decision maker in case of conflicts that can\'t be resolved via votes.',
+        'description': 'The leader of our staff team is here to make sure that the web app is doing well! They make sure we all get things done together and our web app keeps getting new users everyday. They\'re also the decision maker in case of conflicts that can\'t be resolved via votes.',
         'permissions': [
-            'edit_roles', 'edit_staff_status', 'edit_donator_status', 'see_profile_edit_button',
+            'edit_roles', 'edit_donator_status', 'see_profile_edit_button',
             'edit_staff_configurations', 'add_badges', 'see_collections_details',
             'manage_main_items', 'view_items_history',
             'edit_staff_details', 'moderate_reports', 'edit_reported_things',
+            'upload_custom_2x',
             'edit_suggested_edits', 'post_community_event_activities',
             'moderate_own_reports',
             'allow_delete_reported_profiles',
@@ -88,10 +115,16 @@ DEFAULT_GROUPS = [
             'bypass_max_per_user',
             'bypass_maximum_items_that_can_be_deleted_at_once',
             'edit_activities_from_the_feed',
+            'post_news', 'post_on_twitter', 'post_on_instagram',
+            'see_account_verification_details',
+            'edit_own_staff_profile',
         ],
         'outside_permissions': {
-            'Tweetdeck': { 'image': 'links/twitter', 'url': 'https://tweetdeck.twitter.com/' },
+            'Tweetdeck': TWEETDECK_PERMISSION,
             'Disqus moderation': False, # Added in settings
+            'See feedback form answers': False, # Added in settings
+            'See event feedback form answers': None, # Added in settings
+            'See event prizes form answers': None, # Added in settings
         },
         'requires_staff': True,
         'guide': '/help/Managers%20guide',
@@ -99,12 +132,13 @@ DEFAULT_GROUPS = [
     }),
     ('circles_manager', {
         'translation': string_concat('Circles - ', _('Manager')),
-        'description': 'Supervises and helps the creation and growth of all the websites. Advises but generally doesn\'t interfere with the managers\' decisions.',
+        'description': 'Supervises and helps the creation and growth of all the web apps. Advises but generally doesn\'t interfere with the managers\' decisions.',
         'requires_staff': True,
         'permissions': [
             'has_twitter_password',
             'access_site_before_launch',
             'beta_test_features',
+            'edit_own_staff_profile',
         ],
         'guide': '/help/Circles%20managers%20guide',
         'ajax_guide': '/ajax/help/Circles%20managers%20guide',
@@ -113,19 +147,22 @@ DEFAULT_GROUPS = [
         'translation': _('Team manager'),
         'description': 'Knows all the team members and discuss with them on a regular basis to make sure they are all active. Ensures that the staff team is only composed of active members, keep track of members who are taking a break, regularly check with members if they\'re still interested, and help members retire if they want to. They are also in charge of assigning and revoking most permissions.',
         'permissions': [
-            'edit_staff_status', 'edit_roles', 'see_profile_edit_button', 'edit_staff_details',
+            'edit_roles', 'see_profile_edit_button', 'edit_staff_details',
             'order_by_any_field',
             'access_site_before_launch',
             'beta_test_features',
+            'edit_own_staff_profile',
         ],
         'requires_staff': True,
         'outside_permissions': {
-            'Administrate the contributors on GitHub': False, # Added in settings
-            'Administrate the contributors on Tweetdeck': {
-                'image': 'links/twitter',
-                'url': 'https://tweetdeck.twitter.com/',
+            'Administrate the contributors on GitHub': {
+                'url': False, # Added in settings
+                'how_to': GITHUB_HOW_TO,
             },
+            'Administrate the contributors on Tweetdeck': TWEETDECK_PERMISSION,
             'Administrate the moderators on Disqus': False, # Added in settings
+            'Administrate who can see the feedback form answers': False, # Added in settings
+            'Administrate who can see the prizes form answers': False, # Added in settings
         },
         'guide': '/help/Team%20managers%20guide',
         'ajax_guide': '/ajax/help/Team%20managers%20guide',
@@ -138,6 +175,7 @@ DEFAULT_GROUPS = [
             'manage_donation_months',
             'edit_donator_status',
             'message_almost_anyone',
+            'edit_own_staff_profile',
         ],
         'requires_staff': True,
         'requires_staff': True,
@@ -171,6 +209,8 @@ DEFAULT_GROUPS = [
             'access_site_before_launch',
             'beta_test_features',
             'bypass_max_per_user',
+            'edit_own_staff_profile',
+            'upload_custom_2x',
         ],
         'requires_staff': True,
         'guide': '/help/Database%20maintainers%20guide',
@@ -178,7 +218,7 @@ DEFAULT_GROUPS = [
     }),
     ('dbapi', {
         'translation': string_concat(_('Database maintainer'), ' (API)'),
-        'description': 'Extracts assets and data and automatically updates our website. They do their best to publish all the details as soon they are available.',
+        'description': 'Extracts assets and data and automatically updates our web app. They do their best to publish all the details as soon they are available.',
         'permissions': [
             'manage_main_items', 'translate_items',
             'moderate_suggested_edits',
@@ -188,6 +228,7 @@ DEFAULT_GROUPS = [
             'access_site_before_launch',
             'beta_test_features',
             'bypass_max_per_user',
+            'edit_own_staff_profile',
         ],
         'requires_staff': True,
         'outside_permissions': {
@@ -201,13 +242,14 @@ DEFAULT_GROUPS = [
     }),
     ('cm', {
         'translation': _('Community manager'),
-        'description': 'We got you covered with all the game news on the website! Thanks to our active team, you know that by following our latest activities, you\'ll never miss anything!',
+        'description': 'We got you covered with all the game news on our web app! Thanks to our active team, you know that by following our latest activities, you\'ll never miss anything!',
         'permissions': [
             'post_news',
             'edit_staff_configurations',
             'access_site_before_launch',
             'beta_test_features',
             'message_almost_anyone',
+            'edit_own_staff_profile',
         ],
         'requires_staff': True,
         'stats': [
@@ -228,9 +270,10 @@ DEFAULT_GROUPS = [
             'post_on_twitter',
             'access_site_before_launch',
             'beta_test_features',
+            'edit_own_staff_profile',
         ],
         'outside_permissions': {
-            'Tweetdeck': { 'image': 'links/twitter', 'url': 'https://tweetdeck.twitter.com/' },
+            'Tweetdeck': TWEETDECK_PERMISSION,
         },
         'guide': '/help/Community%20managers%20guide',
         'ajax_guide': '/ajax/help/Community%20managers%20guide',
@@ -243,6 +286,7 @@ DEFAULT_GROUPS = [
             'post_on_instagram',
             'access_site_before_launch',
             'beta_test_features',
+            'edit_own_staff_profile',
         ],
         'outside_permissions': {
             'Instagram account': { 'image': 'links/instagram', 'url': 'https://instagram.com/' },
@@ -252,43 +296,47 @@ DEFAULT_GROUPS = [
     }),
     ('external_cm', {
         'translation': _('External communication'),
-        'description': 'We\'re very active on other social media, such as Facebook, reddit and various forums! Our team will take the time to inform the other community about our website news and hopefully get more users from there, as well as valuable feedback to improve the website!',
+        'description': 'We\'re very active on other social media, such as Facebook, reddit and various forums! Our team will take the time to inform the other community about our web app news and hopefully get more users from there, as well as valuable feedback to improve our web app!',
         'requires_staff': True,
         'permissions': [
             'access_site_before_launch',
             'beta_test_features',
+            'edit_own_staff_profile',
         ],
         'guide': '/help/External%20communication%20guide',
         'ajax_guide': '/ajax/help/External%20communication%20guide',
     }),
     ('support', {
         'translation': _('Support'),
-        'description': 'Need help with our website or the game? Our support team is here to help you and answer your questions!',
+        'description': 'Need help with our web app or the game? Our support team is here to help you and answer your questions!',
         'requires_staff': True,
         'permissions': [
             'access_site_before_launch',
             'beta_test_features',
             'message_almost_anyone',
+            'edit_own_staff_profile',
         ],
         'outside_permissions': {
-            'Tweetdeck': { 'image': 'links/twitter', 'url': 'https://tweetdeck.twitter.com/' },
+            'Tweetdeck': TWEETDECK_PERMISSION,
             'Receive private messages on Facebook': False, # Added in settings
             'Receive private messages on Reddit': False, # Added in settings
             'Receive emails': { 'icon': 'contact', 'url': u'mailto:{}'.format(django_settings.AWS_SES_RETURN_PATH) },
-            # 'Feedback form' added in settings if exists
+            'See feedback form answers': False, # Added in settings
         },
         'guide': '/help/Support%20guide',
         'ajax_guide': '/ajax/help/Support%20guide',
     }),
     ('a_moderator', {
         'translation': string_concat(_('Moderator'), ' (', _('Active'), ')'),
-        'description': 'We want all of our users of all ages to have a pleasant a safe stay in our website. That\'s why our team of moderators use the website everyday and report anything that might be inappropriate or invalid!',
+        'description': 'We want all of our users of all ages to have a pleasant a safe stay on our app. That\'s why our team of moderators use the app everyday and report anything that might be inappropriate or invalid!',
         'permissions': [
             'see_profile_edit_button',
             'edit_activities_post_language',
             'manipulate_activities',
             'access_site_before_launch',
             'beta_test_features',
+            'see_account_verification_details',
+            'edit_own_staff_profile',
         ],
         'requires_staff': True,
         'stats': [
@@ -311,6 +359,8 @@ DEFAULT_GROUPS = [
             'edit_activities_post_language',
             'access_site_before_launch',
             'beta_test_features',
+            'see_account_verification_details',
+            'edit_own_staff_profile',
         ],
         'requires_staff': True,
         'outside_permissions': {
@@ -341,10 +391,13 @@ DEFAULT_GROUPS = [
             'mark_activities_as_staff_pick',
             'access_site_before_launch',
             'beta_test_features',
+            'edit_own_staff_profile',
         ],
         'requires_staff': True,
         'outside_permissions': {
-            'Tweetdeck': { 'image': 'links/twitter', 'url': 'https://tweetdeck.twitter.com/' },
+            'Tweetdeck': TWEETDECK_PERMISSION,
+            'See event feedback form answers': None, # Added in settings
+            'See event prizes form answers': None, # Added in settings
         },
         'stats': [
             {
@@ -356,16 +409,73 @@ DEFAULT_GROUPS = [
         'guide': '/help/Community%20entertainers%20guide',
         'ajax_guide': '/ajax/help/Community%20entertainers%20guide',
     }),
+    ('prizeassignment', {
+        'translation': string_concat(_('Community entertainer'), ' - ', _('Prizes')),
+        'description': 'In some of our events, participants can win prizes! This community entertainer is in charge of prize assignment. They\'ll make sure someone will take care of your prize and you receive it.',
+        'permissions': [
+            'add_prizes',
+            'message_almost_anyone',
+            'access_site_before_launch',
+            'beta_test_features',
+            'edit_own_staff_profile',
+        ],
+        'requires_staff': True,
+        'guide': '/help/Community%20managers%20guide',
+        'ajax_guide': '/ajax/help/Community%20managers%20guide',
+    }),
     ('assistant', {
         'translation': _('Backup staff'),
-        'description': 'Our super heroes, magicians and jack-of-all-trades. There\'s nothing they can\'t do! We call them to the rescue whenever something needs to get done and they quickly and efficiently help our website and community.',
+        'description': 'Our super heroes, magicians and jack-of-all-trades. There\'s nothing they can\'t do! We call them to the rescue whenever something needs to get done and they quickly and efficiently help our web app and community.',
         'requires_staff': True,
         'permissions': [
             'access_site_before_launch',
             'beta_test_features',
+            'edit_own_staff_profile',
         ],
         'guide': '/help/Backup%20staff%20guide',
         'ajax_guide': '/ajax/help/Backup%20staff%20guide',
+    }),
+    ('managerdeveloper', {
+        'translation': string_concat(_('Developer'), ' (', _('Main'), ')'),
+        'description': 'Developers contribute to the web app by adding new features or fixing bugs, and overall maintaining the web app.',
+        'requires_staff': True,
+        'permissions': [
+            'advanced_staff_configurations',
+            'see_collections_details',
+            'order_by_any_field',
+            'list_homepage_arts',
+            'access_site_before_launch',
+            'beta_test_features',
+            'edit_own_staff_profile',
+        ],
+        'outside_permissions': {
+            'Repository': {
+                'url': False, # Added in settings
+                'how_to': GITHUB_HOW_TO,
+            },
+            'Bug tracker': False, # Added in settings
+        },
+        'guide': '/help/Developers%20guide',
+        'ajax_guide': '/ajax/help/Developers%20guide',
+    }),
+    ('wiki_editor', {
+        'translation': _('Wiki editor'),
+        'description': 'Keeps wiki pages up-to-date, neat and tidy, and easy to read for everyone.',
+        'requires_staff': True,
+        'permissions': [
+            'access_site_before_launch',
+            'beta_test_features',
+            'edit_own_staff_profile',
+        ],
+        'outside_permissions': {
+            'Edit wiki pages': {
+                'icon': 'wiki',
+                'url': False, # added in settings
+                'how_to': GITHUB_HOW_TO,
+            },
+        },
+        'guide': '/help/Wiki%20editor%20guide/',
+        'ajax_guide': '/ajax/help/Wiki%20editor%20guide/',
     }),
     ('discord', {
         'translation': string_concat(_('Moderator'), ' (Discord)'),
@@ -379,7 +489,7 @@ DEFAULT_GROUPS = [
     }),
     ('translator', {
         'translation': _('Translator'),
-        'description': 'Many people can\'t understand English very well, so by doing so our amazing translators work hard to translate our websites in many languages. By doing so they\'re helping hundreds of people access the information we provide easily and comfortably.',
+        'description': 'Many people can\'t understand English very well, so by doing so our amazing translators work hard to translate our web app in many languages. By doing so they\'re helping hundreds of people access the information we provide easily and comfortably.',
         'permissions': [
             'translate_items',
             'translate_staff_configurations',
@@ -388,7 +498,7 @@ DEFAULT_GROUPS = [
         ],
         'requires_staff': False,
         'outside_permissions': {
-            'POEditor': { 'icon': 'link', 'url': DEFAULT_POEDITOR_URL },
+            'POEditor': POEDITOR_PERMISSION,
         },
         'guide': '/help/Translators%20guide',
         'ajax_guide': '/ajax/help/Translators%20guide',
@@ -396,21 +506,21 @@ DEFAULT_GROUPS = [
     }),
     ('design', {
         'translation': _('Graphic designer'),
-        'description': 'Our graphic designers help with banners, flyers, or any other graphic edit we need to communicate about the website or organize special events.',
+        'description': 'Our graphic designers help with banners, flyers, or any other graphic edit we need to communicate about our web app or organize special events.',
         'requires_staff': False,
         'guide': '/help/Join%20the%20graphic%20design%20team',
         'ajax_guide': '/ajax/help/Join%20the%20graphic%20design%20team',
     }),
     ('artist', {
         'translation': _('Artist'),
-        'description': 'Our artists help with illustrations and drawings we need to communicate about the website or organize special events.',
+        'description': 'Our artists help with illustrations and drawings we need to communicate about our web app or organize special events.',
         'requires_staff': False,
         'guide': '/help/Join%20the%20graphic%20design%20team',
         'ajax_guide': '/ajax/help/Join%20the%20graphic%20design%20team',
     }),
     ('developer', {
         'translation': _('Developer'),
-        'description': 'Developers contribute to the website by adding new features or fixing bugs, and overall maintaining the website.',
+        'description': 'Developers contribute to the web app by adding new features or fixing bugs, and overall maintaining the web app.',
         'permissions': [
             'advanced_staff_configurations',
             'see_collections_details',
@@ -419,13 +529,21 @@ DEFAULT_GROUPS = [
             'access_site_before_launch',
             'beta_test_features',
         ],
+        'outside_permissions': {
+            'See feedback form answers': False, # Added in settings
+            'Repository': {
+                'url': False, # Added in settings
+                'how_to': GITHUB_HOW_TO,
+            },
+            'Bug tracker': False, # Added in settings
+        },
         'requires_staff': False,
         'guide': '/help/Developers%20guide',
         'ajax_guide': '/ajax/help/Developers%20guide',
     }),
     ('sysadmin', {
         'translation': _('System administrator'),
-        'description': 'Our system administrators take care of the infrasturcture of our websites, including maintaining the servers, deploying new versions, ensuring that we scale according to traffic and under budget, and overall instrastructure monitoring.',
+        'description': 'Our system administrators take care of the infrasturcture of our web app, including maintaining the servers, deploying new versions, ensuring that we scale according to traffic and under budget, and overall instrastructure monitoring.',
         'permissions': [
             'advanced_staff_configurations',
             'see_profile_edit_button',
@@ -492,6 +610,7 @@ DEFAULT_ENABLED_NAVBAR_LISTS = OrderedDict([
             'about_game',
             'donate_list',
             'help',
+            'contact',
             'map',
             'staffdetails_list',
             'report_list',
@@ -783,7 +902,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'external_link': True,
     }),
     ('twitter', {
-        'title': 'Twitter',
+        'title': _('Twitter'),
         'image': 'links/twitter',
         'divider_before': True,
         'navbar_link_list': 'community',
@@ -793,7 +912,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'external_link': True,
     }),
     ('instagram', {
-        'title': 'Instagram',
+        'title': _('Instagram'),
         'image': 'links/instagram',
         'navbar_link_list': 'community',
         # redirect set in settings.py
@@ -802,13 +921,19 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
         'external_link': True,
     }),
     ('facebook', {
-        'title': 'Facebook',
+        'title': _('Facebook'),
         'image': 'links/facebook',
         'navbar_link_list': 'community',
         # redirect set in settings.py
         'new_tab': True,
         'check_permissions': lambda c: c['request'].LANGUAGE_CODE not in DEFAULT_LANGUAGES_CANT_SPEAK_ENGLISH,
         'external_link': True,
+    }),
+    ('contact', {
+        'title': _('Contact us'),
+        'icon': 'love-letter',
+        'navbar_link_list': 'more',
+        'redirect': '/about/#contact',
     }),
 
     ('block', {
@@ -908,6 +1033,89 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
             'custom': False,
             'navbar_link': False,
             'icon': 'developer',
+        },
+    ]),
+    ('set_background', {
+        'title': string_concat(_('Background'), ' - ', _('Apply changes')),
+        'ajax': False,
+        'custom': False,
+        'url_variables': [
+            ('pk', '\d+'),
+        ],
+        'authentication_required': True,
+        'navbar_link': False,
+        'as_form': True,
+    }),
+    ('unset_background', {
+        'title': string_concat(_('Background'), ' - ', _('Clear')),
+        'ajax': False,
+        'custom': False,
+        'authentication_required': True,
+        'navbar_link': False,
+        'as_form': True,
+    }),
+    ('set_favorite_character', [
+        {
+            'title': string_concat(__(_('Favorite {thing}'), thing=_('Character')), ' - ', _('Apply changes')),
+            'ajax': False,
+            'custom': False,
+            'url_variables': [
+                ('key', '[^/]+'),
+                ('pk', '\d+'),
+            ],
+            'authentication_required': True,
+            'navbar_link': False,
+            'as_form': True,
+        },
+        {
+            'title': string_concat(__(_('Favorite {thing}'), thing=_('Character')), ' - ', _('Apply changes')),
+            'ajax': True,
+            'custom': False,
+            'url_variables': [
+                ('key', '[^/]+'),
+                ('pk', '\d+'),
+            ],
+            'authentication_required': True,
+            'navbar_link': False,
+            'as_form': True,
+        },
+        {
+            'title': string_concat(__(_('Favorite {thing}'), thing=_('Character')), ' - ', _('Apply changes')),
+            'ajax': False,
+            'custom': False,
+            'url_variables': [
+                ('key', '[^/]+'),
+                ('pk', '\d+'),
+                ('nth', '\d+'),
+            ],
+            'authentication_required': True,
+            'navbar_link': False,
+            'as_form': True,
+        },
+    ]),
+    ('unset_favorite_character', [
+        {
+            'title': string_concat(__(_('Favorite {thing}'), thing=_('Character')), ' - ', _('Clear')),
+            'ajax': False,
+            'custom': False,
+            'url_variables': [
+                ('key', '[^/]+'),
+            ],
+            'authentication_required': True,
+            'navbar_link': False,
+            'as_form': True,
+        },
+        {
+            'title': string_concat(__(_('Favorite {thing}'), thing=_('Character')), ' - ', _('Clear')),
+            'ajax': False,
+            'custom': False,
+            'url_variables': [
+                ('key', '[^/]+'),
+                ('nth', '\d+'),
+            ],
+            'authentication_required': True,
+            'navbar_link': False,
+            'as_form': True,
         },
     ]),
     ('deletelink', {
@@ -1103,6 +1311,31 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
             'navbar_link': False,
             'template': 'success',
             'show_small_title': False,
+        },
+    ]),
+    ('addrevokeoutsidepermissions', [
+        {
+            'title': 'Add / revoke permissions',
+            'custom': False,
+            'navbar_link': False,
+            'as_form': True,
+            'url_variables': [
+                ('username', _usernameRegexp),
+            ],
+            'permissions_required': [ 'edit_roles' ],
+            'image': 'groups/team',
+       },
+        {
+            'title': 'Add / revoke permissions',
+            'custom': False,
+            'navbar_link': False,
+            'as_form': True,
+            'ajax': True,
+            'url_variables': [
+                ('username', _usernameRegexp),
+            ],
+            'permissions_required': [ 'edit_roles' ],
+            'image': 'groups/team',
         },
     ]),
 

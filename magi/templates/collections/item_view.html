@@ -19,8 +19,20 @@
   {% endif %}
   {% if not show_homepage %}{% include 'include/page_title.html' %}{% endif %}
   {% include 'items/'|add:item_template|add:'.html' with comments_displayed_below=comments_enabled %}
+  {% for annotation in annotations_below_template %}
+  <p class="text-muted padding20 text-right fontx0-8">{{ annotation }}</p>
+  {% endfor %}
   {% if include_below_item %}{% include 'include/below_item.html' %}{% endif %}
   <br><br>
   {% if comments_enabled %}{% include 'include/disqus.html' with disqus_identifier=name|add:'-'|addint:item.pk %}{% endif %}
+  {% if not uses_deprecated_to_fields and item_fields.faq %}
+  <h5>{{ item_fields.faq_title }}</h5>
+  <dl class="panel panel-default fontx0-8 text-muted" id="faq">
+    {% for field_name, questions in item_fields.faq.items %}{% for question, answer in questions %}
+    <dt class="panel-heading padding5" data-faq-field="{{ field_name }}" data-toggle="collapse" data-target=".faq-{{ field_name }}-{{ forloop.counter }}"><span class="text-muted" style="cursor: pointer;">{{ question }} <span class="glyphicon glyphicon-triangle-bottom pull-right"></span></dt>
+    <dd class="panel-body padding5 collapse faq-{{ field_name }}-{{ forloop.counter }}">{{ answer }}</dd>
+    {% endfor %}{% endfor %}
+  </dl>
+  {% endif %}
 </div>
 {% endblock %}

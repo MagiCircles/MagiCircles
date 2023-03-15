@@ -202,7 +202,9 @@ def getRelevantVersions(
             break
         relevant_versions.append(relevant_version)
     if not relevant_versions and fallback_to_first:
-        relevant_versions.append(getFieldForVersion(item=item, versions=versions))
+        versions = versions or (item.VERSIONS if item else {})
+        if versions:
+            relevant_versions.append(versions.keys()[0])
     return relevant_versions
 
 def getAllVersionsOrderedByRelevance(*args, **kwargs):

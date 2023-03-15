@@ -1,3 +1,6 @@
+{% if speaks_languages == '' %}
+{% include 'include/alert.html' with alert_title="We don't know which language(s) you can speak. Please set your languages in your settings." alert_button_link='/settings/#groupsSettings' alert_flaticon='settings' alert_button_string="Settings" %}
+{% else %}
   <h2>
     {% if see_all %}
     <a href="." class="pull-right btn btn-main btn-lg">See only the languages you speak</a>
@@ -22,6 +25,11 @@
   <br><br>
 
   <p class="alert alert-info">
+    {% if speaks_languages == None %}
+    You're not a translator. If you'd like to get a translator role, ask a team manager.<br>
+    {% else %}
+    {% if see_all %}You can speak: {{ speaks_languages }}.<br>{% endif %}
+    {% endif %}
     Click on any button below to open all the items that have a missing translation for the
     specified language and field.
   </p>
@@ -106,6 +114,7 @@
   {% endfor %}
   {% endif %}
 
+  {% endif %}
   <br><br><br>
 
   <div class="text-center">

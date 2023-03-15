@@ -53,7 +53,7 @@
       {% for button in filter_form.extra_buttons.values %}
       {% if button.insert_in_sidebar %}{{ button.insert_in_sidebar|safe }}{% endif %}
       {% endfor %}
-      <div class="sticky-buttons text-center" id="filter-form-search-button">
+      <div class="sticky-buttons" id="filter-form-search-button">
         <button type="submit" class="btn btn-lg btn-secondary btn-block"><i class="flaticon-search"></i> {% t 'Search' %}</button>
         <div class="btn-group btn-group-justified" id="filter-form-extra-buttons">
           {% for button_name, button in filter_form.extra_buttons.items %}

@@ -47,6 +47,7 @@
       {% for tab_name, tab in account.tabs.items %}
       <div role="tabpanel" class="tab-pane{% if account.opened_tab == tab_name %} active{% endif %}" id="account-{{ account.id }}-tab-{{ tab_name }}" data-tab-name="{{ tab_name }}">{% if tab_name == 'about' %}
         {% include 'include/fields_table.html' with item=account fields=account.fields bottom=True %}
+        {% if account.include_below_item %}{% include 'include/below_item.html' with show_item_buttons=True item=account %}{% endif %}
       {% endif %}</div>
       {% endfor %}
     </div>

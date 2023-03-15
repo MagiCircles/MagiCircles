@@ -109,7 +109,7 @@
 	<form class="panel-body" method="POST" action="/ajax/moderatereport/{{ report.id }}/Edited/">
 	  {% csrf_token %}
 	  1. Edit the {{ report.reported_thing }} accordingly:
-	  <a href="/{{ report.reported_thing_plural_name }}/edit/{{ report.reported_thing_id }}/" target="_blank" class="btn btn-success btn-block btn-lines" {% if report.reported_thing_collection.edit_view.ajax %}data-ajax-url="/ajax/{{ report.reported_thing_plural_name }}/edit/{{ report.reported_thing_id }}/?disable_delete&{% if report.is_suggestededit %}is_suggestededit{% else %}is_reported{% endif %}" data-ajax-handle-form="true"{% else %}target="_blank"{% endif %}>Edit {{ report.reported_thing }}</a><br>
+	  <a href="/{{ report.reported_thing_plural_name }}/edit/{{ report.reported_thing_id }}/?disable_delete&{% if report.is_suggestededit %}is_suggestededit{% else %}is_reported{% endif %}" target="_blank" class="btn btn-success btn-block btn-lines" {% if report.reported_thing_collection.edit_view.ajax %}data-ajax-url="/ajax/{{ report.reported_thing_plural_name }}/edit/{{ report.reported_thing_id }}/?disable_delete&{% if report.is_suggestededit %}is_suggestededit{% else %}is_reported{% endif %}" data-ajax-handle-form="true"{% else %}target="_blank"{% endif %}>Edit {{ report.reported_thing }}</a><br>
           {% if report.is_suggestededit %}
           2. Explain what was changed and why:
           <textarea name="staff_message" class="form-control" placeholder="Explain what has been edited and why (in English).">{{ report.reason }} {% if ', ' in report.reason %}have{% else %}has{% endif %} been edited.</textarea><br>

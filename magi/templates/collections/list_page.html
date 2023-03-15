@@ -1,81 +1,239 @@
-{# required variables: items, per_line, col_size, col_break, name, total_results, page_size, page #}
+{# Required variables: items, per_line, col_size, col_break, name, total_results, page_size, page #}
 {# optional variables: show_no_result #}
 
 {% load i18n %}
 {% load tools %}
 {% if ajax_show_top_buttons and top_buttons and top_buttons_total %}
 {% include 'include/list_top_buttons.html' %}
-{% endif %}
+{% endif %}{# endif ajax_show_top_buttons ... #}
 {% if items|length == 0 %}
 {% if show_no_result %}
 <div class="padding50 no-result-wrapper">
   {% if no_result_template %}
   {% include no_result_template|add:'.html' %}
-  {% else %}
+  {% else %}{# else no_result_template #}
   <h4 class="padding50 alert alert-info no-result-alert">
     {% trans 'No result.' %}
   </h4>
-  {% endif %}
-</div>
-{% endif %}
-{% else %}
-{% if display_style == 'rows' %}<div class="row items list-items-{{ collection.name }}" id="{{ collection.name }}-page-{{ page }}" data-page-number="{{ page }}">{% endif %}
-  {% if display_style == 'table' %}<div class="table-responsive"><table class="items list-items-{{ collection.name }} {% for class in display_style_table_classes %}{{ class }} {% endfor %}collection-table" data-page-number="{{ page }}" id="{{ collection.name }}-page-{{ page }}" data-page-number="{{ page }}">
-    {% if page == 1 %}{% if table_fields_headers_sections %}<tr class="table-headers-sections">{% for name, verbose_name, colspan in table_fields_headers_sections %}
-      <th data-header-field="{{ name }}" colspan="{{ colspan }}">{{ verbose_name }}</th class="table-headers">{% endfor %}{% endif %}
-    <tr>{% for name, verbose_name in table_fields_headers %}
-      <th data-header-field="{{ name }}">{{ verbose_name }}</th>
-    {% endfor %}{% if include_below_item and table_fields_headers %}<th></th>{% endif %}</tr>{% endif %}
-    {% endif %}
-    {% for item in items %}
-    {% if not showing_section_headers %}
-  {% if display_style == 'rows' and forloop.counter0 != 0 and forloop.counter0|mod:per_line %}
-</div><div class="row items">
-    {% endif %}
-    {% endif %}
-    {% if item.show_section_header %}
-    {% if display_style == 'table' %}
-    <tr><th colspan="42" class="table-section-header">
-        {% if item.display_section_header %}
-        {{ item.display_section_header }}
-        {% else %}
-        {{ item.show_section_header }}
-        {% endif %}
-    </th></tr>
-    {% else %}
-  </div>
+  {% endif %}{# no_result_template #}
+</div>{# no-result-wrapper #}
+{% endif %}{# endif show_no_result #}
+{% else %}{# else items|length == 0 #}
+
+{#####################################################################}
+
+{# Display style: ROWS #}
+{% if display_style == 'rows' %}
+
+<div class="row items list-items-{{ collection.name }}" id="{{ collection.name }}-page-{{ page }}" data-page-number="{{ page }}">
+
+  {% for item in items %}
+
+  {# Show section headers #}
+  {% if item.show_section_header %}
   <h3 class="table-section-header">
     {% if item.display_section_header %}
     {{ item.display_section_header }}
-    {% else %}
+    {% else %}{# else item.display_section_header #}
     {{ item.show_section_header }}
-    {% endif %}
+    {% endif %}{# endif item.display_section_header #}
   </h3>
-  <div class="row items">
-    {% endif %}
-    {% endif %}
-  <{% if display_style == 'rows' %}div class="col-{{ col_break }}-{{ col_size }}"{% elif display_style == 'table' %}tr{% else %}div{% endif %} data-item="{{ collection.name }}" data-item-id="{{ item.pk }}"{% if item.html_attributes_in_list %}{% for key, value in item.html_attributes_in_list.items %} {{ key }}="{{ value }}"{% endfor %}{% elif item.html_attributes %}{% for key, value in item.html_attributes.items %} {{ key }}="{{ value }}"{% endfor %}{% endif %}>
+  {% endif %}{# endif item.show_section_header #}
+
+  {# Display item #}
+  <div class="col-{{ col_break }}-{{ col_size }}" data-item="{{ collection.name }}" data-item-id="{{ item.pk }}"
+       {% if item.html_attributes_in_list %}
+       {% for key, value in item.html_attributes_in_list.items %} {{ key }}="{{ value }}"{% endfor %}
+       {% elif item.html_attributes %}
+       {% for key, value in item.html_attributes.items %} {{ key }}="{{ value }}"{% endfor %}
+       {% endif %}>
+
+    {# Blocked or blocked by #}
     {% if item.blocked_by_owner %}
     <div class="hidden">blocked</div>
     {% elif item.blocked %}
-    {% if not item_blocked_template %}
-    <div class="hidden">blocked</div>
-    {% else %}
-    {% if display_style == 'table' %}<td colspan="42">{% endif %}
+      {% if not item_blocked_template %}
+      <div class="hidden">blocked</div>
+      {% else %}{# else not item_blocked_template #}
       {% include 'items/'|add:item_blocked_template|add:'.html' %}
-      {% if display_style == 'table' %}</td>{% endif %}
-    {% endif %}
-    {% else %}
-    {% if show_owner %}{{ item.owner_unicode }}{% endif %}
+      {% endif %}{# endif not item_blocked_template #}
+    {% else %}{# not blocked or blocked by #}
+
+      {% include 'items/'|add:item_template|add:'.html' %}
+      {% if include_below_item %}
+      {% include 'include/below_item.html' %}
+      {% endif %}{# include_below_item #}
+
+    {% endif %}{# endif item.blocked #}
+
+  </div>{# col-xx-xx #}
+
+  {# Close rows between each line #}
+  {% if item.new_row %}
+</div><div class="row items">
+  {% endif %}
+
+  {% endfor %}
+
+</div>{# row #}
+<div id="{{ collection.name }}-end-of-page-{{ page }}"></div>
+
+{#####################################################################}
+
+{# Display style: TABLE / deprecated fields #}
+{% elif display_style == 'table' and uses_deprecated_to_fields %}
+
+<div class="table-responsive">
+  <table class="items list-items-{{ collection.name }} {% for class in display_style_table_classes %}{{ class }} {% endfor %}collection-table" data-page-number="{{ page }}" id="{{ collection.name }}-page-{{ page }}">
+
+    {% if page == 1 %}
+    {% if table_fields_headers_sections %}
+    <tr class="table-headers-sections">
+      {% for name, verbose_name, colspan in table_fields_headers_sections %}
+      <th data-header-field="{{ name }}" colspan="{{ colspan }}">
+        {{ verbose_name }}
+      </th>
+      {% endfor %}
+    </tr>
+    {% endif %}{# endif table_fields_headers_sections #}
+    <tr>
+      {% for name, verbose_name in table_fields_headers %}
+      <th data-header-field="{{ name }}">{{ verbose_name }}</th>
+      {% endfor %}
+      {% if include_below_item and table_fields_headers %}<th></th>{% endif %}
+    </tr>
+    {% endif %}{# endif page == 1 #}
+
+    {% for item in items %}
+
+    {# Show section headers #}
+    {% if item.show_section_header %}
+    <tr>
+      <th colspan="42" class="table-section-header">
+        {% if item.display_section_header %}
+        {{ item.display_section_header }}
+        {% else %}{# else item.display_section_header #}
+        {{ item.show_section_header }}
+        {% endif %}{# endif item.display_section_header #}
+    </th></tr>
+    {% endif %}{# endif item.show_section_header #}
+
+    {# Display item #}
+    <tr data-item="{{ collection.name }}" data-item-id="{{ item.pk }}"
+        {% if item.html_attributes_in_list %}
+        {% for key, value in item.html_attributes_in_list.items %} {{ key }}="{{ value }}"{% endfor %}
+        {% elif item.html_attributes %}
+        {% for key, value in item.html_attributes.items %} {{ key }}="{{ value }}"{% endfor %}{% endif %}>
+
+      {# Blocked or blocked by #}
+      {% if item.blocked_by_owner %}
+      <td colspan="42"><div class="hidden">blocked</div></td>
+      {% elif item.blocked %}
+      {% if not item_blocked_template %}
+      <td colspan="42"><div class="hidden">blocked</div></td>
+      {% else %}{# else not item_blocked_template #}
+      <td colspan="42">{% include 'items/'|add:item_blocked_template|add:'.html' %}</td>
+      {% endif %}{# endif not item_blocked_template #}
+      {% else %}{# not blocked or blocked by #}
+
+      {% if item_template == 'default_item_table_view' %}
+      {% include 'include/deprecated_default_item_table_view.html' %}
+      {% else %}
+      {% include 'items/'|add:item_template|add:'.html' %}
+      {% endif %}
+
+      {% endif %}{# endif item.blocked #}
+    </tr>
+
+    {% endfor %}
+  </table>
+</div>{# table-responsive #}
+
+{#####################################################################}
+
+{# Display style: TABLE #}
+{% elif display_style == 'table' %}
+
+<div class="flex-table items list-items-{{ collection.name }} {% for class in display_style_table_classes %}{{ class }} {% endfor %}collection-table" role="table" data-page-number="{{ page }}" id="{{ collection.name }}-page-{{ page }}">
+
+  {% if page == 1 %}
+  {% if table_fields_headers_sections %}
+  <div class="flex-tr hidden-xs" class="table-headers-sections">
+    {% for name, verbose_name, colspan in table_fields_headers_sections %}
+    <div class="flex-th field-title" data-header-field="{{ name }}" style="flex: {{ colspan }};">
+      <h4><span>{{ verbose_name }}</span></h4>
+    </div>{# flex-th #}
+    {% endfor %}
+  </div>{# flex-tr #}
+  {% endif %}{# endif table_fields_headers_sections #}
+  {% if table_fields_headers %}
+  <div class="flex-tr hidden-xs">
+    {% for name, verbose_name in table_fields_headers %}
+    <div class="flex-th field-title" data-header-field="{{ name }}">
+      <h4><span>{{ verbose_name }}</span></h4>
+    </div>{# flex-th #}
+    {% endfor %}
+    {% if include_below_item and not include_below_item_as_row  %}<div class="flex-th"></div>{# flex-th #}{% endif %}
+  </div>{# flex-tr #}
+  {% endif %}{# endif table_fields_headers #}
+  {% endif %}{# endif page == 1 #}
+
+  {% for item in items %}
+
+  {# Show section headers #}
+  {% if item.show_section_header %}
+  <div class="flex-tr">
+    <div class="flex-th" class="table-section-header">
+      {% if item.display_section_header %}
+      {{ item.display_section_header }}
+      {% else %}{# else item.display_section_header #}
+      {{ item.show_section_header }}
+      {% endif %}{# endif item.display_section_header #}
+    </div>{# flex-th #}
+  </div>{# flex-tr #}
+
+
+  {% endif %}{# endif item.show_section_header #}
+
+  {# Display item #}
+  <div class="flex-tr {% if not item.blocked_by_owner and not item.blocked and include_below_item_as_row %}no-bottom{% endif %}"
+       data-item="{{ collection.name }}" data-item-id="{{ item.pk }}"
+       {% if item.html_attributes_in_list %}
+       {% for key, value in item.html_attributes_in_list.items %} {{ key }}="{{ value }}"{% endfor %}
+       {% elif item.html_attributes %}
+       {% for key, value in item.html_attributes.items %} {{ key }}="{{ value }}"{% endfor %}{% endif %}>
+
+    {# Blocked or blocked by #}
+    {% if item.blocked_by_owner %}
+    <div class="flex-td"><div class="hidden">blocked</div></div>
+    {% elif item.blocked %}
+    {% if not item_blocked_template %}
+    <div class="flex-td"><div class="hidden">blocked</div></div>
+    {% else %}{# else not item_blocked_template #}
+    <div class="flex-td">{% include 'items/'|add:item_blocked_template|add:'.html' %}</div>
+    {% endif %}{# endif not item_blocked_template #}
+    {% else %}{# not blocked or blocked by #}
+
     {% include 'items/'|add:item_template|add:'.html' %}
-    {% if display_style != 'table' and include_below_item %}{% include 'include/below_item.html' %}{% endif %}
-    {% endif %}
-  </{% if display_style == 'table' %}tr{% else %}div{% endif %}>
-{% endfor %}
-{% if display_style == 'rows' %}</div><div id="{{ collection.name }}-end-of-page-{{ page }}"></div>{% endif %}
-{% if display_style == 'table' %}</table></div>{% endif %}
+
+    {% endif %}{# endif item.blocked #}
+  </div>{# flex-tr #}
+  {% if not item.blocked_by_owner and not item.blocked and include_below_item_as_row %}
+  <div class="flex-tr"><div class="flex-td">{% include 'include/below_item.html' %}</div></div>
+  {% endif %}{# include_below_item #}
+
+  {% endfor %}
+
+</div>{# flex-table #}
+
+{% endif %}{# Display style #}
+
+{#####################################################################}
+
 {% include 'include/pagination.html' %}
-{% endif %}
+
+{% endif %}{# endif items|length == 0 #}
+
 {% if is_last_page and after_template %}
 {% include after_template|add:'.html' %}
 {% endif %}

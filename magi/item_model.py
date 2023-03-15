@@ -7,6 +7,7 @@ from django.db.models.fields.files import ImageFieldFile
 from django.conf import settings as django_settings
 from django.utils.translation import ugettext_lazy as _, get_language
 from django.utils import timezone
+from magi.raw import KNOWN_ITEM_PROPERTIES
 from magi.utils import (
     tourldash,
     getMagiCollection,
@@ -20,6 +21,11 @@ from magi.utils import (
     uploadToRandom,
     uploadThumb,
     staticImageURL,
+    prepareCache,
+    getRelatedItemFromItem,
+    notTranslatedWarning,
+    getAllTranslations,
+    getValueIfNotProperty,
 )
 
 ############################################################
@@ -33,7 +39,7 @@ ALL_ALT_LANGUAGES = [
 ]
 NON_LATIN_LANGUAGES = [
     (_code, _verbose) for _code, _verbose in django_settings.LANGUAGES
-    if _code in [ 'ja', 'ru', 'zh-hans', 'zh-hant', 'kr', 'th' ]
+    if _code in [ 'ja', 'ru', 'zh-hans', 'zh-hant', 'kr', 'th', 'uk' ]
 ]
 
 ############################################################
@@ -172,6 +178,12 @@ def has_item_view_permissions(instance, context={}):
     return False
 
 ############################################################
+# Utils for unicode
+
+def d_unicodes(instance):
+    return getAllTranslations(instance, include_en=False, unique=True)
+
+############################################################
 # BaseMagiModel
 
 class BaseMagiModel(models.Model):
@@ -197,6 +209,7 @@ class BaseMagiModel(models.Model):
     """
     tinypng_settings = {}
     request = None
+    IS_PERSON = False
 
     fk_as_owner = None
     selector_to_owner = classmethod(get_selector_to_owner)
@@ -209,6 +222,7 @@ class BaseMagiModel(models.Model):
     owner_unicode = property(get_owner_unicode)
     real_owner = property(get_real_owner)
     has_item_view_permissions = has_item_view_permissions
+    d_unicodes = property(d_unicodes)
 
     @classmethod
     def get_int_choices(self, field_name):
@@ -289,11 +303,14 @@ class BaseMagiModel(models.Model):
 
     @classmethod
     def _dict_choices(self, field_name):
-        return OrderedDict([
-            ((choice[0] if isinstance(choice, tuple) else choice),
-            (choice[1] if isinstance(choice, tuple) else _(choice)))
-            for choice in getattr(self, u'{name}_CHOICES'.format(name=field_name.upper()), [])
-        ])
+        dict_choices = OrderedDict()
+        for choice in getattr(self, u'{name}_CHOICES'.format(name=field_name.upper()), []):
+            key = choice[0] if isinstance(choice, tuple) else choice
+            value = choice[1] if isinstance(choice, tuple) else notTranslatedWarning(choice)
+            if callable(value):
+                value = value()
+            dict_choices[key] = value
+        return dict_choices
 
     @classmethod
     def get_csv_values(self, field_name, values, translated=True):
@@ -335,14 +352,30 @@ class BaseMagiModel(models.Model):
     @classmethod
     def cached_json_extra(self, field_name, d):
         d = AttrDict(d)
+        # Get collection
+        collection_name = getattr(self, u'_cached_{}_collection_name'.format(field_name), field_name)
+        collection = getMagiCollection(collection_name)
         # Get original model class for cached thing
         try: original_cls = self._meta.get_field(field_name).rel.to
         except FieldDoesNotExist: original_cls = None
         original_cls = getattr(self, u'_cache_{}_fk_class'.format(field_name), original_cls)
+        if not original_cls and collection:
+            original_cls = collection.queryset.model
         if callable(original_cls): original_cls = original_cls()
         # Call pre if provided
         if hasattr(self, u'cached_{}_pre'.format(field_name)):
             getattr(self, u'cached_{}_pre'.format(field_name))(d)
+        # i_ fields
+        if original_cls:
+            for k in d.keys():
+                if k.startswith('i_'):
+                    d[k[2:]] = original_cls.get_reverse_i(k[2:], d[k])
+                    d['t_{}'.format(k[2:])] = original_cls.get_verbose_i(k[2:], d[k])
+        # Add collection
+        if collection_name:
+            d['collection_name'] = collection_name
+        if collection:
+            d['collection'] = collection
         # Add id if missing
         if original_cls and 'id' not in d:
             d['id'] = getattr(self, u'{}_id'.format(field_name), None)
@@ -353,14 +386,9 @@ class BaseMagiModel(models.Model):
             if 'pk' not in d:
                 d['pk'] = d['id']
             # Set collection item URLs
-            collection_name = getattr(self, u'_cached_{}_collection_name'.format(field_name), field_name)
-            if collection_name:
-                d['collection_name'] = collection_name
-                d['collection'] = getMagiCollection(d.collection_name)
+            if collection:
                 d['has_item_view_permissions'] = lambda _context={}: has_item_view_permissions(d, context=_context)
             else:
-                d['collection_name'] = None
-                d['collection'] = None
                 d['has_item_view_permissions'] = lambda _context={}: False
             if 'item_url' not in d:
                 d['item_url'] = u'/{}/{}/{}/'.format(collection_name, d['id'], tourldash(d['unicode']))
@@ -379,12 +407,6 @@ class BaseMagiModel(models.Model):
                 if u'http_{}_url'.format(image_field) not in d:
                     d[u'http_{}_url'.format(image_field)] = get_http_image_url_from_path(d[image_field])
 
-        if original_cls:
-            for k in d.keys():
-                # i_ fields
-                if k.startswith('i_'):
-                    d[k[2:]] = original_cls.get_reverse_i(k[2:], d[k])
-                    d['t_{}'.format(k[2:])] = original_cls.get_verbose_i(k[2:], d[k])
 
         # Translated fields
         language = get_language()
@@ -465,13 +487,20 @@ class BaseMagiModel(models.Model):
     def _to_cache(self, field_name):
         to_cache_method = getattr(self, u'to_cache_{}'.format(field_name), None)
         if not to_cache_method:
+            # If it's a cache for total, simply call "count" (ex: total_cards -> self.cards.count())
+            # Works with multi-level lookups
+            if field_name.startswith('total_'):
+                try:
+                    return getRelatedItemFromItem(self, field_name[len('total_'):], count=True)
+                except AttributeError:
+                    pass
             raise NotImplementedError(u'to_cache_{f} method is required for {f} cache'.format(f=field_name))
         return to_cache_method()
 
     def _update_cache(self, field_name, value):
         setattr(self, u'_cache_{}_last_update'.format(field_name), timezone.now())
         if hasattr(self, '_cache_j_{}'.format(field_name)):
-            value = json.dumps(value) if value else None
+            value = json.dumps(prepareCache(value)) if value else None
             setattr(self, u'_cache_j_{}'.format(field_name), value)
         elif hasattr(self, '_cache_c_{}'.format(field_name)):
             value = join_data(*value) if value else None
@@ -541,23 +570,37 @@ class BaseMagiModel(models.Model):
         )
 
     @classmethod
-    def get_auto_image(self, field_name, value):
-        original_field_name = field_name
-        for name_option in ['i_{}'.format(field_name), 'c_{}'.format(field_name)]:
-            if modelHasField(self, name_option):
-                original_field_name = name_option
-                break
-        return staticImageURL(value, folder=original_field_name)
+    def get_auto_image(self, field_name, value, folder=None):
+        if not folder:
+            folder = getValueIfNotProperty(self, u'{}_AUTO_IMAGES_FOLDER'.format(field_name.upper()), default=None)
+        if not folder:
+            original_field_name = field_name
+            for name_option in [
+                    'i_{}'.format(field_name), 'c_{}'.format(field_name),
+                    'd_{}'.format(field_name), field_name,
+            ]:
+                if modelHasField(self, name_option):
+                    original_field_name = name_option
+                    break
+            folder = original_field_name
+        return staticImageURL(value, folder=folder)
 
-    def _get_auto_image(self, field_name):
-        original_field_name = None
-        for name_option in ['i_{}'.format(field_name), 'c_{}'.format(field_name), field_name]:
-            if hasattr(self, name_option):
-                original_field_name = name_option
-                break
-        if not original_field_name:
+    def _get_auto_image(self, field_name, folder=None):
+        if not folder:
+            folder = getattr(self, u'{}_AUTO_IMAGES_FOLDER'.format(field_name.upper()), None)
+        if not folder:
+            original_field_name = field_name
+            for name_option in [
+                    'i_{}'.format(field_name), 'c_{}'.format(field_name),
+                    'd_{}'.format(field_name), field_name,
+            ]:
+                if hasattr(self, name_option):
+                    original_field_name = name_option
+                    break
+            folder = original_field_name
+        if not folder:
             raise ValueError
-        return staticImageURL(getattr(self, field_name), folder=original_field_name)
+        return staticImageURL(getattr(self, field_name), folder=folder)
 
     @classmethod
     def get_field_translation_sources(self, field_name):
@@ -646,40 +689,7 @@ class BaseMagiModel(models.Model):
         original_name = name
 
         # Reserved names
-        if original_name in [
-                'top_html',
-                'top_html_list',
-                'top_html_item',
-                'top_image',
-                'top_image_list',
-                'top_image_item',
-                'birthday_banner',
-                'birthday_banner_hide_title',
-                'birthday_banner_css_class',
-                'share_image',
-                'share_image_in_list',
-                'display_name',
-                'display_name_in_list',
-                'display_suggest_edit_button_on_fields',
-                'blocked',
-                'blocked_by_owner',
-                'blocked_owner_id',
-                'reverse_related',
-                'html_attributes',
-                'html_attributes_in_list',
-                'thumbnail_size',
-                'tinypng_settings',
-                'icon_for_prefetched',
-                'image_for_prefetched',
-                'template_for_prefetched',
-                'image_for_favorite_character',
-                'display_item_url',
-                'display_ajax_item_url',
-                'show_section_header',
-                'selector_to_collected_item',
-                'get_item_url',
-                'get_ajax_item_url',
-        ]:
+        if original_name in KNOWN_ITEM_PROPERTIES:
             return self._attr_error(original_name)
 
         # PREFIX + SUFFIX
@@ -847,6 +857,13 @@ class BaseMagiModel(models.Model):
 
         return self._attr_error(original_name)
 
+    def __unicode__(self):
+        try:
+            return unicode(self.t_name)
+        except AttributeError:
+            pass
+        return notTranslatedWarning(self.__class__.__name__)
+
     class Meta:
         abstract = True
 
@@ -856,8 +873,8 @@ class BaseMagiModel(models.Model):
 ############################################################
 # Get collection
 
-def get_collection(instance):
-    return getMagiCollection(instance.collection_name)
+def get_collection(cls):
+    return getMagiCollection(cls.collection_name)
 
 ############################################################
 # Get URLs
@@ -883,7 +900,7 @@ def get_ajax_item_url(instance):
     )
 
 def get_full_item_url(instance):
-    display_url = getattr(instance, 'get_ajax_item_url', lambda: None)()
+    display_url = getattr(instance, 'get_item_url', lambda: None)()
     if display_url:
         if '//' not in display_url[:8]:
             return u'{}{}'.format(django_settings.SITE_URL, display_url)
@@ -959,6 +976,7 @@ def addMagiModelProperties(modelClass, collection_name):
     modelClass.collection_plural_name = property(get_collection_plural_name)
     modelClass.collection_title = property(get_collection_title)
     modelClass.collection_plural_title = property(get_collection_plural_title)
+    modelClass.IS_PERSON = False
     modelClass.has_item_view_permissions = has_item_view_permissions
     modelClass.item_url = property(get_item_url)
     modelClass.ajax_item_url = property(get_ajax_item_url)
@@ -977,7 +995,6 @@ def addMagiModelProperties(modelClass, collection_name):
     modelClass.report_sentence = property(get_report_sentence)
     modelClass.suggest_edit_sentence = property(get_suggest_edit_sentence)
     modelClass.tinypng_settings = {}
-    modelClass.request = None
 
     modelClass.fk_as_owner = None
     modelClass.selector_to_owner = classmethod(get_selector_to_owner)
@@ -990,6 +1007,7 @@ def addMagiModelProperties(modelClass, collection_name):
     modelClass.owner_unicode = property(get_owner_unicode)
     modelClass.real_owner = property(get_real_owner)
     modelClass.request = None
+    modelClass.d_unicodes = property(d_unicodes)
 
 ############################################################
 # MagiModel
@@ -1019,7 +1037,6 @@ class MagiModel(BaseMagiModel):
     delete_sentence = property(get_delete_sentence)
     report_sentence = property(get_report_sentence)
     suggest_edit_sentence = property(get_suggest_edit_sentence)
-
     allow_multiple_per_owner = classmethod(get_allow_multiple_per_owner)
 
     def __unicode__(self):

@@ -175,3 +175,11 @@ class UtilsTestCase(TestCase):
             u'<b>世界</b>',
             mark_safe(u'<b>フー</b>'),
         ], mark_safe=True, translated=False)), u'&lt;b&gt;こんにちは&lt;/b&gt;, &lt;b&gt;世界&lt;/b&gt; and <b>フー</b>')
+
+    def test_tweetLength(self):
+        self.assertEqual(utils.tweetLength(u'abc'), 3)
+        self.assertEqual(utils.tweetLength(u'abc https://google.com/'), 4 + 23)
+        self.assertEqual(utils.tweetLength(u'abc https://google.com/?something=true'), 4 + 23)
+        self.assertEqual(utils.tweetLength(u'abc https://google.com def'), 4 + 23 + 4)
+        self.assertEqual(utils.tweetLength(u'abc 🌸'), 4 + 2)
+        self.assertEqual(utils.tweetLength(u'abc 🌸 def'), 4 + 2 + 4)

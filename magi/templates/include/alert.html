@@ -1,5 +1,5 @@
-{# Required: alert_message #}
-{# Optional: alert_type, alert_flaticon, alert_button_link, alert_button_string #}
+{# Required: alert_message OR alert_title (or both) #}
+{# Optional: alert_message, alert_title, alert_type, alert_flaticon, alert_button_link, alert_button_string #}
 {% load i18n %}
 <div class="alert alert-{% if alert_type %}{{ alert_type }}{% else %}warning{% endif %}">
   <div class="row">
@@ -8,7 +8,7 @@
     </div>
     <div class="col-sm-{% if alert_button_link %}7{% else %}10{% endif %}">
       {% if alert_title %}<h4>{{ alert_title }}</h4>{% endif %}
-      {{ alert_message }}
+      {% if alert_message %}{{ alert_message }}{% endif %}
     </div>
     {% if alert_button_link %}
     <div class="col-sm-3 hidden-xs">

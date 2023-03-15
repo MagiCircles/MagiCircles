@@ -1,6 +1,6 @@
 {% load i18n %}
   {% if 'donate' in all_enabled %}
-  {% trans 'If you like the website, please consider donating' %}: <a href="{{ site_url }}donate/"><strong>{% trans 'Donate' %}</strong></a>.
+  {{ consider_donating_sentence }}: <a href="{{ site_url }}donate/"><strong>{% trans 'Donate' %}</strong></a>.
   <br><small><i>{% trans 'This will help us cover the costs of the servers and allow us to keep it running for free and without ads.' %}</i></small>
   <br><br>
   {% endif %}

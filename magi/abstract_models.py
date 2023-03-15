@@ -100,10 +100,59 @@ class AccountAsOwnerModel(MagiModel):
 ############################################################
 # CacheAccount
 
+def to_cached_preferences(
+        item,
+        twitter_field_name='_cache_owner_preferences_twitter',
+        i_status_field_name='_cache_owner_preferences_i_status',
+        color_field_name='_cache_owner_color',
+):
+    try:
+        preferences_model = next(
+            rel.model for rel in item._meta.get_field('owner').rel.to._meta.get_all_related_objects()
+            if rel.get_accessor_name() == 'preferences'
+        )
+    except StopIteration:
+        preferences_model = None
+    preferences = AttrDict({})
+    if twitter_field_name:
+        preferences.update({
+            'twitter': getattr(item, twitter_field_name),
+        })
+    if i_status_field_name:
+        preferences.update({
+            'i_status': getattr(item, i_status_field_name),
+            'status': getattr(item, i_status_field_name),
+            'status_color': (
+                dict(preferences_model.STATUS_COLORS).get(getattr(item, i_status_field_name), None)
+                if preferences_model and getattr(item, i_status_field_name) else None
+            ),
+            't_status': (
+                preferences_model.get_verbose_i('status', getattr(item, i_status_field_name))
+                if preferences_model and getattr(item, i_status_field_name) else None
+            ),
+            'is_premium': (
+                getattr(item, i_status_field_name) and getattr(item, i_status_field_name) != 'THANKS'
+            ),
+        })
+    if color_field_name:
+        preferences.update({
+            'color': getattr(item, color_field_name),
+            'localized_color': (
+                preferences_model.get_localized_color(getattr(item, color_field_name))
+                if preferences_model else None
+            ),
+            'hex_color': preferences_model.get_hex_color(getattr(item, color_field_name)) if preferences_model else None,
+            'rgb_color': preferences_model.get_rgb_color(getattr(item, color_field_name)) if preferences_model else None,
+            'css_color': preferences_model.get_css_color(getattr(item, color_field_name)) if preferences_model else None,
+        })
+    return preferences
+
+# Deprecated - don't use anymore.
 class CacheOwner(MagiModel):
     """
     Will provide a cache with basic owner details
     """
+    _cached_owner_collection_name = 'user'
     _cache_owner_days = 200
     _cache_owner_last_update = models.DateTimeField(null=True)
     _cache_owner_username = models.CharField(max_length=32, null=True)
@@ -129,35 +178,24 @@ class CacheOwner(MagiModel):
 
     @property
     def cached_owner(self):
+        updated = False
         if not self._cache_owner_last_update or self._cache_owner_last_update < timezone.now() - datetime.timedelta(days=self._cache_owner_days):
+            updated = True
             self.force_cache_owner()
-        preferences_model = RAW_CONTEXT.get('preferences_model')
-        full_item_url = '{}user/{}/{}/'.format(django_settings.SITE_URL, self.owner_id, self._cache_owner_username)
-        http_item_url = u'http:' + full_item_url if 'http' not in full_item_url else full_item_url
-        return AttrDict({
-            'pk': self.owner_id,
-            'id': self.owner_id,
-            'username': self._cache_owner_username,
-            'email': self._cache_owner_email,
-            'item_url': '/user/{}/{}/'.format(self.owner_id, self._cache_owner_username),
-            'ajax_item_url': '/ajax/user/{}/'.format(self.owner_id),
-            'full_item_url': full_item_url,
-            'http_item_url': http_item_url,
-            'share_url': http_item_url,
-            'preferences': AttrDict({
-                'i_status': self._cache_owner_preferences_i_status,
-                'status': self._cache_owner_preferences_i_status,
-                'status_color': dict(preferences_model.STATUS_COLORS).get(self._cache_owner_preferences_i_status, None) if preferences_model and self._cache_owner_preferences_i_status else None,
-                't_status': dict(preferences_model.STATUS_CHOICES)[self._cache_owner_preferences_i_status] if preferences_model and self._cache_owner_preferences_i_status else None,
-                'is_premium': self._cache_owner_preferences_i_status and self._cache_owner_preferences_i_status != 'THANKS',
-                'twitter': self._cache_owner_preferences_twitter,
-                'color': self._cache_owner_color,
-                'localized_color': preferences_model.get_localized_color(self._cache_owner_color) if preferences_model else None,
-                'hex_color': preferences_model.get_hex_color(self._cache_owner_color) if preferences_model else None,
-                'rgb_color': preferences_model.get_rgb_color(self._cache_owner_color) if preferences_model else None,
-                'css_color': preferences_model.get_css_color(self._cache_owner_color) if preferences_model else None,
-            }),
-        })
+        if updated or not getattr(self, '_cached_owner', None):
+            d = {
+                'id': self.owner_id,
+                'unicode': self._cache_owner_username,
+                'username': self._cache_owner_username,
+                'email': self._cache_owner_email,
+                'preferences': to_cached_preferences(self),
+            }
+            self._cached_owner = self.cached_json_extra('owner', d)
+        return self._cached_owner
+
+    @classmethod
+    def cached_owner_extra(self, d):
+        d['share_url'] = d['http_item_url']
 
     class Meta:
         abstract = True
@@ -168,7 +206,7 @@ class CacheOwner(MagiModel):
 class BaseAccount(CacheOwner):
     collection_name = 'account'
 
-    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='accounts')
+    owner = models.ForeignKey(User, related_name='accounts')
     creation = models.DateTimeField(_('Join date'), auto_now_add=True)
     nickname = models.CharField(_('Nickname'), max_length=200, null=True, help_text=_('Give a nickname to your account to easily differentiate it from your other accounts when you\'re managing them.'))
     start_date = models.DateField(_('Start date'), null=True, validators=[PastOnlyValidator])
@@ -180,6 +218,7 @@ class BaseAccount(CacheOwner):
 
     # Share URL
 
+    @property
     def share_url(self):
         return u'{}#{}'.format(self.cached_owner.share_url, self.id)
 
@@ -187,7 +226,7 @@ class BaseAccount(CacheOwner):
 
     _cache_leaderboards_days = 1
     _cache_leaderboards_last_update = models.DateTimeField(null=True)
-    _cache_leaderboard = models.PositiveIntegerField(null=True)
+    _cache_leaderboard = models.PositiveIntegerField(verbose_name=_('Leaderboard position'), null=True)
 
     def cache_leaderboard_accounts(self):
         return filterRealAccounts(type(self).objects.all()).filter(
@@ -284,12 +323,13 @@ class MobileGameAccount(BaseAccount):
         _('Screenshot'), help_text=_('In-game profile screenshot'),
         upload_to=uploadItem('account_screenshot'), null=True, blank=True)
     _thumbnail_screenshot = models.ImageField(null=True, upload_to=uploadThumb('account_screenshot'))
-    level_on_screenshot_upload = models.PositiveIntegerField(null=True)
+    level_on_screenshot_upload = models.PositiveIntegerField('Level on screenshot upload', null=True)
     is_hidden_from_leaderboard = models.BooleanField('Hide from leaderboard', default=False, db_index=True)
     is_playground = models.BooleanField(
         _('Playground'), default=False, db_index=True,
         help_text=_('Check this box if this account doesn\'t exist in the game.'),
     )
+    IS_PLAYGROUND_HIDE_WHEN_DEFAULT = True
 
     class Meta:
         abstract = True
@@ -300,7 +340,7 @@ class MobileGameAccount(BaseAccount):
 class _BaseEvent(MagiModel):
     collection_name = 'event'
 
-    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='added_%(class)ss')
+    owner = models.ForeignKey(User, related_name='added_%(class)ss')
 
     ############################################################
     # Name
@@ -400,7 +440,11 @@ def getBaseEventWithVersions(
     has_icons = bool([version for version in versions.values() if version.get('icon', None)])
     has_languages = bool(getLanguagesForVersion(versions[versions.keys()[0]])) if versions else False
     if not has_languages:
-        fields.update(fields_per_language)
+        if extra_fields_per_language:
+            if django_settings.DEBUG:
+                print '[Warning] extra_fields_per_language was specified in event, but versions don\'t have languages.'
+        else:
+            fields.update(fields_per_language)
 
     default_name = defaults.get('name', None)
 

@@ -1,218 +1,69 @@
-{# variables: fields, bottom, item (item.buttons_to_show), user #}
-{% load tools %}
-{% load magi_tags %}
-  <table class="table about-table">
+{% if uses_deprecated_to_fields %}
+{% include 'include/deprecated_fields_table.html' %}
+{% else %}
+<div class="flex-table with-top-border about-flex-table" role="table">
     {% for field_name, field in fields.items %}
-    <tr data-field="{{ field_name }}" class="{% if field.type == 'long_text' or field.type == 'markdown' or field.type == 'alert' or field.spread_across %}long_text_field{% if field.spread_across %} spread_across{% endif %}{% endif %}{% if field.classes %}{% for cls in field.classes %} {{ cls }}{% endfor %}{% endif %}"{% if field.attributes %}{% for attribute, value in field.attributes.items %} {{ attribute }}="{{ value }}"{% endfor %}{% endif %}>
-      {% if not hide_icons %}<td>
-	{% if field.icon %}
-	<i class="flaticon-{{ field.icon }}"></i>
-	{% elif field.image %}
-	<img src="{{ field.image }}" alt="{{ field.verbose_name }}">
-	{% endif %}
-      </td>{% endif %}
-      {% if field.type != 'long_text' and field.type != 'markdown' and field.type != 'alert' and not field.spread_across %}<th{% if hide_icons %} colspan="2"{% endif %}><span class="verbose-name">{{ field.verbose_name }}</span>{% if field.verbose_name_subtitle %}<br><small class="text-muted verbose-name-subtitle">{{ field.verbose_name_subtitle }}</small></br>{% endif %}</th>{% endif %}
-      <td{% if field.type == 'long_text' or field.type == 'markdown' or field.type == 'alert' or field.spread_across %} colspan="{% if hide_icons %}3{% else %}2{% endif %}"{% endif %}>
-        {% if field.type == 'long_text' or field.type == 'markdown' or field.type == 'alert' or field.spread_across %}
-        <strong class="long-text-title">{{ field.verbose_name }}</strong>
+    {% if field.display_field %}
+    {% for html, display_parameters, buttons_html, is_multifield in field.html %}{# for multifields #}
+    {% if field.full_size_template %}
+    {% include field.full_size_template|add:'.html' with item=field.item value=field.value display_parameters=display_parameters %}
+    {% else %}
+    <div class="flex-tr {% for cls in display_parameters.classes %}{{ cls }} {% endfor %}"
+         data-field="{{ display_parameters.field_name }}" role="row"
+         {% if display_parameters.attributes %}
+         {% for attribute, value in display_parameters.attributes.items %} {{ attribute }}="{{ value }}"{% endfor %}
+         {% endif %}>
+
+      {# Icon td #}
+
+      {% if not hide_icons %}
+      <div class="flex-td about-flex-td-icon">
+        {% if display_parameters.image %}
+        <img src="{{ display_parameters.image }}" alt="{{ display_parameters.verbose_name }}" />
+        {% elif display_parameters.icon %}
+        <i class="flaticon-{{ display_parameters.icon }}"></i>
+        {% endif %}
+      </div>{# about-flex-td #}{% endif %}
+
+      {# Title th #}
+
+      <div class="flex-th about-flex-th-title {% if display_parameters.spread_across %}visible-xs{% endif %}">
+        <strong class="verbose-name">{{ display_parameters.verbose_name }}</strong>
+        {% if display_parameters.verbose_name_subtitle %}
+        <br><small class="text-muted verbose-name-subtitle">
+          {{ display_parameters.verbose_name_subtitle }}
+        </small>
+        {% endif %}
+      </div>{# about-flex-th #}
+
+      {# Content td #}
+
+      <div class="flex-td about-flex-td-content flex-collapse-sm {% if display_parameters.spread_across %}spread-across{% endif %}">
+        {% if display_parameters.spread_across %}
+        <strong class="verbose-name hidden-xs long-text-title">{{ display_parameters.verbose_name }}</strong>
         {% endif %}
 
-	{% if field.type == 'text_with_link' %}
-	<span class="text_with_link">{{ field.value }}<br>
-	  <a href="{{ field.link }}"{% if not field.not_new_window %} target="_blank"{% endif %}{% if field.ajax_link %} data-ajax-url="{{ field.ajax_link }}" data-ajax-title="{{ field.value }}"{% endif %}>
-	    {{ field.link_text }}
-	    <i class="flaticon-link fontx0-8"></i>
-	</a></span>
-	{% if field.image or field.image_for_link %}<img src="{% if field.image_for_link %}{{ field.image_for_link }}{% else %}{{ field.image }}{% endif %}" alt="{{ field.link_text }}" class="text_with_link_image">{% endif %}
-	{% elif field.type == 'title_text' %}
-	<strong>{{ field.title }}</strong><br>
-	<p>{{ field.value }}</p>
-	{% elif field.type == 'text_annotation' %}
-	<span>{{ field.value }}</span><br />
-	<small class="text-muted">{{ field.annotation }}</small>
-	{% elif field.type == 'image' %}
-	<a href="{{ field.value }}"{% if not field.not_new_window %} target="_blank"{% endif %}{% if field.ajax_link %} data-ajax-url="{{ field.ajax_link }}" data-ajax-title="{{ field.value }}"{% endif %}>
-	  <img src="{{ field.value }}" alt="{% if field.image_text %}{{ field.image_text }}{% else %}{{ field.verbose_name }}{% endif %}">
-	</a>
-	{% elif field.type == 'images' %}
-        {% for image in field.images %}
-	<a href="{{ image.value }}" {% if not image.not_new_window %} target="_blank"{% endif %}{% if image.ajax_link %} data-ajax-url="{{ image.ajax_link }}" data-ajax-title="{{ image.value }}"{% endif %}{% if image.attributes %}{% for attribute, value in image.attributes.items %} {{ attribute }}="{{ value }}"{% endfor %}{% endif %}>
-	  <img src="{{ image.value }}" alt="{{ image.verbose_name }}">
-	</a>
-        {% endfor %}
-	{% elif field.type == 'image_link'  %}
-        <a href="{{ field.link }}"{% if not field.not_new_window %} target="_blank"{% endif %}{% if field.ajax_link %} data-ajax-url="{{ field.ajax_link }}" data-ajax-title="{{ field.link_text }}"{% endif %}>
-	  <img src="{{ field.value }}" alt="{% if field.image_text %}{{ field.image_text }}{% else %}{{ field.link_text }}{% endif %}">
-        </a>
-	    {% elif field.type == 'image_with_multiple_links'  %}
-        <div class="image-with-links" data-thumbnail="{{ field.value }}" style="{% if field.background_size %}background-size: {{ field.background_size }};{% endif %}">
-          <h4>{{ field.popover_title }}</h4>
-          <ul class="list-group inline-block">
-            {% for link in field.links %}
-            <li class="list-group-item"><a href="{{ link.value }}"{% if not link.not_new_window %} target="_blank"{% endif %}>{{ link.verbose }} <i class="flaticon-link"></i></a></li>
-            {% endfor %}
-          </ul>
-        </div>
-	    {% elif field.type == 'images_links'  %}
-        <div class="images">
-        {% for image in field.images %}{% if field.per_line and forloop.counter0 > 0 and forloop.counter != field.images.length and forloop.counter0|mod:field.per_line %}<br>{% endif %}{% if image.link %}<a href="{{ image.link }}" class="a-nodifference" {% if not image.not_new_window %} target="_blank"{% endif %}{% if image.ajax_link %} data-ajax-url="{{ image.ajax_link }}" data-ajax-title="{{ image.link_text }}"{% endif %}{% if field.images_width %} style="display: inline-block; max-width: {{ field.images_width }};"{% endif %}>{% endif %}
-	      <img src="{{ image.value }}" alt="{{ image.link_text }}"{% if image.tooltip %} data-toggle="tooltip" title="{{ image.tooltip }}"{% endif %}>
-        {% if image.link %}</a>{% endif %}{% endfor %}
-        </div>
-        {% if field.and_more %}
-        <br><a href="{{ field.and_more.link }}" class="btn-link-secondary padding10{% if field.and_more.hide %} hidden{% endif %}"
-               {% if field.and_more.ajax_link %} data-ajax-url="{{ field.and_more.ajax_link }}" data-ajax-title="{{ item }} - {{ field.verbose_name }}"{% endif %}>
-          {{ field.and_more.verbose_name }}
-        </a>
-        {% endif %}
-	{% elif field.type == 'bool' %}
-	{% if field.value %}
-	<i class="flaticon-checked"></i> {% t 'Yes' %}
-	{% else %}
-	<i class="flaticon-delete"></i> {% t 'No' %}
-	{% endif %}
-	{% elif field.type == 'link' %}
-	<a href="{{ field.value }}" {% if not field.not_new_window %} target="_blank"{% endif %}{% if field.ajax_link %} data-ajax-url="{{ field.ajax_link }}" data-ajax-title="{{ field.value }}"{% endif %}>
-	  {{ field.link_text }}
-	</a>
-	{% elif field.type == 'button' %}
-	<a href="{{ field.value }}" {% if not field.not_new_window %} target="_blank"{% endif %} class="btn btn-lg btn-secondary"{% if field.ajax_link %} data-ajax-url="{{ field.ajax_link }}" data-ajax-title="{% if field.title %}{{ field.title }}{% else %}{{ field.link_text }}{% endif %}"{% endif %}>
-	  {% if field.icon %}
-	  <i class="flaticon-{{ field.icon }}"></i>
-	  {% elif field.image %}
-	  <img src="{{ field.image }}" alt="{{ field.verbose_name }}">
-	  {% endif %}
-	  {{ field.link_text }}
-
-	</a>
-	{% elif field.type == 'timezone_datetime' %}
-	{% for timezone in field.timezones %}
-	<span class="timezone" data-to-timezone="{{ timezone }}"
-	      {% if forloop.counter0 != 0 %} style="display: none;"{% endif %}>
-	  <span class="datetime">{{ field.value|torfc2822 }}</span>
-	  (<span class="current_timezone">UTC</span>)
-	</span><br>
-	{% endfor %}
-        {% if field.ago %}
-        <small class="text-muted"><span class="timezone" data-timeago="true" style="display: none;">
-	    <span class="datetime">{{ field.value|torfc2822 }}</span>
-	</span></small>
-        {% endif %}
-	{% elif field.type == 'long_text' %}
-        <div class="long-text-value">{{ field.value }}</div>
-    {% elif field.type == 'list' %}
-        <ul>{% for value in field.value %}
-          <li{% if field.inline %} class="inline-block padding10 padding-novertical"{% endif %}>{{ value }}</li>
-        {% endfor %}</ul>
-    {% elif field.type == 'list_links' %}
-        <ul>{% for link in field.links %}
-          <li>
-            <a href="{{ link.link }}" {% if not link.not_new_window %} target="_blank"{% endif %}{% if link.ajax_link %} data-ajax-url="{{ link.ajax_link }}" data-ajax-title="{{ link.value }}"{% endif %}{% if link.attributes %}{% for key, value in link.attributes.items %} {{ key }}="{{ value }}"{% endfor %}{% endif %}>{{ link.value }}</a>
-          </li>
-          {% endfor %}{% if field.and_more %}
-          <li><a href="{{ field.and_more.link }}" class="btn-link-secondary{% if field.and_more.hide %} hidden{% endif %}"
-                 {% if field.and_more.ajax_link %} data-ajax-url="{{ field.and_more.ajax_link }}" data-ajax-title="{{ item }} - {{ field.verbose_name }}"{% endif %}>
-              {{ field.and_more.verbose_name }}
-          </a></li>
-        {% endif %}</ul>
-	{% elif field.type == 'itunes' %}
-        <div class="itunes" data-itunes-id="{{ field.value }}"></div>
-	{% elif field.type == 'html' %}
-	{{ field.value|safe }}
-	{% elif field.type == 'markdown' %}
-        <div class="long-text-value{% if field.value.0 %} was-markdown{% endif %}">
-          {% if field.value.0 %}
-          {{ field.value.1|safe }}
+        <div class="field-content {% if display_parameters.text_align %}text-{{ display_parameters.text_align }}{% endif %}">
+          {% if field.template %}
+          {% include field.template|add:'.html' with item=field.item value=field.value display_parameters=display_parameters %}
           {% else %}
-          <div class="to-markdown{% if field.allow_html %} allow-html{% endif %}">{{ field.value.1 }}</div>
+          {{ html }}
           {% endif %}
-        </div>
-	{% elif field.type == 'color' %}
-        <span class="text-muted">{{ field.value }}</span>
-        <div class="color-viewer" style="background-color: {{ field.value }};"></div>
-	{% elif field.type == 'youtube_video' %}
-        <div class="youtube-embed-container"><iframe src="{{ field.value }}" frameborder="0" allowfullscreen></iframe></div>
-        {% elif field.type == 'template' %}
-        {% include field.template with parent_item=item item=field.item %}
-        {% elif field.type == 'templates' %}
-        {% if field.template %}
-        {% include field.template with parent_item=item items=field.items %}
-        {% else %}
-        {% for sub_item in field.items %}
-        {% include sub_item.template with parent_item=item item=sub_item %}
-        {% endfor %}
-        {% endif %}
-        {% if field.and_more %}
-        <br><a href="{{ field.and_more.link }}" class="btn-link-secondary padding10{% if field.and_more.hide %} hidden{% endif %}"
-               {% if field.and_more.ajax_link %} data-ajax-url="{{ field.and_more.ajax_link }}" data-ajax-title="{{ item }} - {{ field.verbose_name }}"{% endif %}>
-          {{ field.and_more.verbose_name }}
-        </a>
-        {% endif %}
-    {% elif field.type == 'alert' %}
-        {% include 'include/alert.html' with alert_message=field.value alert_type=field.alert_type alert_flaticon=field.alert_flaticon alert_button_link=field.alert_button_link alert_button_string=field.alert_button_string %}
-	{% else %}
-	{{ field.value }}
-	{% endif %}
-      </td>
-    </tr>
-    {% endfor %}
-    {% if item.buttons_to_show and bottom %}
-    {% for name, button in item.buttons_to_show.items %}
-    {% if button.show and button.has_permissions %}
-    <tr{% if 'staff-only' in button.classes %} class="staff-only"{% endif %} data-field="{{ name }}">
-      <td>
-        {% if button.icon %}<i class="flaticon-{{ button.icon }}"></i>
-        {% elif button.image %}<img src="{{ static_url }}img/{{ button.image }}.png?{{ static_files_version }}" height="39" />{% endif %}
-      </td>
-      <th>
-        {{ button.title }}
-        {% if button.subtitle %}<br><small class="text-muted verbose-name-subtitle">{{ button.subtitle }}</small>{% endif %}
-      </th>
-      <td>
-        <a href="{{ button.url }}" data-btn-name="{{ name }}"
-           class="{% for class in button.classes %}{% if class != 'staff-only' %}{{ class }} {% endif %}{% endfor %}"
-           title="{{ button.title }}"
-           {% for attr, value in button.extra_attributes.items %}data-{{ attr }}="{{ value }}"
-           {% endfor %}
-           {% if button.open_in_new_window %} target="_blank"{% endif %}
-           {% if button.ajax_url %}
-           data-ajax-url="{{ button.ajax_url }}"
-           data-ajax-title="{% if button.ajax_title %}{{ button.ajax_title }}{% else %}{{ button.title }}{% endif %}"
-           data-ajax-handle-form="true"
-           {% endif %}>
-          {% if button.icon %}<i class="flaticon-{{ button.icon }}"></i>
-          {% elif button.image %}<img src="{{ static_url }}img/{{ button.image }}.png?{{ static_files_version }}" height="39" />{% endif %}
-          {% if not item.show_item_buttons_as_icons %}<span class="message">{{ button.title }}</span>{% endif %}
-          {% if button.badge != None %}<span class="badge progress-bar-main"{% if not button.badge %} style="display: none;"{% endif %}>{{ button.badge }}</span>{% endif %}
-        </a>
-      </td>
-    </tr>
+          {% if display_parameters.annotation %}
+          <br><small class="text-muted">{{ display_parameters.annotation }}</small>
+          {% endif %}
+        </div>{# field-content #}
+
+        <div class="field-buttons">
+          {{ buttons_html }}
+        </div>{# field-button #}
+
+      </div>{# about-flex-td #}
+
+    </div>{# about-flex-tr #}
     {% endif %}
     {% endfor %}
     {% endif %}
-    {% if bottom %}
-    {% load i18n %}
-    {% if comments_enabled and not comments_displayed_below %}
-    <tr data-field="comments">
-      <td><i class="flaticon-comments"></i></td>
-      <th>{% trans 'Comments' %}</th>
-      <td>
-	<a href="{{ item.http_item_url }}#disqus_thread" class="btn btn-lg btn-secondary"{% if current != item.collection_name|add:'_item' %} target="_blank"{% endif %}>
-	  {% trans 'Comments' %}
-	</a>
-      </td>
-    </tr>
-    {% endif %}
-    {% if share_enabled %}
-    <tr data-field="share">
-      <td><i class="flaticon-link"></i></td>
-      <th>{% trans 'Share' %}</th>
-      <td>
-	<span class="btn-group">
-	  {% include 'include/share.html' with share_url=item.share_url share_btn_class="secondary btn-lg" share_sentence=item %}
-	</span>
-      </td>
-    </tr>
-    {% endif %}
-    {% endif %}
-  </table>
+    {% endfor %}
+</div>{# about-flex-table #}
+{% endif %}

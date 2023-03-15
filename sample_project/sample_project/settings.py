@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Django settings for sample_project project.
 
@@ -113,6 +114,7 @@ LANGUAGES = (
     ('pt-br', _('Brazilian Portuguese')),
     ('tr', _('Turkish')),
     ('th', _('Thai')),
+    ('uk', _('Ukrainian')),
 )
 
 NATIVE_LANGUAGES = (
@@ -133,6 +135,7 @@ NATIVE_LANGUAGES = (
     ('pt-br', u'Português Brasileiro'),
     ('tr', u'Türkçe'),
     ('th', u'ไทย'),
+    ('uk', u'Українська'),
 )
 
 LANGUAGE_CODE = 'en'

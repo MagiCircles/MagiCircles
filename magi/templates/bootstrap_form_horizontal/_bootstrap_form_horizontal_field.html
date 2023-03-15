@@ -71,7 +71,7 @@
     {{ field|bootstrap_control_field }}
     {% endif %}
     {% endif %}
-    {{ field.field.below_field }}
+    {% if field.field.below_field %}{{ field.field.below_field }}{% endif %}
   </div>
 </div>
 {% endif %}

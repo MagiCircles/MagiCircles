@@ -1,0 +1,16 @@
+{% load i18n %}
+{# This is for a simple form meant to be included in another page. #}
+{# For a full page form, you should use form.html (instead of include/form.html) #}
+{# Variables: form (required), form_method, form_multipart, form.action_url, form.submit_title, form_in_container #}
+<form
+  method="{% if form_method %}{{ form_method }}{% else %}POST{% endif %}"
+  class="generic-form {% if form_in_container %}container_form{% endif %}"
+  {% if form_multipart %} enctype="multipart/form-data"{% endif %}
+  action="{% if form.action_url %}{{ form.action_url }}{% endif %}">
+  {% csrf_token %}
+  {% include "bootstrap_form_horizontal/bootstrap_form_horizontal.html" with form=form wrap=0 %}
+  <div class="pull-right">
+    <button type="submit" class="btn btn-main btn-lg generic-form-submit-button" data-form-loader="true">
+      {% if form.submit_title %}{{ form.submit_title }}{% else %}{% trans 'Submit' %}{% endif %}</button>
+  </div>
+</form>

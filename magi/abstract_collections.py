@@ -3,13 +3,13 @@ from django.utils.translation import ugettext_lazy as _
 from magi.magicollections import MainItemCollection
 from magi.utils import (
     addParametersToURL,
-    eventToCountDownField,
+    makeCollectionCommunity,
     listUnique,
     modelFieldVerbose,
     modelHasField,
     staticImageURL,
 )
-from magi import forms
+from magi import forms, magifields
 
 def to_EventParticipationCollection(cls):
     class _EventParticipationCollection(cls):
@@ -22,11 +22,27 @@ class BaseEventCollection(MainItemCollection):
     plural_title = _('Events')
     translated_fields = ['name', 'm_description']
     icon = 'event'
+    fields_class = magifields.BaseEventFields
 
     def __init__(self, *args, **kwargs):
         super(BaseEventCollection, self).__init__(*args, **kwargs)
         self.with_versions = modelHasField(self.queryset.model, 'c_versions')
         self.versions = self.queryset.model.VERSIONS if self.with_versions else {}
+
+    ############################################################
+    # Form class
+
+    def to_form_class(self):
+        self._form_class = forms.to_EventForm(self)
+
+    ############################################################
+    # Participations (collectible, only when specified)
+
+    def collectible_to_class(self, model_class):
+        cls = super(BaseEventCollection, self).collectible_to_class(model_class)
+        if model_class.collection_name == 'eventparticipation':
+            return to_EventParticipationCollection(cls)
+        return cls
 
     ############################################################
     # Fields icons
@@ -111,21 +127,6 @@ class BaseEventCollection(MainItemCollection):
         return fields_images
 
     ############################################################
-    # Form class
-
-    def to_form_class(self):
-        self._form_class = forms.to_EventForm(self)
-
-    ############################################################
-    # Participations (collectible, only when specified)
-
-    def collectible_to_class(self, model_class):
-        cls = super(BaseEventCollection, self).collectible_to_class(model_class)
-        if model_class.collection_name == 'eventparticipation':
-            return to_EventParticipationCollection(cls)
-        return cls
-
-    ############################################################
     # List view
 
     class ListView(MainItemCollection.ListView):
@@ -142,24 +143,6 @@ class BaseEventCollection(MainItemCollection):
 
     class ItemView(MainItemCollection.ItemView):
         ajax_callback = 'loadBaseEvent'
-
-        # Fields order
-
-        fields_order_before = [
-            'name',
-            'c_versions',
-        ]
-
-        def get_fields_order(self, item):
-            if self.collection.with_versions:
-                order = self.fields_order_before
-                for version_name in item.versions_display_order:
-                    order.append(version_name)
-                    order += [
-                        self.collection.queryset.model.get_field_name_for_version('{}countdown', version_name)
-                    ] + self.collection.queryset.model.ALL_FIELDS_BY_VERSION[version_name]
-                return order
-            return []
 
         def extra_context(self, context):
             super(BaseEventCollection.ItemView, self).extra_context(context)
@@ -189,72 +172,4 @@ class BaseEventCollection(MainItemCollection):
                 ], fields_excluded)
             return fields_excluded
 
-        # Extra fields
-
-        def get_extra_fields(self, item):
-            extra_fields = super(BaseEventCollection.ItemView, self).get_extra_fields(item)
-
-            if self.collection.with_versions:
-
-                for version_name in item.versions:
-
-                    anchor = u'version{}'.format(version_name)
-
-                    # Add title for each version
-                    title_field = {
-                        'image': item.get_version_image(version_name),
-                        'icon': item.get_version_icon(version_name),
-                        'verbose_name': item.get_name_for_version(version_name) or unicode(item),
-                        'verbose_name_subtitle': item.get_version_name(version_name),
-                        'attributes': { 'id': anchor },
-                    }
-                    if '{}image' in self.collection.queryset.model.FIELDS_PER_VERSION_AND_LANGUAGE:
-                        image = item.get_value_of_relevant_language_for_version('image_url', version_name)
-                    else:
-                        image = item.get_field_for_version('image_url', version_name)
-                    if image:
-                        title_field.update({
-                            'type': 'image_link',
-                            'value': image,
-                            'link_text': item.get_name_for_version(version_name),
-                            'link': addParametersToURL(item.item_url, anchor=anchor),
-                            'not_new_window': True,
-                        })
-                    else:
-                        title_field.update({
-                            'type': 'text',
-                            'value': '',
-                        })
-                    extra_fields.append((version_name, title_field))
-
-                    # Add countdown
-
-                    status = item.get_status_for_version(version_name)
-                    if status and status not in ['ended', 'invalid']:
-                        extra_fields.append(eventToCountDownField(
-                            start_date=item.get_start_date_for_version(version_name),
-                            end_date=item.get_end_date_for_version(version_name),
-                            field_name=item.get_field_name_for_version('{}countdown', version_name),
-                        ))
-
-                    # Add participations(?) todo
-
-            return extra_fields
-
-        def to_fields(self, item, *args, **kwargs):
-            fields = super(BaseEventCollection.ItemView, self).to_fields(item, *args, **kwargs)
-            if self.collection.with_versions:
-                # Links to versions with smooth page scroll
-                if getattr(item, 'request', None) and not item.request.path_info.startswith('/ajax/'):
-                    if 'versions' in fields:
-                        fields['versions'].update({
-                            'type': 'list_links',
-                            'links': [{
-                                'link': u'#version{}'.format(version_name),
-                                'value': item.get_version_name(version_name),
-                                'not_new_window': True,
-                                'attributes': { 'class': 'page-scroll' },
-                            } for version_name in item.versions_display_order
-                            ],
-                        })
-            return fields
+CommunityBaseEventCollection = makeCollectionCommunity(BaseEventCollection)

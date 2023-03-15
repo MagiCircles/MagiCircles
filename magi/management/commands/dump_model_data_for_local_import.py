@@ -50,7 +50,7 @@ def dump_dependencies_getters(fileds, foreign_key_model, dependency_item, unique
             dump_item(fileds, foreign_key_model, dependency_item, m2m_unique_fields, m2m_fields, {}, {}, {}, {})
         return fk_var_name
     # Otherwise, can only be gotten
-    print_to_files(fileds, u'try: {}\nexcept NameError:\n  try: {} = {}.{}.objects.get(**{})\n  except ObjectDoesNotExist: {} = None\n\n'.format(
+    print_to_files(fileds, u'try: noop({})\nexcept NameError:\n  try: {} = {}.{}.objects.get(**{})\n  except ObjectDoesNotExist: {} = None\n\n'.format(
         fk_var_name, fk_var_name,
         foreign_key_model.__module__,
         foreign_key_model.__name__,
@@ -96,7 +96,7 @@ def dump_item(fileds, model, item, unique_fields, fields, foreign_keys, many_to_
         if value is not None:
             data[field] = unicode(value)
     fk_var_name = 'fk_{}_{}'.format(model.__name__, item.pk)
-    print_to_files(fileds, u'try: {fk_var_name}\nexcept NameError:\n'.format(fk_var_name=fk_var_name))
+    print_to_files(fileds, u'try: noop({fk_var_name})\nexcept NameError:\n'.format(fk_var_name=fk_var_name))
     lines_to_print_under_except = [
         u'data = {data}'.format(data=data),
     ]
@@ -124,7 +124,7 @@ def dump_item(fileds, model, item, unique_fields, fields, foreign_keys, many_to_
                 for key, value in unique_data.items()
             ]),
         ),
-        u'  {model_from}.{model_name}.objects.filter(pk={fk_var_name}.pk).update(**data)'.format(
+        u'  noop({model_from}.{model_name}.objects.filter(pk={fk_var_name}.pk).update(**data))'.format(
             fk_var_name=fk_var_name,
             model_from=model.__module__,
             model_name=model.__name__,
@@ -149,13 +149,13 @@ def dump_item(fileds, model, item, unique_fields, fields, foreign_keys, many_to_
     if m2m_update:
         for key, value in m2m_update.items():
             lines_to_print_under_except.append(
-                u'{fk_var_name}.{key} = {value}'.format(
+                u'{fk_var_name}.{key}.save( = {value}'.format(
                     fk_var_name=fk_var_name,
                     key=key, value=value,
                 )
             )
         lines_to_print_under_except.append(
-            u'{fk_var_name}.save()'.format(fk_var_name=fk_var_name)
+            u'noop({fk_var_name}.save())'.format(fk_var_name=fk_var_name)
         )
     print_to_files(fileds, u'{}\n\n'.format(u'\n'.join([
         u'  {}'.format(line)
@@ -163,12 +163,14 @@ def dump_item(fileds, model, item, unique_fields, fields, foreign_keys, many_to_
     ])))
 
 def print_file_headers(filed):
+    print_to_files([filed], u'import django\n')
     print_to_files([filed], u'from django.core.exceptions import ObjectDoesNotExist\n')
     print_to_files([filed], u'from django.db.models import Q\n')
     print_to_files([filed], u'from magi.tools import get_default_owner\n')
     print_to_files([filed], u'import magi, {}\n\n'.format(django_settings.SITE))
     print_to_files([filed], u'owner = get_default_owner()\n\n')
     print_to_files([filed], u'total_created = 0\ntotal_updated = 0\n\n')
+    print_to_files([filed], u'def noop(var_name): pass\n\n')
 
 class Command(BaseCommand):
     can_import_settings = True

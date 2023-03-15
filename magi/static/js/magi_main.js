@@ -351,45 +351,39 @@ function ajaxModals() {
                         $('#ajaxModal').data('original-url', button.attr('href'));
                     }
                     loadCommons();
-                    if (typeof button.data('ajax-handle-form') != 'undefined') {
-                        var ajaxModals_handleForms;
-                        ajaxModals_handleForms = function() {
-                            formloaders();
-                            $('#ajaxModal form').submit(function(e) {
-                                e.preventDefault();
-                                var form_name = $(this).find('.generic-form-submit-button').attr('name');
-                                $(this).ajaxSubmit({
-                                    context: this,
-                                    success: function(data) {
-                                        var form_modal_size = modal_size;
-                                        if (typeof form_name != 'undefined'
-                                            && $(data).find('form .generic-form-submit-button[name="' + form_name + '"]').length == 0
-                                            && $(data).find('form .errorlist').length == 0
-                                            && typeof button.data('ajax-modal-after-form-size') != 'undefined') {
-                                            form_modal_size = button.data('ajax-modal-after-form-size');
-                                        }
+                    var ajaxModals_handleForms;
+                    ajaxModals_handleForms = function() {
+                        formloaders();
+                        $('#ajaxModal form').submit(function(e) {
+                            e.preventDefault();
+                            var form_name = $(this).find('.generic-form-submit-button').attr('name');
+                            $(this).ajaxSubmit({
+                                context: this,
+                                success: function(data) {
+                                    var form_modal_size = modal_size;
+                                    if (typeof form_name != 'undefined'
+                                        && $(data).find('form .generic-form-submit-button[name="' + form_name + '"]').length == 0
+                                        && $(data).find('form .errorlist').length == 0
+                                        && typeof button.data('ajax-modal-after-form-size') != 'undefined') {
+                                        form_modal_size = button.data('ajax-modal-after-form-size');
+                                    }
 
-                                        if (data && data.indexOf('<h1 class="page-title ') !== -1) {
-                                            data = $('<div>' + data + '</div>');
-                                            title = data.find('h1.page-title').first().html();
-                                            data.find('h1.page-title').first().remove();
-                                        }
+                                    if (data && data.indexOf('<h1 class="page-title ') !== -1) {
+                                        data = $('<div>' + data + '</div>');
+                                        title = data.find('h1.page-title').first().html();
+                                        data.find('h1.page-title').first().remove();
+                                    }
 
-                                        freeModal(title, data, modalButtons, form_modal_size, $('#ajaxModal'));
-                                        if (typeof form_name != 'undefined'
-                                            && $('#ajaxModal form .generic-form-submit-button[name="' + form_name + '"]').length > 0
-                                            && $('#ajaxModal form .errorlist').length > 0) {
-                                            ajaxModals_handleForms();
-                                        }
-                                        loadCommons();
-                                    },
-                                    error: genericAjaxError,
-                                });
-                                return false;
+                                    freeModal(title, data, modalButtons, form_modal_size, $('#ajaxModal'));
+                                    ajaxModals_handleForms();
+                                    loadCommons();
+                                },
+                                error: genericAjaxError,
                             });
-                        };
-                        ajaxModals_handleForms();
-                    }
+                            return false;
+                        });
+                    };
+                    ajaxModals_handleForms();
                 },
                 'error': genericAjaxErrorWithCallback(function() {
                     button.css('display', button_display);
@@ -526,11 +520,17 @@ function _loadCountdowns() {
     });
 }
 
+_countdown_script_loading = false;
+
 function loadCountdowns() {
     if ($('.countdown').length > 0) {
         if (typeof Countdown == 'undefined') {
-            $.getScript(static_url + 'bower/countdown/dest/jquery.countdown.min.js', _loadCountdowns);
-        } else {
+            _countdown_script_loading = true;
+            $.getScript(static_url + 'bower/countdown/dest/jquery.countdown.min.js', function() {
+                _loadCountdowns();
+                _countdown_script_loading = false;
+            });
+        } else if (!_countdown_script_loading) {
             _loadCountdowns();
         }
     }
@@ -585,16 +585,20 @@ function _localeNameToTimeAgoLocaleName() {
     return to_locale ? to_locale : locale;
 }
 
+_timezone_script_loading = false;
+
 function loadTimezones() {
     if ($('[data-timeago]').length > 0 && typeof jQuery.timeago == 'undefined') {
+        _timezone_script_loading = true;
         $.getScript(static_url + 'bower/jquery-timeago/jquery.timeago.js', function() {
             $.getScript(static_url + 'bower/jquery-timeago/locales/jquery.timeago.' +  _localeNameToTimeAgoLocaleName() + '.js', function() {
                 jQuery.timeago.settings.allowPast = true;
                 jQuery.timeago.settings.allowFuture = true;
                 _loadTimezones();
+                _timezone_script_loading = false;
             });
         });
-    } else {
+    } else if (!_timezone_script_loading) {
         _loadTimezones();
     }
 }
@@ -785,6 +789,40 @@ function directAddCollectible(buttons, uniquePerOwner) {
             }
         });
     });
+}
+
+// *****************************************
+// Set background
+
+function onClickPostConfirmForm(buttons, get_form_url) {
+    buttons.unbind('click');
+    buttons.each(function() {
+        var button = $(this);
+        var form_url = get_form_url(button);
+        let csrf_token = button.data('csrf-token');
+        button.click(function(e) {
+            e.preventDefault();
+            if (button.find('.flaticon-loading').length > 0) {
+                return;
+            }
+            var button_content = button.html();
+            button.html('<i class="flaticon-loading"></i>');
+            let virtual_form = $(`<form action="` + form_url + `" method="POST" class="hidden">
+<input type="checkbox" name="confirm" value="on">
+<input type="hidden" name="csrfmiddlewaretoken" value="` + csrf_token + `">
+</form>`);
+            $(document.body).append(virtual_form);
+            virtual_form.submit();
+        });
+    });
+}
+
+function directlySetBackground() {
+    onClickPostConfirmForm($('[data-set-background="true"]'), button => button.prop('href'));
+}
+
+function directlySetFavoriteCharacter() {
+    onClickPostConfirmForm($('[data-set-favorite-character="true"]'), button => button.prop('href'));
 }
 
 // *****************************************
@@ -1029,9 +1067,12 @@ function loadCommons(onPageLoad /* optional = false */) {
     reloadDisqus();
     itemsReloaders();
     directAddCollectible($('[data-quick-add-to-collection="true"]'));
+    directlySetBackground();
+    directlySetFavoriteCharacter();
     translationsSeeAll();
     deleteFormConfirm();
     colorPicker();
+    loadAlliTunesData();
     if (typeof customLoadCommons != 'undefined') {
         customLoadCommons();
     }
@@ -1097,6 +1138,12 @@ function freeModal(title, body, buttons /* optional */, modal_size /* optional *
         modal.find('.modal-footer').show();
     }
     modal.modal('show');
+    modal.modal('handleUpdate');
+    modal.scrollTop(0);
+    modal.on('hidden.bs.modal', function (e) {
+        // Empty the body to stop any audio or video playing
+        modal.find('.modal-body').html('');
+    });
 }
 
 function confirmModal(onConfirmed, onCanceled /* optional */, title /* optional */, body /* optional */) {
@@ -1136,12 +1183,37 @@ function load_more_function(nextPageUrl, newPageParameters, newPageCallback /* o
     $.ajax({
         'url': (
             nextPageUrl + location.search
-                + (location.search == '' && nextPageUrl.search == '' ? '?' : '&')
+                + (
+                    ((nextPageUrl || '').indexOf('?') == -1
+                     && (location.search || '').indexOf('?') == -1)
+                        ? '?' : '&'
+                )
                 + 'page=' + next_page
                 + newPageParameters
         ),
         'success': function(data) {
-            button.replaceWith(data);
+            // Table: add to previous table to avoid having different sizes columns
+            if (data && data.indexOf('<div class="flex-table items list-items-') !== -1) {
+                let data_elements = $('<div>' + data + '</div>');
+                let data_table = data_elements.find('div[class^="flex-table items list-items-"]');
+                let table_cls = data_table.first().attr('class').split(' ')[2];
+                let current_table = button.parent().find('.flex-table.' + table_cls);
+                data_table.find('.flex-tr').first().attr('data-page-number', data_table.data('page-number'));
+                current_table.find('.flex-tr').last().after(data_table.find('.flex-tr'));
+                current_table.after(data_elements.find('script'));
+                button.replaceWith(data_elements.find('#load_more'));
+            } else if (data && data.indexOf('<table class="items list-items-') !== -1) {
+                let data_elements = $('<div>' + data + '</div>');
+                let data_table = data_elements.find('table[class^="items list-items-"]');
+                let table_cls = data_table.first().attr('class').split(' ')[1];
+                let current_table = button.parent().find('table.' + table_cls);
+                data_table.find('tr').first().attr('data-page-number', data_table.data('page-number'));
+                current_table.find('tr').last().after(data_table.find('tr'));
+                current_table.after(data_elements.find('script'));
+                button.replaceWith(data_elements.find('#load_more'));
+            } else {
+                button.replaceWith(data);
+            }
             if (onClick) {
                 paginationOnClick(onClick, nextPageUrl, newPageParameters, newPageCallback);
             } else {
@@ -1216,6 +1288,7 @@ function hidePopovers() {
 function hideTooltips() {
     $('[data-manual-tooltip="true"]').tooltip('hide');
     $('[data-toggle="tooltip"]').tooltip('hide');
+    $('body > .tooltip[id^="tooltip"]').remove();
 }
 
 // *****************************************
@@ -1584,24 +1657,21 @@ function loadPrivateMessages() {
 // *****************************************
 // Handle form to update users for staff
 
-function updateStaffEditUserForm() {
+function updateStaffEditUserPreferencesForm() {
     function _onCheck(action) {
-        $('[data-form-name="edit_user"] #id_c_groups input[name="c_groups"]').each(function() {
+        $('[data-form-name="edit_userpreferences"] #id_c_groups input[name="c_groups"]').each(function() {
             let input = $(this);
-            let form_group = $('[data-form-name="edit_user"] [id^=id_group_settings_' + input.val() + '_]').closest('.form-group');
             if (input.prop('checked') !== true) {
-                form_group.hide(action);
                 input.parent().find('p, br:not(:first-of-type), ul, .alert').hide(action);
                 input.parent().find('img').css('height', 30);
             } else {
-                form_group.show(action);
                 input.parent().find('p, br:not(:first-of-type), ul, .alert').show(action);
                 input.parent().find('img').css('height', 60);
             }
         });
     }
     _onCheck();
-    $('[data-form-name="edit_user"] #id_c_groups input[name="c_groups"]').change(function() {
+    $('[data-form-name="edit_userpreferences"] #id_c_groups input[name="c_groups"]').change(function() {
         _onCheck('fast');
     });
 }
@@ -1759,11 +1829,17 @@ function _loadMarkdown() {
     });
 }
 
+_markdown_script_loading = false;
+
 function loadMarkdown() {
     if ($('.to-markdown').length > 0) {
         if (typeof marked == 'undefined') {
-            $.getScript(static_url + 'bower/marked/lib/marked.js', _loadMarkdown);
-        } else {
+            _markdown_script_loading = true;
+            $.getScript(static_url + 'bower/marked/lib/marked.js', function() {
+                _loadMarkdown();
+                _markdown_script_loading = false;
+            });
+        } else if (!_markdown_script_loading) {
             _loadMarkdown();
         }
     }
@@ -2401,27 +2477,27 @@ function loadBaseEvent() {
             let event = $(this);
             event.addClass('loaded');
             $.each(versions, function(version_name, version) {
-                let main_field = event.find(' tr[data-field="' + version_name + '"]');
+                let main_field = event.find(' .flex-tr[data-field="' + version_name + '"]');
                 if (main_field.length > 0) {
                     let fields = event.find('[data-field^="' + version.prefix + '"]');
                     // Add some spacing to separate version fields from the rest
-                    fields.first().find('th, td').css('border-top', 0);
-                    fields.last().after('<tr><td colspan="99" height="40px" style="border-top: 0"></td></tr>');
-                    main_field.before('<tr><td colspan="99" height="40px" style="border-top: 0"></td></tr>');
+                    fields.first().find('.flex-th, .flex-td').css('border-top', 0);
+                    fields.last().after('<div class="flex-tr"><div class="flex-td" height="40px" style="border-top: 0"></div></div>');
+                    main_field.before('<div class="flex-tr"><div class="flex-td" height="40px" style="border-top: 0"></div></div>');
                     // Add separator with button to show/hide
                     let separator_tr = (
                         $(document).width() > 992 ?
-                            $('<tr><td></td><td colspan="99"><div class="title-separator"><span></span></div></td></tr>')
-                            : $('<tr><td colspan="99"><div class="title-separator"><span></span></div></td></tr>')
+                            $('<div class="flex-tr"><div class="flex-td"><div class="title-separator"><span></span></div></flex></flex>')
+                            : $('<div class="flex-tr"><div class="flex-td"><div class="title-separator"><span></span></div></div></div>')
                     );
                     separator_tr.find('th, td').css('border-top', 0);
                     fields.first().before(separator_tr);
                     // When screen is big enough, make it a sub table
                     if ($(document).width() > 992) {
-                        let tr = $('<tr><td></td><td colspan="2"><table class="table"></table></td></tr>');
-                        tr.find('th, td').css('border-top', 0);
+                        let tr = $('<div class="flex-tr"><div class="flex-td"><div class="flex-table" style="background: #f8f8f8;"></div></div></div>');
+                        tr.find('.flex-th, .flex-td').css('border-top', 0);
                         separator_tr.after(tr);
-                        fields.appendTo(tr.find('table'));
+                        fields.appendTo(tr.find('.flex-table'));
                     } else {
                         // Otherwise, make the text smaller
                         fields.css('font-size', '0.8em');
@@ -2429,10 +2505,12 @@ function loadBaseEvent() {
                     // Remove the prefixes to the field names
                     let prefix = version.translation + ' - ';
                     fields.each(function() {
-                        let field_name = $(this).find('.verbose-name').text();
-                        if (field_name.startsWith(prefix)) {
-                            $(this).find('.verbose-name').text(field_name.slice(prefix.length));
-                        }
+                        $(this).find('.verbose-name').each(function() {
+                            let verbose = $(this).text();
+                            if (verbose.startsWith(prefix)) {
+                                $(this).text(verbose.slice(prefix.length));
+                            }
+                        });
                     });
 
                     let open_html = '<a href="#" class="btn btn-secondary btn-lg">' + gettext('Open {thing}').replace(
@@ -2761,17 +2839,28 @@ function _loadWikiPage() {
     $('.edit-link').attr('href', 'https://github.com/' + github_repository_username + '/' + github_repository_name + '/wiki/' + wikiPageUrl + '/_edit');
 }
 
+_wiki_script_loading = false;
+_marked_script_loading = false;
+
 function loadWikiPage() {
     function _loadGitHubWiki() {
         if (typeof githubwiki == 'undefined') {
-            $.getScript(static_url + 'bower/github-wiki/js/githubwiki.js', _loadWikiPage);
-        } else {
+            _wiki_script_loading = true;
+            $.getScript(static_url + 'bower/github-wiki/js/githubwiki.js', function() {
+                _loadWikiPage();
+                _wiki_script_loading = false;
+            });
+        } else if (!_wiki_script_loading) {
             _loadWikiPage();
         }
     }
     if (typeof marked == 'undefined') {
-        $.getScript(static_url + 'bower/marked/lib/marked.js', _loadGitHubWiki);
-    } else {
+        _marked_script_loading = true;
+        $.getScript(static_url + 'bower/marked/lib/marked.js', function() {
+            _loadGitHubWiki();
+            _marked_script_loading = false;
+        });
+    } else if (!_marked_script_loading) {
         _loadGitHubWiki();
     }
 }

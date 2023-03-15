@@ -29,6 +29,7 @@ from magi.utils import (
     getMagiCollection,
     getEventStatus,
     tourldash,
+    failSafe,
 )
 from django.utils.translation import ugettext_lazy as _, string_concat, get_language
 
@@ -394,6 +395,11 @@ if hasattr(settings_module, 'SITE_EMOJIS'):
 else:
     SITE_EMOJIS = None
 
+if hasattr(settings_module, 'MANY_CHARACTERS_THRESHOLD'):
+    MANY_CHARACTERS_THRESHOLD = getattr(settings_module, 'MANY_CHARACTERS_THRESHOLD')
+else:
+    MANY_CHARACTERS_THRESHOLD = 30
+
 if hasattr(django_settings, 'FAVORITE_CHARACTERS'):
     FAVORITE_CHARACTERS = getattr(django_settings, 'FAVORITE_CHARACTERS')
 else:
@@ -407,17 +413,43 @@ if hasattr(settings_module, 'FAVORITE_CHARACTERS_MODEL'):  # Used by generated s
         _link.raw_value,
         tourldash(_link.value),
     )
-    FAVORITE_CHARACTER_NAME = lambda: getMagiCollection(FAVORITE_CHARACTERS_MODEL.collection_name).title
+    FAVORITE_CHARACTER_NAME = lambda: (
+        failSafe(lambda: getMagiCollection(
+            FAVORITE_CHARACTERS_MODEL.collection_name).title, exceptions=[ AttributeError ])
+        or failSafe(lambda: toHumanReadable(
+            FAVORITE_CHARACTERS_MODEL.__class__.__name__, warning=True), exceptions=[ AttributeError ])
+    )
+    if hasattr(settings_module, 'HAS_MANY_FAVORITE_CHARACTERS'):
+        HAS_MANY_FAVORITE_CHARACTERS = getattr(settings_module, 'HAS_MANY_FAVORITE_CHARACTERS')
+    elif hasattr(django_settings, 'HAS_MANY_FAVORITE_CHARACTERS'):
+        HAS_MANY_FAVORITE_CHARACTERS = getattr(django_settings, 'HAS_MANY_FAVORITE_CHARACTERS')
+    else:
+        HAS_MANY_FAVORITE_CHARACTERS = False
 else:
     FAVORITE_CHARACTERS_MODEL = None
     FAVORITE_CHARACTERS_FILTER = lambda _q: _q
     FAVORITE_CHARACTER_TO_URL = lambda _: '#'
     FAVORITE_CHARACTER_NAME = None
+    HAS_MANY_FAVORITE_CHARACTERS = False
 
 if hasattr(settings_module, 'FAVORITE_CHARACTER_TO_URL'):
     FAVORITE_CHARACTER_TO_URL = getattr(settings_module, 'FAVORITE_CHARACTER_TO_URL')
 if hasattr(settings_module, 'FAVORITE_CHARACTER_NAME'):
     FAVORITE_CHARACTER_NAME = getattr(settings_module, 'FAVORITE_CHARACTER_NAME')
+
+if hasattr(settings_module, 'BACKGROUNDS_MODEL'): # Used by generated settings
+    BACKGROUNDS_MODEL = getattr(settings_module, 'BACKGROUNDS_MODEL')
+    BACKGROUNDS_FILTER = getattr(settings_module, 'BACKGROUNDS_FILTER', lambda _q: _q)
+    if hasattr(settings_module, 'HAS_MANY_BACKGROUNDS'):
+        HAS_MANY_BACKGROUNDS = getattr(settings_module, 'HAS_MANY_BACKGROUNDS')
+    elif hasattr(django_settings, 'HAS_MANY_BACKGROUNDS'):
+        HAS_MANY_BACKGROUNDS = getattr(django_settings, 'HAS_MANY_BACKGROUNDS')
+    else:
+        HAS_MANY_BACKGROUNDS = False
+else:
+    BACKGROUNDS_MODEL = None
+    BACKGROUNDS_FILTER = lambda _q: _q
+    HAS_MANY_BACKGROUNDS = False
 
 if hasattr(django_settings, 'BACKGROUNDS'):
     BACKGROUNDS = getattr(django_settings, 'BACKGROUNDS')
@@ -425,6 +457,16 @@ elif hasattr(settings_module, 'BACKGROUNDS'):
     BACKGROUNDS = getattr(settings_module, 'BACKGROUNDS')
 else:
     BACKGROUNDS = None
+
+if hasattr(settings_module, 'SHOW_BACKGROUND_NAME_ON_SELECTION'):
+    SHOW_BACKGROUND_NAME_ON_SELECTION = getattr(settings_module, 'SHOW_BACKGROUND_NAME_ON_SELECTION')
+else:
+    SHOW_BACKGROUND_NAME_ON_SELECTION = True
+
+if hasattr(settings_module, 'MANY_BACKGROUNDS_THRESHOLD'):
+    MANY_BACKGROUNDS_THRESHOLD = getattr(settings_module, 'MANY_BACKGROUNDS_THRESHOLD')
+else:
+    MANY_BACKGROUNDS_THRESHOLD = 30
 
 if hasattr(django_settings, 'HOMEPAGE_BACKGROUNDS'):
     HOMEPAGE_BACKGROUNDS = getattr(django_settings, 'HOMEPAGE_BACKGROUNDS')
@@ -517,6 +559,31 @@ if hasattr(settings_module, 'FEEDBACK_FORM'):
     FEEDBACK_FORM = getattr(settings_module, 'FEEDBACK_FORM')
 else:
     FEEDBACK_FORM = None
+
+if hasattr(settings_module, 'FEEDBACK_FORM_ANSWERS'):
+    FEEDBACK_FORM_ANSWERS = getattr(settings_module, 'FEEDBACK_FORM_ANSWERS')
+else:
+    FEEDBACK_FORM_ANSWERS = FEEDBACK_FORM
+
+if hasattr(settings_module, 'EVENT_FEEDBACK_FORM'):
+    EVENT_FEEDBACK_FORM = getattr(settings_module, 'EVENT_FEEDBACK_FORM')
+else:
+    EVENT_FEEDBACK_FORM = None
+
+if hasattr(settings_module, 'EVENT_FEEDBACK_FORM_ANSWERS'):
+    EVENT_FEEDBACK_FORM_ANSWERS = getattr(settings_module, 'EVENT_FEEDBACK_FORM_ANSWERS')
+else:
+    EVENT_FEEDBACK_FORM_ANSWERS = EVENT_FEEDBACK_FORM
+
+if hasattr(settings_module, 'EVENT_PRIZES_FORM'):
+    EVENT_PRIZES_FORM = getattr(settings_module, 'EVENT_PRIZES_FORM')
+else:
+    EVENT_PRIZES_FORM = None
+
+if hasattr(settings_module, 'EVENT_PRIZES_FORM_ANSWERS'):
+    EVENT_PRIZES_FORM_ANSWERS = getattr(settings_module, 'EVENT_PRIZES_FORM_ANSWERS')
+else:
+    EVENT_PRIZES_FORM_ANSWERS = EVENT_PRIZES_FORM
 
 if hasattr(settings_module, 'HASHTAGS'):
     HASHTAGS = getattr(settings_module, 'HASHTAGS')
@@ -619,7 +686,7 @@ if hasattr(settings_module, 'OTHER_CHARACTERS_MODELS'):
 else:
     OTHER_CHARACTERS_MODELS = {}
     # Dict of cache variable name ("VOICE_ACTRESSES") -> Dict of {
-    #     model, filter, allow_set_as_favorite_on_profile, how_many_favorites,
+    #     model, filter, allow_set_as_favorite_on_profile, how_many_favorites, has_many, many_threshold,
     # }
 
 ############################################################
@@ -816,79 +883,42 @@ ACTIVITY_TAGS = _new_activity_tags
 
 # Permissions
 
-def _set_permission_link_on_unset(d, permission, url):
-    if url and permission in d and not d[permission]:
-        d[permission] = url
-
-# GROUPS
-
-_permission_url_to_set = {
-    'team': {
-        'Administrate the contributors on GitHub': {
-            'image': 'links/github',
-            'url': u'https://github.com/{}/{}/settings/collaboration'.format(
-                GITHUB_REPOSITORY[0], GITHUB_REPOSITORY[1]),
-        },
-        'Administrate the moderators on Disqus': {
-            'icon': 'comments',
-            'url': u'https://{}.disqus.com/admin/settings/moderators/'.format(DISQUS_SHORTNAME),
-        },
-    },
-    'support': {
-        'Receive private messages on Facebook': {
-            'image': 'links/facebook',
-            'url': u'https://facebook.com/{}/'.format(CONTACT_FACEBOOK) if CONTACT_FACEBOOK else None,
-        },
-        'Receive private messages on Reddit': {
-            'image': 'links/reddit',
-            'url': u'https://www.reddit.com/user/{}/'.format(CONTACT_REDDIT) if CONTACT_REDDIT else None,
-        },
-    },
-    'd_moderator': {
-        'Disqus moderation': {
-            'icon': 'comments',
-            'url': u'https://{}.disqus.com/admin/moderate/#/pending'.format(DISQUS_SHORTNAME),
-        },
-    },
-    'manager': {
-        'Disqus moderation': {
-            'icon': 'comments',
-            'url': u'https://{}.disqus.com/admin/moderate/#/pending'.format(DISQUS_SHORTNAME),
-        },
-    },
+_permissions_to_set = {
+    'Disqus moderation': u'https://{}.disqus.com/admin/moderate/#/pending'.format(DISQUS_SHORTNAME),
+    'See feedback form answers': FEEDBACK_FORM_ANSWERS,
+    'Administrate the contributors on GitHub': u'https://github.com/{}/{}/settings/collaboration'.format(
+        GITHUB_REPOSITORY[0], GITHUB_REPOSITORY[1]),
+    'Administrate the moderators on Disqus': u'https://{}.disqus.com/admin/settings/moderators/'.format(
+        DISQUS_SHORTNAME),
+    'Receive private messages on Facebook': (
+        u'https://facebook.com/{}/'.format(CONTACT_FACEBOOK)
+        if CONTACT_FACEBOOK else None),
+    'Receive private messages on Reddit': (u'https://www.reddit.com/user/{}/'.format(
+        CONTACT_REDDIT) if CONTACT_REDDIT else None),
+    'See event feedback form answers': EVENT_FEEDBACK_FORM_ANSWERS,
+    'Administrate who can see the feedback form answers': EVENT_FEEDBACK_FORM_ANSWERS,
+    'See event prizes form answers': EVENT_PRIZES_FORM_ANSWERS,
+    'Administrate who can see the prizes form answers': EVENT_PRIZES_FORM_ANSWERS,
+    'Edit wiki pages': 'https://github.com/{}/{}/wiki'.format(WIKI[0], WIKI[1]),
+    'Repository': u'https://github.com/{}/{}/'.format(GITHUB_REPOSITORY[0], GITHUB_REPOSITORY[1]),
+    'Bug tracker': BUG_TRACKER_URL,
 }
 
-for _g, _d in GROUPS:
-    _d['name'] = _g
-    # Add missing outside permission urls based on settings
-    if 'outside_permissions' in _d:
-        for _p, _u in _permission_url_to_set.get(_g, {}).items():
-            _set_permission_link_on_unset(_d['outside_permissions'], _p, _u)
-    if _g == 'support' and FEEDBACK_FORM:
-        if 'outside_permissions' not in _d:
-            _d['outside_permissions'] = {}
-        _d['outside_permissions']['Feedback form'] = { 'icon': 'idea', 'url': FEEDBACK_FORM }
-    # Add staff details edit permission
-    if _d.get('requires_staff', False):
-        if 'permissions' not in _d:
-            _d['permissions'] = []
-        _d['permissions'].append('edit_own_staff_profile')
-    # Add verbose_permissions
-    if 'permissions' in _d:
-        _d['verbose_permissions'] = [toHumanReadable(_p) for _p in _d['permissions']]
-
-# GLOBAL_OUTSIDE_PERMISSIONS
-
-for _permission, _url in [
-        ('Bug tracker', { 'icon': 'bug', 'url': BUG_TRACKER_URL }),
-]:
-    _set_permission_link_on_unset(GLOBAL_OUTSIDE_PERMISSIONS, _permission, _url)
-
-if WIKI:
-    GLOBAL_OUTSIDE_PERMISSIONS['Wiki editor'] = {
-        'icon': 'wiki',
-        'url': 'https://github.com/{}/{}/wiki'.format(WIKI[0], WIKI[1]),
-    }
+now = timezone.now()
+launched = LAUNCH_DATE is None or (LAUNCH_DATE is not True and LAUNCH_DATE < now)
+for _group_name, _group in GROUPS:
+    for _permission, _details in _group.get('outside_permissions', {}).items():
+        if isinstance(_details, dict):
+            if not _details.get('url', None):
+                _details['url'] = _permissions_to_set.get(_permission, None)
+            if not _details['url']:
+                del(_group['outside_permissions'][_permission])
+        elif not _details:
+            _group['outside_permissions'][_permission] = _permissions_to_set.get(_permission, None)
+            if not _group['outside_permissions'][_permission]:
+                del(_group['outside_permissions'][_permission])
+    if launched and 'access_site_before_launch' in _group.get('permissions', []):
+        _group['permissions'].remove('access_site_before_launch')
 
 # Enabled pages defaults
 

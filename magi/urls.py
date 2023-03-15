@@ -129,6 +129,66 @@ urls = [
 ]
 
 ############################################################
+# Set data in RAW_CONTEXT
+
+RAW_CONTEXT['all_enabled'] = all_enabled
+RAW_CONTEXT['magicollections'] = collections
+RAW_CONTEXT['collectible_collections'] = collectible_collections
+RAW_CONTEXT['collections_in_profile_tabs'] = collections_in_profile_tabs
+RAW_CONTEXT['main_collections'] = [ _c.name for _c in main_collections ]
+RAW_CONTEXT['account_model'] = ACCOUNT_MODEL
+RAW_CONTEXT['site_name'] = SITE_NAME
+RAW_CONTEXT['site_name_per_language'] = SITE_NAME_PER_LANGUAGE
+RAW_CONTEXT['site_url'] = SITE_URL
+RAW_CONTEXT['github_repository'] = GITHUB_REPOSITORY
+RAW_CONTEXT['site_description'] = SITE_DESCRIPTION
+RAW_CONTEXT['staff_configurations'] = STAFF_CONFIGURATIONS
+RAW_CONTEXT['get_started_video'] = GET_STARTED_VIDEO
+RAW_CONTEXT['get_started_markdown_tutorial'] = GET_STARTED_MARKDOWN_TUTORIAL
+RAW_CONTEXT['game_name'] = GAME_NAME
+RAW_CONTEXT['game_name_per_language'] = GAME_NAME_PER_LANGUAGE
+RAW_CONTEXT['static_uploaded_files_prefix'] = STATIC_UPLOADED_FILES_PREFIX
+RAW_CONTEXT['static_url'] = SITE_STATIC_URL + 'static/'
+RAW_CONTEXT['static_files_version'] = STATIC_FILES_VERSION
+RAW_CONTEXT['empty_image'] = EMPTY_IMAGE
+RAW_CONTEXT['full_static_url'] = u'http{}:{}'.format('' if settings.DEBUG else 's', RAW_CONTEXT['static_url']) if 'http' not in RAW_CONTEXT['static_url'] else RAW_CONTEXT['static_url']
+RAW_CONTEXT['site_logo'] = staticImageURL(SITE_LOGO)
+RAW_CONTEXT['full_site_logo'] = u'http{}:{}'.format('' if settings.DEBUG else 's',RAW_CONTEXT['site_logo']) if 'http' not in RAW_CONTEXT['site_logo'] else RAW_CONTEXT['site_logo']
+RAW_CONTEXT['site_nav_logo'] = SITE_NAV_LOGO
+RAW_CONTEXT['comments_engine'] = COMMENTS_ENGINE
+if RAW_CONTEXT['comments_engine'] == 'disqus':
+    RAW_CONTEXT['disqus_shortname'] = DISQUS_SHORTNAME
+RAW_CONTEXT['max_activity_height'] = MAX_ACTIVITY_HEIGHT
+RAW_CONTEXT['javascript_translated_terms'] = JAVASCRIPT_TRANSLATED_TERMS
+RAW_CONTEXT['javascript_commons'] = JAVASCRIPT_COMMONS
+RAW_CONTEXT['site_color'] = COLOR
+RAW_CONTEXT['site_image'] = staticImageURL(SITE_IMAGE)
+RAW_CONTEXT['site_image_per_language'] = { _l: staticImageURL(_url) for _l, _url in SITE_IMAGE_PER_LANGUAGE.items() }
+RAW_CONTEXT['full_site_image'] = u'http{}:{}'.format('' if settings.DEBUG else 's',RAW_CONTEXT['site_image']) if 'http' not in RAW_CONTEXT['site_image'] else RAW_CONTEXT['site_image']
+RAW_CONTEXT['full_site_image_per_language'] = { _l: (u'http:{}'.format(_url) if 'http' not in _url else _url) for _l, _url in RAW_CONTEXT['site_image_per_language'].items() }
+RAW_CONTEXT['email_image'] = staticImageURL(EMAIL_IMAGE if EMAIL_IMAGE else SITE_IMAGE)
+RAW_CONTEXT['email_image_per_language'] = { _l: staticImageURL(_url) for _l, _url in EMAIL_IMAGE_PER_LANGUAGE.items() }
+RAW_CONTEXT['full_email_image'] = u'http{}:{}'.format('' if settings.DEBUG else 's',RAW_CONTEXT['email_image']) if 'http' not in RAW_CONTEXT['email_image'] else RAW_CONTEXT['email_image']
+RAW_CONTEXT['full_email_image_per_language'] = { _l: (u'http:{}'.format(_url) if 'http' not in _url else _url) for _l, _url in RAW_CONTEXT['email_image_per_language'].items() }
+RAW_CONTEXT['translation_help_url'] = TRANSLATION_HELP_URL
+RAW_CONTEXT['hashtags'] = HASHTAGS
+RAW_CONTEXT['twitter_handle'] = TWITTER_HANDLE
+RAW_CONTEXT['full_empty_image'] = staticImageURL(RAW_CONTEXT['empty_image'])
+RAW_CONTEXT['google_analytics'] = GOOGLE_ANALYTICS
+RAW_CONTEXT['languages_cant_speak_english'] = LANGUAGES_CANT_SPEAK_ENGLISH
+RAW_CONTEXT['other_sites'] = [s for s in other_sites if s['name'] != SITE_NAME]
+RAW_CONTEXT['corner_popup_image'] = staticImageURL(CORNER_POPUP_IMAGE)
+RAW_CONTEXT['corner_popup_image_overflow'] = CORNER_POPUP_IMAGE_OVERFLOW
+RAW_CONTEXT['site_emojis'] = SITE_EMOJIS
+RAW_CONTEXT['favorite_character_to_url'] = FAVORITE_CHARACTER_TO_URL
+RAW_CONTEXT['favorite_character_name'] = FAVORITE_CHARACTER_NAME
+RAW_CONTEXT['favorite_characters_model'] = FAVORITE_CHARACTERS_MODEL
+RAW_CONTEXT['other_characters_models'] = OTHER_CHARACTERS_MODELS
+
+if not launched:
+    RAW_CONTEXT['launch_date'] = LAUNCH_DATE
+
+############################################################
 # Navbar lists with dropdowns
 
 def navbarAddLink(link_name, link, list_name=None):
@@ -159,30 +219,38 @@ def getCollectionShowLinkLambda(collection):
 
 def _addToCollections(name, cls): # Class of the collection
     collection = cls()
+    collections[collection.name] = collection
+    all_enabled.append(collection.name)
+
     collection.list_view = collection.ListView(collection)
     collection.item_view = collection.ItemView(collection)
     collection.add_view = collection.AddView(collection)
     collection.edit_view = collection.EditView(collection)
 
-    if issubclass(cls, magicollections.SubItemCollection):
+    if (issubclass(cls, magicollections.SubItemCollection)
+        or issubclass(cls, magicollections.CommunitySubItemCollection)):
         for main_collection in (collection.main_collections or [collection.main_collection]):
             if main_collection not in sub_collections:
                 sub_collections[main_collection] = {}
             sub_collections[main_collection][collection.name] = collection
-    elif issubclass(cls, magicollections.MainItemCollection):
+    elif (issubclass(cls, magicollections.MainItemCollection)
+          or issubclass(cls, magicollections.CommunityMainItemCollection)):
         main_collections.append(collection)
 
     if collection.list_view.as_profile_tab:
         collections_in_profile_tabs.append(collection.name)
 
     collection.to_form_class()
+    collection.to_form_details()
+    collection.to_suggest_edit_choices()
+    collection.list_view.to_alt_views()
     collection.list_view.to_filter_form_class()
+    collection.list_view.to_filters_details()
     collection.edit_view.to_translate_form_class()
 
     for view in ['list', 'item', 'add', 'edit']:
         getattr(collection, view + '_view').prelaunch_staff_required = not launched and u'{}_{}'.format(collection.name, view) not in PRELAUNCH_ENABLED_PAGES
-    all_enabled.append(collection.name)
-    collections[collection.name] = collection
+
     if collection.collectible:
         collectible_model_classes = collection.collectible if isinstance(collection.collectible, list) else [collection.collectible]
         collection.collectible_collections = OrderedDict()
@@ -199,9 +267,13 @@ def _addToCollections(name, cls): # Class of the collection
     return collection
 
 def _addToEnabledCollections(name, cls, is_custom):
-    if (name != 'MagiCollection'
-        and name != 'MainItemCollection'
-        and name != 'SubItemCollection'
+    if ((name not in [
+            'MagiCollection',
+            'MainItemCollection',
+            'CommunityMainItemCollection',
+            'SubItemCollection',
+            'CommunitySubItemCollection',
+    ])
         and inspect.isclass(cls)
         and issubclass(cls, magicollections.MagiCollection)
         and not name.startswith('_')):
@@ -270,7 +342,7 @@ for collection in collections.values():
             }
             navbarAddLink(url_name, link, collection.navbar_link_list)
             added_links = [link]
-            for view, details in collection.list_view.alt_views:
+            for view, details in collection.list_view.alt_views.items():
                 if not details.get('hide_in_navbar', False):
                     view_link = link.copy()
                     view_link['url_name'] = u'{}_list_{}'.format(collection.name, view)
@@ -721,64 +793,3 @@ for collection_name in ['activity', 'badge', 'account']:
 if 'report' not in all_enabled:
     for collection in collections.values():
         collection.reportable = False
-
-############################################################
-# Set data in RAW_CONTEXT
-
-RAW_CONTEXT['all_enabled'] = all_enabled
-RAW_CONTEXT['magicollections'] = collections
-RAW_CONTEXT['collectible_collections'] = collectible_collections
-RAW_CONTEXT['collections_in_profile_tabs'] = collections_in_profile_tabs
-RAW_CONTEXT['main_collections'] = [ _c.name for _c in main_collections ]
-RAW_CONTEXT['account_model'] = ACCOUNT_MODEL
-RAW_CONTEXT['site_name'] = SITE_NAME
-RAW_CONTEXT['site_name_per_language'] = SITE_NAME_PER_LANGUAGE
-RAW_CONTEXT['site_url'] = SITE_URL
-RAW_CONTEXT['github_repository'] = GITHUB_REPOSITORY
-RAW_CONTEXT['site_description'] = SITE_DESCRIPTION
-RAW_CONTEXT['staff_configurations'] = STAFF_CONFIGURATIONS
-RAW_CONTEXT['get_started_video'] = GET_STARTED_VIDEO
-RAW_CONTEXT['get_started_markdown_tutorial'] = GET_STARTED_MARKDOWN_TUTORIAL
-RAW_CONTEXT['game_name'] = GAME_NAME
-RAW_CONTEXT['game_name_per_language'] = GAME_NAME_PER_LANGUAGE
-RAW_CONTEXT['static_uploaded_files_prefix'] = STATIC_UPLOADED_FILES_PREFIX
-RAW_CONTEXT['static_url'] = SITE_STATIC_URL + 'static/'
-RAW_CONTEXT['static_files_version'] = STATIC_FILES_VERSION
-RAW_CONTEXT['empty_image'] = EMPTY_IMAGE
-RAW_CONTEXT['full_static_url'] = u'http{}:{}'.format('' if settings.DEBUG else 's', RAW_CONTEXT['static_url']) if 'http' not in RAW_CONTEXT['static_url'] else RAW_CONTEXT['static_url']
-RAW_CONTEXT['site_logo'] = staticImageURL(SITE_LOGO)
-RAW_CONTEXT['full_site_logo'] = u'http{}:{}'.format('' if settings.DEBUG else 's',RAW_CONTEXT['site_logo']) if 'http' not in RAW_CONTEXT['site_logo'] else RAW_CONTEXT['site_logo']
-RAW_CONTEXT['site_nav_logo'] = SITE_NAV_LOGO
-RAW_CONTEXT['comments_engine'] = COMMENTS_ENGINE
-if RAW_CONTEXT['comments_engine'] == 'disqus':
-    RAW_CONTEXT['disqus_shortname'] = DISQUS_SHORTNAME
-RAW_CONTEXT['max_activity_height'] = MAX_ACTIVITY_HEIGHT
-RAW_CONTEXT['javascript_translated_terms'] = JAVASCRIPT_TRANSLATED_TERMS
-RAW_CONTEXT['javascript_commons'] = JAVASCRIPT_COMMONS
-RAW_CONTEXT['site_color'] = COLOR
-RAW_CONTEXT['site_image'] = staticImageURL(SITE_IMAGE)
-RAW_CONTEXT['site_image_per_language'] = { _l: staticImageURL(_url) for _l, _url in SITE_IMAGE_PER_LANGUAGE.items() }
-RAW_CONTEXT['full_site_image'] = u'http{}:{}'.format('' if settings.DEBUG else 's',RAW_CONTEXT['site_image']) if 'http' not in RAW_CONTEXT['site_image'] else RAW_CONTEXT['site_image']
-RAW_CONTEXT['full_site_image_per_language'] = { _l: (u'http:{}'.format(_url) if 'http' not in _url else _url) for _l, _url in RAW_CONTEXT['site_image_per_language'].items() }
-RAW_CONTEXT['email_image'] = staticImageURL(EMAIL_IMAGE if EMAIL_IMAGE else SITE_IMAGE)
-RAW_CONTEXT['email_image_per_language'] = { _l: staticImageURL(_url) for _l, _url in EMAIL_IMAGE_PER_LANGUAGE.items() }
-RAW_CONTEXT['full_email_image'] = u'http{}:{}'.format('' if settings.DEBUG else 's',RAW_CONTEXT['email_image']) if 'http' not in RAW_CONTEXT['email_image'] else RAW_CONTEXT['email_image']
-RAW_CONTEXT['full_email_image_per_language'] = { _l: (u'http:{}'.format(_url) if 'http' not in _url else _url) for _l, _url in RAW_CONTEXT['email_image_per_language'].items() }
-RAW_CONTEXT['translation_help_url'] = TRANSLATION_HELP_URL
-RAW_CONTEXT['hashtags'] = HASHTAGS
-RAW_CONTEXT['twitter_handle'] = TWITTER_HANDLE
-RAW_CONTEXT['full_empty_image'] = staticImageURL(RAW_CONTEXT['empty_image'])
-RAW_CONTEXT['google_analytics'] = GOOGLE_ANALYTICS
-RAW_CONTEXT['preferences_model'] = UserPreferences
-RAW_CONTEXT['languages_cant_speak_english'] = LANGUAGES_CANT_SPEAK_ENGLISH
-RAW_CONTEXT['other_sites'] = [s for s in other_sites if s['name'] != SITE_NAME]
-RAW_CONTEXT['corner_popup_image'] = staticImageURL(CORNER_POPUP_IMAGE)
-RAW_CONTEXT['corner_popup_image_overflow'] = CORNER_POPUP_IMAGE_OVERFLOW
-RAW_CONTEXT['site_emojis'] = SITE_EMOJIS
-RAW_CONTEXT['favorite_character_to_url'] = FAVORITE_CHARACTER_TO_URL
-RAW_CONTEXT['favorite_character_name'] = FAVORITE_CHARACTER_NAME
-RAW_CONTEXT['favorite_characters_model'] = FAVORITE_CHARACTERS_MODEL
-RAW_CONTEXT['other_characters_models'] = OTHER_CHARACTERS_MODELS
-
-if not launched:
-    RAW_CONTEXT['launch_date'] = LAUNCH_DATE

@@ -15,6 +15,14 @@
     <div class="list-group-item active"><h4>{% trans 'Preferences' %}</h4></div>
     {% elif form_name == 'addLink' %}
     <a href="#avatar" class="list-group-item page-scroll"><i class="flaticon-portrait"></i> {% trans 'Avatar' %} <span class="glyphicon glyphicon-chevron-down pull-right"></span></a>
+    {% for key, details in set_characters.items %}
+    <a href="#set_{{ key }}" class="list-group-item page-scroll">
+      {% if details.image %}<img src="{{ details.image }}" {% if details.larger_image %}class="link_larger_image"{% else %}height="16"{% endif %} />{% else %}<i class="flaticon-{{ details.icon }}"></i>{% endif %}
+      {{ details.sentence }} <span class="glyphicon glyphicon-chevron-down pull-right"></span></a>
+    {% endfor %}
+    {% if set_background %}
+    <a href="#set_background" class="list-group-item page-scroll"><i class="flaticon-pictures"></i> {% trans 'Background' %} <span class="glyphicon glyphicon-chevron-down pull-right"></span></a>
+    {% endif %}
     {% if links|length %}
     <a href="#links" class="list-group-item page-scroll"><i class="flaticon-url"></i> {% trans 'Links' %} <span class="glyphicon glyphicon-chevron-down pull-right"></span></a>
     {% endif %}
@@ -41,15 +49,15 @@
     {% if blocked %}
     <a href="#blocked" class="list-group-item page-scroll"><i class="flaticon-block"></i> {{ blocked_users_sentence }}<span class="glyphicon glyphicon-chevron-down pull-right"></span></a>
     {% endif %}
-    {% if user.preferences.groups %}
-    <a href="#groups" class="list-group-item page-scroll"><i class="flaticon-about"></i> Your groups <span class="glyphicon glyphicon-chevron-down pull-right"></span></a>
-    {% endif %}
   </div>
 </div>
+<br><br><hr><br><div class="container_form text-center"><h1 class="well">{% trans 'Profile' %}</h1></div>
 {% endblock %}
 
 {% block beforeform %}
-{% if form_name == 'addLink' %}
+{% if form_name == 'form' %}
+<br><br><hr><br><div class="container_form text-center"><h1 class="well">{% trans 'Preferences' %}</h1></div>
+{% elif form_name == 'addLink' %}
 <h1 id="avatar" class="text-center padding50"><i class="flaticon-portrait"></i> {% trans 'Avatar' %}</h1>
 <br>
 <form class="container_form" data-form-name="avatar">
@@ -57,9 +65,103 @@
   <div class="text-right">
     <a href="#content" class="btn btn-lg btn-link page-scroll"><span class="glyphicon glyphicon-chevron-up"></span></a>
     {% if 'help' in all_enabled and LANGUAGE_CODE not in languages_cant_speak_english %}<a href="/help/Change%20your%20profile%20picture"  data-ajax-url="/ajax/help/Change%20your%20profile%20picture/"target="_blank" class="btn btn-lg btn-link">{% trans 'F.A.Q.' %}</a>{% endif %}
-    <a class="btn btn-lg btn-main" href="https://{{ LANGUAGE_CODE }}.gravatar.com/" target="_blank">{% trans 'Change Avatar' %}</a>
+    <a class="btn btn-lg btn-main" href="https://{{ LANGUAGE_CODE }}.gravatar.com/" target="_blank">{% trans 'Change Avatar' %} <i class="flaticon-link"></i></a>
   </div>
 </form>
+
+{% for key, details in set_characters.items %}
+<h1 id="set_{{ key }}" class="text-center padding50">
+  {% if details.image %}<img src="{{ details.image }}" {% if details.larger_image %}class="link_larger_image"{% else %}height="16"{% endif %} />{% else %}<i class="flaticon-{{ details.icon }}"></i>{% endif %}
+  {{ details.sentence }}
+</h1>
+<div class="container_form">
+  <table class="table table-padded table-rounded">
+    {% for nth, nth_details in details.nth.items %}
+    <tr>
+      {% if details.total_favoritable > 1 %}
+      <td>
+        {% if nth_details.image %}
+        <img src="{{ nth_details.image }}" alt="#{{ nth }}" height="42">
+        {% else %}
+        #{{ nth }}
+        {% endif %}
+      </td>
+      {% endif %}
+      <td>{% if nth_details.current.pk and nth_details.current.image %}
+        <img src="{{ nth_details.current.image }}" alt="{{ nth_details.current.name }}" height="42">
+        {% else %}
+        <img src="{% static_image_url path=empty_image %}" alt="empty" height="42">
+      {% endif %}</td>
+      <td>
+        {% if nth_details.current.pk %}
+        <h4>{{ nth_details.current.name }}</h4>
+        {% else %}
+        <h4 class="text-muted">{{ nth_details.sentence }}</h4>
+        {% endif %}
+      </td>
+      <td class="text-right nowrap">
+        {% if nth_details.current.pk %}
+        <form method="POST" action="{{ nth_details.unset_url }}" data-form-name="unset_character" class="inline-block">
+          {% csrf_token %}
+          <input name="confirm" type="hidden" value="on">
+          <button type="submit" class="btn btn-lg btn-link" data-form-loader="true"
+                  data-toggle="tooltip" data-trigger="hover" data-placement="top" title="{% trans 'Clear' %}">
+            <i class="flaticon-delete"></i>
+          </button>
+        </form>
+        {% endif %}
+        <a href="{{ nth_details.set_url }}" class="btn btn-lg btn-secondary"
+           data-toggle="tooltip" data-trigger="hover" data-placement="top" title="{{ nth_details.edit_sentence }}"
+           {% if nth_details.ajax_url %}
+           data-ajax-url="{{ nth_details.ajax_url }}"
+           data-ajax-title="{{ nth_details.edit_sentence }}"
+           {% endif %}>
+          <i class="flaticon-edit"></i>
+        </a>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  <div class="text-right">
+    <a href="#content" class="btn btn-lg btn-link page-scroll"><span class="glyphicon glyphicon-chevron-up"></span></a>
+    <a href="/user/{{ user.id }}/{{ user.username }}/" class="btn btn-lg btn-link">{{ back_to_profile_sentence }}</a>
+  </div>
+</div>
+{% endfor %}
+
+{% if set_background %}
+<h1 id="set_background" class="text-center padding50"><i class="flaticon-pictures"></i> {% trans 'Background' %}</h1>
+<form class="container_form text-center" method="POST"
+      action="{{ unset_background_url }}" data-form-name="unset_background">
+  {% if user.preferences.background_image_url %}
+  {% csrf_token %}
+  <a href="{{ set_background_url }}" class="a-nodifference"
+     {% if set_background_ajax_url %}
+     data-ajax-url="{{ set_background_ajax_url }}"
+     data-ajax-title="{{ set_background_ajax_title }}"
+     {% endif %}>
+    <img src="{{ user.preferences.background_image_url }}"
+         alt="{% trans 'Background' %}" class="img-responsive">
+  </a>
+  <input name="confirm" type="hidden" value="on">
+  <br>
+  {% endif %}
+  <div class="text-right">
+    {% if user.preferences.background_image_url %}
+    <button type="submit" name="unset_background" class="btn btn-lg btn-link" data-form-loader="true">
+      <i class="flaticon-delete"></i> {% trans 'Clear' %}</button>
+    {% endif %}
+    <a href="{{ set_background_url }}" class="btn btn-main btn-lg"
+       {% if set_background_ajax_url %}
+       data-ajax-url="{{ set_background_ajax_url }}"
+       data-ajax-title="{{ set_background_ajax_title }}"
+       {% endif %}>
+      <i class="flaticon-album"></i> {{ set_background_sentence }}
+      {% if not set_background_ajax_url %}<i class="flaticon-link"></i>{% endif %}
+    </a>
+  </div>
+</form>
+{% endif %}
 {% if links|length %}
 <h1 id="links" class="text-center padding50"><i class="flaticon-url"></i> {% trans 'Links' %}</h1>
 <br>
@@ -86,6 +188,9 @@
 {% endblock %}
 
 {% block belowform %}
+{% if form_name == 'security' %}
+<br><br><hr><br><div class="container_form text-center"><h1 class="well">{% trans 'More' %}</h1></div>
+{% endif %}
 {% if form_name == 'preferences' %}
 {% if user.is_staff %}
 <div class="container_form text-center">
@@ -93,7 +198,7 @@
   Looking for your staff profile details?
   <br><br>
   <div class="text-right">
-    <a href="/staffdetailss/" class="btn btn-main btn-lg">Edit staff details</a>
+    <a href="/staffdetailss/" class="btn btn-main btn-lg">Edit staff details <i class="flaticon-link"></i></a>
   </div>
 </div>
 {% endif %}
@@ -103,11 +208,11 @@
 <br>
 <form class="container_form" data-form-name="customlink">
   <p class="text-secondary"><i class="flaticon-promo"></i> {% trans 'Premium feature' %}</p>
-  <p>{% trans 'If you like the website, please consider donating' %}. {% trans 'This will help us cover the costs of the servers and allow us to keep it running for free and without ads.' %}</p>
+  <p>{{ consider_donating_sentence }}. {% trans 'This will help us cover the costs of the servers and allow us to keep it running for free and without ads.' %}</p>
   <div class="text-right">
     <a href="#content" class="btn btn-lg btn-link page-scroll"><span class="glyphicon glyphicon-chevron-up"></span></a>
     <a href="/donate/" target="_blank" class="btn btn-lg btn-link">{% trans 'Learn more' %}</a>
-    <a class="btn btn-lg btn-main" href="/donate/" target="_blank">{% trans 'Donate' %}</a>
+    <a class="btn btn-lg btn-main" href="/donate/" target="_blank">{% trans 'Donate' %} <i class="flaticon-link"></i></a>
   </div>
 </form>
 {% endif %}
@@ -131,14 +236,14 @@
     {% for account in accounts %}
     <tr>
       <td><h4>{{ account }}</h4></td>
-      <td class="text-right"><a href="{{ account.edit_url }}" class="btn btn-lg btn-secondary">{{ account.edit_sentence }}</a></td>
+      <td class="text-right"><a href="{{ account.edit_url }}" class="btn btn-lg btn-secondary">{{ account.edit_sentence }} <i class="flaticon-link"></i></a></td>
     </tr>
     {% endfor %}
   </table>
   <div class="text-right">
     <a href="#content" class="btn btn-lg btn-link page-scroll"><span class="glyphicon glyphicon-chevron-up"></span></a>
     <a href="/user/{{ user.id }}/{{ user.username }}/" class="btn btn-lg btn-link">{{ back_to_profile_sentence }}</a>
-    <a href="/accounts/add/" class="btn btn-lg btn-main"><i class="flaticon-add"></i> {{ add_account_sentence }}</a>
+    <a href="/accounts/add/" class="btn btn-lg btn-main"><i class="flaticon-add"></i> {{ add_account_sentence }} <i class="flaticon-link"></i></a>
   </div>
 </form>
 {% endif %}
@@ -157,7 +262,7 @@
         </small><br>
         <p class="padding20 padding-nohorizontal">{{ report }}</p>
         <div class="text-right">
-          <a href="{{ report.edit_url }}" target="_blank" class="btn btn-main btn-lg">{{ report.edit_sentence }}</a>
+          <a href="{{ report.edit_url }}" target="_blank" class="btn btn-main btn-lg">{{ report.edit_sentence }} <i class="flaticon-link"></i></a>
         </div>
       </td>
     </tr>
@@ -187,8 +292,8 @@
           <i class="flaticon-link"></i>
         </a> -
         {% endif %}
-        {% trans 'Moderated by:' %}
-        <a href="{{ report.staff.item_url }}">{{ report.staff }}</a>
+        {% if report.staff %}{% trans 'Moderated by:' %}
+        <a href="{{ report.staff.item_url }}">{{ report.staff }} <i class="flaticon-link"></i></a>{% endif %}
     </small></p>
   </div>
   {% endfor %}
@@ -214,7 +319,7 @@
         </small><br>
         <p class="padding20 padding-nohorizontal">{{ report }}</p>
         <div class="text-right">
-          <a href="{{ report.edit_url }}" target="_blank" class="btn btn-main btn-lg">{{ report.edit_sentence }}</a>
+          <a href="{{ report.edit_url }}" target="_blank" class="btn btn-main btn-lg">{{ report.edit_sentence }} <i class="flaticon-link"></i></a>
         </div>
       </td>
     </tr>
@@ -244,8 +349,8 @@
           <i class="flaticon-link"></i>
         </a> -
         {% endif %}
-        {% trans 'Moderated by:' %}
-        <a href="{{ report.staff.item_url }}">{{ report.staff }}</a>
+        {% if report.staff %}{% trans 'Moderated by:' %}
+        <a href="{{ report.staff.item_url }}">{{ report.staff }} <i class="flaticon-link"></i></a>{% endif %}
     </small></p>
   </div>
   {% endfor %}
@@ -270,7 +375,7 @@
       </td>
       <td class="text-right" width="200">
         <a href="/block/{{ blocked_user.id }}/" class="btn btn-lg btn-danger" target="_blank">
-          {{ blocked_user.unblock_message }}
+          {{ blocked_user.unblock_message }} <i class="flaticon-link"></i>
       </a></td>
     </tr>
     {% endfor %}
@@ -280,101 +385,12 @@
   </div>
 </form>
 {% endif %}
-
-{% if user.preferences.groups %}
-<h1 id="groups" class="text-center padding50"><i class="flaticon-about"></i> Your groups</h1>
-<br>
-<form class="container_form" data-form-name="groups">
-  {% if user.is_staff and global_outside_permissions %}
-  <div class="alert alert-warning">
-    <h5>External permissions for all staff members.</h5>
-    <p>
-      <small class="text-muted">
-        Added manually.
-        Contact the <b>team manager</b> if you don't have them.
-      </small>
-    </p>
-    <ul>
-      {% for permission, details in global_outside_permissions.items %}
-      <li>
-        {% if details.url  %}<a href="{{ details.url }}" target="_blank">
-        {% elif details  %}<a href="{{ details }}" target="_blank">{% endif %}
-          {{ permission }}
-        {% if details.url or details %} <i class="flaticon-link"></i></a>{% endif %}
-      </li>
-      {% endfor %}
-    </ul>
-  </div>
-  {% endif %}
-  <div class="list-group">
-    {% for group, details in user.preferences.groups_and_details.items %}
-    <div class="list-group-item">
-      <img class="pull-right" alt="{{ details.translation }}" src="{{ static_url }}img/groups/{{ group }}.png?{{ static_files_version }}" height="100">
-      <h3 class="list-group-item-heading">{{ details.translation }}</h3>
-      <p class="list-group-item-text">
-        <blockquote class="fontx0-8">{{ details.description }}</blockquote>
-        {% if details.permissions %}
-        <h5>Permissions</h5>
-        <ul>
-          {% for permission in details.verbose_permissions %}
-          <li>{{ permission }}</li>
-          {% endfor %}
-        </ul>
-        {% with settings=user.preferences.t_settings_per_groups|getattribute:group %}
-        {% if settings %}
-        Settings:
-        <ul>
-          {% for setting, value in settings.items %}
-          <li><strong>{{ setting }}</strong>: {{ value }}</li>
-          {% endfor %}
-        </ul>
-        {% endif %}
-        {% endwith %}
-        {% endif %}
-        {% if details.outside_permissions %}
-        <div class="alert alert-warning">
-          <h5>External permissions</h5>
-          <p>
-            <small class="text-muted">
-              Added manually.
-              Contact the <b>team manager</b> if you don't have them.
-            </small>
-          </p>
-          <ul>
-            {% for permission, details in details.outside_permissions.items %}
-            <li>
-              {% if details.url %}<a href="{{ details.url }}" target="_blank">
-              {% elif details %}<a href="{{ details }}" target="_blank">{% endif %}
-                  {{ permission }}
-              {% if details.url or details %} <i class="flaticon-link"></i></a>{% endif %}
-            </li>
-            {% endfor %}
-          </ul>
-        </div>
-        {% endif %}
-      </p>
-      {% if details.guide %}
-      <div class="text-right">
-        <a class="btn btn-lg btn-secondary" href="{{ details.guide }}" {% if details.ajax_guide %}data-ajax-url="{{ details.ajax_guide }}"{% endif %} target="_blank">
-          Read the {{ details.translation }} guide
-        </a>
-      </div>
-      {% endif %}
-    </div>
-    {% endfor %}
-  </div>
-  <div class="text-right">
-    <a href="#content" class="btn btn-lg btn-link page-scroll"><span class="glyphicon glyphicon-chevron-up"></span></a>
-  </div>
-</form>
-<br><br><br><br><br><br>
-{% endif %}
 {% endblock %}
 
 {% block otherbuttons %}
 <a href="#content" class="btn btn-lg btn-link page-scroll"><span class="glyphicon glyphicon-chevron-up"></span></a>
 {% if form_name == 'changePassword' %}
-<a href="/password_reset/" class="btn btn-lg btn-link">{% trans 'Forgot password?' %}</a>
+<a href="/password_reset/" class="btn btn-lg btn-link">{% trans 'Forgot password?' %} <i class="flaticon-link"></i></a>
 {% else %}
 <a href="/user/{{ user.id }}/{{ user.username }}/" class="btn btn-lg btn-link">{{ back_to_profile_sentence }}</a>
 {% endif %}

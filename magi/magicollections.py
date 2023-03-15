@@ -13,7 +13,7 @@ from django.shortcuts import get_object_or_404
 from django.conf import settings as django_settings
 from magi.views import indexExtraContext
 from magi.utils import (
-    getCharactersFavoriteFields,
+    mergeDicts,
     getCharacterNameFromPk,
     getCharacterImageFromPk,
     getCharacterURLFromPk,
@@ -25,6 +25,7 @@ from magi.utils import (
     propertyFromCollection,
     getMagiCollections,
     getMagiCollection,
+    getMagiCollectionFromModel,
     CuteFormType,
     CuteFormTransform,
     redirectWhenNotAuthenticated,
@@ -53,12 +54,33 @@ from magi.utils import (
     toHumanReadable,
     YouTubeVideoField,
     markSafeFormat,
+    markSafeJoin,
     listUnique,
     getEnglish,
     newOrder,
     getModelOfRelatedItem,
     selectRelatedDictToStrings,
     displayQueryset,
+    snakeToCamelCase,
+    getListURL,
+    getRelOptionsDict,
+    getMaxShownForPrefetchedTogether,
+    getQuerysetFromModel,
+    getFilterFieldNameOfRelatedItem,
+    articleJsonLdFromActivity,
+    modelGetField,
+    hasValue,
+    getCharactersFavoriteFieldLabel,
+    __,
+    getCharactersTotalFavoritable,
+    ordinalNumber,
+    isValidCharacterPk,
+    baseButton,
+    getCharactersUsersFavorites,
+    isCharactersUserFavorite,
+    isRequestAjax,
+    makeCollectionCommunity,
+    getSiteName,
 )
 from magi.raw import please_understand_template_sentence, unrealistic_template_sentence
 from magi.django_translated import t
@@ -78,8 +100,13 @@ from magi.settings import (
     GLOBAL_OUTSIDE_PERMISSIONS,
     HOME_ACTIVITY_TABS,
     LANGUAGES_CANT_SPEAK_ENGLISH,
+    BACKGROUNDS_MODEL,
+    FAVORITE_CHARACTERS_MODEL,
+    OTHER_CHARACTERS_MODELS,
+    BACKGROUNDS_FILTER,
+    FAVORITE_CHARACTERS_FILTER,
 )
-from magi import models, forms
+from magi import models, forms, magifields
 
 ############################################################
 # MagiCollection interface
@@ -118,10 +145,11 @@ class _View(object):
     def share_image(self, context, item):
         return self.collection.share_image(context, item)
 
-    def get_queryset(self, queryset, parameters, request):
+    def get_queryset(self, queryset=None, parameters={}, request=None):
         return self.collection.get_queryset(self, queryset, parameters, request)
 
     def check_permissions(self, request, context):
+        # It's OK if context is empty, but request is required
         if not self.enabled:
             raise Http404
         if self.logout_required and request.user.is_authenticated():
@@ -146,6 +174,7 @@ class _View(object):
                 raise PermissionDenied()
 
     def check_owner_permissions(self, request, context, item):
+        # It's OK if context is empty, but request is required
         if item.owner_id:
             owner_only = getattr(self, 'owner_only', False)
             if owner_only:
@@ -175,6 +204,7 @@ class _View(object):
     # Tools - not meant to be overridden
 
     def has_permissions(self, request, context, item=None):
+        # It's OK if context is empty, but request is required
         try:
             self.check_permissions(request, context)
             if item:
@@ -204,8 +234,30 @@ class _View(object):
     def view_title(self):
         return self.view.replace('_', ' ').capitalize()
 
+    def has_method_been_overridden(self, method_name, check_collection_level=False):
+        base_view = getattr(MagiCollection, snakeToCamelCase(self.view))
+        base_method = getattr(base_view, method_name)
+        for cls in type(self).__mro__:
+            if hasattr(cls, method_name) and getattr(cls, method_name) != base_method:
+                return True
+        if check_collection_level:
+            base_method = getattr(MagiCollection, method_name)
+            for cls in type(self.collection).__mro__:
+                if hasattr(cls, method_name) and getattr(cls, method_name) != base_method:
+                    return True
+        return False
+
+    def uses_deprecated_to_fields(self):
+        return (
+            self.has_method_been_overridden('to_fields', check_collection_level=True)
+            or self.has_method_been_overridden('get_extra_fields')
+            or (self.view == 'list_view' and self.has_method_been_overridden('table_fields'))
+            or (self.view == 'list_view' and self.has_method_been_overridden('ordering_fields'))
+            or getattr(self, 'fields_extra', None)
+        )
+
     def __unicode__(self):
-        return u'{}: {}'.format(self.collection, self.view_title)
+        return u'{}: {}'.format(self.collection, self.view_title())
 
 class MagiCollection(object):
     # Required variables
@@ -221,6 +273,7 @@ class MagiCollection(object):
     navbar_link_list_divider_after = False
     types = None
     filter_cuteform = {}
+    fields_class = magifields.MagiFields
     fields_icons = {}
     fields_images = {}
 
@@ -238,17 +291,7 @@ class MagiCollection(object):
     def navbar_link_title(self):
         return self.list_view.get_page_title()
 
-    def _get_queryset_from_model(self, model, request):
-        if model:
-            collection_name = getattr(model, 'collection_name', None)
-            if collection_name:
-                collection = getMagiCollection(collection_name)
-                if collection:
-                    return collection.get_queryset(None, collection.queryset, {}, request)
-            return model.objects.all()
-        return None
-
-    def get_queryset(self, view, queryset, parameters, request):
+    def get_queryset(self, view=None, queryset=None, parameters={}, request=None):
         """
         Will preselect/prefetch related items based on view settings.
         For each preselected/prefetched item, it will make sure to call get_queryset to keep all
@@ -271,7 +314,20 @@ class MagiCollection(object):
           - UnitCollection queryset = Unit.objects.prefetch_related('idols')
           => When displaying an idol item view, will preselect unit, and its idols too.
           => Result queryset: Idol.objects.select_related('unit').prefetch_related('unit__idols')
+
+        View is optional.
+        It's used to figure out what to pre-select and prefetch from view settings.
+
+        Queryset is optional.
+        Defaults to self.queryset.
+
+        Request is optional.
+        It's used when called in the context of an item view to make a query with a limit
+        instead of a prefetch whenever it's relevant. It will use previously set _item_view_pk (by item_view function)
+        and store the results in _prefetched_with_max.
         """
+        if queryset is None:
+            queryset = self.queryset
 
         # Preselected
         fields_preselected = listUnique(
@@ -282,7 +338,7 @@ class MagiCollection(object):
             new_fields_preselected = []
             for preselected in fields_preselected:
                 model_of_preselected = getModelOfRelatedItem(queryset.model, preselected)
-                queryset_of_preselected = self._get_queryset_from_model(model_of_preselected, request)
+                queryset_of_preselected = getQuerysetFromModel(model_of_preselected, request=request)
                 new_fields_preselected += [ preselected ]
                 if queryset_of_preselected is not None:
                     new_fields_preselected += [
@@ -296,7 +352,7 @@ class MagiCollection(object):
                             other_prefetched = other_prefetched.prefetch_to
                         if queryset_of_other_prefetched is None:
                             model_of_other_prefetched = getModelOfRelatedItem(model_of_preselected, other_prefetched)
-                            queryset_of_other_prefetched = self._get_queryset_from_model(model_of_other_prefetched, request)
+                            queryset_of_other_prefetched = getQuerysetFromModel(model_of_other_prefetched, request=request)
                         if queryset_of_other_prefetched is not None:
                             queryset = queryset.prefetch_related(Prefetch(
                                 u'{}__{}'.format(preselected, other_prefetched),
@@ -310,12 +366,14 @@ class MagiCollection(object):
             queryset = queryset.select_related(*new_fields_preselected)
 
         # Prefetched
+
         already_prefetched = [ p.prefetch_to if isinstance(p, Prefetch) else p for p in queryset._prefetch_related_lookups ]
         fields_prefetched = listUnique( # may still get duplicates if queryset specified
             getattr(view, 'fields_prefetched', [])
             + getattr(view, 'fields_prefetched_together', [])
             + queryset._prefetch_related_lookups
         )
+        prefetched_with_max_querysets = {}
         # Clear current prefetched because they'll be re-added here
         queryset = queryset.prefetch_related(None)
         for prefetched in fields_prefetched:
@@ -330,23 +388,79 @@ class MagiCollection(object):
                 prefetched = prefetched.prefetch_through
             if queryset_of_prefetched is None:
                 model_of_prefetched = getModelOfRelatedItem(queryset.model, prefetched)
-                queryset_of_prefetched = self._get_queryset_from_model(model_of_prefetched, request)
-            if queryset_of_prefetched is not None:
-                queryset = queryset.prefetch_related(Prefetch(prefetched, queryset=queryset_of_prefetched.distinct(), to_attr=to_attr))
-            else:
-                queryset = queryset.prefetch_related(prefetched)
+                collection_of_prefetched, queryset_of_prefetched = getQuerysetFromModel(
+                    model_of_prefetched, request=request, return_collection=True)
+                # For item view, if the site is in high traffic mode and the current user
+                # is not authenticated, don't prefetch at all.
+                if (getattr(django_settings, 'HIGH_TRAFFIC', False)
+                    and queryset_of_prefetched is not None
+                    and view and view.view == 'item_view'
+                    and request and getattr(request, '_item_view_pk', None)
+                    and prefetched not in already_prefetched
+                    and not request.user.is_authenticated()
+                    and not view.uses_deprecated_to_fields()):
+                    if not hasattr(request, '_not_prefetched_for_high_traffic'):
+                        request._not_prefetched_for_high_traffic = []
+                    request._not_prefetched_for_high_traffic.append(prefetched)
+                    continue
+                # For item view, when a max is set, perform the query with a limit
+                # to avoid loading all items. Doesn't support tuples, Prefetch and __.
+                # If the prefetch key was already in the original queryset, it will also not use this.
+                if (queryset_of_prefetched is not None
+                    and view and view.view == 'item_view'
+                    and request and getattr(request, '_item_view_pk', None)
+                    and prefetched in getattr(view, 'fields_prefetched_together', [])
+                    and prefetched not in already_prefetched
+                    and not view.uses_deprecated_to_fields()):
+                    max = getMaxShownForPrefetchedTogether(
+                        model_class=queryset.model, field_name=prefetched, rel_collection=collection_of_prefetched
+                    )
+                    if max is not None:
+                        filter_field_name = getFilterFieldNameOfRelatedItem(queryset.model, prefetched)
+                        if filter_field_name:
+                            queryset_of_prefetched = queryset_of_prefetched.filter(**{ filter_field_name: request._item_view_pk })
+                            # Load 1 extra as a way to check if there's more or not
+                            prefetched_items = failSafe(lambda: list(queryset_of_prefetched[:max + 1]), exceptions=[ TypeError ])
+                            if prefetched_items is not None:
+                                prefetched_with_max_querysets[prefetched] = queryset_of_prefetched
+                                if not hasattr(request, '_prefetched_with_max'):
+                                    request._prefetched_with_max = {}
+                                request._prefetched_with_max[prefetched] = (prefetched_items, max)
+                                continue
+                            else:
+                                prefetched_with_max_querysets[prefetched] = None
 
-        if django_settings.DEBUG and view:
+            if queryset_of_prefetched is None:
+                queryset = queryset.prefetch_related(prefetched)
+            else:
+                queryset = queryset.prefetch_related(Prefetch(prefetched, queryset=queryset_of_prefetched.distinct(), to_attr=to_attr))
+
+        if django_settings.DEBUG and view and getattr(django_settings, 'DEBUG_SHOW_QUERYSET', True):
             print ''
             print 'Get queryset for', self.plural_name, view.view
             print displayQueryset(queryset, prefix=u'  ')
+            if hasattr(request, '_prefetched_with_max'):
+                print u'{}\n'.format('  Manual prefetch queries with limits:')
+                for prefetched, queryset_of_prefetched in prefetched_with_max_querysets.items():
+                    print '    ', prefetched
+                    if queryset_of_prefetched is None:
+                        print '      Failed to get queryset'
+                    else:
+                        print displayQueryset(queryset_of_prefetched, prefix=u'      ')
+            if hasattr(request, '_not_prefetched_for_high_traffic'):
+                print u'  Due to high traffic, the following have not been prefetched:'
+                print u'    {}'.format(request._not_prefetched_for_high_traffic)
         return queryset
 
     def get_title_prefixes(self, request, context):
         navbar_prefix = getNavbarPrefix(self.navbar_link_list, request, context)
         return [navbar_prefix] if navbar_prefix else []
 
-    def _collectibles_queryset(self, view, queryset, request):
+    def _collectibles_queryset(self, view, queryset, request=None):
+        if queryset is None:
+            queryset = self.queryset
+        if not request:
+            return queryset
         # Select related total collectible for authenticated user
         if request.user.is_authenticated() and self.collectible_collections:
             if not getattr(request, 'show_collect_button', False):
@@ -412,6 +526,7 @@ class MagiCollection(object):
         return queryset
 
     def to_form_class(self):
+        """Used in urls.py"""
         class _Form(forms.AutoForm):
             class Meta(forms.AutoForm.Meta):
                 model = self.queryset.model
@@ -433,6 +548,9 @@ class MagiCollection(object):
         class _CollectibleForm(forms.AutoForm):
             def __init__(self, *args, **kwargs):
                 super(_CollectibleForm, self).__init__(*args, **kwargs)
+                self.collectible_variables = {}
+                if not self.request:
+                    return
                 redirectWhenNotAuthenticated(self.request, {})
                 # Editing
                 if not self.is_creating:
@@ -507,7 +625,6 @@ class MagiCollection(object):
                 if (self.collection
                     and self.collection.add_view.add_to_collection_variables
                     and not isinstance(self, forms.MagiFiltersForm)):
-                    self.collectible_variables = {}
                     missing = False
                     # add variables from GET parameters
                     for variable in self.collection.add_view.add_to_collection_variables:
@@ -642,7 +759,7 @@ class MagiCollection(object):
                 self.item_field_name_id = item_field_name_id
 
             def get_list_url_for_authenticated_owner(
-                    self, request, ajax=False, item=None, fk_as_owner=None, parameters=None):
+                    self, request, ajax=False, item=None, fk_as_owner=None, parameters=None, full=False):
                 new_parameters = {
                     k: v for k, v in {
                         'owner': request.user.id if not fk_as_owner else None,
@@ -651,7 +768,7 @@ class MagiCollection(object):
                     }.items() if v
                 }
                 new_parameters.update(parameters or {})
-                return self.get_list_url(ajax=ajax, parameters=new_parameters)
+                return self.get_list_url(ajax=ajax, parameters=new_parameters, full=full)
 
             @property
             def title(self):
@@ -812,12 +929,13 @@ class MagiCollection(object):
                             and not request.GET.get('owner', None)):
                             raise PermissionDenied()
 
-                def get_queryset(self, queryset, parameters, request):
+                def get_queryset(self, queryset=None, parameters={}, request=None):
                     queryset = super(_CollectibleCollection.ListView, self).get_queryset(
                         queryset, parameters, request)
                     # For collectibles per account:
                     # If we're listing per item and not per account or owner, hide collected from fake accounts
                     if (model_class.fk_as_owner == 'account'
+                        and request
                         and request.GET.get(item_field_name, None)
                         and not request.GET.get('account', None)
                         and not request.GET.get('owner', None)):
@@ -857,7 +975,7 @@ class MagiCollection(object):
                             'url': parent_collection.get_list_url(parameters=parameters),
                             'classes': classes,
                             'title': self.collection.add_sentence,
-                            'icon': 'add',
+                            'icon': self.collection.add_view.view_icon,
                         }
                         if context['total_results']:
                             parameters = {
@@ -919,23 +1037,14 @@ class MagiCollection(object):
                 comments_enabled = False
                 share_enabled = False
 
-                def get_queryset(self, queryset, parameters, request):
-                    return super(_CollectibleCollection.ItemView, self).get_queryset(
-                        queryset, parameters, request).select_related(model_class.fk_as_owner or 'owner')
+                fields_preselected = [
+                    model_class.fk_as_owner or 'owner',
+                    item_field_name,
+                ]
 
                 def extra_context(self, context):
                     super(_CollectibleCollection.ItemView, self).extra_context(context)
                     context['item_parent'] = getattr(context['item'], item_field_name)
-
-                def to_fields(self, item, force_all_fields=False, preselected=None, *args, **kwargs):
-                    if preselected is None: preselected = []
-                    preselected.append(item_field_name)
-                    fields = super(_CollectibleCollection.ItemView, self).to_fields(
-                        item, *args, preselected=preselected, force_all_fields=force_all_fields, **kwargs)
-                    setSubField(fields, item_field_name, key='spread_across', value=True)
-                    if not force_all_fields and model_class.fk_as_owner and model_class.fk_as_owner in fields:
-                        del(fields[model_class.fk_as_owner])
-                    return fields
 
             class AddView(MagiCollection.AddView):
                 alert_duplicate = False
@@ -1022,17 +1131,42 @@ class MagiCollection(object):
     report_allow_delete = True
     report_allow_delete_with_permission = None
 
-    def get_suggest_edit_choices(self, request):
+    def to_form_details(self):
+        """
+        Used in urls.py
+        Dict of field_name -> {
+          'label': label,
+          'form_field_class': class of the form field,
+          'model_field_class': class of the model field,
+        }
+        """
         formClass = self.form_class
         if str(type(formClass)) == '<type \'instancemethod\'>':
-            formClass = formClass(request, {})
-        return OrderedDict([
-            (field.name, (getEnglish(field.label), field.label))
-            for field in formClass(request=request, collection=self)
-            if field.name not in (getattr(self.item_view, 'fields_exclude', None) or [])
+            formClass = formClass(request=None, context={})
+        if formClass:
+            form = formClass(request=None, collection=self)
+            self.form_details = OrderedDict()
+            for field_name, field in form.fields.items():
+                model_field = modelGetField(self.queryset.model, field_name)
+                self.form_details[field_name] = {
+                    'label': field.label,
+                    'form_field_class': type(field),
+                    'model_field_class': model_field,
+                }
+        else:
+            self.form_details = {}
+
+    def to_suggest_edit_choices(self):
+        """Used in urls.py"""
+        self.suggest_edit_choices = OrderedDict([
+            (field_name, (getEnglish(field_details['label']), field_details['label']))
+            for field_name, field_details in self.form_details.items()
+            if field_name not in (getattr(self.item_view, 'fields_exclude', None) or [])
         ])
 
-    translated_fields = None
+    @property
+    def translated_fields(self):
+        return getattr(self.queryset.model, 'TRANSLATED_FIELDS', [])
 
     allow_html_in_markdown = False
 
@@ -1075,6 +1209,9 @@ class MagiCollection(object):
             'ajax_modal_only' if ajax else '',
         )
 
+    def to_magifields(self, view, item, context):
+        return view.fields_class(view, item, context)
+
     def _get_value_from_display_property(self, view, item, field_name):
         value = None
         retrieved_display_from_view = False
@@ -1098,6 +1235,13 @@ class MagiCollection(object):
         return value
 
     def to_fields(self, view, item, to_dict=True, only_fields=None, icons=None, images=None, force_all_fields=False, order=None, extra_fields=None, exclude_fields=None, request=None, preselected=None, prefetched_together=None, prefetched=None, images_as_gallery=None):
+        """
+        Deprecated, in favor of to_magifields (see magifields.py).
+        Will still be used when uses_deprecated_to_fields returns True.
+        This includes when to_fields, get_extra_fields or fields_extra have been set.
+        All sites should stop using these ASAP in order to fully remove this code
+        and migrate to magifields.
+        """
         if extra_fields is None: extra_fields = []
         if exclude_fields is None: exclude_fields = []
         if only_fields is None: only_fields = []
@@ -1115,15 +1259,11 @@ class MagiCollection(object):
         if hasattr(view, 'fields_exclude'):
             exclude_fields = exclude_fields + view.fields_exclude
 
-        icons = icons.copy()
-        icons.update(self.fields_icons)
-        icons.update(view.fields_icons)
+        icons = mergeDicts(icons, self.fields_icons, view.fields_icons)
 
-        images = images.copy()
-        images.update(self.fields_images)
-        images.update(view.fields_images)
+        images = mergeDicts(images, self.fields_images, view.fields_images)
 
-        extra_fields += view.get_extra_fields(item)
+        extra_fields += (view.get_extra_fields(item) or [])
         if hasattr(view, 'fields_extra'):
             extra_fields += view.fields_extra
 
@@ -1266,8 +1406,7 @@ class MagiCollection(object):
                             d['link'] = getattr(related_item, 'image_url', item_image)
                         else:
                             d['link'] = item_image
-                    d['icon'] = getattr(related_item, 'icon_for_prefetched',
-                                        getattr(related_item, 'flaticon', d['icon']))
+                    d['icon'] = getattr(related_item, 'flaticon', d['icon'])
                     if callable(d['icon']):
                         d['icon'] = d['icon'](item)
                     if 'image' in d:
@@ -1515,8 +1654,7 @@ class MagiCollection(object):
                         d['ajax_link'] = getattr(cache, 'ajax_item_url')
                     d['link_text'] = unicode(_(u'Open {thing}')).format(thing=d['verbose_name'].lower())
                     d['image_for_link'] = getImageForPrefetched(cache)
-                    d['icon'] = getattr(cache, 'icon_for_prefetched',
-                                        getattr(cache, 'flaticon', d['icon']))
+                    d['icon'] = getattr(cache, 'flaticon', d['icon'])
                 else:
                     d['type'] = 'text'
                     d['value'] = getattr(cache, 'unicode', field_name)
@@ -1524,10 +1662,11 @@ class MagiCollection(object):
                 d['type'] = 'list'
                 if (getattr(item, '{}_AUTO_IMAGES'.format(field_name.upper()), False)):
                     d['value'] = [
-                        markSafeFormat(
+                        failSafe(lambda: markSafeFormat(
                             u'<img src="{url}" alt="{v}" height="30"> {v}',
                             url=staticImageURL(_value, folder=field.name),
-                            v=item.get_verbose_i(field_name, item.get_i(field_name, _value)))
+                            v=item.get_verbose_i(field_name, item.get_i(field_name, _value))),
+                                 exceptions=[ KeyError ], default=u'')
                         for _value in getattr(item, field_name)
                     ]
             elif field.name.startswith('m_'): # original field name
@@ -1669,7 +1808,7 @@ class MagiCollection(object):
     show_item_buttons_justified = True
     show_item_buttons_as_icons = False
     show_item_buttons_in_one_line = True
-    show_open_button = False
+    show_open_button = 'auto' # can be changed to True/False
     show_edit_button = True
     show_edit_button_permissions_only = []
     show_translate_button = True
@@ -1686,33 +1825,37 @@ class MagiCollection(object):
         You may override this function, but you're not really supposed to call it yourself.
         Can be overridden per view.
         """
-        buttons = OrderedDict([
-            (button_name, {
-                'show': False,
-                'has_permissions': False,
-                'title': button_name,
-                'icon': False,
-                'image': False,
-                'url': False,
-                'open_in_new_window': False,
-                'ajax_url': False,
-                'ajax_title': False, # By default will use title
-                'classes': view.get_item_buttons_classes(request, context, item=item),
-            }) for button_name in self.collectible_collections.keys() + [
-                'open',
-                'edit',
-                'translate',
-                'report',
-                'suggest_edit',
-            ]
-        ])
+        buttons = OrderedDict()
+        def set_base_button(button_name):
+            baseButton(
+                button_name=button_name, buttons=buttons, view=view, request=request,
+                context=context, item=item)
+        # Open button
+        if self.item_view.enabled and view.view == 'list_view':
+            set_base_button('open')
+            if context.get('alt_view', None) and 'show_open_button' in context['alt_view']:
+                buttons['open']['show'] = context['alt_view']['show_open_button']
+            elif (context.get('alt_view', {}) or {}).get('display_style', view.display_style) == 'table':
+                buttons['open']['show'] = view.display_style_table_show_open_button
+            else:
+                buttons['open']['show'] = view.show_open_button
+            buttons['open']['title'] = item.open_sentence
+            buttons['open']['icon'] = self.icon
+            buttons['open']['image'] = self.image
+            buttons['open']['has_permissions'] = self.item_view.has_permissions(request, context, item=item)
+            buttons['open']['url'] = item.item_url
+            if self.item_view.ajax:
+                buttons['open']['ajax_url'] = item.ajax_item_url
+            if (request.user.is_staff
+                and self.item_view.staff_required
+                and not view.staff_required):
+                buttons['open']['classes'].append('staff-only')
         # Collectible buttons
         for name, collectible_collection in self.collectible_collections.items():
             if (not request.show_collect_button
                 or (isinstance(request.show_collect_button, dict)
                     and not request.show_collect_button.get(name, True))
                 or not collectible_collection.add_view.enabled):
-                del(buttons[name])
                 continue
             extra_attributes = {}
             quick_add_to_collection = collectible_collection.add_view.quick_add_to_collection(request) if request.user.is_authenticated() else False
@@ -1727,6 +1870,8 @@ class MagiCollection(object):
                         ) for variable in collectible_collection.add_view.add_to_collection_variables
                         if hasattr(item, variable) or variable == 'unicode']),
                 ))
+            set_base_button(name)
+            buttons[name]['has_permissions'] = False
             buttons[name]['show'] = (
                 request.show_collect_button[name]
                 if isinstance(request.show_collect_button, dict) else request.show_collect_button)
@@ -1739,7 +1884,7 @@ class MagiCollection(object):
             buttons[name]['icon'] = (
                 collectible_collection.icon
                 if collectible_collection.list_view.add_button_use_collection_icon
-                else 'add'
+                else collectible_collection.add_view.view_icon
             )
             buttons[name]['image'] = collectible_collection.image
             buttons[name]['ajax_title'] = u'{}: {}'.format(collectible_collection.add_sentence, unicode(item))
@@ -1792,28 +1937,126 @@ class MagiCollection(object):
                 if collectible_collection.add_view.staff_required and not view.staff_required:
                     buttons[name]['classes'].append('staff-only')
             buttons[name]['extra_attributes'] = extra_attributes
-        # Open button
-        if self.item_view.enabled and view.view == 'list_view':
-            buttons['open']['show'] = (context.get('alt_view', {}) or {}).get(
-                'show_open_button', view.show_open_button)
-            buttons['open']['title'] = item.open_sentence
-            buttons['open']['icon'] = self.icon
-            buttons['open']['image'] = self.image
-            buttons['open']['has_permissions'] = self.item_view.has_permissions(request, context, item=item)
-            buttons['open']['url'] = item.item_url
-            if self.item_view.ajax:
-                buttons['open']['ajax_url'] = item.ajax_item_url
-            if (request.user.is_staff
-                and self.item_view.staff_required
-                and not view.staff_required):
-                buttons['open']['classes'].append('staff-only')
+        # Set as background button
+        if (view.view == 'list_view'
+            and self.list_view.is_backgrounds_model
+            and context.get('view', None) == 'set_background'):
+            set_base_button('set_background')
+            buttons['set_background'].update({
+                'has_permissions': request.user.is_authenticated(),
+                'title': _('Select {}').format(_('Background').lower()),
+                'icon': 'checked',
+                'url': u'/set_background/{}/'.format(item.pk),
+                'extra_attributes': {
+                    'set-background': 'true',
+                    'csrf-token': csrf.get_token(request),
+                },
+            })
+        # Set favorite character / other character buttons
+        key = None
+        if self.list_view.is_favorite_characters_model:
+            key = 'FAVORITE_CHARACTERS'
+        elif self.list_view.is_other_characters_model:
+            key = self.list_view.is_other_characters_model
+        if (key
+            and ((view.view == 'list_view' and context.get('view', None) == 'set_favorite_character')
+                 or (view.view == 'item_view' and isValidCharacterPk(context['item'].pk, key=key)))):
+            current_favorites = getCharactersUsersFavorites(request.user)
+            label = getCharactersFavoriteFieldLabel(key=key)
+            total_favoritable = getCharactersTotalFavoritable(key=key)
+            # If this character has already been set as favorite, show unset button
+            current_nth = isCharactersUserFavorite(
+                item.pk, key=key, favorite_characters=current_favorites)
+            if current_nth:
+                set_base_button('unset_favorite_character')
+                buttons['unset_favorite_character'].update({
+                    'has_permissions': request.user.is_authenticated(),
+                    'title': (
+                        _('Clear')
+                        if total_favoritable == 1
+                        else string_concat(_('Clear'), u' - ', _(ordinalNumber(current_nth)))
+                    ),
+                    'icon': 'delete',
+                    'url': u'/unset_favorite_character/{}/{}/'.format(key, current_nth),
+                    'extra_attributes': {
+                        'unset-favorite-character': 'true',
+                        'csrf-token': csrf.get_token(request),
+                    },
+                })
+            else:
+                if view.view == 'item_view':
+                    icon = 'profile'
+                    title = lambda label: string_concat(_('Customize profile'), u' - ', label)
+                    button_icon = 'star'
+                    button_title = lambda label: _('Select {}').format(label.lower())
+                else:
+                    icon = 'checked'
+                    title = lambda label: _('Select {}').format(label.lower())
+                    button_icon = None
+                    button_title = lambda label: _('Select {}').format(label.lower())
+                # Show only 1 button
+                if total_favoritable == 1 or view.show_item_buttons_as_icons:
+                    set_base_button('set_favorite_character')
+                    nth = request.GET.get('nth', None) if total_favoritable != 1 and request else None
+                    if nth:
+                        url = u'/set_favorite_character/{}/{}/{}/'.format(key, item.pk, request.GET['nth'])
+                        label = _(ordinalNumber(int(nth)))
+                    else:
+                        url = u'/set_favorite_character/{}/{}/'.format(key, item.pk)
+                    buttons['set_favorite_character'].update({
+                        'has_permissions': request.user.is_authenticated(),
+                        'title': title(label),
+                        'button_title': button_title(label),
+                        'icon': icon,
+                        'button_icon': button_icon,
+                        'url': url,
+                    })
+                    if total_favoritable == 1 or nth:
+                        buttons['set_favorite_character']['extra_attributes'] = {
+                            'set-favorite-character': 'true',
+                            'csrf-token': csrf.get_token(request),
+                        }
+                        if total_favoritable == 1:
+                            current_favorite_pk = failSafe(
+                                lambda: current_favorites[key][1]['pk'], exceptions=[ KeyError ])
+                            if current_favorite_pk:
+                                buttons['set_favorite_character']['annotation'] = string_concat(
+                                    _('Current'), u' - ', getCharacterNameFromPk(current_favorite_pk))
+                    else:
+                        buttons['set_favorite_character']['ajax_url'] = u'/ajax' + url
+                        buttons['set_favorite_character']['ajax_title'] = buttons['set_favorite_character']['title']
+                # Show 1 button per nth
+                else:
+                    for nth in range(1, total_favoritable + 1):
+                        if request and request.GET.get('nth', None) and request.GET['nth'] != unicode(nth):
+                            continue
+                        button_name = u'set_favorite_character-{}'.format(nth)
+                        set_base_button(button_name)
+                        buttons[button_name].update({
+                            'has_permissions': request.user.is_authenticated(),
+                            'title': title(label),
+                            'button_title': button_title(_(ordinalNumber(nth))),
+                            'icon': icon,
+                            'button_icon': button_icon,
+                            'url': u'/set_favorite_character/{}/{}/{}/'.format(key, item.pk, nth),
+                            'extra_attributes': {
+                                'set-favorite-character': 'true',
+                                'csrf-token': csrf.get_token(request),
+                            },
+                        })
+                        current_favorite_pk = failSafe(lambda: current_favorites[key][nth]['pk'],
+                                                    exceptions=[ KeyError ])
+                        if current_favorite_pk:
+                            buttons[button_name]['annotation'] = string_concat(
+                                _('Current'), u' - ', getCharacterNameFromPk(current_favorite_pk))
 
         # Edit button
         if self.edit_view.enabled:
+            set_base_button('edit')
             buttons['edit']['show'] = (context.get('alt_view', {}) or {}).get(
                 'show_edit_button', view.show_edit_button)
             buttons['edit']['title'] = item.edit_sentence
-            buttons['edit']['icon'] = 'edit'
+            buttons['edit']['icon'] = self.edit_view.view_icon
             if (self.edit_view.authentication_required
                 and not self.edit_view.requires_permissions()
                 and not request.user.is_authenticated()):
@@ -1842,12 +2085,13 @@ class MagiCollection(object):
         # Translation button
         if self.translated_fields:
             buttons['translate'] = buttons['edit'].copy()
-            buttons['translate']['has_permissions'] = self.edit_view.has_translate_permissions(request, context)
-
+            buttons['translate']['has_permissions'] = self.edit_view.has_translate_permissions(
+                request, context)
             if buttons['translate']['has_permissions'] and request.user.is_staff:
                 for field in self.translated_fields:
                     if request.GET.get(u'missing_{}_translations'.format(field), None):
-                        buttons['translate']['classes'] = [c for c in buttons['translate']['classes'] if c != 'staff-only']
+                        buttons['translate']['classes'] = [
+                            c for c in buttons['translate']['classes'] if c != 'staff-only']
                         parameters = {
                             'language': request.GET.get(u'missing_{}_translations'.format(field)),
                         }
@@ -1865,6 +2109,7 @@ class MagiCollection(object):
                 buttons['translate']['ajax_url'] = u'{}{}translate'.format(buttons['translate']['ajax_url'], '&' if '?' in buttons['translate']['ajax_url'] else '?')
         # Report buttons: don't show in list view unless there's no item view
         if self.reportable:
+            set_base_button('report')
             buttons['report']['show'] = view.show_report_button
             buttons['report']['title'] = item.report_sentence
             buttons['report']['icon'] = 'warning'
@@ -1874,6 +2119,7 @@ class MagiCollection(object):
             buttons['report']['open_in_new_window'] = True
         # Suggest edit buttons: don't show in list view unless there's no item view
         if self.allow_suggest_edit:
+            set_base_button('suggest_edit')
             buttons['suggest_edit']['show'] = view.show_suggest_edit_button
             buttons['suggest_edit']['title'] = item.suggest_edit_sentence
             buttons['suggest_edit']['icon'] = 'edit'
@@ -1883,6 +2129,27 @@ class MagiCollection(object):
             )
             buttons['suggest_edit']['url'] = item.suggest_edit_url
             buttons['suggest_edit']['open_in_new_window'] = True
+        if not context['uses_deprecated_to_fields']:
+            # Comments button: shows up on List view + Item view only if ajax
+            if self.item_view.comments_enabled:
+                set_base_button('comments')
+                buttons['comments']['show'] = (
+                    view.show_comments_button and (view.view != 'item_view' or context['ajax'])
+                )
+                buttons['comments']['title'] = _('Comments')
+                buttons['comments']['icon'] = 'comments'
+                buttons['comments']['has_permissions'] = True
+                buttons['comments']['url'] = addParametersToURL(item.http_item_url, anchor='disqus_thread')
+                buttons['comments']['open_in_new_window'] = True
+            # Share buttons
+            if self.item_view.share_enabled:
+                set_base_button('share')
+                buttons['share']['show'] = view.show_share_buttons
+                buttons['share']['title'] = _('Share')
+                buttons['share']['icon'] = 'link'
+                buttons['share']['has_permissions'] = True
+                buttons['share']['url'] = item.share_url
+                buttons['share']['template'] = 'include/share'
         return buttons
 
     def get_parent_prefix(self, request, context):
@@ -1899,27 +2166,32 @@ class MagiCollection(object):
     #######################
     # Tools - not meant to be overridden
 
-    def get_list_url(self, ajax=False, modal_only=False, parameters=None, preset=None, random=False):
-        return u'{}/{}/{}{}{}{}'.format(
-            '' if not ajax else '/ajax',
-            self.plural_name,
-            u'{}/'.format(preset) if preset else '',
-            'random/' if random else '',
-            '' if not modal_only else '?ajax_modal_only',
-            '' if not parameters else u'{}{}'.format(
-                '?' if not modal_only else '&',
-                '&'.join([u'{}={}'.format(k, v) for k, v in parameters.items() if v is not None]),
-            ),
+    def get_list_url(self, ajax=False, modal_only=False, parameters=None, preset=None, random=False, full=False):
+        return getListURL(
+            self.plural_name, ajax=ajax, modal_only=modal_only, parameters=parameters,
+            preset=preset, random=random, full=full,
         )
+
+    @property
+    def list_url(self):
+        return self.get_list_url()
+
+    @property
+    def random_url(self):
+        return self.get_list_url(random=True)
 
     def get_add_url(self, ajax=False, type=None):
         if self.types and not type:
-            type = self.types.keys[0]
+            type = self.types.keys()[0]
         return u'{}/{}/add/{}'.format(
             '' if not ajax else '/ajax',
             self.plural_name,
             u'{}/'.format(type) if type else '',
         )
+
+    @property
+    def add_url(self):
+        return self.get_add_url()
 
     @property
     def add_sentence(self):
@@ -1947,7 +2219,7 @@ class MagiCollection(object):
 
     def get_buttons_classes(self, buttons_classes, request, context, item=None, size=None, block=None, color=None):
         new_buttons_classes = []
-        color = color or request.GET.get('buttons_color', None) or getattr(request, 'force_buttons_color', None)
+        color = color or request.GET.get('buttons_color', None)
         has_size = False
         for cls in buttons_classes:
             if color:
@@ -1968,6 +2240,20 @@ class MagiCollection(object):
             new_buttons_classes.append(u'btn-{}'.format(size))
         return new_buttons_classes
 
+    def set_buttons_auto_open(self, buttons):
+        """
+        Should only be called by list view, not item view
+        When open show is auto, will display open button when there are other visible buttons
+        """
+        if 'open' in buttons and buttons['open']['show'] == 'auto':
+            buttons['open']['show'] = False
+            for button_name, button in buttons.items():
+                if (button_name != 'open'
+                    and button['show'] and button['has_permissions']
+                    and 'staff-only' not in button['classes']):
+                    buttons['open']['show'] = True
+                    break
+
     def __unicode__(self):
         return u'MagiCollection {}'.format(self.name)
 
@@ -1976,6 +2262,8 @@ class MagiCollection(object):
 
     class ListView(_View):
         view = 'list_view'
+        view_icon = 'icons-list'
+
         # Optional variables without default
         filter_form = None
         ajax_pagination_callback = None
@@ -1990,9 +2278,10 @@ class MagiCollection(object):
 
         # Optional variables with default values
         display_style = 'rows'
-        display_style_table_fields = ['image', 'name']
+        display_style_table_fields = ['image', 'unicode']
         display_style_table_classes = ['table']
-        display_style_table_show_open_button = False
+        display_style_table_show_open_button = True
+        display_style_table_item_buttons_classes = [ 'btn', 'btn-secondary-link', 'btn-lines' ]
         per_line = 3
         col_break = 'md'
         page_size = 12
@@ -2007,6 +2296,7 @@ class MagiCollection(object):
 
         auto_filter_form = False
 
+        fields_class = property(propertyFromCollection('fields_class'))
         fields_icons = {}
         fields_images = {}
         item_buttons_classes = property(propertyFromCollection('item_buttons_classes'))
@@ -2028,7 +2318,6 @@ class MagiCollection(object):
 
         top_buttons_classes = ['btn', 'btn-lg', 'btn-block', 'btn-main']
         top_buttons_per_line = None
-        show_add_button_permission_only = False
         show_search_results = True
         show_items_names = False
         authentication_required = False
@@ -2041,28 +2330,50 @@ class MagiCollection(object):
         item_template = 'default_item_in_list'
         item_blocked_template = None
         auto_reloader = True
-        _alt_view_choices = None # Cache
         alt_views = []
         quick_add_view = None
         show_section_header_on_change = None
 
+        ordering_fields_class = property(lambda _s: _s.collection.fields_class)
+        table_fields_class = property(lambda _s: _s.collection.fields_class)
+
+        def check_random_permissions(self, request, context):
+            return self.allow_random and self.check_permissions(request, context)
+
         def has_permissions_to_see_in_navbar(self, request, context):
             return self.has_permissions(request, context)
 
-        def get_queryset(self, queryset, parameters, request):
-            return super(MagiCollection.ListView, self).get_queryset(self.collection._collectibles_queryset(self, queryset, request), parameters, request)
+        def get_queryset(self, queryset=None, parameters={}, request=None):
+            return super(MagiCollection.ListView, self).get_queryset(
+                queryset=self.collection._collectibles_queryset(self, queryset=queryset, request=request),
+                parameters=parameters, request=request)
 
         def buttons_per_item(self, *args, **kwargs):
             return self.collection.buttons_per_item(self, *args, **kwargs)
 
+        def to_magifields(self, item, context):
+            return self.collection.to_magifields(self, item, context)
+
+        def to_magi_ordering_fields(self, item, context, ordering_fields=[]):
+            return self.ordering_fields_class(self, item, context, ordering_fields=ordering_fields)
+
+        def to_magi_table_fields(self, item, context, table_fields=[]):
+            return self.table_fields_class(
+                self, item, context, table_fields=table_fields,
+            )
+
+        # Deprecated
         def to_fields(self, *args, **kwargs):
             return self.collection.to_fields(self, *args, **kwargs)
 
+        # Deprecated
         ordering_fields = to_fields
 
+        # Deprecated
         def table_fields(self, *args, **kwargs):
             return self.collection.item_view.to_fields(*args, **kwargs)
 
+        # Deprecated
         def table_fields_headers(self, fields, view=None):
             headers = []
             for field_name in fields:
@@ -2106,7 +2417,7 @@ class MagiCollection(object):
             buttons = OrderedDict()
             top_buttons_classes = self.get_top_buttons_classes(request, context)
             # Alt view buttons
-            for alt_view_name, alt_view_details in self.alt_views:
+            for alt_view_name, alt_view_details in self.alt_views.items():
                 buttons[alt_view_name] = {
                     'has_permissions': True, # if you have permissions for the list view, alt view should work too
                     'ajax_url': False,
@@ -2144,11 +2455,10 @@ class MagiCollection(object):
                     ),
                     'title': self.collection.add_sentence,
                 }
-                if (((self.show_add_button_permission_only
-                      and not hasPermission(request.user, self.show_add_button_permission_only)))
-                    and for_all_buttons['has_permissions']
-                    and request.user.is_staff):
-                    for_all_buttons['show'] = False
+                if (self.collection.add_view.authentication_required
+                    and not self.collection.add_view.requires_permissions()
+                    and not request.user.is_authenticated()):
+                    for_all_buttons['has_permissions'] = True
                 if self.collection.types:
                     for (type, button) in self.collection.types.items():
                         if not button.get('show_button', True):
@@ -2165,7 +2475,7 @@ class MagiCollection(object):
                 else:
                     buttons['add'] = dict({
                         'url': self.collection.get_add_url(),
-                        'icon': self.collection.icon,
+                        'icon': self.collection.add_view.view_icon,
                         'image': self.collection.image,
                         'subtitle': self.collection.list_view.add_button_subtitle,
                     }, **for_all_buttons)
@@ -2192,14 +2502,12 @@ class MagiCollection(object):
             # Preset and view prefixes
 
             if view:
-                dict_alt_views = dict(self.alt_views)
-
                 # Don't show view details if view is not visible anywhere
-                if (('show_view_title' not in dict_alt_views[view]
-                     and (dict_alt_views[view].get('hide_in_filter', False)
-                          and dict_alt_views[view].get('hide_in_navbar', False)))
-                    or ('show_view_title' in dict_alt_views[view]
-                        and not dict_alt_views[view]['show_view_title'])):
+                if (('show_view_title' not in self.alt_views[view]
+                     and (self.alt_views[view].get('hide_in_filter', False)
+                          and self.alt_views[view].get('hide_in_navbar', False)))
+                    or ('show_view_title' in self.alt_views[view]
+                        and not self.alt_views[view]['show_view_title'])):
                     view = None
 
             def _preset_title():
@@ -2212,16 +2520,16 @@ class MagiCollection(object):
                 h1['icon'] = self.collection.icon
                 h1['image'] = self.collection.image
             def _view_title():
-                h1['title'] = dict_alt_views[view]['verbose_name']
-                h1['icon'] = dict_alt_views[view].get('icon')
-                h1['image'] = dict_alt_views[view].get('image')
+                h1['title'] = self.alt_views[view]['verbose_name']
+                h1['icon'] = self.alt_views[view].get('icon')
+                h1['image'] = self.alt_views[view].get('image')
             def _parent_prefix():
                 parent_prefix = self.collection.get_parent_prefix(request, context)
                 if parent_prefix:
                     title_prefixes.append(parent_prefix)
             def _view_prefix():
                 title_prefixes.append({
-                    'title': dict_alt_views[view]['verbose_name'],
+                    'title': self.alt_views[view]['verbose_name'],
                     'url': self.collection.get_list_url(parameters={ 'view': view }),
                 })
 
@@ -2245,8 +2553,38 @@ class MagiCollection(object):
             return title_prefixes, h1
 
         def to_filter_form_class(self):
+            """Used in urls.py"""
             if self.auto_filter_form:
                 self.filter_form = forms.to_auto_filter_form(self)
+
+        def to_filters_details(self):
+            """
+            Used in urls.py
+            Dict of field_name -> {
+              'form_field_class': class of the form field,
+              'model_field_class': class of the model field,
+              'form_default': default value when initializing the form,
+            }
+            """
+            formClass = self.filter_form
+            if str(type(formClass)) == '<type \'instancemethod\'>':
+                formClass = formClass(request=None, context={})
+            if formClass:
+                form = formClass(request=None, collection=self.collection)
+                self.filters_details = OrderedDict()
+                self.filters_with_default_form_values = []
+                for field_name, field in form.fields.items():
+                    model_field = modelGetField(self.collection.queryset.model, field_name)
+                    self.filters_details[field_name] = {
+                        'form_field_class': type(field),
+                        'model_field_class': model_field,
+                        'form_default': getattr(field, 'initial', None),
+                        # 'model_default': getattr(model_field, 'default', None),
+                    }
+                    if hasValue(self.filters_details[field_name]['form_default']):
+                        self.filters_with_default_form_values.append(field_name)
+            else:
+                self.filters_details = {}
 
         def get_clear_url(self, request):
             return self.collection.get_list_url(
@@ -2258,30 +2596,103 @@ class MagiCollection(object):
         #######################
         # Tools - not meant to be overridden
 
-        @property
-        def plain_default_ordering_list(self):
-            return [o[1:] if o.startswith('-') else o for o in self.default_ordering.split(',')]
-
-        @property
-        def plain_default_ordering(self):
-            return self.plain_default_ordering_list[0]
-
         def get_top_buttons_classes(self, request, context, size=None, block=None, color=None):
             return self.collection.get_buttons_classes(
                 self.top_buttons_classes, request, context, size=size, block=block, color=color)
 
         def get_item_buttons_classes(self, request, context, item=None, size=None, block=None, color=None):
             return self.collection.get_buttons_classes(
-                (context.get('alt_view', {}) or {}).get('item_buttons_classes', self.item_buttons_classes),
+                (context.get('alt_view', {}) or {}).get('item_buttons_classes', (
+                    self.display_style_table_item_buttons_classes
+                    if context.get('display_style', None) == 'table'
+                    else self.item_buttons_classes)),
                 request, context,
                 item=item,
                 size=size,
-                block=(block or not self.show_item_buttons_in_one_line),
+                block=block,
                 color=color,
             )
 
+        # Caches
+
+        is_backgrounds_model = False
+        is_favorite_characters_model = False
+        is_other_characters_model = False
+
+        _alt_view_choices = None
+        _alt_view_visible_choices = None
+
+        def to_alt_views(self):
+            """Used in urls.py"""
+            if not self.alt_views:
+                self.alt_views = []
+
+            # Set background
+            if self.collection.queryset.model == BACKGROUNDS_MODEL:
+                self.is_backgrounds_model = True
+                self.alt_views.append(('set_background', {
+                    'verbose_name': __(u'{} - {}', _('Customize profile'), _('Background')),
+                    'icon': 'pictures',
+                    'filter_queryset': BACKGROUNDS_FILTER,
+                    'hide_in_navbar': True,
+                    'hide_in_filter': True,
+                    'show_title': True,
+                }))
+
+            # Set favorite character(s)
+            # It's OK to call getCharactersFavoriteFieldLabel because
+            # favorite_character_name has been set at this point.
+            if self.collection.queryset.model == FAVORITE_CHARACTERS_MODEL:
+                self.is_favorite_characters_model = True
+                self.alt_views.append(('set_favorite_character', {
+                    'verbose_name': __(u'{} - {}', _('Customize profile'), getCharactersFavoriteFieldLabel()),
+                    'icon': 'star',
+                    'filter_queryset': FAVORITE_CHARACTERS_FILTER,
+                    'hide_in_navbar': True,
+                    'hide_in_filter': True,
+                    'show_title': True,
+                }))
+            else:
+                for key, other_characters_model in OTHER_CHARACTERS_MODELS.items():
+                    if (self.collection.queryset.model == other_characters_model['model']
+                        and other_characters_model.get('allow_set_as_favorite_on_profile', False)):
+                        self.is_other_characters_model = key
+                        self.alt_views.append((u'set_favorite_character', {
+                            'verbose_name': __(
+                                u'{} - {}', _('Customize profile'),
+                                getCharactersFavoriteFieldLabel(key=key),
+                            ),
+                            'icon': 'star',
+                            'filter_queryset': other_characters_model.get('filter', lambda q: q),
+                            'hide_in_navbar': True,
+                            'hide_in_filter': True,
+                            'show_title': True,
+                        }))
+                        break
+
+            # Make alt views into an ordered dict
+            self.alt_views = OrderedDict(self.alt_views)
+
+            # Cache: Form choices
+            self._alt_view_choices = [('', self.collection.plural_title)] + [
+                (view_name, view.get('verbose_name', view_name))
+                for view_name, view in self.alt_views.items()
+            ]
+
+            # Cache: Visible form choices
+            self._alt_view_visible_choices = [
+                view_name for view_name, view in self.alt_views.items()
+                if (not view.get('hide_in_filter', False)
+                    and view.get('hide_in_navbar', False)
+                    and not view.get('show_as_top_button', False))
+            ]
+
     class ItemView(_View):
         view = 'item_view'
+
+        @property
+        def view_icon(self):
+            return self.collection.icon or 'deck'
 
         # Optional variables without default
         top_illustration = None
@@ -2301,6 +2712,7 @@ class MagiCollection(object):
         owner_only_or_one_of_permissions_required = []
         comments_enabled = True
         share_enabled = True
+        share_templates = False
         full_width = False
         auto_reloader = True
         template = 'default'
@@ -2309,19 +2721,18 @@ class MagiCollection(object):
         ajax_item_max_height = 400
 
         hide_icons = False
+        fields_class = property(propertyFromCollection('fields_class'))
         fields_icons = {}
         fields_images = {}
         fields_preselected = []
+        fields_preselected_subfields = {}
         fields_prefetched = []
         fields_prefetched_together = []
+        fields_suggest_edit = []
 
-        @property
-        def show_item_buttons(self):
-            return False if self.template == 'default' else self.collection.show_item_buttons
+        show_item_buttons = property(propertyFromCollection('show_item_buttons'))
         item_buttons_classes = property(propertyFromCollection('item_buttons_classes'))
-        @property
-        def show_item_buttons_as_icons(self):
-            return True if self.template == 'default' else self.collection.show_item_buttons_as_icons
+        show_item_buttons_as_icons = property(propertyFromCollection('show_item_buttons_as_icons'))
         show_open_button = property(propertyFromCollection('show_open_button'))
         show_edit_button = property(propertyFromCollection('show_edit_button'))
         show_edit_button_permissions_only = property(propertyFromCollection('show_edit_button_permissions_only'))
@@ -2334,11 +2745,40 @@ class MagiCollection(object):
         show_collect_total = property(propertyFromCollection('show_collect_total'))
         # Note: if you use the 'default' template, the following 2 will be ignored:
         show_item_buttons_justified = property(propertyFromCollection('show_item_buttons_justified'))
-        show_item_buttons_in_one_line = property(propertyFromCollection('show_item_buttons_in_one_line'))
 
-        def get_queryset(self, queryset, parameters, request):
-            return super(MagiCollection.ItemView, self).get_queryset(self.collection._collectibles_queryset(self, queryset, request), parameters, request)
+        @property
+        def show_item_buttons_in_one_line(self):
+            if self.template == 'default':
+                return False
+            return self.collection.show_item_buttons_in_one_line
 
+        show_owner = False
+        show_faq = False
+        show_article_ld = False
+
+        def _preselect_owner(self, queryset, request=None):
+            if isRequestAjax(request) or (not self.show_article_ld and not self.show_owner):
+                return queryset
+            if (modelHasField(queryset.model, '_cache_owner_username')
+                or modelHasField(queryset.model, '_cache_owner')):
+                return queryset
+            return queryset.select_related('owner')
+
+        def get_queryset(self, queryset=None, parameters={}, request=None):
+            """
+            Will call self.collection._collectibles_queryset to pre-select total collectible for authenticated user
+            Will call self._preselect_owner to pre-select the owner in case we show the
+            article Ld for SEO or we show the owner.
+            """
+            return super(MagiCollection.ItemView, self).get_queryset(
+                queryset=self._preselect_owner(self.collection._collectibles_queryset(
+                    self, queryset=queryset, request=request), request=request),
+                parameters=parameters, request=request)
+
+        def to_magifields(self, item, context):
+            return self.collection.to_magifields(self, item, context)
+
+        # Deprecated
         def to_fields(self, *args, **kwargs):
             return self.collection.to_fields(self, *args, **kwargs)
 
@@ -2395,12 +2835,13 @@ class MagiCollection(object):
                 self.item_buttons_classes, request, context,
                 item=item,
                 size=(size or ('lg' if self.template == 'default' else None)),
-                block=(block or not self.show_item_buttons_in_one_line),
+                block=block,
                 color=color,
             )
 
     class AddView(_View):
         view = 'add_view'
+        view_icon = 'add'
 
         # Optional variables without default
         otherbuttons_template = None
@@ -2507,6 +2948,7 @@ class MagiCollection(object):
 
     class EditView(_View):
         view = 'edit_view'
+        view_icon = 'edit'
 
         # Optional variables without default
         otherbuttons_template = None
@@ -2557,6 +2999,25 @@ class MagiCollection(object):
             return 10
 
         @property
+        def fields_preselected(self):
+            """Defaults to all the fields known to be in the edit form that are ForeignKey or OneToOneField"""
+            return [
+                field_name
+                for field_name, field_details in self.collection.form_details.items()
+                if (isinstance(field_details['model_field_class'], models.models.ForeignKey)
+                    or isinstance(field_details['model_field_class'], models.models.OneToOneField))
+            ]
+
+        @property
+        def fields_prefetched(self):
+            """Defaults to all the fields known to be in the edit form that are ManyToManyField"""
+            return [
+                field_name
+                for field_name, field_details in self.collection.form_details.items()
+                if isinstance(field_details['model_field_class'], models.models.ManyToManyField)
+            ]
+
+        @property
         def filter_cuteform(self):
             return self.collection.filter_cuteform
 
@@ -2570,6 +3031,7 @@ class MagiCollection(object):
             return self.collection.form_class
 
         def to_translate_form_class(self):
+            """Used in urls.py"""
             self._translate_form_class = forms.to_translate_form_class(self)
 
         def translate_form_class(self, request, context):
@@ -2669,11 +3131,21 @@ class MainItemCollection(MagiCollection):
     allow_html_in_markdown = True
     auto_share_image = True
 
-    class ListView(MagiCollection.ListView):
-        add_button_subtitle = None
-
     class ItemView(MagiCollection.ItemView):
         show_suggest_edit_button = True
+        share_templates = True
+
+        @property
+        def show_owner(self):
+            return self.template == 'default'
+
+        @property
+        def show_faq(self):
+            return self.template == 'default'
+
+        @property
+        def show_article_ld(self):
+            return self.template == 'default'
 
     class AddView(MagiCollection.AddView):
         staff_required = True
@@ -2683,6 +3155,8 @@ class MainItemCollection(MagiCollection):
         staff_required = True
         permissions_required = ['manage_main_items']
         allow_delete = True
+
+CommunityMainItemCollection = makeCollectionCommunity(MainItemCollection)
 
 class SubItemCollection(MainItemCollection):
     """
@@ -2730,12 +3204,14 @@ class SubItemCollection(MainItemCollection):
 
     class ListView(MainItemCollection.ListView):
         def has_permissions_to_see_in_navbar(self, request, context):
-            super(SubItemCollection.ListView, self).has_permissions_to_see_in_navbar(request, context)
-            return (request.user.is_authenticated()
-                    and (request.user.hasOneOfPermissions([
-                        'manage_main_items',
-                        'translate_items',
-                    ])))
+            return (
+                super(SubItemCollection.ListView, self).has_permissions_to_see_in_navbar(request, context)
+                and request.user.is_authenticated()
+                and (request.user.hasOneOfPermissions([
+                    'manage_main_items',
+                    'translate_items',
+                ]))
+            )
 
     class ItemView(MainItemCollection.ItemView):
         comments_enabled = False
@@ -2756,6 +3232,18 @@ class SubItemCollection(MainItemCollection):
                 return super(SubItemCollection.EditView, self).redirect_after_edit(request, item, ajax)
             return self.collection.to_main_item_url(item) if not ajax else '/ajax/successedit/'
 
+_base_CommunitySubItemCollection = makeCollectionCommunity(SubItemCollection)
+class CommunitySubItemCollection(_base_CommunitySubItemCollection):
+    navbar_link_list = 'more'
+    auto_share_image = False
+
+    class ListView(_base_CommunitySubItemCollection.ListView):
+        def has_permissions_to_see_in_navbar(self, request, context):
+            return (
+                super(CommunitySubItemCollection.ListView, self).has_permissions_to_see_in_navbar(request, context)
+                and request.user.is_authenticated()
+            )
+
 ############################################################
 ############################################################
 ############################################################
@@ -2770,10 +3258,8 @@ class AccountCollection(MagiCollection):
     queryset = ACCOUNT_MODEL.objects.all()
     report_allow_delete = False
     form_class = forms.AccountForm
+    fields_class = magifields.AccountFields
     navbar_link_list = 'community'
-
-    show_item_buttons = False
-    show_item_buttons_justified = False
 
     filter_cuteform = {
         'has_friend_id': {
@@ -2816,6 +3302,15 @@ class AccountCollection(MagiCollection):
         'accept_friend_requests': 'users',
         'device': lambda _i: _i.os,
     }
+
+    def get_buttons_classes(self, buttons_classes, request, context, item=None, size=None, block=None, color=None):
+        if item:
+            if getattr(item, 'center', None) and item.center.color:
+                color = item.center.color
+            else:
+                color = item.cached_owner.preferences.css_color
+        return super(AccountCollection, self).get_buttons_classes(
+            buttons_classes, request, context, item=item, color=color, size=size, block=block)
 
     def get_profile_account_tabs(self, request, context, account=None):
         """
@@ -2890,14 +3385,18 @@ class AccountCollection(MagiCollection):
         allow_random = False
         disable_on_high_traffic = True
 
+        show_item_buttons = False # displayed manually by template
+        show_item_buttons_justified = False
+
         show_item_buttons_as_icons = True
         item_buttons_classes = ['btn', 'btn-link']
 
         def show_add_button(self, request):
             return not getAccountIdsFromSession(request)
 
-        def get_queryset(self, queryset, parameters, request):
-            queryset = super(AccountCollection.ListView, self).get_queryset(queryset, parameters, request)
+        def get_queryset(self, queryset=None, parameters={}, request=None):
+            queryset = super(AccountCollection.ListView, self).get_queryset(
+                queryset=queryset, parameters=parameters, request=request)
             queryset = filterRealAccounts(queryset)
             return queryset
 
@@ -2919,37 +3418,32 @@ class AccountCollection(MagiCollection):
             return _('Leaderboard')
 
     class ItemView(MagiCollection.ItemView):
+        # When loading the actual view (/account/x/.../)
         template = 'defaultAccountItem'
         comments_enabled = False
 
+        # When loading within User ItemView
+
+        show_item_buttons = True
+        show_item_buttons_as_icons = False
+        show_item_buttons_in_one_line = False
+        show_item_buttons_justified = False
+
         if modelHasField(ACCOUNT_MODEL, 'center'):
-            fields_preselected = ['center']
+            fields_preselected = [ 'center' ]
 
-        def to_fields(self, item, exclude_fields=None, *args, **kwargs):
-            if not exclude_fields: exclude_fields = []
-            exclude_fields += [
-                'owner', 'level_on_screenshot_upload',
-                'is_hidden_from_leaderboard', 'show_friend_id',
-                'nickname', 'default_tab',
-            ]
-            if not getattr(item, 'is_playground', False):
-                exclude_fields.append('is_playground')
+        fields_exclude = [
+            'owner',
+            'nickname',
+            'default_tab',
+        ]
 
-            fields = super(AccountCollection.ItemView, self).to_fields(item, *args, exclude_fields=exclude_fields, **kwargs)
-            if hasattr(item, 'cached_leaderboard') and item.cached_leaderboard:
-                fields['leaderboard'] = {
-                    'verbose_name': _('Leaderboard position'),
-                    'icon': 'trophy',
-                }
-                if item.cached_leaderboard > 3:
-                    fields['leaderboard']['type'] = 'html'
-                    fields['leaderboard']['value'] = u'<h4>#{}</h4>'.format(item.cached_leaderboard)
-                else:
-                    fields['leaderboard']['type'] = 'image_link'
-                    fields['leaderboard']['link'] = '/accounts/'
-                    fields['leaderboard']['link_text'] = u'#{}'.format(item.cached_leaderboard)
-                    fields['leaderboard']['value'] = item.leaderboard_image_url
-            return fields
+        fields_permissions_required = {
+            'level_on_screenshot_upload': [ 'see_account_verification_details' ],
+            'is_hidden_from_leaderboard': [ 'see_account_verification_details' ],
+            'show_friend_id': [ 'see_account_verification_details' ],
+            # friend_id is hidden/displayed in AccountFields / AccountFriendId
+        }
 
     class AddView(MagiCollection.AddView):
         alert_duplicate = False
@@ -3048,20 +3542,21 @@ class UserCollection(MagiCollection):
     icon = 'users'
     navbar_link = False
     navbar_link_list = 'community'
+    fields_class = magifields.UserFields
     queryset = models.User.objects.all().select_related('preferences')
     report_allow_delete_with_permission = 'allow_delete_reported_profiles'
     report_edit_templates = OrderedDict([
-        ('Inappropriate profile picture', 'Your profile picture is inappropriate. ' + please_understand_template_sentence + ' To change your avatar, go to gravatar and upload a new image, then go to your settings on our website to re-enter your email address.'),
+        ('Inappropriate profile picture', 'Your profile picture is inappropriate. ' + please_understand_template_sentence + ' To change your avatar, go to gravatar and upload a new image, then go to your settings on our web app to re-enter your email address.'),
         ('Inappropriate image in profile description', 'An image on your profile description was inappropriate. ' + please_understand_template_sentence),
         ('Inappropriate link', 'A link on your profile description was inappropriate. ' + please_understand_template_sentence),
         ('Inappropriate profile description', 'Something you wrote on your profile was inappropriate. ' + please_understand_template_sentence),
         ('Inappropriate username', 'Your username was inappropriate. ' + please_understand_template_sentence),
         ('Inappropriate location', 'Your location was inappropriate. ' + please_understand_template_sentence),
-        ('Received an inappropriate private message from this user', 'You sent private message(s) to user(s) and they found the content inappropriate. ' + please_understand_template_sentence + ' We kindly ask you to not re-iterate your actions. If it happens again, we will delete your profile, accounts, activities and everything else you own on our website permanently.'),
+        ('Received an inappropriate private message from this user', 'You sent private message(s) to user(s) and they found the content inappropriate. ' + please_understand_template_sentence + ' We kindly ask you to not re-iterate your actions. If it happens again, we will delete your profile, accounts, activities and everything else you own on our web app permanently.'),
     ])
     report_delete_templates = {
-        'Inappropriate behavior towards other user(s)': 'We noticed that you\'ve been acting in an inappropriate manner towards other user(s), which doesn\'t correspond to what we expect from our community members. Your profile, accounts, activities and everything else you owned on our website has been permanently deleted, and we kindly ask you not to re-iterate your actions.',
-        'Spam': 'We detected spam activities from your user profile. Your profile, accounts, activities and everything else you owned on our website has been permanently deleted, and we kindly ask you not to re-iterate your actions.',
+        'Inappropriate behavior towards other user(s)': 'We noticed that you\'ve been acting in an inappropriate manner towards other user(s), which doesn\'t correspond to what we expect from our community members. Your profile, accounts, activities and everything else you owned on our web app has been permanently deleted, and we kindly ask you not to re-iterate your actions.',
+        'Spam': 'We detected spam activities from your user profile. Your profile, accounts, activities and everything else you owned on our web app has been permanently deleted, and we kindly ask you not to re-iterate your actions.',
         'Troll profile': 'This profile was deliberately made to be provocative with the intention of causing disruption or argument and therefore has been deleted. Activities, accounts, and everything else that was created using this profile have also been deleted. We kindly ask you not to re-iterate your actions and be respectful towards our community.',
     }
 
@@ -3084,6 +3579,7 @@ class UserCollection(MagiCollection):
         item_template = custom_item_template
         filter_form = forms.UserFilterForm
         default_ordering = '-id'
+        fields_preselected = [ 'preferences' ]
         show_report_button = False
         show_item_buttons = False
         show_item_buttons_as_icons = True
@@ -3104,10 +3600,11 @@ class UserCollection(MagiCollection):
             }),
         ]
 
-        def get_queryset(self, queryset, parameters, request):
-            queryset = super(UserCollection.ListView, self).get_queryset(queryset, parameters, request)
+        def get_queryset(self, queryset=None, parameters={}, request=None):
+            queryset = super(UserCollection.ListView, self).get_queryset(
+                queryset=queryset, parameters=parameters, request=request)
             # When ordering is followed first, add follow
-            if request.GET.get('ordering', None) == 'followed,id':
+            if request and request.GET.get('ordering', None) == 'followed,id':
                 queryset = queryset.extra(select={
                     'followed': 'SELECT COUNT(*) FROM {table}_following WHERE userpreferences_id = {id} AND user_id = auth_user.id'.format(
                         table=models.UserPreferences._meta.db_table,
@@ -3132,6 +3629,7 @@ class UserCollection(MagiCollection):
     class ItemView(MagiCollection.ItemView):
         template = 'profile'
         js_files = ['profile']
+        fields_preselected = [ 'preferences' ]
         comments_enabled = False
         follow_enabled = True
         show_item_buttons = False
@@ -3142,9 +3640,11 @@ class UserCollection(MagiCollection):
         accounts_template = 'include/defaultAccountsForProfile'
         profile_accounts_top_template = None
         show_small_title = False
+        show_edit_button = False
 
-        def get_queryset(self, queryset, parameters, request):
-            queryset = super(UserCollection.ItemView, self).get_queryset(queryset, parameters, request)
+        def get_queryset(self, queryset=None, parameters={}, request=None):
+            queryset = super(UserCollection.ItemView, self).get_queryset(
+                queryset=queryset, parameters=parameters, request=request)
 
             # Shown under "Follow" button
             queryset = queryset.extra(select={
@@ -3159,8 +3659,9 @@ class UserCollection(MagiCollection):
             # Prefetch accounts
             account_collection = getMagiCollection('account')
             if account_collection:
-                account_queryset = models.Account.objects.order_by(
-                    *account_collection.list_view.profile_default_ordering.split(','))
+                account_queryset = account_collection.item_view.get_queryset().order_by(
+                    *account_collection.list_view.profile_default_ordering.split(',')
+                )
                 queryset = queryset.prefetch_related(
                     Prefetch('accounts', queryset=account_queryset, to_attr='all_accounts'),
                 )
@@ -3170,7 +3671,7 @@ class UserCollection(MagiCollection):
                 Prefetch('links', queryset=models.UserLink.objects.order_by('-i_relevance'), to_attr='all_links'),
             )
 
-            if request.user.is_authenticated():
+            if request and request.user.is_authenticated():
                 queryset = queryset.extra(select={
                     # Used by "follow" button + "private message" button
                     'followed': 'SELECT COUNT(*) FROM {table}_following WHERE userpreferences_id = {id} AND user_id = auth_user.id'.format(
@@ -3221,6 +3722,44 @@ class UserCollection(MagiCollection):
                     'has_permissions': True,
                 }
 
+            # Mark email address as invalid button
+            if (request.user.is_authenticated() and user.id != request.user.id
+                and request.user.hasPermission('mark_email_addresses_invalid')):
+                baseButton(
+                    button_name='mark_email_addresses_invalid',
+                    buttons=buttons, classes=classes + [ 'staff-only' ], extras={
+                        'title': 'Mark e-mail address invalid',
+                        'url': addParametersToURL(
+                            user.preferences.edit_url, parameters={ 'mark_email_addresses_invalid': u'' }),
+                        'ajax_url': addParametersToURL(
+                            user.preferences.ajax_edit_url, parameters={ 'mark_email_addresses_invalid': u'' }),
+                        'icon': 'warning',
+                    })
+
+            # Edit roles button
+            if (request.user.is_authenticated() and request.user.hasPermission('edit_roles')):
+                baseButton(
+                    button_name='edit_roles', buttons=buttons, classes=classes + [ 'staff-only' ], extras={
+                        'title': 'Edit roles',
+                        'url': addParametersToURL(
+                            user.preferences.edit_url, parameters={ 'edit_roles': u'' }),
+                        'ajax_url': addParametersToURL(
+                            user.preferences.ajax_edit_url, parameters={ 'edit_roles': u'' }),
+                        'icon': 'staff',
+                    })
+
+            # Edit donator status button
+            if (request.user.is_authenticated() and request.user.hasPermission('edit_donator_status')):
+                baseButton(
+                    button_name='edit_donator_status', buttons=buttons, classes=classes + [ 'staff-only' ], extras={
+                        'title': 'Edit donator status',
+                        'url': addParametersToURL(
+                            user.preferences.edit_url, parameters={ 'edit_donator_status': u'' }),
+                        'ajax_url': addParametersToURL(
+                            user.preferences.ajax_edit_url, parameters={ 'edit_donator_status': u'' }),
+                        'icon': 'heart',
+                    })
+
             # Reputation info button
             if request.user.is_authenticated() and request.user.hasPermission('see_reputation'):
                 buttons['reputation'] = {
@@ -3231,6 +3770,7 @@ class UserCollection(MagiCollection):
                     'title': u'Reputation: {} points'.format(reputation),
                     'has_permissions': True,
                 }
+
             return buttons
 
         def reverse_url(self, text):
@@ -3268,22 +3808,18 @@ class UserCollection(MagiCollection):
                     }))
 
             # Favorite characters
-            for key, fields in getCharactersFavoriteFields().items():
-                for (field_name, field_verbose_name) in fields:
-                    if field_name.startswith('d_extra-'):
-                        pk = user.preferences.extra.get(field_name[len('d_extra-'):], None)
-                    else:
-                        pk = getattr(user.preferences, field_name)
+            for key, user_favorites in getCharactersUsersFavorites(user).items():
+                for nth, favorite_character in user_favorites.items():
+                    pk = favorite_character['pk']
                     if pk:
-                        link = AttrDict({
-                            'name': field_name,
-                            'verbose_name': field_verbose_name,
+                        meta_links.append(AttrDict({
+                            'name': favorite_character['field_name'],
+                            'verbose_name': favorite_character['field_label'],
                             'raw_value': pk,
                             'value': getCharacterNameFromPk(pk, key=key),
                             'image': getCharacterImageFromPk(pk, key=key),
                             'url': getCharacterURLFromPk(pk, key=key),
-                        })
-                        meta_links.append(AttrDict(link))
+                        }))
 
             # Location
             if user.preferences.location:
@@ -3352,19 +3888,31 @@ class UserCollection(MagiCollection):
                 if 'account' in context['profile_tabs']:
                     del(context['profile_tabs']['account'])
             else:
+                context['uses_deprecated_to_fields'] = account_collection.item_view.uses_deprecated_to_fields()
                 for account in user.all_accounts:
+                    account.request = request
+
                     # Fields
-                    account.fields = account_collection.item_view.to_fields(account)
+                    if context['uses_deprecated_to_fields']:
+                        # Call deprecated to_fields if to_fields has been overrided
+                        account.fields = account_collection.item_view.to_fields(account, request=request)
+                    else:
+                        account.fields = account_collection.item_view.to_magifields(account, context)
+
                     # Buttons
-                    request.force_buttons_color = (
-                        account.center.color
-                        if getattr(account, 'center', None) and account.center.color
-                        else account.cached_owner.preferences.css_color
-                    )
-                    account.buttons_to_show = account_collection.item_view.buttons_per_item(request, context, account)
-                    account.show_item_buttons_justified = account_collection.item_view.show_item_buttons_justified
-                    account.show_item_buttons_as_icons = account_collection.item_view.show_item_buttons_as_icons
-                    account.show_item_buttons_in_one_line = account_collection.item_view.show_item_buttons_in_one_line
+                    account.show_item_buttons_in_one_line = account_collection.show_item_buttons_in_one_line
+                    if (context['uses_deprecated_to_fields']
+                        or account.show_item_buttons_in_one_line):
+                        account.include_below_item = False
+                        account.show_item_buttons_as_icons = account_collection.show_item_buttons_as_icons
+                        account.show_item_buttons_justified = account_collection.show_item_buttons_justified
+                        account.buttons_to_show = account_collection.item_view.buttons_per_item(request, context, account)
+                        if ((account.show_item_buttons_in_one_line
+                             or not context['uses_deprecated_to_fields'])
+                            and account_collection.item_view.show_item_buttons
+                            and [True for b in account.buttons_to_show.values() if b['show'] and b['has_permissions']]):
+                            account.include_below_item = True
+
                     # Tabs
                     account.tabs = account_collection.get_profile_account_tabs(request, context, account)
                     account.tabs_size = 100 / len(account.tabs) if account.tabs else 100
@@ -3388,7 +3936,6 @@ class UserCollection(MagiCollection):
                                 tab_name=tab_name, callback=tab['callback'],
                             )
                     afterjs += u'},'
-                request.force_buttons_color = None
             afterjs += u'};'
 
             # Badges
@@ -3549,40 +4096,67 @@ class UserCollection(MagiCollection):
     class EditView(MagiCollection.EditView):
         staff_required = True
         one_of_permissions_required = [
-            'edit_staff_status',
             'edit_roles',
             'edit_reported_things',
             'edit_donator_status',
             'mark_email_addresses_invalid',
-            'edit_activities_post_language',
         ]
         form_class = forms.StaffEditUser
-        ajax_callback = 'updateStaffEditUserForm'
-
-        filter_cuteform = {
-            'i_activities_language': {
-                'image_folder': 'language',
-            },
-        }
 
         def check_owner_permissions(self, request, context, item):
-            super(UserCollection.EditView, self).check_permissions(request, context)
             # Edit view is for staff only, but staff can't edit their own
-            if item.is_owner(request.user) and not request.user.hasPermission('edit_roles'):
+            if item.owner_id == request.user.id:
                 raise PermissionDenied()
 
         def extra_context(self, context):
-            if hasPermission(context['request'].user, 'edit_roles') and GLOBAL_OUTSIDE_PERMISSIONS:
-                if 'afterfields' not in context:
-                    context['afterfields'] = {}
-                context['afterfields']['edit_user'] = mark_safe(u'<div class="alert alert-danger">If you are making {user} a new staff, or if you are revoking the staff status of {user}, make sure you also <b>manually grant or revoke</b> the following permissions: <ul>{permissions}</ul></div>'.format(
-                    user=context['item'].username,
-                    permissions=u''.join([u'<li>{}</li>'.format(
-                        p if not u
-                        else u'<a href="{}" target="_blank">{} <i class="flaticon-link"></i></a>'.format(
-                                u['url'] if isinstance(u, dict) else u, p),
-                    ) for p, u in GLOBAL_OUTSIDE_PERMISSIONS.items()]),
-                ))
+            # Redirects to preference form most of the time, unless it's being linked from
+            # preference form itself with ?edit_reported_user
+            # The view still needs to exist in order to be linked from reports.
+            if context.get('request', None) and 'edit_reported_user' in context['request'].GET:
+                return
+            raise HttpRedirectException(addParametersToURL((
+                context['item'].preferences.ajax_edit_url
+                if context['ajax']
+                else context['item'].preferences.edit_url
+            ), parameters={
+                key: context['request'].GET[key]
+                for key in [ 'is_reported', 'disable_delete' ]
+                if key in context['request'].GET
+            }))
+
+        def redirect_after_edit(self, request, item, ajax):
+            if ajax:
+                return u'/ajax/successedit/'
+            return item.item_url
+
+class UserPreferencesCollection(MagiCollection):
+    queryset = models.UserPreferences.objects.all()
+    title = _('Preferences')
+    plural_title = _('Preferences')
+
+    class ItemView(MagiCollection.ItemView):
+        enabled = False
+    class ListView(MagiCollection.ListView):
+        enabled = False
+    class AddView(MagiCollection.AddView):
+        enabled = False
+
+    class EditView(MagiCollection.EditView):
+        staff_required = True
+        one_of_permissions_required = [
+            'edit_roles',
+            'edit_reported_things',
+            'edit_donator_status',
+            'mark_email_addresses_invalid',
+        ]
+        form_class = forms.StaffEditUserPreferences
+        fields_preselected = [ 'owner' ]
+        ajax_callback = 'updateStaffEditUserPreferencesForm'
+
+        def check_owner_permissions(self, request, context, item):
+            # Edit view is for staff only, but staff can't edit their own (unless they can edit their roles)
+            if item.owner_id == request.user.id and not request.user.hasPermission('edit_roles'):
+                raise PermissionDenied()
 
         def after_save(self, request, instance, type=None):
             models.onUserEdited(instance)
@@ -3594,9 +4168,15 @@ class UserCollection(MagiCollection):
             return instance
 
         def redirect_after_edit(self, request, item, ajax):
-            if ajax: # Ajax is not allowed
-                return '/ajax/successedit/'
-            return super(UserCollection.EditView, self).redirect_after_edit(request, item, ajax)
+            if 'edit_roles' in request.GET:
+                return '{}/addrevokeoutsidepermissions/{}/?previous_is_staff={}&previous_groups={}'.format(
+                    '/ajax' if ajax else '', item.owner.username,
+                    'true' if request._previous_is_staff else '',
+                    u','.join(request._previous_groups),
+                )
+            if ajax:
+                return u'/ajax/successedit/'
+            return item.owner.item_url
 
 ############################################################
 # Staff Configuration Collection
@@ -3609,6 +4189,7 @@ class StaffConfigurationCollection(MagiCollection):
     navbar_link_list = 'staff'
     icon = 'settings'
     form_class = forms.StaffConfigurationForm
+    fields_class = magifields.StaffConfigurationFields
     reportable = False
     blockable = False
     one_of_permissions_required = [
@@ -3632,30 +4213,44 @@ class StaffConfigurationCollection(MagiCollection):
     class ListView(MagiCollection.ListView):
         add_button_subtitle = None
         item_template = 'default_item_table_view'
+        page_size = len(django_settings.LANGUAGES) if len(django_settings.LANGUAGES) > 12 else 12
         display_style = 'table'
         display_style_table_fields = ['verbose_key', 'i_language', 'value', 'owner']
         display_style_table_classes = MagiCollection.ListView.display_style_table_classes + ['table-striped']
         before_template = 'include/beforeStaffConfigurations'
         filter_form = forms.StaffConfigurationFilters
         allow_random = False
+        fields_preselected = [ 'owner' ]
 
-        def get_queryset(self, queryset, parameters, request):
-            queryset = super(StaffConfigurationCollection.ListView, self).get_queryset(queryset, parameters, request)
+        def get_queryset(self, queryset=None, parameters={}, request=None):
+            queryset = super(StaffConfigurationCollection.ListView, self).get_queryset(
+                queryset=queryset, parameters=parameters, request=request)
             # Translators can only see translatable configurations
-            if not hasOneOfPermissions(request.user, ['edit_staff_configurations', 'advanced_staff_configurations']):
+            if request and not hasOneOfPermissions(request.user, [
+                    'edit_staff_configurations', 'advanced_staff_configurations' ]):
                 queryset = queryset.exclude(Q(i_language__isnull=True) | Q(i_language=''))
+            elif not parameters.get('i_language', None) and not parameters.get('key', None):
+                # Hide other languages (unless you're filtering by language or by specific key)
+                queryset = queryset.filter(
+                    Q(Q(i_language__isnull=True) | Q(i_language=''))
+                    | Q(i_language=(request.LANGUAGE_CODE if request else get_language()))
+                )
             return queryset
 
-        def table_fields_headers(self, fields, view=None):
-            return []
-
-        def table_fields(self, item, *args, **kwargs):
-            fields = super(StaffConfigurationCollection.ListView, self).table_fields(item, *args, **kwargs)
-            setSubField(fields, 'owner', key='value', value='Last updated by:')
-            setSubField(fields, 'owner', key='link_text', value=item.cached_owner.unicode)
-            setSubField(fields, 'value', key='type', value=item.field_type)
-            setSubField(fields, 'value', key='value', value=item.representation_value)
-            return fields
+        def buttons_per_item(self, request, context, item):
+            buttons = super(StaffConfigurationCollection.ListView, self).buttons_per_item(request, context, item)
+            if item.i_language and not request.GET.get('key', None):
+                baseButton(
+                    button_name='see_other_languages', buttons=buttons,
+                    view=self, request=request, context=context, item=item, extras={
+                        'title': 'See all languages',
+                        'icon': 'translate',
+                        'url': self.collection.get_list_url(parameters={ 'key': item.key }),
+                        'ajax_url': self.collection.get_list_url(
+                            ajax=True, modal_only=True, parameters={ 'key': item.key },
+                        ),
+                    })
+            return buttons
 
     class ItemView(MagiCollection.ItemView):
         enabled = False
@@ -3694,7 +4289,6 @@ class StaffDetailsCollection(MagiCollection):
     queryset = models.StaffDetails.objects.all().select_related('owner')
     navbar_link_list = 'staff'
     icon = 'id'
-    translated_fields = ('hobbies', 'favorite_food')
     reportable = False
     blockable = False
     form_class = forms.StaffDetailsForm
@@ -3706,9 +4300,9 @@ class StaffDetailsCollection(MagiCollection):
         hide_sidebar = True
         allow_random = False
 
-        def get_queryset(self, queryset, parameters, request):
+        def get_queryset(self, queryset=None, parameters={}, request=None):
             queryset = super(StaffDetailsCollection.ListView, self).get_queryset(queryset, parameters, request)
-            if not hasOneOfPermissions(request.user, ['translate_items', 'edit_staff_details']):
+            if request and not hasOneOfPermissions(request.user, ['translate_items', 'edit_staff_details']):
                 try:
                     sd = models.StaffDetails.objects.get(owner=request.user)
                     raise HttpRedirectException(sd.edit_url)
@@ -3744,8 +4338,8 @@ class StaffDetailsCollection(MagiCollection):
 # Activities Collection
 
 class ActivityCollection(MagiCollection):
-    title = _('Activity')
-    plural_title = _('Activities')
+    title = _('Post')
+    plural_title = _('Posts')
     plural_name = 'activities'
     queryset = models.Activity.objects.all()
     navbar_link_list = 'community'
@@ -3770,8 +4364,8 @@ class ActivityCollection(MagiCollection):
         ('Spam activity', 'This activity has been detected as spam. We do not tolerate such behavior and kindly ask you not to re-iterate your actions or your entire profile might get deleted next time.'),
     ])
 
-    def _get_queryset_for_list_and_item(self, queryset, parameters, request):
-        if request.user.is_authenticated():
+    def _get_queryset_for_list_and_item(self, queryset, request=None):
+        if request and request.user.is_authenticated():
             queryset = queryset.extra(select={
                 'liked': 'SELECT COUNT(*) FROM {activity_table_name}_likes WHERE activity_id = {activity_table_name}.id AND user_id = {user_id}'.format(
                     activity_table_name=models.Activity._meta.db_table,
@@ -3927,18 +4521,19 @@ class ActivityCollection(MagiCollection):
         show_edit_button_permissions_only = [ 'edit_activities_from_the_feed' ]
         shortcut_urls = [''] + [u'activities/{}'.format(_tab) for _tab in HOME_ACTIVITY_TABS.keys()]
 
-        def get_queryset(self, queryset, parameters, request):
-            queryset = super(ActivityCollection.ListView, self).get_queryset(queryset, parameters, request)
-            queryset = self.collection._get_queryset_for_list_and_item(queryset, parameters, request)
+        def get_queryset(self, queryset=None, parameters={}, request=None):
+            queryset = super(ActivityCollection.ListView, self).get_queryset(
+                queryset=queryset, parameters=parameters, request=request)
+            queryset = self.collection._get_queryset_for_list_and_item(queryset, request=request)
             # Exclude hidden tags
-            if request.user.is_authenticated() and request.user.preferences.hidden_tags:
+            if request and request.user.is_authenticated() and request.user.preferences.hidden_tags:
                 for tag, hidden in request.user.preferences.hidden_tags.items():
                     if hidden:
                         queryset = queryset.exclude(c_tags__contains=u'"{}"'.format(tag))
             else:
                 queryset = queryset.exclude(_cache_hidden_by_default=True)
             # Get who archived if staff
-            if request.user.is_authenticated() and request.user.is_staff:
+            if request and request.user.is_authenticated() and request.user.is_staff:
                 queryset = queryset.select_related('archived_by_staff')
             return queryset
 
@@ -4010,9 +4605,10 @@ class ActivityCollection(MagiCollection):
         def item_buttons_classes(self):
             return [cls for cls in super(ActivityCollection.ItemView, self).item_buttons_classes if cls != 'btn-secondary'] + ['btn-link']
 
-        def get_queryset(self, queryset, parameters, request):
-            queryset = super(ActivityCollection.ItemView, self).get_queryset(queryset, parameters, request)
-            return self.collection._get_queryset_for_list_and_item(queryset, parameters, request)
+        def get_queryset(self, queryset=None, parameters={}, request=None):
+            queryset = super(ActivityCollection.ItemView, self).get_queryset(
+                queryset=queryset, parameters=parameters, request=request)
+            return self.collection._get_queryset_for_list_and_item(queryset=queryset, request=request)
 
         def get_h1_title(self, *args, **kwargs):
             title_prefixes, h1 = super(ActivityCollection.ItemView, self).get_h1_title(*args, **kwargs)
@@ -4039,6 +4635,10 @@ class ActivityCollection(MagiCollection):
                 context['page_title'] = None
                 context['h1_page_title'] = None
                 context['comments_enabled'] = False
+
+            # JSON-LD
+
+            articleJsonLdFromActivity(context['item'], context=context)
 
     class AddView(MagiCollection.AddView):
         alert_duplicate = False
@@ -4092,11 +4692,14 @@ class NotificationCollection(MagiCollection):
         authentication_required = True
         allow_random = False
 
-        def get_queryset(self, queryset, parameters, request):
-            queryset = super(NotificationCollection.ListView, self).get_queryset(queryset, parameters, request)
+        def get_queryset(self, queryset=None, parameters={}, request=None):
+            queryset = super(NotificationCollection.ListView, self).get_queryset(
+                queryset=queryset, parameters=parameters, request=request)
             if 'ajax_modal_only' in parameters:
                 queryset = queryset.filter(seen=False)
-            return queryset.filter(owner=request.user)
+            if request:
+                queryset = queryset.filter(owner=request.user)
+            return queryset
 
         def top_buttons(self, request, context):
             buttons = super(NotificationCollection.ListView, self).top_buttons(request, context)
@@ -4208,13 +4811,15 @@ class BadgeCollection(MagiCollection):
         filter_form = forms.FilterBadges
         allow_random = False
 
-        def get_queryset(self, queryset, parameters, request):
-            queryset = super(BadgeCollection.ListView, self).get_queryset(queryset, parameters, request)
-            if 'of_user' in parameters and parameters['of_user']:
-                request.context_show_user = False
-            else:
-                queryset = queryset.select_related('user', 'user__preferences')
-                request.context_show_user = True
+        def get_queryset(self, queryset=None, parameters={}, request=None):
+            queryset = super(BadgeCollection.ListView, self).get_queryset(
+                queryset=queryset, parameters=parameters, request=request)
+            if request:
+                if 'of_user' in parameters and parameters['of_user']:
+                    request.context_show_user = False
+                else:
+                    queryset = queryset.select_related('user', 'user__preferences')
+                    request.context_show_user = True
             return queryset
 
         def extra_context(self, context):
@@ -4256,10 +4861,7 @@ class BadgeCollection(MagiCollection):
     class ItemView(MagiCollection.ItemView):
         template = 'badgeInfo'
         comments_enabled = False
-
-        def get_queryset(self, queryset, parameters, request):
-            queryset = super(BadgeCollection.ItemView, self).get_queryset(queryset, parameters, request)
-            return queryset.select_related('owner')
+        fields_preselected = [ 'owner' ]
 
         def get_h1_title(self, request, context, item):
             _unused_title_prefixes, h1 = super(BadgeCollection.ItemView, self).get_h1_title(request, context, item)
@@ -4470,8 +5072,9 @@ class DonateCollection(MagiCollection):
         def get_page_title(self):
             return _('Donate')
 
-        def get_queryset(self, queryset, parameters, request):
-            queryset = super(DonateCollection.ListView, self).get_queryset(queryset, parameters, request)
+        def get_queryset(self, queryset=None, parameters={}, request=None):
+            queryset = super(DonateCollection.ListView, self).get_queryset(
+                queryset=queryset, parameters=parameters, request=request)
             extra_select = {
                 u'user_is_{}'.format(status): 'CASE WHEN i_status = \'{}\' THEN 1 ELSE 0 END'.format(status)
                 for status, verbose in models.UserPreferences.STATUS_CHOICES
@@ -4507,6 +5110,8 @@ class DonateCollection(MagiCollection):
             context['donate_image'] = DONATE_IMAGE
             if request.user.is_authenticated() and request.user.hasPermission('manage_donation_months'):
                 context['show_donator_details'] = True
+            context['consider_donating_sentence'] = _('If you like {site_name}, please consider donating').format(
+                site_name=getSiteName())
 
     class ItemView(MagiCollection.ItemView):
         enabled = False
@@ -4540,22 +5145,11 @@ class PrizeCollection(MagiCollection):
     enabled = False
     queryset = models.Prize.objects.all()
     form_class = forms.PrizeForm
+    fields_class = magifields.PrizeFields
     navbar_link_list = 'staff'
     filter_cuteform = PRIZE_CUTEFORM
     reportable = False
     icon = 'present'
-
-    def to_fields(self, view, item, *args, **kwargs):
-        fields = super(PrizeCollection, self).to_fields(view, item, *args, **kwargs)
-        if item.i_character is not None:
-            setSubField(fields, 'character', key='verbose_name', value=getCharacterLabel())
-            setSubField(fields, 'character', key='type', value='text_with_link')
-            setSubField(fields, 'character', key='value', value=getCharacterNameFromPk(item.i_character))
-            setSubField(fields, 'character', key='link', value=item.character_url)
-            setSubField(fields, 'character', key='link_text', value=_(
-                'Open {thing}').format(thing=getCharacterLabel().lower()))
-            setSubField(fields, 'character', key='image', value=item.character_image)
-        return fields
 
     class ListView(MagiCollection.ListView):
         staff_required = True
@@ -4631,10 +5225,12 @@ class PrivateMessageCollection(MagiCollection):
             ),
         }), pk=request.GET['to_user'])
 
-    def get_queryset(self, view, queryset, parameters, request):
-        queryset = super(PrivateMessageCollection, self).get_queryset(view, queryset, parameters, request)
-        # Only return messages sent from or to me
-        queryset = queryset.filter(Q(to_user=request.user) | Q(owner=request.user))
+    def get_queryset(self, view=None, queryset=None, parameters={}, request=None):
+        queryset = super(PrivateMessageCollection, self).get_queryset(
+            view=view, queryset=queryset, parameters=parameters, request=request)
+        if request:
+            # Only return messages sent from or to me
+            queryset = queryset.filter(Q(to_user=request.user) | Q(owner=request.user))
         return queryset
 
     class ListView(MagiCollection.ListView):
@@ -4652,8 +5248,11 @@ class PrivateMessageCollection(MagiCollection):
         def get_page_title(self):
             return _('Inbox')
 
-        def get_queryset(self, queryset, parameters, request):
-            queryset = super(PrivateMessageCollection.ListView, self).get_queryset(queryset, parameters, request)
+        def get_queryset(self, queryset=None, parameters={}, request=None):
+            queryset = super(PrivateMessageCollection.ListView, self).get_queryset(
+                queryset=queryset, parameters=parameters, request=request)
+            if not request:
+                return queryset
             # Thread view (including search)
             if request.GET.get('to_user', None):
                 # Get user thread with

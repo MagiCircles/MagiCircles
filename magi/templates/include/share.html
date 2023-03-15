@@ -1,13 +1,16 @@
-{# variables: share_url, share_sentence, share_btn_class #}
-<a href="{{ share_url }}" class="btn share-button btn-{{ share_btn_class|default_if_none:"link" }}" target="_blank" data-copy-to-clipboard="{{ share_url }}">
-  <img src="{{ static_url }}img/links/share-copy.png?{{ static_files_version }}" alt="Copy" />
+{# variables: share_url, share_sentence, share_btn_class, share_btn_group #}
+{% load i18n %}
+{% if share_btn_group %}<div class="btn-group">{% endif %}
+<a href="{{ share_url }}" class="btn share-button btn-{{ share_btn_class|default_if_none:"link" }}" target="_blank" data-copy-to-clipboard="{{ share_url }}" data-toggle="tooltip" title="{% trans 'Copy' %}" data-trigger="hover" data-placement="top" data-container="body">
+  <img src="{{ static_url }}img/links/share-copy.png?{{ static_files_version }}" alt="{% trans 'Copy' %}" />
 </a>
-<a href="http://twitter.com/share?text={{ share_sentence|urlencode }}&url={{ share_url|urlencode }}&hashtags={% for hashtag in hashtags %}{{ hashtag }},{% endfor %}&via={{ twitter_handle }}" class="btn share-button btn-{{ share_btn_class|default_if_none:"main" }}" target="_blank">
-  <img src="{{ static_url }}img/links/twitter.png?{{ static_files_version }}" alt="Twitter" />
+<a href="http://twitter.com/share?text={{ share_sentence|urlencode }}&url={{ share_url|urlencode }}&hashtags={% for hashtag in hashtags %}{{ hashtag }},{% endfor %}&via={{ twitter_handle }}" class="btn share-button btn-{{ share_btn_class|default_if_none:"main" }}" target="_blank" data-toggle="tooltip" title="{% trans 'Twitter' %}" data-trigger="hover" data-placement="top" data-container="body">
+  <img src="{{ static_url }}img/links/twitter.png?{{ static_files_version }}" alt="{% trans 'Twitter' %}" />
 </a>
-<a href="http://www.facebook.com/sharer/sharer.php?u={{ share_url|urlencode }}" class="btn share-button btn-{{ share_btn_class|default_if_none:"main" }}" target="_blank">
-  <img src="{{ static_url }}img/links/facebook.png?{{ static_files_version }}" alt="Facebook" />
+<a href="http://www.facebook.com/sharer/sharer.php?u={{ share_url|urlencode }}" class="btn share-button btn-{{ share_btn_class|default_if_none:"main" }}" target="_blank" data-toggle="tooltip" title="{% trans 'Facebook' %}" data-trigger="hover" data-placement="top" data-container="body">
+  <img src="{{ static_url }}img/links/facebook.png?{{ static_files_version }}" alt="{% trans 'Facebook' %}" />
 </a>
-<a href="http://www.reddit.com/submit?url={{ share_url|urlencode }}&title={{ share_sentence|urlencode }}" class="btn share-button btn-{{ share_btn_class|default_if_none:"main" }}" target="_blank">
-  <img src="{{ static_url }}img/links/reddit.png?{{ static_files_version }}" alt="Reddit" />
+<a href="http://www.reddit.com/submit?url={{ share_url|urlencode }}&title={{ share_sentence|urlencode }}" class="btn share-button btn-{{ share_btn_class|default_if_none:"main" }}" target="_blank" data-toggle="tooltip" title="{% trans 'Reddit' %}" data-trigger="hover" data-placement="top" data-container="body">
+  <img src="{{ static_url }}img/links/reddit.png?{{ static_files_version }}" alt="{% trans 'Reddit' %}" />
 </a>
+{% if share_btn_group %}</div>{% endif %}

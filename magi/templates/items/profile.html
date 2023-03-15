@@ -15,6 +15,16 @@
             {% trans 'Staff' %}
           </span>
           {% endif %}
+          {% if profile_user.preferences.groups %}
+          {% for group_name, group in profile_user.preferences.groups_and_details.items %}
+          <a href="/help/Roles/" data-ajax-url="/ajax/help/Roles/" data-ajax-title="{% trans 'Roles' %}">
+            <img src="{{ static_url }}img/groups/{{ group_name }}.png?{{ static_files_version }}"
+                 alt="{{ group.translation }}" width="20" data-toggle="tooltip"
+                 title="{{ group.translation }}" data-trigger="hover"
+                 data-placement="top" data-container="body" />
+          </a>
+          {% endfor %}
+          {% endif %}
         </div>
         <div class="col-sm-10">
           <div class="info">

@@ -8,6 +8,7 @@
     <meta charset="UTF-8">
     <title>{% block title %}{% if page_title %}{{ page_title }}{% else %}{{ game_name }}{% endif %}{% endblock %} | {{ t_site_name }}{% if page_title %} - {{ game_name }}{% endif %}</title>
 
+    {# Favicon #}
     <link rel="shortcut icon" type="image/x-icon" href="{{ static_url }}favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="{{ static_url }}apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ static_url }}favicon-32x32.png">
@@ -16,6 +17,7 @@
     <meta name="msapplication-TileColor" content="{{ site_color }}">
     <meta name="theme-color" content="{{ site_color }}">
 
+    {# CSS #}
     <link rel="stylesheet" href="{{ static_url }}bower/bootstrap/dist/css/bootstrap.min.css">
     {% if debug %}
     <link rel="stylesheet/less" type="text/css" href="{{ static_url }}less/{% if stylesheet %}{{ stylesheet }}_theme{% else %}local{% endif %}.less?{{ static_files_version }}" />
@@ -25,13 +27,23 @@
     {% endif %}
     {% block extracss %}{% endblock %}{% if extracss %}<style>{{ extracss|safe }}</style>{% endif %}{% if extracss_template %}<style>{% include extracss_template %}</style>{% endif %}
 
-    <meta property="og:image" content="{% block shareimage %}{% if share_image %}{{ share_image }}{% else %}{{ t_full_site_image }}{% endif %}{% endblock %}"/>
+    {# Global details #}
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <meta name="description" content="{% if page_description %}{{ page_description }} -- {% endif %}{{ site_description }}">
-    <meta name="keywords" content="{{ game_name }}, {{ t_site_name }}, Android game, iPhone game, rhythm game, cards, card, tracker, share collection{% for hashtag in hashtags %},{{ hashtag }}{% endfor %}">
-    <meta name="twitter:card" content="{{ t_site_name }} - {% if page_description %}{{ page_description }} -- {% endif %}{{ site_description }}">
+    <meta name="keywords" content="{{ game_name }}, {{ t_site_name }}, {% if h1_page_title %}{{ h1_page_title }}, {% elif page_title %}{{ page_title }}, {% endif %}{% for hashtag in hashtags %}{{ hashtag }}, {% endfor %} community, wiki, social media, Android game, iPhone game, rhythm game, cards, card, tracker, share collection">
+    <meta name="author" content="{% if json_ld and json_ld.0.author %}{{ json_ld.0.author.name }}{% else %}@db0company{% endif %}">
+    {# OpenGraph #}
+    <meta property="og:site_name" content="{{ t_site_name }} - {{ game_name }}">
+    <meta property="og:title" content="{% if page_title %}{{ page_title }}{% else %}{{ game_name }}{% endif %} | {{ t_site_name }}{% if page_title %} - {{ game_name }}{% endif %}">
+    {% if current_url or share_url %}<meta property="og:url" content="{% if share_url %}{{ share_url }}{% else %}{{ current_url }}{% endif %}">{% endif %}
+    <meta property="og:description" content="{% if page_description %}{{ page_description }} -- {% endif %}{{ site_description }}">
+    <meta property="og:image" content="{% block shareimage %}{% if share_image %}{{ share_image }}{% else %}{{ t_full_site_image }}{% endif %}{% endblock %}"/>
+    <meta property="og:image:alt" content="{% if share_image and h1_page_title %}{{ h1_page_title }}{% elif share_image and page_title %}{{ page_title }}{% else %}{{ t_site_name }}{% endif %}">
+
+    {# Twitter #}
+    <meta name="twitter:site" content="@{{ twitter_handle }}">
     <meta name="twitter:image" content="{% block shareimagetwitter %}{% if share_image %}{{ share_image }}{% else %}{{ t_full_site_image }}{% endif %}{% endblock %}">
-    <meta name="twitter:creator" content="@db0company">
+    <meta name="twitter:creator" content="{% if json_ld and json_ld.0.author and json_ld.0.author.additionalName %}{{ json_ld.0.author.additionalName }}{% else %}@db0company{% endif %}">
     <!--[if lt IE 9]>
         <script src="http://html5shim.googlecode.com/svn/trunk/html5.js">
         </script>
@@ -41,6 +53,10 @@
     {% recaptcha_init %}
     {% recaptcha_ready action_name=current %}
     {% endif %}
+
+    {% if json_ld %}{% for ld in json_ld %}<script type="application/ld+json">
+    {{ ld|jsv }}
+    </script>{% endfor %}{% endif %}
   </head>
   <body class="current-{% if current %}{{ current }}{% else %}error{% endif %}{% if shortcut_url != None %} shortcut-{{ shortcut_url }}{% endif %}{% for page_definer in page_definers %} {{ page_definer }}{% endfor %}">
     {% if not hidenavbar %}
@@ -125,7 +141,7 @@
                 {% if link.is_list and link_name == 'more' %}
                 {% if other_sites %}
                 <li class="divider"></li>
-                <li class="dropdown-header">{% trans 'Check out our other websites' %}</li>
+                <li class="dropdown-header">{% trans 'Check out our other apps' %}</li>
                 <li class="dropdown-header">
                   {% for site in other_sites %}
                   <a href="{{ site.url }}" target="_blank" class="other-site">

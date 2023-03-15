@@ -36,6 +36,11 @@
 
       <div class="row">
         {% for side, art, url in tab.arts %}
+        {% ifchanged art.title %}{% if art.title %}
+        {% if forloop.counter0 != 0 %}</div><div style="height: 5px"></div>{% endif %}
+      <h2><b>{{ art.title }}</b></h2>
+      {% if forloop.counter0 != 0 %}<div class="row">{% endif %}
+        {% endif %}{% endifchanged %}
         {% if forloop.counter0 != 0 and forloop.counter0|mod:3 %}
       </div><div style="height: 5px"></div><div class="row">
         {% endif %}
@@ -47,9 +52,9 @@
               background-position-y: {% if art.position.y %}{{ art.position.y }}{% else %}{{ art_position.y }}{% endif %};
               background-position-x: {% if art.position.x %}{{ art.position.x }}{% else %}{{ art_position.x }}{% endif %};
               {% if art.url %}
-              background-image: url('{% static_image_url with path=art.url %}');
+              background-image: url('{% static_image_url path=art.url %}');
               {% elif backgrounds %}
-              background-image: url('{% static_image_url with path=backgrounds|random %}');
+              background-image: url('{% static_image_url path=backgrounds|random %}');
               {% elif background %}
               background: url('{{ background }}');
               {% endif %}
@@ -58,7 +63,7 @@
 
             {% if art and art.foreground_url %}
             <div class="home-foreground">
-              <img src="{% if '//' in art.foreground_url %}{{ art.foreground_url }}{% else %}{{ static_url }}img/{{ art.foreground_url }}?{{ static_fles_version }}{% endif %}">
+              <img src="{% if '//' in art.foreground_url %}{{ art.foreground_url }}{% else %}{{ static_url }}img/{{ art.foreground_url }}?{{ static_files_version }}{% endif %}">
             </div>
             {% endif %}{# foreground_url #}
             <div class="home">

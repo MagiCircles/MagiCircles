@@ -25,10 +25,14 @@ from magi.utils import (
     addParametersToURL,
     modelGetField,
     setJavascriptFormContext,
-)
-from magi.raw import (
-    GET_PARAMETERS_NOT_IN_FORM,
-    GET_PARAMETERS_IN_FORM_HANDLED_OUTSIDE,
+    getDescriptionFromItem,
+    isPreset,
+    MagiQueryDict,
+    unifyMergedFields,
+    reverseOrdering,
+    plainOrdering,
+    getOwnerFromItem,
+    markSafeFormat,
 )
 from magi.forms import ConfirmDelete, filter_ids
 
@@ -40,11 +44,6 @@ def _redirect_on_high_traffic(view, request, ajax=False):
         and view.disable_on_high_traffic
         and not request.user.is_authenticated()):
         raise HttpRedirectException(u'{}/hightraffic/'.format('/ajax' if ajax else ''))
-
-def _get_filters(request_get, extra_filters={}):
-    filters = request_get.copy()
-    filters.update(extra_filters)
-    return filters
 
 def _get_share_image(context, collection_view, item=None):
     return staticImageURL(collection_view.share_image(context, item), full=True)
@@ -73,6 +72,8 @@ def _add_h1_and_prefixes_to_context(view, context, title_prefixes, h1, item=None
     context['show_title'] = view.show_title
     if context.get('alt_view', None) and 'show_title' in context['alt_view']:
         context['show_title'] = context['alt_view']['show_title']
+    if context.get('preset', None):
+        context['show_title'] = True
     context['show_small_title'] = view.show_small_title
     if context.get('alt_view', None) and 'show_small_title' in context['alt_view']:
         context['show_small_title'] = context['alt_view']['show_small_title']
@@ -94,8 +95,11 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
     context = collection.item_view.get_global_context(request)
     collection.item_view.check_permissions(request, context)
     _redirect_on_high_traffic(collection.item_view, request, ajax=ajax)
+    request._item_view_pk = pk
     request.show_collect_button = collection.item_view.show_collect_button
-    queryset = collection.item_view.get_queryset(collection.queryset, _get_filters(request.GET, extra_filters), request)
+    filters = MagiQueryDict(request.GET)
+    filters.update(extra_filters)
+    queryset = collection.item_view.get_queryset(collection.queryset, filters, request)
     if not pk and reverse:
         options = collection.item_view.reverse_url(reverse)
     else:
@@ -129,20 +133,7 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
     context['name'] = name
 
     # Page description
-    description = unicode(context['item'])
-    for field_name, is_markdown in [
-            ('t_m_description', True),
-            ('t_description', False),
-            ('m_description', True),
-            ('description', False),
-    ]:
-        description = getattr(context['item'], field_name, None)
-        if description:
-            if isinstance(description, tuple):
-                description = description[1]
-            description = (simplifyMarkdown if is_markdown else summarize)(description, max_length=158)
-            break
-    context['page_description'] = description
+    context['page_description'] = getDescriptionFromItem(context['item'])
 
     context['js_files'] = collection.item_view.js_files
     context['reportable'] = collection.reportable
@@ -161,9 +152,16 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
     context['hide_icons'] = collection.item_view.hide_icons
     context['staff_only_view'] = collection.item_view.staff_required
     context['collection'] = collection
+    context['uses_deprecated_to_fields'] = collection.item_view.uses_deprecated_to_fields()
+
     if context['item_template'] == 'default':
         context['top_illustration'] = collection.item_view.top_illustration
-        context['item_fields'] = collection.item_view.to_fields(context['item'], request=request)
+
+        if context['uses_deprecated_to_fields']:
+            # Call deprecated to_fields if to_fields has been overrided
+            context['item_fields'] = collection.item_view.to_fields(context['item'], request=request)
+        else:
+            context['item_fields'] = collection.item_view.to_magifields(context['item'], context)
 
     # Ajax items reloader
     if not ajax and collection.item_view.auto_reloader and collection.item_view.ajax:
@@ -180,17 +178,29 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
 
     context['include_below_item'] = False
     context['show_item_buttons'] = collection.item_view.show_item_buttons
-    context['item'].show_item_buttons_justified = collection.item_view.show_item_buttons_justified
-    context['item'].show_item_buttons_as_icons = collection.item_view.show_item_buttons_as_icons
-    context['item'].show_item_buttons_in_one_line = collection.item_view.show_item_buttons_in_one_line
-    context['item'].buttons_to_show = collection.item_view.buttons_per_item(request, context, context['item'])
-    if 'only_show_buttons' in request.GET:
-        only_show_buttons = request.GET['only_show_buttons'].split(',')
-        for button_name, button in context['item'].buttons_to_show.items():
-            if button_name not in only_show_buttons:
-                button['show'] = False
-    if collection.item_view.show_item_buttons and [True for b in context['item'].buttons_to_show.values() if b['show'] and b['has_permissions']]:
-        context['include_below_item'] = True
+    # Buttons are displayed by magifields (deprecated or magifields) or when buttons are displayed
+    # in one line. They're also loaded if a user uses a custom template, so they can be displayed as they want
+    # within their template.
+    if (context['uses_deprecated_to_fields']
+        or collection.item_view.show_item_buttons_in_one_line
+        or context['item_template'] != 'default'):
+        context['item'].show_item_buttons_as_icons = collection.item_view.show_item_buttons_as_icons
+        context['item'].show_item_buttons_in_one_line = collection.item_view.show_item_buttons_in_one_line
+        context['item'].show_item_buttons_justified = collection.item_view.show_item_buttons_justified
+        context['item'].buttons_to_show = collection.item_view.buttons_per_item(request, context, context['item'])
+        if ((collection.item_view.show_item_buttons_in_one_line or not context['uses_deprecated_to_fields'])
+            and collection.item_view.show_item_buttons
+            and [True for b in context['item'].buttons_to_show.values() if b['show'] and b['has_permissions']]):
+            context['include_below_item'] = True # only used by 'default' template (deprecated or magifields)
+
+    # Show owner
+    context['annotations_below_template'] = []
+    if not ajax and collection.item_view.show_owner:
+        owner = getOwnerFromItem(context['item'])
+        if owner:
+            context['annotations_below_template'].append(
+                markSafeFormat(_('Added by {username}'), username=markSafeFormat(
+                    u'<a href="{}" target="_blank">{}</a>', owner.http_item_url, owner.username)))
 
     collection.item_view.extra_context(context)
     if ajax:
@@ -203,9 +213,19 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
 # Random view
 
 def random_view(request, name, collection, ajax=False, extra_filters={}, shortcut_url=None, **kwargs):
-    collection.list_view.check_permissions(request, {})
-    filters = _get_filters(request.GET, extra_filters)
+    collection.list_view.check_random_permissions(request, {})
+    filters = MagiQueryDict(request.GET)
+    request.GET = filters
+    filters.update(extra_filters)
+
+    unifyMergedFields(collection, filters)
+    collection.list_view.filter_form.set_filters_defaults_when_missing(collection, filters)
+
     queryset = collection.list_view.get_queryset(collection.queryset, filters, request)
+
+    alt_view = collection.list_view.alt_views.get(filters.get('view', None), None)
+    if alt_view and alt_view.get('filter_queryset', None):
+        queryset = alt_view['filter_queryset'](queryset)
 
     filter_form = collection.list_view.filter_form(
         filters, request=request, ajax=ajax, collection=collection, preset=None, allow_next=False)
@@ -216,7 +236,7 @@ def random_view(request, name, collection, ajax=False, extra_filters={}, shortcu
         random_item = queryset.order_by('?')[0]
     except IndexError:
         raise HttpRedirectException(collection.get_list_url(
-            ajax=ajax, modal_only=ajax,
+            ajax=ajax, modal_only=ajax, parameters=filters,
         ))
     raise HttpRedirectException(random_item.ajax_item_url if ajax else random_item.item_url)
 
@@ -231,6 +251,9 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
 
     context = collection.list_view.get_global_context(request)
 
+    ######################
+    # Permissions
+
     if (shortcut_url == ''
         and context.get('launch_date', None)
         and (not request.user.is_authenticated()
@@ -240,82 +263,123 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     collection.list_view.check_permissions(request, context)
     _redirect_on_high_traffic(collection.list_view, request, ajax=ajax)
 
-    context['plural_name'] = collection.plural_name
-    page = 0
+    ######################
+    # Filters
 
+    filters = MagiQueryDict(request.GET)
+    request.GET = filters
+    filters.update(extra_filters)
+
+    preset = None
+    filled_filter_form = False
+    filled_filter_form_before_preset = False
+    filled_filter_form_excluding_view = False
+
+    if collection.list_view.filter_form:
+
+        # Find preset path, if any
+        url = request.path[5:] if request.path.startswith('/ajax') else request.path
+        template = u'/{}/{}/'.format(collection.plural_name, '{preset}')
+        matches = matchesTemplate(template, url)
+        preset_path = matches.get('preset', None) if matches else None
+
+        # Confirm that the preset matches an existing preset
+        if preset_path:
+            if getattr(collection.list_view.filter_form, 'presets'):
+                presets = collection.list_view.filter_form.get_presets()
+                if preset_path in presets:
+                    preset = preset_path
+                    context['preset'] = preset
+
+        # When there's a preset
+        if preset:
+
+            # 1. Is filled (before presets)?
+            filled_filter_form_before_preset = filters.is_form_filled(collection, include_view=False)
+            # 2. Add preset filters to filters
+            collection.list_view.filter_form.update_filters_with_preset(preset, filters)
+            # 3. Unify merged fields with their original fields
+            unifyMergedFields(collection, filters)
+            # 4. Is filled?
+            filled_filter_form = filters.is_form_filled(collection)
+            filled_filter_form_excluding_view = filters.is_form_filled(collection, include_view=False)
+
+        # When there's no preset
+        else:
+
+            # 1. Unify merged fields with their original fields
+            unifyMergedFields(collection, filters)
+            # 2. Is filled?
+            filled_filter_form = filters.is_form_filled(collection)
+            # 3. Detect if filters match a preset, and redirect to preset if so
+            if not ajax and filled_filter_form:
+                preset = isPreset(collection, filters)
+                if preset:
+                    raise HttpRedirectException(collection.get_list_url(
+                        preset=preset))
+            filled_filter_form_excluding_view = filters.is_form_filled(collection, include_view=False)
+            filled_filter_form_before_preset = filled_filter_form_excluding_view
+
+        # Set default filters
+
+        if filled_filter_form:
+            collection.list_view.filter_form.set_filters_defaults_when_missing(collection, filters)
+
+    ######################
     # Alt views
+
     context['view'] = None
     context['alt_view'] = None
-    alt_views = dict(collection.list_view.alt_views)
-    page_size = collection.list_view.page_size
+    alt_views = collection.list_view.alt_views
+    view = filters.get('view', None)
+    if view in alt_views:
+        context['view'] = view
+        context['alt_view'] = alt_views[view]
+
     request.show_collect_button = collection.list_view.show_collect_button
-    if 'view' in request.GET and request.GET['view'] in alt_views:
-        context['view'] = request.GET['view']
-        context['alt_view'] = alt_views[context['view']]
-    if context['alt_view'] and 'page_size' in context['alt_view']:
-        page_size = context['alt_view']['page_size']
     if context['alt_view'] and 'show_collect_button' in context['alt_view']:
         request.show_collect_button = context['alt_view']['show_collect_button']
 
-    if 'page_size' in request.GET:
-        try: page_size = int(request.GET['page_size'])
-        except ValueError: pass
-        if page_size > 500: page_size = 500
-    filters = _get_filters(request.GET, extra_filters)
+    ######################
+    # Display style (table/row)
+
+    context['display_style'] = collection.list_view.display_style
+    if context['alt_view'] and 'display_style' in context['alt_view']:
+        context['display_style'] = context['alt_view']['display_style']
+    context['display_style_table_classes'] = collection.list_view.display_style_table_classes
+    context['display_style_table_fields'] = collection.list_view.display_style_table_fields
+    if context['alt_view'] and 'display_style_table_fields' in context['alt_view']:
+        context['display_style_table_fields'] = context['alt_view']['display_style_table_fields']
+
+    ######################
+    # Queryset
 
     queryset = collection.list_view.get_queryset(collection.queryset, filters, request)
 
-    show_relevant_fields_on_ordering = collection.list_view.show_relevant_fields_on_ordering
-    if context['alt_view'] and 'show_relevant_fields_on_ordering' in context['alt_view']:
-        show_relevant_fields_on_ordering = context['alt_view']['show_relevant_fields_on_ordering']
-    if 'hide_relevant_fields_on_ordering' in request.GET:
-        show_relevant_fields_on_ordering = False
+    if context['alt_view'] and context['alt_view'].get('filter_queryset', None):
+        queryset = context['alt_view']['filter_queryset'](queryset)
 
-    ordering = None
-    if (request.GET.get('ordering', None)
-        and ((request.user.is_authenticated()
-              and request.user.hasPermission('order_by_any_field'))
-             or (collection.list_view.filter_form
-                 and request.GET['ordering'] in dict(
-                     getattr(collection.list_view.filter_form, 'ordering_fields', []))))):
-        reverse = ('reverse_order' in request.GET and request.GET['reverse_order']) or not request.GET or len(request.GET) == 1
-        prefix = '-' if reverse else ''
-        ordering = [prefix + ordering for ordering in request.GET['ordering'].split(',')]
-        ordering = [order[2:] if order.startswith('--') else order for order in ordering]
+    ######################
+    # Form
 
-        if (show_relevant_fields_on_ordering
-            and request.GET['ordering'] != ','.join(collection.list_view.plain_default_ordering_list)):
-            context['show_relevant_fields_on_ordering'] = True
-            context['plain_ordering'] = [o[1:] if o.startswith('-') else o for o in ordering]
-
-    filled_filter_form = False
-    preset = None
     if collection.list_view.filter_form:
-        # Set default values from presets
-        if getattr(collection.list_view.filter_form, 'presets'):
-            url = request.path[5:] if request.path.startswith('/ajax') else request.path
-            template = u'/{}/{}/'.format(collection.plural_name, '{preset}')
-            matches = matchesTemplate(template, url)
-            presets = collection.list_view.filter_form.get_presets()
-            if matches and matches['preset'] in presets:
-                preset = matches['preset']
-                context['preset'] = preset
-                filters.update(collection.list_view.filter_form.get_presets_fields(preset))
 
-        if len([
-                k for k in filters.keys()
-                if k not in GET_PARAMETERS_NOT_IN_FORM + GET_PARAMETERS_IN_FORM_HANDLED_OUTSIDE
-        ]) > 0:
-            context['filter_form'] = collection.list_view.filter_form(filters, request=request, ajax=ajax, collection=collection, preset=preset, allow_next=False)
-            filled_filter_form = len(request.GET) > 0
+        # Initialize form
+        if filled_filter_form:
+            context['filter_form'] = collection.list_view.filter_form(
+                filters, request=request, ajax=ajax, collection=collection, preset=preset, allow_next=False)
         else:
-            context['filter_form'] = collection.list_view.filter_form(request=request, ajax=ajax, collection=collection, preset=preset, allow_next=False)
+            context['filter_form'] = collection.list_view.filter_form(
+                request=request, ajax=ajax, collection=collection, preset=preset, allow_next=False)
+
+        # Apply filters
         if hasattr(context['filter_form'], 'filter_queryset'):
             queryset = context['filter_form'].filter_queryset(queryset, filters, request)
         else:
-            queryset = filter_ids(queryset, request)
+            queryset = filter_ids(queryset, filters.get('ids', None))
+
     else:
-        queryset = filter_ids(queryset, request)
+        queryset = filter_ids(queryset, filters.get('ids', None))
 
     if preset and 'filter_form' in context:
         try:
@@ -323,47 +387,180 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
         except AttributeError:
             pass
 
-    if not ordering:
-        if ('filter_form' in context
-            and 'ordering' in context['filter_form'].fields
-            and context['filter_form'].fields['ordering'].initial):
-            reverse = True
-            if 'reverse_order' in context['filter_form'].fields:
-                reverse = context['filter_form'].fields['reverse_order'].initial
-            ordering = [
-                u'{}{}'.format(
-                    '-' if reverse else '',
-                    ordering_field,
-                ) for ordering_field in context['filter_form'].fields['ordering'].initial.split(',')
-            ]
+    ######################
+    # Ordering
+
+    ordering_fields = []
+    is_reverse = True
+    filtered_relevant_fields_to_show = None
+
+    # Get default ordering fields + is_reverse
+    if ('filter_form' in context
+        and 'ordering' in context['filter_form'].fields
+        and context['filter_form'].fields['ordering'].initial):
+        default_ordering_fields = context['filter_form'].fields['ordering'].initial.split(',')
+        if 'reverse_order' in context['filter_form'].fields:
+            default_is_reverse = bool(context['filter_form'].fields['reverse_order'].initial)
         else:
-            ordering = collection.list_view.default_ordering.split(',')
+            default_is_reverse = True
+    else:
+        default_ordering_fields = collection.list_view.default_ordering.split(',')
+        default_is_reverse = False # dashes are assumed to already be in ordering fields
+
+    # Specified in filters (with or without form)
+    # + Check if it's allowed to order by that field
+    if (filters.get('ordering', None)
+        and ((collection.list_view.filter_form
+              and filters['ordering'] in dict(
+                  getattr(collection.list_view.filter_form, 'ordering_fields', [])))
+             or (request.user.is_authenticated()
+                 and request.user.hasPermission('order_by_any_field')))):
+        ordering_fields = filters['ordering'].split(',')
+        is_reverse = bool(filters.get('reverse_order', True)) # defaults have been added to filters earlier
+        filtered_relevant_fields_to_show = getattr(
+            collection.list_view.filter_form, 'ordering_show_relevant_fields', {}).get(filters['ordering'], None)
+
+    # Default ordering
+    else:
+        ordering_fields = default_ordering_fields
+        is_reverse = default_is_reverse
+
+    # Check if it's the default ordering
+    is_default_ordering = (
+        (ordering_fields == default_ordering_fields and is_reverse == default_is_reverse)
+        or (is_reverse != default_is_reverse and reverseOrdering(ordering_fields) == default_ordering_fields)
+    )
+
+    # Apply is_reverse
+    if is_reverse:
+        ordering = [
+            field_name[1:] if field_name.startswith('-') else u'-' + field_name
+            for field_name in ordering_fields
+        ]
+    else:
+        ordering = ordering_fields
+
+    # Apply order_by
+    queryset = queryset.order_by(*ordering)
+
+    context['ordering'] = ordering
+
+    # Show relevant fields on ordering
+    if filtered_relevant_fields_to_show is not None:
+        ordering_fields_to_show = filtered_relevant_fields_to_show
+    else:
+        ordering_fields_to_show = plainOrdering(ordering)
+
+    show_relevant_fields_on_ordering = collection.list_view.show_relevant_fields_on_ordering
+    if context['alt_view'] and 'show_relevant_fields_on_ordering' in context['alt_view']:
+        show_relevant_fields_on_ordering = context['alt_view']['show_relevant_fields_on_ordering']
+    if 'hide_relevant_fields_on_ordering' in filters:
+        show_relevant_fields_on_ordering = False
+    if (show_relevant_fields_on_ordering and (not filled_filter_form_excluding_view or is_default_ordering)):
+        show_relevant_fields_on_ordering = False
+    # Hide fields already in the table
+    if context['display_style'] == 'table':
+        ordering_fields_to_show = [
+            field_name for field_name in ordering_fields_to_show
+            if field_name not in context['display_style_table_fields']
+        ]
+
+    if not ordering_fields_to_show:
+        show_relevant_fields_on_ordering = False
+
+    context['show_relevant_fields_on_ordering'] = show_relevant_fields_on_ordering
+    context['uses_deprecated_to_fields'] = collection.list_view.uses_deprecated_to_fields()
+
+    ######################
+    # Finalize queryset
 
     # Hide items without value when order is not reversed (lower values first)
     # because it would otherwise show them first which can be confusing
-    if len(ordering) == 1 and filled_filter_form:
+    if len(ordering) == 1 and filled_filter_form_excluding_view:
         field_name = ordering[0][1:] if ordering[0].startswith('-') else ordering[0]
         field = modelGetField(collection.queryset.model, field_name)
         if (field and field.null
             and not ordering[0].startswith('-')):
             queryset = queryset.exclude(**{ u'{}__isnull'.format(field_name): True })
 
-    queryset = queryset.order_by(*ordering)
-
+    # Distinct
     if collection.list_view.distinct:
         queryset = queryset.distinct()
-    context['total_results'] = queryset.count()
-    context['total_results_sentence'] = _('1 {object} matches your search:').format(object=collection.title.lower()) if context['total_results'] == 1 else _('{total} {objects} match your search:').format(total=context['total_results'], objects=collection.plural_title.lower())
 
-    if 'page' in request.GET and request.GET['page']:
+    ######################
+    # Total
+
+    context['total_results'] = queryset.count()
+
+    if context['total_results'] == 1:
+        context['total_results_sentence'] = _('1 {object} matches your search:').format(
+            object=collection.title.lower())
+    else:
+        context['total_results_sentence'] = _('{total} {objects} match your search:').format(
+            total=context['total_results'], objects=collection.plural_title.lower(),
+        )
+
+    ######################
+    # Pagination
+
+    # Per line
+    context['per_line'] = int(filters['max_per_line']) if 'max_per_line' in filters and int(filters['max_per_line']) < collection.list_view.per_line else collection.list_view.per_line
+    if context['alt_view'] and 'per_line' in context['alt_view']:
+        context['per_line'] = context['alt_view']['per_line']
+    context['col_size'] = getColSize(context['per_line'])
+
+    # Page size
+    page_size = collection.list_view.page_size
+    if context['alt_view'] and 'page_size' in context['alt_view']:
+        page_size = context['alt_view']['page_size']
+    # Make sure the page_size is aligned with per_line, unless headers are shown
+    if filled_filter_form_excluding_view or not collection.list_view.show_section_header_on_change:
+        page_size += (page_size % context['per_line'])
+    # Page size specified in filters
+    if 'page_size' in filters:
+        try: page_size = int(filters.get('page_size'))
+        except ValueError: pass
+        if page_size > 500: page_size = 500
+    context['page_size'] = page_size
+
+    page = 0
+
+    if filters.get('page', None):
         try:
-            page = int(request.GET['page']) - 1
+            page = int(filters['page']) - 1
         except ValueError:
             page = 0
         if page < 0:
             page = 0
+
     unpaginated_queryset = queryset
     queryset = queryset[(page * page_size):((page * page_size) + page_size)]
+
+    context['page'] = page + 1
+    context['total_pages'] = int(math.ceil(context['total_results'] / page_size))
+    context['is_last_page'] = context['page'] == context['total_pages']
+
+    page_buttons = [(0, 'active' if page == 0 else None)]
+    if page > 2:
+        page_buttons.append((-1, 'disabled'))
+    if (page - 1) > 0:
+        page_buttons.append((page - 1, None))
+    page_buttons.append((page, 'active'))
+    if (page + 1) < (context['total_pages'] - 1):
+        page_buttons.append((page + 1, None))
+    if page < (context['total_pages'] - 3):
+        page_buttons.append((-2, 'disabled'))
+    page_buttons.append((context['total_pages'] - 1, 'active' if page == (context['total_pages'] - 1) else None))
+    context['displayed_page_buttons'] = listUnique(page_buttons)
+    if request.path and request.path != '/':
+        context['next_page_url'] = u'/ajax{}'.format(request.path)
+    else:
+        context['next_page_url'] = u'/ajax/{}/'.format(collection.plural_name)
+
+    ######################
+    # Set settings in context
+
+    context['plural_name'] = collection.plural_name
 
     if 'filter_form' in context and not ajax:
         setJavascriptFormContext(
@@ -374,20 +571,22 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
             ajax=ajax,
         )
 
-    # Will display a link to see the other results instead of the pagination button
+    # ajax_modal_only will display a link to see the other results instead of the pagination button
     context['ajax_modal_only'] = False
-    if 'ajax_modal_only' in request.GET:
+    if 'ajax_modal_only' in filters:
         context['ajax_modal_only'] = True
-        context['filters_string'] = '&'.join(['{}={}'.format(k, v) for k, v in filters.items() if k != 'ajax_modal_only'])
+        context['filters_string'] = '&'.join([
+            u'&'.join([ u'{}={}'.format(key, value) for value in values ])
+            for key, values in filters.items_as_lists()
+            if key != 'ajax_modal_only'
+        ])
         context['remaining'] = context['total_results'] - page_size
 
-    # Will still show top buttons at the top, first page only
-    context['ajax_show_top_buttons'] = ajax and 'ajax_show_top_buttons' in request.GET and page == 0
+    # ajax_show_top_buttons will still show top buttons at the top, first page only
+    context['ajax_show_top_buttons'] = ajax and 'ajax_show_top_buttons' in filters and page == 0
 
     if shortcut_url is not None:
         context['shortcut_url'] = shortcut_url
-
-    context['ordering'] = ordering
 
     # Page description
     if shortcut_url != '':
@@ -420,27 +619,6 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
                 game=context['game_name'],
             )
 
-    context['total_pages'] = int(math.ceil(context['total_results'] / page_size))
-    context['items'] = queryset
-    context['page'] = page + 1
-
-    page_buttons = [(0, 'active' if page == 0 else None)]
-    if page > 2:
-        page_buttons.append((-1, 'disabled'))
-    if (page - 1) > 0:
-        page_buttons.append((page - 1, None))
-    page_buttons.append((page, 'active'))
-    if (page + 1) < (context['total_pages'] - 1):
-        page_buttons.append((page + 1, None))
-    if page < (context['total_pages'] - 3):
-        page_buttons.append((-2, 'disabled'))
-    page_buttons.append((context['total_pages'] - 1, 'active' if page == (context['total_pages'] - 1) else None))
-    context['displayed_page_buttons'] = listUnique(page_buttons)
-    if request.path and request.path != '/':
-        context['next_page_url'] = u'/ajax{}'.format(request.path)
-    else:
-        context['next_page_url'] = u'/ajax/{}/'.format(collection.plural_name)
-
     # Ajax items reloader
     if not ajax and collection.list_view.auto_reloader and collection.list_view.ajax:
         context['ajax_reload_url'] = context['next_page_url']
@@ -448,12 +626,8 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
         if collection.collectible_collections:
             context['reload_urls_start_with'] += [cc.get_add_url() for cc in collection.collectible_collections.values()]
 
-    context['is_last_page'] = context['page'] == context['total_pages']
-    context['page_size'] = page_size
-    context['show_no_result'] = not ajax or context['ajax_modal_only'] or 'ajax_show_no_result' in request.GET
-    context['show_search_results'] = collection.list_view.show_search_results and filled_filter_form
-    context['show_owner'] = 'show_owner' in request.GET
-    context['get_started'] = 'get_started' in request.GET
+    context['show_no_result'] = not ajax or context['ajax_modal_only'] or 'ajax_show_no_result' in filters
+    context['show_search_results'] = collection.list_view.show_search_results and filled_filter_form_before_preset
     context['name'] = name
     context['title'] = collection.title
     context['reportable'] = collection.reportable
@@ -467,6 +641,8 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['item_blocked_template'] = collection.list_view.item_blocked_template
     if context['alt_view'] and 'template' in context['alt_view']:
         context['item_template'] = context['alt_view']['template']
+    if context['display_style'] == 'table' and context['item_template'] == 'default_item_in_list':
+        context['item_template'] = 'default_item_table_view'
     context['item_padding'] = collection.list_view.item_padding
     if context['alt_view'] and 'item_padding' in context['alt_view']:
         context['item_padding'] = context['alt_view']['item_padding']
@@ -487,48 +663,35 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     context['full_width'] = collection.list_view.full_width
     if context['alt_view'] and 'full_width' in context['alt_view']:
         context['full_width'] = context['alt_view']['full_width']
-    context['display_style'] = collection.list_view.display_style
-    if context['alt_view'] and 'display_style' in context['alt_view']:
-        context['display_style'] = context['alt_view']['display_style']
-    if context['display_style'] == 'table' and context['item_template'] == 'default_item_in_list':
-        context['item_template'] = 'default_item_table_view'
-    context['display_style_table_classes'] = collection.list_view.display_style_table_classes
-    context['display_style_table_fields'] = collection.list_view.display_style_table_fields
-    if context['alt_view'] and 'display_style_table_fields' in context['alt_view']:
-        context['display_style_table_fields'] = context['alt_view']['display_style_table_fields']
     context['col_break'] = collection.list_view.col_break
     if context['alt_view'] and 'col_break' in context['alt_view']:
         context['col_break'] = context['alt_view']['col_break']
-    context['per_line'] = int(request.GET['max_per_line']) if 'max_per_line' in request.GET and int(request.GET['max_per_line']) < collection.list_view.per_line else collection.list_view.per_line
-    if context['alt_view'] and 'per_line' in context['alt_view']:
-        context['per_line'] = context['alt_view']['per_line']
-    context['col_size'] = getColSize(context['per_line'])
     context['ajax_item_popover'] = collection.list_view.ajax_item_popover
     context['item_view_enabled'] = collection.item_view.enabled
     context['ajax_item_view_enabled'] = context['item_view_enabled'] and collection.item_view.ajax and not context['ajax_item_popover']
-    context['include_below_item'] = False # May be set to true below
     context['staff_only_view'] = collection.list_view.staff_required
     context['collection'] = collection
 
-    if context['display_style'] == 'table':
-        context['table_fields_headers'] = collection.list_view.table_fields_headers(context['display_style_table_fields'], view=context['view'])
-        context['table_fields_headers_sections'] = collection.list_view.table_fields_headers_sections(view=context['view'])
+    # May be set to true below (go through each item)
+    context['include_below_item'] = False
+    context['include_below_item_as_row'] = False
 
     # Title and prefixes
     title_prefixes, h1 = collection.list_view.get_h1_title(
         request, context, view=context['view'], preset=preset)
     _add_h1_and_prefixes_to_context(collection.list_view, context, title_prefixes, h1)
 
-    context['get_started'] = 'get_started' in request.GET
+    # Get started
+    context['get_started'] = 'get_started' in filters
     if context['get_started']:
         context['show_small_title'] = False
         context['show_search_results'] = False
         context['before_template'] = 'include/getstarted'
-        context['share_collection_sentence'] = _('Share your {things}!').format(things=unicode(collection.plural_title).lower())
+        context['share_collection_sentence'] = _('Share your {things}!').format(
+            things=unicode(collection.plural_title).lower())
         context['after_template'] = 'include/afterGetStarted'
 
     # Top buttons
-
     if not ajax or context['ajax_show_top_buttons']:
         context['top_buttons'] = collection.list_view.top_buttons(request, context)
         context['filtered_top_buttons'] = OrderedDict([
@@ -543,11 +706,14 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
                 context['top_buttons_per_line'] = context['top_buttons_total']
             context['top_buttons_col_size'] = getColSize(context['top_buttons_per_line'])
 
+    # Show item buttons
     context['show_item_buttons'] = collection.list_view.show_item_buttons
     if context['alt_view'] and 'show_item_buttons' in context['alt_view']:
         context['show_item_buttons'] = context['alt_view']['show_item_buttons']
 
-    if not filled_filter_form and not preset and collection.list_view.show_section_header_on_change:
+    # Retrieve section header from previous page, if any, to avoid showing the
+    # header multiple times when loading pages
+    if not filled_filter_form_excluding_view and collection.list_view.show_section_header_on_change:
         if page > 0:
             try:
                 previous_section_header = getattr(
@@ -559,28 +725,58 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
         else:
             previous_section_header = None
 
-    for i, item in enumerate(queryset):
+    ######################
+    # Go through each item
+
+    context['items'] = list(queryset)
+    previous_item = None
+
+    for i, item in enumerate(context['items']):
+
+        # Add request to item (sometimes accessed in properties)
         item.request = request
+
+        # Apply foreach_items (if any specified in collection)
         if collection.list_view.foreach_items:
             collection.list_view.foreach_items(i, item, context)
-        if context.get('show_relevant_fields_on_ordering', False):
+
+        # Retrieve relevant fields on ordering
+        if show_relevant_fields_on_ordering:
             context['include_below_item'] = True
-            item.relevant_fields_to_show = collection.list_view.ordering_fields(item, only_fields=context['plain_ordering'], request=request)
-        if context['display_style'] == 'table':
-            item.table_fields = collection.list_view.table_fields(item, only_fields=context['display_style_table_fields'], force_all_fields=True, request=request)
+            context['include_below_item_as_row'] = True
+            if context['uses_deprecated_to_fields']:
+                item.relevant_fields_to_show = collection.list_view.ordering_fields(
+                    item, only_fields=ordering_fields_to_show, request=request)
+            else:
+                item.relevant_fields_to_show = collection.list_view.to_magi_ordering_fields(
+                    item, context, ordering_fields=ordering_fields_to_show)
+
+        # Buttons per item
         item.buttons_to_show = collection.list_view.buttons_per_item(request, context, item)
-        if 'only_show_buttons' in request.GET:
-            only_show_buttons = request.GET['only_show_buttons'].split(',')
-            for button_name, button in item.buttons_to_show.items():
-                if button_name not in only_show_buttons:
-                    button['show'] = False
+        collection.set_buttons_auto_open(item.buttons_to_show)
+        item.show_item_buttons_in_one_line = collection.list_view.show_item_buttons_in_one_line
         item.show_item_buttons_justified = collection.list_view.show_item_buttons_justified
         item.show_item_buttons_as_icons = collection.list_view.show_item_buttons_as_icons
         if context['alt_view'] and 'show_item_buttons_as_icons' in context['alt_view']:
             item.show_item_buttons_as_icons = context['alt_view']['show_item_buttons_as_icons']
-        item.show_item_buttons_in_one_line = collection.list_view.show_item_buttons_in_one_line
-        if collection.list_view.show_item_buttons and [True for b in item.buttons_to_show.values() if b['show'] and b['has_permissions']]:
+        total_shown_buttons = len([True for b in item.buttons_to_show.values() if b['show'] and b['has_permissions']])
+        if context['show_item_buttons'] and total_shown_buttons > 0:
             context['include_below_item'] = True
+            if total_shown_buttons > 1 and len(context['display_style_table_fields']) > 4:
+                context['include_below_item_as_row'] = True
+
+        # Retrieve relevant fields for table display style
+        if context['display_style'] == 'table':
+            if context['uses_deprecated_to_fields']:
+                item.table_fields = collection.list_view.table_fields(
+                    item, only_fields=context['display_style_table_fields'],
+                    force_all_fields=True, request=request)
+            else:
+                item.table_fields = collection.list_view.to_magi_table_fields(
+                    item, context, table_fields=context['display_style_table_fields'])
+
+        # If the user blocked whoever owns this item, it will be hidden with a button to unblock
+        # If the user was blocked by whoever owns this item, it will be hidden and the user won't know
         if request.user.is_authenticated() and collection.blockable:
             if item.owner_id in request.user.preferences.cached_blocked_ids:
                 item.blocked = True
@@ -592,15 +788,54 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
                 item.unblock_button = _(u'Unblock {username}').format(username=username)
             elif item.owner_id in request.user.preferences.cached_blocked_by_ids:
                 item.blocked_by_owner = True
-        if not filled_filter_form and not preset and collection.list_view.show_section_header_on_change:
-            if getattr(item, collection.list_view.show_section_header_on_change) != previous_section_header:
-                item.show_section_header = getattr(item, collection.list_view.show_section_header_on_change)
-                previous_section_header = item.show_section_header
+
+        # Calculate column
+        item.new_row = False
+        if not previous_item:
+            item.column = 0
+        else:
+            item.column = previous_item.column + 1
+            if item.column == (context['per_line'] - 1):
+                item.new_row = True
+            elif item.column == context['per_line']:
+                item.column = 0
+
+        # Show section headers
+        if not filled_filter_form_excluding_view and collection.list_view.show_section_header_on_change:
+            section_header = getattr(item, collection.list_view.show_section_header_on_change)
+            if section_header != previous_section_header:
+                item.show_section_header = section_header
+                previous_section_header = section_header
                 context['showing_section_headers'] = True
+                if previous_item:
+                    item.new_row = False
+                    previous_item.new_row = True
+                    item.column = 0
             else:
                 item.show_section_header = False
 
+        previous_item = item
+
+    ######################
+    # Table headers (only if there are items, otherwise no result will show)
+
+    if context['display_style'] == 'table' and context['items']:
+        if context['uses_deprecated_to_fields']:
+            context['table_fields_headers'] = collection.list_view.table_fields_headers(
+                context['display_style_table_fields'], view=context['view'])
+            context['table_fields_headers_sections'] = collection.list_view.table_fields_headers_sections(
+                view=context['view'])
+        else:
+            context['table_fields_headers'] = context['items'][0].table_fields.get_table_headers()
+            context['table_fields_headers_sections'] = context['items'][0].table_fields.get_table_headers_sections()
+
+    ######################
+    # Extra context (from collection)
+
     collection.list_view.extra_context(context)
+
+    ######################
+    # Render template
 
     if ajax:
         context['include_template'] = 'collections/list_page'
@@ -719,7 +954,9 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
     context['is_reported'] = 'is_reported' in request.GET
     context['is_suggestededit'] = 'is_suggestededit' in request.GET
     context = _modification_view(context, name, collection.edit_view, ajax)
-    queryset = collection.edit_view.get_queryset(collection.queryset, _get_filters(request.GET, extra_filters), request)
+    filters = MagiQueryDict(request.GET)
+    filters.update(extra_filters)
+    queryset = collection.edit_view.get_queryset(collection.queryset, filters, request)
     instance = get_one_object_or_404(queryset, **collection.edit_view.get_item(request, pk))
     context['type'] = None
     collection.edit_view.check_owner_permissions(request, context, instance)

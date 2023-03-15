@@ -26,12 +26,15 @@ from magi.utils import (
     modelHasField,
     getCharacterImageFromPk,
     LANGUAGES_DICT,
+    getMagiCollection,
 )
 from magi.settings import (
     ACTIVITY_TAGS,
     FAVORITE_CHARACTERS_MODEL,
     FAVORITE_CHARACTERS_FILTER,
     GET_BACKGROUNDS,
+    BACKGROUNDS_MODEL,
+    BACKGROUNDS_FILTER,
     GET_HOMEPAGE_ARTS,
     OTHER_CHARACTERS_MODELS,
     SITE_STATIC_URL,
@@ -39,6 +42,10 @@ from magi.settings import (
     SEASONS,
     USERS_BIRTHDAYS_BANNER,
     BIRTHDAY_BANNER_HIDE_TITLE,
+    MANY_BACKGROUNDS_THRESHOLD,
+    MANY_CHARACTERS_THRESHOLD,
+    HAS_MANY_BACKGROUNDS,
+    HAS_MANY_FAVORITE_CHARACTERS,
 )
 from magi import models, seasons
 
@@ -257,6 +264,44 @@ def getUsersBirthdaysToday(image=None, latest_news=None, max_usernames=4):
     return latest_news
 
 ############################################################
+# Get backgrounds
+
+def getBackgroundsFromModel():
+    print 'Get backgrounds'
+    backgrounds_collection = getMagiCollection(getattr(BACKGROUNDS_MODEL, 'collection_name', None))
+    if backgrounds_collection:
+        queryset = backgrounds_collection.get_queryset()
+    else:
+        queryset = BACKGROUNDS_MODEL.objects.all()
+    queryset = BACKGROUNDS_FILTER(queryset)
+    total = queryset.count()
+    if total > MANY_BACKGROUNDS_THRESHOLD:
+        queryset = queryset.order_by('?')[:MANY_BACKGROUNDS_THRESHOLD]
+    backgrounds = []
+    for background in queryset:
+        image = getattr(background, 'background_image_url', getattr(background, 'image_url', None))
+        backgrounds.append({
+            'id': background.pk,
+            'image': image,
+            'thumbnail': getattr(
+                background, 'background_image_thumbnail_url',
+                getattr(background, 'image_thumbnail_url', image),
+            ),
+            'hd_image': getattr(
+                background, 'background_image_2x_url',
+                getattr(background, 'image_2x_url', image),
+            ),
+            'name': unicode(background),
+            'd_names': background.d_unicodes,
+            'homepage': getattr(
+                background, 'show_background_on_homepage',
+                getattr(background, 'show_image_on_homepage', False),
+            ),
+            'profile': getattr(background, 'show_background_on_profile', True),
+        })
+    return backgrounds, total
+
+############################################################
 # Get seasonal activity tag banners
 
 def getSeasonalActivityTagBanners(latest_news=None, seasonal_settings=None):
@@ -294,7 +339,7 @@ def getSeasonalActivityTagBanners(latest_news=None, seasonal_settings=None):
 def generateCharactersSettings(
         queryset, generated_settings, imports=None,
         for_favorite=True, base_name=None,
-        to_image=None,
+        to_image=None, has_many=None, threshold=MANY_CHARACTERS_THRESHOLD,
 ):
     imports.append('from collections import OrderedDict')
 
@@ -342,6 +387,11 @@ def generateCharactersSettings(
                 all_names[character.pk][language] = name
     translation_activate('en')
     generated_settings[u'{}_NAMES'.format(base_name)] = all_names
+
+    if has_many is not None:
+        generated_settings[u'HAS_MANY_{}'.format(base_name)] = has_many
+    else:
+        generated_settings[u'HAS_MANY_{}'.format(base_name)] = len(original_names) > threshold
 
     if modelHasField(queryset.model, 'birthday'):
         generated_settings[u'{}_BIRTHDAYS'.format(base_name)] = OrderedDict([
@@ -439,7 +489,8 @@ def magiCirclesGeneratedSettings(existing_values):
             generateCharactersSettings(
                 queryset,
                 generated_settings=generated_settings,
-                imports=imports,
+                imports=imports, has_many=HAS_MANY_FAVORITE_CHARACTERS,
+                threshold=MANY_CHARACTERS_THRESHOLD,
             )
         # Get birthday banners
         if modelHasField(FAVORITE_CHARACTERS_MODEL, 'birthday'):
@@ -464,6 +515,8 @@ def magiCirclesGeneratedSettings(existing_values):
                     imports=imports,
                     for_favorite=False,
                     base_name=key,
+                    has_many=character_details.get('has_many', None),
+                    threshold=character_details.get('many_threshold', MANY_CHARACTERS_THRESHOLD),
                 )
             # Get birthday banners
             if modelHasField(character_details['model'], 'birthday'):
@@ -531,6 +584,15 @@ def magiCirclesGeneratedSettings(existing_values):
     # Get backgrounds
     if GET_BACKGROUNDS:
         generated_settings['BACKGROUNDS'] = GET_BACKGROUNDS()
+        total = len(generated_settings['BACKGROUNDS'])
+    elif BACKGROUNDS_MODEL:
+        generated_settings['BACKGROUNDS'], total = getBackgroundsFromModel()
+
+    backgrounds_collection = getMagiCollection(getattr(BACKGROUNDS_MODEL, 'collection_name', None))
+    if HAS_MANY_BACKGROUNDS is not None:
+        generated_settings['HAS_MANY_BACKGROUNDS'] = HAS_MANY_BACKGROUNDS
+    else:
+        generated_settings['HAS_MANY_BACKGROUNDS'] = backgrounds_collection and total > MANY_BACKGROUNDS_THRESHOLD
 
     # Get past tags count
     generated_settings['PAST_ACTIVITY_TAGS_COUNT'] = {}

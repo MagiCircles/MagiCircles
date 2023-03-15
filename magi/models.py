@@ -32,11 +32,11 @@ from magi.utils import (
     simplifyMarkdown,
     getCharactersChoices,
     getCharacterNameFromPk,
-    getCharacterImageFromPk,
-    getCharacterURLFromPk,
-    getCharactersFavoriteFields,
     NATIVE_LANGUAGES,
     LANGUAGES_DICT,
+    failSafe,
+    isFullURL,
+    mergeDicts,
 )
 from magi.settings import (
     ACCOUNT_MODEL,
@@ -57,6 +57,9 @@ from magi.settings import (
     USERS_REPUTATION_CALCULATOR,
     GOOD_REPUTATION_THRESHOLD,
     PROFILE_BACKGROUNDS_IMAGES,
+    HAS_MANY_BACKGROUNDS,
+    BACKGROUNDS_MODEL,
+    BACKGROUNDS_FILTER,
 )
 from magi.raw import other_sites
 from magi.item_model import (
@@ -70,7 +73,7 @@ from magi.item_model import (
     ALL_ALT_LANGUAGES,
     UserImage,
 )
-from magi.abstract_models import CacheOwner
+from magi.abstract_models import CacheOwner, to_cached_preferences
 from magi.default_settings import RAW_CONTEXT
 
 Account = ACCOUNT_MODEL
@@ -97,10 +100,32 @@ def avatar(user, size=200):
             + hashlib.md5(user.email.lower()).hexdigest()
             + "?" + urllib.urlencode({'d': default, 's': str(size)}))
 
+def getBackgroundsQueryset():
+    backgrounds_collection = getMagiCollection(getattr(BACKGROUNDS_MODEL, 'collection_name', None))
+    if backgrounds_collection:
+        queryset = backgrounds_collection.queryset
+    else:
+        queryset = BACKGROUNDS_MODEL.objects.all()
+    queryset = BACKGROUNDS_FILTER(queryset)
+    return queryset
+
+def getBackgroundURLFromId(background_id):
+    """
+    Performs a database query.
+    If GET_BACKGROUNDS was set and uses different ids from the pks in db, this will return None.
+    """
+    queryset = getBackgroundsQueryset()
+    try:
+        background = queryset.filter(pk=background_id)[0]
+    except IndexError:
+        return None
+    return getattr(background, 'background_image_url', getattr(background, 'image_url', None))
+
 ############################################################
 # Add MagiModel properties to User objects
 
 addMagiModelProperties(User, 'user')
+User.IS_PERSON = True
 User.image_url = property(avatar)
 User.http_image_url = property(avatar)
 User.owner_id = property(lambda u: u.id)
@@ -130,8 +155,12 @@ ACTIVITIES_TAGS_HIDDEN_BY_DEFAULT = [
 ############################################################
 # User preferences
 
-class UserPreferences(BaseMagiModel):
+class UserPreferences(MagiModel):
+    collection_name = 'userpreferences'
+
     user = models.OneToOneField(User, related_name='preferences', on_delete=models.CASCADE)
+    owner = property(lambda _s: _s.user)
+    owner_id = property(lambda _s: _s.user_id)
 
     LANGUAGE_CHOICES = NATIVE_LANGUAGES.items()
     LANGUAGE_WITHOUT_I_CHOICES = True
@@ -211,7 +240,9 @@ class UserPreferences(BaseMagiModel):
 
     view_activities_language_only = models.BooleanField(_('View activities in your language only?'), default=ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT)
     email_notifications_turned_off_string = models.CharField(max_length=15, null=True)
-    invalid_email = models.BooleanField(default=False)
+    invalid_email = models.BooleanField(default=False, help_text=u"""
+    Mark as invalid if we keep receiving bounce emails from that email address.
+    No email will ever be sent to that user again.""")
 
     GROUPS_CHOICES = [(_k, _v['translation']) for _k, _v in GROUPS]
     GROUPS = OrderedDict(GROUPS)
@@ -222,7 +253,7 @@ class UserPreferences(BaseMagiModel):
     def t_settings_per_groups(self):
         s = {
             group: {
-                toHumanReadable(setting): value
+                toHumanReadable(setting, warning=False): value
                 for setting, value in settings.items()
             }
             for group, settings in (self.settings_per_groups or {}).items()
@@ -270,12 +301,33 @@ class UserPreferences(BaseMagiModel):
             self.favorite_character3,
         ] if c]
 
-    @property
-    def background_id(self): return int(self.extra.get('background', '0')) or None
+    def _update_background_to_use_full_url(self, background_id):
+        """
+        If the full URL was not stored, it means there was a migration from a previously
+        pre-set list of backgrounds. We need to retrieve the background from database
+        and fix to the new one.
+        """
+        background_image_url = getBackgroundURLFromId(background_id)
+        if background_image_url:
+            self.add_d('extra', 'background', background_image_url)
+        else:
+            self.remove_d('extra', 'background')
+        self.save()
+        return background_image_url
 
     @property
     def background_image_url(self):
-        return staticImageURL(PROFILE_BACKGROUNDS_IMAGES.get(self.background_id, None))
+        background = self.extra.get('background', None)
+        if not background:
+            return None
+        if isFullURL(background):
+            return background
+        if HAS_MANY_BACKGROUNDS:
+            return self._update_background_to_use_full_url(background)
+        try:
+            return staticImageURL(PROFILE_BACKGROUNDS_IMAGES.get(int(background), None))
+        except (ValueError, KeyError):
+            return None
 
     @classmethod
     def get_localized_color(self, color):
@@ -428,7 +480,7 @@ class UserPreferences(BaseMagiModel):
     # Cached reputation score
     _cache_reputation_days = 1
     _cache_reputation_last_update = models.DateTimeField(null=True)
-    _cache_reputation = models.IntegerField(null=True, db_index=True)
+    _cache_reputation = models.IntegerField('Reputation', null=True, db_index=True)
 
     def reputation_points(self):
         # Reputation deal breakers
@@ -484,20 +536,20 @@ class UserPreferences(BaseMagiModel):
 
 class UserLink(BaseMagiModel):
     alphanumeric = validators.RegexValidator(r'^[0-9a-zA-Z\-_\. /]*$', 'Only alphanumeric and - _ characters are allowed.')
-    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='links')
+    owner = models.ForeignKey(User, related_name='links')
     value = models.CharField(string_concat(_('Username'), '/', _('ID')), max_length=64, help_text=_('Write your username only, no URL.'), validators=[alphanumeric])
 
     TYPE_CHOICES = [
-        ('twitter', 'Twitter'),
-        ('facebook', 'Facebook'),
-        ('reddit', 'Reddit'),
+        ('twitter', _('Twitter')),
+        ('facebook', _('Facebook')),
+        ('reddit', _('Reddit')),
     ] + [
         (_details['shortname'], _details['name'])
         for _details in other_sites
         if _details['name'] != SITE_NAME and _details.get('shortname', None)
     ] + [
-        ('instagram', 'Instagram'),
-        ('youtube', 'YouTube'),
+        ('instagram', _('Instagram')),
+        ('youtube', _('YouTube')),
         ('tumblr', 'Tumblr'),
         ('twitch', 'Twitch'),
         ('steam', 'Steam'),
@@ -511,6 +563,7 @@ class UserLink(BaseMagiModel):
         ('line', 'LINE Messenger'),
         ('github', 'GitHub'),
         ('carrd', 'Carrd'),
+        ('linktree', 'Linktree'),
         ('listography', 'Listography'),
     ]
 
@@ -547,6 +600,7 @@ class UserLink(BaseMagiModel):
         'line': u'http://line.me/#{}',
         'github': u'https://github.com/{}',
         'carrd': u'https://{}.carrd.co/',
+        'linktree': u'https://linktr.ee/{}',
         'listography': u'https://listography.com/{}',
     }
     LINK_URLS.update({
@@ -573,26 +627,26 @@ class UserLink(BaseMagiModel):
 class StaffConfiguration(MagiModel):
     collection_name = 'staffconfiguration'
 
-    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='added_configurations')
-    key = models.CharField(max_length=100)
+    owner = models.ForeignKey(User, related_name='added_configurations')
+    OWNER_TABLE_HEADER = 'Last updated by'
+    key = models.CharField('Key', max_length=100)
     verbose_key = models.CharField('Name', max_length=100)
     value = models.TextField('Value', null=True)
 
     LANGUAGE_CHOICES = ALL_LANGUAGES
     LANGUAGE_WITHOUT_I_CHOICES = True
     LANGUAGE_SOFT_CHOICES = True
+    LANGUAGE_AUTO_IMAGES = True
+    LANGUAGE_AUTO_IMAGES_FOLDER = 'language'
     i_language = models.CharField(_('Language'), max_length=10, null=True)
-    language_image_url = property(lambda _s: staticImageURL(_s.language, folder=u'language', extension='png'))
 
     is_long = models.BooleanField(default=False)
     is_markdown = models.BooleanField(default=False)
     is_boolean = models.BooleanField(default=False)
 
-    # Owner is always pre-selected
     @property
-    def cached_owner(self):
-        self.owner.unicode = unicode(self.owner)
-        return self.owner
+    def is_image(self):
+        return self.key.endswith('_image_url') or self.key.endswith('_image')
 
     @property
     def boolean_value(self):
@@ -603,28 +657,6 @@ class StaffConfiguration(MagiModel):
                 return False
             return None
         return self.value
-
-    @property
-    def representation_value(self):
-        if self.is_markdown:
-            return u'<div class="list-group-item to-markdown">{}</div>'.format(self.value) if self.value else ''
-        elif self.is_boolean:
-            if self.value == 'True':
-                return u'<i class="flaticon-checked"></i>'
-            if self.value == 'False':
-                return u'<i class="flaticon-delete"></i>'
-            return ''
-        elif self.field_type == 'image':
-            return staticImageURL(self.value)
-        return self.value or ''
-
-    @property
-    def field_type(self):
-        if self.key.endswith('_image_url') or self.key.endswith('_image'):
-            return 'image'
-        if self.is_markdown or self.is_boolean:
-            return 'html'
-        return 'text'
 
     def __unicode__(self):
         return self.verbose_key
@@ -638,6 +670,8 @@ class StaffConfiguration(MagiModel):
 
 class StaffDetails(MagiModel):
     collection_name = 'staffdetails'
+    IS_PERSON = True
+    TRANSLATED_FIELDS = [ 'hobbies', 'favorite_food' ]
 
     owner = models.OneToOneField(User, related_name='staff_details', on_delete=models.CASCADE, unique=True)
 
@@ -809,7 +843,7 @@ class Activity(MagiModel):
 
     creation = models.DateTimeField(auto_now_add=True)
     last_bump = models.DateTimeField(db_index=True, null=True)
-    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='activities', db_index=True)
+    owner = models.ForeignKey(User, related_name='activities', db_index=True)
     m_message = models.TextField(_('Message'), null=True)
 
     likes = models.ManyToManyField(User, related_name="liked_activities")
@@ -916,27 +950,21 @@ class Activity(MagiModel):
 
     @property
     def cached_owner(self):
+        updated = False
         now = timezone.now()
         if not self._cache_last_update or self._cache_last_update < now - datetime.timedelta(days=self._cache_days):
+            updated = True
             self.force_cache_owner()
-        cached_owner = AttrDict({
-            'pk': self.owner_id,
-            'id': self.owner_id,
-            'username': self._cache_owner_username,
-            'email': self._cache_owner_email,
-            'item_url': '/user/{}/{}/'.format(self.owner_id, self._cache_owner_username),
-            'ajax_item_url': '/ajax/user/{}/'.format(self.owner_id),
-            'preferences': AttrDict({
-                'i_status': self._cache_owner_preferences_i_status,
-                'status': dict(UserPreferences.STATUS_CHOICES).get(self._cache_owner_preferences_i_status, None),
-                'status': self._cache_owner_preferences_i_status,
-                'status_color': dict(UserPreferences.STATUS_COLORS).get(self._cache_owner_preferences_i_status, None),
-                't_status': dict(UserPreferences.STATUS_CHOICES).get(self._cache_owner_preferences_i_status, None),
-                'is_premium': self._cache_owner_preferences_i_status and self._cache_owner_preferences_i_status != 'THANKS',
-                'twitter': self._cache_owner_preferences_twitter,
-            }),
-        })
-        return cached_owner
+        if updated or not getattr(self, '_cached_owner', None):
+            d = {
+                'id': self.owner_id,
+                'unicode': self._cache_owner_username,
+                'username': self._cache_owner_username,
+                'email': self._cache_owner_email,
+                'preferences': to_cached_preferences(self, color_field_name=None),
+            }
+            self._cached_owner = self.cached_json_extra('owner', d)
+        return self._cached_owner
 
     @property
     def shareSentence(self):
@@ -960,10 +988,24 @@ class Activity(MagiModel):
         except IndexError:
             return None
 
+    def get_title(self, fallback=True):
+        if not self.m_message:
+            return None if not fallback else u''
+        for i in range(1, 6): # h1 to h5
+            prefix = (i * u'#') + u' '
+            if self.m_message.startswith(prefix):
+                return self.m_message.split(prefix)[1].split(u'\n')[0].strip()
+            newline_prefix = u'\n' + prefix
+            if newline_prefix in self.m_message:
+                return self.m_message.split(newline_prefix)[1].split(u'\n')[0].strip()
+        if fallback:
+            return simplifyMarkdown(self.m_message.split(u'\n')[0], max_length=100).strip()
+        return None
+
     m_description = property(lambda _s: _s.m_message)
 
     def __unicode__(self):
-        return self.summarize()
+        return self.get_title() or unicode(_('Post'))
 
     class Meta:
         verbose_name_plural = 'activities'
@@ -1017,13 +1059,17 @@ def getAllowedTags(
             return True
         # Hide tags that are not allowed to be shown
         if check_permissions_to_show:
-            has_permission_to_show = tag.get('has_permission_to_show', lambda r: True)(request)
+            has_permission_to_show = failSafe(
+                lambda: tag.get('has_permission_to_show', lambda r: True)(request),
+                exceptions=[ AttributeError ],
+                default=False,
+            )
             if has_permission_to_show != True:
                 notAllowedReason(tag_name, tag, 'permission', has_permission_to_show)
                 return False
         # Hidden by user
         if check_hidden_by_user:
-            if request.user.is_authenticated():
+            if request and request.user.is_authenticated():
                 if request.user.preferences.hidden_tags:
                     if request.user.preferences.hidden_tags.get(tag_name, False):
                         notAllowedReason(tag_name, tag, 'user', _CHOOSE_HIDDEN_TAGS_MESSAGE)
@@ -1047,15 +1093,19 @@ def getAllowedTags(
                 notAllowedReason(tag_name, tag, 'past')
                 return False
             # Don't allow tags that are not allowed to be added
-            if not tag.get('has_permission_to_add', lambda r: True)(request):
+            has_permission_to_add = failSafe(
+                lambda: tag.get('has_permission_to_add', lambda r: True)(request),
+                exceptions=[ AttributeError ],
+                default=False,
+            )
+            if not has_permission_to_add:
                 notAllowedReason(tag_name, tag, 'permission')
                 return False
         return True
     def getTag(tag_name, tag):
         translation = tag['translation']() if callable(tag['translation']) else tag['translation']
         if full_tags:
-            new_tag = tag.copy()
-            new_tag.update({
+            new_tag = mergeDicts(tag, {
                 'translation': translation,
                 'status': tag_statuses[tag_name],
             })
@@ -1096,7 +1146,7 @@ def updateCachedActivities(user_id):
 class Notification(MagiModel):
     collection_name = 'notification'
 
-    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='notifications', db_index=True)
+    owner = models.ForeignKey(User, related_name='notifications', db_index=True)
     creation = models.DateTimeField(auto_now_add=True)
 
     MESSAGES = [
@@ -1186,7 +1236,7 @@ class Report(MagiModel):
     is_suggestededit = models.BooleanField(default=False, db_index=True)
     creation = models.DateTimeField(auto_now_add=True)
     modification = models.DateTimeField(auto_now=True)
-    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='reports', null=True)
+    owner = models.ForeignKey(User, related_name='reports', null=True)
     reported_thing = models.CharField(max_length=300) # Collection name
     reported_thing_title = models.CharField(max_length=300) # Collection title in English
     reported_thing_id = models.PositiveIntegerField() # Pk
@@ -1279,7 +1329,7 @@ class Report(MagiModel):
 
     @property
     def edited_fields(self):
-        return self.reported_thing_collection.get_suggest_edit_choices(getattr(self, 'request', None))
+        return self.reported_thing_collection.suggest_edit_choices
 
     def __unicode__(self):
         return u'{title} #{id}'.format(
@@ -1302,7 +1352,7 @@ BADGE_IMAGE_TINYPNG_SETTINGS = {
 class DonationMonth(MagiModel):
     collection_name = 'donate'
 
-    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='donation_month_created')
+    owner = models.ForeignKey(User, related_name='donation_month_created')
     date = models.DateField(default=datetime.datetime.now)
     cost = models.FloatField(default=250)
     goal = DONATORS_GOAL
@@ -1366,7 +1416,7 @@ class Badge(MagiModel):
     collection_name = 'badge'
 
     date = models.DateField(default=datetime.datetime.now)
-    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='badges_created')
+    owner = models.ForeignKey(User, related_name='badges_created')
     user = models.ForeignKey(User, related_name='badges', db_index=True)
     donation_month = models.ForeignKey(DonationMonth, related_name='badges', null=True)
     name = models.CharField(_('Title'), max_length=50, null=True)
@@ -1391,6 +1441,14 @@ class Badge(MagiModel):
     RANK_CHOICES_DICT = dict(RANK_CHOICES)
 
     rank = models.PositiveIntegerField(null=True, blank=True, choices=RANK_CHOICES, help_text='Top 3 of this specific badge.')
+
+    @classmethod
+    def position_to_rank(self, position):
+        return {
+            1: self.RANK_GOLD,
+            2: self.RANK_SILVER,
+            3: self.RANK_BRONZE,
+        }.get(position, None)
 
     @property
     def t_rank(self):
@@ -1441,7 +1499,7 @@ class Badge(MagiModel):
 class Prize(MagiModel):
     collection_name = 'prize'
 
-    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='added_prizes')
+    owner = models.ForeignKey(User, related_name='added_prizes')
     name = models.CharField('Prize name', max_length=100)
     image = models.ImageField('Prize image', upload_to=uploadItem('prize'))
     image2 = models.ImageField('2nd image', upload_to=uploadItem('prize'), null=True, blank=True)
@@ -1454,10 +1512,7 @@ class Prize(MagiModel):
     CHARACTER_WITHOUT_I_CHOICES = True
     CHARACTER_SOFT_CHOICES = True
     i_character = models.CharField('Character', null=True, max_length=200)
-    character_name = property(lambda _s: getCharacterNameFromPk(_s.i_character))
-    t_character = character_name
-    character_image = property(lambda _s: getCharacterImageFromPk(_s.i_character))
-    character_url = property(lambda _s: getCharacterURLFromPk(_s.i_character))
+    t_character = property(lambda _s: getCharacterNameFromPk(_s.i_character))
 
     m_details = models.TextField('Details', null=True)
 
@@ -1482,7 +1537,7 @@ class Prize(MagiModel):
         return mark_safe(u"""
 <small class="text-muted">{character_name}&nbsp;&nbsp;&nbsp;&nbsp;[#{id}]</small>
 <br>{item}""".format(
-    character_name=self.character_name or '', item=self, id=self.id))
+    character_name=self.t_character or '', item=self, id=self.id))
 
     @property
     def images_urls(self):
@@ -1497,7 +1552,7 @@ class Prize(MagiModel):
 class PrivateMessage(MagiModel):
     collection_name = 'privatemessage'
 
-    owner = models.ForeignKey(User, verbose_name=_('User'), related_name='sent_messages', on_delete=models.CASCADE)
+    owner = models.ForeignKey(User, related_name='sent_messages', on_delete=models.CASCADE)
     to_user = models.ForeignKey(User, related_name='received_messages', on_delete=models.CASCADE)
     creation = models.DateTimeField(auto_now_add=True)
     message = models.TextField(_('Message'), max_length=1500)
