@@ -316,9 +316,8 @@ class MagiField(object):
             return self.item_options['ANSWER']
         return self.answer
 
-    def to_faq(self):
-        if self.item_options['FAQ'] is not None:
-            return self.item_options['FAQ']
+    @property
+    def faq(self):
         question = self.format_question(self.to_question())
         if question is not None:
             answer = self.to_answer()
@@ -327,6 +326,11 @@ class MagiField(object):
                     (question, answer),
                 ]
         return []
+
+    def to_faq(self):
+        if self.item_options['FAQ'] is not None:
+            return self.item_options['FAQ']
+        return self.faq
 
     def to_video_ld(self):
         return None
@@ -1273,8 +1277,7 @@ class MagiCharModelField(MagiCharFieldMixin, MagiModelField):
 # Long text field
 
 class MagiTextFieldMixin(object):
-    def to_faq(self):
-        return None
+    faq = None
 
     display_class = MagiDisplayLongText
     default_verbose_name = _('Details')
@@ -1301,9 +1304,7 @@ class MagiTextModelField(MagiTextFieldMixin, MagiModelField):
 class MagiTextareaFieldMixin(object):
     default_icon = 'developer'
     display_class = MagiDisplayTextarea
-
-    def to_faq(self):
-        return None
+    faq = None
 
 class MagiTextareaField(MagiTextareaFieldMixin, MagiField):
     """
@@ -1444,9 +1445,7 @@ class MagiImageFieldMixin(object):
         'hq',
         'original',
     ]
-
-    def to_faq(self):
-        return None
+    faq = None
 
     # Display
 
@@ -1501,8 +1500,7 @@ class MagiFileFieldMixin(object):
         # value_from_display_property is used in link.
         return _('Download')
 
-    def to_faq(self):
-        return None
+    faq = None
 
     # Display
 
@@ -1595,7 +1593,8 @@ class MagiMainImageModelField(MagiMainImageFieldMixin, MagiImageModelField):
 # Birthday field
 
 class MagiBirthdayFieldMixin(object):
-    def to_faq(self):
+    @property
+    def faq(self):
         faq_for_field = super(MagiBirthdayFieldMixin, self).to_faq()
         if (not self.item_options['SHOW_YEAR']
             or 'age' in self.magifields.fields):
@@ -1678,9 +1677,7 @@ class MagiBooleanModelField(MagiBooleanFieldMixin, MagiModelField):
 # iTunes field
 
 class MagiITunesFieldMixin(object):
-    def to_faq(self):
-        return None
-
+    faq = None
     display_class = MagiDisplayITunes
     default_icon = 'play'
     default_verbose_name = _('Preview')
@@ -1781,8 +1778,7 @@ class MagiMoneyModelField(MagiMoneyFieldMixin, MagiModelField):
 # Video field
 
 class MagiYouTubeVideoFieldMixin(object):
-    def to_faq(self):
-        return None
+    faq = None
 
     def to_video_ld(self):
         if not self.has_value():
@@ -1878,8 +1874,7 @@ class MagiURLFieldMixin(object):
         # value_from_display_property is used in link.
         return self.verbose_name
 
-    def to_faq(self):
-        return None
+    faq = None
 
     # Display
 
@@ -2175,8 +2170,7 @@ class MagiMarkdownFieldMixin(object):
     def has_value(self):
         return hasValue(self.value[1])
 
-    def to_faq(self):
-        return None
+    faq = None
 
     def to_text_value(self):
         return self.value[1]
@@ -2258,8 +2252,7 @@ class MagiDictFieldMixin(object):
             )) for key, value in self.value.items()
         ])
 
-    def to_faq(self):
-        return None
+    faq = None
 
     is_usually_plural = True
 
@@ -2858,8 +2851,7 @@ class MagiOwnerModelField(MagiForeignKeyModelField):
             and super(MagiOwnerModelField, self).is_field(field_name, model_field, options)
         )
 
-    def to_faq(self):
-        return None
+    faq = None
 
     default_verbose_name = __(_('Added by {username}'), username='')
 
@@ -3113,7 +3105,8 @@ class MagiManyToManyModelField(BaseMagiManyToManyModelField):
     def to_value(self):
         return self.db_value
 
-    def to_faq(self):
+    @property
+    def faq(self):
         # When there are no items, no question
         if not self.rel_items:
             return None
@@ -3603,8 +3596,7 @@ class MagiButtonField(MagiField):
     def has_translations(self):
         return False
 
-    def to_faq(self):
-        return None
+    faq = None
 
     ############################################################
     # Permissions
@@ -4359,7 +4351,7 @@ class MagiFields(object):
         if not hasattr(self, '_faq'):
             faq = OrderedDict()
             for field_name, field in self.fields.items():
-                if field.display_field and not field.is_multifields():
+                if field.display_field and field.has_value() and not field.is_multifields():
                     faq_for_field = field.to_faq()
                     if faq_for_field:
                         faq[field_name] = faq_for_field
