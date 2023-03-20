@@ -231,7 +231,7 @@ def signup(request, context):
                     if ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT
                     else (get_language() in ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES)),
             )
-            for field_name in form.preferences_fields:
+            for field_name in form.PREFERENCES_FIELDS:
                 if field_name in form.fields and field_name in form.cleaned_data:
                     setattr(preferences, field_name, form.cleaned_data[field_name])
             age = preferences.age
