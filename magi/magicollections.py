@@ -3586,7 +3586,7 @@ class UserCollection(MagiCollection):
         show_item_buttons_in_one_line = True
         show_item_buttons_justified = False
         item_buttons_classes = ['btn', 'btn-link-secondary', 'btn-lg']
-        show_edit_button_permissions_only = ['see_profile_edit_button']
+        show_edit_button = False
         disable_on_high_traffic = True
         page_size = 30
         per_line = 1
@@ -3635,7 +3635,6 @@ class UserCollection(MagiCollection):
         show_item_buttons = False
         show_item_buttons_justified = False
         item_buttons_classes = ['btn', 'btn-link']
-        show_edit_button_permissions_only = ['see_profile_edit_button']
         ajax = False
         accounts_template = 'include/defaultAccountsForProfile'
         profile_accounts_top_template = None

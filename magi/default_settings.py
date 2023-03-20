@@ -96,7 +96,7 @@ DEFAULT_GROUPS = [
         'translation': _('Manager'),
         'description': 'The leader of our staff team is here to make sure that the web app is doing well! They make sure we all get things done together and our web app keeps getting new users everyday. They\'re also the decision maker in case of conflicts that can\'t be resolved via votes.',
         'permissions': [
-            'edit_roles', 'edit_donator_status', 'see_profile_edit_button',
+            'edit_roles', 'edit_donator_status', 'see_reputation',
             'edit_staff_configurations', 'add_badges', 'see_collections_details',
             'manage_main_items', 'view_items_history',
             'edit_staff_details', 'moderate_reports', 'edit_reported_things',
@@ -147,7 +147,7 @@ DEFAULT_GROUPS = [
         'translation': _('Team manager'),
         'description': 'Knows all the team members and discuss with them on a regular basis to make sure they are all active. Ensures that the staff team is only composed of active members, keep track of members who are taking a break, regularly check with members if they\'re still interested, and help members retire if they want to. They are also in charge of assigning and revoking most permissions.',
         'permissions': [
-            'edit_roles', 'see_profile_edit_button', 'edit_staff_details',
+            'edit_roles', 'see_reputation', 'edit_staff_details',
             'order_by_any_field',
             'access_site_before_launch',
             'beta_test_features',
@@ -173,6 +173,7 @@ DEFAULT_GROUPS = [
         'permissions': [
             'add_donation_badges',
             'manage_donation_months',
+            'see_reputation',
             'edit_donator_status',
             'message_almost_anyone',
             'edit_own_staff_profile',
@@ -246,6 +247,7 @@ DEFAULT_GROUPS = [
         'permissions': [
             'post_news',
             'edit_staff_configurations',
+            'see_reputation',
             'access_site_before_launch',
             'beta_test_features',
             'message_almost_anyone',
@@ -268,6 +270,7 @@ DEFAULT_GROUPS = [
         'requires_staff': True,
         'permissions': [
             'post_on_twitter',
+            'see_reputation',
             'access_site_before_launch',
             'beta_test_features',
             'edit_own_staff_profile',
@@ -284,6 +287,7 @@ DEFAULT_GROUPS = [
         'requires_staff': True,
         'permissions': [
             'post_on_instagram',
+            'see_reputation',
             'access_site_before_launch',
             'beta_test_features',
             'edit_own_staff_profile',
@@ -299,6 +303,7 @@ DEFAULT_GROUPS = [
         'description': 'We\'re very active on other social media, such as Facebook, reddit and various forums! Our team will take the time to inform the other community about our web app news and hopefully get more users from there, as well as valuable feedback to improve our web app!',
         'requires_staff': True,
         'permissions': [
+            'see_reputation',
             'access_site_before_launch',
             'beta_test_features',
             'edit_own_staff_profile',
@@ -311,6 +316,7 @@ DEFAULT_GROUPS = [
         'description': 'Need help with our web app or the game? Our support team is here to help you and answer your questions!',
         'requires_staff': True,
         'permissions': [
+            'see_reputation',
             'access_site_before_launch',
             'beta_test_features',
             'message_almost_anyone',
@@ -330,7 +336,7 @@ DEFAULT_GROUPS = [
         'translation': string_concat(_('Moderator'), ' (', _('Active'), ')'),
         'description': 'We want all of our users of all ages to have a pleasant a safe stay on our app. That\'s why our team of moderators use the app everyday and report anything that might be inappropriate or invalid!',
         'permissions': [
-            'see_profile_edit_button',
+            'see_reputation',
             'edit_activities_post_language',
             'manipulate_activities',
             'access_site_before_launch',
@@ -353,6 +359,7 @@ DEFAULT_GROUPS = [
         'description': 'When something gets reported, our team of decisive moderators will make a decision on whether or not it should be edited or deleted. This 2-steps system ensures that our team makes fair decisions!',
         'permissions': [
             'moderate_reports',
+            'see_reputation',
             'edit_reported_things',
             'message_almost_anyone',
             'manipulate_activities',
@@ -383,6 +390,7 @@ DEFAULT_GROUPS = [
         'permissions': [
             'post_news',
             'message_almost_anyone',
+            'see_reputation',
             'edit_staff_configurations',
             'add_badges',
             'post_community_event_activities',
@@ -414,6 +422,7 @@ DEFAULT_GROUPS = [
         'description': 'In some of our events, participants can win prizes! This community entertainer is in charge of prize assignment. They\'ll make sure someone will take care of your prize and you receive it.',
         'permissions': [
             'add_prizes',
+            'see_reputation',
             'message_almost_anyone',
             'access_site_before_launch',
             'beta_test_features',
@@ -441,6 +450,7 @@ DEFAULT_GROUPS = [
         'requires_staff': True,
         'permissions': [
             'advanced_staff_configurations',
+            'see_reputation',
             'see_collections_details',
             'order_by_any_field',
             'list_homepage_arts',
@@ -481,6 +491,11 @@ DEFAULT_GROUPS = [
         'translation': string_concat(_('Moderator'), ' (Discord)'),
         'description': 'Help keep Circle\'s private server well organized and fun for all our staff and contributors.',
         'requires_staff': False,
+        'permissions': [
+            'see_reputation',
+            'access_site_before_launch',
+            'beta_test_features',
+        ],
         'outside_permissions': {
             'Discord moderation': { 'image': 'links/discord', 'url': DEFAULT_CONTACT_DISCORD },
         },
@@ -525,6 +540,7 @@ DEFAULT_GROUPS = [
             'advanced_staff_configurations',
             'see_collections_details',
             'order_by_any_field',
+            'see_reputation',
             'list_homepage_arts',
             'access_site_before_launch',
             'beta_test_features',
@@ -546,7 +562,7 @@ DEFAULT_GROUPS = [
         'description': 'Our system administrators take care of the infrasturcture of our web app, including maintaining the servers, deploying new versions, ensuring that we scale according to traffic and under budget, and overall instrastructure monitoring.',
         'permissions': [
             'advanced_staff_configurations',
-            'see_profile_edit_button',
+            'see_reputation',
             'mark_email_addresses_invalid',
             'see_collections_details',
             'order_by_any_field',
