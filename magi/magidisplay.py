@@ -524,6 +524,8 @@ class _MagiDisplayMarkdown(MagiDisplay):
         )
 
     def to_display_value(self, value, parameters):
+        if value[0]:
+            return markSafe(value[1])
         return value[1]
 
     def template(self, parameters):

@@ -55,6 +55,7 @@ from magi.utils import (
     getVerboseNameOfRelatedField,
     hasValue,
     isFullURL,
+    isMarkedSafe,
     isPreset,
     isRequestAjax,
     isRequestCrawler,
@@ -145,6 +146,7 @@ class MagiField(object):
         u'{}_ANSWER': None,
         u'{}_FAQ': None,
         u'{}_TABLE_HEADER': None,
+        u'{}_IS_PLURAL': None, # boolean, defaults to wether or not it ends with 's'
     }, PERMISSION_ITEM_OPTIONS)
     VALID_ITEM_OPTIONS = {}
 
@@ -259,17 +261,35 @@ class MagiField(object):
     # Special
     # After bound. Can be overridden.
 
+    # When a field is usually used to save plural values (example: MagiCSVField)
+    is_usually_plural = False
+
+    @property
+    def is_plural(self):
+        """Used by question, in FAQ"""
+        if self.item_options['IS_PLURAL'] is None:
+            if self.is_usually_plural:
+                return True
+            return self.field_name.endswith('s')
+        return bool(self.item_options['IS_PLURAL'])
+
     def to_text_value(self):
         """
         Used:
         - to display Google Translate links with the text content passed via URL
         - default answer when using Q&A for SEO
         """
+        if isMarkedSafe(self.value):
+            return None
         return unicode(self.value)
 
     # Used to create an FAQ for SEO
     # To return multiple questions and answer, use to_faq instead
-    question = _('What is {name}\'s {thing}?')
+    @property
+    def question(self):
+        if self.is_plural:
+            return _('What are {name}\'s {things}?')
+        return _('What is {name}\'s {thing}?')
 
     def to_question(self):
         if self.item_options['QUESTION']:
@@ -302,7 +322,7 @@ class MagiField(object):
         question = self.format_question(self.to_question())
         if question is not None:
             answer = self.to_answer()
-            if answer is not None and unicode(answer) != unicode(self.name_for_question):
+            if hasValue(answer) and unicode(answer) != unicode(self.name_for_question):
                 return [
                     (question, answer),
                 ]
@@ -1202,6 +1222,36 @@ class MagiModelField(MagiField):
 # Field classes that work as model or non-model
 
 ############################################################
+# Number field
+
+class MagiNumberFieldMixin(object):
+    @property
+    def question(self):
+        if self.is_plural and not isinstance(self.value, float):
+            return _('How many {things} does {name} have?')
+        try:
+            return BaseMagiRelatedField.question.fget(self)
+        except AttributeError:
+            return BaseMagiRelatedField.question
+
+class MagiNumberField(MagiNumberFieldMixin, MagiField):
+    """
+    Value: Integer or float
+    """
+    pass
+
+class MagiNumberModelField(MagiNumberFieldMixin, MagiModelField):
+    """
+    Model field: IntegerField, PositiveIntegerField, FloatField
+    """
+    @classmethod
+    def is_field(self, field_name, model_field, options):
+        for cls in [ models.models.PositiveIntegerField, models.models.IntegerField, models.models.FloatField ]:
+            if isinstance(model_field, cls):
+                return True
+        return False
+
+############################################################
 # Char field
 
 class MagiCharFieldMixin(object):
@@ -1251,6 +1301,9 @@ class MagiTextModelField(MagiTextFieldMixin, MagiModelField):
 class MagiTextareaFieldMixin(object):
     default_icon = 'developer'
     display_class = MagiDisplayTextarea
+
+    def to_faq(self):
+        return None
 
 class MagiTextareaField(MagiTextareaFieldMixin, MagiField):
     """
@@ -1592,6 +1645,8 @@ class MagiBooleanFieldMixin(object):
     def to_display_value_from_value(self, value):
         return _('Yes') if value else _('No')
 
+    question = _('Is {name} {thing}?')
+
     @property
     def answer(self):
         return self.to_display_value_from_value(self.value)
@@ -1682,12 +1737,22 @@ class MagiAgeModelField(MagiAgeFieldMixin, MagiModelField):
 class MagiMoneyFieldMixin(object):
     VALID_ITEM_OPTIONS = {
         u'{}_CURRENCY_SYMBOL': '$',
+        u'{}_CURRENCY_AS_PREFIX': True,
     }
 
     question = _('How much does {name} cost?')
 
+    def format_value_with_currency(self, value):
+        if self.item_options['CURRENCY_AS_PREFIX']:
+            return markSafeFormat(u'{}{}', self.item_options['CURRENCY_SYMBOL'], value)
+        return markSafeFormat(u'{} {}', value, self.item_options['CURRENCY_SYMBOL'])
+
     def to_display_value_from_value(self, value):
-        return u'{}{}'.format(self.item_options.CURRENCY_SYMBOL, value)
+        return self.format_value_with_currency(value)
+
+    @property
+    def answer(self):
+        return self.format_value_with_currency(self.value)
 
     default_icon = 'money'
 
@@ -1878,6 +1943,13 @@ class MagiIChoiceFieldMixin(object):
             return self.db_value
         return self.value
 
+    @property
+    def answer(self):
+        display_value = self.to_display_value()
+        if isMarkedSafe(display_value):
+            return self.value
+        return display_value
+
     # Display
 
     @property
@@ -2008,7 +2080,11 @@ class MagiCSVFieldMixin(MagiModelField):
         return db_value
 
     def to_text_value(self):
-        return andJoin(self.value.values())
+        return andJoin([
+            value for value in self.value.values() if not isMarkedSafe(value)
+        ])
+
+    is_usually_plural = True
 
     ############################################################
     # Display
@@ -2184,6 +2260,8 @@ class MagiDictFieldMixin(object):
 
     def to_faq(self):
         return None
+
+    is_usually_plural = True
 
     ############################################################
     # Display
@@ -2679,6 +2757,8 @@ class MagiForeignKeyModelField(BaseMagiRelatedField):
     @property
     def question(self):
         if getattr(self.rel_model_class, 'IS_PERSON', False):
+            if self.is_plural:
+                return _('Who are {name}\'s {things}?')
             return _('Who is {name}\'s {thing}?')
         try:
             return BaseMagiRelatedField.question.fget(self)
@@ -2778,6 +2858,9 @@ class MagiOwnerModelField(MagiForeignKeyModelField):
             and super(MagiOwnerModelField, self).is_field(field_name, model_field, options)
         )
 
+    def to_faq(self):
+        return None
+
     default_verbose_name = __(_('Added by {username}'), username='')
 
     @property
@@ -2829,6 +2912,8 @@ class BaseMagiManyToManyModelField(BaseMagiRelatedField):
     def bound_init_after(self):
         self.rel_filter_field_name = self.get_rel_filter_field_name()
         self.cached_total = self.get_total_cache()
+
+    is_usually_plural = True
 
     ############################################################
     # Tools
@@ -3713,6 +3798,7 @@ class MagiFields(object):
     # You can also inherit from existing sub classes.
     _EXTRA_FIELD_CLASSES = [
         MagiMainImageField,
+        MagiNumberField,
         MagiCharField,
         MagiTextField,
         MagiCSVField,
@@ -3782,6 +3868,7 @@ class MagiFields(object):
         MagiAgeModelField,
         MagiMoneyModelField,
         MagiTextModelField,
+        MagiNumberModelField,
 
         # Catch-all:
         MagiCharModelField,
