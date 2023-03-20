@@ -651,6 +651,9 @@ class _MagiDisplayImage(MagiDisplayWithTooltipMixin, MagiDisplay):
         else:
             parameters.links = []
 
+    def to_default_tooltip(self, parameters):
+        return parameters.alt or parameters.verbose_name
+
     _BASE_TEMPLATE = u'<img class="image" src="{thumbnail}" alt="{alt}" {tooltip}>'
 
     def template(self, parameters):

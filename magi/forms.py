@@ -866,7 +866,12 @@ class MagiForm(forms.ModelForm):
                         max=self.collection.add_view.max_per_user,
                         things=unicode(self.collection.plural_title).lower(),
                     ))
-
+        # Strip all strings
+        for field_name, field in self.fields.items():
+            if isinstance(field, forms.CharField):
+                value = self.cleaned_data.get(field_name, None)
+                if value is not None:
+                    self.cleaned_data[field_name] = value.strip()
         return self.cleaned_data
 
     def save(self, commit=True):

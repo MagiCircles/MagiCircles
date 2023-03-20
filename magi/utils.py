@@ -906,20 +906,23 @@ def globalContext(request=None, email=False):
 
     context = RAW_CONTEXT.copy()
     context['ajax'] = isRequestAjax(request)
-    context['ajax_modal_only'] = context['ajax'] and 'ajax_modal_only' in request.GET
-    context['is_authenticated'] = request.user.is_authenticated()
-    if context['is_authenticated']:
-        context['is_crawler'] = False
-    else:
-        context['is_crawler'] = isRequestCrawler(request)
 
     if request:
+        context['ajax_modal_only'] = context['ajax'] and 'ajax_modal_only' in request.GET
+        context['is_authenticated'] = request.user.is_authenticated()
         context['request'] = request
         context['current'] = resolve(request.path_info).url_name
         context['current_url'] = request.get_full_path() + ('?' if request.get_full_path()[-1] == '/' else '&')
         language = request.LANGUAGE_CODE
     else:
         language = get_language()
+        context['ajax_modal_only'] = False
+        context['is_authenticated'] = False
+
+    if context['is_authenticated']:
+        context['is_crawler'] = False
+    else:
+        context['is_crawler'] = isRequestCrawler(request)
 
     context['page_title'] = None
     context['current_language'] = language
@@ -966,7 +969,8 @@ def globalContext(request=None, email=False):
     else:
         context['corner_popups'] = OrderedDict()
 
-        context['hidenavbar'] = 'hidenavbar' in request.GET
+        if request:
+            context['hidenavbar'] = 'hidenavbar' in request.GET
         context['javascript_translated_terms_json'] = simplejson.dumps(
             { term: unicode(_(term)) for term in context['javascript_translated_terms'] })
 

@@ -3900,7 +3900,7 @@ class UserCollection(MagiCollection):
                         account.fields = account_collection.item_view.to_magifields(account, context)
 
                     # Buttons
-                    account.show_item_buttons_in_one_line = account_collection.show_item_buttons_in_one_line
+                    account.show_item_buttons_in_one_line = account_collection.item_view.show_item_buttons_in_one_line
                     if (context['uses_deprecated_to_fields']
                         or account.show_item_buttons_in_one_line):
                         account.include_below_item = False
