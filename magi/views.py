@@ -715,8 +715,9 @@ def settings(request, context):
         ('emails', EmailsPreferencesForm(request=request)),
         ('activities', ActivitiesPreferencesForm(instance=context['preferences'], request=request)),
         ('security', SecurityPreferencesForm(instance=context['preferences'], request=request)),
-        ('groupsSettings', EditGroupsSettings(instance=context['preferences'], request=request)),
     ])
+    if request.user.preferences.groups:
+        context['forms']['groupsSettings'] = EditGroupsSettings(instance=context['preferences'], request=request)
 
     # Handle submitted forms
 
