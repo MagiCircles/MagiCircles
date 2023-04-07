@@ -176,6 +176,13 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
         collection.item_view, context, title_prefixes, h1, context['item'], get_page_title_parameters={
             'item': context['item'], })
 
+    # Display unicode other languages
+    if collection.item_view.show_item_name_in_source_languages and not getattr(context['item'], 'image', None):
+        context['item'].display_unicode_other_languages = context['item'].get_display_unicode_other_languages_item(
+            languages=collection.item_view.show_item_name_in_source_languages)
+    else:
+        context['item'].display_unicode_other_languages = None
+
     context['include_below_item'] = False
     context['show_item_buttons'] = collection.item_view.show_item_buttons
     # Buttons are displayed by magifields (deprecated or magifields) or when buttons are displayed
@@ -416,7 +423,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
              or (request.user.is_authenticated()
                  and request.user.hasPermission('order_by_any_field')))):
         ordering_fields = filters['ordering'].split(',')
-        is_reverse = bool(filters.get('reverse_order', True)) # defaults have been added to filters earlier
+        is_reverse = bool(filters.get('reverse_order', False))
         filtered_relevant_fields_to_show = getattr(
             collection.list_view.filter_form, 'ordering_show_relevant_fields', {}).get(filters['ordering'], None)
 
@@ -559,6 +566,13 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
 
     ######################
     # Set settings in context
+
+    if 'js_variables' not in context or not context['js_variables']:
+        context['js_variables'] = OrderedDict()
+    context['js_variables']['merged_fields'] = OrderedDict()
+    def _add_merge_fields_to_js_variables_foreach(new_field_name, details, fields):
+        context['js_variables']['merged_fields'][new_field_name] = fields.keys()
+    context['filter_form'].foreach_merge_fields(_add_merge_fields_to_js_variables_foreach)
 
     context['plural_name'] = collection.plural_name
 
@@ -750,6 +764,13 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
             else:
                 item.relevant_fields_to_show = collection.list_view.to_magi_ordering_fields(
                     item, context, ordering_fields=ordering_fields_to_show)
+
+        # Display unicode other languages
+        if context['show_items_names'] and collection.list_view.show_items_names_in_source_languages:
+            item.display_unicode_other_languages = item.get_display_unicode_other_languages_in_list(
+                languages=collection.list_view.show_items_names_in_source_languages)
+        else:
+            item.display_unicode_other_languages = None
 
         # Buttons per item
         item.buttons_to_show = collection.list_view.buttons_per_item(request, context, item)

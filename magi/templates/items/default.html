@@ -11,13 +11,14 @@
       <img src="{% if item.top_image_item %}{{ item.top_image_item }}{% elif item.top_image %}{{ item.top_image }}{% else %}{{ item.image_url }}{% endif %}" alt="{{ item }}" class="{{ item.collection_name }}-image" style="{% if item_max_height %} max-height: {{ item_max_height }}px;{% endif %}"><!-- data-hd-src="{% if item.top_image_item_hd %}{{ item.top_image_item_hd }}{% elif item.top_image_hd %}{{ item.top_image_hd }}{% endif %}"> removed to see if we get better traffic costs -->
     </a>
     {% else %}
-      {% if item.display_name_item %}
-      {{ item.display_name_item }}
-      {% elif item.display_name %}
-      {{ item.display_name }}
-      {% else %}
-      {{ item }}
-      {% endif %}
+    {{ item.display_unicode_item }}
+    {% if item.display_unicode_other_languages %}
+    {% for display_other_language, display_other_details in item.display_unicode_other_languages.items %}
+    <br><small class="text-muted" lang="{{ display_other_language }}">
+      {% if 'en' not in item.display_unicode_other_languages %}<img src="{{ display_other_details.image }}"
+          alt="{{ display_other_details.verbose_language }}" height="20" />{% endif %}
+      {{ display_other_details.translation }}</small>
+    {% endfor %}{% endif %}
     {% endif %}
   </div>
   <br>

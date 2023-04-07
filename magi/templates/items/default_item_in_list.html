@@ -9,23 +9,25 @@
     {% elif item.top_image_list or item.top_image or item.image %}
     <img src="{% if item.top_image_list %}{{ item.top_image_list }}{% elif item.top_image %}{{ item.top_image }}{% else %}{{ item.image_url }}{% endif %}" alt="{{ item }}" class="{{ item.collection_name }}-image img-responsive" style="{% if item_max_height %} max-height: {{ item_max_height }}px;{% endif %}">
     {% elif not show_items_names %}
-    {% if item.display_name_in_list %}
-    {{ item.display_name_in_list }}
-    {% elif item.display_name %}
-    {{ item.display_name }}
-    {% else %}
-    {{ item }}
-    {% endif %}
+    {{ item.display_unicode_in_list }}
+    {% if item.display_unicode_other_languages %}
+    {% for display_other_language, display_other_details in item.display_unicode_other_languages.items %}
+    <br><small class="text-muted" lang="{{ display_other_language }}">
+      {% if 'en' not in item.display_unicode_other_languages %}<img src="{{ display_other_details.image }}"
+          alt="{{ display_other_details.verbose_language }}" height="20" />{% endif %}
+      {{ display_other_details.translation }}</small>
+    {% endfor %}{% endif %}
     {% endif %}
     {% if show_items_names %}
     <h3 class="{{ item.collection_name }}-name">
-      {% if item.display_name_in_list %}
-      {{ item.display_name_in_list }}
-      {% elif item.display_name %}
-      {{ item.display_name }}
-      {% else %}
-      {{ item }}
-      {% endif %}
+      {{ item.display_unicode_in_list }}
+      {% if item.display_unicode_other_languages %}
+      {% for display_other_language, display_other_details in item.display_unicode_other_languages.items %}
+      <br><small class="text-muted" lang="{{ display_other_language }}">
+        {% if 'en' not in item.display_unicode_other_languages %}<img src="{{ display_other_details.image }}"
+          alt="{{ display_other_details.verbose_language }}" height="20" />{% endif %}
+        {{ display_other_details.translation }}</small>
+      {% endfor %}{% endif %}
     </h3>
     {% else %}{# Ensure minimum height to avoid infinite load #}
     <br>

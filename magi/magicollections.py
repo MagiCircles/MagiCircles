@@ -282,6 +282,7 @@ class MagiCollection(object):
 
     # Optional variables with default values
     auto_share_image = False
+    show_items_names_in_source_languages = False # Can also be a list of languages
 
     @property
     def name(self):
@@ -397,6 +398,7 @@ class MagiCollection(object):
                     and view and view.view == 'item_view'
                     and request and getattr(request, '_item_view_pk', None)
                     and prefetched not in already_prefetched
+                    and prefetched not in view.fields_prefetched_even_on_high_traffic
                     and not request.user.is_authenticated()
                     and not view.uses_deprecated_to_fields()):
                     if not hasattr(request, '_not_prefetched_for_high_traffic'):
@@ -908,6 +910,8 @@ class MagiCollection(object):
                 show_add_button = justReturn(False)
                 ajax_item_popover = True
                 allow_random = False
+                show_open_button = False
+                display_style_table_show_open_button = False
 
                 alt_views = MagiCollection.ListView.alt_views + [
                     ('quick_edit', {
@@ -915,7 +919,7 @@ class MagiCollection(object):
                         'verbose_name': _('Quick edit'),
                         'template': 'default_item_table_view',
                         'display_style': 'table',
-                        'display_style_table_fields': ['image'] + ([
+                        'display_style_table_fields': [ 'image' ] + ([
                             model_class.fk_as_owner] if model_class.fk_as_owner else []),
                     }),
                 ]
@@ -1000,31 +1004,9 @@ class MagiCollection(object):
                             }
                     return buttons
 
-                def table_fields(self, item, *args, **kwargs):
-                    item_image = None
-                    for image_field in [
-                            'top_image_list', 'top_image',
-                            'image_thumbnail_url', 'image_url',
-                    ]:
-                        if getattr(item, image_field, None):
-                            item_image = getattr(item, image_field)
-                            break
-                    fields = super(_CollectibleCollection.ListView, self).table_fields(item, *args, extra_fields=(
-                        [(('image', {
-                            'verbose_name': unicode(item),
-                            'value': item_image,
-                            'type': 'image',
-                        }) if item_image else ('image', {
-                            'verbose_name': unicode(item),
-                            'value': unicode(item),
-                            'type': 'text',
-                          }))]), **kwargs)
-                    if (model_class.fk_as_owner and model_class.fk_as_owner in fields
-                        and 'ajax_link' in fields[model_class.fk_as_owner]):
-                        del(fields[model_class.fk_as_owner]['ajax_link'])
-                    return fields
+                hide_table_fields_headers = True
 
-                def table_fields_headers(self, fields, view=None):
+                def table_fields_headers(self, fields, view=None): # Deprecated
                     return []
 
                 def extra_context(self, context):
@@ -2320,6 +2302,7 @@ class MagiCollection(object):
         top_buttons_per_line = None
         show_search_results = True
         show_items_names = False
+        show_items_names_in_source_languages = property(propertyFromCollection('show_items_names_in_source_languages'))
         authentication_required = False
         distinct = False
         add_button_subtitle = None
@@ -2393,6 +2376,8 @@ class MagiCollection(object):
 
         def table_fields_headers_sections(self, view=None):
             return []
+
+        hide_table_fields_headers = False
 
         def show_add_button(self, request):
             return True
@@ -2729,7 +2714,9 @@ class MagiCollection(object):
         fields_prefetched = []
         fields_prefetched_together = []
         fields_suggest_edit = []
+        fields_prefetched_even_on_high_traffic = []
 
+        show_item_name_in_source_languages = property(propertyFromCollection('show_items_names_in_source_languages'))
         show_item_buttons = property(propertyFromCollection('show_item_buttons'))
         item_buttons_classes = property(propertyFromCollection('item_buttons_classes'))
         show_item_buttons_as_icons = property(propertyFromCollection('show_item_buttons_as_icons'))

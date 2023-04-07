@@ -26,6 +26,7 @@ from magi.utils import (
     andJoin,
     articleJsonLdFromItem,
     AttrDict,
+    cmToHumanReadable,
     ColorField,
     failSafe,
     FAQjsonLd,
@@ -39,6 +40,7 @@ from magi.utils import (
     getCharacterURLFromPk,
     getDomainFromURL,
     getEmojis,
+    getEnglish,
     getEventStatus,
     getFilterFieldNameOfRelatedItem,
     getImageForPrefetched,
@@ -54,6 +56,7 @@ from magi.utils import (
     getValueIfNotProperty,
     getVerboseNameOfRelatedField,
     hasValue,
+    inchesToHumanReadable,
     isFullURL,
     isMarkedSafe,
     isPreset,
@@ -71,6 +74,7 @@ from magi.utils import (
     modelHasField,
     newOrder,
     recursiveCall,
+    secondsToHumanReadable,
     setRelOptionsDefaults,
     split_data,
     staticImageURL,
@@ -1063,7 +1067,7 @@ class MagiField(object):
             _html, _display_parameters, _display_value = self.get_display_class_html(
                 iter_value=iter_value, is_other_language=True)
             # Check display_value to avoid displaying the same value twice
-            if _display_value not in all_languages_display_values:
+            if hasValue(_display_value) and _display_value not in all_languages_display_values:
                 all_languages_display_values.append(_display_value)
                 all_languages_html[language] = _html
         translation_activate(current_user_language)
@@ -1090,6 +1094,8 @@ class MagiField(object):
                         button_name, prefix='show', iter_value=iter_value, default=True)
             ]),
             item_to_parameters=lambda button_name, _button_verbose: {
+                'button': True,
+                'button_class': 'link-muted',
                 'link': self.get_field_button_variable(
                     button_name, 'url', iter_value=iter_value),
                 'ajax_link': self.get_field_button_variable(
@@ -1573,6 +1579,18 @@ class MagiMainImageFieldMixin(object):
     def ajax_link_title(self):
         return self.item if self.options.table_fields else None
 
+
+    @property
+    def thumbnail(self):
+        # When main image displayed in table, check for top_image settings
+        if self.options.table_fields:
+            return (
+                getattr(self.item, u'top_image_list', None)
+                or getattr(self.item, u'top_image', None)
+                or MagiImageFieldMixin.thumbnail.fget(self)
+            )
+        return MagiImageFieldMixin.thumbnail.fget(self)
+
 class MagiMainImageField(MagiMainImageFieldMixin, MagiImageField):
     """
     Value: URL
@@ -1593,8 +1611,7 @@ class MagiMainImageModelField(MagiMainImageFieldMixin, MagiImageModelField):
 # Birthday field
 
 class MagiBirthdayFieldMixin(object):
-    @property
-    def faq(self):
+    def to_faq(self):
         faq_for_field = super(MagiBirthdayFieldMixin, self).to_faq()
         if (not self.item_options['SHOW_YEAR']
             or 'age' in self.magifields.fields):
@@ -1727,6 +1744,113 @@ class MagiAgeModelField(MagiAgeFieldMixin, MagiModelField):
     @classmethod
     def is_field(self, field_name, model_field, options):
         return fieldNameMatch(field_name, 'age')
+
+############################################################
+# Seconds field
+
+class MagiDurationFieldMixin(object):
+    def to_display_value_from_value(self, value):
+        return secondsToHumanReadable(value)
+
+    @property
+    def answer(self):
+        return self.to_display_value_from_value(self.value)
+
+    default_icon = 'times'
+    default_verbose_name = _('Length')
+
+class MagiDurationField(MagiDurationFieldMixin, MagiNumberField):
+    """
+    Value: Integer (seconds)
+    """
+    pass
+
+class MagiDurationModelField(MagiDurationFieldMixin, MagiNumberModelField):
+    """
+    Model field: see number
+    Condition: Name contains length and help_text contains "seconds", or name contains duration
+    """
+    @classmethod
+    def is_field(self, field_name, model_field, options):
+        return (
+            (fieldNameMatch(field_name, 'length')
+             and model_field.help_text and 'seconds' in getEnglish(model_field.help_text))
+            or fieldNameMatch(field_name, 'duration'))
+
+############################################################
+# Size field
+
+class MagiSizeFieldMixin(object):
+    VALID_ITEM_OPTIONS = {
+        u'{}_CM_ONLY': False, # will not convert to km, m, cm
+        u'{}_INCHES_ONLY': False, # will not convert to miles, feet, inches
+    }
+
+    @property
+    def question(self):
+        if fieldNameMatch('height'):
+            return _('How tall is {name}?')
+        elif fieldNameMatch('size') or fieldNameMatch('length'):
+            return _('What is {name}\'s {thing}?')
+        return _('What is {name}\'s {thing} size?')
+
+    def to_display_value_from_value(self, value):
+        return cmToHumanReadable(value, cm_only=self.cm_only)
+
+    @property
+    def annotation(self):
+        if self.language in [ 'en', 'my' ]:
+            return inchesToHumanReadable(cm=self.value, inches_only=self.inches_only)
+        return None
+
+    @property
+    def answer(self):
+        if self.language in [ 'en', 'my' ]:
+            return u'{} ({})'.format(
+                cmToHumanReadable(cm=self.value, cm_only=self.cm_only),
+                inchesToHumanReadable(cm=self.value, inches_only=self.inches_only),
+            )
+        return self.to_display_value(self.value)
+
+    default_icon = 'measurements'
+    default_verbose_name = _('Height')
+
+    ############################################################
+    # Tools
+
+    @property
+    def inches_only(self):
+        if self.item_options['INCHES_ONLY']:
+            return True
+        for field_name_match in [ 'bust', 'waist', 'hips' ]:
+            if fieldNameMatch(self.field_name, field_name_match):
+                return True
+        return False
+
+    @property
+    def cm_only(self):
+        return self.item_options['CM_ONLY']
+
+class MagiSizeField(MagiSizeFieldMixin, MagiNumberField):
+    """
+    Value: Integer
+    """
+    pass
+
+class MagiSizeModelField(MagiSizeFieldMixin, MagiNumberModelField):
+    """
+    Model field: see number
+    Condition: Name contains height, size, length, bust, waist, hips
+    """
+    _FIELD_NAME_MATCHES = [
+        'height', 'size', 'length', 'bust', 'waist', 'hips',
+    ]
+    @classmethod
+    def is_field(self, field_name, model_field, options):
+        for field_name_match in self._FIELD_NAME_MATCHES:
+            if fieldNameMatch(field_name, field_name_match):
+                return True
+        return False
 
 ############################################################
 # Money field
@@ -3060,7 +3184,7 @@ class MagiManyToManyModelField(BaseMagiManyToManyModelField):
             # Retrieve items that have been prefetched manually with a limit
             rel_items, self.rel_options.max = self.request._prefetched_with_max[self.original_field_name]
             self._and_more_button_total_from_rel_items(rel_items)
-        elif isinstance(getattr(self.item, self.item_access_field_name), QuerySet):
+        elif isinstance(getattr(self.item, self.item_access_field_name, None), QuerySet):
             # Non-explicit relationships: manual queryset with a limit
             rel_items = getattr(self.item, self.field_name)[:self.rel_options.max + 1]
             self._and_more_button_total_from_rel_items(rel_items)
@@ -3551,7 +3675,7 @@ class MagiButtonField(MagiField):
                 ('ajax_title', 'ajax_link_title'),
                 ('open_in_new_window', 'new_window'),
                 ('extra_attributes', 'data_attributes'),
-                ('badge', 'badge'),
+                ('badge', 'text_badge'),
         ]:
             if not hasattr(self, parameter_name) and hasattr(self.button_options, button_option_name):
                 try:
@@ -3637,6 +3761,8 @@ class MagiButtonField(MagiField):
     @property
     def text_image(self):
         return self.image
+
+    button = False # button classes get added by link_classes
 
     @property
     def link_classes(self):
@@ -3809,6 +3935,8 @@ class MagiFields(object):
         MagiYouTubeVideoField,
         MagiURLField,
         MagiAgeField,
+        MagiDurationField,
+        MagiSizeField,
         MagiMoneyField,
         MagiTextareaField,
         MagiSocialMediaTemplateField,
@@ -3858,6 +3986,8 @@ class MagiFields(object):
         MagiURLModelField,
         MagiLeaderboardPositionModelField,
         MagiAgeModelField,
+        MagiDurationModelField,
+        MagiSizeModelField,
         MagiMoneyModelField,
         MagiTextModelField,
         MagiNumberModelField,
@@ -4362,6 +4492,8 @@ class MagiFields(object):
     # Table headers
 
     def get_table_headers(self):
+        if self.view.hide_table_fields_headers:
+            return []
         return [
             (field_name, field.verbose_name_for_table_header)
             for field_name, field in self.fields.items()

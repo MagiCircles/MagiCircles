@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import json, datetime
 from collections import OrderedDict
 from django.contrib.auth.models import User
@@ -5,7 +6,7 @@ from django.db import models
 from django.db.models.fields import FieldDoesNotExist
 from django.db.models.fields.files import ImageFieldFile
 from django.conf import settings as django_settings
-from django.utils.translation import ugettext_lazy as _, get_language
+from django.utils.translation import ugettext_lazy as _, get_language, activate as translation_activate
 from django.utils import timezone
 from magi.raw import KNOWN_ITEM_PROPERTIES
 from magi.utils import (
@@ -26,6 +27,10 @@ from magi.utils import (
     notTranslatedWarning,
     getAllTranslations,
     getValueIfNotProperty,
+    getVerboseLanguage,
+    getLanguageImage,
+    getTranslatedName,
+    getWesternName,
 )
 
 ############################################################
@@ -381,7 +386,7 @@ class BaseMagiModel(models.Model):
             d['id'] = getattr(self, u'{}_id'.format(field_name), None)
         # Add default unicode if missing
         if 'unicode' not in d:
-            d['unicode'] = d['name'] if 'name' in d else (unicode(d['id']) if 'id' in d else '?')
+            d['unicode'] = getTranslatedName(d) if 'name' in d else (unicode(d['id']) if 'id' in d else '?')
         if 'id' in d:
             if 'pk' not in d:
                 d['pk'] = d['id']
@@ -602,6 +607,52 @@ class BaseMagiModel(models.Model):
             raise ValueError
         return staticImageURL(getattr(self, field_name), folder=folder)
 
+    @property
+    def display_unicode_item(self):
+        return (
+            getattr(self, 'display_name_item', None)
+            or getattr(self, 'display_name', None)
+            or unicode(self)
+        )
+
+    @property
+    def display_unicode_in_list(self):
+        return (
+            getattr(self, 'display_name_in_list', None)
+            or getattr(self, 'display_name', None)
+            or unicode(self)
+        )
+
+    def _get_display_unicode_other_languages(self, to_unicode, languages=None):
+        if not languages or languages == True:
+            languages = self.get_display_translation_sources('name')
+        if not languages:
+            return u''
+        current_language = getattr(getattr(self, 'request', None), 'LANGUAGE_CODE', None) or get_language()
+        current_language_unicode = to_unicode()
+        to_display = OrderedDict()
+        for language in languages:
+            if language == current_language:
+                continue
+            translation_activate(language)
+            translated_value = to_unicode()
+            if translated_value != current_language_unicode and translated_value not in to_display.values():
+                to_display[language] = translated_value
+        translation_activate(current_language)
+        return OrderedDict([
+            (language, {
+                'translation': translated_value,
+                'verbose_language': getVerboseLanguage(language),
+                'image': getLanguageImage(language),
+            }) for language, translated_value in to_display.items()
+        ])
+
+    def get_display_unicode_other_languages_in_list(self, languages=None):
+        return self._get_display_unicode_other_languages(to_unicode=lambda: self.display_unicode_in_list)
+
+    def get_display_unicode_other_languages_item(self, languages=None):
+        return self._get_display_unicode_other_languages(to_unicode=lambda: self.display_unicode_item)
+
     @classmethod
     def get_field_translation_sources(self, field_name):
         return listUnique(getattr(self, u'{}_SOURCE_LANGUAGES'.format(
@@ -666,11 +717,32 @@ class BaseMagiModel(models.Model):
                         if value:
                             result_language = source
                         break
+        to_translation = getattr(self, u'to_{}_translation'.format(field_name), None)
+        if to_translation:
+            result = to_translation(language, result_language, value)
+            if isinstance(result, tuple):
+                result_language, value = result
+            else:
+                value = result
         if return_language:
             return result_language, value
         return value
 
     get_translation_from_dict = get_translation # for retro-compatibility
+
+    def to_name_translation(self, language, result_language, value):
+        """
+        When names are assumed to be Japanese, they're assumed to be stored with last name then first name.
+        Because western names are not displayed that way, in the exception that the current item has a
+        western name, this function will do the job of swapping names for display.
+        """
+        is_western_name = getattr(self, 'is_western_name', getattr(self, 'IS_WESTERN_NAME', False))
+        return getWesternName(value, is_western_name=is_western_name, language=result_language)
+
+    @property
+    def first_name(self):
+        """Assumes last name is saved first. Example: Smith John"""
+        self.get_translation('name').split(' ')[-1]
 
     def get_displayed_timezones(self, name):
         timezones = ['Local time']

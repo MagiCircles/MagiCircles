@@ -471,6 +471,9 @@
         .btn .flaticon-checked {
             color: inherit;
         }
+        ul.list-group {
+            margin: 0;
+        }
         .list-wrapper {
             display: block;
             &.with_bullet {
@@ -524,7 +527,7 @@
                 }
             }
         }
-        dl {
+        dl:not(.inline) {
             dt {
                 padding: 8px 0;
             }
@@ -661,6 +664,23 @@
     }
     &.collection-table [data-field="buttons"] {
         min-width: 80px;
+    }
+}
+
+dl.inline {
+    margin-bottom: 0;
+    dt {
+        display: inline-block;
+        padding: 0;
+        min-width: 60px;
+        text-align: left;
+    }
+    dd {
+        display: inline;
+    }
+    dd:after {
+        display: block;
+        content: '';
     }
 }
 

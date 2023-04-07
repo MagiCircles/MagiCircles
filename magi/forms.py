@@ -1560,11 +1560,23 @@ class MagiFiltersForm(AutoForm):
 
     @classmethod
     def set_filters_defaults_when_missing(self, collection, filters):
+        boolean_fields = []
+        was_updated = False
         for field_name in collection.list_view.filters_with_default_form_values:
             if field_name not in filters:
-                filters.update_key(
-                    field_name, collection.list_view.filters_details[field_name]['form_default'],
-                )
+                if collection.list_view.filters_details[field_name]['form_field_class'] != forms.fields.BooleanField:
+                    was_updated = True
+                    filters.update_key(
+                        field_name, collection.list_view.filters_details[field_name]['form_default'],
+                    )
+                else:
+                    boolean_fields.append(field_name)
+        # If anything needed up an update, then we're in the case where the URL was set manually
+        # and not set from a form, so we should also set the default values for booleans
+        if was_updated:
+            for field_name in boolean_fields:
+                if collection.list_view.filters_details[field_name]['form_default']:
+                    filters.update_key(field_name, True)
 
     @property
     def extra_buttons(self):

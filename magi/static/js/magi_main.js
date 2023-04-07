@@ -1035,6 +1035,7 @@ $(document).ready(function() {
     dismissPopoversOnClickOutside();
     switchLanguage();
     loadFiltersButtons();
+    loadFiltersMergedFields();
 });
 
 // *****************************************
@@ -1910,6 +1911,24 @@ function loadFiltersButtons() {
     });
 }
 
+function loadFiltersMergedFields() {
+    // When a merge field gets unset, also unset original fields to avoid having them be repopulated in python
+    let form = $('#sidebar-wrapper form[id^="filter-form-"]');
+    if (typeof(merged_fields) != 'undefined') {
+        $.each(merged_fields, function(new_field_name, fields) {
+            let merged_field = form.find('#id_' + new_field_name);
+            function onMergedFieldChanged() {
+                if (!hasValue(merged_field)) {
+                    fields.forEach(function(field_name) {
+                        form.find('#id_' + field_name).val('');
+                    });
+                }
+            };
+            formOnChangeValueTrigger(form, new_field_name, onMergedFieldChanged);
+        });
+    }
+}
+
 function loadPresets(button) {
     if (button.data('always-hidden')) {
         return;
@@ -2354,7 +2373,7 @@ function formOnChangeValueShow(form, changingFieldName, valuesToShow) {
 }
 
 function formOnChangeValueTrigger(form, changingFieldName, valuesThatTrigger) {
-    // valuesThatTrigger can be a callback name name or a callback
+    // valuesThatTrigger can be a callback name or a callback
     // or an object { value: callback name name or callback }
     let changingField = form.find('#id_' + changingFieldName);
     function onChange(animation) {

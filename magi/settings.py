@@ -220,6 +220,11 @@ if hasattr(settings_module, 'ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LAN
 else:
     ONLY_SHOW_SAME_LANGUAGE_ACTIVITY_BY_DEFAULT_FOR_LANGUAGES = LANGUAGES_CANT_SPEAK_ENGLISH
 
+if hasattr(settings_module, 'GOOGLE_ANALYTICS_GA4'):
+    GOOGLE_ANALYTICS_GA4 = getattr(settings_module, 'GOOGLE_ANALYTICS_GA4')
+else:
+    GOOGLE_ANALYTICS_GA4 = None
+
 if hasattr(settings_module, 'GOOGLE_ANALYTICS'):
     GOOGLE_ANALYTICS = getattr(settings_module, 'GOOGLE_ANALYTICS')
 else:

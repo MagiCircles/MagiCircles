@@ -31,6 +31,7 @@ __all__ = [
     'MagiDisplayTextWithLink',
     'MagiDisplayMarkdown',
     'MagiDisplayLink',
+    'MagiDisplayButton',
     'MagiDisplayImage',
     'MagiDisplayFigure',
     'MagiDisplayDateTimeWithTimezones',
@@ -49,7 +50,6 @@ __all__ = [
     'MagiDisplayAlert',
 
     'MagiDisplayButtons',
-    'MagiDisplayButton',
 ]
 
 ############################################################
@@ -426,6 +426,7 @@ class _MagiDisplayText(MagiDisplay):
         'text_image': None,
         'text_image_height': 30,
         'text_image_alt': None, # defaults to verbose_name
+        'text_badge': None,
     }
     truc = True
 
@@ -436,10 +437,13 @@ class _MagiDisplayText(MagiDisplay):
 
     def to_parameters_extra(self, parameters):
         parameters.text_image_alt = parameters.text_image_alt or parameters.verbose_name
+        if parameters.text_badge == 0:
+            parameters.text_badge = None
 
-    template = u'{text_icon} {text_image} <span>{display_value}</span>'
+    template = u'{text_icon} {text_image} <span>{display_value}</span> {text_badge}'
     template_text_icon = u'<i class="flaticon-{text_icon}"></i>'
     template_text_image = u'<img src="{text_image}" alt="{text_image_alt}" height="{text_image_height}">'
+    template_text_badge = u'<span class="badge progress-bar-main">{text_badge}</span>'
 
 MagiDisplayText = _MagiDisplayText()
 
@@ -608,6 +612,17 @@ class _MagiDisplayLink(MagiDisplay):
 MagiDisplayLink = _MagiDisplayLink()
 
 ############################################################
+# Button
+
+class _MagiDisplayButton(_MagiDisplayLink):
+    OPTIONAL_PARAMETERS = mergeDicts(_MagiDisplayLink.OPTIONAL_PARAMETERS, {
+        'button': True,
+        'button_size': 'md',
+    })
+
+MagiDisplayButton = _MagiDisplayButton()
+
+############################################################
 # Image
 
 class _MagiDisplayImage(MagiDisplayWithTooltipMixin, MagiDisplay):
@@ -616,7 +631,7 @@ class _MagiDisplayImage(MagiDisplayWithTooltipMixin, MagiDisplay):
     """
     OPTIONAL_PARAMETERS = {
         'original': None, # Defaults to display_value
-        'thumbnail': None, # Defaults to value
+        'thumbnail': None, # Defaults to display_value
         'hq': None,
         'alt': None, # defaults to verbose_name
 
@@ -975,7 +990,11 @@ class _MagiDisplayDescriptionList(_MagiDisplayDict):
     - A dict: { 'What\'s your name?': 'Deby' }
     - A dict of dicts: { 'name_question': { 'verbose': _('What\'s your name?'), 'value': 'Deby' } }
     """
-    template = u'<dl>{display_value}</dl>'
+    OPTIONAL_PARAMETERS = mergeDicts(_MagiDisplayDict.OPTIONAL_PARAMETERS, {
+        'inline': False,
+    })
+    template = u'<dl {inline}>{display_value}</dl>'
+    template_inline = u'class="inline"'
     template_foreach = u'<dt data-key="{key}">{display_dict_key}</dt><dd>{value}</dd>'
 
 MagiDisplayDescriptionList = _MagiDisplayDescriptionList()
@@ -1074,34 +1093,9 @@ MagiDisplayAlert = _MagiDisplayAlert()
 ############################################################
 # Mini buttons (below fields)
 
-class _MagiDisplayButton(_MagiDisplayLink):
-    OPTIONAL_PARAMETERS = mergeDicts(_MagiDisplayLink.OPTIONAL_PARAMETERS, {
-        'button': True,
-        'button_size': 'md',
-        'button_class': 'link-muted',
-    })
-
-MagiDisplayButton = _MagiDisplayButton()
-
 class _MagiDisplayButtons(_MagiDisplayMultiple):
     OPTIONAL_PARAMETERS = mergeDicts(_MagiDisplayMultiple.OPTIONAL_PARAMETERS, {
         'item_display_class': MagiDisplayButton,
     })
 
 MagiDisplayButtons = _MagiDisplayButtons()
-
-############################################################
-# Button
-
-class _MagiDisplayButton(_MagiDisplayLink):
-    OPTIONAL_PARAMETERS = mergeDicts(_MagiDisplayLink.OPTIONAL_PARAMETERS, {
-        'badge': None,
-    })
-
-    def to_parameters_extra(self, parameters):
-        parameters.hide_badge = parameters.badge == 0
-
-    template_badge = u'<span class="badge progress-bar-main" {hide_badge}>{badge}</span>'
-    template_hide_badge = u'style="display: none;"'
-
-MagiDisplayButton = _MagiDisplayButton()

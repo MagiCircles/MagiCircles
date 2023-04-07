@@ -83,6 +83,7 @@
 {# Display style: TABLE / deprecated fields #}
 {% elif display_style == 'table' and uses_deprecated_to_fields %}
 
+{% if debug %}-- old design --{% endif %}
 <div class="table-responsive">
   <table class="items list-items-{{ collection.name }} {% for class in display_style_table_classes %}{{ class }} {% endfor %}collection-table" data-page-number="{{ page }}" id="{{ collection.name }}-page-{{ page }}">
 

@@ -277,6 +277,7 @@ DEFAULT_ICONS_BASED_ON_NAMES = OrderedDict([
     ('hips', 'measurements'),
     ('waist', 'measurements'),
     ('bust', 'measurements'),
+    ('measurements', 'measurements'),
     ('blood', 'hp'),
     ('length', 'times'),
     ('bpm', 'hp'),

@@ -133,6 +133,14 @@ def getTranslatedName(d, field_name='name', language=None):
 
 getTranslatedNameLazy = lazy(getTranslatedName, unicode)
 
+def ordinalNumber(n):
+    return "%d%s" % (n, "tsnrhtdd"[(n / 10 % 10 != 1) * (n % 10 < 4) * n % 10::4])
+
+def translatedOrdinalNumber(n):
+    return unicode(_(ordinalNumber(n)))
+
+ordinalNumberLazy = lazy(translatedOrdinalNumber, unicode)
+
 ############################################################
 # Characters
 
@@ -1813,6 +1821,21 @@ def birthdayOrderingQueryset(queryset, field_name='birthday', order_by=True):
         queryset = queryset.order_by('birthday_month', 'birthday_day')
     return queryset
 
+ASTROLOGICAL_SIGN_CHOICES = (
+    ('leo', _('Leo')),
+    ('aries', _('Aries')),
+    ('libra', _('Libra')),
+    ('virgo', _('Virgo')),
+    ('scorpio', _('Scorpio')),
+    ('capricorn', _('Capricorn')),
+    ('pisces', _('Pisces')),
+    ('gemini', _('Gemini')),
+    ('cancer', _('Cancer')),
+    ('sagittarius', _('Sagittarius')),
+    ('aquarius', _('Aquarius')),
+    ('taurus', _('Taurus')),
+)
+
 ASTROLOGICAL_SIGNS = [
     ((12, 22), 'capricorn'),
     ((11, 22), 'sagittarius'),
@@ -2027,9 +2050,6 @@ def randomString(length, choice=(string.ascii_letters + string.digits)):
 def isAscii(string):
     return all(ord(c) < 128 for c in string)
 
-def ordinalNumber(n):
-    return "%d%s" % (n,"tsnrhtdd"[(n/10%10!=1)*(n%10<4)*n%10::4])
-
 def getMedalImage(nth):
     return staticImageURL(u'medal{}'.format(4 - nth), folder='badges') if nth < 4 else None
 
@@ -2061,6 +2081,8 @@ def getTranslation(term, language):
     """
     term accepts callable
     """
+    if language == 'en' and hasattr(term, '_proxy____args'):
+        return term._proxy____args[0]
     old_lang = get_language()
     if old_lang != language:
         translation_activate(language)
@@ -2163,6 +2185,85 @@ def hilo(a, b, c):
     if b < a: a, b = b, a
     if c < b: b, c = c, b
     return a + c
+
+def cmToInches(cm):
+    return cm / 2.54
+
+def cmToHumanReadable(cm, return_list=False, cm_only=False):
+    if cm_only:
+        return u'{}cm'.format(cm)
+    if cm < 0:
+        cm = cm * -1
+        is_negative = True
+    else:
+        is_negative = False
+    values = []
+    for unit, cm_per_unit in [
+            ('km', 100000),
+            ('m', 100),
+            ('cm', 1),
+    ]:
+        value = int(math.floor(cm / cm_per_unit))
+        if value != 0:
+            values.append((value, unit))
+        cm = cm - (value * cm_per_unit)
+    if return_list:
+        return (is_negative, values)
+    return (
+        (u'-' if is_negative else u'')
+        + (u' '.join([ u'{}{}'.format(value, unit) for value, unit in values ]))
+    )
+
+def inchesToHumanReadable(inches=None, cm=None, return_list=False, inches_only=False):
+    if cm is not None and inches is None:
+        inches = cmToInches(cm)
+    if inches_only:
+        return u'{}"'.format(int(round(inches)))
+    if inches < 0:
+        inches = inches * -1
+        is_negative = True
+    else:
+        is_negative = False
+    values = []
+    use_short_units = True
+    for unit, short_unit, inches_per_unit in [
+            ('mi', None, 63360),
+            ('ft', '\'', 12),
+            ('in', '"', 1),
+    ]:
+        value = int(math.floor(inches / inches_per_unit))
+        if unit == 'mi' and value:
+            use_short_units = False
+        if value != 0:
+            values.append((value, short_unit if use_short_units else unit))
+        inches = int(inches - (value * inches_per_unit))
+    if return_list:
+        return (is_negative, values)
+    return (
+        (u'-' if is_negative else u'')
+        + (u'' if use_short_units else u' ').join([ u'{}{}'.format(value, unit) for value, unit in values ])
+    )
+
+def secondsToHumanReadable(seconds, return_list=False):
+    if seconds < 0:
+        seconds = seconds * -1
+        is_negative = True
+    else:
+        is_negative = False
+    values = []
+    for unit, seconds_per_unit in [
+            (_('days'), 86400),
+            (_('hours'), 3600),
+            (_('minutes'), 60),
+            (_('seconds'), 1),
+    ]:
+        value = int(math.floor(seconds / seconds_per_unit))
+        if value != 0:
+            values.append((value, unit))
+        seconds = seconds - (value * seconds_per_unit)
+    if return_list:
+        return (is_negative, values)
+    return u' '.join([ u'{} {}'.format(value, unit) for value, unit in values ])
 
 def complementaryColor(hex_color=None, rgb=None):
     if hex_color:
@@ -2301,6 +2402,10 @@ class MagiQueryDict(object):
             return getattr(self.querydict, name)
         except AttributeError:
             return None
+
+    # Unicode
+    def __unicode__(self):
+        return unicode(self.querydict)
 
 def getIndex(list, index, default=None):
     try:
@@ -4427,6 +4532,33 @@ _mark_safe = mark_safe
 
 def clearJoin(strings, separator=u''):
     return separator.join([ s for s in strings if s ])
+
+def getWesternName(t_name, is_western_name=False, language=None):
+    """
+    When names are assumed to be Japanese, they're assumed to be stored with last name then first name.
+    Because western names are not displayed that way, in the exception that the current item has a
+    western name, this function will do the job of swapping names for display.
+    """
+    if is_western_name:
+        language = language or get_language()
+        if language == 'ja':
+            return u'・'.join(reversed(t_name.split(' ')))
+        if language in ['zh-hant', 'zh-hans']:
+            return u'·'.join(reversed(t_name.split(' ')))
+        return u' '.join(reversed(t_name.split(' ')))
+    return t_name
+
+WESTERN_NAME_HELP_TEXT = u"""
+Family name should always be first.
+Ex: "Kousaka Honoka" or "Verde Emma".
+Use spaces to separate names.
+If a name has multiple words, copy-paste this character to use as space: " ".
+"""
+
+WESTERN_OPTION_HELP_TEXT = u"""
+When checked, the order of the name will be swapped to look more like a Western name.
+Ex: "Emma Verde" or "エマ・ヴェルデ"
+"""
 
 ############################################################
 # Form labels and help texts

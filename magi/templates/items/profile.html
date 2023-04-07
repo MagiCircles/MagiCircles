@@ -9,15 +9,15 @@
       <div class="row">
         <div class="col-sm-2">
           {% include 'include/avatar.html' with av_user=profile_user av_size=40 av_image_size=200 %}
-          {% if profile_user.is_staff %}
+          {% if user.is_superuser and profile_user.is_superuser %}ADMIN<br>{% endif %}{% if profile_user.is_staff %}
           <span class="staff-status">
             <i class="flaticon-staff"></i>
-            {% trans 'Staff' %}
+            {% trans 'Staff' %}<br>
           </span>
           {% endif %}
           {% if profile_user.preferences.groups %}
           {% for group_name, group in profile_user.preferences.groups_and_details.items %}
-          <a href="/help/Roles/" data-ajax-url="/ajax/help/Roles/" data-ajax-title="{% trans 'Roles' %}">
+          <a href="/help/Roles/" data-ajax-url="/ajax/help/Roles/" data-ajax-title="{% trans 'Roles' %}" class="a-nodifference">
             <img src="{{ static_url }}img/groups/{{ group_name }}.png?{{ static_files_version }}"
                  alt="{{ group.translation }}" width="20" data-toggle="tooltip"
                  title="{{ group.translation }}" data-trigger="hover"
