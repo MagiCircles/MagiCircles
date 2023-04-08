@@ -567,12 +567,13 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     ######################
     # Set settings in context
 
-    if 'js_variables' not in context or not context['js_variables']:
-        context['js_variables'] = OrderedDict()
-    context['js_variables']['merged_fields'] = OrderedDict()
-    def _add_merge_fields_to_js_variables_foreach(new_field_name, details, fields):
-        context['js_variables']['merged_fields'][new_field_name] = fields.keys()
-    context['filter_form'].foreach_merge_fields(_add_merge_fields_to_js_variables_foreach)
+    if context.get('filter_form', None):
+        if 'js_variables' not in context or not context['js_variables']:
+            context['js_variables'] = OrderedDict()
+        context['js_variables']['merged_fields'] = OrderedDict()
+        def _add_merge_fields_to_js_variables_foreach(new_field_name, details, fields):
+            context['js_variables']['merged_fields'][new_field_name] = fields.keys()
+        context['filter_form'].foreach_merge_fields(_add_merge_fields_to_js_variables_foreach)
 
     context['plural_name'] = collection.plural_name
 
