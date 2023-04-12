@@ -95,7 +95,7 @@ navbar_links = OrderedDict()
 now = timezone.now()
 launched = LAUNCH_DATE is None or (LAUNCH_DATE is not True and LAUNCH_DATE < now)
 collections = OrderedDict()
-enabled = {}
+enabled = OrderedDict()
 all_enabled = []
 urls = []
 collectible_collections = {}
@@ -135,7 +135,6 @@ RAW_CONTEXT['all_enabled'] = all_enabled
 RAW_CONTEXT['magicollections'] = collections
 RAW_CONTEXT['collectible_collections'] = collectible_collections
 RAW_CONTEXT['collections_in_profile_tabs'] = collections_in_profile_tabs
-RAW_CONTEXT['main_collections'] = [ _c.name for _c in main_collections ]
 RAW_CONTEXT['account_model'] = ACCOUNT_MODEL
 RAW_CONTEXT['site_name'] = SITE_NAME
 RAW_CONTEXT['site_name_per_language'] = SITE_NAME_PER_LANGUAGE
@@ -793,3 +792,5 @@ for collection_name in ['activity', 'badge', 'account']:
 if 'report' not in all_enabled:
     for collection in collections.values():
         collection.reportable = False
+
+RAW_CONTEXT['main_collections'] = [ _c.name for _c in main_collections ]

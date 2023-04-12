@@ -1100,14 +1100,14 @@ class MagiCollection(object):
     allow_suggest_edit = False
 
     report_edit_templates = {
-        'Wrong details': 'The following details seemed to be wrong: XXXXXXXXX',
         'Inappropriate content': 'Something you wrote or uploaded was inappropriate. ' + please_understand_template_sentence,
     }
-    report_delete_templates = {
-        'Inappropriate content': 'Something you wrote or uploaded was inappropriate. ' + please_understand_template_sentence,
-        'Troll': 'This content has been detected as being deliberately provocative with the intention of causing disruption or argument and therefore has been deleted. We kindly ask you not to re-iterate your actions and be respectful towards our community.',
-        'Spam activity': 'This content has been detected as spam. We do not tolerate such behavior and kindly ask you not to re-iterate your actions or your entire profile might get deleted next time.',
-    }
+    report_delete_templates = OrderedDict([
+        ('Inappropriate content', 'Something you wrote or uploaded was inappropriate. ' + please_understand_template_sentence),
+        ('Troll', 'This content has been detected as being deliberately provocative with the intention of causing disruption or argument and therefore has been deleted. We kindly ask you not to re-iterate your actions and be respectful towards our community.'),
+        ('Spam', 'This content has been detected as spam. We do not tolerate such behavior and kindly ask you not to re-iterate your actions or your entire profile might get deleted next time.'),
+        ('Wrong details', 'The following details seemed to be wrong: XXXXXXXXX'),
+    ])
     report_allow_edit = True
     report_allow_edit_with_permission = None
     report_allow_delete = True
@@ -2270,6 +2270,9 @@ class MagiCollection(object):
         item_padding = 20 # Only used with default item template
         item_max_height = 300
 
+        prefetched_per_line = property(lambda _s: _s.per_line)
+        prefetched_page_size = property(lambda _s: _s.page_size)
+
         ajax_item_popover = False
         hide_icons = False
         allow_random = True
@@ -2774,9 +2777,9 @@ class MagiCollection(object):
 
         def share_image(self, context, item):
             for field_name in ['http_share_image_url', 'http_top_image_item_url',
-                               'http_top_image_url', 'http_image_url']:
+                               'http_top_image_url', 'http_image_url', 'DEFAULT_IMAGE']:
                 if hasattr(item, field_name):
-                    return getattr(item, field_name)
+                    return staticImageURL(getattr(item, field_name))
             return self.collection.share_image(context, item)
 
         def get_item(self, request, pk):
@@ -4119,6 +4122,7 @@ class UserPreferencesCollection(MagiCollection):
     queryset = models.UserPreferences.objects.all()
     title = _('Preferences')
     plural_title = _('Preferences')
+    reportable = False
 
     class ItemView(MagiCollection.ItemView):
         enabled = False
@@ -4285,6 +4289,10 @@ class StaffDetailsCollection(MagiCollection):
         filter_form = forms.StaffDetailsFilterForm
         hide_sidebar = True
         allow_random = False
+        show_items_names = True
+        display_style = 'table'
+        fields_preselected_subfields = { 'owner': [ 'username' ] }
+        display_style_table_fields = [ 'image', 'owner__username' ]
 
         def get_queryset(self, queryset=None, parameters={}, request=None):
             queryset = super(StaffDetailsCollection.ListView, self).get_queryset(queryset, parameters, request)
@@ -5002,6 +5010,13 @@ class ReportCollection(_BaseReportCollection):
     @property
     def add_sentence(self):
         return _('Report')
+
+    def before_save(self, request, instance, type=None):
+        if (instance.reason == 'Wrong details'
+            and instance.reported_thing_collection
+            and instance.reported_thing_collection.allow_suggest_edit):
+            instance.is_suggestededit = True
+        return instance
 
     class ListView(_BaseReportCollection.ListView):
         permissions_required = ['moderate_reports']

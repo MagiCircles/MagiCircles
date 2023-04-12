@@ -85,7 +85,7 @@
 
 {% if debug %}-- old design --{% endif %}
 <div class="table-responsive">
-  <table class="items list-items-{{ collection.name }} {% for class in display_style_table_classes %}{{ class }} {% endfor %}collection-table" data-page-number="{{ page }}" id="{{ collection.name }}-page-{{ page }}">
+  <table class="items list-items-{{ collection.name }} {% for class in display_style_table_classes %}{{ class }} {% endfor %}collection-table" data-page-number="{{ page }}" id="{{ collection.name }}-page-{{ page }}" data-collection="{{ collection.name }}">
 
     {% if page == 1 %}
     {% if table_fields_headers_sections %}
@@ -155,7 +155,7 @@
 {# Display style: TABLE #}
 {% elif display_style == 'table' %}
 
-<div class="flex-table items list-items-{{ collection.name }} {% for class in display_style_table_classes %}{{ class }} {% endfor %}collection-table" role="table" data-page-number="{{ page }}" id="{{ collection.name }}-page-{{ page }}">
+<div class="flex-table items list-items-{{ collection.name }} {% for class in display_style_table_classes %}{{ class }} {% endfor %}collection-table" role="table" data-page-number="{{ page }}" id="{{ collection.name }}-page-{{ page }}" data-collection="{{ collection.name }}">
 
   {% if page == 1 %}
   {% if table_fields_headers_sections %}

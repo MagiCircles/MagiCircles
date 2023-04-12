@@ -30,6 +30,7 @@ from django.db import models
 from django.db import connection
 from django.db.models.fields import BLANK_CHOICE_DASH, FieldDoesNotExist
 from django.db.models.related import RelatedObject
+from django.db.models.query import QuerySet
 from django.db.models import Q, Prefetch
 from django.forms.models import model_to_dict
 from django.forms import (
@@ -572,6 +573,8 @@ def getRomajiWithFallback(
         item, romaji_field_name='romaji_name', fallback_field_name='name',
         language=None, return_language=False,
 ):
+    if not language:
+        language = get_language()
     fallback_language, fallback = item.get_translation(fallback_field_name, language=language, return_language=True)
     if not couldSpeakEnglish(language=language, request=getattr(item, 'request', None)):
         if fallback:
@@ -2889,6 +2892,20 @@ def _getVerboseNameOfRelatedFieldAsList(
     current_list.append(verbose_name)
     return current_list
 
+def getPrefetchedRelatedItems(item, field_name, request):
+    # Items have not been prefetched due to high traffic
+    if request and field_name in getattr(request, '_not_prefetched_for_high_traffic', []):
+        return []
+    # Retrieve items that have been prefetched manually with a limit
+    elif request and getattr(request, '_prefetched_with_max', {}).get(field_name):
+        return request._prefetched_with_max[field_name][0]
+    # Non-explicit relationships: manual queryset
+    elif isinstance(getattr(item, field_name, None), QuerySet):
+        return getattr(item, field_name)
+    # Retrieve items that have been prefetched with .all()
+    else:
+        return getRelatedItemsFromItem(item, field_name)
+
 def getVerboseNameOfRelatedField(
         model, related_item_field_name, model_field=None, plural=None,
         rel_options=None, collection=None, prefix=None, default=None,
@@ -3040,7 +3057,7 @@ def hasValue(value, false_bool_is_value=True, none_string_is_value=False):
 def getRelOptionsDict(rel_options=None, model_class=None, field_name=None):
     """
     Either (rel_options) or (model_class + field_name required)
-    Will add default values.
+    Will not add default values, call setRelOptionsDefaults for that.
     """
     if rel_options is None:
         rel_options = failSafe(lambda: next(
@@ -3059,7 +3076,7 @@ def getRelOptionsDict(rel_options=None, model_class=None, field_name=None):
     rel_options = AttrDict(rel_options)
     return rel_options
 
-def setRelOptionsDefaults(model_class, field_name, rel_collection, rel_options):
+def setRelOptionsDefaults(model_class, field_name, rel_collection, rel_options, is_multiple=True):
     # Set defaults to None
     for key in [
             'verbose_name',
@@ -3086,24 +3103,36 @@ def setRelOptionsDefaults(model_class, field_name, rel_collection, rel_options):
             # URL stuff
             'allow_ajax_per_item': True,
             'allow_ajax_for_more': True,
-            # Display grid
-            'col_break': 'sm',
-            'align': 'right',
     }.items():
         if key not in rel_options:
             rel_options[key] = default
 
-    # Max and per line
-    rel_options.max = getMaxShownForPrefetchedTogether(
-        model_class, field_name, rel_collection, rel_options=rel_options)
-    rel_options.show_per_line = (
+    # Multiple
+    if is_multiple:
+        # Defaults
+        for key, default in {
+                # Display grid
+                'col_break': 'sm',
+                'align': 'right',
+        }.items():
+            if key not in rel_options:
+                rel_options[key] = default
+
+        # Max and per line
+        rel_options.show_per_line = _getPerLineShownForPrefetchedTogether(
+            model_class, field_name, rel_collection, rel_options=rel_options)
+        rel_options.max = getMaxShownForPrefetchedTogether(
+            model_class, field_name, rel_collection, rel_options=rel_options)
+
+def _getPerLineShownForPrefetchedTogether(model_class, field_name, rel_collection, rel_options):
+    return (
         getattr(rel_options, 'show_per_line', None)
         or getattr(rel_options, 'max_per_line', None)
         or getattr(model_class, u'{}_SHOW_PER_LINE'.format(field_name.upper()), None)
         or getattr(model_class, u'{}_MAX_PER_LINE'.format(field_name.upper()), None)
         or (
-            rel_collection.list_view.per_line
-            if rel_collection and rel_collection.list_view.per_line >= 3
+            rel_collection.list_view.prefetched_per_line
+            if rel_collection and rel_collection.list_view.prefetched_per_line >= 3
             else None
         )
         or 5
@@ -3112,19 +3141,27 @@ def setRelOptionsDefaults(model_class, field_name, rel_collection, rel_options):
 def getMaxShownForPrefetchedTogether(model_class, field_name, rel_collection, rel_options=None):
     if not rel_options:
         rel_options = getRelOptionsDict(model_class=model_class, field_name=field_name)
+    max = None
     if 'max' in rel_options:
-        return rel_options.max
+        max = rel_options.max
     elif 'max_per_line' in rel_options:
-        return rel_options.max_per_line
+        max = rel_options.max_per_line
     elif hasattr(model_class, u'{}_MAX'.format(field_name.upper())):
-        return getattr(model_class, u'{}_MAX'.format(field_name.upper()))
+        max = getattr(model_class, u'{}_MAX'.format(field_name.upper()))
     elif hasattr(model_class, u'{}_MAX_PER_LINE'.format(field_name.upper())):
-        return getattr(model_class, u'{}_MAX_PER_LINE'.format(field_name.upper()))
-    elif rel_collection and rel_collection.list_view.page_size >= 3:
-        return rel_collection.list_view.page_size
+        max = getattr(model_class, u'{}_MAX_PER_LINE'.format(field_name.upper()))
+    elif rel_collection and rel_collection.list_view.prefetched_page_size >= 3:
+        max = rel_collection.list_view.prefetched_page_size
     elif rel_collection:
-        return 5
-    return None
+        max = 5
+    # Round up to make sure the last line isn't weird
+    if max:
+        if 'show_per_line' in rel_options:
+            per_line = rel_options.show_per_line
+        else:
+            per_line = _getPerLineShownForPrefetchedTogether(model_class, field_name, rel_collection, rel_options)
+        max = max + (per_line - (max % per_line))
+    return max
 
 def getValueIfNotProperty(cls, field_name, default=None):
     """When trying to access a variable of a class and not its instance, makes sure it doesn't return falsely positive value."""
@@ -4366,7 +4403,7 @@ def makeBadgeImage(badge=None, badge_image=None, badge_rank=None, width=None, pa
 
 def staticFileURL(path, folder=None, extension=None, versionned=True, full=False, static_url=None, default_extension=None, default_folder=None):
     # /!\ Can't be called at global level
-    if not path:
+    if not hasValue(path, false_bool_is_value=False):
         return None
     path = unicode(path)
     if not extension and '.' not in path and default_extension:

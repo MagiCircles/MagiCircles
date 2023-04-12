@@ -6,8 +6,8 @@
     {{ item.top_html_list|safe }}
     {% elif item.top_html %}
     {{ item.top_html|safe }}
-    {% elif item.top_image_list or item.top_image or item.image %}
-    <img src="{% if item.top_image_list %}{{ item.top_image_list }}{% elif item.top_image %}{{ item.top_image }}{% else %}{{ item.image_url }}{% endif %}" alt="{{ item }}" class="{{ item.collection_name }}-image img-responsive" style="{% if item_max_height %} max-height: {{ item_max_height }}px;{% endif %}">
+    {% elif item.display_image_in_list %}
+    <img src="{{ item.display_image_in_list }}" alt="{{ item }}" class="{{ item.collection_name }}-image img-responsive" style="{% if item_max_height %} max-height: {{ item_max_height }}px;{% endif %}">
     {% elif not show_items_names %}
     {{ item.display_unicode_in_list }}
     {% if item.display_unicode_other_languages %}

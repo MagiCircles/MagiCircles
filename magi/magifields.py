@@ -143,9 +143,10 @@ class MagiField(object):
     BASE_VALID_ITEM_OPTIONS = mergeDicts({
         u'{}_SUGGEST_EDIT': False,
         u'{}_SUGGEST_EDIT_WHEN_EMPTY': False,
-        u'{}_AUTO_IMAGES_FOLDER': None, # defaults to i_xxx
+
         u'{}_AUTO_IMAGES': False,
-        u'{}_AUTO_IMAGES_FROM_I': False,
+        # {}_AUTO_IMAGES_FOLDER + {}_AUTO_IMAGES_FROM_I also exist and are used by get_auto_image in item_model
+
         u'{}_QUESTION': None,
         u'{}_ANSWER': None,
         u'{}_FAQ': None,
@@ -738,6 +739,10 @@ class MagiField(object):
             'reason': self.item_access_original_field_name,
         })
 
+    @property
+    def suggest_edit_button_new_window(self):
+        return self.ajax
+
     ############################################################
     # Internals
 
@@ -989,9 +994,6 @@ class MagiField(object):
                 print self.field_name
                 traceback.print_exc()
 
-    def get_value_for_auto_image(self):
-        return self.value
-
     def get_auto_image(self):
         """
         Most commonly used for i choices, but can work for any other field.
@@ -1000,8 +1002,12 @@ class MagiField(object):
         Used by to_image, which retrieves the `image` value displayed on the left of the field.
         """
         if self.item_options['AUTO_IMAGES']:
-            return staticImageURL(self.get_value_for_auto_image(), folder=(
-                self.item_options['AUTO_IMAGES_FOLDER'] or self.item_access_original_field_name))
+            return self.item.get_auto_image(
+                instance=self.item,
+                field_name=self.item_access_field_name,
+                value=self.value,
+                original_field_name=self.item_access_original_field_name,
+            )
         return None
 
     def get_auto_image_foreach(self, value):
@@ -1011,8 +1017,11 @@ class MagiField(object):
         Not to be confused with multifields.
         """
         if self.item_options['AUTO_IMAGES']:
-            return staticImageURL(value, folder=(
-                self.item_options['AUTO_IMAGES_FOLDER'] or self.item_access_original_field_name))
+            return self.item.get_auto_image(
+                field_name=self.item_access_field_name,
+                value=value,
+                original_field_name=self.item_access_original_field_name,
+            )
         return None
 
     def get_value_from_display_property(self):
@@ -1565,30 +1574,34 @@ class MagiMainImageFieldMixin(object):
             return False
         return True
 
+    def has_value(self):
+        return hasValue(self.value) or hasValue(self.thumbnail)
+
     # Table view only: Links to open the item
 
     @property
     def link(self):
-        return self.item.item_url if self.options.table_fields else None
+        if (self.options.table_view
+            and self.collection.item_view.enabled):
+            return self.item.item_url
+        return None
 
     @property
     def ajax_link(self):
-        return self.item.ajax_item_url if self.options.table_fields else None
+        if (self.options.table_view
+            and self.collection.item_view.enabled
+            and self.collection.item_view.ajax):
+            return self.item.ajax_item_url
+        return None
 
     @property
     def ajax_link_title(self):
         return self.item if self.options.table_fields else None
 
-
     @property
     def thumbnail(self):
-        # When main image displayed in table, check for top_image settings
         if self.options.table_fields:
-            return (
-                getattr(self.item, u'top_image_list', None)
-                or getattr(self.item, u'top_image', None)
-                or MagiImageFieldMixin.thumbnail.fget(self)
-            )
+            return self.item.display_image_in_list
         return MagiImageFieldMixin.thumbnail.fget(self)
 
 class MagiMainImageField(MagiMainImageFieldMixin, MagiImageField):
@@ -2000,6 +2013,10 @@ class MagiURLFieldMixin(object):
 
     faq = None
 
+    @property
+    def verbose_name_for_buttons(self):
+        return _('Link').lower()
+
     # Display
 
     display_class = MagiDisplayLink
@@ -2056,11 +2073,6 @@ class MagiIChoiceFieldMixin(object):
         if original_field_name.startswith('i_'):
             return original_field_name[2:]
         return original_field_name
-
-    def get_value_for_auto_image(self):
-        if self.item_options['AUTO_IMAGES_FROM_I']:
-            return self.db_value
-        return self.value
 
     @property
     def answer(self):
@@ -2178,7 +2190,6 @@ class MagiCSVFieldMixin(MagiModelField):
     VALID_ITEM_OPTIONS = {
         u'{}_LINK_TO_FILTER': False,
         u'{}_LINK_TO_PRESET': False,
-        u'{}_AUTO_IMAGES': False,
     }
 
     ############################################################
@@ -2580,6 +2591,7 @@ class MagiSocialMediaTemplateField(MagiTextareaField):
     VALID_ITEM_OPTIONS = {
         u'{}_TEMPLATE': TEMPLATE,
         u'{}_EXTRA': None,
+        u'{}_TEMPLATE_VARIABLES': {},
     }
 
     default_icon = 'share'
@@ -2591,9 +2603,9 @@ class MagiSocialMediaTemplateField(MagiTextareaField):
     def apply_template(self, variables):
         return re.sub(r'\n{3,}', '\n\n', self.item_options['TEMPLATE'].format(**variables)).strip()
 
-    def to_base_template_variables(self):
+    def to_template_variables(self):
         emojis = getEmojis(how_many=2)
-        return {
+        template_variables = {
             'site_name': getSiteName(),
             'list_url': self.collection.get_list_url(full=True) if self.collection else SITE_URL,
             'thing': self.collection.title,
@@ -2607,13 +2619,11 @@ class MagiSocialMediaTemplateField(MagiTextareaField):
             'extra': self.item_options['EXTRA'] or '',
             'hashtags': u' '.join([ u'#{}'.format(hashtag) for hashtag in HASHTAGS ]),
         }
-
-    def to_template_variables(self):
-        template_variables = self.to_base_template_variables()
         template_variables.update({
             'link_in_bio_sentence': self.LINK_IN_BIO_SENTENCE.format(**template_variables),
             'bio_link': self.BIO_LINK.format(**template_variables),
         })
+        template_variables.update(self.item_options['TEMPLATE_VARIABLES'])
         return template_variables
 
     def has_value(self):
@@ -2723,21 +2733,20 @@ class BaseMagiRelatedField(MagiModelField):
     def get_verbose_name_list(self):
         verbose_name_list = getattr(self, '_verbose_name_list', None)
         if verbose_name_list is None:
-            if 'verbose_name' in self.fields_kwargs:
-                verbose_name_list = [ self.fields_kwargs['verbose_name'] ]
-            else:
-                verbose_name_list = getVerboseNameOfRelatedField(
-                    self.model, self.item_access_field_name, self.model_field,
-                    rel_options=self.rel_options,
-                    collection=self.rel_collection,
-                    plural=self.is_multiple,
-                    default=self.default_verbose_name,
-                    return_as_list=True,
-                )
+            verbose_name_list = getVerboseNameOfRelatedField(
+                self.model, self.item_access_field_name, self.model_field,
+                rel_options=self.rel_options,
+                collection=self.rel_collection,
+                plural=self.is_multiple,
+                default=self.default_verbose_name,
+                return_as_list=True,
+            )
             self._verbose_name_list = verbose_name_list
         return verbose_name_list
 
     def to_verbose_name(self):
+        if 'verbose_name' in self.fields_kwargs:
+            return self.fields_kwargs['verbose_name']
         return u' - '.join([
             unicode(v) for v in self.get_verbose_name_list()
         ])
@@ -2803,8 +2812,15 @@ class BaseMagiRelatedField(MagiModelField):
                 field_name=self.item_access_field_name,
             )
 
+    @property
+    def rel_options_is_multiple(self):
+        raise NotImplementedError(
+            '{} rel_options_is_multiple is required in BaseMagiRelatedField'.format(self.field_name))
+
     def _set_rel_options_defaults(self):
-        setRelOptionsDefaults(self.rel_model_class, self.original_field_name, self.rel_collection, self.rel_options)
+        setRelOptionsDefaults(
+            self.model, self.original_field_name,
+            self.rel_collection, self.rel_options, is_multiple=self.rel_options_is_multiple)
 
 ############################################################
 # Foreign key field
@@ -2816,12 +2832,6 @@ class MagiForeignKeyModelField(BaseMagiRelatedField):
     Condition: field_name specified in:
                - collection.fields_preselected
                - or item.REVERSE_RELATED
-
-    ITEM_OPTIONS:
-    - {}_MAX
-    - {}_SHOW_PER_LINE
-    - {}_MAX_PER_LINE
-    are all available as item options but not as kwargs.
     """
     @classmethod
     def is_field(self, field_name, model_field, options):
@@ -2843,6 +2853,7 @@ class MagiForeignKeyModelField(BaseMagiRelatedField):
     # Value
 
     is_multiple = False
+    rel_options_is_multiple = False
 
     def to_db_value(self):
         """
@@ -3083,8 +3094,13 @@ class BaseMagiManyToManyModelField(BaseMagiRelatedField):
     _list_url = None
     def get_list_url(self, ajax=False):
         if self._list_url is None:
+            # If url is in rel_options, return url
             if self.rel_options.url and isFullURL(self.rel_options.url):
                 self._list_url = self.rel_options.url
+            # If it's a collectible collection, it should link to the owner's collection
+            elif self.is_collectible():
+                self._list_url = self.get_list_url_for_collectible(ajax=ajax)
+            # Create link to rel_collection
             else:
                 if self.rel_options.to_preset:
                     preset = tourldash(self.rel_options.to_preset(self.item))
@@ -3121,6 +3137,48 @@ class BaseMagiManyToManyModelField(BaseMagiRelatedField):
             return addParametersToURL(u'/ajax{}'.format(self._list_url), parameters={ 'ajax_modal_only': '' })
         return self._list_url or None
 
+    def is_collectible(self):
+        return self.rel_collection and getattr(self.rel_collection, 'parent_collection', None)
+
+    def get_list_url_for_collectible(self, ajax=False):
+        owner_model_class = self.rel_model_class.owner_model_class()
+        owner_collection = self.rel_model_class.owner_collection()
+        filter_field_name = (
+            self.rel_options.filter_field_name
+            or u'{}__{}'.format(
+                getFilterFieldNameOfRelatedItem(self.rel_model_class, self.rel_model_class.fk_as_owner or 'owner'),
+                self.rel_collection.item_field_name,
+            )
+        )
+        if self.rel_options.to_preset:
+            preset = tourldash(self.rel_options.to_preset(self.item))
+        elif self.rel_collection:
+            preset = isPreset(owner_collection, {
+                filter_field_name: self.item.pk,
+            }, disable_cleaning=True)
+        else:
+            preset = None
+        parameters = {}
+        if not preset:
+            parameters[filter_field_name] = self.item.pk
+        if self.rel_options.url:
+            return getListURL(
+                self.rel_options.url,
+                preset=preset,
+                parameters=parameters,
+            )
+        elif self.rel_collection:
+            if (not owner_collection.list_view.enabled
+                or not owner_collection.list_view.has_permissions(self.request, self.context)
+                or (ajax and not owner_collection.list_view.ajax)):
+                return ''
+            else:
+                return owner_collection.get_list_url(
+                    preset=preset,
+                    ajax=ajax, modal_only=ajax,
+                    parameters=parameters,
+                )
+
 ############################################################
 # Many to many field
 
@@ -3132,6 +3190,12 @@ class MagiManyToManyModelField(BaseMagiManyToManyModelField):
                - collection.fields_prefetched
                - or collection.fields_prefetched_together
                - or item.REVERSE_RELATED
+
+    ITEM_OPTIONS:
+    - {}_MAX
+    - {}_SHOW_PER_LINE
+    - {}_MAX_PER_LINE
+    are all available as item options but not as kwargs.
     """
     @classmethod
     def is_field(self, field_name, model_field, options):
@@ -3154,12 +3218,14 @@ class MagiManyToManyModelField(BaseMagiManyToManyModelField):
     def is_multiple(self):
         return not self.is_multifields()
 
+    rel_options_is_multiple = True
+
     def is_multifields(self):
         return (
             not self._not_prefetched_for_high_traffic()
             and (
                 self.field_name in self.options.prefetched_field_names
-                or self.rel_options.prefetched
+                or getattr(self.rel_options, 'prefetched', False)
             )
         )
 
@@ -3592,6 +3658,7 @@ class MagiCachedTotalModelField(BaseMagiManyToManyModelField):
     # Value
 
     is_multiple = True
+    rel_options_is_multiple = False
 
     def to_db_value(self):
         return self.get_total_cache()
@@ -3601,6 +3668,9 @@ class MagiCachedTotalModelField(BaseMagiManyToManyModelField):
 
     def to_display_value_from_value(self, value):
         return self.get_cached_total_sentence()
+
+    def has_value(self):
+        return super(MagiCachedTotalModelField, self).has_value() and self.value != 0
 
     question = _('How many {things} does {name} have?')
 
@@ -4321,7 +4391,7 @@ class MagiFields(object):
             return
         to_set = self.SHARE_TEMPLATES_FIELD_CLASSES[:]
         for field in self.fields.values():
-            for cls in self.SHARE_TEMPLATES_FIELD_CLASSES:
+            for cls in to_set:
                 if isinstance(field, cls):
                     to_set.remove(cls)
         for cls in to_set:

@@ -871,7 +871,10 @@ class MagiForm(forms.ModelForm):
             if isinstance(field, forms.CharField):
                 value = self.cleaned_data.get(field_name, None)
                 if value is not None:
-                    self.cleaned_data[field_name] = value.strip()
+                    try:
+                        self.cleaned_data[field_name] = value.strip()
+                    except AttributeError:
+                        pass
         return self.cleaned_data
 
     def save(self, commit=True):

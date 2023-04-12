@@ -3,13 +3,13 @@
     {% if top_illustration %}
     {% include top_illustration|add:'.html' %}
     {% elif item.top_html_item %}
-    {{ item.top_html_item|safe }}
+    {{ item.top_html_item }}
     {% elif item.top_html %}
-    {{ item.top_html|safe }}
-    {% elif item.top_image_item or item.top_image or item.image %}
-    <a href="{% if item.top_image_item %}{% if item.top_image_item_hd %}{{ item.top_image_item_hd }}{% else %}{{ item.top_image_item }}{% endif %}{% elif item.top_image %}{% if item.top_image_hd %}{{ item.top_image_hd }}{% else %}{{ item.top_image }}{% endif %}{% else %}{% if item.image_2x_url %}{{ item.image_2x_url }}{% else %}{{ item.image_original_url }}{% endif %}{% endif %}" target="_blank">
-      <img src="{% if item.top_image_item %}{{ item.top_image_item }}{% elif item.top_image %}{{ item.top_image }}{% else %}{{ item.image_url }}{% endif %}" alt="{{ item }}" class="{{ item.collection_name }}-image" style="{% if item_max_height %} max-height: {{ item_max_height }}px;{% endif %}"><!-- data-hd-src="{% if item.top_image_item_hd %}{{ item.top_image_item_hd }}{% elif item.top_image_hd %}{{ item.top_image_hd }}{% endif %}"> removed to see if we get better traffic costs -->
-    </a>
+    {{ item.top_html }}
+    {% elif item.display_image_item %}
+    {% if item.display_image_link_item %}<a href="{{ item.display_image_link_item }}" target="_blank">{% endif %}
+      <img src="{{ item.display_image_item }}" alt="{{ item }}" class="{{ item.collection_name }}-image" style="{% if item_max_height %} max-height: {{ item_max_height }}px;{% endif %}">
+    {% if item.display_image_link_item %}</a>{% endif %}
     {% else %}
     {{ item.display_unicode_item }}
     {% if item.display_unicode_other_languages %}

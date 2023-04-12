@@ -74,7 +74,6 @@ KNOWN_ITEM_PROPERTIES = [
     'display_item_url',
     'display_name',
     'display_name_in_list',
-    'display_suggest_edit_button_on_fields',
     'get_ajax_item_url',
     'get_item_url',
     'html_attributes',

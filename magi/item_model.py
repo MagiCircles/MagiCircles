@@ -114,10 +114,13 @@ def get_selector_to_owner(cls):
         return u'{}__owner'.format(cls.fk_as_owner)
     return 'owner'
 
+def get_owner_model_class(cls):
+    return cls._meta.get_field(cls.fk_as_owner or 'owner').rel.to
+
 def get_owners_queryset(cls, user):
     if not cls.fk_as_owner:
         return [user]
-    return cls._meta.get_field(cls.fk_as_owner).rel.to.objects.filter(**{
+    return get_owner_model_class(cls).objects.filter(**{
         cls.selector_to_owner()[(len(cls.fk_as_owner) + 2):]:
         user,
     })
@@ -131,7 +134,7 @@ def get_owner_from_pk(cls, owner_pk):
     """
     Always performs a database query, use with caution.
     """
-    return cls._meta.get_field(cls.fk_as_owner or 'owner').rel.to.objects.get(pk=owner_pk)
+    return get_owner_model_class(cls).objects.get(pk=owner_pk)
 
 def get_owner_collection(cls):
     if cls.fk_as_owner:
@@ -222,6 +225,7 @@ class BaseMagiModel(models.Model):
     owner_ids = classmethod(get_owner_ids)
     get_owner_from_pk = classmethod(get_owner_from_pk)
     allow_multiple_per_owner = classmethod(get_allow_multiple_per_owner)
+    owner_model_class = classmethod(get_owner_model_class)
     owner_collection = classmethod(get_owner_collection)
     is_owner = get_is_owner
     owner_unicode = property(get_owner_unicode)
@@ -575,37 +579,32 @@ class BaseMagiModel(models.Model):
         )
 
     @classmethod
-    def get_auto_image(self, field_name, value, folder=None):
+    def get_auto_image(self, field_name, value, folder=None, original_field_name=None, instance=None):
+        """
+        Before calling this, make sure you check that {}_AUTO_IMAGES == True
+        original_field_name is only used if folder is not provided.
+        Specify instance if you have one, allows to access properties.
+        """
         if not folder:
-            folder = getValueIfNotProperty(self, u'{}_AUTO_IMAGES_FOLDER'.format(field_name.upper()), default=None)
+            folder = getValueIfNotProperty(instance or self, u'{}_AUTO_IMAGES_FOLDER'.format(
+                field_name.upper()), default=None)
         if not folder:
-            original_field_name = field_name
-            for name_option in [
-                    'i_{}'.format(field_name), 'c_{}'.format(field_name),
-                    'd_{}'.format(field_name), field_name,
-            ]:
-                if modelHasField(self, name_option):
-                    original_field_name = name_option
-                    break
+            if not original_field_name:
+                original_field_name = field_name
+                for name_option in [
+                        'i_{}'.format(field_name), 'c_{}'.format(field_name),
+                        'd_{}'.format(field_name), field_name,
+                ]:
+                    if modelHasField(self, name_option):
+                        original_field_name = name_option
+                        break
             folder = original_field_name
+        if getValueIfNotProperty(instance or self, u'{}_AUTO_IMAGES_FROM_I'.format(field_name.upper()), default=False):
+            value = self.get_i(field_name, value)
+        to_auto_images = getValueIfNotProperty(instance or self, u'to_{}_auto_images'.format(field_name))
+        if to_auto_images:
+            value = to_auto_images(value)
         return staticImageURL(value, folder=folder)
-
-    def _get_auto_image(self, field_name, folder=None):
-        if not folder:
-            folder = getattr(self, u'{}_AUTO_IMAGES_FOLDER'.format(field_name.upper()), None)
-        if not folder:
-            original_field_name = field_name
-            for name_option in [
-                    'i_{}'.format(field_name), 'c_{}'.format(field_name),
-                    'd_{}'.format(field_name), field_name,
-            ]:
-                if hasattr(self, name_option):
-                    original_field_name = name_option
-                    break
-            folder = original_field_name
-        if not folder:
-            raise ValueError
-        return staticImageURL(getattr(self, field_name), folder=folder)
 
     @property
     def display_unicode_item(self):
@@ -621,6 +620,54 @@ class BaseMagiModel(models.Model):
             getattr(self, 'display_name_in_list', None)
             or getattr(self, 'display_name', None)
             or unicode(self)
+        )
+
+    @property
+    def display_image_item(self):
+        return (
+            getattr(self, 'top_image_item', None)
+            or getattr(self, 'top_image', None)
+            or getattr(self, 'image_url', None)
+            or staticImageURL(getattr(self, 'DEFAULT_IMAGE', None))
+        )
+
+    @property
+    def display_image_link_item(self):
+        top_image_item = getattr(self, 'top_image_item', None)
+        if top_image_item:
+            return (
+                getattr(self, 'top_image_item_hd', None)
+                or top_image_item
+            )
+        top_image = getattr(self, 'top_image', None)
+        if top_image:
+            return (
+                getattr(self, 'top_image_hd', None)
+                or top_image
+            )
+        return (
+            getattr(self, 'image_2x_url', None)
+            or getattr(self, 'image_original_url', None)
+        )
+
+    @property
+    def display_image_in_list(self):
+        top_image = (
+            getattr(self, 'top_image_list', None)
+            or getattr(self, 'top_image', None)
+        )
+        if top_image:
+            return top_image
+        # When there's an original/tinypng, use it
+        original = getattr(self, 'image_original_url', None)
+        main = getattr(self, 'image_url', None)
+        if original != main:
+            return main
+        # Otherwise, use thumbnail
+        return (
+            getattr(self, 'image_thumbnail_url', None) # will fallback to main anyway
+            or main
+            or staticImageURL(getattr(self, 'DEFAULT_IMAGE', None))
         )
 
     def _get_display_unicode_other_languages(self, to_unicode, languages=None):
@@ -736,8 +783,10 @@ class BaseMagiModel(models.Model):
         Because western names are not displayed that way, in the exception that the current item has a
         western name, this function will do the job of swapping names for display.
         """
-        is_western_name = getattr(self, 'is_western_name', getattr(self, 'IS_WESTERN_NAME', False))
-        return getWesternName(value, is_western_name=is_western_name, language=result_language)
+        if self.IS_PERSON:
+            is_western_name = getattr(self, 'is_western_name', getattr(self, 'IS_WESTERN_NAME', False))
+            return getWesternName(value, is_western_name=is_western_name, language=result_language)
+        return value
 
     @property
     def first_name(self):
@@ -865,7 +914,7 @@ class BaseMagiModel(models.Model):
 
         # When accessing "something_image"
         elif name.endswith('_image') and getattr(self, '{}_AUTO_IMAGES'.format(name[:-6].upper()), False):
-            return self._get_auto_image(name[:-6])
+            return self.get_auto_image(name[:-6], getattr(self, name[:-6]), instance=self)
 
         # When accessing "something_url"
         elif name.endswith('_url'):
@@ -1074,6 +1123,7 @@ def addMagiModelProperties(modelClass, collection_name):
     modelClass.owner_ids = classmethod(get_owner_ids)
     modelClass.get_owner_from_pk = classmethod(get_owner_from_pk)
     modelClass.allow_multiple_per_owner = classmethod(get_allow_multiple_per_owner)
+    modelClass.owner_model_class = classmethod(get_owner_model_class)
     modelClass.owner_collection = classmethod(get_owner_collection)
     modelClass.is_owner = get_is_owner
     modelClass.owner_unicode = property(get_owner_unicode)

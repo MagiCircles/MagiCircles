@@ -832,6 +832,10 @@ class StaffDetails(MagiModel):
     PUBLIC_FIELDS = ['image', 'description', 'favorite_food', 'hobbies', 'nickname', 'c_hashtags', 'preferred_name', 'pronouns', 'timezone']
     STAFF_ONLY_FIELDS = ['discord_username', 'staff_since', 'availability', 'weekend_availability', 'experience', 'other_experience']
 
+    @property
+    def top_image(self):
+        return self.image_url or self.owner.image_url
+
     def __unicode__(self):
         return u'{} staff details'.format(self.owner.username)
 

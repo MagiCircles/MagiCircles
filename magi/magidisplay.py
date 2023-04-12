@@ -499,7 +499,9 @@ class _MagiDisplayTextWithLink(MagiDisplay):
                 <i class="flaticon-link fontx0-8"></i>
             </a>
         </span>
-        {image_for_link}
+        <a href="{link}" {new_window} {ajax_link}>
+          {image_for_link}
+        </a>
     </div>
     """
 

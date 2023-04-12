@@ -101,6 +101,10 @@
 
         {% if view.view == 'list_view' %}
         <p class="text-right">
+          {% if view.item_template != 'default_item_in_list' %}
+          Custom template<br>({{ view.item_template }})
+          {% else %}
+          {% endif %}
           <a href="{{ collection.list_url }}" target="_blank" class="btn btn-link-muted padding-nohorizontal">
             <i class="flaticon-link"></i>
           </a>

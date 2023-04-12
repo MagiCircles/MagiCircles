@@ -1181,24 +1181,18 @@ function load_more_function(nextPageUrl, newPageParameters, newPageCallback /* o
     let button_content = button.html();
     button.html('<div class="loader"><i class="flaticon-loading"></i></div>');
     var next_page = button.attr('data-next-page');
+    let next_page_url = nextPageUrl + location.search + newPageParameters;;
+    next_page_url = removeParameterFromURL(next_page_url, 'page');
+    next_page_url = addParameterToURL(next_page_url, { page: next_page });
     $.ajax({
-        'url': (
-            nextPageUrl + location.search
-                + (
-                    ((nextPageUrl || '').indexOf('?') == -1
-                     && (location.search || '').indexOf('?') == -1)
-                        ? '?' : '&'
-                )
-                + 'page=' + next_page
-                + newPageParameters
-        ),
+        'url': next_page_url,
         'success': function(data) {
             // Table: add to previous table to avoid having different sizes columns
             if (data && data.indexOf('<div class="flex-table items list-items-') !== -1) {
                 let data_elements = $('<div>' + data + '</div>');
                 let data_table = data_elements.find('div[class^="flex-table items list-items-"]');
-                let table_cls = data_table.first().attr('class').split(' ')[2];
-                let current_table = button.parent().find('.flex-table.' + table_cls);
+                let table_collection = data_table.first().data('collection');
+                let current_table = button.parent().find('.flex-table[data-collection="' + table_collection + '"]');
                 data_table.find('.flex-tr').first().attr('data-page-number', data_table.data('page-number'));
                 current_table.find('.flex-tr').last().after(data_table.find('.flex-tr'));
                 current_table.after(data_elements.find('script'));
@@ -1206,8 +1200,8 @@ function load_more_function(nextPageUrl, newPageParameters, newPageCallback /* o
             } else if (data && data.indexOf('<table class="items list-items-') !== -1) {
                 let data_elements = $('<div>' + data + '</div>');
                 let data_table = data_elements.find('table[class^="items list-items-"]');
-                let table_cls = data_table.first().attr('class').split(' ')[1];
-                let current_table = button.parent().find('table.' + table_cls);
+                let table_collection = data_table.first().data('collection');
+                let current_table = button.parent().find('table[data-collection="' + table_collection + '"]');
                 data_table.find('tr').first().attr('data-page-number', data_table.data('page-number'));
                 current_table.find('tr').last().after(data_table.find('tr'));
                 current_table.after(data_elements.find('script'));
@@ -1326,7 +1320,7 @@ function genericAjaxErrorWithCallback(callback) {
 }
 
 // *****************************************
-// Objects, arrays
+// Objects, arrays, strings
 
 function set(object, keys, value) {
     if (keys.length == 0) {
@@ -1347,6 +1341,31 @@ function getAllValues(elements, attribute) {
         elements.map(function() {
             return $(this).attr(attribute);
         }).get()));
+}
+
+function removeParameterFromURL(url, parameter_name) {
+    let part = url.split('?' + parameter_name + '=')[1];
+    if (part) {
+        url = url.replace('?' + parameter_name + '=' + part.split('&')[0], '');
+    }
+    part = url.split('&' + parameter_name + '=')[1]
+    if (part) {
+        url = url.replace('&' + parameter_name + '=' + part.split('&')[0], '');
+    }
+    return url;
+}
+
+function addParameterToURL(url, parameters) {
+    // Doesn't handle anchors
+    $.each(parameters, function(parameter_name, value) {
+        if (url.indexOf('?') == -1) {
+            url += '?';
+        } else {
+            url += '&';
+        }
+        url += parameter_name + '=' + value;
+    });
+    return url;
 }
 
 // *****************************************

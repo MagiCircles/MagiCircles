@@ -177,7 +177,8 @@ def item_view(request, name, collection, pk=None, reverse=None, ajax=False, item
             'item': context['item'], })
 
     # Display unicode other languages
-    if collection.item_view.show_item_name_in_source_languages and not getattr(context['item'], 'image', None):
+    if (collection.item_view.show_item_name_in_source_languages
+        and not getattr(context['item'], 'display_image_item', None)):
         context['item'].display_unicode_other_languages = context['item'].get_display_unicode_other_languages_item(
             languages=collection.item_view.show_item_name_in_source_languages)
     else:

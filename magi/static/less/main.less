@@ -491,6 +491,7 @@
         .text_with_link_wrapper {
             display: flex;
             justify-content: flex-end;
+            align-items: center;
             width: 100%;
         }
         .text_with_link {
@@ -500,7 +501,7 @@
         .text_with_link_image {
             display: block;
             padding-left: 10px;
-            max-height: 80px;
+            max-height: 200px;
             vertical-align: middle;
         }
         .image {
@@ -541,6 +542,13 @@
         }
     }
 
+}
+
+.popover-content {
+    .about-flex-table .field-content .text_with_link_image,
+    .flex-table.collection-table .field-content .text_with_link_image {
+        max-width: 100%;
+    }
 }
 
 .about-table, .collection-table { // deprecated
