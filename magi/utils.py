@@ -3865,6 +3865,8 @@ def formUniquenessCheck(
     return True
 
 def addButtonsToSubCollection(form, sub_collection, field_name):
+    if not sub_collection:
+        return
     form.fields[field_name].below_field = mark_safe(u"""
     <div class="btn-group btn-group-justified">
       <a href="{list_url}" target="_blank"
