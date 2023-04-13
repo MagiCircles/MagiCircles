@@ -57,6 +57,7 @@ from magi.raw import (
     TWITTER_MAX_CHARACTERS,
     RFC3066_TO_ISO6392,
     KNOWN_CRAWLERS,
+    MAX_URL_LENGTH,
 )
 from magi.middleware.httpredirect import HttpRedirectException
 from magi.default_settings import RAW_CONTEXT
@@ -100,9 +101,11 @@ def _join_lazy(strings, separator=u'', mark_safe=False):
 
 joinTranslation = lazy(_join_lazy, unicode)
 
-def andJoin(strings, translated=True, mark_safe=False, language=None, or_=False):
+def andJoin(strings, translated=True, mark_safe=False, language=None, or_=False, max=None):
     if not strings:
         return u''
+    if max is not None and len(strings) > max:
+        strings = strings[:max] + [ _('More').lower() ]
     strings = [
         _markSafeFormatEscapeOrNot(string) if mark_safe else unicode(string)
         for string in strings if string is not None
@@ -906,6 +909,12 @@ def getRandomVariableInCurrentSeasons(key, custom_seasonal_module):
         for season_name, season in django_settings.SEASONAL_SETTINGS.items()
         if season.get(key, None)
     ])[key], custom_seasonal_module)
+
+def checkIsCurrentSeasonNotFromGeneratedSettings(seasons_settings, season_name):
+    """seasons_settings = from magi.settings import SEASONS"""
+    return season_name in seasons_settings and getEventStatus(
+        seasons_settings[season_name]['start_date'], seasons_settings[season_name]['end_date'],
+        ends_within=1) in ['current', 'ended_recently']
 
 ############################################################
 # Context for django requests
@@ -2061,7 +2070,7 @@ def tourldash(string, separator=u'-'):
     if not string:
         return ''
     s =  u''.join(e if e.isalnum() else separator for e in string)
-    return separator.join([s for s in s.split(separator) if s])
+    return separator.join([s for s in s.split(separator) if s])[:MAX_URL_LENGTH]
 
 def notTranslatedWarning(string):
     if string and isinstance(string, basestring) and django_settings.DEBUG:

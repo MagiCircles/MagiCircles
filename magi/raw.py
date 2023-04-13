@@ -5,6 +5,8 @@ from django.utils.translation import ugettext_lazy as _, string_concat
 TWITTER_MAX_CHARACTERS = 280
 TWITTER_LINKS_COUNT_AS_X_CHARACTERS = 23
 
+MAX_URL_LENGTH = 1200 # Real max is 2014 but we don't want our URLs to be this long
+
 please_understand_template_sentence = 'Please understand that we have a very young audience, so we have to be very careful with what appears on our web app.'
 
 unrealistic_template_sentence = u'Your {thing} is unrealistic, so we edited it. If this was a mistake, please upload a screenshot of your game to the details of your account to prove your {thing} and change it back. Thank you for your understanding.'

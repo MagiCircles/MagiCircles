@@ -27,6 +27,7 @@ from magi.utils import (
     getCharacterImageFromPk,
     LANGUAGES_DICT,
     getMagiCollection,
+    checkIsCurrentSeasonNotFromGeneratedSettings,
 )
 from magi.settings import (
     ACTIVITY_TAGS,
@@ -266,17 +267,22 @@ def getUsersBirthdaysToday(image=None, latest_news=None, max_usernames=4):
 ############################################################
 # Get backgrounds
 
-def getBackgroundsFromModel():
-    print 'Get backgrounds'
-    backgrounds_collection = getMagiCollection(getattr(BACKGROUNDS_MODEL, 'collection_name', None))
-    if backgrounds_collection:
-        queryset = backgrounds_collection.get_queryset()
-    else:
-        queryset = BACKGROUNDS_MODEL.objects.all()
+def generateBackgroundsList(queryset=None, filter_queryset=None, check_for_threshold=False):
+    if not queryset:
+        if not BACKGROUNDS_MODEL:
+            return None
+        backgrounds_collection = getMagiCollection(getattr(BACKGROUNDS_MODEL, 'collection_name', None))
+        if backgrounds_collection:
+            queryset = backgrounds_collection.get_queryset()
+        else:
+            queryset = BACKGROUNDS_MODEL.objects.all()
     queryset = BACKGROUNDS_FILTER(queryset)
+    if filter_queryset:
+        queryset = filter_queryset(queryset)
     total = queryset.count()
-    if total > MANY_BACKGROUNDS_THRESHOLD:
-        queryset = queryset.order_by('?')[:MANY_BACKGROUNDS_THRESHOLD]
+    if check_for_threshold:
+        if total > MANY_BACKGROUNDS_THRESHOLD:
+            queryset = queryset.order_by('?')[:MANY_BACKGROUNDS_THRESHOLD]
     backgrounds = []
     for background in queryset:
         image = getattr(background, 'background_image_url', getattr(background, 'image_url', None))
@@ -300,6 +306,10 @@ def getBackgroundsFromModel():
             'profile': getattr(background, 'show_background_on_profile', True),
         })
     return backgrounds, total
+
+def getBackgroundsFromModel():
+    print 'Get backgrounds'
+    return generateBackgroundsList(check_for_threshold=True)
 
 ############################################################
 # Get seasonal activity tag banners
@@ -452,7 +462,7 @@ def seasonalGeneratedSettings(staff_configurations):
     print 'Get seasonal settings'
     seasonal_settings = {}
     for season_name, season in SEASONS.items():
-        if getEventStatus(season['start_date'], season['end_date'], ends_within=1) in ['current', 'ended_recently']:
+        if checkIsCurrentSeasonNotFromGeneratedSettings(SEASONS, season_name):
             print '  Current season:', season_name
             seasonal_settings[season_name] = {}
             for variable in seasons.AVAILABLE_SETTINGS:

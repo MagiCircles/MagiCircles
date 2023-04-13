@@ -404,7 +404,8 @@ class BaseMagiModel(models.Model):
             if 'ajax_item_url' not in d:
                 d['ajax_item_url'] = u'/ajax/{}/{}/'.format(collection_name, d['id'])
             if 'full_item_url' not in d:
-                d['full_item_url'] = u'{}{}/{}/{}/'.format(django_settings.SITE_URL, collection_name, d['id'], tourldash(d['unicode']))
+                d['full_item_url'] = u'{}{}/{}/{}/'.format(
+                    django_settings.SITE_URL, collection_name, d['id'], tourldash(d['unicode']))
             if 'http_item_url' not in d:
                 d['http_item_url'] = u'https:{}'.format(d['full_item_url']) if 'http' not in d['full_item_url'] else d['full_item_url']
 
