@@ -135,6 +135,7 @@ from magi.settings import (
     CUSTOM_PREFERENCES_FORM,
     HOMEPAGE_ARTS,
     RANDOM_ART_FOR_CHARACTER,
+    RANDOM_ART_FOR_CHARACTER_BIRTHDAY,
     HOMEPAGE_ART_POSITION,
     HOMEPAGE_ART_SIDE,
     HOMEPAGE_ART_GRADIENT,
@@ -320,6 +321,7 @@ def indexExtraContext(context):
     # Homepage arts
     if HOMEPAGE_ARTS:
         context['full_width'] = True
+        characters_birthday_today = getCharactersBirthdayToday()
 
         can_preview = (django_settings.DEBUG
                        or (context['request'].user.is_authenticated()
@@ -356,10 +358,10 @@ def indexExtraContext(context):
             context['art'] = preview
 
         # It's a character's birthday
-        elif (RANDOM_ART_FOR_CHARACTER
-              and getCharactersBirthdayToday()):
-            context['art'] = RANDOM_ART_FOR_CHARACTER(
-                random.choice(getCharactersBirthdayToday()),
+        elif ((RANDOM_ART_FOR_CHARACTER_BIRTHDAY or RANDOM_ART_FOR_CHARACTER)
+              and characters_birthday_today):
+            context['art'] = (RANDOM_ART_FOR_CHARACTER_BIRTHDAY or RANDOM_ART_FOR_CHARACTER)(
+                random.choice(characters_birthday_today),
             )
 
         # 1 chance out of 5 to get a random art of 1 of your favorite characters

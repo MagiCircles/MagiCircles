@@ -643,6 +643,11 @@ if hasattr(settings_module, 'RANDOM_ART_FOR_CHARACTER'):
 else:
     RANDOM_ART_FOR_CHARACTER = None
 
+if hasattr(settings_module, 'RANDOM_ART_FOR_CHARACTER_BIRTHDAY'):
+    RANDOM_ART_FOR_CHARACTER_BIRTHDAY = getattr(settings_module, 'RANDOM_ART_FOR_CHARACTER_BIRTHDAY')
+else:
+    RANDOM_ART_FOR_CHARACTER_BIRTHDAY = None
+
 if hasattr(settings_module, 'JAVASCRIPT_COMMONS'):
     JAVASCRIPT_COMMONS = getattr(settings_module, 'JAVASCRIPT_COMMONS')
 else:

@@ -263,8 +263,15 @@ def getCharacterBirthdayFromPk(pk, failsafe=False, key='FAVORITE_CHARACTERS'):
         or ((None, None) if failsafe else None)
     )
 
-def getCharactersBirthdayToday(key='FAVORITE_CHARACTERS'):
-    return getattr(django_settings, u'{}_BIRTHDAY_TODAY'.format(key), [])
+def getCharactersBirthdayToday(key='FAVORITE_CHARACTERS', check_date=True):
+    if not check_date:
+        return getattr(django_settings, u'{}_BIRTHDAY_TODAY'.format(key), [])
+    birthday_today_setting = []
+    for character_pk in getCharactersBirthdayToday(key=key, check_date=False):
+        birthday = getCharacterBirthdayFromPk(character_pk, key=key)
+        if birthday and getEventStatus(start_date=birthday, ends_within=1) == 'ended_recently':
+            birthday_today_setting.append(character_pk)
+    return birthday_today_setting
 
 def getCharacterImageFromPk(pk, default=None, key='FAVORITE_CHARACTERS'):
     return (
