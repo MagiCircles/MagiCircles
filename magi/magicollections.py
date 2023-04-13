@@ -2625,6 +2625,7 @@ class MagiCollection(object):
                     'hide_in_navbar': True,
                     'hide_in_filter': True,
                     'show_title': True,
+                    'show_open_button': False,
                 }))
 
             # Set favorite character(s)
@@ -2639,6 +2640,7 @@ class MagiCollection(object):
                     'hide_in_navbar': True,
                     'hide_in_filter': True,
                     'show_title': True,
+                    'show_open_button': False,
                 }))
             else:
                 for key, other_characters_model in OTHER_CHARACTERS_MODELS.items():
@@ -2655,6 +2657,7 @@ class MagiCollection(object):
                             'hide_in_navbar': True,
                             'hide_in_filter': True,
                             'show_title': True,
+                            'show_open_button': False,
                         }))
                         break
 
