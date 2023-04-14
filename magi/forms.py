@@ -405,7 +405,7 @@ class MagiForm(forms.ModelForm):
                 modelchoicefield_collection = getMagiCollection(
                     getattr(field.queryset.model, 'collection_name', None))
                 if modelchoicefield_collection:
-                    field.queryset = modelchoicefield_collection.get_queryset()
+                    field.queryset = modelchoicefield_collection.get_queryset().distinct()
                     limit_choices_to = field.get_limit_choices_to()
                     if limit_choices_to is not None:
                         field.queryset = field.queryset.complex_filter(limit_choices_to)

@@ -284,17 +284,17 @@ def getCharacterURLFromPk(pk, key='FAVORITE_CHARACTERS', ajax=False):
     # /!\ Can't be called at global level
     if key == 'FAVORITE_CHARACTERS' and not getCharacterSetting('model', key=key):
         return u'{}{}'.format(
-            '/ajax' if ajax else '',
+            u'/ajax' if ajax else '',
             RAW_CONTEXT.get('favorite_character_to_url', lambda _link: '#')({
                 'raw_value': pk,
                 'value': getCharacterNameFromPk(pk),
             }),
         )
     return u'{}/{}/{}/'.format(
-        '/ajax' if ajax else '',
+        u'/ajax' if ajax else '',
         getCharacterCollectionName(key=key),
         pk,
-        '{}/'.format(tourldash(getCharacterNameFromPk(pk, key=key))) if not ajax else '',
+        u'{}/'.format(tourldash(getCharacterNameFromPk(pk, key=key))) if not ajax else '',
     )
 
 _CHARACTERS_CHOICES = {
