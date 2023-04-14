@@ -65,7 +65,7 @@
   <div class="text-right">
     <a href="#content" class="btn btn-lg btn-link page-scroll"><span class="glyphicon glyphicon-chevron-up"></span></a>
     {% if 'help' in all_enabled and LANGUAGE_CODE not in languages_cant_speak_english %}<a href="/help/Change%20your%20profile%20picture"  data-ajax-url="/ajax/help/Change%20your%20profile%20picture/"target="_blank" class="btn btn-lg btn-link">{% trans 'F.A.Q.' %}</a>{% endif %}
-    <a class="btn btn-lg btn-main" href="https://{{ LANGUAGE_CODE }}.gravatar.com/" target="_blank">{% trans 'Change Avatar' %} <i class="flaticon-link"></i></a>
+    <a class="btn btn-lg btn-main btn-lines" href="https://{{ LANGUAGE_CODE }}.gravatar.com/" target="_blank">{% trans 'Change Avatar' %} <i class="flaticon-link"></i></a>
   </div>
 </form>
 
@@ -75,42 +75,42 @@
   {{ details.sentence }}
 </h1>
 <div class="container_form">
-  <table class="table table-padded table-rounded">
+  <div class="flex-table">
     {% for nth, nth_details in details.nth.items %}
-    <tr>
+    <div class="flex-tr">
       {% if details.total_favoritable > 1 %}
-      <td>
+      <div class="flex-td">
         {% if nth_details.image %}
         <img src="{{ nth_details.image }}" alt="#{{ nth }}" height="42">
         {% else %}
         #{{ nth }}
         {% endif %}
-      </td>
+      </div>{# td #}
       {% endif %}
-      <td>{% if nth_details.current.pk and nth_details.current.image %}
+      <div class="flex-td">{% if nth_details.current.pk and nth_details.current.image %}
         <img src="{{ nth_details.current.image }}" alt="{{ nth_details.current.name }}" height="42">
         {% else %}
         <img src="{% static_image_url path=empty_image %}" alt="empty" height="42">
-      {% endif %}</td>
-      <td>
+      {% endif %}</div>{# td #}
+      <div class="flex-td">
         {% if nth_details.current.pk %}
         <h4>{{ nth_details.current.name }}</h4>
         {% else %}
         <h4 class="text-muted">{{ nth_details.sentence }}</h4>
         {% endif %}
-      </td>
-      <td class="text-right nowrap">
+      </div>{# td #}
+      <div class="flex-tdtext-right nowrap">
         {% if nth_details.current.pk %}
         <form method="POST" action="{{ nth_details.unset_url }}" data-form-name="unset_character" class="inline-block">
           {% csrf_token %}
           <input name="confirm" type="hidden" value="on">
-          <button type="submit" class="btn btn-lg btn-link" data-form-loader="true"
+          <button type="submit" class="btn btn-lg btn-link btn-lines" data-form-loader="true"
                   data-toggle="tooltip" data-trigger="hover" data-placement="top" title="{% trans 'Clear' %}">
             <i class="flaticon-delete"></i>
           </button>
         </form>
         {% endif %}
-        <a href="{{ nth_details.set_url }}" class="btn btn-lg btn-secondary"
+        <a href="{{ nth_details.set_url }}" class="btn btn-lg btn-secondary btn-lines"
            data-toggle="tooltip" data-trigger="hover" data-placement="top" title="{{ nth_details.edit_sentence }}"
            {% if nth_details.ajax_url %}
            data-ajax-url="{{ nth_details.ajax_url }}"
@@ -118,13 +118,13 @@
            {% endif %}>
           <i class="flaticon-edit"></i>
         </a>
-      </td>
-    </tr>
+      </div>{# td #}
+    </div>{# tr #}
     {% endfor %}
-  </table>
+  </div>{# table #}
   <div class="text-right">
     <a href="#content" class="btn btn-lg btn-link page-scroll"><span class="glyphicon glyphicon-chevron-up"></span></a>
-    <a href="/user/{{ user.id }}/{{ user.username }}/" class="btn btn-lg btn-link">{{ back_to_profile_sentence }}</a>
+    <a href="/user/{{ user.id }}/{{ user.username }}/" class="btn btn-lg btn-link btn-lines">{{ back_to_profile_sentence }}</a>
   </div>
 </div>
 {% endfor %}
@@ -151,7 +151,7 @@
     <button type="submit" name="unset_background" class="btn btn-lg btn-link" data-form-loader="true">
       <i class="flaticon-delete"></i> {% trans 'Clear' %}</button>
     {% endif %}
-    <a href="{{ set_background_url }}" class="btn btn-main btn-lg"
+    <a href="{{ set_background_url }}" class="btn btn-main btn-lg btn-lines"
        {% if set_background_ajax_url %}
        data-ajax-url="{{ set_background_ajax_url }}"
        data-ajax-title="{{ set_background_ajax_title }}"
@@ -166,16 +166,16 @@
 <h1 id="links" class="text-center padding50"><i class="flaticon-url"></i> {% trans 'Links' %}</h1>
 <br>
 <form class="container_form" action="#addLink" data-form-name="addLink">
-  <table class="table table-main table-padded table-rounded">
+  <div class="flex-table table-main table-rounded table-padded">
     {% for link in links %}
-    <tr id="link{{ link.pk }}">
-      <td>
+    <div class="flex-tr" id="link{{ link.pk }}">
+      <div class="flex-td">
 	{% include 'include/link.html' %}
-      </td>
-      <td class="text-right" width="200"><a href="#deleteLink" data-link-id="{{ link.pk }}" class="btn btn-lg btn-danger">{{ delete_link_sentence }}</a></td>
-    </tr>
+      </div>{# td #}
+      <div class="flex-td text-right" width="200"><a href="#deleteLink" data-link-id="{{ link.pk }}" class="btn btn-lg btn-danger btn-lines">{{ delete_link_sentence }}</a></div>{# td #}
+    </div>{# tr #}
     {% endfor %}
-  </table>
+  </div>{# table #}
 </form>
 {% endif %}
 {% endif %}
@@ -198,7 +198,7 @@
   Looking for your staff profile details?
   <br><br>
   <div class="text-right">
-    <a href="/staffdetailss/" class="btn btn-main btn-lg">Edit staff details <i class="flaticon-link"></i></a>
+    <a href="/staffdetailss/" class="btn btn-main btn-lg btn-lines">Edit staff details <i class="flaticon-link"></i></a>
   </div>
 </div>
 {% endif %}
@@ -211,8 +211,8 @@
   <p>{{ consider_donating_sentence }}. {% trans 'This will help us cover the costs of the servers and allow us to keep it running for free and without ads.' %}</p>
   <div class="text-right">
     <a href="#content" class="btn btn-lg btn-link page-scroll"><span class="glyphicon glyphicon-chevron-up"></span></a>
-    <a href="/donate/" target="_blank" class="btn btn-lg btn-link">{% trans 'Learn more' %}</a>
-    <a class="btn btn-lg btn-main" href="/donate/" target="_blank">{% trans 'Donate' %} <i class="flaticon-link"></i></a>
+    <a href="/donate/" target="_blank" class="btn btn-lg btn-link btn-lines">{% trans 'Learn more' %}</a>
+    <a class="btn btn-lg btn-main btn-lines" href="/donate/" target="_blank">{% trans 'Donate' %} <i class="flaticon-link"></i></a>
   </div>
 </form>
 {% endif %}
@@ -232,18 +232,22 @@
 <h1 id="accounts" class="text-center padding50"><i class="flaticon-album"></i> {{ accounts_title_sentence }}</h1>
 <br>
 <form class="container_form" data-form-name="accounts">
-  <table class="table table-main table-padded table-rounded">
+  <div class="flex-table table-main table-padded table-rounded">
     {% for account in accounts %}
-    <tr>
-      <td><h4>{{ account }}</h4></td>
-      <td class="text-right"><a href="{{ account.edit_url }}" class="btn btn-lg btn-secondary">{{ account.edit_sentence }} <i class="flaticon-link"></i></a></td>
-    </tr>
+    <div class="flex-tr">
+      <div class="flex-td"><h4>{{ account }}</h4></div>{# td #}
+      <div class="flex-td text-right">
+        <a href="{{ account.edit_url }}" class="btn btn-lg btn-secondary btn-lines">
+          {{ account.edit_sentence }} <i class="flaticon-link"></i>
+        </a>
+      </div>{# td #}
+    </div>{# tr #}
     {% endfor %}
-  </table>
+  </div>{# table #}
   <div class="text-right">
     <a href="#content" class="btn btn-lg btn-link page-scroll"><span class="glyphicon glyphicon-chevron-up"></span></a>
-    <a href="/user/{{ user.id }}/{{ user.username }}/" class="btn btn-lg btn-link">{{ back_to_profile_sentence }}</a>
-    <a href="/accounts/add/" class="btn btn-lg btn-main"><i class="flaticon-add"></i> {{ add_account_sentence }} <i class="flaticon-link"></i></a>
+    <a href="/user/{{ user.id }}/{{ user.username }}/" class="btn btn-lg btn-link btn-lines">{{ back_to_profile_sentence }}</a>
+    <a href="/accounts/add/" class="btn btn-lg btn-main btn-lines"><i class="flaticon-add"></i> {{ add_account_sentence }} <i class="flaticon-link"></i></a>
   </div>
 </form>
 {% endif %}
@@ -252,20 +256,20 @@
 <h1 id="suggested_edits" class="text-center padding50"><i class="flaticon-edit"></i> {% trans 'Suggested edits' %}</h1>
 <br>
 <form class="container_form" data-form-name="suggested_edits">
-  <table class="table table-blocked table-padded table-rounded">
+  <div class="flex-table table-blocked table-padded table-rounded">
   {% for report in pending_suggested_edits %}
-    <tr>
-      <td>
-        <small class="timezone" data-timeago="true">
-          <span class="datetime">{{ report.creation|torfc2822 }}</span>
-          (<span class="current_timezone">UTC</span>)
-        </small><br>
-        <p class="padding20 padding-nohorizontal">{{ report }}</p>
-        <div class="text-right">
-          <a href="{{ report.edit_url }}" target="_blank" class="btn btn-main btn-lg">{{ report.edit_sentence }} <i class="flaticon-link"></i></a>
-        </div>
-      </td>
-    </tr>
+  <div class="flex-tr">
+    <div class="flex-td">
+      <small class="timezone" data-timeago="true">
+        <span class="datetime">{{ report.creation|torfc2822 }}</span>
+        (<span class="current_timezone">UTC</span>)
+      </small><br>
+      <p class="padding20 padding-nohorizontal">{{ report }}</p>
+      <div class="text-right">
+        <a href="{{ report.edit_url }}" target="_blank" class="btn btn-main btn-lg btn-lines">{{ report.edit_sentence }} <i class="flaticon-link"></i></a>
+      </div>
+    </div>{# td #}
+  </div>{# tr #}
   {% endfor %}
   {% for report in suggested_edits %}
   <div class="alert alert-success progress-bar-striped">
@@ -297,7 +301,7 @@
     </small></p>
   </div>
   {% endfor %}
-  </table>
+  </div>{# table #}
   <div class="text-right">
     <a href="#content" class="btn btn-lg btn-link page-scroll"><span class="glyphicon glyphicon-chevron-up"></span></a>
   </div>
@@ -309,20 +313,20 @@
 <h1 id="reports" class="text-center padding50"><i class="flaticon-warning"></i> {% trans 'Reports' %}</h1>
 <br>
 <form class="container_form" data-form-name="reports">
-  <table class="table table-blocked table-padded table-rounded">
+  <div class="flex-table table-blocked table-padded table-rounded">
   {% for report in pending_reports %}
-    <tr>
-      <td>
+    <div class="flex-tr">
+      <div class="flex-td">
         <small class="timezone" data-timeago="true">
           <span class="datetime">{{ report.creation|torfc2822 }}</span>
           (<span class="current_timezone">UTC</span>)
         </small><br>
         <p class="padding20 padding-nohorizontal">{{ report }}</p>
         <div class="text-right">
-          <a href="{{ report.edit_url }}" target="_blank" class="btn btn-main btn-lg">{{ report.edit_sentence }} <i class="flaticon-link"></i></a>
+          <a href="{{ report.edit_url }}" target="_blank" class="btn btn-main btn-lg btn-lines">{{ report.edit_sentence }} <i class="flaticon-link"></i></a>
         </div>
-      </td>
-    </tr>
+      </div>{# td #}
+    </div>{# tr #}
   {% endfor %}
   {% for report in reports %}
   <div class="alert alert-{% if report.status == 'Edited' %}warning{% else %}danger{% endif %} progress-bar-striped">
@@ -354,7 +358,7 @@
     </small></p>
   </div>
   {% endfor %}
-</table>
+</div>{# table #}
   <div class="text-right">
     <a href="#content" class="btn btn-lg btn-link page-scroll"><span class="glyphicon glyphicon-chevron-up"></span></a>
   </div>
@@ -366,20 +370,20 @@
 <h1 id="blocked" class="text-center padding50"><i class="flaticon-block"></i> {{ blocked_users_sentence }}</h1>
 <br>
 <form class="container_form" data-form-name="blocked">
-  <table class="table table-blocked table-padded table-rounded">
+  <div class="flex-table table-blocked table-padded table-rounded">
     {% for blocked_user in blocked %}
-    <tr>
-      <td><i class="flaticon-block"></i></td>
-      <td>
+    <div class="flex-tr">
+      <div class="flex-td">
+        <i class="flaticon-block"></i>
         {{ blocked_user.block_message }}
-      </td>
-      <td class="text-right" width="200">
-        <a href="/block/{{ blocked_user.id }}/" class="btn btn-lg btn-danger" target="_blank">
+      </div>
+      <div class="flex-td text-right" width="200">
+        <a href="/block/{{ blocked_user.id }}/" class="btn btn-lg btn-danger btn-lines" target="_blank">
           {{ blocked_user.unblock_message }} <i class="flaticon-link"></i>
-      </a></td>
-    </tr>
+      </a></div>{# td #}
+    </div>{# tr #}
     {% endfor %}
-  </table>
+  </div>{# table #}
   <div class="text-right">
     <a href="#content" class="btn btn-lg btn-link page-scroll"><span class="glyphicon glyphicon-chevron-up"></span></a>
   </div>
@@ -390,9 +394,9 @@
 {% block otherbuttons %}
 <a href="#content" class="btn btn-lg btn-link page-scroll"><span class="glyphicon glyphicon-chevron-up"></span></a>
 {% if form_name == 'changePassword' %}
-<a href="/password_reset/" class="btn btn-lg btn-link">{% trans 'Forgot password?' %} <i class="flaticon-link"></i></a>
+<a href="/password_reset/" class="btn btn-lg btn-link btn-lines">{% trans 'Forgot password?' %} <i class="flaticon-link"></i></a>
 {% else %}
-<a href="/user/{{ user.id }}/{{ user.username }}/" class="btn btn-lg btn-link">{{ back_to_profile_sentence }}</a>
+<a href="/user/{{ user.id }}/{{ user.username }}/" class="btn btn-lg btn-link btn-lines">{{ back_to_profile_sentence }}</a>
 {% endif %}
 {% endblock %}
 

@@ -148,10 +148,12 @@ class MagiField(object):
         # {}_AUTO_IMAGES_FOLDER + {}_AUTO_IMAGES_FROM_I also exist and are used by get_auto_image in item_model
 
         u'{}_QUESTION': None,
+        u'{}_QUESTION_VARIABLES': {},
         u'{}_ANSWER': None,
         u'{}_FAQ': None,
         u'{}_TABLE_HEADER': None,
         u'{}_IS_PLURAL': None, # boolean, defaults to wether or not it ends with 's'
+        u'{}_IS_PERSON': False,
     }, PERMISSION_ITEM_OPTIONS)
     VALID_ITEM_OPTIONS = {}
 
@@ -275,7 +277,7 @@ class MagiField(object):
         if self.item_options['IS_PLURAL'] is None:
             if self.is_usually_plural:
                 return True
-            return self.field_name.endswith('s')
+            return self.field_name.endswith('s') and not self.field_name.endswith('ss')
         return bool(self.item_options['IS_PLURAL'])
 
     def to_text_value(self):
@@ -292,6 +294,10 @@ class MagiField(object):
     # To return multiple questions and answer, use to_faq instead
     @property
     def question(self):
+        if self.item_options['IS_PERSON']:
+            if self.is_plural:
+                return _('Who are {name}\'s {things}?')
+            return _('Who is {name}\'s {thing}?')
         if self.is_plural:
             return _('What are {name}\'s {things}?')
         return _('What is {name}\'s {thing}?')
@@ -304,15 +310,15 @@ class MagiField(object):
         return self.question
 
     def format_question(self, question):
-        return question.format(
-            name=self.name_for_question,
-            thing=self.verbose_name_for_question,
-            things=self.verbose_name_for_question,
-        )
+        return question.format(**mergeDicts({
+            'name': self.name_for_question,
+            'thing': self.verbose_name_for_question,
+            'things': self.verbose_name_for_question,
+        }, self.item_options['QUESTION_VARIABLES']))
 
     @property
     def answer(self):
-        return self.to_text_value()
+        return andJoin(self.to_text_value().split(u'\n'))
 
     def to_answer(self):
         if self.item_options['ANSWER']:
@@ -1801,9 +1807,9 @@ class MagiSizeFieldMixin(object):
 
     @property
     def question(self):
-        if fieldNameMatch('height'):
+        if fieldNameMatch(self.field_name, 'height'):
             return _('How tall is {name}?')
-        elif fieldNameMatch('size') or fieldNameMatch('length'):
+        elif fieldNameMatch(self.field_name, 'size') or fieldNameMatch(self.field_name, 'length'):
             return _('What is {name}\'s {thing}?')
         return _('What is {name}\'s {thing} size?')
 
@@ -2385,6 +2391,7 @@ class MagiDictFieldMixin(object):
                 if isinstance(value, dict)
                 else [ key, value ]
             )) for key, value in self.value.items()
+            if not isMarkedSafe(value['value'] if isinstance(value, dict) else value)
         ])
 
     faq = None
@@ -3539,13 +3546,16 @@ class MagiManyToManyModelField(BaseMagiManyToManyModelField):
                 'link_content_to_parameters': self._get_image_parameters(rel_item),
             })
         elif self.with_links:
+            text_image = (
+                getattr(rel_item, 'text_image_for_prefetched', None)
+                or rel_item._magimanytomanyfield_image
+            )
             parameters.update({
                 'button': True,
                 'button_class': 'link-secondary',
                 'link_classes': [ 'padding-novertical' ],
-                'text_image': rel_item._magimanytomanyfield_image,
-                'text_icon': self.rel_collection.icon if not getattr(
-                    rel_item, '_magimanytomanyfield_image', None) else None,
+                'text_image': text_image,
+                'text_icon': self.rel_collection.icon if not text_image else None,
                 'text_image_alt': rel_item,
             })
         elif self.with_images:

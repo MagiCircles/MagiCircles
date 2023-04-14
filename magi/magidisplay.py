@@ -596,7 +596,7 @@ class _MagiDisplayLink(MagiDisplay):
         {display_value} {external_link_icon} {link_subtitle}
     </a>
     """
-    template_button = u'btn btn-{button_size} btn-{button_class}'
+    template_button = u'btn btn-{button_size} btn-{button_class} btn-lines'
     template_new_window = u'target="_blank"'
     template_external_link_icon = u'<i class="flaticon-link"></i>'
     template_link_subtitle = u'<br><span class="faded fontx0-8">{link_subtitle}</span>'

@@ -135,6 +135,8 @@ User.hasGroup = lambda u, group: hasGroup(u, group)
 User.hasPermission = lambda u, permission: hasPermission(u, permission)
 User.hasOneOfPermissions = lambda u, permissions: hasOneOfPermissions(u, permissions)
 User.hasPermissions = lambda u, permissions: hasPermissions(u, permissions)
+User.image_for_prefetched = -1 # Always display usernames when showing prefetched users
+User.text_image_for_prefetched = property(avatar)
 
 User.birthday_url = property(lambda u: birthdayURL(u))
 User.hasPermissionToMessage = hasPermissionToMessage
@@ -940,6 +942,7 @@ class Activity(MagiModel):
     _cache_owner_email = models.EmailField(blank=True)
     _cache_owner_preferences_i_status = models.CharField(max_length=12, null=True)
     _cache_owner_preferences_twitter = models.CharField(max_length=32, null=True, blank=True)
+    _cached_owner_collection_name = 'user'
 
     def force_cache_owner(self):
         """

@@ -2628,7 +2628,7 @@ class _DisplayGroup(MagiDisplay):
     template_verbose_permissions_foreach = u'<li>{value}</li>'
     template_guide = u"""
       <div class="text-right">
-        <a class="btn btn-lg btn-secondary" href="{guide}" {ajax_guide} target="_blank">
+        <a class="btn btn-lg btn-secondary btn-lines" href="{guide}" {ajax_guide} target="_blank">
           Read the {translation} guide <i class="flaticon-link"></i>
         </a>
       </div>

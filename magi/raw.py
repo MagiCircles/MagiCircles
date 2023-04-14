@@ -82,6 +82,7 @@ KNOWN_ITEM_PROPERTIES = [
     'html_attributes_in_list',
     'image_for_favorite_character',
     'image_for_prefetched',
+    'text_image_for_prefetched',
     'IS_PERSON',
     'name_for_questions',
     'new_row',

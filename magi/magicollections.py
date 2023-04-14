@@ -4341,6 +4341,7 @@ class ActivityCollection(MagiCollection):
     queryset = models.Activity.objects.all()
     navbar_link_list = 'community'
     icon = 'comments'
+    show_open_button = False
 
     report_edit_templates = OrderedDict([
         ('Incorrect/missing tag', 'Your activity\'s tags have been changed. One or more of the activity\'s tags didn\'t reflect its content, or one or more tags were missing.'),
@@ -4388,6 +4389,13 @@ class ActivityCollection(MagiCollection):
         classes = view.get_item_buttons_classes(request, context, item=item)
         js_buttons = []
         if request.user.is_authenticated():
+
+            # Edit button
+            if ('edit' in buttons
+                and buttons['edit']['has_permissions']
+                and item.owner_id != request.user.id
+                and not request.user.is_superuser):
+                buttons['edit']['has_permissions'] = False
 
             # Archive buttons
             for prefix, is_archived, (has_permissions, because_premium), icon, staff_only in [
