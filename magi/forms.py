@@ -3579,8 +3579,10 @@ class FilterActivities(MagiFiltersForm):
 
     show_more = FormShowMore(cutoff='is_popular')
 
+    c_tags_filter = MagiFilter(selector=u'c_tags', operator_for_multiple=MagiFilterOperator.And)
+
     c_past_tags = forms.MultipleChoiceField(required=False, widget=forms.CheckboxSelectMultiple, label=_('Past tags'))
-    c_past_tags_filter = MagiFilter(selector=u'c_tags')
+    c_past_tags_filter = MagiFilter(selector=u'c_tags', operator_for_multiple=MagiFilterOperator.And)
 
     with_image = forms.NullBooleanField(label=_('Image'))
     with_image_filter = MagiFilter(selector='image__isnull')
