@@ -335,64 +335,9 @@ class MobileGameAccount(BaseAccount):
         abstract = True
 
 ############################################################
-# BaseEvent
+# ModelWithVersions
 
-class _BaseEvent(MagiModel):
-    collection_name = 'event'
-
-    owner = models.ForeignKey(User, related_name='added_%(class)ss')
-
-    ############################################################
-    # Name
-
-    name = models.CharField(_('Title'), max_length=100, null=True)
-    NAMES_CHOICES = ALL_ALT_LANGUAGES
-    d_names = models.TextField(_('Title'), null=True)
-
-    ############################################################
-    # Description
-
-    m_description = models.TextField(_('Details'), null=True)
-    M_DESCRIPTIONS_CHOICES = ALL_ALT_LANGUAGES
-    d_m_descriptions = models.TextField(_('Details'), null=True)
-    _cache_description = models.TextField(null=True)
-
-    STATUS_STARTS_WITHIN = 3
-    STATUS_ENDS_WITHIN = 3
-
-    def __unicode__(self):
-        return unicode(self.t_name)
-
-    class Meta(MagiModel.Meta):
-        abstract = True
-
-class BaseEvent(_BaseEvent):
-    collection_name = 'event'
-
-    image = models.ImageField(_('Image'), upload_to=uploadItem('event'), null=True)
-    _original_image = models.ImageField(null=True, upload_to=uploadTiny('event'))
-
-    start_date = models.DateTimeField(_('Beginning'), null=True)
-    end_date = models.DateTimeField(_('End'), null=True)
-
-    get_status = lambda _s: getEventStatus(
-        _s.start_date, _s.end_date, ends_within=_s.STATUS_ENDS_WITHIN, starts_within=_s.STATUS_STARTS_WITHIN)
-    status = property(get_status)
-
-    class Meta(MagiModel.Meta):
-        abstract = True
-        ordering = ['-start_date']
-
-BASE_EVENT_FIELDS_PER_VERSION = OrderedDict([
-    (u'{}start_date', lambda _version_name, _version: models.DateTimeField(
-        string_concat(_version['translation'], ' - ', _('Beginning')), null=True,
-    )),
-    (u'{}end_date', lambda _version_name, _version: models.DateTimeField(
-        string_concat(_version['translation'], ' - ', _('End')), null=True,
-    )),
-])
-
-BASE_EVENT_FIELDS_PER_VERSION_AND_LANGUAGE = OrderedDict([
+BASE_MODEL_FIELDS_PER_VERSION_AND_LANGUAGE = OrderedDict([
     (u'{}image', lambda _version_name, _version, _language=None: models.ImageField(
         string_concat(*([_version['translation'], ' - ', _('Image')] + (
             [' - ', getVerboseLanguage(_language)] if _language else []
@@ -404,35 +349,24 @@ BASE_EVENT_FIELDS_PER_VERSION_AND_LANGUAGE = OrderedDict([
     )),
 ])
 
-_timezones_lambda = lambda _version_name, _version: _version.get(
-    'timezones', [_version['timezone']] if _version.get('timezone', None) else None)
-
-BASE_EVENT_UTILS_PER_VERSION = OrderedDict([
-    (u'{}name', lambda _version_name, _version: property(lambda _s: _s.get_name_for_version(_version_name))),
-    (u'{}status', lambda _version_name, _version: property(lambda _s: _s.get_status_for_version(_version_name))),
-    (u'{}START_DATE_DEFAULT_TIMEZONES', _timezones_lambda),
-    (u'{}END_DATE_DEFAULT_TIMEZONES', _timezones_lambda),
-])
-
-def getBaseEventWithVersions(
+def getBaseModelWithVersions(
         versions, defaults={}, fallbacks={},
-        fields=None, extra_fields=None,
+        base_fields=None, fields=None, extra_fields=None,
+        base_fields_per_language=BASE_MODEL_FIELDS_PER_VERSION_AND_LANGUAGE,
         fields_per_language=None, extra_fields_per_language=None,
-        utils=None, extra_utils=None,
+        base_utils=None, utils=None, extra_utils=None,
+        base_model_class=MagiModel, default_verbose_name=None,
 ):
-    """
-    https://github.com/MagiCircles/MagiCircles/wiki/Events
-    """
     if fields is None:
-        fields = BASE_EVENT_FIELDS_PER_VERSION.copy()
+        fields = base_fields.copy() if base_fields else {}
     if extra_fields:
         fields.update(extra_fields)
     if fields_per_language is None:
-        fields_per_language = BASE_EVENT_FIELDS_PER_VERSION_AND_LANGUAGE.copy()
+        fields_per_language = base_fields_per_language.copy() if base_fields_per_language else {}
     if extra_fields_per_language:
         fields_per_language.update(extra_fields_per_language)
     if utils is None:
-        utils = BASE_EVENT_UTILS_PER_VERSION.copy()
+        utils = base_utils.copy() if base_utils else {}
     if extra_utils:
         utils.update(extra_utils)
 
@@ -442,13 +376,13 @@ def getBaseEventWithVersions(
     if not has_languages:
         if extra_fields_per_language:
             if django_settings.DEBUG:
-                print '[Warning] extra_fields_per_language was specified in event, but versions don\'t have languages.'
+                print '[Warning] extra_fields_per_language was specified in model with versions, but versions don\'t have languages.'
         else:
             fields.update(fields_per_language)
 
     default_name = defaults.get('name', None)
 
-    class BaseEventWithVersions(_BaseEvent):
+    class BaseModelWithVersions(MagiModel):
 
         ############################################################
         # Versions
@@ -593,7 +527,11 @@ def getBaseEventWithVersions(
         # Unicode
 
         def __unicode__(self):
-            return unicode(self.relevant_name or _('Event'))
+            return (
+                unicode(self.relevant_name)
+                or default_verbose_name
+                or super(BaseModelWithVersions, self).__unicode__()
+            )
 
         class Meta(MagiModel.Meta):
             abstract = True
@@ -603,55 +541,55 @@ def getBaseEventWithVersions(
 
     default_ordering = getFieldNameForVersion('{}start_date', versions[versions.keys()[0]])
 
-    BaseEventWithVersions._versions_by_prefixes = {
+    BaseModelWithVersions._versions_by_prefixes = {
         version['prefix']: version_name
         for version_name, version in versions.items()
     }
 
     for version_name, version in versions.items():
-        BaseEventWithVersions.ALL_FIELDS_BY_VERSION[version_name] = []
+        BaseModelWithVersions.ALL_FIELDS_BY_VERSION[version_name] = []
 
         for template_field_name, to_field in fields.items():
             # Add model fields per version
             field_name = getFieldNameForVersion(template_field_name, version)
             field = to_field(version_name, version)
-            BaseEventWithVersions.add_to_class(field_name, field)
+            BaseModelWithVersions.add_to_class(field_name, field)
             # Add to ALL_FIELDS_PER_VERSION
-            BaseEventWithVersions.ALL_FIELDS_PER_VERSION.append(field_name)
+            BaseModelWithVersions.ALL_FIELDS_PER_VERSION.append(field_name)
             # Add to ALL_FIELDS_BY_VERSION
-            BaseEventWithVersions.ALL_FIELDS_BY_VERSION[version_name].append(field_name)
+            BaseModelWithVersions.ALL_FIELDS_BY_VERSION[version_name].append(field_name)
             # Add to ALL_VERSION_FIELDS_BY_NAME
-            if template_field_name not in BaseEventWithVersions.ALL_VERSION_FIELDS_BY_NAME:
-                BaseEventWithVersions.ALL_VERSION_FIELDS_BY_NAME[template_field_name] = []
-            BaseEventWithVersions.ALL_VERSION_FIELDS_BY_NAME[template_field_name].append(field_name)
+            if template_field_name not in BaseModelWithVersions.ALL_VERSION_FIELDS_BY_NAME:
+                BaseModelWithVersions.ALL_VERSION_FIELDS_BY_NAME[template_field_name] = []
+            BaseModelWithVersions.ALL_VERSION_FIELDS_BY_NAME[template_field_name].append(field_name)
             # Add default ordering if matches
             if field_name == default_ordering:
-                BaseEventWithVersions.Meta.ordering = [default_ordering]
+                pass # BaseModelWithVersions.Meta.ordering = [default_ordering]
 
         for language in getLanguagesForVersion(version):
             for template_field_name, to_field in fields_per_language.items():
                 # Add model fields per language
                 field = to_field(version_name, version, language)
                 field_name = getFieldNameForVersionAndLanguage(template_field_name, version, language)
-                BaseEventWithVersions.add_to_class(field_name, field)
+                BaseModelWithVersions.add_to_class(field_name, field)
                 # Add to FIELDS_PER_VERSION_AND_LANGUAGE_BY_LANGUAGE
-                if language not in BaseEventWithVersions.FIELDS_PER_VERSION_AND_LANGUAGE_BY_LANGUAGE:
-                    BaseEventWithVersions.FIELDS_PER_VERSION_AND_LANGUAGE_BY_LANGUAGE[language] = []
-                BaseEventWithVersions.FIELDS_PER_VERSION_AND_LANGUAGE_BY_LANGUAGE[language].append(field_name)
+                if language not in BaseModelWithVersions.FIELDS_PER_VERSION_AND_LANGUAGE_BY_LANGUAGE:
+                    BaseModelWithVersions.FIELDS_PER_VERSION_AND_LANGUAGE_BY_LANGUAGE[language] = []
+                BaseModelWithVersions.FIELDS_PER_VERSION_AND_LANGUAGE_BY_LANGUAGE[language].append(field_name)
                 # Add to ALL_FIELDS_PER_VERSION_AND_LANGUAGE
-                BaseEventWithVersions.ALL_FIELDS_PER_VERSION_AND_LANGUAGE.append(field_name)
+                BaseModelWithVersions.ALL_FIELDS_PER_VERSION_AND_LANGUAGE.append(field_name)
                 # Add to ALL_FIELDS_BY_VERSION
-                BaseEventWithVersions.ALL_FIELDS_BY_VERSION[version_name].append(field_name)
+                BaseModelWithVersions.ALL_FIELDS_BY_VERSION[version_name].append(field_name)
                 # Add to ALL_VERSION_FIELDS_BY_NAME
-                if template_field_name not in BaseEventWithVersions.ALL_VERSION_FIELDS_BY_NAME:
-                    BaseEventWithVersions.ALL_VERSION_FIELDS_BY_NAME[template_field_name] = []
-                BaseEventWithVersions.ALL_VERSION_FIELDS_BY_NAME[template_field_name].append(field_name)
+                if template_field_name not in BaseModelWithVersions.ALL_VERSION_FIELDS_BY_NAME:
+                    BaseModelWithVersions.ALL_VERSION_FIELDS_BY_NAME[template_field_name] = []
+                BaseModelWithVersions.ALL_VERSION_FIELDS_BY_NAME[template_field_name].append(field_name)
 
         # Add utils per version
         for field_name, to_util in utils.items():
             template = getFieldTemplateForVersion(field_name)
             new_field_name = template.format(version['prefix'].upper() if template.isupper() else version['prefix'])
-            setattr(BaseEventWithVersions, new_field_name, to_util(version_name, version))
+            setattr(BaseModelWithVersions, new_field_name, to_util(version_name, version))
 
         def _get_relevant_language_for_version(field_name, version_name):
             return lambda item: item.get_value_of_relevant_language_for_version(field_name, version_name)
@@ -666,8 +604,8 @@ def getBaseEventWithVersions(
         def _add_relevant_utils(field_name):
             neutral_field_name = getVersionNeutralFieldName(field_name)
             l = _get_relevant(field_name, defaults.get(field_name, None), fallbacks.get(field_name, True))
-            setattr(BaseEventWithVersions, u'get_relevant_{}'.format(neutral_field_name), l)
-            setattr(BaseEventWithVersions, u'relevant_{}'.format(neutral_field_name), property(l))
+            setattr(BaseModelWithVersions, u'get_relevant_{}'.format(neutral_field_name), l)
+            setattr(BaseModelWithVersions, u'relevant_{}'.format(neutral_field_name), property(l))
 
         def _get_for_version(field_name):
             return lambda item, version_name: item.get_field_for_version(field_name, version_name)
@@ -682,11 +620,11 @@ def getBaseEventWithVersions(
         if not field_name.startswith('_'):
 
             # Add to FIELDS_PER_VERSION
-            BaseEventWithVersions.FIELDS_PER_VERSION.append(field_name)
+            BaseModelWithVersions.FIELDS_PER_VERSION.append(field_name)
 
             # Add utils
             neutral_field_name = getVersionNeutralFieldName(field_name)
-            setattr(BaseEventWithVersions, u'get_{}_for_version'.format(
+            setattr(BaseModelWithVersions, u'get_{}_for_version'.format(
                 neutral_field_name), _get_for_version(field_name))
             _add_relevant_utils(field_name)
 
@@ -694,21 +632,121 @@ def getBaseEventWithVersions(
         if not field_name.startswith('_'):
 
             # Add to FIELDS_PER_VERSION_AND_LANGUAGE
-            BaseEventWithVersions.FIELDS_PER_VERSION_AND_LANGUAGE.append(field_name)
+            BaseModelWithVersions.FIELDS_PER_VERSION_AND_LANGUAGE.append(field_name)
 
             # Add utils
             for version_name, version in versions.items():
                 version_field_name = getFieldNameForVersion(field_name, version)
-                setattr(BaseEventWithVersions, version_field_name, property(
+                setattr(BaseModelWithVersions, version_field_name, property(
                     _get_relevant_language_for_version(field_name, version_name)))
             neutral_field_name = getVersionNeutralFieldName(field_name)
-            setattr(BaseEventWithVersions, u'get_{}_for_version_and_language'.format(
+            setattr(BaseModelWithVersions, u'get_{}_for_version_and_language'.format(
                 neutral_field_name), _get_for_version_and_language(field_name))
-            setattr(BaseEventWithVersions, u'get_{}_for_version'.format(
+            setattr(BaseModelWithVersions, u'get_{}_for_version'.format(
                 neutral_field_name), _get_for_version_with_relevant_language(field_name))
             _add_relevant_utils(field_name)
 
-    return BaseEventWithVersions
+    return BaseModelWithVersions
+
+############################################################
+# BaseEvent
+
+class _BaseEvent(MagiModel):
+    collection_name = 'event'
+    TRANSLATED_FIELDS = ['name', 'm_description']
+
+    owner = models.ForeignKey(User, related_name='added_%(class)ss')
+
+    ############################################################
+    # Name
+
+    name = models.CharField(_('Title'), max_length=100, null=True)
+    NAMES_CHOICES = ALL_ALT_LANGUAGES
+    d_names = models.TextField(_('Title'), null=True)
+
+    ############################################################
+    # Description
+
+    m_description = models.TextField(_('Details'), null=True)
+    M_DESCRIPTIONS_CHOICES = ALL_ALT_LANGUAGES
+    d_m_descriptions = models.TextField(_('Details'), null=True)
+    _cache_description = models.TextField(null=True)
+
+    STATUS_STARTS_WITHIN = 3
+    STATUS_ENDS_WITHIN = 3
+
+    def __unicode__(self):
+        return unicode(self.t_name)
+
+    class Meta(MagiModel.Meta):
+        abstract = True
+
+class BaseEvent(_BaseEvent):
+    collection_name = 'event'
+
+    image = models.ImageField(_('Image'), upload_to=uploadItem('event'), null=True)
+    _original_image = models.ImageField(null=True, upload_to=uploadTiny('event'))
+
+    start_date = models.DateTimeField(_('Beginning'), null=True)
+    end_date = models.DateTimeField(_('End'), null=True)
+
+    get_status = lambda _s: getEventStatus(
+        _s.start_date, _s.end_date, ends_within=_s.STATUS_ENDS_WITHIN, starts_within=_s.STATUS_STARTS_WITHIN)
+    status = property(get_status)
+
+    class Meta(MagiModel.Meta):
+        abstract = True
+        ordering = ['-start_date']
+
+BASE_EVENT_FIELDS_PER_VERSION = OrderedDict([
+    (u'{}start_date', lambda _version_name, _version: models.DateTimeField(
+        string_concat(_version['translation'], ' - ', _('Beginning')), null=True,
+    )),
+    (u'{}end_date', lambda _version_name, _version: models.DateTimeField(
+        string_concat(_version['translation'], ' - ', _('End')), null=True,
+    )),
+])
+
+BASE_EVENT_FIELDS_PER_VERSION_AND_LANGUAGE = OrderedDict([
+    (u'{}image', lambda _version_name, _version, _language=None: models.ImageField(
+        string_concat(*([_version['translation'], ' - ', _('Image')] + (
+            [' - ', getVerboseLanguage(_language)] if _language else []
+        ))),
+        upload_to=uploadItem(u'event/{}'.format(_version_name.lower())), null=True,
+    )),
+    (u'_original_{}image', lambda _version_name, _version, _language=None: models.ImageField(
+        upload_to=uploadItem(u'event/{}'.format(_version_name.lower())), null=True,
+    )),
+])
+
+_timezones_lambda = lambda _version_name, _version: _version.get(
+    'timezones', [_version['timezone']] if _version.get('timezone', None) else None)
+
+BASE_EVENT_UTILS_PER_VERSION = OrderedDict([
+    (u'{}name', lambda _version_name, _version: property(lambda _s: _s.get_name_for_version(_version_name))),
+    (u'{}status', lambda _version_name, _version: property(lambda _s: _s.get_status_for_version(_version_name))),
+    (u'{}START_DATE_DEFAULT_TIMEZONES', _timezones_lambda),
+    (u'{}END_DATE_DEFAULT_TIMEZONES', _timezones_lambda),
+])
+
+def getBaseEventWithVersions(
+        versions, defaults={}, fallbacks={},
+        fields=None, extra_fields=None,
+        fields_per_language=None, extra_fields_per_language=None,
+        utils=None, extra_utils=None,
+):
+    """
+    https://github.com/MagiCircles/MagiCircles/wiki/Events
+    """
+    return getBaseModelWithVersions(
+        versions, defaults=defaults, fallbacks=fallbacks,
+        base_fields=BASE_EVENT_FIELDS_PER_VERSION,
+        fields=fields, extra_fields=extra_fields,
+        base_fields_per_language=BASE_EVENT_FIELDS_PER_VERSION_AND_LANGUAGE,
+        fields_per_language=fields_per_language, extra_fields_per_language=extra_fields_per_language,
+        base_utils=BASE_EVENT_UTILS_PER_VERSION, utils=utils, extra_utils=extra_utils,
+        base_model_class=_BaseEvent, default_verbose_name=_('Event'),
+    )
 
 class BaseEventParticipation(AccountAsOwnerModel, AutoImageFromParent):
     collection_name = 'eventparticipation'

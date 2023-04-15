@@ -81,6 +81,7 @@ from magi.utils import (
     isRequestAjax,
     makeCollectionCommunity,
     getSiteName,
+    notTranslatedWarning,
 )
 from magi.raw import please_understand_template_sentence, unrealistic_template_sentence
 from magi.django_translated import t
@@ -1158,12 +1159,11 @@ class MagiCollection(object):
 
     @property
     def title(self):
-        return string.capwords(self.name)
+        return notTranslatedWarning(string.capwords(self.name))
 
     @property
     def plural_title(self):
-        return string.capwords(self.plural_name)
-
+        return notTranslatedWarning(string.capwords(self.plural_name))
 
     def share_image(self, context, item=None):
         return (
@@ -3559,7 +3559,7 @@ class UserCollection(MagiCollection):
         },
         'i_language': {
             'image_folder': 'language',
-        }
+        },
     }
 
     def get_buttons_classes(self, buttons_classes, request, context, item=None, size=None, block=None, color=None):

@@ -233,10 +233,10 @@ class ReCaptchaField(_ReCaptchaField):
         kwargs['widget'] = ReCaptchaHiddenInput()
         super(ReCaptchaField, self).__init__(*args, **kwargs)
 
-def _to_cuteform_for_auto_images(model, field_name):
-    return lambda k, v: staticImageURL(
-        failSafe(lambda: model.get_reverse_i(field_name[2:], k), exceptions=[KeyError], default=k),
-        folder=field_name,
+def _to_cuteform_for_auto_images(model, field_name, original_field_name):
+    return lambda k, v: model.get_auto_image(
+        field_name, failSafe(lambda: model.get_reverse_i(field_name, k), exceptions=[ ValueError ]),
+        original_field_name=original_field_name,
     )
 
 def groupSettingsFields(form, group_name, edited_preferences=None):
@@ -586,7 +586,9 @@ class MagiForm(forms.ModelForm):
                             if auto_images:
                                 return (k, markSafeFormat(
                                     u'<img src="{url}" alt="{v}" height="30"> {v}',
-                                    url=staticImageURL(k, folder=name), v=v))
+                                    url=self.Meta.model.get_auto_image(name[2:], k, original_field_name=name),
+                                    v=v,
+                                ))
                             return (k, v)
                         changeFormField(self, name, CSVChoiceField, {
                             'required': False,
@@ -753,7 +755,7 @@ class MagiForm(forms.ModelForm):
                 and name.startswith('i_')
                 and (getattr(self.Meta.model, '{}_AUTO_IMAGES'.format(name[2:].upper()), False))):
                 self.cuteform[name] = {
-                    'to_cuteform': _to_cuteform_for_auto_images(self.Meta.model, name),
+                    'to_cuteform': _to_cuteform_for_auto_images(self.Meta.model, name[2:], name),
                 }
 
         # Fix force required fields
@@ -2053,6 +2055,9 @@ def to_auto_filter_form(list_view):
             or isinstance(field, django_models.TextField)):
             auto_search_fields.append(field_name)
 
+        if field_name in (getattr(list_view.collection.item_view, 'fields_exclude', []) or []):
+            continue
+
         if (not field_name.startswith('i_')
             and field_name != 'id'
             and (('name' in field_name and not field_name.startswith('d_'))
@@ -2061,7 +2066,6 @@ def to_auto_filter_form(list_view):
                  or isinstance(field, django_models.AutoField)
                  or isinstance(field, django_models.DateField)
             )
-            and field_name not in (getattr(list_view.collection.item_view, 'fields_exclude', []) or [])
         ):
             auto_ordering_fields.append((field_name, field.verbose_name))
 
@@ -4135,10 +4139,10 @@ class PrivateMessageFilterForm(MagiFiltersForm):
 # Abstract collections
 
 ############################################################
-# Event
+# Base model with versions
 
-def to_EventForm(cls):
-    class _EventForm(AutoForm):
+def to_ModelWithVersionsForm(cls):
+    class _ModelWithVersionsForm(AutoForm):
         # Show/hide versions fields details when versions are selected
         if modelHasField(cls.queryset.model, 'c_versions'):
             on_change_value_show = {
@@ -4147,14 +4151,14 @@ def to_EventForm(cls):
 
         class Meta(AutoForm.Meta):
             model = cls.queryset.model
-    return _EventForm
+    return _ModelWithVersionsForm
 
-def to_EventFilterForm(cls):
+def to_ModelWithVersionsFilterForm(cls):
     form_class = to_auto_filter_form(cls)
     model_class = cls.collection.queryset.model
     form_class.Meta.with_versions = cls.collection.with_versions
 
-    class _EventFilterForm(form_class):
+    class _ModelWithVersionsFilterForm(form_class):
         # Filter by status
         def _status_to_queryset(self, queryset, request, value):
             if self.Meta.with_versions:
@@ -4165,16 +4169,18 @@ def to_EventFilterForm(cls):
                         self.data.get('version')]['prefix'])
             return filterEventsByStatus(queryset, value)
 
-        status = forms.ChoiceField(label=_('Status'), choices=[
-            ('ended', _('Past')),
-            ('current', _('Current')),
-            ('future', _('Future')),
-        ])
-        status_filter = MagiFilter(to_queryset=_status_to_queryset)
         cuteform = getattr(form_class, 'cuteform', {})
-        cuteform['status'] = {
-            'type': CuteFormType.HTML,
-        }
+
+        if modelHasField(model_class, 'start_date') and modelHasField(model_class, 'end_date'):
+            status = forms.ChoiceField(label=_('Status'), choices=[
+                ('ended', _('Past')),
+                ('current', _('Current')),
+                ('future', _('Future')),
+            ])
+            status_filter = MagiFilter(to_queryset=_status_to_queryset)
+            cuteform['status'] = {
+                'type': CuteFormType.HTML,
+            }
 
         # Versions
         if form_class.Meta.with_versions:
@@ -4185,9 +4191,10 @@ def to_EventFilterForm(cls):
             ] + getattr(form_class, 'ordering_fields', [])
 
             def filter_queryset(self, queryset, parameters, request, *args, **kwargs):
-                queryset = super(_EventFilterForm, self).filter_queryset(
+                queryset = super(_ModelWithVersionsFilterForm, self).filter_queryset(
                     queryset, parameters, request, *args, **kwargs)
-                if parameters.get('ordering', 'start_date') == 'start_date':
+                if (modelHasField(queryset.model, 'start_date')
+                    and parameters.get('ordering', 'start_date') == 'start_date'):
                     queryset = sortByRelevantVersions(
                         queryset,
                         request=self.request, fallback_to_first=True,
@@ -4218,10 +4225,21 @@ def to_EventFilterForm(cls):
         class Meta(form_class.Meta):
             if form_class.Meta.with_versions:
                 hidden_fields = getattr(form_class.Meta, 'hidden_fields', []) + ['c_versions']
-                fields = newOrder(form_class.Meta.fields, insert_before={
-                    'ordering': (
-                        ['version'] if modelHasField(model_class, 'c_versions') else []
-                    ) + ['status'],
-                })
+                fields = form_class.Meta.fields + (
+                    ['version'] if modelHasField(model_class, 'c_versions') else []
+                ) + (
+                    ['status']
+                    if modelHasField(model_class, 'start_date') and modelHasField(model_class, 'end_date')
+                    else []
+                )
 
-    return _EventFilterForm
+    return _ModelWithVersionsFilterForm
+
+############################################################
+# Event
+
+def to_EventForm(cls):
+    return to_ModelWithVersionsForm(cls)
+
+def to_EventFilterForm(cls):
+    return to_ModelWithVersionsFilterForm(cls)

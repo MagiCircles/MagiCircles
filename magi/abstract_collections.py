@@ -5,59 +5,25 @@ from magi.utils import (
     addParametersToURL,
     makeCollectionCommunity,
     listUnique,
+    mergeDicts,
     modelFieldVerbose,
     modelHasField,
     staticImageURL,
 )
 from magi import forms, magifields
 
-def to_EventParticipationCollection(cls):
-    class _EventParticipationCollection(cls):
-        title = _('Event participation')
-        plural_title = _('Event participations')
-    return _EventParticipationCollection
-
-class BaseEventCollection(MainItemCollection):
-    title = _('Event')
-    plural_title = _('Events')
-    translated_fields = ['name', 'm_description']
-    icon = 'event'
-    fields_class = magifields.BaseEventFields
-
+class BaseModelWithVersionsCollection(MainItemCollection):
     def __init__(self, *args, **kwargs):
-        super(BaseEventCollection, self).__init__(*args, **kwargs)
+        super(BaseModelWithVersionsCollection, self).__init__(*args, **kwargs)
         self.with_versions = modelHasField(self.queryset.model, 'c_versions')
         self.versions = self.queryset.model.VERSIONS if self.with_versions else {}
 
-    ############################################################
-    # Form class
-
-    def to_form_class(self):
-        self._form_class = forms.to_EventForm(self)
-
-    ############################################################
-    # Participations (collectible, only when specified)
-
-    def collectible_to_class(self, model_class):
-        cls = super(BaseEventCollection, self).collectible_to_class(model_class)
-        if model_class.collection_name == 'eventparticipation':
-            return to_EventParticipationCollection(cls)
-        return cls
-
-    ############################################################
-    # Fields icons
-
     base_fields_icons = {
-        'name': 'event',
         'description': 'about',
         'versions': 'world',
-        'start_date': 'date',
-        'end_date': 'date',
     }
 
     fields_icons_per_version = {
-        u'{}start_date': 'date',
-        u'{}end_date': 'date',
     }
 
     fields_icons_per_version_and_language = {
@@ -127,28 +93,22 @@ class BaseEventCollection(MainItemCollection):
         return fields_images
 
     ############################################################
-    # List view
+    # Form class
 
-    class ListView(MainItemCollection.ListView):
-
-        @property
-        def default_ordering(self):
-            return u','.join(getattr(self.collection.queryset.model._meta, 'ordering', [])) or '-start_date'
-
-        def to_filter_form_class(self):
-            self.filter_form = forms.to_EventFilterForm(self)
+    def to_form_class(self):
+        self._form_class = forms.to_ModelWithVersionsForm(self)
 
     ############################################################
     # Item view
 
     class ItemView(MainItemCollection.ItemView):
-        ajax_callback = 'loadBaseEvent'
+        ajax_callback = 'loadBaseModelWithVersions'
 
         def extra_context(self, context):
-            super(BaseEventCollection.ItemView, self).extra_context(context)
+            super(BaseModelWithVersionsCollection.ItemView, self).extra_context(context)
             if 'js_variables' not in context:
                 context['js_variables'] = {}
-            context['js_variables']['event_collection_name'] = self.collection.name
+            context['js_variables']['base_model_with_versions_collection_name'] = self.collection.name
             context['js_variables']['with_versions'] = self.collection.with_versions
             if self.collection.with_versions:
                 context['js_variables']['versions'] = self.collection.versions
@@ -171,5 +131,63 @@ class BaseEventCollection(MainItemCollection):
                     for field_name in self.fields_exclude_per_version + self.fields_exclude_per_version_and_language
                 ], fields_excluded)
             return fields_excluded
+
+    ############################################################
+    # List view
+
+    class ListView(MainItemCollection.ListView):
+        def to_filter_form_class(self):
+            self.filter_form = forms.to_ModelWithVersionsFilterForm(self)
+
+############################################################
+# Base event collection
+
+def to_EventParticipationCollection(cls):
+    class _EventParticipationCollection(cls):
+        title = _('Event participation')
+        plural_title = _('Event participations')
+    return _EventParticipationCollection
+
+class BaseEventCollection(BaseModelWithVersionsCollection):
+    title = _('Event')
+    plural_title = _('Events')
+    icon = 'event'
+    fields_class = magifields.BaseEventFields
+
+    ############################################################
+    # Participations (collectible, only when specified)
+
+    def collectible_to_class(self, model_class):
+        cls = super(BaseEventCollection, self).collectible_to_class(model_class)
+        if model_class.collection_name == 'eventparticipation':
+            return to_EventParticipationCollection(cls)
+        return cls
+
+    ############################################################
+    # Fields icons
+
+    base_fields_icons = mergeDicts(BaseModelWithVersionsCollection.base_fields_icons, {
+        'name': 'event',
+        'start_date': 'date',
+        'end_date': 'date',
+    })
+
+    fields_icons_per_version = mergeDicts(BaseModelWithVersionsCollection.fields_icons_per_version, {
+        u'{}start_date': 'date',
+        u'{}end_date': 'date',
+    })
+
+    ############################################################
+    # Form class
+
+    def to_form_class(self):
+        self._form_class = forms.to_EventForm(self)
+
+    ############################################################
+    # List view
+
+    class ListView(BaseModelWithVersionsCollection.ListView):
+        def to_filter_form_class(self):
+            self.filter_form = forms.to_EventFilterForm(self)
 
 CommunityBaseEventCollection = makeCollectionCommunity(BaseEventCollection)

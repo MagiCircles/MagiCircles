@@ -580,11 +580,14 @@ class BaseMagiModel(models.Model):
         )
 
     @classmethod
-    def get_auto_image(self, field_name, value, folder=None, original_field_name=None, instance=None):
+    def get_auto_image(
+            self, field_name, value, folder=None, original_field_name=None,
+            instance=None, with_static_url=True):
         """
         Before calling this, make sure you check that {}_AUTO_IMAGES == True
         original_field_name is only used if folder is not provided.
         Specify instance if you have one, allows to access properties.
+        Set full_url=False if you're calling this from global context
         """
         if not folder:
             folder = getValueIfNotProperty(instance or self, u'{}_AUTO_IMAGES_FOLDER'.format(
@@ -605,7 +608,7 @@ class BaseMagiModel(models.Model):
         to_auto_images = getValueIfNotProperty(instance or self, u'to_{}_auto_images'.format(field_name))
         if to_auto_images:
             value = to_auto_images(value)
-        return staticImageURL(value, folder=folder)
+        return staticImageURL(value, folder=folder, with_static_url=with_static_url)
 
     @property
     def display_unicode_item(self):

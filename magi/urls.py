@@ -774,6 +774,7 @@ for link_name, link in RAW_CONTEXT['navbar_links'].items():
             if 'headers' in link:
                 for header_name, header in link['headers']:
                     header['is_header'] = True
+                    header['show_link_callback'] = getPageShowLinkLambda(header)
                 link['links'].update(link['headers'])
             order = [link_name for link_name in link['links'].keys() if link_name not in link['order']] + link['order']
             link['links'] = OrderedDict((key, link['links'][key]) for key in order if key in link['links'])

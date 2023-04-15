@@ -61,7 +61,9 @@ def getRelevantVersion(
         version_name = i_version_string_to_version.get(request.GET.get('i_version', None), None)
         if version_name in versions:
             return version_name
-        c_versions = request.GET.get('c_versions', '').split(',')
+        c_versions = request.GET.get('c_versions', '')
+        if not isinstance(c_versions, list):
+            c_versions = c_versions.split(',')
         for version_name in c_versions:
             if version_name in versions:
                 return version_name

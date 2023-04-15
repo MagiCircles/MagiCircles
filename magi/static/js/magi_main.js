@@ -2508,16 +2508,16 @@ function modalCuteFormSeparators(settings) {
 // *****************************************
 // Abstract utils
 
-function loadBaseEvent() {
-    if (event_collection_name && with_versions) {
+function loadBaseModelWithVersions() {
+    if (base_model_with_versions_collection_name && with_versions) {
         // Versions panels
-        $('[class^="item-info ' + event_collection_name + '"]:not(.loaded)').each(function() {
-            let event = $(this);
-            event.addClass('loaded');
+        $('[class^="item-info ' + base_model_with_versions_collection_name + '"]:not(.loaded)').each(function() {
+            let item = $(this);
+            item.addClass('loaded');
             $.each(versions, function(version_name, version) {
-                let main_field = event.find(' .flex-tr[data-field="' + version_name + '"]');
+                let main_field = item.find(' .flex-tr[data-field="' + version_name + '"]');
                 if (main_field.length > 0) {
-                    let fields = event.find('[data-field^="' + version.prefix + '"]');
+                    let fields = item.find('[data-field^="' + version.prefix + '"]');
                     // Add some spacing to separate version fields from the rest
                     fields.first().find('.flex-th, .flex-td').css('border-top', 0);
                     fields.last().after('<div class="flex-tr"><div class="flex-td" height="40px" style="border-top: 0"></div></div>');

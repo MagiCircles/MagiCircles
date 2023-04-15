@@ -97,7 +97,7 @@ def markSafeJoin(strings, separator=u' '):
 def _join_lazy(strings, separator=u'', mark_safe=False):
     if mark_safe:
         return markSafeJoin(strings, separator=separator)
-    return separator.join(strings)
+    return separator.join([ unicode(string) for string in strings if string is not None ])
 
 joinTranslation = lazy(_join_lazy, unicode)
 
@@ -130,10 +130,10 @@ def andJoin(strings, translated=True, mark_safe=False, language=None, or_=False,
 andJoinTranslation = lazy(andJoin, unicode)
 
 def getTranslatedName(d, field_name='name', language=None):
-    return d.get(u'{}s'.format(field_name), {}).get(
+    return unicode(d.get(u'{}s'.format(field_name), {}).get(
         language or get_language(),
         d.get(field_name, None),
-    )
+    ))
 
 getTranslatedNameLazy = lazy(getTranslatedName, unicode)
 
@@ -1435,10 +1435,20 @@ def cuteFormFieldsForContext(cuteform_fields, context, form=None, prefix=None, a
                 if (field_type == CuteFormType.Images
                     and (field['to_cuteform'] in ['key', 'value']
                          or transform == CuteFormTransform.ImagePath)):
-                    cuteform = staticImageURL(
-                        unicode(cuteform_value),
-                        folder=field.get('image_folder', field_name),
-                    )
+                    if field_name.startswith('i_') or field_name.startswith('c_') or field_name.startswith('d_'):
+                        new_field_name = field_name[2:]
+                    else:
+                        new_field_name = field_name
+                    if model and getattr(model, u'{}_AUTO_IMAGES'.format(new_field_name.upper()), False):
+                        cuteform = model.get_auto_image(new_field_name, failSafe(
+                            lambda: model.get_reverse_i(new_field_name, key), exceptions=[ KeyError ], default=key),
+                            original_field_name=field_name,
+                        )
+                    else:
+                        cuteform = staticImageURL(
+                            unicode(cuteform_value),
+                            folder=field.get('image_folder', field_name),
+                        )
                 # Transform to flaticon
                 elif transform in [CuteFormTransform.Flaticon, CuteFormTransform.FlaticonWithText]:
                     cuteform = u'<i class="flaticon-{icon}"></i>{text}'.format(
@@ -3553,25 +3563,27 @@ class YouTubeVideoTranslationsField(_YouTubeFieldsHelpTextMixin, models.TextFiel
 def presetsFromChoices(
         model, field_name,
         get_label=None, get_image=None, get_field_value=None,
-        get_key=None, auto_image=False, auto_image_with_key=False,
+        get_key=None,
         should_include=None,
         extra_fields={},
         to_extra_fields=lambda i, value, verbose: {},
 ):
-    auto_image_with_key = getattr(model, u'{}_AUTO_IMAGES'.format(field_name.upper()), auto_image_with_key)
     prefix = 'i_' if modelHasField(model, 'i_{}'.format(field_name)) else (
         'c_' if modelHasField(model, 'c_{}'.format(field_name)) else '')
+    without_i_choices = getattr(model, u'{name}_WITHOUT_I_CHOICES'.format(name=field_name.upper()), False)
     return [
         (value if not get_key else get_key(i, value, verbose), {
             'label': get_label(i, value, verbose) if get_label else None,
             'verbose_name': verbose,
             'fields': updatedDict({
-                u'i_{}'.format(field_name): get_field_value(i, value, verbose) if get_field_value else i,
+                u'{}{}'.format(prefix, field_name):
+                get_field_value(i, value, verbose)
+                if get_field_value else (value if prefix == 'c_' or without_i_choices else i),
             }, extra_fields, to_extra_fields(i, value, verbose)),
             'image': get_image(i, value, verbose) if get_image else (
-                u'{}{}/{}.png'.format(prefix, field_name, i) if auto_image else (
-                    u'{}{}/{}.png'.format(prefix, field_name, value) if auto_image_with_key else None
-                )),
+                model.get_auto_image(field_name, value, with_static_url=False)
+                if getattr(model, u'{}_AUTO_IMAGES'.format(field_name.upper()), False) else None
+            ),
         }) for i, (value, verbose) in model.get_choices(field_name)
         if (True if not should_include else should_include(i, value, verbose))
     ]
@@ -4419,8 +4431,11 @@ def makeBadgeImage(badge=None, badge_image=None, badge_rank=None, width=None, pa
 ############################################################
 # Image URLs
 
-def staticFileURL(path, folder=None, extension=None, versionned=True, full=False, static_url=None, default_extension=None, default_folder=None):
-    # /!\ Can't be called at global level
+def staticFileURL(
+        path, folder=None, extension=None, versionned=True,
+        full=False, with_static_url=True, static_url=None,
+        default_extension=None, default_folder=None):
+    # /!\ Can't be called at global level, unless with_static_url=False
     if not hasValue(path, false_bool_is_value=False):
         return None
     path = unicode(path)
@@ -4428,24 +4443,29 @@ def staticFileURL(path, folder=None, extension=None, versionned=True, full=False
         extension = default_extension
     if isFullURL(path):
         return path
-    if not static_url:
+    if with_static_url and not static_url:
         static_url = RAW_CONTEXT['static_url'] if not full else RAW_CONTEXT['full_static_url']
     return u'{static}{default_folder}{folder}{path}{extension}{version}'.format(
-        static=static_url,
+        static=static_url if with_static_url else '',
         default_folder=default_folder or '',
         folder=u'{}/'.format(folder) if folder else '',
         path=path,
         extension=u'.{}'.format(extension) if extension else '',
         version=u'' if not versionned else u'{suffix}{version}'.format(
             suffix='?' if '?' not in path and '?' not in (extension or '') else '&',
-            version=RAW_CONTEXT['static_files_version'],
+            version=RAW_CONTEXT['static_files_version'] if with_static_url else '',
         ),
     )
 
-def staticImageURL(path, folder=None, extension=None, versionned=True, full=False, static_url=None):
-    # /!\ Can't be called at global level
-    return staticFileURL(path, folder=folder, extension=extension, versionned=versionned, full=full,
-                         static_url=static_url, default_extension='png', default_folder='img/',)
+def staticImageURL(
+        path, folder=None, extension=None, versionned=True,
+        full=False, static_url=None, with_static_url=True):
+    # /!\ Can't be called at global level, unless with_static_url=False
+    if failSafe(lambda: path.startswith('img/'), exceptions=[ AttributeError ]):
+        path = path[len('img/'):]
+    return staticFileURL(
+        path, folder=folder, extension=extension, versionned=versionned, full=full,
+        static_url=static_url, default_extension='png', default_folder='img/', with_static_url=with_static_url)
 
 def linkToImageURL(link):
     # /!\ Can't be called at global level
