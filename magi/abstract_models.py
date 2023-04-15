@@ -342,10 +342,10 @@ BASE_MODEL_FIELDS_PER_VERSION_AND_LANGUAGE = OrderedDict([
         string_concat(*([_version['translation'], ' - ', _('Image')] + (
             [' - ', getVerboseLanguage(_language)] if _language else []
         ))),
-        upload_to=uploadItem(u'event/{}'.format(_version_name.lower())), null=True,
+        upload_to=uploadItem(u'event/{}'.format(_version_name.lower())), null=True, blank=True,
     )),
     (u'_original_{}image', lambda _version_name, _version, _language=None: models.ImageField(
-        upload_to=uploadItem(u'event/{}'.format(_version_name.lower())), null=True,
+        upload_to=uploadItem(u'event/{}'.format(_version_name.lower())), null=True, blank=True,
     )),
 ])
 
