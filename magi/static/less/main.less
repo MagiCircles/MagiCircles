@@ -160,8 +160,13 @@
     }
 }
 @media (max-width: 768px) {
-    .dropdown-header {
-        color: rgba(255, 255, 255, 0.6);
+    .navbar {
+        .dropdown-menu {
+            .dropdown-header.large {
+                background: @secondaryColor;
+                color: white;
+            }
+        }
     }
 }
 

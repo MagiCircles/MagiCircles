@@ -653,10 +653,10 @@ class _MagiDisplayImage(MagiDisplayWithTooltipMixin, MagiDisplay):
     def to_parameters_extra(self, parameters):
         super(_MagiDisplayImage, self).to_parameters_extra(parameters)
         parameters.thumbnail = parameters.thumbnail or parameters.display_value
-        parameters.link = parameters.link or parameters.display_value
+        parameters.original = parameters.original or parameters.display_value
+        parameters.link = parameters.link or parameters.original
         parameters.alt = parameters.alt or parameters.verbose_name
         parameters.ajax_link_title = parameters.ajax_link_title or parameters.alt
-        parameters.original = parameters.original or parameters.display_value
         if parameters.hq or parameters.extra_links:
             parameters.links = [
                 { 'verbose': _('Original'), 'url': parameters.original },

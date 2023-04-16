@@ -218,7 +218,7 @@ other_sites = [
             'zh-hant': u'星屑RUN',
             'ru': u'Звездная пыльRUN',
         },
-        'game_name': 'Pokémon Go',
+        'game_name': u'Pokémon Go',
         'game_names': {
             'ja': u'ポケモン ゴー',
             'kr': u'포켓몬 GO',
