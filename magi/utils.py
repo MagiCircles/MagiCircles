@@ -1384,12 +1384,14 @@ def cuteFormFieldsForContext(cuteform_fields, context, form=None, prefix=None, a
             and isinstance(form.fields[field_name].widget, HiddenInput)):
             continue
         # Get choices
-        choices = field.get('choices', [])
-        if not choices and form and field_name in form.fields:
+        choices = field.get('choices', None)
+        if choices is None and form and field_name in form.fields:
             if hasattr(form.fields[field_name], 'queryset'):
                 choices = BLANK_CHOICE_DASH + list(form.fields[field_name].queryset)
             elif hasattr(form.fields[field_name], 'choices'):
                 choices = form.fields[field_name].choices
+        if choices == []:
+            choices = BLANK_CHOICE_DASH
         if choices and field_type in [CuteFormType.YesNo, CuteFormType.OnlyNone]:
             transform = CuteFormTransform.FlaticonWithText
         if not choices and field_type in [CuteFormType.YesNo, CuteFormType.OnlyNone]:
