@@ -351,6 +351,7 @@ BASE_MODEL_FIELDS_PER_VERSION_AND_LANGUAGE = OrderedDict([
 
 def getBaseModelWithVersions(
         versions, defaults={}, fallbacks={},
+        versions_images_folder='version',
         base_fields=None, fields=None, extra_fields=None,
         base_fields_per_language=BASE_MODEL_FIELDS_PER_VERSION_AND_LANGUAGE,
         fields_per_language=None, extra_fields_per_language=None,
@@ -408,6 +409,21 @@ def getBaseModelWithVersions(
         VERSIONS_HAVE_LANGUAGES = has_languages
         VERSIONS_HAVE_IMAGES = has_images
         VERSIONS_HAVE_ICONS = has_icons
+
+        if has_images:
+            VERSIONS_AUTO_IMAGES = True
+            VERSIONS_AUTO_IMAGES_FOLDER = versions_images_folder
+
+            @classmethod
+            def to_versions_auto_images(self, value):
+                if value is None: return None
+                return self.VERSIONS[value]['image']
+
+            @classmethod
+            def get_version_image(self, version_name):
+                return self.get_auto_image('versions', version_name, folder=versions_images_folder)
+        else:
+            get_version_image = classmethod(lambda _s: None)
 
         ############################################################
         # Utils
@@ -493,7 +509,6 @@ def getBaseModelWithVersions(
         # Class utils
 
         get_version_name = classmethod(lambda _s, _v: _s.get_version_info(_v, 'translation'))
-        get_version_image = classmethod(lambda _s, _v: staticImageURL(_s.get_version_info(_v, 'image')))
         get_version_icon = classmethod(lambda _s, _v: _s.get_version_info(_v, 'icon'))
 
         @classmethod

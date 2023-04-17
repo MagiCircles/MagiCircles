@@ -68,12 +68,12 @@ class BaseModelWithVersionsCollection(MainItemCollection):
 
     def get_fields_images_per_version(self, version_name, version):
         return {
-            u'{}image': version.get('image', None),
+            u'{}image': lambda item: item.get_version_image(version_name),
         }
 
     def get_fields_images_per_version_and_language(self, version_name, version, language):
         return {
-            u'{}image': version.get('image', None),
+            u'{}image': lambda item: item.get_version_image(version_name),
         }
 
     @property
