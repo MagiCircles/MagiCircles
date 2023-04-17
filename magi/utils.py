@@ -1270,7 +1270,8 @@ def videoJsonLd(video_url, video_title, video_description, upload_date, context=
             'description': video_description,
             'thumbnailUrl': YouTubeVideoField.thumbnail_url(video_url),
             'uploadDate': failSafe(
-                lambda: torfc2822(upload_date), exceptions=[ AttributeError ], default=(upload_date or 'unknown')),
+                lambda: upload_date.isoformat(), exceptions=[ AttributeError ],
+                default=(upload_date or 'unknown')),
             'contentUrl': video_url,
             'embedUrl': YouTubeVideoField.embed_url(video_url),
         },

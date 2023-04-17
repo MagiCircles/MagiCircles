@@ -1936,6 +1936,7 @@ class MagiYouTubeVideoFieldMixin(object):
             ),
             'upload_date': (
                 getattr(self.item, 'creation', None)
+                or getattr(self.item, 'release_date', None)
                 or 'unknown'
             ),
         }
