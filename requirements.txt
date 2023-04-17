@@ -12,7 +12,7 @@ disqus-python==0.4.2
 django-bootstrap-form==3.2
 django-common-helpers==0.7.0
 django-cors-headers==1.1.0
-django-filter==0.9.1
+django-filter==2.4.0
 django-multiupload==0.5.1
 django-recaptcha3==0.1.0
 django-ses==0.7.0
