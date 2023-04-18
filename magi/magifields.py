@@ -2790,11 +2790,15 @@ class BaseMagiRelatedField(MagiModelField):
         )
 
     def to_image(self):
-        return (
-            staticImageURL(self.rel_options.image)
-            or staticImageURL(self.rel_collection.image) if self.rel_collection else None
-            or super(BaseMagiRelatedField, self).to_image()
+        image = (
+            self.options.fields_images.get(self.field_name, None)
+            or self.collection.fields_images.get(self.field_name, None)
+            or self.get_auto_image()
+            or self.rel_options.image
+            or self.rel_collection.image if self.rel_collection else None
+            or self.default_image
         )
+        return staticImageURL(image(self.item) if callable(image) else image)
 
     @property
     def new_window(self):

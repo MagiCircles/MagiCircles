@@ -4186,9 +4186,10 @@ def to_ModelWithVersionsFilterForm(cls):
         if form_class.Meta.with_versions:
 
             # Add generic date field as first (default ordering option)
-            ordering_fields = [
+            ordering_fields = ([
                 ('start_date', _('Date')),
-            ] + getattr(form_class, 'ordering_fields', [])
+            ] if modelHasField(model_class, 'start_date') else [
+            ]) + getattr(form_class, 'ordering_fields', [])
 
             def filter_queryset(self, queryset, parameters, request, *args, **kwargs):
                 queryset = super(_ModelWithVersionsFilterForm, self).filter_queryset(

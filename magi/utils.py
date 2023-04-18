@@ -1477,6 +1477,12 @@ def cuteFormFieldsForContext(cuteform_fields, context, form=None, prefix=None, a
         # Store a JSON version to be displayed in Javascript
         context['cuteform_fields_json'][selector] = simplejson.dumps(context['cuteform_fields'][selector])
 
+def _auto_images_to_cuteform(model, new_field_name, original_field_name):
+    return lambda key, value: model.get_auto_image(
+        new_field_name, failSafe(lambda: model.get_reverse_i(
+            new_field_name, key), exceptions=[ KeyError ], default=key),
+        original_field_name=original_field_name,
+    )
 def mergedFieldCuteForm(cuteform, settings, merged_fields, merged_field_name=None, model=None):
     if not merged_fields:
         return
@@ -1484,18 +1490,32 @@ def mergedFieldCuteForm(cuteform, settings, merged_fields, merged_field_name=Non
         merged_fields = OrderedDict([(field_name, None) for field_name in merged_fields])
     if not merged_field_name:
         merged_field_name = '_'.join(merged_fields.keys())
-    default_to_cuteform = settings.get('to_cuteform', CuteFormType.default_to_cuteform[
-        settings.get('type', CuteFormTransform.default_field_type[
-            settings.get('transform', CuteFormTransform.No)
-        ])
-    ])
+    to_cuteforms = {}
+    for field_name, to_cuteform in merged_fields.items():
+        if not to_cuteform:
+            to_cuteform = cuteform.get(field_name, {}).get('to_cuteform', None)
+        if not to_cuteform:
+            if field_name.startswith('i_') or field_name.startswith('c_') or field_name.startswith('d_'):
+                new_field_name = field_name[2:]
+            else:
+                new_field_name = field_name
+            if model and getattr(model, u'{}_AUTO_IMAGES'.format(new_field_name.upper()), False):
+                to_cuteform = _auto_images_to_cuteform(model, new_field_name, field_name)
+        if not to_cuteform:
+            to_cuteform = settings.get('to_cuteform', CuteFormType.default_to_cuteform[
+                settings.get('type', CuteFormTransform.default_field_type[
+                    settings.get('transform', CuteFormTransform.No)
+                ])
+            ])
+        to_cuteforms[field_name] = to_cuteform
+
     def _to_cuteform(k, v):
-        for field_name, to_cuteform in merged_fields.items():
+        for field_name, to_cuteform in to_cuteforms.items():
             if k.startswith(field_name):
                 k = k[len(field_name) + 1:]
                 return _callToCuteForm(
                     field_name, model,
-                    to_cuteform or cuteform.get(field_name, {}).get('to_cuteform', None) or default_to_cuteform,
+                    to_cuteform,
                     int(k) if field_name.startswith('i_') and k.isdecimal() else k, v,
                 )
     cuteform[merged_field_name] = settings

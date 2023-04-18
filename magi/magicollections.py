@@ -3253,6 +3253,7 @@ class AccountCollection(MagiCollection):
     form_class = forms.AccountForm
     fields_class = magifields.AccountFields
     navbar_link_list = 'community'
+    show_open_button = False
 
     filter_cuteform = {
         'has_friend_id': {

@@ -328,6 +328,8 @@ DEFAULT_ICONS_BASED_ON_NAMES = OrderedDict([
     ('center', 'center'),
     ('category', 'category'),
     ('section', 'category'),
+    ('type', 'category'),
+    ('kind', 'category'),
     ('3d', '3d'),
     ('2d', '3d'),
     ('jp', 'jp'),
