@@ -927,8 +927,15 @@ for _group_name, _group in GROUPS:
             _group['outside_permissions'][_permission] = _permissions_to_set.get(_permission, None)
             if not _group['outside_permissions'][_permission]:
                 del(_group['outside_permissions'][_permission])
+    if 'permissions' not in _group:
+        _group['permissions'] = []
+    # All groups have beta test access + access site before launch
+    if 'beta_test_features' not in _group.get('permissions', []):
+        _group['permissions'].append('beta_test_features')
     if launched and 'access_site_before_launch' in _group.get('permissions', []):
         _group['permissions'].remove('access_site_before_launch')
+    elif not launched and 'access_site_before_launch' not in _group.get('permissions', []):
+        _group['permissions'].append('access_site_before_launch')
 
 # Enabled pages defaults
 
