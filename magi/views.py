@@ -1149,7 +1149,7 @@ def twitter_avatar(request, twitter):
 # Beta test
 
 BETA_TEST_TEMPLATE = _(u"""Welcome, curious adventurer!
-You've stumbled upon our top-secret beta-testing page for "{page_title}".
+You've stumbled upon our top-secret beta-testing "{page_title}" page.
 
 We're testing out all sorts of new features and improvements here before they're ready for prime time. We're excited to share all the new stuff we've been working on, but we need your help!
 
