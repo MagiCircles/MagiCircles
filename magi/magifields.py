@@ -1461,6 +1461,9 @@ class MagiDateModelField(MagiDateFieldMixin, MagiModelField):
 # Image field
 
 class MagiImageFieldMixin(object):
+    VALID_ITEM_OPTIONS = {
+        '{}_EXTRA_LINKS': [], # List of dicts with verbose (button name), url (image url)
+    }
     VALID_KWARGS = [
         'thumbnail',
         'hq',
@@ -1493,6 +1496,10 @@ class MagiImageFieldMixin(object):
             staticImageURL(self.fields_kwargs.get('original', None))
             or getattr(self.item, u'{}_original_url'.format(self.item_access_field_name), None)
         )
+
+    @property
+    def extra_links(self):
+        return self.item_options['EXTRA_LINKS']
 
 class MagiImageField(MagiImageFieldMixin, MagiField):
     """

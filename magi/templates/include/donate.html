@@ -1,5 +1,6 @@
 {% load i18n %}
 <div class="padding50 text-center">
+  {% if not just_button %}
   <div class="row">
     {% if donate_image %}
     <div class="col-md-4">
@@ -7,10 +8,11 @@
     </div>
     {% endif %}
     <div class="col-md-{% if donate_image %}8{% else %}12{% endif %} ">
-      <p class="big-text donate-text{% if donate_image %} text-left %}{% endif %}"><br>{{ consider_donating_sentence }}. {% trans 'This will help us cover the costs of the servers and allow us to keep it running for free and without ads.' %}</p>
+      <p class="big-text donate-text{% if donate_image %} text-left %}{% endif %}"><br>{% if consider_donating_sentence %}{{ consider_donating_sentence }}. {% endif %}{% trans 'This will help us cover the costs of the servers and allow us to keep it running for free and without ads.' %}</p>
     </div>
   </div>
   <br><br>
+  {% endif %}
   {% if show_paypal %}
   <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
     <input type="hidden" name="cmd" value="_s-xclick">

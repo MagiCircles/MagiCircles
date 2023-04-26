@@ -63,12 +63,14 @@ from magi.settings import (
     CORNER_POPUP_IMAGE,
     CORNER_POPUP_IMAGE_OVERFLOW,
     SITE_EMOJIS,
+    BETA_TEST_IN_PROGRESS,
 )
 from magi.models import UserPreferences
 from magi.middleware.httpredirect import HttpRedirectException
 from magi.utils import (
     getGlobalContext,
     getNavbarPrefix,
+    getNavbarHeaderPrefixForPage,
     pageTitleFromPrefixes,
     h1ToContext,
     redirectWhenNotAuthenticated,
@@ -79,6 +81,9 @@ from magi.utils import (
     groupsWithOneOfPermissions,
     staticImageURL,
     setJavascriptFormContext,
+    isPageBetaTestOnly,
+    isListViewBetaTestOnly,
+    mergeDicts,
 )
 from raw import other_sites
 
@@ -216,6 +221,11 @@ def getURLLambda(name, lambdas):
 def getCollectionShowLinkLambda(collection):
     return lambda context: collection.list_view.has_permissions_to_see_in_navbar(context['request'], context)
 
+def getCollectionShowBetaTestLinkLambda(collection):
+    if BETA_TEST_IN_PROGRESS:
+        return lambda context: isListViewBetaTestOnly(collection.list_view)
+    return lambda context: False
+
 def _addToCollections(name, cls): # Class of the collection
     collection = cls()
     collections[collection.name] = collection
@@ -245,6 +255,7 @@ def _addToCollections(name, cls): # Class of the collection
     collection.list_view.to_alt_views()
     collection.list_view.to_filter_form_class()
     collection.list_view.to_filters_details()
+    collection.list_view.auto_cuteform_for_filter_forms()
     collection.edit_view.to_translate_form_class()
 
     for view in ['list', 'item', 'add', 'edit']:
@@ -337,6 +348,7 @@ for collection in collections.values():
                 'larger_image': collection.larger_image,
                 'auth': (True, False) if collection.list_view.authentication_required else (True, True),
                 'show_link_callback': getCollectionShowLinkLambda(collection),
+                'show_beta_test_link': getCollectionShowBetaTestLinkLambda(collection),
                 'divider_before': collection.navbar_link_list_divider_before,
             }
             navbarAddLink(url_name, link, collection.navbar_link_list)
@@ -455,6 +467,11 @@ def getPageShowLinkLambda(page):
         )
     return _showLink
 
+def getPageShowBetaTestLinkLambda(page):
+    if BETA_TEST_IN_PROGRESS:
+        return lambda _context: isPageBetaTestOnly(page)
+    return lambda context: False
+
 def permissionDeniedOrRedirect(request, redirect):
     if redirect:
         if 'next' in request.GET:
@@ -519,6 +536,7 @@ def page_view(name, page):
             context['title_prefixes'] = []
             if 'navbar_link_list' in page:
                 getNavbarPrefix(page['navbar_link_list'], request, context, append_to=context['title_prefixes'])
+                getNavbarHeaderPrefixForPage(name, page, context, append_to=context['title_prefixes'])
             default_page_title = page.get('title', None)
             if callable(default_page_title):
                 default_page_title = default_page_title(context)
@@ -607,6 +625,7 @@ for (name, pages) in ENABLED_PAGES.items():
                     'get_url': None if not page.get('url_variables', None) else (getURLLambda(name, lambdas)),
                     'external_link': page.get('external_link', False),
                     'show_link_callback': getPageShowLinkLambda(page),
+                    'show_beta_test_link': getPageShowBetaTestLinkLambda(page),
                     'divider_before': page.get('divider_before', False),
                     'divider_after': page.get('divider_after', False),
                 }
@@ -755,11 +774,25 @@ def _getPageShowLinkForListsLambda(link):
     if show_link_callback:
         return show_link_callback
     def _show_link_callback(context):
-        return OrderedDict([
-            (sub_link_name, sub_link)
-            for sub_link_name, sub_link in link['links'].items()
-            if sub_link.get('show_link_callback', lambda c: True)(context)
-        ])
+        links = OrderedDict()
+        for sub_link_name, sub_link in link['links'].items():
+            if sub_link.get('show_link_callback', lambda c: True)(context):
+                links[sub_link_name] = sub_link
+            elif sub_link.get('show_beta_test_link', lambda c: False)(context):
+                if sub_link.get('get_url', None):
+                    url = sub_link['get_url'](context) or '#'
+                else:
+                    url = sub_link.get('url', None) or '#'
+                if url:
+                    title = sub_link['title']
+                    if callable(title):
+                        title = title(context)
+                    links[sub_link_name] = mergeDicts(sub_link, {
+                        'url': '/betatest/?next={}&next_title={}'.format(url, title),
+                        'get_url': None,
+                        'badge': u'β',
+                    })
+        return links
     return _show_link_callback
 
 order = [link_name for link_name in navbar_links.keys() if link_name not in NAVBAR_ORDERING] + NAVBAR_ORDERING

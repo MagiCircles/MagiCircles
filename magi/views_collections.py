@@ -583,7 +583,7 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
             form=context['filter_form'],
             form_selector='[id=\\"filter-form-{}\\"]'.format(collection.name),
             context=context,
-            cuteforms=[collection.list_view.filter_cuteform],
+            cuteforms=[ collection.list_view.filter_cuteform ],
             ajax=ajax,
         )
 

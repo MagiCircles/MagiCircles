@@ -6,7 +6,7 @@
 <div class="list-group">
   {% endif %}
   {% if link.is_header %}
-  <{% if link.small %}h4{% else %}h3{% endif %} class="list-group-item">
+  <{% if link.small %}h4{% else %}h3{% endif %} class="list-group-item" id="{{ link_name }}">
     {% if link.icon %}
     <i class="flaticon-{{ link.icon }}"></i>
     {% elif link.image %}
@@ -22,6 +22,7 @@
     <img src="{{ static_url }}img/{{ link.image }}.png?{{ static_files_version }}" height="16" />
     {% endif %}
     {% navbarTitle link=link %}
+    {% if link.badge %}<span class="badge progress-bar-info">{{ link.badge }}</span>{% endif %}
   </a>
   {% endif %}
   {% if link.divider_after %}

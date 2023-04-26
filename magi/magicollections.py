@@ -31,6 +31,7 @@ from magi.utils import (
     redirectWhenNotAuthenticated,
     custom_item_template,
     getNavbarPrefix,
+    getNavbarHeaderPrefixForCollection,
     getAccountIdsFromSession,
     setSubField,
     hasPermission,
@@ -82,6 +83,7 @@ from magi.utils import (
     makeCollectionCommunity,
     getSiteName,
     notTranslatedWarning,
+    mergedFieldCuteForm,
 )
 from magi.raw import please_understand_template_sentence, unrealistic_template_sentence
 from magi.django_translated import t
@@ -456,8 +458,14 @@ class MagiCollection(object):
         return queryset
 
     def get_title_prefixes(self, request, context):
+        prefixes = []
         navbar_prefix = getNavbarPrefix(self.navbar_link_list, request, context)
-        return [navbar_prefix] if navbar_prefix else []
+        if navbar_prefix:
+            prefixes = [ navbar_prefix ]
+            header_prefix = getNavbarHeaderPrefixForCollection(self, context)
+            if header_prefix:
+                prefixes.append(header_prefix)
+        return prefixes
 
     def _collectibles_queryset(self, view, queryset, request=None):
         if queryset is None:
@@ -2553,6 +2561,7 @@ class MagiCollection(object):
               'model_field_class': class of the model field,
               'form_default': default value when initializing the form,
             }
+            Will also automatically add cuteform for merged fields.
             """
             formClass = self.filter_form
             if str(type(formClass)) == '<type \'instancemethod\'>':
@@ -2573,6 +2582,33 @@ class MagiCollection(object):
                         self.filters_with_default_form_values.append(field_name)
             else:
                 self.filters_details = {}
+
+        def auto_cuteform_for_filter_forms(self):
+            if str(type(self.filter_form)) == '<type \'instancemethod\'>':
+                return
+            if not getattr(self.filter_form, 'merge_fields', None):
+                return
+            if not hasattr(self.filter_form, 'cuteform'):
+                self.filter_form.cuteform = {}
+            all_cuteforms_for_filter_form = mergeDicts(
+                self.collection.filter_cuteform,
+                self.filter_form.cuteform,
+            )
+            if not all_cuteforms_for_filter_form:
+                return
+            def _autoCuteFormForMergedFields_foreachMergeFields(new_field_name, details, fields):
+                if new_field_name in all_cuteforms_for_filter_form:
+                    return
+                for field_name in fields:
+                    if (field_name not in all_cuteforms_for_filter_form
+                        or not all_cuteforms_for_filter_form[field_name].get('to_cuteform', None)):
+                        return
+                cuteform_name, cuteform = mergedFieldCuteForm(
+                    all_cuteforms_for_filter_form, merged_fields=fields,
+                    model=self.collection.queryset.model, as_modal=True, add_to_cuteform=False,
+                )
+                self.filter_form.cuteform[cuteform_name] = cuteform
+            self.filter_form.foreach_merge_fields(_autoCuteFormForMergedFields_foreachMergeFields)
 
         def get_clear_url(self, request):
             return self.collection.get_list_url(

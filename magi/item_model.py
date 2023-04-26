@@ -581,7 +581,8 @@ class BaseMagiModel(models.Model):
 
     @classmethod
     def get_auto_image(
-            self, field_name, value, folder=None, original_field_name=None,
+            self, field_name, value=None, i_value=None,
+            folder=None, original_field_name=None,
             instance=None, with_static_url=True):
         """
         Before calling this, make sure you check that {}_AUTO_IMAGES == True
@@ -589,6 +590,8 @@ class BaseMagiModel(models.Model):
         Specify instance if you have one, allows to access properties.
         Set full_url=False if you're calling this from global context
         """
+        if i_value is not None:
+            value = self.get_reverse_i(field_name, i_value)
         if not folder:
             folder = getValueIfNotProperty(instance or self, u'{}_AUTO_IMAGES_FOLDER'.format(
                 field_name.upper()), default=None)

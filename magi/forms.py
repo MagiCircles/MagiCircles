@@ -113,6 +113,7 @@ from magi.utils import (
     ordinalNumber,
     markSafeReplace,
     markSafeStrip,
+    YouTubeVideoField,
 )
 from magi.magidisplay import MagiDisplay, _MagiDisplayMultiple, MagiDisplayLink
 from versions_utils import sortByRelevantVersions
@@ -243,6 +244,10 @@ def groupSettingsFields(form, group_name, edited_preferences=None):
     new_fields = []
     group = models.UserPreferences.GROUPS[group_name]
     for setting in group.get('settings', []):
+        if isinstance(group['settings'], dict):
+            setting_details = group['settings'][setting]
+        else:
+            setting_details = {}
         field_name = u'group_settings_{}_{}'.format(group_name, setting)
         setting_label = toHumanReadable(setting, warning=False)
         label = markSafeFormat(
@@ -250,13 +255,14 @@ def groupSettingsFields(form, group_name, edited_preferences=None):
             name=group['translation'], setting=setting_label,
             img=staticImageURL(group_name, folder='groups', extension='png'),
         )
+        initial = None
         if edited_preferences:
             initial = (getattr(edited_preferences, 'settings_per_groups', None) or {}).get(
                 group_name, {}).get(setting, None)
-        if setting == 'languages':
-            form.fields[field_name] = forms.MultipleChoiceField(
-                required=False, label=label, choices=LANGUAGES_DICT.items(), initial=initial,
-            )
+        to_field = setting_details.get('to_form_field', None)
+        if to_field:
+            form.fields[field_name] = to_field()
+            form.fields[field_name].initial = initial
         else:
             form.fields[field_name] = forms.CharField(required=False, label=label, initial=initial)
         form.fields[field_name].placeholder = setting_label
@@ -2051,8 +2057,12 @@ def to_auto_filter_form(list_view):
             field = list_view.collection.queryset.model._meta.get_field(field_name)
         except FieldDoesNotExist: # ManyToMany and reverse relations
             continue
-        if (isinstance(field, django_models.CharField)
-            or isinstance(field, django_models.TextField)):
+        if ((isinstance(field, django_models.CharField)
+             or isinstance(field, django_models.TextField))
+            # Fields with choices shouldn't be here
+            and not getattr(list_view.collection.queryset.model, '{name}_CHOICES'.format(
+                name=field_name[2:].upper()), None)
+            and not isinstance(field, YouTubeVideoField)):
             auto_search_fields.append(field_name)
 
         if field_name in (getattr(list_view.collection.item_view, 'fields_exclude', []) or []):
@@ -2070,7 +2080,9 @@ def to_auto_filter_form(list_view):
             auto_ordering_fields.append((field_name, field.verbose_name))
 
         if (field_name.startswith('i_')
-            or field_name.startswith('c_')
+            or (field_name.startswith('c_')
+                and not getattr(list_view.collection.queryset.model, '{name}_CHOICES'.format(
+                    name=field_name[2:].upper()), None))
             or isinstance(field, django_models.BooleanField)
             or isinstance(field, django_models.NullBooleanField)):
             filter_fields.append(field_name)
@@ -2599,7 +2611,6 @@ class _DisplayGroup(MagiDisplay):
         u'guide': None,
         u'ajax_guide': None,
         u'settings': None,
-        u't_settings_per_groups': None,
     }
     def to_parameters_extra(self, parameters):
         group = models.UserPreferences.GROUPS.get(parameters.display_value, None)
@@ -4203,9 +4214,19 @@ def to_ModelWithVersionsFilterForm(cls):
                     )
                 return queryset
 
-            # Filter by version (c_versions allows multiple with a checkbox, we want just one at a time with a cuteform)
+            # Filter by version
+            # Note: c_versions allows multiple with a checkbox, we want just one at a time with a cuteform
+
+            def version_to_queryset(self, queryset, request, value):
+                if request.GET.get('version_exclusive', False):
+                    return queryset.filter(c_versions=u'"{}"'.format(value))
+                return queryset.filter(c_versions__contains=u'"{}"'.format(value))
+
             version = forms.ChoiceField(label=_(u'Server availability'), choices=model_class.VERSIONS_CHOICES)
-            version_filter = MagiFilter(to_queryset=lambda form, queryset, request, value: queryset.filter(c_versions__contains=value))
+            version_filter = MagiFilter(to_queryset=version_to_queryset)
+
+            version_exclusive = forms.BooleanField(label=_('Exclusive'))
+            version_exclusive_filter = MagiFilter(noop=True)
 
             if model_class.VERSIONS_HAVE_IMAGES:
                 cuteform['version'] = {
@@ -4221,7 +4242,7 @@ def to_ModelWithVersionsFilterForm(cls):
 
             # Show/hide status filter to show up only when filtering by version
             on_change_value_show = getattr(form_class, 'on_change_value_show', {})
-            on_change_value_show['version'] = ['status']
+            on_change_value_show['version'] = [ 'version_exclusive', 'status' ]
 
         class Meta(form_class.Meta):
             if form_class.Meta.with_versions:

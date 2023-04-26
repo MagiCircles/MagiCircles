@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import division
 import math, datetime, random, string, simplejson
 from collections import OrderedDict
@@ -9,6 +10,7 @@ from django.contrib.auth.views import logout as logout_view
 from django.contrib.auth import authenticate, login as login_action
 from django.contrib.admin.utils import NestedObjects
 from django.utils.translation import ugettext_lazy as _, get_language, activate as translation_activate
+from django.utils.formats import date_format
 from django_translated import t
 from django.utils.safestring import mark_safe
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
@@ -96,6 +98,9 @@ from magi.utils import (
     toNullBool,
     andJoin,
     getSiteName,
+    getSiteNameWithEmojis,
+    markSafe,
+    mergeDicts,
 )
 from magi.notifications import pushNotification
 from magi.settings import (
@@ -181,11 +186,25 @@ def sitemap(request, context):
                     else navbar_details['title']
             )
         )
-        context['sitemap'] = OrderedDict([
-            (link_name, link)
-            for link_name, link in navbar_details['links'].items()
-            if link['show_link_callback'](context)
-        ])
+        context['sitemap'] = OrderedDict()
+        for sub_link_name, sub_link in navbar_details['links'].items():
+            if sub_link['show_link_callback'](context):
+                context['sitemap'][sub_link_name] = sub_link
+            elif sub_link.get('show_beta_test_link', lambda c: False)(context):
+                if sub_link.get('get_url', None):
+                    url = sub_link['get_url'](context) or '#'
+                else:
+                    url = sub_link.get('url', None) or '#'
+                if url:
+                    title = sub_link['title']
+                    if callable(title):
+                        title = title(context)
+                    context['sitemap'][sub_link_name] = mergeDicts(sub_link, {
+                        'url': '/betatest/?next={}&next_title={}'.format(url, title),
+                        'get_url': None,
+                        'badge': u'β',
+                    })
+
 
 ############################################################
 # Login / Logout / Sign up
@@ -1125,6 +1144,33 @@ def unset_favorite_character(request, context, key, nth=None):
 
 def twitter_avatar(request, twitter):
     raise HttpRedirectException('https://twitter.com/{}/profile_image?size=original'.format(twitter))
+
+############################################################
+# Beta test
+
+BETA_TEST_TEMPLATE = _(u"""Welcome, curious adventurer!
+You've stumbled upon our top-secret beta-testing page for "{page_title}".
+
+We're testing out all sorts of new features and improvements here before they're ready for prime time. We're excited to share all the new stuff we've been working on, but we need your help!
+
+Want to become one of our exclusive beta-testers? It's easy! Just donate $1 or more to {site_name} and you'll get early access to all the new features we're working on.
+Plus, you'll get to help shape the future of {site_name}!
+Think of it like a sneak peek behind the curtain. You'll get to see all the cool stuff before anyone else, and your feedback will help us make it even better. It's a win-win!
+
+So what are you waiting for? Donate now and join the exclusive club of beta-testers today. We can't wait to see you on the other side!""")
+
+def betatest(request, context):
+    context['next'] = request.GET.get('next', None)
+    context['next_title'] = request.GET.get('next_title', None)
+    context['beta_testing_text'] = markSafeFormat(
+        BETA_TEST_TEMPLATE.replace('\n', '<br>'),
+        page_title=context['next_title'] or context['t_site_name'],
+        site_name=markSafe(getSiteNameWithEmojis().replace(' ', '&nbsp;')),
+    )
+    context['already_sentence'] = _('Are you already a {role}?').format(
+        role=_('{month} Donator').format(
+            month=date_format(datetime.datetime.now(), format='YEAR_MONTH_FORMAT', use_l10n=True),
+        ))
 
 ############################################################
 # Ajax

@@ -26,6 +26,7 @@ from magi.utils import (
     getEventStatus,
     getVerboseLanguage,
     listUnique,
+    mergeDicts,
 )
 from magi.versions_utils import (
     getRelevantVersion,
@@ -337,7 +338,7 @@ class MobileGameAccount(BaseAccount):
 ############################################################
 # ModelWithVersions
 
-BASE_MODEL_FIELDS_PER_VERSION_AND_LANGUAGE = OrderedDict([
+BASE_MODEL_FIELDS_PER_VERSION_AND_LANGUAGE_FOR_IMAGES = OrderedDict([
     (u'{}image', lambda _version_name, _version, _language=None: models.ImageField(
         string_concat(*([_version['translation'], ' - ', _('Image')] + (
             [' - ', getVerboseLanguage(_language)] if _language else []
@@ -351,17 +352,21 @@ BASE_MODEL_FIELDS_PER_VERSION_AND_LANGUAGE = OrderedDict([
 
 def getBaseModelWithVersions(
         versions, defaults={}, fallbacks={},
-        versions_images_folder='version',
+        versions_images_folder='version', with_images_per_language=True,
         base_fields=None, fields=None, extra_fields=None,
-        base_fields_per_language=BASE_MODEL_FIELDS_PER_VERSION_AND_LANGUAGE,
-        fields_per_language=None, extra_fields_per_language=None,
+        base_fields_per_language=None, fields_per_language=None, extra_fields_per_language=None,
         base_utils=None, utils=None, extra_utils=None,
         base_model_class=MagiModel, default_verbose_name=None,
 ):
+    if with_images_per_language:
+        base_fields_per_language = mergeDicts(
+            BASE_MODEL_FIELDS_PER_VERSION_AND_LANGUAGE_FOR_IMAGES, base_fields_per_language or {})
+
     if fields is None:
         fields = base_fields.copy() if base_fields else {}
     if extra_fields:
         fields.update(extra_fields)
+
     if fields_per_language is None:
         fields_per_language = base_fields_per_language.copy() if base_fields_per_language else {}
     if extra_fields_per_language:

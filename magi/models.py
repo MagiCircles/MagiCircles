@@ -253,17 +253,22 @@ class UserPreferences(MagiModel):
 
     @property
     def t_settings_per_groups(self):
-        s = {
-            group: {
-                toHumanReadable(setting, warning=False): value
-                for setting, value in settings.items()
-            }
-            for group, settings in (self.settings_per_groups or {}).items()
-        }
-        if 'translator' in s and 'Languages' in s['translator']:
-            s['translator']['Languages'] = u', '.join([
-                unicode(LANGUAGES_DICT.get(l, l)) for l in s['translator']['Languages']
-            ])
+        s = {}
+        for group, settings in (self.settings_per_groups or {}).items():
+            s[group] = {}
+            for setting, value in settings.items():
+                if (group not in self.GROUPS or 'settings' not in self.GROUPS[group]
+                    or setting not in self.GROUPS[group]['settings']):
+                    continue
+                if isinstance(self.GROUPS[group].get('settings', None), dict):
+                    setting_details = self.GROUPS[group]['settings'][setting]
+                else:
+                    setting_details = {}
+                to_value = setting_details.get('to_t_value', None)
+                if to_value:
+                    value = to_value(value)
+                if value:
+                    s[group][toHumanReadable(setting, warning=False)] = value
         return s
 
     @property

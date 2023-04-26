@@ -131,6 +131,7 @@
                     <img src="{{ static_url }}img/{{ sub_link.image }}.png?{{ static_files_version }}" {% if link.larger_image %}class="link_larger_image"{% else %}height="16"{% endif %} />
                     {% endif %}
                     {% navbarTitle link=sub_link %}
+                    {% if sub_link.badge %}<span class="badge progress-bar-info">{{ sub_link.badge }}</span>{% endif %}
                   </a>
                 </li>
                 {% if sub_link.divider_after %}

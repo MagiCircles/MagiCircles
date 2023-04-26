@@ -94,7 +94,7 @@ def markSafeJoin(strings, separator=u' '):
         if string is not None
     ]))
 
-def _join_lazy(strings, separator=u'', mark_safe=False):
+def _join_lazy(strings, separator=u' - ', mark_safe=False):
     if mark_safe:
         return markSafeJoin(strings, separator=separator)
     return separator.join([ unicode(string) for string in strings if string is not None ])
@@ -227,7 +227,7 @@ def getTotalCharacters(key='FAVORITE_CHARACTERS'):
     return len(getCharacters(key=key))
 
 def getCharactersPks(key='FAVORITE_CHARACTERS'):
-    return _CHARACTERS_NAMES.keys()
+    return _CHARACTERS_NAMES.get(key, {}).keys()
 
 def isValidCharacterPk(pk, key='FAVORITE_CHARACTERS'):
     return (
@@ -789,6 +789,40 @@ def usersWithOneOfPermissions(queryset, groups, permissions):
     """
     groups = groupsWithOneOfPermissions(groups, permissions)
     return usersWithOneOfGroups(queryset, groups) if groups else []
+
+def isBetaTestOnly(
+        staff_required, permissions_required, one_of_permissions_required,
+):
+    """
+    Call this after you checked permissions, the person doesn't have permissions,
+    but you want to check if they would have permissions if they had beta test access
+    """
+    if staff_required:
+        return False
+    if ('beta_test_features' in one_of_permissions_required and
+        (not permissions_required or permissions_required == [ 'beta_test_features' ])):
+        return True
+    if not one_of_permissions_required and permissions_required == [ 'beta_test_features' ]:
+        return True
+    return False
+
+def isPageBetaTestOnly(page):
+    if page.get('check_permissions', None):
+        return False
+    return isBetaTestOnly(
+        page.get('staff_required', False),
+        page.get('permissions_required', []),
+        page.get('one_of_permissions_required', []),
+    )
+
+def isListViewBetaTestOnly(list_view):
+    if list_view.has_method_been_overridden('check_permissions', check_collection_level=False):
+        return False
+    return isBetaTestOnly(
+        list_view.staff_required,
+        list_view.permissions_required,
+        list_view.one_of_permissions_required,
+    )
 
 def receivedMessageFromStaffBefore(from_user, to_user):
     return bool(from_user.sent_messages.model.objects.filter(owner=to_user, to_user=from_user).count())
@@ -1483,13 +1517,24 @@ def _auto_images_to_cuteform(model, new_field_name, original_field_name):
             new_field_name, key), exceptions=[ KeyError ], default=key),
         original_field_name=original_field_name,
     )
-def mergedFieldCuteForm(cuteform, settings, merged_fields, merged_field_name=None, model=None):
+def mergedFieldCuteForm(
+        cuteform, settings={},
+        merged_fields={}, merged_field_name=None,
+        model=None, as_modal=False, add_to_cuteform=True,
+):
     if not merged_fields:
         return
     if not isinstance(merged_fields, dict):
         merged_fields = OrderedDict([(field_name, None) for field_name in merged_fields])
     if not merged_field_name:
         merged_field_name = '_'.join(merged_fields.keys())
+    if as_modal:
+        settings = mergeDicts(settings, {
+            'extra_settings': {
+                'modal': 'true',
+                'modal-text': 'true',
+            },
+        })
     to_cuteforms = {}
     for field_name, to_cuteform in merged_fields.items():
         if not to_cuteform:
@@ -1518,8 +1563,10 @@ def mergedFieldCuteForm(cuteform, settings, merged_fields, merged_field_name=Non
                     to_cuteform,
                     int(k) if field_name.startswith('i_') and k.isdecimal() else k, v,
                 )
-    cuteform[merged_field_name] = settings
-    cuteform[merged_field_name]['to_cuteform'] = _to_cuteform
+    settings['to_cuteform'] = _to_cuteform
+    if add_to_cuteform:
+        cuteform[merged_field_name] = settings
+    return (merged_field_name, settings)
 
 class FormShowMore:
     def __init__(
@@ -2619,6 +2666,12 @@ def getEmojis(how_many=1):
             how_many / len(RAW_CONTEXT['site_emojis']))))[:how_many]
     return RAW_CONTEXT['site_emojis'][:how_many]
 
+def getSiteNameWithEmojis(language=None):
+    emojis = getEmojis(2)
+    return u'{emoji1} {site_name} {emoji2}'.format(
+        emoji1=emojis[0], site_name=getSiteName(language=language), emoji2=emojis[1],
+    )
+
 def couldSpeakEnglish(language=None, request=None):
     # /!\ Can't be called at global level
     if not language:
@@ -2649,9 +2702,11 @@ def getNavbarPrefix(navbar_link_list, request, context, append_to=None):
     if navbar_link_list:
         if navbar_link_list == 'staff' and not request.user.is_staff:
             return None
-        title = (_('More') if navbar_link_list == 'more'
-                 else context['navbar_links'].get(navbar_link_list, {}).get(
-                         'title', string.capwords(navbar_link_list)))
+        navbar_list_details = context['navbar_links'].get(navbar_link_list, {})
+        title = (
+            _('More') if navbar_link_list == 'more'
+            else navbar_list_details.get('title', string.capwords(navbar_link_list))
+        )
         prefix = {
             'title': title(context) if callable(title) else title,
             'url': u'/{}/'.format(navbar_link_list),
@@ -2660,6 +2715,43 @@ def getNavbarPrefix(navbar_link_list, request, context, append_to=None):
             append_to.append(prefix)
         return prefix
     return None
+
+def getNavbarHeaderPrefix(navbar_link_list, is_link, context, append_to=None):
+    if navbar_link_list:
+        if navbar_link_list == 'staff':
+            return None
+        navbar_list_details = context['navbar_links'].get(navbar_link_list, {})
+        header = None
+        header_name = None
+        for link_name, link in navbar_list_details['links'].items():
+            if link.get('is_header', False):
+                header = link
+                header_name = link_name
+            if is_link(link_name):
+                if header:
+                    prefix = {
+                        'title': header['title'],
+                        'url': header.get('url', u'/{}/#{}'.format(navbar_link_list, header_name)),
+                    }
+                    if append_to is not None:
+                        append_to.append(prefix)
+                    return prefix
+                return None
+    return None
+
+def getNavbarHeaderPrefixForCollection(collection, context, append_to=None):
+    return getNavbarHeaderPrefix(
+        navbar_link_list=collection.navbar_link_list,
+        is_link=lambda link_name: link_name.startswith(u'{}_'.format(collection.name)),
+        context=context, append_to=append_to,
+    )
+
+def getNavbarHeaderPrefixForPage(page_name, page, context, append_to=None):
+    return getNavbarHeaderPrefix(
+        navbar_link_list=page['navbar_link_list'],
+        is_link=lambda link_name: link_name == page_name,
+        context=context, append_to=append_to,
+    )
 
 ############################################################
 # Redirections

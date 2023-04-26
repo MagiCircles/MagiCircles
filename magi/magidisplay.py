@@ -271,14 +271,18 @@ class MagiDisplay(object):
         self.to_parameters_extra(parameters)
         return True, parameters
 
-    def prepare_template(self, template, parameters, parameters_templates, value):
+    def prepare_template(self, template, parameters, parameters_templates, value, sub_item_name=None):
         if callable(template):
             template = template(parameters)
         template = template.replace('{{', '{{{{').replace('}}', '}}}}')
         if isinstance(value, dict):
             for key in templateVariables(template):
                 if key in value:
-                    parameters_templates[key] = '{{{}}}'.format(key)
+                    parameters_templates[key] = self.get_parameter_template(
+                        key, value[key], parameters, parameters_templates,
+                        template_name=(
+                            u'template_{}_{{}}'.format(sub_item_name) if sub_item_name else u'template_{}'),
+                    )
                     parameters[key] = value[key]
         return template
 
@@ -382,7 +386,9 @@ class MagiDisplay(object):
                     template_name=u'template_{}_{{}}'.format(parameter_name) if parameter_name != 'display_value' else u'template_{}',
                 )
             # Prepare template
-            template_per_item = self.prepare_template(foreach_template, parameters_per_item, parameters_templates_per_item, list_item)
+            template_per_item = self.prepare_template(
+                foreach_template, parameters_per_item, parameters_templates_per_item, list_item,
+                sub_item_name=parameter_name)
             # Apply parameters_templates:
             template_per_item = template_per_item.format(**parameters_templates_per_item)
             # Apply parameters to template:
@@ -645,7 +651,9 @@ class _MagiDisplayImage(MagiDisplayWithTooltipMixin, MagiDisplay):
         'new_window': True,
 
         # Multiple links (including when hq is set)
-        'extra_links': [], # List of dicts with verbose (button name), url (image url)
+        'original_label': _('Original'),
+        'extra_links': [], # List of dicts with verbose (button name), url (image url),
+        # optional: new_window, ajax_link, ajax_link_title
         'popover_title': _('Download'), # Only used when there is a hq or extra_links
         'background_size': None,
     }
@@ -659,10 +667,10 @@ class _MagiDisplayImage(MagiDisplayWithTooltipMixin, MagiDisplay):
         parameters.ajax_link_title = parameters.ajax_link_title or parameters.alt
         if parameters.hq or parameters.extra_links:
             parameters.links = [
-                { 'verbose': _('Original'), 'url': parameters.original },
+                { 'verbose': parameters.original_label, 'url': parameters.original },
             ] + ([
                 { 'verbose': parameters.alt, 'url': parameters.link },
-            ] if parameters.link != parameters.display_value else []) + ([
+            ] if parameters.link != parameters.original else []) + ([
                 { 'verbose': _('High quality'), 'url': parameters.hq },
             ] if parameters.hq else []) + (
                 parameters.extra_links or []
@@ -691,8 +699,10 @@ class _MagiDisplayImage(MagiDisplayWithTooltipMixin, MagiDisplay):
 
     template_background_size = u'background-size: {background_size};'
     template_new_window = u'target="_blank"'
-    template_links_foreach = u'<li class="list-group-item"><a href="{url}" {new_window}>{verbose} <i class="flaticon-link"></i></a></li>'
     template_ajax_link = u'data-ajax-url="{ajax_link}" data-ajax-title="{ajax_link_title}" data-ajax-handle-form="true"'
+    template_links_foreach = u'<li class="list-group-item"><a href="{url}" {new_window} {ajax_link}>{verbose} <i class="flaticon-link"></i></a></li>'
+    template_links_ajax_link = template_ajax_link
+    template_links_new_window = template_new_window
 
 MagiDisplayImage = _MagiDisplayImage()
 
@@ -1048,6 +1058,85 @@ class _MagiDisplayGallery(_MagiDisplayList):
     })
 
 MagiDisplayGallery = _MagiDisplayGallery()
+
+############################################################
+# Table
+
+class MagiDisplayTableTitle(object):
+    def __init__(self, title):
+        self.title = title
+
+class _MagiDisplayTable(MagiDisplay):
+    """
+    Value: List of lists (rows, columns)
+    """
+    OPTIONAL_PARAMETERS = {
+        'align': 'center',
+        'column_display_class': MagiDisplayText,
+        'column_to_parameters': lambda _row, _column, _value: {},
+        'column_to_value': lambda _row, _column, _value: _value,
+        'title_display_class': MagiDisplayText,
+        'title_to_parameters': lambda _row, _column, _value: {},
+        'title_to_value': lambda _row, _column, _value: _value,
+    }
+    WILL_USE_PARAMETERS_FROM = [
+        'column_display_class',
+        'title_display_class',
+    ]
+
+    template = u"""
+    <div class="flex-table with-border table-rounded text-{align}">
+      {display_value}
+    </div>
+    """
+    template_foreach = u"""
+    <div class="flex-tr">{value}</div>
+    """
+    _template_title_column = u"""
+    <div class="flex-th flex-collapse-sm">{column_value}</div>
+    """
+    _template_column = u"""
+    <div class="flex-td flex-collapse-sm">{column_value}</div>
+    """
+
+    def to_foreach_value(self, parameters_per_item):
+        columns_html = []
+        for j, column in enumerate(parameters_per_item['value']):
+            if isinstance(column, MagiDisplayTableTitle):
+                template = self._template_title_column
+                value_html = parameters_per_item['title_display_class'].to_html(
+                    parameters_per_item['item'],
+                    parameters_per_item['title_to_value'](parameters_per_item['i'], j, column.title),
+                    **self.get_display_class_parameters(
+                        parameters_per_item,
+                        'title_display_class',
+                        to_callable_parameters=lambda _parameters: (
+                            (parameters_per_item['i'], j, column.title)
+                        ),
+                ))
+            elif not hasValue(column):
+                template = self._template_column
+                value_html = u''
+            else:
+                template = self._template_column
+                value_html = parameters_per_item['column_display_class'].to_html(
+                    parameters_per_item['item'],
+                    parameters_per_item['column_to_value'](parameters_per_item['i'], j, column),
+                    **self.get_display_class_parameters(
+                        parameters_per_item,
+                        'column_display_class',
+                        to_callable_parameters=lambda _parameters: (
+                            (parameters_per_item['i'], j, column)
+                        ),
+                ))
+            html = markSafeFormat(
+                template,
+                column_value=value_html,
+            )
+            columns_html.append(html)
+        return markSafeJoin(columns_html)
+
+MagiDisplayTable = _MagiDisplayTable()
 
 ############################################################
 # Textarea

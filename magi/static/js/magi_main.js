@@ -468,9 +468,13 @@ function loadImagesWithLinks() {
         div.css('height', 190);
         div.css('width', 190);
         div.css('max-width', '100%');
+        let placement = 'left';
+        if ($(document).width() <= 768) {
+            placement = 'top';
+        }
         div.popover({
             html: true,
-            placement: 'left',
+            placement: placement,
             title: title,
             content: content,
             trigger: 'manual',
@@ -478,6 +482,7 @@ function loadImagesWithLinks() {
         div.click(function(e) {
             e.preventDefault();
             div.popover('show');
+            loadCommons();
             return false;
         });
     });

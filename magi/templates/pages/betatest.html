@@ -1,0 +1,25 @@
+{% load i18n %}
+<div class="text-center">
+  {% if next_title %}
+  <h1>
+    {{ next_title }}
+    <br><small>{% trans 'Coming soon' %}</small>
+  </h1>
+  {% else %}
+  <h1>{% trans 'Coming soon' %}</h1>
+  {% endif %}
+  <br>
+  <p class="margin50 fontx1-5">
+    {{ beta_testing_text }}
+  </p>
+  {% include 'include/donate.html' with hide_donators_title=True just_button=True %}
+  <p class="text-muted">
+    {{ already_sentence }}
+    {% if user.is_authenticated %}
+    <a href="/about/#contact">{% trans 'Contact us' %}</a>
+    {% else %}
+    <a href="/login/{% if next %}?next={{ next }}{% if next_title %}&next_title={{ next_title}}{% endif %}{% endif %}"
+       class="btn btn-link-muted btn-lg">{% trans 'Login' %}</a>
+    {% endif %}
+  </p>
+</div>

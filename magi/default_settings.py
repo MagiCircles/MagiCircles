@@ -3,13 +3,15 @@ from collections import OrderedDict
 from django.conf import settings as django_settings
 from django.utils.functional import lazy
 from django.utils.translation import ugettext_lazy as _, string_concat
+from django.forms import MultipleChoiceField
 from magi.django_translated import t
 from magi.seasons import DEFAULT_SEASONS
-from django.conf import settings
+
+LANGUAGES_DICT = OrderedDict(django_settings.LANGUAGES)
 
 RAW_CONTEXT = {
-    'debug': settings.DEBUG,
-    'site': settings.SITE,
+    'debug': django_settings.DEBUG,
+    'site': django_settings.SITE,
     'extends': 'base.html',
     'forms': {},
     'form': None,
@@ -91,6 +93,11 @@ POEDITOR_PERMISSION = {
 
 GITHUB_HOW_TO = u"""Click on "Settings", then "Collaborators and teams"."""
 
+# The following permissions will get added to all groups in settings.py (including custom groups)
+# All staff groups will get edit_own_staff_profile
+# If the site is not launched yet, all groups will get access_site_before_launch
+# If there's a beta test in progress (BETA_TEST_IN_PROGRESS), all groups will get beta_test_features
+
 DEFAULT_GROUPS = [
     ('manager', {
         'translation': _('Manager'),
@@ -110,14 +117,11 @@ DEFAULT_GROUPS = [
             'manage_prizes', 'manipulate_activities', 'mark_activities_as_staff_pick',
             'edit_activities_post_language', 'order_by_any_field',
             'list_homepage_arts',
-            'access_site_before_launch',
-            'beta_test_features',
             'bypass_max_per_user',
             'bypass_maximum_items_that_can_be_deleted_at_once',
             'edit_activities_from_the_feed',
             'post_news', 'post_on_twitter', 'post_on_instagram',
             'see_account_verification_details',
-            'edit_own_staff_profile',
         ],
         'outside_permissions': {
             'Tweetdeck': TWEETDECK_PERMISSION,
@@ -136,9 +140,6 @@ DEFAULT_GROUPS = [
         'requires_staff': True,
         'permissions': [
             'has_twitter_password',
-            'access_site_before_launch',
-            'beta_test_features',
-            'edit_own_staff_profile',
         ],
         'guide': '/help/Circles%20managers%20guide',
         'ajax_guide': '/ajax/help/Circles%20managers%20guide',
@@ -149,9 +150,6 @@ DEFAULT_GROUPS = [
         'permissions': [
             'edit_roles', 'see_reputation', 'edit_staff_details',
             'order_by_any_field',
-            'access_site_before_launch',
-            'beta_test_features',
-            'edit_own_staff_profile',
         ],
         'requires_staff': True,
         'outside_permissions': {
@@ -176,7 +174,6 @@ DEFAULT_GROUPS = [
             'see_reputation',
             'edit_donator_status',
             'message_almost_anyone',
-            'edit_own_staff_profile',
         ],
         'requires_staff': True,
         'requires_staff': True,
@@ -207,10 +204,7 @@ DEFAULT_GROUPS = [
             'edit_suggested_edits',
             'order_by_any_field',
             'list_homepage_arts',
-            'access_site_before_launch',
-            'beta_test_features',
             'bypass_max_per_user',
-            'edit_own_staff_profile',
             'upload_custom_2x',
         ],
         'requires_staff': True,
@@ -226,10 +220,7 @@ DEFAULT_GROUPS = [
             'edit_suggested_edits',
             'order_by_any_field',
             'list_homepage_arts',
-            'access_site_before_launch',
-            'beta_test_features',
             'bypass_max_per_user',
-            'edit_own_staff_profile',
         ],
         'requires_staff': True,
         'outside_permissions': {
@@ -248,10 +239,7 @@ DEFAULT_GROUPS = [
             'post_news',
             'edit_staff_configurations',
             'see_reputation',
-            'access_site_before_launch',
-            'beta_test_features',
             'message_almost_anyone',
-            'edit_own_staff_profile',
         ],
         'requires_staff': True,
         'stats': [
@@ -271,9 +259,6 @@ DEFAULT_GROUPS = [
         'permissions': [
             'post_on_twitter',
             'see_reputation',
-            'access_site_before_launch',
-            'beta_test_features',
-            'edit_own_staff_profile',
         ],
         'outside_permissions': {
             'Tweetdeck': TWEETDECK_PERMISSION,
@@ -288,9 +273,6 @@ DEFAULT_GROUPS = [
         'permissions': [
             'post_on_instagram',
             'see_reputation',
-            'access_site_before_launch',
-            'beta_test_features',
-            'edit_own_staff_profile',
         ],
         'outside_permissions': {
             'Instagram account': { 'image': 'links/instagram', 'url': 'https://instagram.com/' },
@@ -304,9 +286,6 @@ DEFAULT_GROUPS = [
         'requires_staff': True,
         'permissions': [
             'see_reputation',
-            'access_site_before_launch',
-            'beta_test_features',
-            'edit_own_staff_profile',
         ],
         'guide': '/help/External%20communication%20guide',
         'ajax_guide': '/ajax/help/External%20communication%20guide',
@@ -317,10 +296,7 @@ DEFAULT_GROUPS = [
         'requires_staff': True,
         'permissions': [
             'see_reputation',
-            'access_site_before_launch',
-            'beta_test_features',
             'message_almost_anyone',
-            'edit_own_staff_profile',
         ],
         'outside_permissions': {
             'Tweetdeck': TWEETDECK_PERMISSION,
@@ -339,10 +315,7 @@ DEFAULT_GROUPS = [
             'see_reputation',
             'edit_activities_post_language',
             'manipulate_activities',
-            'access_site_before_launch',
-            'beta_test_features',
             'see_account_verification_details',
-            'edit_own_staff_profile',
         ],
         'requires_staff': True,
         'stats': [
@@ -364,10 +337,7 @@ DEFAULT_GROUPS = [
             'message_almost_anyone',
             'manipulate_activities',
             'edit_activities_post_language',
-            'access_site_before_launch',
-            'beta_test_features',
             'see_account_verification_details',
-            'edit_own_staff_profile',
         ],
         'requires_staff': True,
         'outside_permissions': {
@@ -397,9 +367,6 @@ DEFAULT_GROUPS = [
             'add_prizes',
             'manipulate_activities',
             'mark_activities_as_staff_pick',
-            'access_site_before_launch',
-            'beta_test_features',
-            'edit_own_staff_profile',
         ],
         'requires_staff': True,
         'outside_permissions': {
@@ -424,9 +391,6 @@ DEFAULT_GROUPS = [
             'add_prizes',
             'see_reputation',
             'message_almost_anyone',
-            'access_site_before_launch',
-            'beta_test_features',
-            'edit_own_staff_profile',
         ],
         'requires_staff': True,
         'guide': '/help/Community%20managers%20guide',
@@ -436,11 +400,6 @@ DEFAULT_GROUPS = [
         'translation': _('Backup staff'),
         'description': 'Our super heroes, magicians and jack-of-all-trades. There\'s nothing they can\'t do! We call them to the rescue whenever something needs to get done and they quickly and efficiently help our web app and community.',
         'requires_staff': True,
-        'permissions': [
-            'access_site_before_launch',
-            'beta_test_features',
-            'edit_own_staff_profile',
-        ],
         'guide': '/help/Backup%20staff%20guide',
         'ajax_guide': '/ajax/help/Backup%20staff%20guide',
     }),
@@ -454,9 +413,6 @@ DEFAULT_GROUPS = [
             'see_collections_details',
             'order_by_any_field',
             'list_homepage_arts',
-            'access_site_before_launch',
-            'beta_test_features',
-            'edit_own_staff_profile',
         ],
         'outside_permissions': {
             'Repository': {
@@ -472,11 +428,6 @@ DEFAULT_GROUPS = [
         'translation': _('Wiki editor'),
         'description': 'Keeps wiki pages up-to-date, neat and tidy, and easy to read for everyone.',
         'requires_staff': True,
-        'permissions': [
-            'access_site_before_launch',
-            'beta_test_features',
-            'edit_own_staff_profile',
-        ],
         'outside_permissions': {
             'Edit wiki pages': {
                 'icon': 'wiki',
@@ -493,8 +444,6 @@ DEFAULT_GROUPS = [
         'requires_staff': False,
         'permissions': [
             'see_reputation',
-            'access_site_before_launch',
-            'beta_test_features',
         ],
         'outside_permissions': {
             'Discord moderation': { 'image': 'links/discord', 'url': DEFAULT_CONTACT_DISCORD },
@@ -508,8 +457,6 @@ DEFAULT_GROUPS = [
         'permissions': [
             'translate_items',
             'translate_staff_configurations',
-            'access_site_before_launch',
-            'beta_test_features',
         ],
         'requires_staff': False,
         'outside_permissions': {
@@ -517,7 +464,16 @@ DEFAULT_GROUPS = [
         },
         'guide': '/help/Translators%20guide',
         'ajax_guide': '/ajax/help/Translators%20guide',
-        'settings': ['languages'],
+        'settings': {
+            'languages': {
+                'to_form_field': lambda: MultipleChoiceField(
+                    required=False, label=_('Languages'), choices=LANGUAGES_DICT.items(),
+                ),
+                'to_t_value': lambda _value: u', '.join([
+                    unicode(LANGUAGES_DICT.get(_l, _l)) for _l in _value
+                ]),
+            },
+        },
     }),
     ('design', {
         'translation': _('Graphic designer'),
@@ -542,8 +498,6 @@ DEFAULT_GROUPS = [
             'order_by_any_field',
             'see_reputation',
             'list_homepage_arts',
-            'access_site_before_launch',
-            'beta_test_features',
         ],
         'outside_permissions': {
             'See feedback form answers': False, # Added in settings
@@ -566,8 +520,6 @@ DEFAULT_GROUPS = [
             'mark_email_addresses_invalid',
             'see_collections_details',
             'order_by_any_field',
-            'access_site_before_launch',
-            'beta_test_features',
         ],
         'requires_staff': False,
         'guide': '/help/System%30administrator%20guide',
@@ -576,18 +528,10 @@ DEFAULT_GROUPS = [
     ('betatester', {
         'translation': _(u'β-tester'),
         'description': 'Beta testers have access to features before everybody else!',
-        'permissions': [
-            'access_site_before_launch',
-            'beta_test_features',
-        ],
     }),
     ('betatester_donator', {
         'translation': string_concat(_(u'β-tester'), ' (', _('Donators'), ')'),
         'description': 'Beta testers have access to features before everybody else!',
-        'permissions': [
-            'access_site_before_launch',
-            'beta_test_features',
-        ],
     }),
 ]
 
@@ -1046,6 +990,21 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
             'ajax': True,
             'title': 'Temporarily unavailable',
             'show_title': True,
+            'custom': False,
+            'navbar_link': False,
+            'icon': 'developer',
+        },
+    ]),
+    ('betatest', [
+        {
+            'title': _(u'β-tester'),
+            'custom': False,
+            'navbar_link': False,
+            'icon': 'developer',
+        },
+        {
+            'ajax': True,
+            'title': _(u'β-tester'),
             'custom': False,
             'navbar_link': False,
             'icon': 'developer',

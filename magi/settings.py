@@ -513,6 +513,11 @@ if hasattr(settings_module, 'LAUNCH_DATE'):
 else:
     LAUNCH_DATE = None
 
+if hasattr(settings_module, 'BETA_TEST_IN_PROGRESS'):
+    BETA_TEST_IN_PROGRESS = getattr(settings_module, 'BETA_TEST_IN_PROGRESS')
+else:
+    BETA_TEST_IN_PROGRESS = False
+
 if hasattr(settings_module, 'REDIRECT_AFTER_SIGNUP'):
     REDIRECT_AFTER_SIGNUP = getattr(settings_module, 'REDIRECT_AFTER_SIGNUP')
 else:
@@ -929,12 +934,15 @@ for _group_name, _group in GROUPS:
                 del(_group['outside_permissions'][_permission])
     if 'permissions' not in _group:
         _group['permissions'] = []
+    # All staff groups have edit own staff profile
+    if _group.get('requires_staff') and 'edit_own_staff_profile' not in _group['permissions']:
+        _group['permissions'].append('edit_own_staff_profile')
     # All groups have beta test access + access site before launch
-    if 'beta_test_features' not in _group.get('permissions', []):
+    if BETA_TEST_IN_PROGRESS and 'beta_test_features' not in _group['permissions']:
         _group['permissions'].append('beta_test_features')
-    if launched and 'access_site_before_launch' in _group.get('permissions', []):
+    if launched and 'access_site_before_launch' in _group['permissions']:
         _group['permissions'].remove('access_site_before_launch')
-    elif not launched and 'access_site_before_launch' not in _group.get('permissions', []):
+    elif not launched and 'access_site_before_launch' not in _group['permissions']:
         _group['permissions'].append('access_site_before_launch')
 
 # Enabled pages defaults
