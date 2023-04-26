@@ -788,7 +788,7 @@ def _getPageShowLinkForListsLambda(link):
                     if callable(title):
                         title = title(context)
                     links[sub_link_name] = mergeDicts(sub_link, {
-                        'url': '/betatest/?next={}&next_title={}'.format(url, title),
+                        'url': u'/betatest/?next={}&next_title={}'.format(url, title),
                         'get_url': None,
                         'badge': u'β',
                     })
