@@ -4214,6 +4214,14 @@ def to_ModelWithVersionsFilterForm(cls):
                     )
                 return queryset
 
+            presets = OrderedDict([
+                (_version_name, {
+                    'fields': { 'version': _version_name },
+                    'verbose_name': _version['translation'],
+                    'image': model_class.get_version_image(_version_name),
+                }) for _version_name, _version in model_class.VERSIONS.items()
+            ])
+
             # Filter by version
             # Note: c_versions allows multiple with a checkbox, we want just one at a time with a cuteform
 
