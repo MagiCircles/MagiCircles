@@ -352,7 +352,7 @@ class MagiCollection(object):
                     for other_prefetched in queryset_of_preselected._prefetch_related_lookups:
                         queryset_of_other_prefetched = None
                         if isinstance(other_prefetched, Prefetch):
-                            queryset_of_other_prefetched = other_prefetch.queryset
+                            queryset_of_other_prefetched = other_prefetched.queryset
                             other_prefetched = other_prefetched.prefetch_to
                         if queryset_of_other_prefetched is None:
                             model_of_other_prefetched = getModelOfRelatedItem(model_of_preselected, other_prefetched)
@@ -388,7 +388,8 @@ class MagiCollection(object):
                 prefetched = prefetched[0]
             elif isinstance(prefetched, Prefetch):
                 queryset_of_prefetched = prefetched.queryset
-                to_attr = prefetched.prefetch_to
+                if prefetched.prefetch_to != prefetched.prefetch_through:
+                    to_attr = prefetched.prefetch_to
                 prefetched = prefetched.prefetch_through
             if queryset_of_prefetched is None:
                 model_of_prefetched = getModelOfRelatedItem(queryset.model, prefetched)

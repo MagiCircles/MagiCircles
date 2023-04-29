@@ -2,13 +2,15 @@ from __future__ import print_function
 import requests, json, os.path
 from django.conf import settings as django_settings
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Q, ImageField
+from django.db.models import Q, ImageField, Model
+from django.db import connections
 from magi.utils import (
     addParametersToURL,
     AttrDict,
     failSafe,
     getSubField,
     getIndex,
+    hasValue,
     join_data,
     modelHasField,
     matchesTemplate,
@@ -223,6 +225,20 @@ def loadJsonAPIPage(url, parameters=None, local=False, local_file_name='tmp', re
         f.close()
     return r.json()
 
+def loadLocalJson(path, log_function=print):
+    """
+    JSON from local files
+    path = without base dir, doesn't start with a /
+    """
+    try:
+        f = open(path, 'r')
+    except IOError:
+        log_function('File not found: {}'.format(path))
+        return None
+    result = json.loads(f.read())
+    f.close()
+    return result
+
 ############################################################
 # Import data utils
 
@@ -350,7 +366,36 @@ def prepare_data(data, model, unique, download_images):
         return data
     return data, manytomany, dictionaries, images
 
-def default_find_existing_item(model, unique_together, unique_data):
+def _is_item_when_unique_together(item, unique_data):
+    for key, value in unique_data.items():
+        if value and isinstance(value, Model):
+            if getattr(item, u'{}_id'.format(key), None) != value.id:
+                return False
+        else:
+            if getattr(item, key, None) != value:
+                return False
+    return True
+
+def _is_item_when_any_unique(item, unique_data):
+    for key, value in unique_data.items():
+        if value and isinstance(value, Model):
+            if getattr(item, u'{}_id'.format(key), None) == value.id:
+                return True
+        else:
+            if getattr(item, key, None) == value:
+                return True
+    return False
+
+def default_find_existing_item(model, unique_together, unique_data, all_items):
+    if all_items:
+        for item in all_items:
+            if unique_together:
+                if _is_item_when_unique_together(item, unique_data):
+                    return item
+            else:
+                if _is_item_when_any_unique(item, unique_data):
+                    return item
+        return None
     try:
         return model.objects.filter(reduce(
             ((lambda qs, (k, v): qs & Q(**{k: v}))
@@ -362,8 +407,8 @@ def default_find_existing_item(model, unique_together, unique_data):
         return None
 
 def save_item(
-        details, unique_data, data, log_function=print, json_item=None,
-        verbose=False, download_images=False, force_reload_images=False):
+        details, unique_data, data, log_function=print, json_item=None, update=True,
+        verbose=False, download_images=False, force_reload_images=False, all_items=None):
     model = details['model']
     unique_together = details.get('unique_together', False)
     download_images = details.get('download_images', download_images)
@@ -385,17 +430,35 @@ def save_item(
         if find_existing_item:
             item = find_existing_item(model, unique_data, data, manytomany, dictionaries)
         else:
-            item = default_find_existing_item(model, unique_together, unique_data)
+            item = default_find_existing_item(model, unique_together, unique_data, all_items)
 
         if item:
-            data = {
-                k: v for k, v in data.items()
-                if v or k not in dont_erase_existing_value_fields
-            }
-            model.objects.filter(pk=item.pk).update(**data)
-            item = model.objects.filter(pk=item.pk)[0]
-            if verbose:
-                log_function(u'Updated {} #{}'.format(model.__name__, item.pk))
+            if not update:
+                changed = False
+                for k, v in data.items():
+                    if v and isinstance(v, Model):
+                        if v and not getattr(item, u'{}_id'.format(k), None):
+                            setattr(item, k, v)
+                            changed = True
+                    else:
+                        if hasValue(v) and not hasValue(getattr(item, k, None)):
+                            setattr(item, k, v)
+                            changed = True
+                if changed:
+                    item.save()
+                    if verbose:
+                        log_function(u'Updated {} #{}'.format(model.__name__, item.pk))
+                elif verbose:
+                    log_function(u'Nothing to change {} #{}'.format(model.__name__, item.pk))
+            else:
+                data = {
+                    k: v for k, v in data.items()
+                    if v or k not in dont_erase_existing_value_fields
+                }
+                model.objects.filter(pk=item.pk).update(**data)
+                item = model.objects.filter(pk=item.pk)[0]
+                if verbose:
+                    log_function(u'Updated {} #{}'.format(model.__name__, item.pk))
         else:
             if modelHasField(model, 'owner') and 'owner' not in data and 'owner_id' not in data:
                 data['owner'] = get_default_owner()
@@ -409,16 +472,21 @@ def save_item(
                 getattr(item, field_name).add(*list_of_items)
                 if verbose:
                     log_function('    ', field_name)
-            item.save()
         if dictionaries:
-            if verbose:
-                log_function('- Updated dictionaries:')
+            changed = False
             for field_name, dictionary in dictionaries.items():
+                previous = getattr(item, field_name[2:])
                 for k, v in dictionary.items():
+                    if hasValue(previous.get(k, None)) and not update:
+                        continue
                     item.add_d(field_name[2:], k, v)
-                if verbose:
-                    log_function('    ', field_name, getattr(item, field_name[2:]))
-            item.save()
+                if previous != getattr(item, field_name[2:]):
+                    changed = True
+                    if verbose:
+                        log_function('- Updated dictionary:')
+                        log_function('    ', field_name, getattr(item, field_name[2:]))
+            if changed:
+                item.save()
         if images:
             saved_images = []
             for field_name, url in images.items():
@@ -503,6 +571,111 @@ def api_pages(
     log_function('Total {}'.format(total))
     log_function('Done.')
 
+def import_from_json(
+        folder, name, details,
+        log_function=print,
+        verbose=False, download_images=False,
+        force_reload_images=False,
+        results_location=None,
+):
+    log_function('Downloading list of {}...'.format(name))
+    details.get('callback_before', lambda: None)()
+    path = folder + details.get('filename', name) + '.json'
+    if verbose:
+        log_function(path)
+    total = 0
+    result = loadLocalJson(path, log_function=log_function)
+    if 'callback_before_page' in details:
+        result = details['callback_before_page'](result)
+    results = result
+    if 'results_location' in details:
+        results = getSubField(results, details['results_location'], default=[])
+    elif results_location is not None:
+        results = getSubField(results, results_location, default=[])
+    for item in (results.values() if isinstance(results, dict) else results):
+        not_in_fields = {}
+        if (details.get('callback_should_import', None)
+            and not details['callback_should_import'](details, item)):
+            continue
+        if details.get('callback_per_item', False):
+            unique_data, data = details['callback_per_item'](details, item)
+        else:
+            unique_data, data, not_in_fields = import_generic_item(
+                details, item, verbose=verbose, log_function=log_function)
+        save_item(
+            details, unique_data, data, log_function, json_item=item,
+            verbose=verbose, download_images=download_images,
+            force_reload_images=force_reload_images,
+        )
+        if not_in_fields and verbose:
+            log_function('- Ignored:')
+            log_function(not_in_fields)
+        total += 1
+    details.get('callback_end', lambda: None)()
+    log_function('Total {}'.format(total))
+    log_function('Done.')
+
+
+def dictfetchall(cursor):
+    "Return all rows from a cursor as a dict"
+    columns = [col[0] for col in cursor.description]
+    return [
+        dict(zip(columns, row))
+        for row in cursor.fetchall()
+    ]
+
+def import_from_sqlite(
+        db_name, name, details,
+        log_function=print,
+        verbose=False, download_images=False,
+        force_reload_images=False,
+        results_location=None, update=True,
+):
+    log_function('Downloading list of {}...'.format(name))
+    details.get('callback_before', lambda: None)()
+    total = 0
+
+    if details.get('queryset', None):
+        all_items = list(details['queryset'])
+    else:
+        all_items = list(details['model'].objects.all())
+
+    with connections[db_name].cursor() as cursor:
+
+        table_name = details.get('table', name)
+
+        if 'callback_before_page' in details:
+            result = details['callback_before_page'](result)
+
+        query = 'SELECT * FROM {}'.format(table_name)
+        if verbose:
+            log_function(query)
+        cursor.execute(query)
+        for item in dictfetchall(cursor):
+            not_in_fields = {}
+            if (details.get('callback_should_import', None)
+                and not details['callback_should_import'](details, item)):
+                continue
+            if details.get('callback_per_item', False):
+                unique_data, data = details['callback_per_item'](details, item)
+            else:
+                unique_data, data, not_in_fields = import_generic_item(
+                    details, item, verbose=verbose, log_function=log_function)
+            save_item(
+                details, unique_data, data, log_function, json_item=item,
+                verbose=verbose, download_images=download_images,
+                force_reload_images=force_reload_images, update=update,
+                all_items=all_items,
+            )
+            if not_in_fields and verbose:
+                log_function('- Ignored:')
+                log_function(not_in_fields)
+            total += 1
+        details.get('callback_end', lambda: None)()
+
+    log_function('Total {}'.format(total))
+    log_function('Done.')
+
 ############################################################
 # Import data
 
@@ -569,4 +742,47 @@ def import_data(
                 verbose=verbose, download_images=download_images,
                 force_reload_images=force_reload_images,
                 request_call=request_call,
+            )
+
+def import_data_from_local_json(
+        import_configuration, folder='',
+        to_import=None, log_function=print,
+        verbose=False, download_images=False,
+        force_reload_images=False,
+        results_location=None,
+):
+    """
+    Assumes name in import is the name of the file .json (can specify filename in import config)
+    Folder = including BASE_DIR if needed
+    path + name + .json
+    """
+    for name, details in import_configuration.items():
+        if to_import is None or name in to_import:
+            import_from_json(
+                folder, name, details,
+                results_location=results_location,
+                log_function=log_function,
+                verbose=verbose, download_images=download_images,
+                force_reload_images=force_reload_images,
+            )
+
+def import_data_from_local_sqlite(
+        db_name, import_configuration,
+        to_import=None, log_function=print,
+        verbose=False, download_images=False,
+        force_reload_images=False,
+        results_location=None, update=True,
+):
+    """
+    db_name = db key in your ${PROJECT}_project/import_settings.py
+    Assumes name in import is the name of the table (can specify table in import config)
+    """
+    for name, details in import_configuration.items():
+        if to_import is None or name in to_import:
+            import_from_sqlite(
+                db_name, name, details,
+                results_location=results_location,
+                log_function=log_function,
+                verbose=verbose, download_images=download_images,
+                force_reload_images=force_reload_images, update=update,
             )

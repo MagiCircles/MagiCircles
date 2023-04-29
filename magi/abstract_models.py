@@ -547,8 +547,9 @@ def getBaseModelWithVersions(
         # Unicode
 
         def __unicode__(self):
+            relevant_name = self.relevant_name
             return (
-                unicode(self.relevant_name)
+                (unicode(relevant_name) if relevant_name else None)
                 or default_verbose_name
                 or super(BaseModelWithVersions, self).__unicode__()
             )
