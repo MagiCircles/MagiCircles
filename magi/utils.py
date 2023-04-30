@@ -3677,7 +3677,7 @@ class YouTubeVideoTranslationsField(_YouTubeFieldsHelpTextMixin, models.TextFiel
 
 def presetsFromChoices(
         model, field_name,
-        get_label=None, get_image=None, get_field_value=None,
+        get_label=None, get_image=None, get_field_value=None, get_icon=None,
         get_key=None,
         should_include=None,
         extra_fields={},
@@ -3699,6 +3699,7 @@ def presetsFromChoices(
                 model.get_auto_image(field_name, value, with_static_url=False)
                 if getattr(model, u'{}_AUTO_IMAGES'.format(field_name.upper()), False) else None
             ),
+            'icon': get_icon(i, value, verbose) if get_icon else None,
         }) for i, (value, verbose) in model.get_choices(field_name)
         if (True if not should_include else should_include(i, value, verbose))
     ]
