@@ -3706,7 +3706,7 @@ def presetsFromChoices(
 
 def presetsFromCharacters(
         field_name, get_label=None, get_field_value=None, key='FAVORITE_CHARACTERS',
-        extra_fields={},
+        extra_fields={}, should_include=None,
         to_extra_fields=lambda i, value, verbose: {},
 ):
     def _lambda(pk):
@@ -3720,6 +3720,7 @@ def presetsFromCharacters(
             }, extra_fields, to_extra_fields(pk, name, name)),
             'image': getCharacterImageFromPk(pk, key=key),
         }) for (pk, name, _image) in getattr(django_settings, key, [])
+        if not should_include or should_include(pk)
     ]
 
 def _getAllEquivalentsOfField(field_name, model_field_class_or_form_field_class, value):
