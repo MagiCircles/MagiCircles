@@ -1186,9 +1186,19 @@ function load_more_function(nextPageUrl, newPageParameters, newPageCallback /* o
     let button_content = button.html();
     button.html('<div class="loader"><i class="flaticon-loading"></i></div>');
     var next_page = button.attr('data-next-page');
-    let next_page_url = nextPageUrl + location.search + newPageParameters;;
-    next_page_url = removeParameterFromURL(next_page_url, 'page');
-    next_page_url = addParameterToURL(next_page_url, { page: next_page });
+
+    let url_parts = getURLparts(nextPageUrl);
+    let current_parameters = splitParameters(location.search);
+    let new_page_parameters = splitParameters(newPageParameters);
+    let parameters = {
+        ...current_parameters,
+        ...url_parts.parameters,
+        ...new_page_parameters,
+        ...{ page: next_page },
+    };
+    url_parts.parameters = parameters;
+    let next_page_url = makeURLfromParts(url_parts);
+
     $.ajax({
         'url': next_page_url,
         'success': function(data) {
@@ -1348,29 +1358,68 @@ function getAllValues(elements, attribute) {
         }).get()));
 }
 
+function splitParameters(parameters_str) {
+    if (typeof parameters_str == 'undefined') {
+        return {};
+    }
+    let parameters_parts = {};
+    parameters_str.split('&').forEach(function(parameter) {
+        let key = parameter.split('=')[0];
+        if (key) {
+            let value = parameter.split('=')[1];
+            if (typeof value == 'undefined') {
+                value = '';
+            }
+            parameters_parts[key] = value;
+        }
+    });
+    return parameters_parts;
+}
+
+function getURLparts(url) {
+    let url_part = url.split('?')[0];
+    let anchor_part = url.split('#').slice(1).join('#');
+    let parameters_part = url.split('?').slice(1).join('&');
+    if (typeof parameters_part != 'undefined') {
+        parameters_part = parameters_part.split('#')[0];
+    }
+    return {
+        'url': url_part,
+        'parameters': splitParameters(parameters_part),
+        'anchor': anchor_part,
+    }
+}
+
+function makeURLfromParts(url_parts) {
+    let parameters = [];
+    $.each(url_parts.parameters, (key, value) => parameters.push(key + '=' + (value ? value : '')));
+    return (
+        url_parts.url
+            + (parameters.length > 0 ? '?' : '')
+            + parameters.join('&')
+            + (url_parts.anchor ? '#' : '')
+            + url_parts.anchor
+    );
+}
+
 function removeParameterFromURL(url, parameter_name) {
-    let part = url.split('?' + parameter_name + '=')[1];
-    if (part) {
-        url = url.replace('?' + parameter_name + '=' + part.split('&')[0], '');
-    }
-    part = url.split('&' + parameter_name + '=')[1]
-    if (part) {
-        url = url.replace('&' + parameter_name + '=' + part.split('&')[0], '');
-    }
-    return url;
+    let url_parts = getURLparts(url);
+    let parameters_parts = {};
+    $.each(url_parts.parameters, function(key, value) {
+        if (key != parameter_name) {
+            parameters_parts[key] = value;
+        }
+    });
+    url_parts.parameters = parameters_parts;
+    return makeURLfromParts(url_parts);
 }
 
 function addParameterToURL(url, parameters) {
-    // Doesn't handle anchors
-    $.each(parameters, function(parameter_name, value) {
-        if (url.indexOf('?') == -1) {
-            url += '?';
-        } else {
-            url += '&';
-        }
-        url += parameter_name + '=' + value;
+    let url_parts = getURLparts(url);
+    $.each(parameters, function(key, value) {
+        url_parts.parameters[key] = value;
     });
-    return url;
+    return makeURLfromParts(url_parts);
 }
 
 // *****************************************

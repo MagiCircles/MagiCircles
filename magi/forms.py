@@ -3869,10 +3869,8 @@ class FilterReports(MagiFiltersForm):
         'reported_thing': { 'type': CuteFormType.HTML },
     }
 
-    reported_thing_filter = MagiFilter(to_value=lambda _model_names: [
-        getMagiCollectionFromModelName(_model_name).name
-        for _model_name in _model_names
-    ])
+    reported_thing_filter = MagiFilter(to_value=lambda _model_name: (
+        getMagiCollectionFromModelName(_model_name).name))
 
     def __init__(self, *args, **kwargs):
         super(FilterReports, self).__init__(*args, **kwargs)
