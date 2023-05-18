@@ -100,6 +100,7 @@ class MagiDisplay(object):
 
     OPTIONAL_PARAMETERS = {}
     REQUIRED_PARAMETERS = []
+    AUTO_REQUIRED_PARAMETERS = False
     DONT_CALL_CALLABLE_PARAMETERS_FOR = []
 
     def to_display_value(self, value, parameters):
@@ -115,10 +116,8 @@ class MagiDisplay(object):
 
     template = None
 
-    # In addition to what's in valid_parameters, parameters contain:
-    # - item
-    # - original_value
-    # - display_value
+    # In addition to what's in valid_parameters, parameters contain auto-set parameters,
+    # See AUTO_SET_PARAMETERS
 
     # template can be a callable that takes parameters.
     # You can set template_{} for any parameter, including display_value.
@@ -163,6 +162,9 @@ class MagiDisplay(object):
     }
     # It's not possible to set default values for PARAMETERS in MagiDisplay.
     # Defaults can be set in MagiField classes.
+    AUTO_SET_PARAMETERS = [
+        'item', 'original_value', 'display_value',
+    ]
 
     @property
     def valid_parameters(self):
@@ -202,6 +204,13 @@ class MagiDisplay(object):
             self.to_display_value_foreach_value = self.to_foreach_value
         if hasattr(self, 'to_foreach_parameters_extra'):
             self.to_display_value_foreach_parameters_extra = self.to_foreach_parameters_extra
+        # Auto-add parameters
+        if self.AUTO_REQUIRED_PARAMETERS and not callable(self.template):
+            self.REQUIRED_PARAMETERS = self.REQUIRED_PARAMETERS[:]
+            valid_parameters = self.valid_parameters + self.AUTO_SET_PARAMETERS
+            for variable in templateVariables(self.template):
+                if variable not in valid_parameters:
+                    self.REQUIRED_PARAMETERS.append(variable)
 
     def get_default_kwargs_parameter(self, parameter_name):
         return (
@@ -405,7 +414,8 @@ class MagiDisplay(object):
         display_class_parameters = getattr(parameters, u'_parameters_{}'.format(display_class_name), None) or {}
         to_parameters = getattr(parameters, display_class_name.replace('_display_class', '_to_parameters'), None)
         if to_parameters:
-            display_class_parameters.update(
+            display_class_parameters = mergeDicts(
+                display_class_parameters,
                 to_parameters(*to_callable_parameters(parameters))
                 if callable(to_parameters)
                 else to_parameters
@@ -833,8 +843,14 @@ class _MagiDisplayColor(MagiDisplay):
     """
     Value: Hex code
     """
+    OPTIONAL_PARAMETERS = {
+        'color_text': None, # defaults to value = hex code
+    }
+    def to_parameters_extra(self, parameters):
+        parameters.color_text = parameters.color_text or parameters.display_value
+
     template = u"""
-    <span class="text-muted">{display_value}</span>
+    <span class="text-muted">{color_text}</span>
     <div class="color-viewer" style="background-color: {display_value};"></div>
     """
 

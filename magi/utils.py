@@ -130,10 +130,11 @@ def andJoin(strings, translated=True, mark_safe=False, language=None, or_=False,
 andJoinTranslation = lazy(andJoin, unicode)
 
 def getTranslatedName(d, field_name='name', language=None):
-    return unicode(d.get(u'{}s'.format(field_name), {}).get(
+    value = d.get(u'{}s'.format(field_name), {}).get(
         language or get_language(),
         d.get(field_name, None),
-    ))
+    )
+    return unicode(value) if value is not None else None
 
 getTranslatedNameLazy = lazy(getTranslatedName, unicode)
 
@@ -202,6 +203,16 @@ _CHARACTERS_BIRTHDAYS_UNICODE = {
     ]) for _key in ALL_CHARACTERS_KEYS
 }
 
+def isCharacterModelClass(model_class):
+    # /!\ Can't be called at global level
+    if model_class == RAW_CONTEXT.get('favorite_characters_model', None):
+        return 'FAVORITE_CHARACTERS'
+    for key, character_details in RAW_CONTEXT.get('other_characters_models', None).items():
+        if ((isinstance(character_details, dict) and model_class == character_details['model'])
+            or model_class == character_details):
+            return key
+    return False
+
 def getCharacterSetting(detail, key='FAVORITE_CHARACTERS', default=None):
     # /!\ Can't be called at global level
     if key == 'FAVORITE_CHARACTERS':
@@ -249,6 +260,19 @@ def getCharacterNamesFromPk(pk, key='FAVORITE_CHARACTERS'):
             or _CHARACTERS_LOCALIZED_NAMES_UNICODE.get(key, {}).get(pk, {})
         ),
     }
+
+def getCharacterCacheFromPk(pk, key='FAVORITE_CHARACTERS', with_extra=True):
+    cache = getCharacterNamesFromPk(pk, key=key)
+    cache['birthday'] = getCharacterBirthdayFromPk(pk, key=key)
+    cache['image'] = getCharacterImageFromPk(pk, key=key)
+    if with_extra:
+        # /!\ Can't be called at global level
+        cache = cacheRelExtra(
+            cache, RAW_CONTEXT['cached_item_class'],
+            id=pk, collection_name=getCharacterCollectionName(key),
+            model_class=getCharacterSetting('model', key=key),
+        )
+    return cache
 
 def getCharacterEnglishNameFromPk(pk, key='FAVORITE_CHARACTERS'):
     return _CHARACTERS_NAMES.get(key, {}).get(pk, None)
@@ -630,6 +654,23 @@ def getStaffConfigurationCache(model_class, key, default=None, is_json=True):
 
 def saveStaffConfigurationCache(model_class, key, value, is_json=True):
     model_class.objects.filter(key=key).update(value=json.dumps(value) if is_json else value)
+
+def hasCachedChoice(model_class, field_name, choice=None, i_choice=None, key_choice=None, default=None):
+    """field_name should include i_/c_/d_ if needed. Either choice/i_choice/key_choice required."""
+    if not model_class:
+        return default
+    if choice is None:
+        if i_choice is not None:
+            choice = i_choice
+        elif key_choice is not None:
+            choice = model_class.get_i(field_name[2:], key_choice)
+    if choice is None:
+        return default
+    choices = getattr(django_settings, 'CACHED_FILTER_FORM_CHOICES', {}).get(
+        model_class.collection_name, {})
+    if field_name not in choices:
+        return default
+    return choice in choices[field_name]
 
 ############################################################
 # Use a dict as a class
@@ -2180,6 +2221,8 @@ def getTranslation(term, language):
     """
     term accepts callable
     """
+    if term is None:
+        return None
     if language == 'en' and hasattr(term, '_proxy____args'):
         return term._proxy____args[0]
     old_lang = get_language()
@@ -2201,12 +2244,18 @@ def getAllTranslations(term, unique=False, include_en=True):
             continue
         translation_activate(lang)
         translations[lang] = unicode(term(lang)) if callable(term) else unicode(term)
+    if unique:
+        if include_en:
+            en_translation = translations['en']
+        else:
+            translation_activate('en')
+            en_translation = unicode(term(lang)) if callable(term) else unicode(term)
     translation_activate(old_lang)
     if unique:
         translations = {
             language: value
             for language, value in translations.items()
-            if language == 'en' or translations.get('en', None) != value
+            if language == 'en' or en_translation != value
         }
     return translations
 
@@ -2237,6 +2286,22 @@ def jsv(v):
 
 def templateVariables(string):
     return [x[1] for x in string._formatter_parser() if x[1]]
+
+def validateTemplate(template, valid_variables, raise_error=True, raise_error_on_field_name=None):
+    if template:
+        variables = templateVariables(template)
+        unknown_variables = [
+            variable for variable in variables
+            if variable not in valid_variables
+        ]
+        if unknown_variables:
+            if raise_error:
+                error = 'Unknown variables: {}'.format(andJoin(unknown_variables))
+                if raise_error_on_field_name:
+                    raise ValidationError({ raise_error_on_field_name: [ error ] })
+                raise ValidationError(error)
+            return unknown_variables
+    return True
 
 def oldStyleTemplateVariables(string):
     return [ s for s in [ s.split(')s')[0] if ')s' in s else None for s in  string.split('%(')[1:] ] if s ]
@@ -2344,6 +2409,8 @@ def inchesToHumanReadable(inches=None, cm=None, return_list=False, inches_only=F
     )
 
 def secondsToHumanReadable(seconds, return_list=False):
+    if seconds is None:
+        return None
     if seconds < 0:
         seconds = seconds * -1
         is_negative = True
@@ -2816,6 +2883,34 @@ def prepareCache(d):
             json.dumps(d)
         except TypeError:
             return unicode(d)
+    return d
+
+def cacheRelExtra(
+        d, cached_item_class, id=None,
+        collection_name=None,
+        model_class=None,
+        images_field_names=[],
+):
+    """Takes a dict and adds details to mimic a cached related item"""
+    d = cached_item_class(d)
+    # Get collection_name + model_class
+    if model_class:
+        d.model_class = model_class
+        d.collection_name = getattr(model_class, 'collection_name', None)
+        collection = d.collection
+    elif collection_name:
+        d.collection_name = collection_name
+        collection = d.collection
+        d.model_class = failSafe(lambda: collection.queryset.model, exceptions=[ AttributeError ])
+    else:
+        d.model_class = None
+        d.collection_name = None
+        collection = None
+    # Add id if missing
+    if 'id' not in d and id is not None:
+        d.id = id
+    if 'pk' not in d:
+        d.pk = d.get('id', None)
     return d
 
 def modelHasField(model, field_name):
@@ -3325,6 +3420,198 @@ def getQuerysetFromModel(model, request=None, return_collection=False):
         return collection, queryset
     return queryset
 
+def addRelatedCaches(model_class, caches):
+    if not getattr(model_class, 'RELATED_CACHES', []):
+        model_class.RELATED_CACHES = []
+    for cache_name, details in caches.items():
+        model_class.RELATED_CACHES.append(cache_name)
+        if 'to_fields' not in details:
+            details['to_fields'] = {}
+        model_field = modelGetField(model_class, cache_name)
+        if model_field:
+            rel_model_class = model_field.rel.to
+            if not getattr(rel_model_class, 'REVERSE_RELATED_CACHES', []):
+                rel_model_class.REVERSE_RELATED_CACHES = []
+            is_m2m = isinstance(model_field, models.ManyToManyField)
+            rel_model_class.REVERSE_RELATED_CACHES.append((
+                model_field.related.get_accessor_name(),
+                cache_name, is_m2m,
+            ))
+            label = notTranslatedWarning(model_field._verbose_name)
+            rel_collection_name = getattr(rel_model_class, 'collection_name', None)
+        else: # Assume reverse related
+            label = toHumanReadable(cache_name, warning=True)
+            rel_model_class = None
+            is_m2m = True
+            rel_collection_name = None
+        character_key = details.get('character_key', details.get('is_character', None))
+        if character_key == True:
+            character_key = 'FAVORITE_CHARACTERS'
+        if not details.get('fields', []) and character_key:
+            if is_m2m:
+                cache_field_name = u'_cache_c_{}'.format(cache_name)
+                to_cache = _addRelatedCaches_to_cache_m2m_csv(cache_name)
+                setattr(model_class, u'cached_{}_map'.format(
+                    cache_name), classmethod(_addRelatedCaches_cached_map_for_characters(character_key)))
+            else:
+                setattr(model_class, u'cached_{}'.format(cache_name), property(
+                    _addRelatedCaches_cached_character))
+        else:
+            cache_field_name = u'_cache_j_{}'.format(cache_name)
+            if character_key:
+                fields = [ 'id' ]
+            elif rel_model_class and rel_model_class.__name__ == 'UserImage':
+                fields = [ 'id', 'image', 'image_thumbnail' ]
+            elif rel_model_class and rel_model_class.__name__ == 'User':
+                fields = [ 'id', 'image', 'username' ]
+            else:
+                fields = [ 'id', 'unicode', 'unicodes' ]
+            fields = listUnique(fields + details.get('fields', []))
+            # Go through fields
+            translated_fields = details.get('translated_fields', []) + getattr(
+                rel_model_class, 'TRANSLATED_FIELDS', [])
+            for field_name in fields:
+                # Add images (doesn't work for reverse related)
+                if rel_model_class:
+                    if field_name.endswith('_thumbnail'):
+                        field = modelGetField(rel_model_class, field_name[:len('_thumbnail') * -1])
+                    else:
+                        field = modelGetField(rel_model_class, field_name)
+                    if isinstance(field, models.ImageField):
+                        if not hasattr(model_class, u'_cache_{}_images'.format(cache_name)):
+                            setattr(model_class, u'_cache_{}_images'.format(cache_name), [ field_name ])
+                        else:
+                            getattr(model_class, u'_cache_{}_images'.format(cache_name)).append(field_name)
+                # Add translations for translatable fields (doesn't work for related fields)
+                if field_name in translated_fields:
+                    fields.append('{}s'.format(field_name))
+                    details['to_fields'][field_name] = _addRelatedCaches_toTranslationField(field_name)
+                    details['to_fields']['{}s'.format(field_name)] = _addRelatedCaches_toTranslationsField(
+                        field_name)
+            if is_m2m:
+                to_cache = _addRelatedCaches_to_cache_m2m(
+                    cache_name, fields, rel_collection_name, details['to_fields'])
+            else:
+                to_cache = _addRelatedCaches_to_cache_fk(cache_name, fields, details['to_fields'])
+            if not model_field:
+                # For reverse relationships, because models have not been fully loaded yet,
+                # some details get added in magi.urls
+                if not getattr(model_class, '_UNSET_REVERSE_RELATED_CACHES', []):
+                    model_class._UNSET_REVERSE_RELATED_CACHES = []
+                model_class._UNSET_REVERSE_RELATED_CACHES.append((cache_name, details, fields))
+            # Add pre for characters
+            if character_key:
+                setattr(model_class, u'cached_{}_pre'.format(
+                    cache_name), classmethod(_addRelatedCaches_cache_pre_for_characters(character_key)))
+        image_for_prefetched = details.get('image_for_prefetched', None)
+        text_image_for_prefetched = details.get('text_image_for_prefetched', None)
+        # Add pre for users
+        if rel_model_class and rel_model_class.__name__ == 'User':
+            if not image_for_prefetched:
+                image_for_prefetched = lambda _item, _d: -1
+                text_image_for_prefetched = lambda _item, _d: _d.image_url
+            setattr(model_class, u'cached_{}_pre'.format(cache_name), classmethod(
+                _addRelatedCaches_cache_pre_for_user))
+        # Add extra to add image_for_prefetched if set
+        if image_for_prefetched or text_image_for_prefetched:
+            setattr(model_class, u'cached_{}_extra'.format(cache_name), classmethod(
+                _addRelatedCaches_cache_extra_image_for_prefetched(
+                    image_for_prefetched, text_image_for_prefetched)))
+        cache_model_field = models.TextField(label, null=True)
+        model_class.add_to_class(cache_field_name, cache_model_field)
+        setattr(model_class, u'to_cache_{}'.format(cache_name), to_cache)
+        if rel_collection_name:
+            setattr(model_class, u'_cached_{}_collection_name'.format(cache_name), rel_collection_name)
+
+def _addRelatedCaches_to_cache_m2m_csv(cache_name):
+    def _to_cache(item):
+        return [
+            rel_item.pk
+            for rel_item in getattr(item, cache_name).all()
+        ]
+    return _to_cache
+
+def _addRelatedCaches_to_rel_item_cache(rel_item, fields, to_fields):
+    return {
+        field_name: (
+            to_fields[field_name](rel_item)
+            if field_name in to_fields
+            else getattr(rel_item, field_name)
+        ) for field_name in fields
+    }
+
+def _addRelatedCaches_to_cache_m2m(cache_name, fields, rel_collection_name, to_fields):
+    def _to_cache(item):
+        max = None
+        if rel_collection_name:
+            rel_collection = getMagiCollection(rel_collection_name)
+            max = getMaxShownForPrefetchedTogether(type(item), cache_name, rel_collection)
+        queryset = getattr(item, cache_name).all()
+        if max:
+            queryset = queryset[:max]
+        return [
+            _addRelatedCaches_to_rel_item_cache(rel_item, fields, to_fields)
+            for rel_item in queryset
+        ]
+    return _to_cache
+
+def _addRelatedCaches_to_cache_fk(cache_name, fields, to_fields):
+    def _to_cache(item):
+        rel_item = getattr(item, cache_name)
+        if not rel_item:
+            return None
+        return _addRelatedCaches_to_rel_item_cache(rel_item, fields, to_fields)
+    return _to_cache
+
+def _addRelatedCaches_cached_map_for_characters(character_key):
+    def _cached_map(item, pk):
+        return getCharacterCacheFromPk(pk, key=character_key)
+    return _cached_map
+
+def _addRelatedCaches_cache_pre_for_characters(character_key):
+    def _cache_pre(item, d):
+        for key, value in getCharacterCacheFromPk(d['id'], key=character_key, with_extra=False).items():
+            if key not in d:
+                d[key] = value
+    return _cache_pre
+
+def _addRelatedCaches_cached_character(character_key):
+    def _cached_character(item):
+        return getCharacterCacheFromPk(getattr(item, u'{}_id'.format(field_name)), key=character_key)
+    return _cached_character
+
+def _addRelatedCaches_cache_extra_image_for_prefetched(image_for_prefetched, text_image_for_prefetched):
+    def _cached_extra(item, d):
+        if image_for_prefetched:
+            d['image_for_prefetched'] = image_for_prefetched(item, d)
+        if text_image_for_prefetched:
+            d['text_image_for_prefetched'] = text_image_for_prefetched(item, d)
+        return d
+    return _cached_extra
+
+def _addRelatedCaches_cache_pre_for_user(item, d):
+    d['unicode'] = d['username']
+    d['avatar'] = d['image']
+
+def _addRelatedCaches_toTranslationField(field_name):
+    def _to_field(item):
+        return item.get_translation(field_name, language='en', fallback_to_other_sources=False)
+    return _to_field
+
+def _addRelatedCaches_toTranslationsField(field_name):
+    def _to_field(item):
+        return item.get_all_translations_of_field(field_name, include_english=False, unique=True)
+    return _to_field
+
+def updateAllRelatedCaches():
+    # /!\ Can't be called at global level
+    for collection_name, collection in getMagiCollections().items():
+        print collection_name
+        try:
+            collection.queryset.model.update_all_related_caches_of_model(update_reverse_related_caches=False)
+        except AttributeError:
+            pass
+
 class ColorInput(TextInput):
     input_type = 'color'
 
@@ -3678,11 +3965,13 @@ class YouTubeVideoTranslationsField(_YouTubeFieldsHelpTextMixin, models.TextFiel
 def presetsFromChoices(
         model, field_name,
         get_label=None, get_image=None, get_field_value=None, get_icon=None,
-        get_key=None,
+        get_key=None, form_model_class=None,
         should_include=None,
         extra_fields={},
         to_extra_fields=lambda i, value, verbose: {},
 ):
+    if form_model_class is None:
+        form_model_class = model
     prefix = 'i_' if modelHasField(model, 'i_{}'.format(field_name)) else (
         'c_' if modelHasField(model, 'c_{}'.format(field_name)) else '')
     without_i_choices = getattr(model, u'{name}_WITHOUT_I_CHOICES'.format(name=field_name.upper()), False)
@@ -3701,14 +3990,19 @@ def presetsFromChoices(
             ),
             'icon': get_icon(i, value, verbose) if get_icon else None,
         }) for i, (value, verbose) in model.get_choices(field_name)
-        if (True if not should_include else should_include(i, value, verbose))
+        if (hasCachedChoice(
+                form_model_class, u'{}{}'.format(prefix, field_name), default=True,
+                i_choice=(None if without_i_choices or prefix != 'i_' else i),
+                choice=(value if without_i_choices or prefix != 'i_' else None),
+        ) and (True if not should_include else should_include(i, value, verbose)))
     ]
 
 def presetsFromCharacters(
         field_name, get_label=None, get_field_value=None, key='FAVORITE_CHARACTERS',
-        extra_fields={}, should_include=None,
+        extra_fields={}, should_include=None, form_model_class=None,
         to_extra_fields=lambda i, value, verbose: {},
 ):
+    """form_model_class is used to check for cache choices"""
     def _lambda(pk):
         return lambda: getCharacterNameFromPk(pk, key=key)
     return [
@@ -3720,7 +4014,8 @@ def presetsFromCharacters(
             }, extra_fields, to_extra_fields(pk, name, name)),
             'image': getCharacterImageFromPk(pk, key=key),
         }) for (pk, name, _image) in getattr(django_settings, key, [])
-        if not should_include or should_include(pk)
+        if ((not should_include or should_include(pk))
+            and hasCachedChoice(form_model_class, field_name, choice=pk, default=True))
     ]
 
 def _getAllEquivalentsOfField(field_name, model_field_class_or_form_field_class, value):
@@ -4099,6 +4394,7 @@ def getImageForPrefetched(item, return_field_name=False, in_list=True):
         'top_image',
         'image_thumbnail_url',
         'image_url',
+        'icon_image_url',
     ]:
         if getattr(item, image_field, None):
             if getattr(item, image_field) == -1:

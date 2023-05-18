@@ -57,6 +57,7 @@ def save_item(model, item, updated_fields, in_item=False):
         item.save()
     else:
         model.objects.filter(pk=item.pk).update(**updated_fields)
+    item.update_all_related_caches()
 
 # All callbacks return True or False whether or not they did something
 # When the first callback does something, the script stops

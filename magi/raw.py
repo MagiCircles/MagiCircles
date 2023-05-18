@@ -142,6 +142,23 @@ other_sites = [
         'shortname': 'bang',
     },
     {
+        'name': 'Cinderella Producers',
+        'names': {
+            'ja': u'シンデレラプロ',
+        },
+        'game_name': 'THE iDOLM@STER Cinderella Girls: Starlight Stage',
+        'game_names': {
+            'ja': u'アイドルマスター シンデレラガールズ スターライトステージ',
+            'kr': u'아이돌마스터 신데렐라 걸즈 스타라이트 스테이지',
+            'zh-hant': u'偶像大師 灰姑娘女孩 星光舞台',
+            'zh-hans': u'偶像大師 灰姑娘女孩 星光舞台',
+        },
+        'image': 'cpro',
+        'url': 'https://cinderella.pro/',
+        'profile_url': 'https://cinderella.pro/user/{}/',
+        'shortname': 'cpro',
+    },
+    {
         'name': 'Starlight Academy',
         'names': {
             'ja': u'スタァライト アカデミー',
@@ -158,23 +175,6 @@ other_sites = [
         'url': 'https://starlight.academy/',
         'profile_url': 'https://starlight.academy/user/{}/',
         'shortname': 'starlight',
-    },
-    {
-        'name': 'Cinderella Producers',
-        'names': {
-            'ja': u'シンデレラプロ',
-        },
-        'game_name': 'THE iDOLM@STER Cinderella Girls: Starlight Stage',
-        'game_names': {
-            'ja': u'アイドルマスター シンデレラガールズ スターライトステージ',
-            'kr': u'아이돌마스터 신데렐라 걸즈 스타라이트 스테이지',
-            'zh-hant': u'偶像大師 灰姑娘女孩 星光舞台',
-            'zh-hans': u'偶像大師 灰姑娘女孩 星光舞台',
-        },
-        'image': 'cpro',
-        'url': 'https://cinderella.pro/',
-        'profile_url': 'https://cinderella.pro/user/{}/',
-        'shortname': 'cpro',
     },
     {
         'name': 'School Idol Tomodachi',
@@ -229,6 +229,14 @@ other_sites = [
         'url': 'https://stardust.run/',
         'profile_url': 'https://stardust.run/user/{}/',
         'shortname': 'stardustrun',
+    },
+    {
+        'name': 'Starlet',
+        'game_name': 'RuPaul\'s Drag Race Superstar',
+        'image': 'starlet',
+        'url': 'https://starlet.db0.company/',
+        'profile_url': 'https://starlet.db0.company/user/{}/',
+        'shortname': 'starlet',
     },
     {
         'name': 'fr.gl',

@@ -432,24 +432,19 @@ def save_item(
         else:
             item = default_find_existing_item(model, unique_together, unique_data, all_items)
 
+        need_save = False
+        need_cache_update = False
         if item:
             if not update:
-                changed = False
                 for k, v in data.items():
                     if v and isinstance(v, Model):
                         if v and not getattr(item, u'{}_id'.format(k), None):
                             setattr(item, k, v)
-                            changed = True
+                            need_save = True
                     else:
                         if hasValue(v) and not hasValue(getattr(item, k, None)):
                             setattr(item, k, v)
-                            changed = True
-                if changed:
-                    item.save()
-                    if verbose:
-                        log_function(u'Updated {} #{}'.format(model.__name__, item.pk))
-                elif verbose:
-                    log_function(u'Nothing to change {} #{}'.format(model.__name__, item.pk))
+                            need_save = True
             else:
                 data = {
                     k: v for k, v in data.items()
@@ -457,12 +452,14 @@ def save_item(
                 }
                 model.objects.filter(pk=item.pk).update(**data)
                 item = model.objects.filter(pk=item.pk)[0]
+                need_cache_update = True
                 if verbose:
                     log_function(u'Updated {} #{}'.format(model.__name__, item.pk))
         else:
             if modelHasField(model, 'owner') and 'owner' not in data and 'owner_id' not in data:
                 data['owner'] = get_default_owner()
             item = model.objects.create(**data)
+            need_cache_update = True
             log_function(u'Created {} #{}'.format(model.__name__, item.pk))
 
         if manytomany:
@@ -470,10 +467,10 @@ def save_item(
                 log_function('- Many to many:')
             for field_name, list_of_items in manytomany.items():
                 getattr(item, field_name).add(*list_of_items)
+                need_cache_update = True
                 if verbose:
                     log_function('    ', field_name)
         if dictionaries:
-            changed = False
             for field_name, dictionary in dictionaries.items():
                 previous = getattr(item, field_name[2:])
                 for k, v in dictionary.items():
@@ -481,12 +478,10 @@ def save_item(
                         continue
                     item.add_d(field_name[2:], k, v)
                 if previous != getattr(item, field_name[2:]):
-                    changed = True
+                    need_save = True
                     if verbose:
                         log_function('- Updated dictionary:')
                         log_function('    ', field_name, getattr(item, field_name[2:]))
-            if changed:
-                item.save()
         if images:
             saved_images = []
             for field_name, url in images.items():
@@ -497,10 +492,31 @@ def save_item(
                 if not verbose:
                     log_function(u'{} #{}'.format(model.__name__, item.pk))
                 log_function(u'- Uploaded images: {}'.format(', '.join(saved_images)))
-                item.save()
+                need_save = True
 
         if 'callback_after_save' in details:
-            details['callback_after_save'](details, item, json_item)
+            result = details['callback_after_save'](details, item, json_item)
+            if isinstance(result, tuple):
+                new_need_save, new_need_cache_update = result
+            elif isinstance(result, bool):
+                new_need_save = result
+                new_need_cache_update = result
+            if new_need_save:
+                need_save = True
+            if new_need_cache_update:
+                need_cache_update = True
+
+        if need_save:
+            item.save()
+            if verbose:
+                log_function(u'Updated {} #{}'.format(model.__name__, item.pk))
+            item.update_all_related_caches()
+        elif need_cache_update:
+            item.update_all_related_caches()
+            if verbose:
+                log_function(u'Updated caches for {} #{}'.format(model.__name__, item.pk))
+        elif verbose:
+            log_function(u'Nothing to change {} #{}'.format(model.__name__, item.pk))
 
         return item
     return None
@@ -647,7 +663,8 @@ def import_from_sqlite(
         if 'callback_before_page' in details:
             result = details['callback_before_page'](result)
 
-        query = 'SELECT * FROM {}'.format(table_name)
+        query = details.get('query', 'SELECT * FROM {table_name}')
+        query = query.format(table_name=table_name)
         if verbose:
             log_function(query)
         cursor.execute(query)

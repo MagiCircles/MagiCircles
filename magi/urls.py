@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-import string, inspect
+import string, inspect, django.apps
 from collections import OrderedDict
 from django.conf import settings
 from django.conf.urls import include, patterns, url
 from django.core.exceptions import PermissionDenied
+from django.db.models import ManyToManyField
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
@@ -65,9 +66,12 @@ from magi.settings import (
     SITE_EMOJIS,
     BETA_TEST_IN_PROGRESS,
 )
+from magi.item_model import CachedItem
 from magi.models import UserPreferences
 from magi.middleware.httpredirect import HttpRedirectException
 from magi.utils import (
+    _addRelatedCaches_to_cache_m2m,
+    _addRelatedCaches_toTranslationField,
     getGlobalContext,
     getNavbarPrefix,
     getNavbarHeaderPrefixForPage,
@@ -188,6 +192,7 @@ RAW_CONTEXT['favorite_character_to_url'] = FAVORITE_CHARACTER_TO_URL
 RAW_CONTEXT['favorite_character_name'] = FAVORITE_CHARACTER_NAME
 RAW_CONTEXT['favorite_characters_model'] = FAVORITE_CHARACTERS_MODEL
 RAW_CONTEXT['other_characters_models'] = OTHER_CHARACTERS_MODELS
+RAW_CONTEXT['cached_item_class'] = CachedItem
 
 if not launched:
     RAW_CONTEXT['launch_date'] = LAUNCH_DATE
@@ -828,3 +833,43 @@ if 'report' not in all_enabled:
         collection.reportable = False
 
 RAW_CONTEXT['main_collections'] = [ _c.name for _c in main_collections ]
+
+############################################################
+# Fix reverse related caches for model classes
+
+def fixRevereRelatedCachesForModelClasses():
+    for model_class in django.apps.apps.get_models():
+        unset_reverse_related_caches = getattr(model_class, u'_UNSET_REVERSE_RELATED_CACHES', [])
+        for cache_name, details, fields in unset_reverse_related_caches:
+            relationship = getattr(model_class, cache_name, None)
+            if not relationship:
+                continue
+            rel_model_class = relationship.related.model
+            if not rel_model_class:
+                continue
+            if not getattr(rel_model_class, 'REVERSE_RELATED_CACHES', []):
+                rel_model_class.REVERSE_RELATED_CACHES = []
+            is_m2m = isinstance(relationship.related.field, ManyToManyField)
+            rel_model_class.REVERSE_RELATED_CACHES.append((
+                relationship.related.field.name,
+                cache_name, is_m2m,
+            ))
+            rel_collection_name = getattr(rel_model_class, 'collection_name', None)
+            if not rel_collection_name and rel_model_class.__name__ == 'User':
+                rel_collection_name = 'user'
+            if rel_collection_name:
+                setattr(model_class, u'_cached_{}_collection_name'.format(cache_name), rel_collection_name)
+            if 'to_fields' not in details:
+                details['to_fields'] = {}
+            translated_fields = details.get('translated_fields', []) + getattr(
+                rel_model_class, 'TRANSLATED_FIELDS', [])
+            for field_name in fields:
+                if field_name in translated_fields:
+                    fields.append('{}s'.format(field_name))
+                    details['to_fields']['{}s'.format(field_name)] = _addRelatedCaches_toTranslationField(
+                        field_name)
+            to_cache = _addRelatedCaches_to_cache_m2m(
+                cache_name, fields, rel_collection_name, details['to_fields'])
+            setattr(model_class, u'to_cache_{}'.format(cache_name), to_cache)
+
+fixRevereRelatedCachesForModelClasses()

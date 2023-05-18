@@ -9,7 +9,9 @@ from django.utils.html import escape
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings as django_settings
 from django.db.models import Count
+from django.forms import ModelChoiceField, NullBooleanField
 from magi.utils import (
+    andJoin,
     birthdays_within,
     camelToSnakeCase,
     snakeCaseToTitle,
@@ -28,6 +30,8 @@ from magi.utils import (
     LANGUAGES_DICT,
     getMagiCollection,
     checkIsCurrentSeasonNotFromGeneratedSettings,
+    getAllTranslations,
+    isCharacterModelClass,
 )
 from magi.settings import (
     ACTIVITY_TAGS,
@@ -298,7 +302,7 @@ def generateBackgroundsList(queryset=None, filter_queryset=None, check_for_thres
                 getattr(background, 'image_2x_url', image),
             ),
             'name': unicode(background),
-            'd_names': background.d_unicodes,
+            'names': background.unicodes,
             'homepage': getattr(
                 background, 'show_background_on_homepage',
                 getattr(background, 'show_image_on_homepage', False),
@@ -454,6 +458,65 @@ def generateShareImageForMainCollections(collection):
     image_instance._thumbnail_image = image_instance.image
     image_instance.save()
     return unicode(image_instance.image)
+
+def getCacheForFilterFormChoices():
+    print 'Get cache of filter form choices'
+    cached_choices = {}
+    for collection_name, collection in getMagiCollections().items():
+        if not collection.list_view.filters_details:
+            continue
+        filter_form = collection.list_view.filter_form(
+            {}, request=None, ajax=False, collection=collection, preset=None, allow_next=False,
+        )
+        cache_choices_for_fields = getattr(filter_form, 'cache_choices', [])
+        if not cache_choices_for_fields or not hasattr(filter_form, 'filter_queryset'):
+            continue
+        queryset = collection.list_view.get_queryset(collection.queryset, {}, None)
+        cached_choices[collection.name] = {}
+        for field_name in cache_choices_for_fields:
+            if field_name not in filter_form.fields:
+                continue
+            if isinstance(filter_form.fields[field_name], NullBooleanField):
+                choices = [ (1, ''), (2, 'Yes'), (3, 'No') ]
+            else:
+                choices = filter_form.fields[field_name].choices
+            cache_verbose_from_items = False
+            if (isinstance(filter_form.fields[field_name], ModelChoiceField)
+                and not isCharacterModelClass(filter_form.fields[field_name].queryset.model)):
+                cache_verbose_from_items = True
+                items = { item.pk: item for item in filter_form.fields[field_name].queryset }
+                filtered_choices = OrderedDict()
+            else:
+                filtered_choices = []
+            kept = []
+            removed = []
+            for choice, verbose in choices:
+                if choice == '':
+                    continue
+                if filter_form.filter_queryset(queryset, { field_name: choice }, None).count():
+                    kept.append(verbose)
+                    if cache_verbose_from_items:
+                        choice_details = { 'key': choice }
+                        if choice in items:
+                            all_translations = getAllTranslations(items[choice], unique=True)
+                            choice_details['name'] = all_translations['en']
+                            if len(all_translations) > 1:
+                                del(all_translations['en'])
+                                choice_details['names'] = all_translations
+                        else:
+                            choice_details['name'] = verbose
+                        filtered_choices[choice] = choice_details
+                    else:
+                        filtered_choices.append(choice)
+                else:
+                    removed.append(verbose)
+            cached_choices[collection.name][field_name] = filtered_choices
+            if django_settings.DEBUG and getattr(django_settings, 'DEBUG_SHOW_CACHED_CHOICES', True):
+                print u'  {} filter form: {} Removed {} choices, choices left: {}'.format(
+                    collection.title, filter_form.fields[field_name].label, len(removed),
+                    (andJoin(kept) if kept else 'none') if removed else 'all',
+                )
+    return cached_choices
 
 ############################################################
 # Generate settings (for generated settings)
@@ -614,6 +677,9 @@ def magiCirclesGeneratedSettings(existing_values):
         ) == 'ended':
             generated_settings['PAST_ACTIVITY_TAGS_COUNT'][tag_name] = models.Activity.objects.filter(
                 c_tags__contains='"{}"'.format(tag_name)).count()
+
+    # Cache choices
+    generated_settings['CACHED_FILTER_FORM_CHOICES'] = getCacheForFilterFormChoices()
 
     ############################################################
     # Save

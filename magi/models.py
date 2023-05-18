@@ -1,4 +1,4 @@
-import hashlib, urllib, datetime, pytz
+import datetime, pytz
 from collections import OrderedDict
 from dateutil.relativedelta import relativedelta
 from django.db import models
@@ -9,7 +9,6 @@ from django.utils.safestring import mark_safe
 from django.utils import timezone
 from django.utils.formats import date_format
 from django.forms.models import model_to_dict
-from django.conf import settings as django_settings
 from magi.utils import (
     AttrDict,
     getMagiCollection,
@@ -26,7 +25,6 @@ from magi.utils import (
     locationOnChange,
     staticImageURL,
     birthdayURL,
-    hasPermissionToMessage,
     ordinalNumber,
     getAge,
     simplifyMarkdown,
@@ -63,6 +61,7 @@ from magi.settings import (
 )
 from magi.raw import other_sites
 from magi.item_model import (
+    avatar,
     MagiModel,
     BaseMagiModel,
     get_image_url,
@@ -80,25 +79,6 @@ Account = ACCOUNT_MODEL
 
 ############################################################
 # Utils
-
-def avatar(user, size=200):
-    """
-    Preferences in user objects must always be prefetched
-    """
-    default = staticImageURL('avatar.png', full=True)
-    if (getattr(django_settings, 'DEBUG', False)
-        and getattr(django_settings, 'UPLOADED_FILES_URL', None)):
-        default = staticImageURL('avatar.png', static_url=u'{}{}static/'.format(
-            'https:' if 'http' not in django_settings.UPLOADED_FILES_URL else '',
-            django_settings.UPLOADED_FILES_URL,
-        ))
-    if hasattr(django_settings, 'DEBUG_AVATAR'):
-        default = django_settings.DEBUG_AVATAR
-    if user.preferences.twitter:
-        default = u'{}twitter_avatar/{}/'.format(SITE_URL if SITE_URL.startswith('http') else 'https:' + SITE_URL, user.preferences.twitter)
-    return ("https://www.gravatar.com/avatar/"
-            + hashlib.md5(user.email.lower()).hexdigest()
-            + "?" + urllib.urlencode({'d': default, 's': str(size)}))
 
 def getBackgroundsQueryset():
     backgrounds_collection = getMagiCollection(getattr(BACKGROUNDS_MODEL, 'collection_name', None))
@@ -120,26 +100,6 @@ def getBackgroundURLFromId(background_id):
     except IndexError:
         return None
     return getattr(background, 'background_image_url', getattr(background, 'image_url', None))
-
-############################################################
-# Add MagiModel properties to User objects
-
-addMagiModelProperties(User, 'user')
-User.IS_PERSON = True
-User.image_url = property(avatar)
-User.http_image_url = property(avatar)
-User.owner_id = property(lambda u: u.id)
-User.owner = property(lambda u: u)
-User.report_sentence = property(lambda u: _('Report {thing}').format(thing=u.username))
-User.hasGroup = lambda u, group: hasGroup(u, group)
-User.hasPermission = lambda u, permission: hasPermission(u, permission)
-User.hasOneOfPermissions = lambda u, permissions: hasOneOfPermissions(u, permissions)
-User.hasPermissions = lambda u, permissions: hasPermissions(u, permissions)
-User.image_for_prefetched = -1 # Always display usernames when showing prefetched users
-User.text_image_for_prefetched = property(avatar)
-
-User.birthday_url = property(lambda u: birthdayURL(u))
-User.hasPermissionToMessage = hasPermissionToMessage
 
 ############################################################
 
@@ -556,6 +516,7 @@ class UserLink(BaseMagiModel):
         if _details['name'] != SITE_NAME and _details.get('shortname', None)
     ] + [
         ('instagram', _('Instagram')),
+        ('tiktok', _('TikTok')),
         ('youtube', _('YouTube')),
         ('tumblr', 'Tumblr'),
         ('twitch', 'Twitch'),
@@ -593,6 +554,7 @@ class UserLink(BaseMagiModel):
         'facebook': u'https://www.facebook.com/{}',
         'reddit': u'http://www.reddit.com/user/{}',
         'instagram': u'https://instagram.com/{}/',
+        'tiktok': u'https://www.tiktok.com/@{}',
         'youtube': u'https://www.youtube.com/{}',
         'tumblr': u'http://{}.tumblr.com/',
         'twitch': u'http://twitch.tv/{}',

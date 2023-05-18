@@ -1144,6 +1144,7 @@ class MagiCollection(object):
                     'label': field.label,
                     'form_field_class': type(field),
                     'model_field_class': model_field,
+                    'validators': field.validators,
                 }
         else:
             self.form_details = {}
@@ -1185,6 +1186,7 @@ class MagiCollection(object):
         return instance
 
     def after_save(self, request, instance, type=None):
+        instance.update_all_related_caches(reload_m2m=True)
         return instance
 
     def _get_more_url(self, url, filter_field_name, item, to_preset, ajax=False):
@@ -3524,7 +3526,7 @@ class AccountCollection(MagiCollection):
             return instance
 
         def after_save(self, request, instance, type=None):
-            super(AccountCollection.AddView, self).after_save(request, instance, type=type)
+            instance = super(AccountCollection.AddView, self).after_save(request, instance, type=type)
             # If the user had no account before, update cache to say that they have accounts now
             if not instance.owner.preferences.cached_tabs_with_content.get('account', {}).get('has_content', False):
                 instance.owner.preferences.force_update_cache('tabs_with_content')
@@ -4190,6 +4192,7 @@ class UserPreferencesCollection(MagiCollection):
                 raise PermissionDenied()
 
         def after_save(self, request, instance, type=None):
+            instance = super(UserPreferencesCollection.EditView, self).after_save(request, instance, type=type)
             models.onUserEdited(instance)
             if ON_USER_EDITED:
                 ON_USER_EDITED(instance)
@@ -4941,7 +4944,7 @@ class BadgeCollection(MagiCollection):
                 context['alert_button_link'] = context['forms'][form_name].badge.item_url
 
         def after_save(self, request, instance, type=None):
-            super(BadgeCollection.AddView, self).after_save(request, instance, type=type)
+            instance = super(BadgeCollection.AddView, self).after_save(request, instance, type=type)
             # If the user had no badge before, update cache to say that they have badges now
             if (not instance.user.preferences.cached_tabs_with_content.get('badge', False)
                 or (instance.show_on_profile
@@ -4961,7 +4964,7 @@ class BadgeCollection(MagiCollection):
         # If the badge wasn't shown on top profile and is now shown, update cache
 
         def after_save(self, request, instance):
-            super(BadgeCollection.EditView, self).after_save(request, instance)
+            instance = super(BadgeCollection.EditView, self).after_save(request, instance)
             # _previous_show_on_top_profile is set in form init
             if (instance.show_on_profile != request._previous_show_on_top_profile):
                 instance.user.preferences.force_update_cache('tabs_with_content')
@@ -5061,6 +5064,7 @@ class ReportCollection(_BaseReportCollection):
         return _('Report')
 
     def before_save(self, request, instance, type=None):
+        super(ReportCollection, self).before_save(request, instance, type=type)
         if (instance.reason == 'Wrong details'
             and instance.reported_thing_collection
             and instance.reported_thing_collection.allow_suggest_edit):
@@ -5505,7 +5509,7 @@ class PrivateMessageCollection(MagiCollection):
             })
 
         def after_save(self, request, instance, type=None):
-            super(PrivateMessageCollection.AddView, self).after_save(request, instance)
+            instance = super(PrivateMessageCollection.AddView, self).after_save(request, instance)
             pushNotification(
                 request.thread_with,
                 'private-message',

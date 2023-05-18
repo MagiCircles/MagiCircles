@@ -390,6 +390,9 @@ def getBaseModelWithVersions(
 
     class BaseModelWithVersions(MagiModel):
 
+        STATUS_STARTS_WITHIN = 3
+        STATUS_ENDS_WITHIN = 3
+
         ############################################################
         # Versions
 
@@ -469,11 +472,19 @@ def getBaseModelWithVersions(
 
         image = property(lambda _s: _s.relevant_image)
 
-        def get_field_for_relevant_version(self, field_name, default=None, get_value=None, return_version=False, fallback=True):
+        def get_field_for_relevant_version(self, field_name, default=None, get_value=None, return_version=False, fallback=True, versions_checks={}):
             return getFieldForRelevantVersion(
                 self, field_name, default=default, get_value=get_value,
-                return_version=return_version, fallback=fallback,
+                return_version=return_version, fallback=fallback, versions_checks=versions_checks,
             )
+
+        def get_field_for_relevant_version_all_users(self, *args, **kwargs):
+            return self.get_field_for_relevant_version(*args, versions_checks={
+                'check_filtered_choice': False,
+                'check_status': True,
+                'check_accounts': False,
+                'check_language': False,
+            }, **kwargs)
 
         def get_translated_value_for_relevant_version(self, field_name, default=None, return_version=False):
             return getTranslatedValueForRelevantVersion(self, field_name, default=default, return_version=return_version)
@@ -692,9 +703,6 @@ class _BaseEvent(MagiModel):
     M_DESCRIPTIONS_CHOICES = ALL_ALT_LANGUAGES
     d_m_descriptions = models.TextField(_('Details'), null=True)
     _cache_description = models.TextField(null=True)
-
-    STATUS_STARTS_WITHIN = 3
-    STATUS_ENDS_WITHIN = 3
 
     def __unicode__(self):
         return unicode(self.t_name)

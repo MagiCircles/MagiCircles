@@ -845,6 +845,8 @@ class MagiField(object):
                         value = self.fields_kwargs[key]
                         if key == 'image':
                             value = staticImageURL(value)
+                        if value is not None and callable(value):
+                            value = value(self.item)
                         try: setattr(self, key, value)
                         except AttributeError: pass
                     else:
@@ -2881,9 +2883,13 @@ class MagiForeignKeyModelField(BaseMagiRelatedField):
         if self.is_preselected:
             rel_item = getRelatedItemFromItem(self.item, self.item_access_field_name)
             self.retrieved_from = 'db'
-        elif hasattr(self.item, 'cached_' + self.item_access_field_name):
+            if SHOW_DEBUG and (self.view.view == 'item_view' or SHOW_DEBUG_LIST):
+                print '   fk:', self.field_name, 'from database'
+        elif hasattr(self.item, u'cached_{}'.format(self.item_access_field_name)):
             rel_item = getattr(self.item, 'cached_' + self.item_access_field_name, None)
             self.retrieved_from = 'cache'
+            if SHOW_DEBUG and (self.view.view == 'item_view' or SHOW_DEBUG_LIST):
+                print '   fk:', self.field_name, 'from cache'
         else:
             rel_item = None
             self.retrieved_from = None
@@ -3041,6 +3047,14 @@ class BaseMagiManyToManyModelField(BaseMagiRelatedField):
                     or model_field.get('prefetched_together', False)
                 )
             )
+        )
+
+    @classmethod
+    def is_cached(self, field_name, model_field, options):
+        return (
+            modelHasField(options.model, u'_cache_j_{}'.format(field_name))
+            or modelHasField(options.model, u'_cache_d_{}'.format(field_name))
+            or modelHasField(options.model, u'_cache_c_{}'.format(field_name))
         )
 
     ############################################################
@@ -3224,7 +3238,10 @@ class MagiManyToManyModelField(BaseMagiManyToManyModelField):
                 or isinstance(model_field, RelatedObject)
                 or isinstance(model_field, ReverseRelatedDetails)
             )
-            and self.is_prefetched(field_name, model_field, options)
+            and (
+                self.is_prefetched(field_name, model_field, options)
+                or self.is_cached(field_name, model_field, options)
+            )
         )
 
     ############################################################
@@ -3244,6 +3261,7 @@ class MagiManyToManyModelField(BaseMagiManyToManyModelField):
             not self._not_prefetched_for_high_traffic()
             and (
                 self.field_name in self.options.prefetched_field_names
+                or self.field_name in self.options.cached_fields_prefetched
                 or getattr(self.rel_options, 'prefetched', False)
             )
         )
@@ -3264,21 +3282,35 @@ class MagiManyToManyModelField(BaseMagiManyToManyModelField):
 
         if self._not_prefetched_for_high_traffic():
             self.and_more_button_total = 0
+            if SHOW_DEBUG and (self.view.view == 'item_view' or SHOW_DEBUG_LIST):
+                print '   m2m:', self.field_name, 'not prefetched due to high traffic'
             return []
+        cached_items = getattr(self.item, u'cached_{}'.format(self.item_access_field_name), -1)
+        if cached_items != -1:
+            rel_items = cached_items or []
+            self._and_more_button_total_from_rel_items(rel_items)
+            if SHOW_DEBUG and (self.view.view == 'item_view' or SHOW_DEBUG_LIST):
+                print '   m2m:', self.field_name, 'from cache'
         elif getattr(self.request, '_prefetched_with_max', {}).get(self.original_field_name):
             # Retrieve items that have been prefetched manually with a limit
             rel_items, self.rel_options.max = self.request._prefetched_with_max[self.original_field_name]
             self._and_more_button_total_from_rel_items(rel_items)
+            if SHOW_DEBUG and (self.view.view == 'item_view' or SHOW_DEBUG_LIST):
+                print '   m2m:', self.field_name, 'from _prefetched_with_max'
         elif isinstance(getattr(self.item, self.item_access_field_name, None), QuerySet):
             # Non-explicit relationships: manual queryset with a limit
             rel_items = getattr(self.item, self.field_name)[:self.rel_options.max + 1]
             self._and_more_button_total_from_rel_items(rel_items)
+            if SHOW_DEBUG and (self.view.view == 'item_view' or SHOW_DEBUG_LIST):
+                print '   m2m:', self.field_name, 'from non-explicit relationship manual queryset with limit'
         else:
             # Retrieve items that have been prefetched with .all()
             rel_items = getRelatedItemsFromItem(self.item, self.item_access_field_name)
             self.and_more_button_total = len(rel_items) - (self.rel_options.max or 0)
             if self.and_more_button_total < 0:
                 self.and_more_button_total = 0
+            if SHOW_DEBUG and (self.view.view == 'item_view' or SHOW_DEBUG_LIST):
+                print '   m2m:', self.field_name, 'from .all() queryset'
         if self.rel_options.max:
             rel_items = rel_items[:self.rel_options.max]
         self.with_images = True
@@ -3294,7 +3326,7 @@ class MagiManyToManyModelField(BaseMagiManyToManyModelField):
             )
             rel_item._magimanytomanyfield_image = image
             rel_item._magimanytomanyfield_image_link = (
-                getattr(rel_item, 'image_url')
+                getattr(rel_item, 'image_url', None)
                 if image_field_name == 'image_thumbnail_url'
                 else None
             )
@@ -3969,6 +4001,7 @@ class MagiFields(object):
         'fields_preselected': [],
         'fields_preselected_subfields': {},
         'fields_prefetched': [],
+        'cached_fields_prefetched': [],
         'fields_prefetched_together': [],
         'show_suggest_edit_button': True,
         'show_item_buttons_as_icons': False,
@@ -4179,6 +4212,7 @@ class MagiFields(object):
             self.options.order = self.options.table_fields
         elif self.options.ordering_fields:
             self.options.only_fields = self.options.ordering_fields
+        self.options.model = self.model
 
         self.prepare_fields()
         self.set_fields()
@@ -4487,7 +4521,9 @@ class MagiFields(object):
 
             if field_name in self._found_preselected_subfields:
                 sub_item_field_name, subfield_field_name = self._found_preselected_subfields[field_name]
-                sub_item = getattr(self.item, sub_item_field_name)
+                sub_item = getattr(self.item, u'cached_{}'.format(sub_item_field_name), -1)
+                if sub_item == -1:
+                    sub_item = getattr(self.item, sub_item_field_name)
                 field.bound_field(field_name, self.view, sub_item, self.context)
             else:
                 field.bound_field(field_name, self.view, self.item, self.context)
@@ -4730,8 +4766,8 @@ class EventVersionFieldMixin(object):
     version_name = property(lambda _s: _s.fields_kwargs['version_name'])
     version = property(lambda _s: _s.model.VERSIONS[_s.version_name])
     event_status = property(lambda _s: _s.item.get_status_for_version(_s.version_name))
-    event_start_date = property(lambda _s: _s.item.get_start_date_for_version(_s.version_name))
-    event_end_date = property(lambda _s: _s.item.get_end_date_for_version(_s.version_name))
+    event_start_date = property(lambda _s: _s.item.get_field_for_version('start_date', _s.version_name))
+    event_end_date = property(lambda _s: _s.item.get_field_for_version('end_date', _s.version_name))
 
     # Value
     to_value = lambda _s: ''

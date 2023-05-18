@@ -129,7 +129,10 @@ def getRelevantVersion(
 
     return None
 
-def getFieldForRelevantVersion(item, field_name, default=None, request=None, get_value=None, return_version=False, fallback=True):
+def getFieldForRelevantVersion(
+        item, field_name, default=None, request=None, get_value=None,
+        return_version=False, fallback=True, versions_checks={},
+):
     if not request:
         request = getattr(item, 'request', None)
     if not item.VERSIONS:
@@ -139,7 +142,10 @@ def getFieldForRelevantVersion(item, field_name, default=None, request=None, get
     exclude_versions = []
     # Try to get from most relevant version, if value does not exist, move on to next most relevant version
     while len(exclude_versions) < len(item.VERSIONS):
-        version_name = getRelevantVersion(item=item, request=request, exclude_versions=exclude_versions, fallback_to_first=False)
+        version_name = getRelevantVersion(
+            request=request, exclude_versions=exclude_versions,
+            item=item, fallback_to_first=False, **versions_checks
+        )
         if not version_name:
             break
         version = item.VERSIONS[version_name]

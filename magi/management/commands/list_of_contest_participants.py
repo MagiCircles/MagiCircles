@@ -779,7 +779,7 @@ class Command(BaseCommand):
                                 url,
                             ))
                         else:
-                            ll.append(u'[{}]({})').format(ordinalNumber(i + 1), url)
+                            ll.append(u'[{}]({})'.format(ordinalNumber(i + 1), url))
                     l.append(u'{} {}'.format(u, andJoin(ll)))
                 elif len(self.platforms) > 1:
                     url, entry = entries_per_user.items()[0]

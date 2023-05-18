@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import json, datetime
+import json, datetime, hashlib, urllib
 from collections import OrderedDict
 from django.contrib.auth.models import User
 from django.db import models
@@ -31,6 +31,15 @@ from magi.utils import (
     getLanguageImage,
     getTranslatedName,
     getWesternName,
+    cacheRelExtra,
+    modelGetField,
+    failSafe,
+    hasOneOfPermissions,
+    hasGroup,
+    hasPermission,
+    hasPermissions,
+    hasPermissionToMessage,
+    birthdayURL,
 )
 
 ############################################################
@@ -188,7 +197,7 @@ def has_item_view_permissions(instance, context={}):
 ############################################################
 # Utils for unicode
 
-def d_unicodes(instance):
+def unicodes(instance):
     return getAllTranslations(instance, include_en=False, unique=True)
 
 ############################################################
@@ -231,7 +240,8 @@ class BaseMagiModel(models.Model):
     owner_unicode = property(get_owner_unicode)
     real_owner = property(get_real_owner)
     has_item_view_permissions = has_item_view_permissions
-    d_unicodes = property(d_unicodes)
+    unicode = property(lambda _s: unicode(_s))
+    unicodes = property(unicodes)
 
     @classmethod
     def get_int_choices(self, field_name):
@@ -360,72 +370,24 @@ class BaseMagiModel(models.Model):
 
     @classmethod
     def cached_json_extra(self, field_name, d):
-        d = AttrDict(d)
-        # Get collection
-        collection_name = getattr(self, u'_cached_{}_collection_name'.format(field_name), field_name)
-        collection = getMagiCollection(collection_name)
-        # Get original model class for cached thing
-        try: original_cls = self._meta.get_field(field_name).rel.to
-        except FieldDoesNotExist: original_cls = None
-        original_cls = getattr(self, u'_cache_{}_fk_class'.format(field_name), original_cls)
-        if not original_cls and collection:
-            original_cls = collection.queryset.model
-        if callable(original_cls): original_cls = original_cls()
         # Call pre if provided
         if hasattr(self, u'cached_{}_pre'.format(field_name)):
             getattr(self, u'cached_{}_pre'.format(field_name))(d)
-        # i_ fields
-        if original_cls:
-            for k in d.keys():
-                if k.startswith('i_'):
-                    d[k[2:]] = original_cls.get_reverse_i(k[2:], d[k])
-                    d['t_{}'.format(k[2:])] = original_cls.get_verbose_i(k[2:], d[k])
-        # Add collection
-        if collection_name:
-            d['collection_name'] = collection_name
-        if collection:
-            d['collection'] = collection
-        # Add id if missing
-        if original_cls and 'id' not in d:
-            d['id'] = getattr(self, u'{}_id'.format(field_name), None)
-        # Add default unicode if missing
-        if 'unicode' not in d:
-            d['unicode'] = getTranslatedName(d) if 'name' in d else (unicode(d['id']) if 'id' in d else '?')
-        if 'id' in d:
-            if 'pk' not in d:
-                d['pk'] = d['id']
-            # Set collection item URLs
-            if collection:
-                d['has_item_view_permissions'] = lambda _context={}: has_item_view_permissions(d, context=_context)
-            else:
-                d['has_item_view_permissions'] = lambda _context={}: False
-            if 'item_url' not in d:
-                d['item_url'] = u'/{}/{}/{}/'.format(collection_name, d['id'], tourldash(d['unicode']))
-            if 'ajax_item_url' not in d:
-                d['ajax_item_url'] = u'/ajax/{}/{}/'.format(collection_name, d['id'])
-            if 'full_item_url' not in d:
-                d['full_item_url'] = u'{}{}/{}/{}/'.format(
-                    django_settings.SITE_URL, collection_name, d['id'], tourldash(d['unicode']))
-            if 'http_item_url' not in d:
-                d['http_item_url'] = u'https:{}'.format(d['full_item_url']) if 'http' not in d['full_item_url'] else d['full_item_url']
-
-        # Set image url helpers
-        for image_field in getattr(self, u'_cache_{}_images'.format(field_name), []) + ['image']:
-            if image_field in d:
-                if u'{}_url'.format(image_field) not in d:
-                    d[u'{}_url'.format(image_field)] = get_image_url_from_path(d[image_field])
-                if u'http_{}_url'.format(image_field) not in d:
-                    d[u'http_{}_url'.format(image_field)] = get_http_image_url_from_path(d[image_field])
-
-
-        # Translated fields
-        language = get_language()
-        for k, v in d.items():
-            if isinstance(d.get(u'{}s'.format(k), None), dict):
-                if language == 'en':
-                    d['t_{}'.format(k)] = v
-                else:
-                    d['t_{}'.format(k)] = d[u'{}s'.format(k)].get(language, v)
+        # Get collection name
+        collection_name = getattr(self, u'_cached_{}_collection_name'.format(field_name), field_name)
+        # Get original model class for cached thing
+        try: model_class = self._meta.get_field(field_name).rel.to
+        except FieldDoesNotExist: model_class = None
+        model_class = getattr(self, u'_cache_{}_fk_class'.format(field_name), model_class)
+        # Get id
+        id = getattr(self, u'{}_id'.format(field_name), None) if model_class else None
+        # Get images fields
+        images_field_names = getattr(self, u'_cache_{}_images'.format(field_name), [])
+        # Call cache rel extra
+        d = cacheRelExtra(
+            d, CachedItem, id=id, collection_name=collection_name, model_class=model_class,
+            images_field_names=images_field_names,
+        )
         # Call extra if provided
         if hasattr(self, u'cached_{}_extra'.format(field_name)):
             getattr(self, u'cached_{}_extra'.format(field_name))(d)
@@ -438,8 +400,11 @@ class BaseMagiModel(models.Model):
         if d is None: return None
         if isinstance(d, list):
             d = map(lambda _d: self.cached_json_extra(field_name, _d), d)
-        else:
+        elif isinstance(d, dict):
             d = self.cached_json_extra(field_name, d)
+        else:
+            print 'Warning: Invalid JSON saved'
+            return None
         return d
 
     @classmethod
@@ -507,17 +472,21 @@ class BaseMagiModel(models.Model):
             raise NotImplementedError(u'to_cache_{f} method is required for {f} cache'.format(f=field_name))
         return to_cache_method()
 
-    def _update_cache(self, field_name, value):
-        setattr(self, u'_cache_{}_last_update'.format(field_name), timezone.now())
+    def _prepare_cache(self, field_name, value):
         if hasattr(self, '_cache_j_{}'.format(field_name)):
-            value = json.dumps(prepareCache(value)) if value else None
-            setattr(self, u'_cache_j_{}'.format(field_name), value)
+            return (u'_cache_j_{}'.format(field_name), json.dumps(
+                prepareCache(value), sort_keys=True) if value else None)
         elif hasattr(self, '_cache_c_{}'.format(field_name)):
-            value = join_data(*value) if value else None
-            setattr(self, u'_cache_c_{}'.format(field_name), value)
+            return (u'_cache_c_{}'.format(field_name), join_data(*value) if value else None)
         elif hasattr(self, '_cache_i_{}'.format(field_name)):
-            setattr(self, u'_cache_i_{}'.format(field_name), value)
-        setattr(self, u'_cache_{}'.format(field_name), value)
+            return (u'_cache_i_{}'.format(field_name), value)
+        return (u'_cache_{}'.format(field_name), value)
+
+    def _update_cache(self, field_name, value, prepared=False, cache_field_name=None):
+        setattr(self, u'_cache_{}_last_update'.format(field_name), timezone.now())
+        if not prepared:
+            cache_field_name, value = self._prepare_cache(field_name, value)
+        setattr(self, cache_field_name, value)
 
     def update_cache(self, field_name, save=False):
         self._update_cache(field_name, self._to_cache(field_name))
@@ -525,26 +494,28 @@ class BaseMagiModel(models.Model):
             self.save()
 
     def update_cache_if_changed(self, field_name, save=True):
-        current_value = getattr(self, u'cached_{}'.format(field_name))
         value = self._to_cache(field_name)
-        if not current_value and not value: # For fields that save empty strings when no value, like images
+        cache_field_name, prepared_value = self._prepare_cache(field_name, value)
+        current_value = getattr(self, cache_field_name)
+        # For fields that save empty strings when no value, like images
+        if not current_value and not prepared_value:
             return False
-        if current_value == value:
+        if current_value == prepared_value:
             return False
-        self._update_cache(field_name, value)
+        self._update_cache(field_name, prepared_value, prepared=True, cache_field_name=cache_field_name)
         if save:
             self.save()
         return True
 
     def update_caches_if_changed(self, field_names, save=True):
-        some_changed = False
+        caches_that_changed = []
         for field_name in field_names:
             changed = self.update_cache_if_changed(field_name, save=False)
             if changed:
-                some_changed = True
-        if some_changed and save:
+                caches_that_changed.append(field_name)
+        if caches_that_changed and save:
             self.save()
-        return some_changed
+        return caches_that_changed
 
     def force_update_cache(self, field_name):
         self.update_cache(field_name, save=True)
@@ -558,6 +529,72 @@ class BaseMagiModel(models.Model):
         if (getattr(self, u'_cache_{}_update_on_none'.format(field_name), False)
             and getattr(self, u'_cache_{}{}'.format(prefix, field_name)) is None):
             self.force_update_cache(field_name)
+        original_model_field = modelGetField(type(self), field_name)
+        if (original_model_field
+            and (isinstance(original_model_field, models.ForeignKey)
+                 or isinstance(original_model_field, models.OneToOneField))
+            and getattr(self, u'_cache_{}{}'.format(prefix, field_name)) is None
+            and getattr(self, u'{}_id'.format(field_name), None) is not None):
+            self.force_update_cache(field_name)
+
+    def update_all_related_caches(self, reload_m2m=True, update_reverse_related_caches=True):
+        related_caches = getattr(self, 'RELATED_CACHES', [])
+        if reload_m2m:
+            for cache_name in related_caches:
+                if isinstance(modelGetField(type(self), cache_name), models.ManyToManyField):
+                    getattr(self, cache_name).all()._result_cache = None
+        caches_that_changed = self.update_caches_if_changed(related_caches)
+        if django_settings.DEBUG and caches_that_changed:
+            print '  UPDATED CACHE', caches_that_changed
+        if not update_reverse_related_caches:
+            return
+        for rel_field_name, rel_cache_name, is_m2m in getattr(
+                self, 'REVERSE_RELATED_CACHES', []):
+            if modelHasField(type(self), rel_field_name):
+                if is_m2m:
+                    flag = False
+                    for rel_item in getattr(self, rel_field_name).all():
+                        changed = rel_item.update_cache_if_changed(rel_cache_name)
+                        if django_settings.DEBUG and changed:
+                            if not flag:
+                                print '  UPDATE CACHE REV', rel_field_name
+                                flag = True
+                            print '    ', failSafe(lambda: unicode(rel_item), default=rel_item.id)
+                else:
+                    rel_item = getattr(self, rel_field_name)
+                    if rel_item:
+                        changed = rel_item.update_cache_if_changed(rel_cache_name)
+                        if django_settings.DEBUG and changed:
+                            print '  UPDATE CACHE REV', rel_field_name
+                            print '    ', failSafe(lambda: unicode(rel_item), default=rel_item.id)
+            else:
+                rel_queryset = getattr(self, rel_field_name).all()
+                if is_m2m:
+                    rel_queryset = rel_queryset.prefetch_related(rel_cache_name)
+                else:
+                    rel_queryset = rel_queryset.select_related(rel_cache_name)
+                flag = False
+                for rel_item in rel_queryset:
+                    changed = rel_item.update_cache_if_changed(rel_cache_name)
+                    if django_settings.DEBUG and changed:
+                        if not flag:
+                            print '  UPDATE CACHE REV', rel_field_name
+                            flag = True
+                        print '    ', failSafe(lambda: unicode(rel_item), default=rel_item.id)
+
+    @classmethod
+    def update_all_related_caches_of_model(self, update_reverse_related_caches=True):
+        queryset = self.objects.all()
+        for cache_name in getattr(self, 'RELATED_CACHES', []):
+            field = modelGetField(self, cache_name)
+            if isinstance(field, models.ManyToManyField):
+                queryset = queryset.prefetch_related(cache_name)
+            else:
+                queryset = queryset.select_related(cache_name)
+        for item in queryset:
+            print self.__name__, failSafe(lambda: unicode(item), default=item.id)
+            item.update_all_related_caches(
+                reload_m2m=False, update_reverse_related_caches=update_reverse_related_caches)
 
     def get_thumbnail(self, field_name):
         thumbnail = getattr(self, u'_tthumbnail_{}'.format(field_name), None)
@@ -590,10 +627,11 @@ class BaseMagiModel(models.Model):
         Specify instance if you have one, allows to access properties.
         Set full_url=False if you're calling this from global context
         """
+        settings_from = instance if instance and not isinstance(instance, AttrDict) else self
         if i_value is not None:
             value = self.get_reverse_i(field_name, i_value)
         if not folder:
-            folder = getValueIfNotProperty(instance or self, u'{}_AUTO_IMAGES_FOLDER'.format(
+            folder = getValueIfNotProperty(settings_from, u'{}_AUTO_IMAGES_FOLDER'.format(
                 field_name.upper()), default=None)
         if not folder:
             if not original_field_name:
@@ -606,9 +644,9 @@ class BaseMagiModel(models.Model):
                         original_field_name = name_option
                         break
             folder = original_field_name
-        if getValueIfNotProperty(instance or self, u'{}_AUTO_IMAGES_FROM_I'.format(field_name.upper()), default=False):
+        if getValueIfNotProperty(settings_from, u'{}_AUTO_IMAGES_FROM_I'.format(field_name.upper()), default=False):
             value = self.get_i(field_name, value)
-        to_auto_images = getValueIfNotProperty(instance or self, u'to_{}_auto_images'.format(field_name))
+        to_auto_images = getValueIfNotProperty(settings_from, u'to_{}_auto_images'.format(field_name))
         if to_auto_images:
             value = to_auto_images(value)
         return staticImageURL(value, folder=folder, with_static_url=with_static_url)
@@ -726,17 +764,30 @@ class BaseMagiModel(models.Model):
                 or modelHasField(self, u'{}_{}'.format(language, field_name)))
         ]
 
-    def get_all_translations_of_field(self, field_name, include_english=True):
-        return OrderedDict([(l, t) for l, t in [
-            (language, self.get_translation(
+    def get_all_translations_of_field(self, field_name, include_english=True, unique=False):
+        translations = OrderedDict()
+        for language in self.get_field_translation_languages(
+                field_name, include_english=include_english):
+            if not include_english and language == 'en':
+                continue
+            translations[language] = self.get_translation(
                 field_name, language=language,
                 fallback_to_english=False,
                 fallback_to_other_sources=False,
                 return_language=False,
-            ))
-            for language in self.get_field_translation_languages(
-                    field_name, include_english=include_english)
-        ] if t])
+            )
+        if unique:
+            if include_english:
+                english_translation = translations['en']
+            else:
+                english_translation = self.get_translation(
+                    field_name, language='en', fallback_to_other_sources=False, return_language=False)
+            translations = OrderedDict([
+                (language, value)
+                for language, value in translations.items()
+                if value and (language == 'en' or english_translation != value)
+            ])
+        return translations
 
     def get_translation(
             self, field_name, language=None, fallback_to_english=True, fallback_to_other_sources=True,
@@ -1093,19 +1144,21 @@ def get_collection_plural_title(instance):
 # Transform an existing model to an MagiModel
 # Used for the User model
 
-def addMagiModelProperties(modelClass, collection_name):
+def addMagiModelProperties(modelClass, collection_name, only_properties=False):
     """
     Takes an existing Model class and adds the missing properties that would make it a proper MagiModel.
     Useful if you can't write a certain model yourself but you wish to use a MagiCollection for that model.
     Will not have the properties and tools provided by BaseMagiModel, except helpers for images, c_ and i_fields.
     """
-    modelClass.collection_name = collection_name
+    if not only_properties:
+        modelClass.collection_name = collection_name
     modelClass.collection = property(get_collection)
     modelClass.collection_plural_name = property(get_collection_plural_name)
     modelClass.collection_title = property(get_collection_title)
     modelClass.collection_plural_title = property(get_collection_plural_title)
-    modelClass.IS_PERSON = False
-    modelClass.has_item_view_permissions = has_item_view_permissions
+    if not only_properties:
+        modelClass.IS_PERSON = False
+        modelClass.has_item_view_permissions = has_item_view_permissions
     modelClass.item_url = property(get_item_url)
     modelClass.ajax_item_url = property(get_ajax_item_url)
     modelClass.full_item_url = property(get_full_item_url)
@@ -1122,21 +1175,178 @@ def addMagiModelProperties(modelClass, collection_name):
     modelClass.delete_sentence = property(get_delete_sentence)
     modelClass.report_sentence = property(get_report_sentence)
     modelClass.suggest_edit_sentence = property(get_suggest_edit_sentence)
-    modelClass.tinypng_settings = {}
+    if not only_properties:
+        modelClass.tinypng_settings = {}
 
-    modelClass.fk_as_owner = None
-    modelClass.selector_to_owner = classmethod(get_selector_to_owner)
-    modelClass.owners_queryset = classmethod(get_owners_queryset)
-    modelClass.owner_ids = classmethod(get_owner_ids)
-    modelClass.get_owner_from_pk = classmethod(get_owner_from_pk)
-    modelClass.allow_multiple_per_owner = classmethod(get_allow_multiple_per_owner)
-    modelClass.owner_model_class = classmethod(get_owner_model_class)
-    modelClass.owner_collection = classmethod(get_owner_collection)
-    modelClass.is_owner = get_is_owner
+    if not only_properties:
+        modelClass.fk_as_owner = None
+        modelClass.selector_to_owner = classmethod(get_selector_to_owner)
+        modelClass.owners_queryset = classmethod(get_owners_queryset)
+        modelClass.owner_ids = classmethod(get_owner_ids)
+        modelClass.get_owner_from_pk = classmethod(get_owner_from_pk)
+        modelClass.allow_multiple_per_owner = classmethod(get_allow_multiple_per_owner)
+        modelClass.owner_model_class = classmethod(get_owner_model_class)
+        modelClass.owner_collection = classmethod(get_owner_collection)
+        modelClass.is_owner = get_is_owner
     modelClass.owner_unicode = property(get_owner_unicode)
     modelClass.real_owner = property(get_real_owner)
-    modelClass.request = None
-    modelClass.d_unicodes = property(d_unicodes)
+    if not only_properties:
+        modelClass.request = None
+    modelClass.unicodes = property(unicodes)
+    modelClass.unicode = property(lambda _s: unicode(_s))
+
+############################################################
+# CachedItem: Set all properties so it behaves like a MagiModel
+
+class CachedItem(AttrDict):
+    """This class mimics some features of MagiModel"""
+    model_class = None
+    collection_name = None
+
+    def get_translation(
+            self, field_name, language=None,
+            fallback_to_english=True, fallback_to_other_sources=True, return_language=False,
+    ):
+        # Note: to_{}_translation was already called when the translated values were cached,
+        #       since MagiModel.get_translation gets called when caching translated fields.
+        if not language:
+            language = get_language()
+        ds = getattr(self, u'{}s'.format(field_name), {})
+        if language in ds:
+            return (language, ds[language]) if return_language else ds[language]
+        elif fallback_to_english:
+            return ('en', getattr(self, field_name)) if return_language else getattr(self, field_name)
+        elif fallback_to_other_sources:
+            for other_language in getattr(self, u'{}_SOURCE_LANGUAGES'.format(field_name.upper()), []):
+                if other_language in ds:
+                    return (other_language, ds[other_language]) if return_language else ds[other_language]
+        return None
+
+    def has_item_view_permissions(self, context={}):
+        if self.collection:
+            return has_item_view_permissions(self, context=context)
+        return False
+
+    def _attr_error(self, name):
+        raise AttributeError('CachedItem {} object has no attribute {}'.format(
+            self.model_class.__name__ if self.model_class else '', name))
+
+    def __getattr__(self, name):
+        original_name = name
+        # PROPERTIES IN MODEL CLASS
+        # Some properties like item_url & co are set below with addMagiModelProperties
+        # Properties + Classmethods retrieved with getValueIfNotProperty. ex: IS_PERSON, get_auto_image
+        if self.model_class:
+            value_from_model_class = getValueIfNotProperty(self.model_class, original_name, default=-1)
+            if value_from_model_class != -1:
+                return value_from_model_class
+
+        # PREFIXES
+        # When accessing "t_something", return the verbose value
+        # Note: Markdown (d_m_) and Dicts (d_) are not supported at the moment.
+        if name.startswith('t_'):
+            name = name[2:]
+            # For a i_choice
+            if self.model_class and hasattr(self, 'i_{name}'.format(name=name)):
+                return self.model_class.get_verbose_i(name, getattr(self, 'i_{name}'.format(name=name)))
+            # For a CSV value: return dict {value: translated value}
+            elif self.model_class and hasattr(self, 'c_{name}'.format(name=name)):
+                return self.model_class.get_csv_values(name, getattr(self, name), translated=True)
+            # Regular fields translations
+            elif hasattr(self, name):
+                return self.get_translation(name)
+            return self._attr_error(original_name)
+        # When accessing "has_something" and "i_something" exists
+        if name.startswith('has_'):
+            name = name[4:]
+            # For a i_choice
+            if hasattr(self, 'i_{name}'.format(name=name)):
+                return getattr(self, 'i_{name}'.format(name=name)) is not None
+            return self._attr_error(original_name)
+
+        # SUFFIXES
+        # When accessing "something_image"
+        if (self.model_class and name.endswith('_image')
+            and getattr(self, '{}_AUTO_IMAGES'.format(name[:-6].upper()), False)):
+            return self.model_class.get_auto_image(name[:-6], getattr(self, name[:-6]), instance=self)
+        # When accessing "something_url"
+        elif name.endswith('_url'):
+            original_image_value = getattr(self, name.replace('http_', '')[:-4])
+            if name.startswith('http_'):
+                return get_http_image_url_from_path(original_image_value)
+            return get_image_url_from_path(original_image_value)
+
+        # WITHOUT PREFIX
+        # Note: Markdown (m_) and Dicts (d_) are not supported at the moment.
+        for prefix in ['_', 'i_', 'c_', 'd_', 'm_', 'j_']:
+            if name.startswith(prefix):
+                return self._attr_error(original_name)
+        # When accessing "something" and "i_something exists, return the readable key for the choice
+        if self.model_class and hasattr(self, u'i_{name}'.format(name=name)):
+            return self.model_class.get_reverse_i(name, getattr(self, u'i_{name}'.format(name=name)))
+        # When accessing "something" and "c_something" exists, returns the list of CSV values
+        elif self.model_class and hasattr(self, 'c_{name}'.format(name=name)):
+            return self.model_class.get_csv_values(
+                name, getattr(self, 'c_{name}'.format(name=name)), translated=False)
+        return self._attr_error(original_name)
+
+    def __unicode__(self):
+        language = get_language()
+        id = self.__dict__.get('id', None)
+        return (
+            getTranslatedName(self.__dict__, field_name='unicode', language=language)
+            or getTranslatedName(self.__dict__, field_name='name', language=language)
+            or (u'#{}'.format(id) if id else None)
+            or u'cached {}'.format(failSafe(lambda: self.model_class.__name__, exceptions=[
+                AttributeError ], default=u'item'))
+        )
+
+addMagiModelProperties(CachedItem, None, only_properties=True)
+
+############################################################
+# Add MagiModel properties to User objects
+
+def avatar(user, size=200):
+    """
+    Preferences in user objects must always be prefetched
+    """
+    default = staticImageURL('avatar.png', full=True)
+    if (getattr(django_settings, 'DEBUG', False)
+        and getattr(django_settings, 'UPLOADED_FILES_URL', None)):
+        default = staticImageURL('avatar.png', static_url=u'{}{}static/'.format(
+            'https:' if 'http' not in django_settings.UPLOADED_FILES_URL else '',
+            django_settings.UPLOADED_FILES_URL,
+        ))
+    if hasattr(django_settings, 'DEBUG_AVATAR'):
+        default = django_settings.DEBUG_AVATAR
+    if user.preferences.twitter:
+        default = u'{}twitter_avatar/{}/'.format(
+            django_settings.SITE_URL
+            if django_settings.SITE_URL.startswith('http')
+            else 'https:' + django_settings.SITE_URL, user.preferences.twitter,
+        )
+    return 'https://www.gravatar.com/avatar/{}?{}'.format(
+        hashlib.md5(user.email.lower()).hexdigest(),
+        urllib.urlencode({'d': default, 's': str(size)}),
+    )
+
+addMagiModelProperties(User, 'user')
+User.IS_PERSON = True
+User.image = property(avatar)
+User.image_url = property(avatar)
+User.http_image_url = property(avatar)
+User.owner_id = property(lambda u: u.id)
+User.owner = property(lambda u: u)
+User.report_sentence = property(lambda u: _('Report {thing}').format(thing=u.username))
+User.hasGroup = lambda u, group: hasGroup(u, group)
+User.hasPermission = lambda u, permission: hasPermission(u, permission)
+User.hasOneOfPermissions = lambda u, permissions: hasOneOfPermissions(u, permissions)
+User.hasPermissions = lambda u, permissions: hasPermissions(u, permissions)
+User.image_for_prefetched = -1 # Always display usernames when showing prefetched users
+User.text_image_for_prefetched = property(avatar)
+
+User.birthday_url = property(lambda u: birthdayURL(u))
+User.hasPermissionToMessage = hasPermissionToMessage
 
 ############################################################
 # MagiModel

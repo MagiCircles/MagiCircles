@@ -724,7 +724,7 @@ LAST_SERVER_RESTART = timezone.now()
 # For backgrounds
 
 def _toBackgroundNameLambda(_b):
-    return lambda: _b.get('d_names', {}).get(get_language(), _b.get('name', None))
+    return lambda: _b.get('names', {}).get(get_language(), _b.get('name', None))
 
 HOMEPAGE_BACKGROUNDS_IMAGES = OrderedDict([
     (_b['id'], _b['image'])

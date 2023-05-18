@@ -470,7 +470,7 @@ DEFAULT_GROUPS = [
                     required=False, label=_('Languages'), choices=LANGUAGES_DICT.items(),
                 ),
                 'to_t_value': lambda _value: u', '.join([
-                    unicode(LANGUAGES_DICT.get(_l, _l)) for _l in _value
+                    unicode(LANGUAGES_DICT.get(_l, _l)) for _l in (_value or [])
                 ]),
             },
         },
