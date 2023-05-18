@@ -2303,6 +2303,23 @@ def validateTemplate(template, valid_variables, raise_error=True, raise_error_on
             return unknown_variables
     return True
 
+@deconstructible
+class TemplateValidator(object):
+    def __init__(self, valid_variables):
+        self.valid_variables = valid_variables
+
+    def __call__(self, template):
+        return validateTemplate(template, self.valid_variables, raise_error=True)
+
+    def __eq__(self, other):
+        return (
+            isinstance(other, TemplateValidator)
+            and other.valid_variables == self.valid_variables
+        )
+
+    def __ne__(self, other):
+        return not (self == other)
+
 def oldStyleTemplateVariables(string):
     return [ s for s in [ s.split(')s')[0] if ')s' in s else None for s in  string.split('%(')[1:] ] if s ]
 

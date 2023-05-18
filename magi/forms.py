@@ -1318,9 +1318,10 @@ def to_translate_form_class(view):
                         fallback_to_other_sources=False) or None)
                     for language in source_languages
                 ])
+                model_field = modelGetField(self.Meta.model, field_name)
                 # Add validators from original field
                 validators = getattr(self.collection, 'form_details', {}).get(
-                    field_name, {}).get('validators', [])
+                    field_name, {}).get('validators', []) + getattr(model_field, 'validators', [])
 
                 # Add a language help text on top of each field
                 # with the list of sources + "Source" + "No value"
