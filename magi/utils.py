@@ -2301,7 +2301,7 @@ def validateTemplate(template, valid_variables, raise_error=True, raise_error_on
                     raise ValidationError({ raise_error_on_field_name: [ error ] })
                 raise ValidationError(error)
             return unknown_variables
-    return True
+    return []
 
 @deconstructible
 class TemplateValidator(object):
