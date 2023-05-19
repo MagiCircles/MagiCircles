@@ -1838,6 +1838,10 @@ class MagiFiltersForm(AutoForm):
                                 for key, verbose in getCharactersChoices(characters_key)
                                 if key in cached_choices
                             ]
+                            changeFormField(
+                                self, field_name, forms.ChoiceField, force_add=False,
+                                new_parameters={ 'choices': self.fields[field_name].choices },
+                            )
                             continue
                     # 2/ or Choices from cached dict
                     if isinstance(cached_choices, dict):
@@ -1845,6 +1849,11 @@ class MagiFiltersForm(AutoForm):
                             (key, getTranslatedName(details))
                             for key, details in cached_choices.items()
                         ]
+                        if isinstance(self.fields[field_name], forms.ModelChoiceField):
+                            changeFormField(
+                                self, field_name, forms.ChoiceField, force_add=False,
+                                new_parameters={ 'choices': self.fields[field_name].choices },
+                            )
                         continue
                     # 3/ or Choices from Null boolean
                     if isinstance(self.fields[field_name], forms.NullBooleanField):

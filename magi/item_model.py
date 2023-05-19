@@ -29,7 +29,6 @@ from magi.utils import (
     getValueIfNotProperty,
     getVerboseLanguage,
     getLanguageImage,
-    getTranslatedName,
     getWesternName,
     cacheRelExtra,
     modelGetField,
@@ -1211,11 +1210,12 @@ class CachedItem(AttrDict):
         #       since MagiModel.get_translation gets called when caching translated fields.
         if not language:
             language = get_language()
-        ds = getattr(self, u'{}s'.format(field_name), {})
+        ds = self.__dict__.get(u'{}s'.format(field_name), {})
         if language in ds:
             return (language, ds[language]) if return_language else ds[language]
-        elif fallback_to_english:
-            return ('en', getattr(self, field_name)) if return_language else getattr(self, field_name)
+        elif language == 'en' or fallback_to_english:
+            english_value = self.__dict__.get(field_name, None)
+            return ('en', english_value) if return_language else english_value
         elif fallback_to_other_sources:
             for other_language in getattr(self, u'{}_SOURCE_LANGUAGES'.format(field_name.upper()), []):
                 if other_language in ds:
@@ -1294,8 +1294,8 @@ class CachedItem(AttrDict):
         language = get_language()
         id = self.__dict__.get('id', None)
         return (
-            getTranslatedName(self.__dict__, field_name='unicode', language=language)
-            or getTranslatedName(self.__dict__, field_name='name', language=language)
+            self.get_translation('unicode', language=language)
+            or self.get_translation('name', language=language)
             or (u'#{}'.format(id) if id else None)
             or u'cached {}'.format(failSafe(lambda: self.model_class.__name__, exceptions=[
                 AttributeError ], default=u'item'))

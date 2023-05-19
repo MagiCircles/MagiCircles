@@ -1388,6 +1388,9 @@ class DonationMonth(MagiModel):
 
 class Badge(MagiModel):
     collection_name = 'badge'
+    DEFER_IN_LIST_VIEW = [
+        'm_description', '_cache_description',
+    ]
 
     date = models.DateField(default=datetime.datetime.now)
     owner = models.ForeignKey(User, related_name='badges_created')

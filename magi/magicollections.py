@@ -2295,6 +2295,7 @@ class MagiCollection(object):
         fields_class = property(propertyFromCollection('fields_class'))
         fields_icons = {}
         fields_images = {}
+        fields_preselected_subfields = {}
         item_buttons_classes = property(propertyFromCollection('item_buttons_classes'))
         show_item_buttons = property(propertyFromCollection('show_item_buttons'))
         show_item_buttons_justified = property(propertyFromCollection('show_item_buttons_justified'))
@@ -2755,7 +2756,7 @@ class MagiCollection(object):
         fields_icons = {}
         fields_images = {}
         fields_preselected = []
-        fields_preselected_subfields = {}
+        fields_preselected_subfields = property(propertyFromCollection('fields_preselected_subfields'))
         fields_prefetched = []
         fields_prefetched_together = []
         fields_suggest_edit = []

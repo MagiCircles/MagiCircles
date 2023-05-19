@@ -368,6 +368,13 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
         queryset = context['alt_view']['filter_queryset'](queryset)
 
     ######################
+    # Defer fields
+
+    defer_fields = getattr(queryset.model, 'DEFER_IN_LIST_VIEW', [])
+    if defer_fields:
+        queryset = queryset.defer(*defer_fields)
+
+    ######################
     # Form
 
     if collection.list_view.filter_form:

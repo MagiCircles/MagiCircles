@@ -3520,6 +3520,11 @@ def addRelatedCaches(model_class, caches):
             if character_key:
                 setattr(model_class, u'cached_{}_pre'.format(
                     cache_name), classmethod(_addRelatedCaches_cache_pre_for_characters(character_key)))
+        # Defer in list
+        if details.get('defer_in_list_view', False):
+            if not getattr(model_class, 'DEFER_IN_LIST_VIEW', []):
+                model_class.DEFER_IN_LIST_VIEW = []
+            model_class.DEFER_IN_LIST_VIEW.append(cache_field_name)
         image_for_prefetched = details.get('image_for_prefetched', None)
         text_image_for_prefetched = details.get('text_image_for_prefetched', None)
         # Add pre for users
