@@ -1231,8 +1231,19 @@ class CachedItem(AttrDict):
         raise AttributeError('CachedItem {} object has no attribute {}'.format(
             self.model_class.__name__ if self.model_class else '', name))
 
+    def __getitem__(self, name):
+        # Some old code might still try to access cached details using the dict syntax:
+        # card.cached_idol['http_item_url'] instead of card.cached_idol.http_item_url
+        # This ensures it doesn't fail on existing properties
+        return getattr(self, name)
+
     def __getattr__(self, name):
         original_name = name
+
+        # Reserved names
+        if original_name in KNOWN_ITEM_PROPERTIES:
+            return self._attr_error(original_name)
+
         # PROPERTIES IN MODEL CLASS
         # Some properties like item_url & co are set below with addMagiModelProperties
         # Properties + Classmethods retrieved with getValueIfNotProperty. ex: IS_PERSON, get_auto_image

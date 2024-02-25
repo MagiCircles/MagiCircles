@@ -157,6 +157,7 @@ class MagiDisplay(object):
         'classes': [],
         'attributes': {},
         'spread_across': False,
+        'spread_across_on_small_screens': False,
         'text_align': None,
         'annotation': None,
     }
@@ -359,8 +360,8 @@ class MagiDisplay(object):
         # Before: '<span><i class="flaticon-{icon}"> {display_value}</span>'
         # After:  '<span><i class="flaticon-idol"> Kousaka Honoka</span>'
 
-        html = markSafeFormat(template, **parameters)
         # Step 6: apply parameters to template
+        html = markSafeFormat(template, **parameters)
         return html
 
     def html_for_list_or_dict(self, parameter_name, parameter_value, parameters_templates, parameters):

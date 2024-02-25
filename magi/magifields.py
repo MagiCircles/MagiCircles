@@ -1596,14 +1596,14 @@ class MagiMainImageFieldMixin(object):
 
     @property
     def link(self):
-        if (self.options.table_view
+        if (self.options.table_fields
             and self.collection.item_view.enabled):
             return self.item.item_url
         return None
 
     @property
     def ajax_link(self):
-        if (self.options.table_view
+        if (self.options.table_fields
             and self.collection.item_view.enabled
             and self.collection.item_view.ajax):
             return self.item.ajax_item_url
@@ -2558,6 +2558,40 @@ class MagiUnicodeField(MagiField):
     def has_value(self):
         return True
 
+    ############################################################
+    # Display
+
+    @property
+    def display_class(self):
+        if self._has_link():
+            return MagiDisplayLink
+        return MagiDisplayText
+
+    @property
+    def link(self):
+        return self.item.item_url
+
+    @property
+    def ajax_link(self):
+        if self.collection.item_view.ajax:
+            return self.item.ajax_item_url
+        return None
+
+    @property
+    def ajax_link_title(self):
+        return self.item
+
+    link_classes = [ 'a-nodifference' ]
+
+    ############################################################
+    # Internal
+
+    def _has_link(self):
+        return (
+            self.options.table_fields
+            and self.collection.item_view.enabled
+        )
+
 ############################################################
 # Empty field
 
@@ -3332,7 +3366,7 @@ class MagiManyToManyModelField(BaseMagiManyToManyModelField):
             )
             rel_item._magimanytomanyfield_item_url = (
                 getattr(rel_item, 'item_url', None)
-                if rel_item.has_item_view_permissions()
+                if failSafe(lambda: rel_item.has_item_view_permissions(), exceptions=[ AttributeError ])
                 else None
             )
             if not rel_item._magimanytomanyfield_image:

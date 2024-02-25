@@ -1202,8 +1202,8 @@ class MagiCollection(object):
             'ajax_modal_only' if ajax else '',
         )
 
-    def to_magifields(self, view, item, context):
-        return view.fields_class(view, item, context)
+    def to_magifields(self, view, item, context, **kwargs):
+        return view.fields_class(view, item, context, **kwargs)
 
     def _get_value_from_display_property(self, view, item, field_name):
         value = None
@@ -1951,9 +1951,9 @@ class MagiCollection(object):
             key = 'FAVORITE_CHARACTERS'
         elif self.list_view.is_other_characters_model:
             key = self.list_view.is_other_characters_model
-        if (key
+        if (request and key
             and ((view.view == 'list_view' and context.get('view', None) == 'set_favorite_character')
-                 or (view.view == 'item_view' and isValidCharacterPk(context['item'].pk, key=key)))):
+                 or (view.view == 'item_view' and isValidCharacterPk(item.pk, key=key)))):
             current_favorites = getCharactersUsersFavorites(request.user)
             label = getCharactersFavoriteFieldLabel(key=key)
             total_favoritable = getCharactersTotalFavoritable(key=key)
@@ -1990,7 +1990,7 @@ class MagiCollection(object):
                 # Show only 1 button
                 if total_favoritable == 1 or view.show_item_buttons_as_icons:
                     set_base_button('set_favorite_character')
-                    nth = request.GET.get('nth', None) if total_favoritable != 1 and request else None
+                    nth = request.GET.get('nth', None) if total_favoritable != 1 else None
                     if nth:
                         url = u'/set_favorite_character/{}/{}/{}/'.format(key, item.pk, request.GET['nth'])
                         label = _(ordinalNumber(int(nth)))
@@ -2021,7 +2021,7 @@ class MagiCollection(object):
                 # Show 1 button per nth
                 else:
                     for nth in range(1, total_favoritable + 1):
-                        if request and request.GET.get('nth', None) and request.GET['nth'] != unicode(nth):
+                        if request.GET.get('nth', None) and request.GET['nth'] != unicode(nth):
                             continue
                         button_name = u'set_favorite_character-{}'.format(nth)
                         set_base_button(button_name)
@@ -2212,7 +2212,7 @@ class MagiCollection(object):
 
     def get_buttons_classes(self, buttons_classes, request, context, item=None, size=None, block=None, color=None):
         new_buttons_classes = []
-        color = color or request.GET.get('buttons_color', None)
+        color = color or (request.GET.get('buttons_color', None) if request else None)
         has_size = False
         for cls in buttons_classes:
             if color:
@@ -2295,7 +2295,7 @@ class MagiCollection(object):
         fields_class = property(propertyFromCollection('fields_class'))
         fields_icons = {}
         fields_images = {}
-        fields_preselected_subfields = {}
+        fields_preselected_subfields = property(propertyFromCollection('fields_preselected_subfields'))
         item_buttons_classes = property(propertyFromCollection('item_buttons_classes'))
         show_item_buttons = property(propertyFromCollection('show_item_buttons'))
         show_item_buttons_justified = property(propertyFromCollection('show_item_buttons_justified'))
@@ -2349,15 +2349,16 @@ class MagiCollection(object):
         def buttons_per_item(self, *args, **kwargs):
             return self.collection.buttons_per_item(self, *args, **kwargs)
 
-        def to_magifields(self, item, context):
-            return self.collection.to_magifields(self, item, context)
+        def to_magifields(self, item, context, **kwargs):
+            return self.collection.to_magifields(self, item, context, **kwargs)
 
-        def to_magi_ordering_fields(self, item, context, ordering_fields=[]):
-            return self.ordering_fields_class(self, item, context, ordering_fields=ordering_fields)
+        def to_magi_ordering_fields(self, item, context, ordering_fields=[], **kwargs):
+            return self.ordering_fields_class(
+                self, item, context, ordering_fields=ordering_fields, **kwargs)
 
-        def to_magi_table_fields(self, item, context, table_fields=[]):
+        def to_magi_table_fields(self, item, context, table_fields=[], **kwargs):
             return self.table_fields_class(
-                self, item, context, table_fields=table_fields,
+                self, item, context, table_fields=table_fields, **kwargs
             )
 
         # Deprecated
@@ -2808,8 +2809,8 @@ class MagiCollection(object):
                     self, queryset=queryset, request=request), request=request),
                 parameters=parameters, request=request)
 
-        def to_magifields(self, item, context):
-            return self.collection.to_magifields(self, item, context)
+        def to_magifields(self, item, context, **kwargs):
+            return self.collection.to_magifields(self, item, context, **kwargs)
 
         # Deprecated
         def to_fields(self, *args, **kwargs):

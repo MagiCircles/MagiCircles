@@ -1,7 +1,7 @@
 {% if uses_deprecated_to_fields %}
 {% include 'include/deprecated_fields_table.html' %}
 {% else %}
-<div class="flex-table with-top-border about-flex-table" role="table">
+<div class="flex-table {% if in_list %}with-bottom-border{% else %}with-top-border{% endif %} about-flex-table" role="table">
     {% for field_name, field in fields.items %}
     {% if field.display_field %}
     {% for html, display_parameters, buttons_html, is_multifield in field.html %}{# for multifields #}
@@ -38,7 +38,7 @@
 
       {# Content td #}
 
-      <div class="flex-td about-flex-td-content flex-collapse-sm {% if display_parameters.spread_across %}spread-across{% endif %}">
+      <div class="flex-td about-flex-td-content {% if display_parameters.collapse_sm %}flex-collapse-sm{% endif %} {% if display_parameters.spread_across %}spread-across{% endif %} {% if display_parameters.spread_across_on_small_screens %}spread-across-on-small-screens{% endif %}">
         {% if display_parameters.spread_across %}
         <strong class="verbose-name hidden-xs long-text-title">{{ display_parameters.verbose_name }}</strong>
         {% endif %}

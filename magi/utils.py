@@ -3528,14 +3528,14 @@ def addRelatedCaches(model_class, caches):
         image_for_prefetched = details.get('image_for_prefetched', None)
         text_image_for_prefetched = details.get('text_image_for_prefetched', None)
         # Add pre for users
-        if rel_model_class and rel_model_class.__name__ == 'User':
+        if not as_html and rel_model_class and rel_model_class.__name__ == 'User':
             if not image_for_prefetched:
                 image_for_prefetched = lambda _item, _d: -1
                 text_image_for_prefetched = lambda _item, _d: _d.image_url
             setattr(model_class, u'cached_{}_pre'.format(cache_name), classmethod(
                 _addRelatedCaches_cache_pre_for_user))
         # Add extra to add image_for_prefetched if set
-        if image_for_prefetched or text_image_for_prefetched:
+        if not as_html and (image_for_prefetched or text_image_for_prefetched):
             setattr(model_class, u'cached_{}_extra'.format(cache_name), classmethod(
                 _addRelatedCaches_cache_extra_image_for_prefetched(
                     image_for_prefetched, text_image_for_prefetched)))
@@ -5015,10 +5015,12 @@ def _markSafeFormatEscapeOrNot(string):
 
 def markSafeFormat(string, *args, **kwargs):
     """The first string doesn't need to be marked safe, it's assumed safe"""
+    template_variables = templateVariables(string)
     return mark_safe(string.format(*[
         _markSafeFormatEscapeOrNot(arg) for arg in args
     ], **{
         key: _markSafeFormatEscapeOrNot(value) for key, value in kwargs.items()
+        if key in template_variables
     }))
 
 def markSafeReplace(string, replace_from, replace_to):
@@ -5318,7 +5320,9 @@ def artSettingsToGetParameters(settings):
             for pk, pv in v.items():
                 parameters['position_{}_preview'.format(pk)] = pv
         elif k == 'url':
-            parameters['preview'] = urllib.quote(staticImageURL(v).encode('utf8'))
+            preview = staticImageURL(v)
+            if v:
+                parameters['preview'] = urllib.quote(v.encode('utf8'))
         elif k == 'foreground_url':
             parameters['foreground_preview'] = urllib.quote(staticImageURL(v).encode('utf8'))
         else:
