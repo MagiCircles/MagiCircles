@@ -3528,14 +3528,14 @@ def addRelatedCaches(model_class, caches):
         image_for_prefetched = details.get('image_for_prefetched', None)
         text_image_for_prefetched = details.get('text_image_for_prefetched', None)
         # Add pre for users
-        if not as_html and rel_model_class and rel_model_class.__name__ == 'User':
+        if rel_model_class and rel_model_class.__name__ == 'User':
             if not image_for_prefetched:
                 image_for_prefetched = lambda _item, _d: -1
                 text_image_for_prefetched = lambda _item, _d: _d.image_url
             setattr(model_class, u'cached_{}_pre'.format(cache_name), classmethod(
                 _addRelatedCaches_cache_pre_for_user))
         # Add extra to add image_for_prefetched if set
-        if not as_html and (image_for_prefetched or text_image_for_prefetched):
+        if image_for_prefetched or text_image_for_prefetched:
             setattr(model_class, u'cached_{}_extra'.format(cache_name), classmethod(
                 _addRelatedCaches_cache_extra_image_for_prefetched(
                     image_for_prefetched, text_image_for_prefetched)))
