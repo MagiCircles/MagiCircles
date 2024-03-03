@@ -1258,7 +1258,7 @@ def to_translate_form_class(view):
             formatted_sources = [
                 markSafeFormat(
                     u"""<span class="label label-info">{language_verbose}</span>
-                    <span lang="{language}">{value}</span>""",
+                    <span lang="{language}" style="white-space: pre-line;">{value}</span>""",
                     language=source_language,
                     language_verbose=getVerboseLanguage(source_language),
                     value=(
