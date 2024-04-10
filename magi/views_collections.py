@@ -33,6 +33,7 @@ from magi.utils import (
     plainOrdering,
     getOwnerFromItem,
     markSafeFormat,
+    getGetStartedDetails,
 )
 from magi.forms import ConfirmDelete, filter_ids
 
@@ -707,9 +708,23 @@ def list_view(request, name, collection, ajax=False, extra_filters={}, shortcut_
     # Get started
     context['get_started'] = 'get_started' in filters
     if context['get_started']:
-        context['show_small_title'] = False
-        context['show_search_results'] = False
-        context['before_template'] = 'include/getstarted'
+        # Get started details
+        context['display_get_started_markdown'], context['display_get_started_video'] = getGetStartedDetails(request)
+        for collectible_collection in collection.collectible_collections.values():
+            if collectible_collection.queryset.model.fk_as_owner != 'account':
+                continue
+            account_id = filters.get(u'add_to_{}'.format(collectible_collection.name), None)
+            if not account_id:
+                continue
+            context['display_get_started_markdown'], context['display_get_started_video'] = getGetStartedDetails(
+                request, account_id)
+            break
+        if context['display_get_started_markdown']:
+            context['show_small_title'] = False
+            context['show_search_results'] = False
+            context['before_template'] = 'include/getstarted'
+
+        # Share after done adding
         context['share_collection_sentence'] = _('Share your {things}!').format(
             things=unicode(collection.plural_title).lower())
         context['after_template'] = 'include/afterGetStarted'
@@ -968,6 +983,45 @@ def add_view(request, name, collection, type=None, ajax=False, shortcut_url=None
         context['ajax'] = True
     return render(request, 'collections/modification_view.html', context)
 
+# Select type
+
+def add_view_select_type(request, name, collection, type=None, ajax=False, shortcut_url=None, **kwargs):
+    context = collection.add_view.get_global_context(request)
+    collection.add_view.check_permissions(request, context)
+    _redirect_on_high_traffic(collection.add_view, request, ajax=ajax)
+    context = _modification_view(context, name, collection.add_view, ajax)
+    context['share_image'] = _get_share_image(context, collection.add_view)
+
+    # Title and prefixes
+    title_prefixes, h1 = collection.add_view.get_h1_title(request, context, type=type)
+    _add_h1_and_prefixes_to_context(collection.add_view, context, title_prefixes, h1, get_page_title_parameters={
+        'type': type, })
+
+    # Types
+    top_buttons_classes = [
+        cls for cls in collection.list_view.get_top_buttons_classes(request, context, block=False)
+        if cls != 'btn-block'
+    ] + [ 'margin10' ]
+    context['type_buttons'] = OrderedDict([
+        (type, {
+            'classes': top_buttons_classes,
+            'url': collection.get_add_url(ajax=False, type=type),
+            'ajax_url': collection.get_add_url(ajax=True, type=type) if ajax else None,
+            'icon': type_details.get('icon', None),
+            'image': type_details.get('image', None),
+            'title': type_details.get('title', type),
+        }) for type, type_details in collection.types.items()
+        if (type_details.get('show_button', True)
+            and collection.add_view.has_type_permissions(request, context, type=type))
+    ])
+
+    if ajax:
+        context['include_template'] = 'collections/add_view_select_type'
+        context['extends'] = 'ajax.html'
+        context['ajax'] = True
+
+    return render(request, 'collections/add_view_select_type.html', context)
+
 ############################################################
 # Edit view
 
@@ -990,6 +1044,7 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
     instance = get_one_object_or_404(queryset, **collection.edit_view.get_item(request, pk))
     context['type'] = None
     collection.edit_view.check_owner_permissions(request, context, instance)
+    type = None
     if context['is_translate']:
         formClass = collection.edit_view.translate_form_class
         context['icontitle'] = 'translate'
@@ -1025,10 +1080,10 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
             collection.edit_view.after_delete(request)
             raise HttpRedirectException(redirectURL)
         else:
-            form = formClass(instance=instance, request=request, ajax=ajax, collection=collection, allow_next=collection.edit_view.allow_next)
+            form = formClass(instance=instance, request=request, ajax=ajax, collection=collection, allow_next=collection.edit_view.allow_next, type=type)
     # Edit form
     elif request.method == 'POST':
-        form = formClass(request.POST, request.FILES, instance=instance, request=request, ajax=ajax, collection=collection, allow_next=collection.edit_view.allow_next)
+        form = formClass(request.POST, request.FILES, instance=instance, request=request, ajax=ajax, collection=collection, allow_next=collection.edit_view.allow_next, type=type)
         if form.is_valid():
             instance = form.save(commit=False)
             instance = collection.edit_view.before_save(request, instance)
@@ -1050,7 +1105,7 @@ def edit_view(request, name, collection, pk, extra_filters={}, ajax=False, short
                 'thing_to_delete': instance.pk,
             }, request=request, instance=instance, collection=collection)
     else:
-        form = formClass(instance=instance, request=request, ajax=ajax, collection=collection, allow_next=collection.edit_view.allow_next)
+        form = formClass(instance=instance, request=request, ajax=ajax, collection=collection, allow_next=collection.edit_view.allow_next, type=type)
         if allowDelete:
             formDelete = ConfirmDelete(initial={
                 'thing_to_delete': instance.pk,

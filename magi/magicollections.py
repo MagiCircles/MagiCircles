@@ -33,6 +33,7 @@ from magi.utils import (
     getNavbarPrefix,
     getNavbarHeaderPrefixForCollection,
     getAccountIdsFromSession,
+    getAccountTypesFromSession,
     setSubField,
     hasPermission,
     hasPermissions,
@@ -100,6 +101,7 @@ from magi.settings import (
     ON_PREFERENCES_EDITED,
     ACCOUNT_TAB_ORDERING,
     FIRST_COLLECTION,
+    FIRST_COLLECTION_PER_ACCOUNT_TYPE,
     GLOBAL_OUTSIDE_PERMISSIONS,
     HOME_ACTIVITY_TABS,
     LANGUAGES_CANT_SPEAK_ENGLISH,
@@ -428,10 +430,14 @@ class MagiCollection(object):
                             # Load 1 extra as a way to check if there's more or not
                             prefetched_items = failSafe(lambda: list(queryset_of_prefetched[:max + 1]), exceptions=[ TypeError ])
                             if prefetched_items is not None:
+                                has_more = False
+                                if len(prefetched_items) > max:
+                                    has_more = True
+                                    prefetched_items = prefetched_items[:-1]
                                 prefetched_with_max_querysets[prefetched] = queryset_of_prefetched
                                 if not hasattr(request, '_prefetched_with_max'):
                                     request._prefetched_with_max = {}
-                                request._prefetched_with_max[prefetched] = (prefetched_items, max)
+                                request._prefetched_with_max[prefetched] = (prefetched_items, max, has_more)
                                 continue
                             else:
                                 prefetched_with_max_querysets[prefetched] = None
@@ -477,7 +483,6 @@ class MagiCollection(object):
         if request.user.is_authenticated() and self.collectible_collections:
             if not getattr(request, 'show_collect_button', False):
                 return queryset
-            account_ids = getAccountIdsFromSession(request)
             for name, collection in self.collectible_collections.items():
                 if (not collection.add_view.enabled
                     or (isinstance(request.show_collect_button, dict)
@@ -501,7 +506,13 @@ class MagiCollection(object):
                         else:
                             # Get the first one in the list
                             if collection.queryset.model.fk_as_owner == 'account':
-                                all_fk_owner_ids = getAccountIdsFromSession(request)
+                                if collection.collectible_limit_to_account_types is not None:
+                                    all_fk_owner_ids = [
+                                        account_id for account_id, type_ in getAccountTypesFromSession(request).items()
+                                        if type_ in collection.collectible_limit_to_account_types
+                                    ]
+                                else:
+                                    all_fk_owner_ids = getAccountIdsFromSession(request)
                             else:
                                 all_fk_owner_ids = collection.queryset.model.owner_ids(request.user)
                             try:
@@ -591,9 +602,17 @@ class MagiCollection(object):
                                     item_field_name,
                                 ): self.item_id
                             })
-                        self.fields[model_class.fk_as_owner].choices = [
-                            (c.pk, unicode(c)) for c in filtered_queryset
-                        ]
+                        # Choices
+                        # Exclude limited account types
+                        if self.collection and self.collection.collectible_limit_to_account_types is not None:
+                            self.fields[model_class.fk_as_owner].choices = [
+                                (c.pk, unicode(c)) for c in filtered_queryset
+                                if c.type in self.collection.collectible_limit_to_account_types
+                            ]
+                        else:
+                            self.fields[model_class.fk_as_owner].choices = [
+                                (c.pk, unicode(c)) for c in filtered_queryset
+                            ]
                         total_choices = len(self.fields[model_class.fk_as_owner].choices)
                         if total_choices == 0:
                             if self.collection and self.collection.add_view.unique_per_owner:
@@ -685,6 +704,9 @@ class MagiCollection(object):
                     for _o, _t in getattr(parent_collection.list_view.filter_form, 'ordering_fields', [])
                 ]
 
+            def _to_cuteform_for_i_choices(self, to_cuteform, field_name):
+                return lambda key, value: to_cuteform(key, parent_collection.queryset.model.get_reverse_i(field_name[2:], key), value)
+
             def __init__(self, *args, **kwargs):
                 super(_CollectibleFilterForm, self).__init__(*args, **kwargs)
                 self.fields['owner'] = forms.forms.IntegerField(required=False, widget=forms.forms.HiddenInput)
@@ -731,6 +753,9 @@ class MagiCollection(object):
                     )
                     if cuteform is not None:
                         cuteform = cuteform.copy()
+                        if ('to_cuteform' in cuteform and field_name.startswith('i_')
+                            and failSafe(lambda: cuteform['to_cuteform'].func_code.co_argcount, exceptions=[ AttributeError ]) == 3):
+                            cuteform['to_cuteform'] = self._to_cuteform_for_i_choices(cuteform['to_cuteform'], field_name)
                         if not cuteform.get('image_folder', None):
                             cuteform['image_folder'] = field_name
                         self.cuteform[new_field_name] = cuteform
@@ -762,6 +787,7 @@ class MagiCollection(object):
             reportable = False
             form_class = _CollectibleForm
             collectible_tab_name = property(lambda _s: _s.plural_title)
+            collectible_limit_to_account_types = None # If accounts have types, list of types that are allowed to collect this
 
             def __init__(self, *args, **kwargs):
                 super(_CollectibleCollection, self).__init__(*args, **kwargs)
@@ -1186,7 +1212,8 @@ class MagiCollection(object):
         return instance
 
     def after_save(self, request, instance, type=None):
-        instance.update_all_related_caches(reload_m2m=True)
+        instance.update_all_related_caches(reload_m2m=True, previous_related_caches=getattr(
+            request, '_reverse_related_caches_previous_values', {}))
         return instance
 
     def _get_more_url(self, url, filter_field_name, item, to_preset, ajax=False):
@@ -2174,8 +2201,6 @@ class MagiCollection(object):
         return self.get_list_url(random=True)
 
     def get_add_url(self, ajax=False, type=None):
-        if self.types and not type:
-            type = self.types.keys()[0]
         return u'{}/{}/add/{}'.format(
             '' if not ajax else '/ajax',
             self.plural_name,
@@ -2193,14 +2218,6 @@ class MagiCollection(object):
     @property
     def edit_sentence(self):
         return _(u'Edit {thing}').format(thing=self.title.lower())
-
-    @property
-    def is_first_collection(self):
-        return self.name == FIRST_COLLECTION
-
-    @property
-    def is_first_collection_parent(self):
-        return getMagiCollection(FIRST_COLLECTION).parent_collection.name == self.name
 
     @property
     def all_views(self):
@@ -3347,7 +3364,7 @@ class AccountCollection(MagiCollection):
         return super(AccountCollection, self).get_buttons_classes(
             buttons_classes, request, context, item=item, color=color, size=size, block=block)
 
-    def get_profile_account_tabs(self, request, context, account=None):
+    def get_profile_account_tabs(self, request, context, account=None, account_type=None):
         """
         Ordered dict that:
         - MUST contain name, callback (except for about)
@@ -3357,6 +3374,9 @@ class AccountCollection(MagiCollection):
         tabs = {}
         if context['collectible_collections'] and 'account' in context['collectible_collections']:
             for collection_name, collection in context['collectible_collections']['account'].items():
+                if (collection.collectible_limit_to_account_types is not None
+                    and (getattr(account, 'type', None) or account_type) not in collection.collectible_limit_to_account_types):
+                    continue
                 tabs[collection_name] = {
                     'name': collection.collectible_tab_name,
                     'icon': collection.icon,
@@ -3506,15 +3526,17 @@ class AccountCollection(MagiCollection):
                     context['otherbuttons'][form_name] = mark_safe(u'<a href="?advanced" class="btn btn-link">{}</a>'.format(_('Advanced')))
 
         def redirect_after_add(self, request, instance, ajax=False):
-            if FIRST_COLLECTION:
-                collection = getMagiCollection(FIRST_COLLECTION)
-                if collection:
-                    return collection.parent_collection.get_list_url(
-                        ajax=ajax, modal_only=ajax, parameters={
-                            'get_started': '',
-                            'add_to_{}'.format(collection.name): instance.pk,
-                        },
-                    )
+            first_collection = getMagiCollection(
+                FIRST_COLLECTION_PER_ACCOUNT_TYPE.get(getattr(instance, 'type', None), None)
+                or FIRST_COLLECTION
+            )
+            if first_collection:
+                return first_collection.parent_collection.get_list_url(
+                    ajax=ajax, modal_only=ajax, parameters={
+                        'get_started': '',
+                        'add_to_{}'.format(first_collection.name): instance.pk,
+                    },
+                )
             if ajax: # Ajax is not allowed for profile url
                 return '/ajax/successadd/'
             return '{}#{}'.format(request.user.item_url, instance.pk)
@@ -3525,6 +3547,8 @@ class AccountCollection(MagiCollection):
                 del request.session['account_ids']
             if 'account_versions' in request.session:
                 del request.session['account_versions']
+            if 'account_types' in request.session:
+                del request.session['account_types']
             return instance
 
         def after_save(self, request, instance, type=None):
@@ -3557,6 +3581,8 @@ class AccountCollection(MagiCollection):
                 del request.session['account_ids']
             if 'account_versions' in request.session:
                 del request.session['account_versions']
+            if 'account_types' in request.session:
+                del request.session['account_types']
             request._account_owner = item.owner
 
         def after_delete(self, request):

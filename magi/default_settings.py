@@ -932,7 +932,7 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
             'url_variables': [
                 ('model_name', '\w+'),
                 ('field_name', '[\w_]+'),
-                ('language', '\w+'),
+                ('language', '[\w\-]+'),
             ],
             'show_title': True,
         },
