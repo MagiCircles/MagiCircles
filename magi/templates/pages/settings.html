@@ -235,7 +235,7 @@
   <div class="flex-table table-main table-padded table-rounded">
     {% for account in accounts %}
     <div class="flex-tr">
-      <div class="flex-td"><h4>{{ account }}</h4></div>{# td #}
+      <div class="flex-td"><h4>{{ account }}{% if account.t_type %}<br><i class="fontx0-8">&nbsp;&nbsp;&nbsp;{{ account.t_type }}</i>{% endif %}</h4></div>{# td #}
       <div class="flex-td text-right">
         <a href="{{ account.edit_url }}" class="btn btn-lg btn-secondary btn-lines">
           {{ account.edit_sentence }} <i class="flaticon-link"></i>
@@ -243,7 +243,7 @@
       </div>{# td #}
     </div>{# tr #}
     {% endfor %}
-  </div>{# table #}
+  </div>{# table #}<br>
   <div class="text-right">
     <a href="#content" class="btn btn-lg btn-link page-scroll"><span class="glyphicon glyphicon-chevron-up"></span></a>
     <a href="/user/{{ user.id }}/{{ user.username }}/" class="btn btn-lg btn-link btn-lines">{{ back_to_profile_sentence }}</a>

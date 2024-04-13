@@ -605,6 +605,11 @@ if hasattr(settings_module, 'FIRST_COLLECTION'):
 else:
     FIRST_COLLECTION = None
 
+if hasattr(settings_module, 'FIRST_COLLECTION_PER_ACCOUNT_TYPE'):
+    FIRST_COLLECTION_PER_ACCOUNT_TYPE = getattr(settings_module, 'FIRST_COLLECTION_PER_ACCOUNT_TYPE')
+else:
+    FIRST_COLLECTION_PER_ACCOUNT_TYPE = {}
+
 if hasattr(settings_module, 'GET_STARTED_VIDEO'):
     GET_STARTED_VIDEO = getattr(settings_module, 'GET_STARTED_VIDEO')
 else:
@@ -614,6 +619,16 @@ if hasattr(settings_module, 'GET_STARTED_MARKDOWN_TUTORIAL'):
     GET_STARTED_MARKDOWN_TUTORIAL = getattr(settings_module, 'GET_STARTED_MARKDOWN_TUTORIAL')
 else:
     GET_STARTED_MARKDOWN_TUTORIAL = None
+
+if hasattr(settings_module, 'GET_STARTED_VIDEO_PER_ACCOUNT_TYPE'):
+    GET_STARTED_VIDEO_PER_ACCOUNT_TYPE = getattr(settings_module, 'GET_STARTED_VIDEO_PER_ACCOUNT_TYPE')
+else:
+    GET_STARTED_VIDEO_PER_ACCOUNT_TYPE = {}
+
+if hasattr(settings_module, 'GET_STARTED_MARKDOWN_TUTORIAL_PER_ACCOUNT_TYPE'):
+    GET_STARTED_MARKDOWN_TUTORIAL_PER_ACCOUNT_TYPE = getattr(settings_module, 'GET_STARTED_MARKDOWN_TUTORIAL_PER_ACCOUNT_TYPE')
+else:
+    GET_STARTED_MARKDOWN_TUTORIAL_PER_ACCOUNT_TYPE = {}
 
 if hasattr(settings_module, 'ON_USER_EDITED'):
     ON_USER_EDITED = getattr(settings_module, 'ON_USER_EDITED')

@@ -1596,14 +1596,14 @@ class MagiMainImageFieldMixin(object):
 
     @property
     def link(self):
-        if (self.options.table_view
+        if (self.options.table_fields
             and self.collection.item_view.enabled):
             return self.item.item_url
         return None
 
     @property
     def ajax_link(self):
-        if (self.options.table_view
+        if (self.options.table_fields
             and self.collection.item_view.enabled
             and self.collection.item_view.ajax):
             return self.item.ajax_item_url
@@ -2558,6 +2558,40 @@ class MagiUnicodeField(MagiField):
     def has_value(self):
         return True
 
+    ############################################################
+    # Display
+
+    @property
+    def display_class(self):
+        if self._has_link():
+            return MagiDisplayLink
+        return MagiDisplayText
+
+    @property
+    def link(self):
+        return self.item.item_url
+
+    @property
+    def ajax_link(self):
+        if self.collection.item_view.ajax:
+            return self.item.ajax_item_url
+        return None
+
+    @property
+    def ajax_link_title(self):
+        return self.item
+
+    link_classes = [ 'a-nodifference' ]
+
+    ############################################################
+    # Internal
+
+    def _has_link(self):
+        return (
+            self.options.table_fields
+            and self.collection.item_view.enabled
+        )
+
 ############################################################
 # Empty field
 
@@ -3266,13 +3300,17 @@ class MagiManyToManyModelField(BaseMagiManyToManyModelField):
             )
         )
 
-    def _and_more_button_total_from_rel_items(self, rel_items):
-        if len(rel_items) > (self.rel_options.max or 0):
-            cached_total = self.get_total_cache()
-            if cached_total is not None and cached_total >= len(rel_items):
-                self.and_more_button_total = cached_total - (len(rel_items) - 1)
+    def _and_more_button_total_from_rel_items(self, rel_items, has_more=False):
+        # -1 means we know there are more but we don't know how many more
+        cached_total = self.get_total_cache()
+        if cached_total is not None:
+            if cached_total >= len(rel_items):
+                self.and_more_button_total = cached_total - len(rel_items)
             else:
-                self.and_more_button_total = -1
+                self.and_more_button_total = 0
+        elif (has_more
+              or len(rel_items) > (self.rel_options.max or 0)):
+            self.and_more_button_total = -1
         else:
             self.and_more_button_total = 0
 
@@ -3293,8 +3331,8 @@ class MagiManyToManyModelField(BaseMagiManyToManyModelField):
                 print '   m2m:', self.field_name, 'from cache'
         elif getattr(self.request, '_prefetched_with_max', {}).get(self.original_field_name):
             # Retrieve items that have been prefetched manually with a limit
-            rel_items, self.rel_options.max = self.request._prefetched_with_max[self.original_field_name]
-            self._and_more_button_total_from_rel_items(rel_items)
+            rel_items, self.rel_options.max, has_more = self.request._prefetched_with_max[self.original_field_name]
+            self._and_more_button_total_from_rel_items(rel_items, has_more=has_more)
             if SHOW_DEBUG and (self.view.view == 'item_view' or SHOW_DEBUG_LIST):
                 print '   m2m:', self.field_name, 'from _prefetched_with_max'
         elif isinstance(getattr(self.item, self.item_access_field_name, None), QuerySet):
@@ -3332,7 +3370,7 @@ class MagiManyToManyModelField(BaseMagiManyToManyModelField):
             )
             rel_item._magimanytomanyfield_item_url = (
                 getattr(rel_item, 'item_url', None)
-                if rel_item.has_item_view_permissions()
+                if failSafe(lambda: rel_item.has_item_view_permissions(), exceptions=[ AttributeError ])
                 else None
             )
             if not rel_item._magimanytomanyfield_image:
@@ -4216,6 +4254,8 @@ class MagiFields(object):
 
         self.prepare_fields()
         self.set_fields()
+        # Will be set on bond
+        self.dynamically_excluded_fields = []
         if item:
             self.order_fields()
             self.bound_fields(item)
@@ -4472,6 +4512,12 @@ class MagiFields(object):
         self.fields_per_category.pop('BUTTON')
 
     ############################################################
+    # Exclude fields after bond
+
+    def exclude_fields_after_bond(self):
+        return []
+
+    ############################################################
     # Imitate dict behavior
 
     def items(self):
@@ -4506,6 +4552,7 @@ class MagiFields(object):
         else:
             self.item = item
         self.name_for_questions = self.to_name_for_questions()
+        self.dynamically_excluded_fields = self.exclude_fields_after_bond()
 
         if SHOW_DEBUG and (self.view.view == 'item_view' or SHOW_DEBUG_LIST):
             print 'Unbound fields:'
@@ -4532,6 +4579,7 @@ class MagiFields(object):
                     self.options.force_all_fields
                     or (
                         field.show
+                        and field_name not in self.dynamically_excluded_fields
                         and (
                             field.has_buttons_to_show()
                             or (
@@ -4553,6 +4601,8 @@ class MagiFields(object):
                         reason = '!can_display'
                     elif not field.show:
                         reason = '!show'
+                    elif field_name in self.dynamically_excluded_fields:
+                        reason = 'exclude_fields_after_bond'
                     elif not field.has_value():
                         reason = '!has_value'
                 bound_and_not_displayed[field.field_name] = reason

@@ -1362,6 +1362,9 @@ function splitParameters(parameters_str) {
     if (typeof parameters_str == 'undefined') {
         return {};
     }
+    if (parameters_str.startsWith('?')) {
+        parameters_str = parameters_str.slice(1);
+    }
     let parameters_parts = {};
     parameters_str.split('&').forEach(function(parameter) {
         let key = parameter.split('=')[0];

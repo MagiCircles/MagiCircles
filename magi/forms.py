@@ -45,6 +45,7 @@ from magi.settings import (
     MAX_LEVEL_BEFORE_SCREENSHOT_REQUIRED,
     MAX_LEVEL_UP_STEP_BEFORE_SCREENSHOT_REQUIRED,
     FIRST_COLLECTION,
+    FIRST_COLLECTION_PER_ACCOUNT_TYPE,
     TRANSLATION_HELP_URL,
     PROFILE_BACKGROUNDS_NAMES,
     MAX_LEVEL,
@@ -696,6 +697,17 @@ class MagiForm(forms.ModelForm):
                 else:
                     self.fields[name].help_text = markdown_help_text
 
+            # Save previous values of reverse related caches
+            elif (self.request and self.request.method == 'POST'
+                  and not self.is_creating and name in [ r[0] for r in getattr(self.instance, 'REVERSE_RELATED_CACHES', []) ]):
+                if not hasattr(self.request, '_reverse_related_caches_previous_values'):
+                    self.request._reverse_related_caches_previous_values = {}
+                is_m2m = next(r[2] for r in getattr(self.instance, 'REVERSE_RELATED_CACHES', []) if r[0] == name)
+                if is_m2m:
+                    self.request._reverse_related_caches_previous_values[name] = list(getattr(self.instance, name).all())
+                else:
+                    self.request._reverse_related_caches_previous_values[name] = getattr(self.instance, name)
+
             # Images selector
             elif (model_field
                   and isinstance(model_field, django_models.ManyToManyField)
@@ -1258,7 +1270,7 @@ def to_translate_form_class(view):
             formatted_sources = [
                 markSafeFormat(
                     u"""<span class="label label-info">{language_verbose}</span>
-                    <span lang="{language}">{value}</span>""",
+                    <span lang="{language}" style="white-space: pre-line;">{value}</span>""",
                     language=source_language,
                     language_verbose=getVerboseLanguage(source_language),
                     value=(
@@ -1739,6 +1751,13 @@ class MagiFiltersForm(AutoForm):
                                     queryset=queryset, required=True,
                                     initial=initial, label=label, help_text=help_text,
                                 ))] + self.fields.items())
+                        # Exclude limited account types
+                        if collection and collection.collectible_limit_to_account_types is not None:
+                            self.fields[u'add_to_{}'.format(collection_name)].choices = [
+                                (c.pk, unicode(c)) for c in queryset
+                                if c.type in collection.collectible_limit_to_account_types
+                            ]
+
                 if collection.add_view.enabled:
                     # Add added_{} for fields that are collectible
                     field_name = u'added_{}'.format(collection_name)
@@ -2232,7 +2251,10 @@ class AccountForm(AutoForm):
                 changeFormField(self, 'default_tab', forms.ChoiceField, {
                     'required': False,
                     'label': _('Default tab'),
-                    'initial': FIRST_COLLECTION,
+                    'initial': (
+                        FIRST_COLLECTION_PER_ACCOUNT_TYPE.get(self.form_type, None)
+                        or FIRST_COLLECTION
+                    ),
                     'choices': BLANK_CHOICE_DASH + [
                         (tab_name, tab['name'])
                         for tab_name, tab in
@@ -2240,6 +2262,7 @@ class AccountForm(AutoForm):
                             self.request,
                             RAW_CONTEXT,
                             self.instance if not self.is_creating else None,
+                            account_type=self.form_type,
                         ).items()
                     ],
                 })

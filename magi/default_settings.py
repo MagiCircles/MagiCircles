@@ -930,9 +930,9 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
             'permissions_required': ['translate_items'],
             'navbar_link': False,
             'url_variables': [
-                ('model_name', '[a-z]+'),
-                ('field_name', '[a-z_]+'),
-                ('language', '[a-z]+'),
+                ('model_name', '\w+'),
+                ('field_name', '[\w_]+'),
+                ('language', '[\w\-]+'),
             ],
             'show_title': True,
         },
@@ -943,8 +943,8 @@ DEFAULT_ENABLED_PAGES = OrderedDict([
             'permissions_required': ['translate_items'],
             'navbar_link': False,
             'url_variables': [
-                ('model_name', '[a-z]+'),
-                ('field_name', '[a-z_]+'),
+                ('model_name', '\w+'),
+                ('field_name', '[\w_]+'),
             ],
             'show_title': True,
         },

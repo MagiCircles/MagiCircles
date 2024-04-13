@@ -54,9 +54,10 @@ from magi.settings import (
     NAVBAR_ORDERING,
     ACCOUNT_MODEL,
     STAFF_CONFIGURATIONS,
-    FIRST_COLLECTION,
     GET_STARTED_VIDEO,
+    GET_STARTED_VIDEO_PER_ACCOUNT_TYPE,
     GET_STARTED_MARKDOWN_TUTORIAL,
+    GET_STARTED_MARKDOWN_TUTORIAL_PER_ACCOUNT_TYPE,
     GLOBAL_OUTSIDE_PERMISSIONS,
     GROUPS,
     JAVASCRIPT_COMMONS,
@@ -153,6 +154,8 @@ RAW_CONTEXT['site_description'] = SITE_DESCRIPTION
 RAW_CONTEXT['staff_configurations'] = STAFF_CONFIGURATIONS
 RAW_CONTEXT['get_started_video'] = GET_STARTED_VIDEO
 RAW_CONTEXT['get_started_markdown_tutorial'] = GET_STARTED_MARKDOWN_TUTORIAL
+RAW_CONTEXT['get_started_video_per_account_type'] = GET_STARTED_VIDEO_PER_ACCOUNT_TYPE
+RAW_CONTEXT['get_started_markdown_tutorial_per_account_type'] = GET_STARTED_MARKDOWN_TUTORIAL_PER_ACCOUNT_TYPE
 RAW_CONTEXT['game_name'] = GAME_NAME
 RAW_CONTEXT['game_name_per_language'] = GAME_NAME_PER_LANGUAGE
 RAW_CONTEXT['static_uploaded_files_prefix'] = STATIC_UPLOADED_FILES_PREFIX
@@ -415,6 +418,11 @@ for collection in collections.values():
     if collection.add_view.enabled:
         url_name = '{}_add'.format(collection.name)
         if collection.types:
+            urls.append(url(u'^{}/add[/]*$'.format(collection.name), views_collections.add_view_select_type, parameters, name=url_name))
+            urls.append(url(u'^{}/add[/]*$'.format(collection.plural_name), views_collections.add_view_select_type, parameters, name=url_name))
+            if collection.AddView.ajax:
+                urls.append(url(u'^ajax/{}/add[/]*$'.format(collection.plural_name), views_collections.add_view_select_type, ajax_parameters, name='{}_ajax'.format(url_name)))
+
             urls.append(url(u'^{}/add/(?P<type>{})[/]*$'.format(collection.name, _verbose_re), views_collections.add_view, parameters, name=url_name))
             urls.append(url(u'^{}/add/(?P<type>{})[/]*$'.format(collection.plural_name, _verbose_re), views_collections.add_view, parameters, name=url_name))
             if collection.add_view.ajax:

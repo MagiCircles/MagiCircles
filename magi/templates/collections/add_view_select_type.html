@@ -1,0 +1,26 @@
+{% extends extends %}
+
+{% block content %}
+<div class="{% if not ajax %}container{% endif %} container-for-generic-form">
+  {% include 'include/page_title.html' with h1_page_title=h1_page_title|default_if_none:page_title h1_page_title_icon=h1_page_title_icon h1_page_title_image=h1_page_title_image h1_page_title_classes='form-title'|add:h1_page_title_classes %}
+
+  <div class="text-center container_form">
+    {% for type_name, button in type_buttons.items %}
+    <a href="{{ button.url }}" style="margin-bottom: 10px;"
+       data-top-btn-name="{{ type_name }}"
+       class="{% for class in button.classes %}{{ class }} {% endfor %}"
+       title="{{ button.title }}"
+       {% if button.ajax_url %}
+       data-ajax-url="{{ button.ajax_url }}"
+       data-ajax-title="{{ button.title }}"
+       data-ajax-handle-form="true"
+       {% endif %}>
+      {% if button.icon %}<i class="flaticon-{{ button.icon }}"></i>
+      {% elif button.image %}<img src="{{ static_url }}img/{{ button.image }}.png?{{ static_files_version }}" height="39" />{% endif %}
+      {{ button.title }}
+    </a>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

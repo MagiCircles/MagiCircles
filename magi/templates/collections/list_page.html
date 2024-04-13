@@ -61,7 +61,7 @@
 
       {% include 'items/'|add:item_template|add:'.html' %}
       {% if include_below_item %}
-      {% include 'include/below_item.html' %}
+      {% include 'include/below_item.html' with in_list=True %}
       {% endif %}{# include_below_item #}
 
     {% endif %}{# endif item.blocked #}

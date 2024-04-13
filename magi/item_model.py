@@ -39,6 +39,9 @@ from magi.utils import (
     hasPermissions,
     hasPermissionToMessage,
     birthdayURL,
+    getModelOfRelatedItem,
+    getFilterFieldNameOfRelatedItem,
+    getQuerysetFromModel,
 )
 
 ############################################################
@@ -458,6 +461,14 @@ class BaseMagiModel(models.Model):
     def save_j(self, field_name, j):
         setattr(self, u'j_{name}'.format(name=field_name), json.dumps(j) if j else None)
 
+    def _to_cache_queryset(self, cache_name):
+        # Call getQuerysetFromModel to make sure .get_queryset is called
+        return getQuerysetFromModel(getModelOfRelatedItem(type(self), cache_name)).filter(**{
+            getFilterFieldNameOfRelatedItem(type(self), cache_name): self.pk })
+
+    def _to_cache_total(self, cache_name):
+        return self._to_cache_queryset(cache_name).count()
+
     def _to_cache(self, field_name):
         to_cache_method = getattr(self, u'to_cache_{}'.format(field_name), None)
         if not to_cache_method:
@@ -465,7 +476,7 @@ class BaseMagiModel(models.Model):
             # Works with multi-level lookups
             if field_name.startswith('total_'):
                 try:
-                    return getRelatedItemFromItem(self, field_name[len('total_'):], count=True)
+                    return self._to_cache_total(field_name[len('total_'):])
                 except AttributeError:
                     pass
             raise NotImplementedError(u'to_cache_{f} method is required for {f} cache'.format(f=field_name))
@@ -536,55 +547,76 @@ class BaseMagiModel(models.Model):
             and getattr(self, u'{}_id'.format(field_name), None) is not None):
             self.force_update_cache(field_name)
 
-    def update_all_related_caches(self, reload_m2m=True, update_reverse_related_caches=True):
+    def update_all_related_caches(self, reload_m2m=True, update_reverse_related_caches=True, previous_related_caches={}):
         related_caches = getattr(self, 'RELATED_CACHES', [])
-        if reload_m2m:
-            for cache_name in related_caches:
-                if isinstance(modelGetField(type(self), cache_name), models.ManyToManyField):
-                    getattr(self, cache_name).all()._result_cache = None
-        caches_that_changed = self.update_caches_if_changed(related_caches)
-        if django_settings.DEBUG and caches_that_changed:
-            print '  UPDATED CACHE', caches_that_changed
-        if not update_reverse_related_caches:
-            return
-        for rel_field_name, rel_cache_name, is_m2m in getattr(
-                self, 'REVERSE_RELATED_CACHES', []):
-            if modelHasField(type(self), rel_field_name):
-                if is_m2m:
+        if related_caches:
+            if reload_m2m:
+                for cache_name in related_caches:
+                    if isinstance(modelGetField(type(self), cache_name), models.ManyToManyField):
+                        getattr(self, cache_name).all()._result_cache = None
+            caches_that_changed = self.update_caches_if_changed(related_caches)
+            if django_settings.DEBUG and caches_that_changed:
+                print '  UPDATED CACHE', caches_that_changed
+        if update_reverse_related_caches:
+            for rel_field_name, rel_cache_name, is_m2m in getattr(
+                    self, 'REVERSE_RELATED_CACHES', []):
+                if modelHasField(type(self), rel_field_name):
+                    if is_m2m:
+                        flag = False
+                        getattr(self, rel_field_name).all()._result_cache = None
+                        rel_items = list(getattr(self, rel_field_name).all())
+                        for rel_item in rel_items:
+                            changed = rel_item.update_cache_if_changed(rel_cache_name)
+                            if django_settings.DEBUG and changed:
+                                if not flag:
+                                    print '  UPDATE M2M CACHE REV', rel_field_name
+                                    flag = True
+                                print '    ', failSafe(lambda: unicode(rel_item), default=rel_item.id)
+                        flag = False
+                        for previous_rel_item in previous_related_caches.get(rel_field_name, []):
+                            if previous_rel_item not in rel_items:
+                                changed = previous_rel_item.update_cache_if_changed(rel_cache_name)
+                                if django_settings.DEBUG and changed:
+                                    if not flag:
+                                        print '  UPDATE M2M CACHE REV OF REMOVED', rel_field_name
+                                        flag = True
+                                    print '    ', failSafe(lambda: unicode(previous_rel_item), default=previous_rel_item.id)
+                    else:
+                        rel_item = getattr(self, rel_field_name)
+                        if rel_item:
+                            changed = rel_item.update_cache_if_changed(rel_cache_name)
+                            if django_settings.DEBUG and changed:
+                                print '  UPDATE CACHE REV', rel_field_name
+                                print '    ', failSafe(lambda: unicode(rel_item), default=rel_item.id)
+                        previous_rel_item = previous_related_caches.get(rel_field_name, None)
+                        if previous_rel_item and previous_rel_item != rel_item:
+                            changed = previous_rel_item.update_cache_if_changed(rel_cache_name)
+                            if django_settings.DEBUG and changed:
+                                print '  UPDATE CACHE REV OF REMOVED', rel_field_name
+                                print '    ', failSafe(lambda: unicode(previous_rel_item), default=previous_rel_item.id)
+
+                else:
+                    rel_queryset = getattr(self, rel_field_name).all()
+                    if is_m2m:
+                        rel_queryset = rel_queryset.prefetch_related(rel_cache_name)
+                    else:
+                        rel_queryset = rel_queryset.select_related(rel_cache_name)
                     flag = False
-                    for rel_item in getattr(self, rel_field_name).all():
+                    for rel_item in rel_queryset:
                         changed = rel_item.update_cache_if_changed(rel_cache_name)
                         if django_settings.DEBUG and changed:
                             if not flag:
                                 print '  UPDATE CACHE REV', rel_field_name
                                 flag = True
                             print '    ', failSafe(lambda: unicode(rel_item), default=rel_item.id)
-                else:
-                    rel_item = getattr(self, rel_field_name)
-                    if rel_item:
-                        changed = rel_item.update_cache_if_changed(rel_cache_name)
-                        if django_settings.DEBUG and changed:
-                            print '  UPDATE CACHE REV', rel_field_name
-                            print '    ', failSafe(lambda: unicode(rel_item), default=rel_item.id)
-            else:
-                rel_queryset = getattr(self, rel_field_name).all()
-                if is_m2m:
-                    rel_queryset = rel_queryset.prefetch_related(rel_cache_name)
-                else:
-                    rel_queryset = rel_queryset.select_related(rel_cache_name)
-                flag = False
-                for rel_item in rel_queryset:
-                    changed = rel_item.update_cache_if_changed(rel_cache_name)
-                    if django_settings.DEBUG and changed:
-                        if not flag:
-                            print '  UPDATE CACHE REV', rel_field_name
-                            flag = True
-                        print '    ', failSafe(lambda: unicode(rel_item), default=rel_item.id)
 
     @classmethod
     def update_all_related_caches_of_model(self, update_reverse_related_caches=True):
         queryset = self.objects.all()
-        for cache_name in getattr(self, 'RELATED_CACHES', []):
+        related_caches = getattr(self, 'RELATED_CACHES', [])
+        if not related_caches:
+            return
+        for cache_name in related_caches:
             field = modelGetField(self, cache_name)
             if isinstance(field, models.ManyToManyField):
                 queryset = queryset.prefetch_related(cache_name)
@@ -1231,8 +1263,19 @@ class CachedItem(AttrDict):
         raise AttributeError('CachedItem {} object has no attribute {}'.format(
             self.model_class.__name__ if self.model_class else '', name))
 
+    def __getitem__(self, name):
+        # Some old code might still try to access cached details using the dict syntax:
+        # card.cached_idol['http_item_url'] instead of card.cached_idol.http_item_url
+        # This ensures it doesn't fail on existing properties
+        return getattr(self, name)
+
     def __getattr__(self, name):
         original_name = name
+
+        # Reserved names
+        if original_name in KNOWN_ITEM_PROPERTIES:
+            return self._attr_error(original_name)
+
         # PROPERTIES IN MODEL CLASS
         # Some properties like item_url & co are set below with addMagiModelProperties
         # Properties + Classmethods retrieved with getValueIfNotProperty. ex: IS_PERSON, get_auto_image

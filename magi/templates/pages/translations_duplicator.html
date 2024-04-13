@@ -11,7 +11,7 @@
   <br>
   <div class="text-center">
     {% if language %}
-    <a href="/translations_duplicator/{{ collection.name }}/{{ field_name }}/"
+    <a href="/translations_duplicator/{{ collection.model_name }}/{{ field_name }}/"
        class="btn btn-main btn-sm">See all languages</a>
     {% endif %}
     {% if see_all %}
@@ -68,7 +68,7 @@
                 <td>
                   {% if count_apply %}
                   <form class="text-right" method="POST"
-                        action="/translations_duplicator/{{ collection.name }}/{{ field_name }}/{{ language_ }}/">
+                        action="/translations_duplicator/{{ collection.model_name }}/{{ field_name }}/{{ language_ }}/">
                     {% csrf_token %}
                     <input type="hidden" name="term" value="{{ term }}">
                     <button type="submit" class="btn btn-main btn-xs" style="margin-left: 20px;"

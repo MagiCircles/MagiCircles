@@ -34,7 +34,7 @@ GET_PARAMETERS_NOT_IN_FORM = [
     'page', 'page_size',
     'ajax_modal_only', 'ajax_show_top_buttons', 'ajax_show_top_buttons',
     'hide_relevant_fields_on_ordering',
-    'show_owner', 'get_started'
+    'show_owner', 'get_started',
     'max_per_line',
     'open',
     'buttons_color',

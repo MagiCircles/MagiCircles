@@ -1381,6 +1381,37 @@ def getAccountVersionsFromSession(request):
         ]
     return request.session['account_versions']
 
+def getAccountTypesFromSession(request):
+    # /!\ Can't be called at global level
+    if not request.user.is_authenticated():
+        return []
+    if 'account_types' not in request.session:
+        request.session['account_types'] = {
+            unicode(account.id): account.type
+            for account in RAW_CONTEXT['account_model'].objects.filter(**{
+                    RAW_CONTEXT['account_model'].selector_to_owner():
+                    request.user
+            })
+        }
+    return {
+        int(account_id): account_type
+        for account_id, account_type
+        in request.session['account_types'].items()
+    }
+
+def getGetStartedDetails(request, account_id=None):
+    # /!\ Can't be called at global level
+    default_markdown_tutorial = RAW_CONTEXT['staff_configurations'].get('get_started', {}).get(request.LANGUAGE_CODE, RAW_CONTEXT['get_started_markdown_tutorial'])
+    default_video = RAW_CONTEXT['get_started_video']
+    if not account_id:
+        return (default_markdown_tutorial, default_video)
+    account_id = int(account_id)
+    account_types = getAccountTypesFromSession(request)
+    return (
+        RAW_CONTEXT['get_started_markdown_tutorial_per_account_type'].get(account_types.get(account_id, None), default_markdown_tutorial),
+        RAW_CONTEXT['get_started_video_per_account_type'].get(account_types.get(account_id, None), default_video),
+    )
+
 def addCornerPopupToContext(
         context, name, title, content=None, image=None, image_overflow=None, buttons=None,
         allow_close_once=False, allow_close_remind=None, allow_close_forever=False,
@@ -1413,11 +1444,12 @@ def _callToCuteForm(field_name, model, to_cuteform, key, value):
         return key
     elif to_cuteform == 'value':
         return value
-    if (field_name.startswith('i_') # i_choices
-        and to_cuteform.func_code.co_argcount == 3): # to_cuteform takes 3 arguments
+    if to_cuteform.func_code.co_argcount == 3: # to_cuteform takes 3 arguments
         if not model:
             raise ValueError('When to_cuteform takes 3 arguments, it\'s required to specify the model class.')
-        return to_cuteform(key, model.get_reverse_i(field_name[2:], key), value)
+        if field_name.startswith('i_'):
+            return to_cuteform(key, model.get_reverse_i(field_name[2:], key), value)
+        return to_cuteform(key, key, value)
     return to_cuteform(key, value)
 
 def cuteFormFieldsForContext(cuteform_fields, context, form=None, prefix=None, ajax=False, model=None):
@@ -3467,7 +3499,7 @@ def addRelatedCaches(model_class, caches):
         if not details.get('fields', []) and character_key:
             if is_m2m:
                 cache_field_name = u'_cache_c_{}'.format(cache_name)
-                to_cache = _addRelatedCaches_to_cache_m2m_csv(cache_name)
+                to_cache = _addRelatedCaches_to_cache_m2m_csv(cache_name, rel_collection_name)
                 setattr(model_class, u'cached_{}_map'.format(
                     cache_name), classmethod(_addRelatedCaches_cached_map_for_characters(character_key)))
             else:
@@ -3520,6 +3552,12 @@ def addRelatedCaches(model_class, caches):
             if character_key:
                 setattr(model_class, u'cached_{}_pre'.format(
                     cache_name), classmethod(_addRelatedCaches_cache_pre_for_characters(character_key)))
+        # Total cache for m2m
+        if is_m2m:
+            total_cache_field_name = u'_cache_total_{}'.format(cache_name)
+            total_cache_model_field = models.PositiveIntegerField(__('{} - {}', label, _('Total')), null=True)
+            model_class.add_to_class(total_cache_field_name, total_cache_model_field)
+            setattr(model_class, u'_cache_total_{}_update_on_none'.format(cache_name), True)
         # Defer in list
         if details.get('defer_in_list_view', False):
             if not getattr(model_class, 'DEFER_IN_LIST_VIEW', []):
@@ -3539,17 +3577,30 @@ def addRelatedCaches(model_class, caches):
             setattr(model_class, u'cached_{}_extra'.format(cache_name), classmethod(
                 _addRelatedCaches_cache_extra_image_for_prefetched(
                     image_for_prefetched, text_image_for_prefetched)))
+
         cache_model_field = models.TextField(label, null=True)
         model_class.add_to_class(cache_field_name, cache_model_field)
         setattr(model_class, u'to_cache_{}'.format(cache_name), to_cache)
         if rel_collection_name:
             setattr(model_class, u'_cached_{}_collection_name'.format(cache_name), rel_collection_name)
 
-def _addRelatedCaches_to_cache_m2m_csv(cache_name):
+def _addRelatedCaches_to_cache_queryset(item, cache_name, rel_collection_name):
+    # Get queryset from .get_queryset if possible
+    queryset = item._to_cache_queryset(cache_name)
+    # Update total as well
+    setattr(item, u'_cache_total_{}'.format(cache_name), queryset.count())
+    # Limit to max when relevant
+    rel_collection = getMagiCollection(rel_collection_name)
+    max = getMaxShownForPrefetchedTogether(type(item), cache_name, rel_collection)
+    if max:
+        queryset = queryset[:max]
+    return queryset
+
+def _addRelatedCaches_to_cache_m2m_csv(cache_name, rel_collection_name):
     def _to_cache(item):
         return [
             rel_item.pk
-            for rel_item in getattr(item, cache_name).all()
+            for rel_item in _addRelatedCaches_to_cache_queryset(item, cache_name, rel_collection_name)
         ]
     return _to_cache
 
@@ -3564,16 +3615,9 @@ def _addRelatedCaches_to_rel_item_cache(rel_item, fields, to_fields):
 
 def _addRelatedCaches_to_cache_m2m(cache_name, fields, rel_collection_name, to_fields):
     def _to_cache(item):
-        max = None
-        if rel_collection_name:
-            rel_collection = getMagiCollection(rel_collection_name)
-            max = getMaxShownForPrefetchedTogether(type(item), cache_name, rel_collection)
-        queryset = getattr(item, cache_name).all()
-        if max:
-            queryset = queryset[:max]
         return [
             _addRelatedCaches_to_rel_item_cache(rel_item, fields, to_fields)
-            for rel_item in queryset
+            for rel_item in _addRelatedCaches_to_cache_queryset(item, cache_name, rel_collection_name)
         ]
     return _to_cache
 
@@ -5015,10 +5059,12 @@ def _markSafeFormatEscapeOrNot(string):
 
 def markSafeFormat(string, *args, **kwargs):
     """The first string doesn't need to be marked safe, it's assumed safe"""
+    template_variables = templateVariables(string)
     return mark_safe(string.format(*[
         _markSafeFormatEscapeOrNot(arg) for arg in args
     ], **{
         key: _markSafeFormatEscapeOrNot(value) for key, value in kwargs.items()
+        if key in template_variables
     }))
 
 def markSafeReplace(string, replace_from, replace_to):
@@ -5318,7 +5364,9 @@ def artSettingsToGetParameters(settings):
             for pk, pv in v.items():
                 parameters['position_{}_preview'.format(pk)] = pv
         elif k == 'url':
-            parameters['preview'] = urllib.quote(staticImageURL(v).encode('utf8'))
+            preview = staticImageURL(v)
+            if v:
+                parameters['preview'] = urllib.quote(v.encode('utf8'))
         elif k == 'foreground_url':
             parameters['foreground_preview'] = urllib.quote(staticImageURL(v).encode('utf8'))
         else:
