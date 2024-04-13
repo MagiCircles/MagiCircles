@@ -3988,7 +3988,8 @@ class UserCollection(MagiCollection):
                             if (collection_name not in [account.opened_tab, account.default_tab]
                                 and not tabs_with_content.get('account', {}).get(
                                     'tabs_per_account', {}).get(str(account.id), {}).get(collection_name, False)):
-                                del(account.tabs[collection_name])
+                                if collection_name in account.tabs:
+                                    del(account.tabs[collection_name])
                     afterjs += u'\'{account_id}\': {{'.format(account_id=account.id)
                     for tab_name, tab in account.tabs.items():
                         if 'callback' in tab and tab['callback']:
